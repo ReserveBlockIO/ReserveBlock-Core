@@ -2,6 +2,8 @@
 For an immediately usable, binary version of the ReserverBlock Core software, see
 https://reserveblock.io
 
+This repo is currently a work in progress. New commits pushing more of the RXBX wallet are staged. Keep an eye out for releases to test the blockchain.
+
 # What is ReserverBlock?
 ReserverBlock is an NFT centric blockchain aiming to focus on NFTs and deliver a blockchain built around them. 
 ReserveBlock Foundation (reserveblock.io), is the first open-source platform allowing for the creation of a decentralized NFT Centric Blockchain, which is independently governed and democratizes NFTs for everyone.
