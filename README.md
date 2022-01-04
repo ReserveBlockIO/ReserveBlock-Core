@@ -24,7 +24,7 @@ For more information please read the ReserverBlock whitepaper or litepaper.
 ReserveBlock-CLI is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
 
-### How do I get set up? ###
+### How do I get set up? (Coming Soon) ###
 
 * Summary of set up
 *   Comning soon
