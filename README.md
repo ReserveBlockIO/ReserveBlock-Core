@@ -15,9 +15,9 @@ For more information please read the ReserverBlock whitepaper or litepaper.
 
 * RXBX CLI Main Code REPO
 * C#
-* .Net 6.0
+* .Net 6.0 | https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 * CLI
-* Visual Studio 2022
+* Visual Studio 2022 | https://visualstudio.microsoft.com/vs/
 
 # License
 
