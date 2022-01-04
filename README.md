@@ -3,7 +3,7 @@ For more information and to follow latest news go to:
 https://reserveblock.io
 
 This repo is currently a work in progress. New commits pushing more of the RXBX wallet are staged. Keep an eye out for releases to test the blockchain.
-During Januaray we will be committing multiples stages of the code. Please follow to get latest updates!
+During January we will be committing multiples stages of the code. Please follow to get latest updates!
 
 # What is ReserverBlock?
 ReserverBlock is an NFT centric blockchain aiming to focus on NFTs and deliver a blockchain built around them. 
