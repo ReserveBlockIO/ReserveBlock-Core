@@ -1,5 +1,5 @@
 # ReserverBlock Core-CLI
-For an immediately usable, binary version of the ReserverBlock Core software, see
+For more information and to follow latest news go to:
 https://reserveblock.io
 
 This repo is currently a work in progress. New commits pushing more of the RXBX wallet are staged. Keep an eye out for releases to test the blockchain.
