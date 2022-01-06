@@ -1,4 +1,7 @@
-﻿Console.WriteLine("Starting up Reserve Block Wallet");
+﻿using ReserveBlockCore.Commands;
+
+
+Console.WriteLine("Starting up Reserve Block Wallet");
 
 Thread.Sleep(1000);
 
@@ -10,7 +13,7 @@ while (true)
 
     if (command != "" || command != null)
     {
-        var commandResult = ReserveBlockCore.Utilties.CommandUtility.ProcessCommand(command);
+        var commandResult = BaseCommand.ProcessCommand(command);
 
         if (commandResult == "_EXIT")
         {

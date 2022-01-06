@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ReserveBlockCore.Utilties
+namespace ReserveBlockCore.Commands
 {
-    internal class CommandUtility
+    internal class BaseCommand
     {
         internal static string ProcessCommand(string command)
         {
