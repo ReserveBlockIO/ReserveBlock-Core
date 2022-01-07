@@ -9,7 +9,7 @@ namespace ReserveBlockCore.Services
 {
     internal class HashingService
     {
-		public static string CalculateHash(string inputString)
+		private static string CalculateHash(string inputString)
 		{
 			SHA256 sha256 = SHA256Managed.Create();
 			byte[] bytes = Encoding.UTF8.GetBytes(inputString);
