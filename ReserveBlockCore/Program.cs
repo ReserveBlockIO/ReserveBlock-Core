@@ -1,11 +1,11 @@
 ﻿using ReserveBlockCore.Commands;
+using ReserveBlockCore.Models;
+using ReserveBlockCore.Services;
 
-
-Console.WriteLine("Starting up Reserve Block Wallet");
-
+//
+StartupService.StartupMenu();
 Thread.Sleep(1000);
-
-Console.WriteLine("Wallet Started. Awaiting Command...");
+StartupService.MainMenu();
 
 while (true)
 {
