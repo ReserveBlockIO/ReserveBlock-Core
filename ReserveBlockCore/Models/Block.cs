@@ -14,7 +14,6 @@ namespace ReserveBlockCore.Models
 		public long Timestamp { get; set; }
 		public byte[] Hash { get; set; }
 		public byte[] PrevHash { get; set; }
-		public int Nonce { get; set; } = 0;
 		public string NodeValidatorId { get; set; }
 		public string ChainRev { get; set; }
 		public string CurrencyMoved { get; set; }
