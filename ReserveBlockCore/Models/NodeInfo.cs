@@ -8,5 +8,7 @@ namespace ReserveBlockCore.Models
 {
     internal class NodeInfo
     {
+        public string NodeId { get; set; }
+        public long CurrentBlockHeight { get; set; }
     }
 }

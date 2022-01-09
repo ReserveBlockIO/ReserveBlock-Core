@@ -8,11 +8,22 @@ namespace ReserveBlockCore.Models
 {
     public class Blockchain
     {
-        public List<Block> Chain { get; set; }
-        public int Difficulty { get; set; } = 2; //
+        public string ChainHash { get; set; }
+        public int Difficulty { get; set; } = 2; 
         public List<Transaction> PendingTransactions { get; set; }
-        public decimal MasterNodeReward { get; set; } = 50M;
-        public decimal DataNodeReward { get; set; } = 100M;
+        public decimal MasterNodeReward { get; set; } = 15M;
+        public decimal DataNodeReward { get; set; } = 25M;
+        public virtual ICollection<Block> Blocks { get; set; }
+
+        public int GetLatestBlock
+        {
+            get { return Blocks.Count() - 1; } 
+        }
+
+        public int GetNextBlockHeight
+        {
+            get { return Blocks.Count(); }
+        }
 
     }
 }
