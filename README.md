@@ -19,6 +19,11 @@ For more information please read the ReserverBlock whitepaper or litepaper.
 * CLI
 * Visual Studio 2022 | https://visualstudio.microsoft.com/vs/
 
+### References ###
+
+* LiteDB - Ver. 5.0.11
+* Newtonsoft.Json - Ver. 13.0.1
+
 # License
 
 ReserveBlock-CLI is released under the terms of the MIT license. See [COPYING](COPYING) for more
