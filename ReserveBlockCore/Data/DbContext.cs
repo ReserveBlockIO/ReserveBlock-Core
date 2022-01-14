@@ -18,6 +18,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_TRANSACTION_POOL = "rsrv_transaction_pool";
         public const string RSRV_TRANSACTIONS = "rsrv_transactions";
         public const string RSRV_WALLET = "rsrv_wallet";
+        public const string RSRV_WALLET_SETTINGS = "rsrv_wallet_settings";
 
         public static void Initialize()
         {

@@ -15,7 +15,6 @@
   <ItemGroup>
     <Folder Include="Networks\" />
     <Folder Include="Nodes\" />
-    <Folder Include="P2P\" />
   </ItemGroup>
 
 </Project>

@@ -12,13 +12,11 @@ namespace ReserveBlockCore.Models
     {
 		public int BlockHeight { get; set; }
 		public long Timestamp { get; set; }
-		public byte[] Hash { get; set; }
-		public byte[] PrevHash { get; set; }
+		public string Hash { get; set; }
+		public string PrevHash { get; set; }
 		public string NodeValidatorId { get; set; }
 		public string ChainRev { get; set; }
-		public string CurrencyMoved { get; set; }
 		public decimal BlockReward { get; set; }
-		public decimal FeeReward { get; set; }
 		public string ValidatorKey { get; set; }
 
 		//FK Relationships

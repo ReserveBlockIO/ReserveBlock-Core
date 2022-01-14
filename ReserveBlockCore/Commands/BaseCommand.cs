@@ -35,6 +35,7 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "4":
                     //Insert Method
+                    commandResult = "This feature is coming soon...";
                     break;
                 case "5":
                     //Insert Method
@@ -43,13 +44,13 @@ namespace ReserveBlockCore.Commands
                     //Insert Method
                     break;
                 case "7":
-                    //Insert Method
+                    commandResult = "This feature is coming soon...";
                     break;
                 case "8":
                     //Insert Method
                     break;
                 case "9":
-                    //Insert Method
+                    commandResult = "This feature is coming soon...";
                     break;
                 case "10":
                     //Insert Method
