@@ -1,4 +1,6 @@
 ﻿using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,8 +26,16 @@ namespace ReserveBlockCore.Commands
                 case "/menu":
                     StartupService.MainMenu();
                     break;
+                case "/clear":
+                    Console.Clear();
+                    break;
+                case "/backupwallet":
+                    BackupUtil.BackupWalletData();
+                    Console.WriteLine("Reserve Block Wallet has been backed up.");
+                    break;
                 case "1":
-                    //Insert Method
+                    var genBlock = BlockchainData.GetGenesisBlock();
+                    BlockchainData.PrintBlock(genBlock);
                     break;
                 case "2":
                     //Insert Method

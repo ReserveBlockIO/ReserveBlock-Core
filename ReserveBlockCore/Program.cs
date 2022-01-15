@@ -2,7 +2,8 @@
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 
-//
+StartupService.StartupDatabase();
+StartupService.StartupInitializeChain();
 StartupService.StartupMenu();
 Thread.Sleep(1000);
 StartupService.MainMenu();

@@ -9,22 +9,28 @@ namespace ReserveBlockCore.Services
 {
     internal class HashingService
     {
-		private static string CalculateHash(string inputString)
-		{
-			SHA256 sha256 = SHA256Managed.Create();
-			byte[] bytes = Encoding.UTF8.GetBytes(inputString);
-			byte[] hash = sha256.ComputeHash(bytes);
-			return GetStringFromHash(hash);
-		}
-
-		private static string GetStringFromHash(byte[] hash)
-		{
-			StringBuilder result = new StringBuilder();
-			for (int i = 0; i < hash.Length; i++)
-			{
-				result.Append(hash[i].ToString("X2"));
-			}
-			return result.ToString();
-		}
-	}
+        public static string GenerateHash(string data)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
+            byte[] hash = SHA256.Create().ComputeHash(bytes);
+            return BytesToHex(hash);
+        }
+        public static string GenerateHashHex(string hex)
+        {
+            byte[] bytes = HexToBytes(hex);
+            byte[] hash = SHA256.Create().ComputeHash(bytes);
+            return BytesToHex(hash);
+        }
+        public static string BytesToHex(byte[] bytes)
+        {
+            return Convert.ToHexString(bytes).ToLower();
+        }
+        public static byte[] HexToBytes(string hex)
+        {
+            return Enumerable.Range(0, hex.Length)
+                .Where(x => x % 2 == 0)
+                .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                .ToArray();
+        }
+    }
 }
