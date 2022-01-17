@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Services;
+﻿using LiteDB;
+using ReserveBlockCore.Data;
+using ReserveBlockCore.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,7 +13,7 @@ namespace ReserveBlockCore.Models
 {
     public class Block
     {
-		public int Height { get; set; }
+		public long Height { get; set; }
 		public long Timestamp { get; set; }
 		public string Hash { get; set; }
 		public string PrevHash { get; set; }
@@ -34,6 +36,7 @@ namespace ReserveBlockCore.Models
 			TotalAmount = GetTotalAmount();
 			TotalReward = GetTotalFees();
 			MerkleRoot = GetMerkleRoot();
+			PrevHash = GetLastBlack() != null ? GetLastBlack().Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			Difficulty = 1;
 		}
@@ -45,6 +48,18 @@ namespace ReserveBlockCore.Models
 		{
 			var totFee = Transactions.AsEnumerable().Sum(x => x.Fee);
 			return (float)totFee;
+		}
+		public static ILiteCollection<Block> GetBlocks()
+		{
+			var block = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
+			block.EnsureIndex(x => x.Height);
+			return block;
+		}
+		private static Block GetLastBlack()
+		{
+			var blockchain = GetBlocks();
+			var block = blockchain.FindOne(Query.All(Query.Descending));
+			return block;
 		}
 		private double GetTotalAmount()
 		{

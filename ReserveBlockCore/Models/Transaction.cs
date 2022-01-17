@@ -21,7 +21,7 @@ namespace ReserveBlockCore.Models
         public string? NFTData { get; set; }
 
         [ForeignKey("Block")]
-        public int BlockHeight { get; set; }
+        public long BlockHeight { get; set; }
         public virtual Block Block { get; set; }
 
         public void Build()

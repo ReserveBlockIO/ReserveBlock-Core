@@ -22,14 +22,13 @@ namespace ReserveBlockCore.Data
         {
             var startTimer = DateTime.UtcNow;
 
-            var timeStamp = 1642194044; //14 Jan. 2022
+            var timeStamp = 1642194044; //14 Jan. 2022 | This value is hard coded for the start of the chain.
 
             //var validator = Genesis.GetAll().FirstOrDefault();
 
             Block block = new Block
             {
                 Height = 0,
-                PrevHash = "Genesis Block",
                 Timestamp = timeStamp,
                 Transactions = gTrxList,
                 Validator = "Alpha Validator"

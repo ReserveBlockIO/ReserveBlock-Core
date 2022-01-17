@@ -38,6 +38,85 @@ namespace ReserveBlockCore.Data
                 trxPool.DeleteAll();
             }
         }
+        public static List<Transaction> GiveOtherInfos(List<Transaction> trxs, long height)
+        {
+            foreach (var trx in trxs)
+            {
+                trx.BlockHeight = height;
+            }
+            return trxs;
+        }
+        //Method needing validator functions still.
+        public static void CraftNewBlock()
+        {
+            // start craft time
+            var startCraftTimer = DateTime.UtcNow;
+
+            //Get tx's from Mempool
+            var txPool = TransactionData.GetPool();
+
+            var lastBlock = GetLastBlock();
+            var height = lastBlock.Height + 1;
+            var timestamp = Utilities.TimeUtil.GetTime();
+            //Need to get master node validator.
+
+            var transactionList = new List<Transaction>();
+
+            var coinbase_tx = new Transaction
+            {
+                Amount = 0,
+                ToAddress = "Input miner address here",
+                Fee = 0.00M,
+                Timestamp = timestamp,
+                FromAddress = "Genesis account will go here",
+            };
+
+            if (txPool.Count() > 0)
+            {
+                coinbase_tx.ToAddress = "validator"; //this needs to be fixed.
+
+                coinbase_tx.Amount = GetTotalFees(txPool.FindAll().ToList());
+                coinbase_tx.Build();
+
+                transactionList.Add(coinbase_tx);
+                transactionList.AddRange(txPool.FindAll());
+
+                txPool.DeleteAll();
+            }
+            else
+            {
+                coinbase_tx.Build();
+                transactionList.Add(coinbase_tx);
+            }
+
+            var block = new Block
+            {
+                Height = height,
+                Timestamp = timestamp,
+                Transactions = GiveOtherInfos(transactionList, height),
+                Validator = "validator"
+            };
+            block.Build();
+
+
+            //block size
+            var str = JsonConvert.SerializeObject(block);
+            block.Size = str.Length;
+
+            // get craft time    
+            var endTimer = DateTime.UtcNow;
+            var buildTime = endTimer - startCraftTimer;
+            block.BCraftTime = buildTime.Milliseconds;
+
+            AddBlock(block);
+            PrintBlock(block);
+
+
+            foreach (var tx in transactionList)
+            {
+                Transaction.Add(tx);
+            }
+        }
         public static ILiteCollection<Block> GetBlocks()
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
@@ -81,16 +160,12 @@ namespace ReserveBlockCore.Data
             var blocks = GetBlocks();
             blocks.Insert(block);
         }
-        private static float GetTotalFees(IList<Transaction> txs)
+        private static decimal GetTotalFees(IList<Transaction> txs)
         {
             var totFee = txs.AsEnumerable().Sum(x => x.Fee);
-            return (float)totFee;
+            return totFee;
         }
 
-        public static void CraftNewBlock()
-        {
-
-        }
         public static void PrintBlock(Block block)
         {
             Console.WriteLine("\n===========\nNew Block created");
