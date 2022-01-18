@@ -47,7 +47,6 @@ namespace ReserveBlockCore.Data
             DB_Wallet.Dispose();
             DB_Peers.Dispose();
             DB_Banlist.Dispose();
-
         }
 
 

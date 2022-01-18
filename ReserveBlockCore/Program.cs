@@ -1,32 +1,69 @@
-﻿using ReserveBlockCore.Commands;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
+using ReserveBlockCore.Commands;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 
-StartupService.StartupDatabase();
-StartupService.StartupInitializeChain();
-StartupService.StartupMenu();
-Thread.Sleep(1000);
-StartupService.MainMenu();
 
-while (true)
+
+namespace ReserveBlockCore
 {
-    var command = Console.ReadLine();
-
-    if (command != "" || command != null)
+    class Program
     {
-        var commandResult = BaseCommand.ProcessCommand(command);
-
-        if (commandResult == "_EXIT")
+        static async Task Main(string[] args)
         {
-            Console.WriteLine("Closing and Exiting Wallet Application.");
-            Environment.Exit(0);
+            StartupService.StartupDatabase();
+            StartupService.StartupInitializeChain();
+
+            string url = "https://localhost:12345";
+
+            var commandLoopTask = Task.Run(() => CommandLoop(url));
+
+            var builder = Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseKestrel()
+                    .UseStartup<Startup>()
+                    .UseUrls(url)
+                    .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                });
+
+            await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
         }
 
-        Console.WriteLine(commandResult);
-    }
-    else
-    {
-        Console.WriteLine("Please enter a command...");
-    }
+        private static void CommandLoop(string url)
+        {
+            StartupService.StartupMenu();
+            Thread.Sleep(1000);
+            StartupService.MainMenu();
 
+            while (true)
+            {
+                var command = Console.ReadLine();
+
+                if (command != "" || command != null)
+                {
+                    var commandResult = BaseCommand.ProcessCommand(command);
+
+                    if (commandResult == "_EXIT")
+                    {
+                        Console.WriteLine("Closing and Exiting Wallet Application.");
+                        Environment.Exit(0);
+                    }
+
+                    Console.WriteLine(commandResult);
+                }
+                else
+                {
+                    Console.WriteLine("Please enter a command...");
+                }
+
+            }
+            
+        }
+
+    }
 }
+
+
+
