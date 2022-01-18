@@ -4,14 +4,23 @@ using ReserveBlockCore.Commands;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 
-
-
 namespace ReserveBlockCore
 {
     class Program
     {
         static async Task Main(string[] args)
         {
+            var argList = args.ToList();
+
+            if(args.Length != 0)
+            {
+                argList.ForEach(x => { 
+                    if(x == "enableapi")
+                    {
+                        Startup.APIEnabled = true;
+                    }
+                });
+            }
             StartupService.StartupDatabase();
             StartupService.StartupInitializeChain();
 

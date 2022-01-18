@@ -45,7 +45,8 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 7. Display NFTs                      |");
             Console.WriteLine("| 8. Startup Masternode                |");
             Console.WriteLine("| 9. Startup Datanode                  |");
-            Console.WriteLine("| 10. Exit                             |");
+            Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
+            Console.WriteLine("| 11. Exit                             |");
             Console.WriteLine("|======================================|");
         }
     }

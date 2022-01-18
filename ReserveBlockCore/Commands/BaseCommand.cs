@@ -63,6 +63,13 @@ namespace ReserveBlockCore.Commands
                     commandResult = "This feature is coming soon...";
                     break;
                 case "10":
+                    Startup.APIEnabled = Startup.APIEnabled == false ? true : false;
+                    if (Startup.APIEnabled)
+                        Console.WriteLine("Reserveblock API has been turned on...");
+                    else
+                        Console.WriteLine("Reserveblock API has been turned off...");
+                    break;
+                case "11":
                     //Insert Method
                     break;
 

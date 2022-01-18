@@ -10,6 +10,7 @@ namespace ReserveBlockCore
 {
     public class Startup
     {
+        public static bool APIEnabled = false;
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -30,6 +31,13 @@ namespace ReserveBlockCore
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.Use((context, func) =>
+            {
+                if (APIEnabled)
+                    return func.Invoke();
+                context.Response.StatusCode = 204;//if u want to return specific status code when not ready to accept requests
+                return Task.CompletedTask;
+            });
 
             app.UseHttpsRedirection();
 
