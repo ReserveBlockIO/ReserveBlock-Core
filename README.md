@@ -23,6 +23,8 @@ For more information please read the ReserverBlock whitepaper or litepaper.
 
 * LiteDB - Ver. 5.0.11
 * Newtonsoft.Json - Ver. 13.0.1
+* Starbank for ECDSA Library
+* Darren Starr for RIPEMD160 Library
 
 # License
 
