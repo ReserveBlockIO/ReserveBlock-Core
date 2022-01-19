@@ -166,7 +166,19 @@ namespace ReserveBlockCore.Data
             return totFee;
         }
 
-        public static void PrintBlock(Block block)
+        public static IEnumerable<Block> GetBlocksByValidator(string address)
+        {
+
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
+            blocks.EnsureIndex(x => x.Validator);
+            var query = blocks.Query()
+                .OrderByDescending(x => x.Height)
+                .Where(x => x.Validator == address)
+                .Limit(20).ToList();
+            return query;
+        }
+
+            public static void PrintBlock(Block block)
         {
             Console.WriteLine("\n===========\nNew Block created");
             Console.WriteLine(" * Block Height....: {0}", block.Height);
