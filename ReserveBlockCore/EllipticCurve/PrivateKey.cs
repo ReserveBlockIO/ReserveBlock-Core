@@ -133,7 +133,7 @@ namespace ReserveBlockCore.EllipticCurve
 
         public static PrivateKey fromString(byte[] str, string curve = "secp256k1")
         {
-            return new PrivateKey(curve, Utils.BinaryAscii.numberFromString(str));
+            return new PrivateKey(curve, BinaryAscii.numberFromString(str));
         }
     }
 }

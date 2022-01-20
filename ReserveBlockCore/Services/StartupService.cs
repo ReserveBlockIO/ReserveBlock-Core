@@ -37,12 +37,12 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("ReserverBlock Main Menu");
             Console.WriteLine("|======================================|");
             Console.WriteLine("| 1. Genesis Block (Check)             |");
-            Console.WriteLine("| 2. Display Last Block                |");
-            Console.WriteLine("| 3. Create Transactions               |");
-            Console.WriteLine("| 4. Create NFT                        |");
+            Console.WriteLine("| 2. Create Account                    |");
+            Console.WriteLine("| 3. Restore Account                   |");
+            Console.WriteLine("| 4. Send Coins                        |");
             Console.WriteLine("| 5. Check Address Balance             |");
             Console.WriteLine("| 6. Transaction History               |");
-            Console.WriteLine("| 7. Display NFTs                      |");
+            Console.WriteLine("| 7. Account Info                      |");
             Console.WriteLine("| 8. Startup Masternode                |");
             Console.WriteLine("| 9. Startup Datanode                  |");
             Console.WriteLine("| 10. Enable API (Turn On and Off)     |");

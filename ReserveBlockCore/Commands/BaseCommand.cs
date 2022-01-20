@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ReserveBlockCore.Models;
 
 namespace ReserveBlockCore.Commands
 {
@@ -37,11 +38,15 @@ namespace ReserveBlockCore.Commands
                     var genBlock = BlockchainData.GetGenesisBlock();
                     BlockchainData.PrintBlock(genBlock);
                     break;
-                case "2":
-                    //Insert Method
+                case "2": // Create Account
+                    var account = new Account().Build();
+                    AccountData.WalletInfo(account);
                     break;
-                case "3":
-                    //Insert Method
+                case "3": // Restore Account
+                    Console.WriteLine("Please enter private key... ");
+                    var privKey = Console.ReadLine();
+                    var restoredAccount = new Account().Restore(privKey);
+                    AccountData.WalletInfo(restoredAccount);
                     break;
                 case "4":
                     //Insert Method
@@ -54,7 +59,7 @@ namespace ReserveBlockCore.Commands
                     //Insert Method
                     break;
                 case "7":
-                    commandResult = "This feature is coming soon...";
+                    AccountData.PrintWalletAccounts();
                     break;
                 case "8":
                     //Insert Method
