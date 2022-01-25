@@ -11,6 +11,7 @@ namespace ReserveBlockCore
     public class Startup
     {
         public static bool APIEnabled = false;
+        public static bool IsTestNet = false;
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;

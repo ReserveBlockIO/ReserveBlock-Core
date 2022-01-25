@@ -13,7 +13,15 @@ namespace ReserveBlockCore.Services
         {
             //Establish block, wallet, ban list, and peers db
             Console.WriteLine("Initializing Reserve Block Database...");
-            DbContext.Initialize();
+            if(Startup.IsTestNet == true)
+            {
+                DbContext.InitializeTest();
+            }
+            else
+            {
+                DbContext.Initialize();
+            }
+            
         }
         internal static void StartupInitializeChain()
         {

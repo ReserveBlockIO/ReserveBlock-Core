@@ -30,7 +30,7 @@ namespace ReserveBlockCore.Models
         }
         public string GetHash()
         {
-            var data = Timestamp + FromAddress + Amount + Fee + ToAddress;
+            var data = Timestamp + FromAddress + ToAddress + Amount + Fee  + NFTData;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
         public static void Add(Transaction transaction)

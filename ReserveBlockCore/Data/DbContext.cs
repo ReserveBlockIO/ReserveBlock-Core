@@ -16,11 +16,22 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_Peers { set; get; }
         public static LiteDatabase DB_Banlist { set; get; }
 
+        public static LiteDatabase DBTest { set; get; }
+        public static LiteDatabase DBTest_Wallet { set; get; }
+        public static LiteDatabase DBTest_Peers { set; get; }
+        public static LiteDatabase DBTest_Banlist { set; get; }
+
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
         public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
         public const string RSRV_DB_BANLIST_NAME = @"rsrvbanldata.db";
         public const string RSRV_DB_PEERS_NAME = @"rsrvpeersdata.db";
+
+        //db names for test
+        public const string RSRV_DBTest_NAME = @"rsrvblkdata_test.db";
+        public const string RSRV_DBTest_WALLET_NAME = @"rsrvwaldata_test.db";
+        public const string RSRV_DBTest_BANLIST_NAME = @"rsrvbanldata_test.db";
+        public const string RSRV_DBTest_PEERS_NAME = @"rsrvpeersdata_Test.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -32,6 +43,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_WALLET_SETTINGS = "rsrv_wallet_settings";
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
         public const string RSRV_PEERS = "rsrv_peers";
+        public const string RSRV_VALIDATORS = "rsrv_validators";
 
         public static void Initialize()
         {
@@ -41,6 +53,14 @@ namespace ReserveBlockCore.Data
             DB_Banlist = new LiteDatabase(RSRV_DB_PEERS_NAME);
         }
 
+        public static void InitializeTest()
+        {
+            DBTest = new LiteDatabase(RSRV_DB_NAME);
+            DBTest_Wallet = new LiteDatabase(RSRV_DB_WALLET_NAME);
+            DBTest_Peers = new LiteDatabase(RSRV_DB_BANLIST_NAME);
+            DBTest_Banlist = new LiteDatabase(RSRV_DB_PEERS_NAME);
+        }
+
         public static void CloseDB()
         {
             DB.Dispose();
@@ -48,7 +68,13 @@ namespace ReserveBlockCore.Data
             DB_Peers.Dispose();
             DB_Banlist.Dispose();
         }
-
+        public static void CloseTestDB()
+        {
+            DBTest.Dispose();
+            DBTest_Wallet.Dispose();
+            DBTest_Peers.Dispose();
+            DBTest_Banlist.Dispose();
+        }
 
 
     }

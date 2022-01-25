@@ -38,6 +38,12 @@ namespace ReserveBlockCore.Data
                 trxPool.DeleteAll();
             }
         }
+
+        public static decimal GetBlockReward()
+        {
+            var BlockReward = HalvingUtility.GetBlockReward(); 
+            return BlockReward;
+        }
         public static List<Transaction> GiveOtherInfos(List<Transaction> trxs, long height)
         {
             foreach (var trx in trxs)
@@ -71,6 +77,7 @@ namespace ReserveBlockCore.Data
                 FromAddress = "Genesis account will go here",
             };
 
+            //this is just for testing. Validator will always get reward regardless of tx count. 
             if (txPool.Count() > 0)
             {
                 coinbase_tx.ToAddress = "validator"; //this needs to be fixed.

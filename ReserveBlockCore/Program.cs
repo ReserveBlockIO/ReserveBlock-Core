@@ -14,10 +14,24 @@ namespace ReserveBlockCore
 
             if(args.Length != 0)
             {
-                argList.ForEach(x => { 
-                    if(x == "enableapi")
+                argList.ForEach(x => {
+                    var argC = x.ToLower();
+                    if(argC == "enableapi")
                     {
-                        Startup.APIEnabled = true;
+                        Startup.APIEnabled = true; //api disabled by default
+                    }
+                    if(argC == "hidecli")
+                    {
+                        //maybe add hidden cli feature
+                    }
+                    if(argC == "gui")
+                    {
+                        //launch gui
+                    }
+                    if(argC == "testnet")
+                    {
+                        //Launch testnet
+                        Startup.IsTestNet = true;
                     }
                 });
             }
@@ -37,7 +51,10 @@ namespace ReserveBlockCore
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                 });
 
+            
+
             await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
+
         }
 
         private static void CommandLoop(string url)
