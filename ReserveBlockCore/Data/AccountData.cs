@@ -26,6 +26,10 @@ namespace ReserveBlockCore.Data
             account.Balance = 0.00M;
 			account.Address = GetHumanAddress(account.PublicKey);
 
+			//var test = HexToByte(account.PublicKey.Remove(0,2));
+
+			//var pubKeyTest = PublicKey.fromString(test);
+
 			AddToAccount(account);
 
 			return account;
@@ -121,14 +125,35 @@ namespace ReserveBlockCore.Data
 			return accounts;
 		}
 
+		public static IEnumerable<Account> GetAccountsWithBalance()
+		{
+			var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			var accountsWithBal = accounts.Find(x => x.Balance > 0);
+
+			return accountsWithBal;
+		}
+
+		public static Account GetSingleAccount(string humanAddress)
+        {
+			var account = new Account();
+			var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			account = accounts.FindOne(x => x.Address == humanAddress);
+
+			if(account == null)
+            {
+				return account;//This means a null account was found. This should never happen, but just in case the DB is erased or some other memory issue.
+            }
+			return account;
+		}
+
 		public static string GetHumanAddress(string pubKeyHash)
         {
 			byte[] PubKey = HexToByte(pubKeyHash);
-			byte[] PubKeySha = Sha256(PubKey);
-			byte[] PubKeyShaRIPE = RipeMD160(PubKeySha);
+			byte[] PubKeySha = Sha256(ByteToHex(PubKey));
+			byte[] PubKeyShaRIPE = RipeMD160(ByteToHex(PubKeySha));
 			byte[] PreHashWNetwork = AppendReserveBlockNetwork(PubKeyShaRIPE, 0x3C);//This will create Address starting with 'R'
-			byte[] PublicHash = Sha256(PreHashWNetwork);
-			byte[] PublicHashHash = Sha256(PublicHash);
+			byte[] PublicHash = Sha256(ByteToHex(PreHashWNetwork));
+			byte[] PublicHashHash = Sha256(ByteToHex(PublicHash));
 			byte[] Address = ConcatAddress(PreHashWNetwork, PublicHashHash);
 			return Base58Encode(Address); //Returns human readable address starting with an 'R'
         }
@@ -148,16 +173,22 @@ namespace ReserveBlockCore.Data
 			}
 			return retArray;
 		}
-		public static byte[] Sha256(byte[] array)
+		public static byte[] Sha256(string inputString)
 		{
-			SHA256Managed hashstring = new SHA256Managed();
-			return hashstring.ComputeHash(array);
+			//SHA256Managed hashstring = new SHA256Managed();
+			//return hashstring.ComputeHash(array);
+			SHA256 sha256 = SHA256Managed.Create();
+			byte[] bytes = Encoding.UTF8.GetBytes(inputString);
+			byte[] hash = sha256.ComputeHash(bytes);
+			return hash;
 		}
 
-		public static byte[] RipeMD160(byte[] array)
+		public static byte[] RipeMD160(string inputString)
 		{
 			RIPEMD160Managed hashstring = new RIPEMD160Managed();
-			return hashstring.ComputeHash(array);
+			byte[] bytes = Encoding.UTF8.GetBytes(inputString);
+			byte[] hash = hashstring.ComputeHash(bytes);
+			return hash;
 		}
 
 		public static byte[] AppendReserveBlockNetwork(byte[] RipeHash, byte Network)
