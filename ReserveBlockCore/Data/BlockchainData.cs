@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Data
 
             public static void PrintBlock(Block block)
         {
-            Console.WriteLine("\n===========\nNew Block created");
+            Console.WriteLine("\n===========\nBlock Info:");
             Console.WriteLine(" * Block Height....: {0}", block.Height);
             Console.WriteLine(" * Version         : {0}", block.Version);
             Console.WriteLine(" * Previous Hash...: {0}", block.PrevHash);

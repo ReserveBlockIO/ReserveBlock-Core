@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Models;
 using LiteDB;
+using ReserveBlockCore.EllipticCurve;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Data
 {
@@ -16,13 +18,14 @@ namespace ReserveBlockCore.Data
             var timeStamp = TimeUtil.GetTime();
             var gTrx = new Transaction
             {
-                Amount = 100,
+                Amount = 67500000,
                 BlockHeight = 0,
                 FromAddress = "rbx_genesis_transaction",
-                ToAddress = "Foundation Coin Address Goes Here",
+                ToAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH",
                 Fee = 0,
                 Hash = "", //this will be built down below. showing just to make this clear.
                 Timestamp = timeStamp,
+                Signature = "COINBASE_TX"
             };
 
             gTrx.Build();
@@ -128,6 +131,20 @@ namespace ReserveBlockCore.Data
             }
 
             return balance;
+        }
+
+        public static string CreateSignature(string message, PrivateKey PrivKey)
+        {
+            Signature signature = Ecdsa.sign(message, PrivKey);
+            return signature.toBase64();
+        }
+
+        public static bool VerifySignature(string publicKeyHex, string message, string signature)
+        {
+            var pubKeyByte = AccountData.HexToByte(publicKeyHex.Remove(0, 2));
+            var publicKey = PublicKey.fromString(pubKeyByte);
+
+            return Ecdsa.verify(message, Signature.fromBase64(signature), publicKey);
         }
     }
 

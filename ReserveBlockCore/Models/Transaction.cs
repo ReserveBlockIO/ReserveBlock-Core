@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Models
@@ -19,6 +20,7 @@ namespace ReserveBlockCore.Models
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
         public string? NFTData { get; set; }
+        public string Signature { get; set; }
 
         [ForeignKey("Block")]
         public long BlockHeight { get; set; }
@@ -30,7 +32,7 @@ namespace ReserveBlockCore.Models
         }
         public string GetHash()
         {
-            var data = Timestamp + FromAddress + ToAddress + Amount + Fee  + NFTData;
+            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + NFTData ;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
         public static void Add(Transaction transaction)

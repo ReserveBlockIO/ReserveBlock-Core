@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using ReserveBlockCore.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ namespace ReserveBlockCore
     {
         public static bool APIEnabled = false;
         public static bool IsTestNet = false;
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;

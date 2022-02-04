@@ -43,9 +43,9 @@ namespace ReserveBlockCore.Data
 			var pubKey = privateKey.publicKey();
 
 			account.PrivateKey = privKeySecretHex;
-			account.PublicKey = "04" + ByteToHex(pubKey.toString());
-			account.Balance = 0.00M;
+			account.PublicKey = "04" + ByteToHex(pubKey.toString());		
 			account.Address = GetHumanAddress(account.PublicKey);
+			account.Balance = TransactionData.GetBalance(account.Address);
 
 			AddToAccount(account);
 			//Now need to scan to check for transactions and balance - feature coming soon.

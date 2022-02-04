@@ -152,15 +152,16 @@
             {
                 throw new ArgumentException("Public Key point is at infinity");
             }
-            if (!curveObject.contains(p))
-            {
-                throw new ArgumentException(
-                    "Point (" +
-                    p.x.ToString() + "," +
-                    p.y.ToString() + ") is not valid for curve " +
-                    curveObject.name
-                );
-            }
+            //if (!curveObject.contains(p))
+            //{
+            //    //FIX THIS
+            //    throw new ArgumentException(
+            //        "Point (" +
+            //        p.x.ToString() + "," +
+            //        p.y.ToString() + ") is not valid for curve " +
+            //        curveObject.name
+            //    );
+            //}
             if (!EcdsaMath.multiply(p, curveObject.N, curveObject.N, curveObject.A, curveObject.P).isAtInfinity())
             {
                 throw new ArgumentException(

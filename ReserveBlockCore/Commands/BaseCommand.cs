@@ -49,8 +49,7 @@ namespace ReserveBlockCore.Commands
                     AccountData.WalletInfo(restoredAccount);
                     break;
                 case "4":
-                    //Insert Method
-                    commandResult = "This feature is coming soon...";
+                    WalletService.StartSend();
                     break;
                 case "5":
                     //Insert Method
