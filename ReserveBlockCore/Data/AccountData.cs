@@ -149,11 +149,11 @@ namespace ReserveBlockCore.Data
 		public static string GetHumanAddress(string pubKeyHash)
         {
 			byte[] PubKey = HexToByte(pubKeyHash);
-			byte[] PubKeySha = Sha256(ByteToHex(PubKey));
-			byte[] PubKeyShaRIPE = RipeMD160(ByteToHex(PubKeySha));
+			byte[] PubKeySha = Sha256(PubKey);
+			byte[] PubKeyShaRIPE = RipeMD160(PubKeySha);
 			byte[] PreHashWNetwork = AppendReserveBlockNetwork(PubKeyShaRIPE, 0x3C);//This will create Address starting with 'R'
-			byte[] PublicHash = Sha256(ByteToHex(PreHashWNetwork));
-			byte[] PublicHashHash = Sha256(ByteToHex(PublicHash));
+			byte[] PublicHash = Sha256(PreHashWNetwork);
+			byte[] PublicHashHash = Sha256(PublicHash);
 			byte[] Address = ConcatAddress(PreHashWNetwork, PublicHashHash);
 			return Base58Encode(Address); //Returns human readable address starting with an 'R'
         }
@@ -173,22 +173,16 @@ namespace ReserveBlockCore.Data
 			}
 			return retArray;
 		}
-		public static byte[] Sha256(string inputString)
+		public static byte[] Sha256(byte[] array)
 		{
-			//SHA256Managed hashstring = new SHA256Managed();
-			//return hashstring.ComputeHash(array);
-			SHA256 sha256 = SHA256Managed.Create();
-			byte[] bytes = Encoding.UTF8.GetBytes(inputString);
-			byte[] hash = sha256.ComputeHash(bytes);
-			return hash;
+			SHA256Managed hashstring = new SHA256Managed();
+			return hashstring.ComputeHash(array);
 		}
 
-		public static byte[] RipeMD160(string inputString)
+		public static byte[] RipeMD160(byte[] array)
 		{
 			RIPEMD160Managed hashstring = new RIPEMD160Managed();
-			byte[] bytes = Encoding.UTF8.GetBytes(inputString);
-			byte[] hash = hashstring.ComputeHash(bytes);
-			return hash;
+			return hashstring.ComputeHash(array);
 		}
 
 		public static byte[] AppendReserveBlockNetwork(byte[] RipeHash, byte Network)
