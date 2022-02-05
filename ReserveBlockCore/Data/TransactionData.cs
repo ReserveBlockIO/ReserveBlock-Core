@@ -133,18 +133,34 @@ namespace ReserveBlockCore.Data
             return balance;
         }
 
-        public static string CreateSignature(string message, PrivateKey PrivKey)
+        public static string CreateSignature(string message, PrivateKey PrivKey, string pubKey)
         {
+
             Signature signature = Ecdsa.sign(message, PrivKey);
-            return signature.toBase64();
+            var sigBase64 = signature.toBase64();
+            var pubKeyEncoded = Base58Utility.Base58Encode(HexByteUtility.HexToByte(pubKey.Remove(0, 2)));
+            var sigScript = sigBase64 + "." + pubKeyEncoded;
+
+            //validate new signature
+            var sigScriptArray = sigScript.Split('.', 2);
+            var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
+            var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
+            var publicKey = PublicKey.fromString(pubKeyByte);
+            var verifyCheck = Ecdsa.verify(message, Signature.fromBase64(sigScriptArray[0]), publicKey);
+
+            if (verifyCheck != true)
+                return "ERROR";
+            return sigScript;
         }
 
-        public static bool VerifySignature(string publicKeyHex, string message, string signature)
+        public static bool VerifySignature(string message, string sigScript)
         {
-            var pubKeyByte = AccountData.HexToByte(publicKeyHex.Remove(0, 2));
+            var sigScriptArray = sigScript.Split('.', 2);
+            var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
+            var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
             var publicKey = PublicKey.fromString(pubKeyByte);
 
-            return Ecdsa.verify(message, Signature.fromBase64(signature), publicKey);
+            return Ecdsa.verify(message, Signature.fromBase64(sigScriptArray[0]), publicKey);
         }
     }
 

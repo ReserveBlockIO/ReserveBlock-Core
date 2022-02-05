@@ -112,6 +112,7 @@ namespace ReserveBlockCore.Services
             nTx.Build();
 
             //balance check on funds
+            //This will need to improve to store the TXIn's once chain grows.
             var senderBalance = TransactionData.GetBalance(account.Address);
             if ((nTx.Amount + nTx.Fee) > senderBalance)
             {
@@ -125,8 +126,11 @@ namespace ReserveBlockCore.Services
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = nTx.Hash;
-            var signature = TransactionData.CreateSignature(txHash, privateKey);
-            nTx.Signature = signature;
+            var signature = TransactionData.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR")
+                return "ERROR! There was an error signing your transaction. Please verify private key belongs to public address.";
+
+            nTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
 
             try
             {
@@ -169,7 +173,7 @@ namespace ReserveBlockCore.Services
             }
 
             //If we get here that means the hash rest passed above.
-            var isTxValid = TransactionData.VerifySignature(account.PublicKey, txRequest.Hash, txRequest.Signature);
+            var isTxValid = TransactionData.VerifySignature(txRequest.Hash, txRequest.Signature);
             if(isTxValid)
             {
                 txResult = true;
