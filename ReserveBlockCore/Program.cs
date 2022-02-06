@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using ReserveBlockCore.Commands;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 
@@ -8,11 +9,15 @@ namespace ReserveBlockCore
 {
     class Program
     {
+        private static Timer blockTimer;
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
 
-            if(args.Length != 0)
+            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
+
+            if (args.Length != 0)
             {
                 argList.ForEach(x => {
                     var argC = x.ToLower();
@@ -38,7 +43,7 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();
             StartupService.StartupInitializeChain();
 
-            string url = "https://localhost:12345";
+            string url = "https://localhost:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
 
             var commandLoopTask = Task.Run(() => CommandLoop(url));
 
@@ -85,6 +90,21 @@ namespace ReserveBlockCore
                 }
 
             }
+            
+        }
+
+        private static void blockBuilder_Elapsed(object sender)
+        {
+            // do new block work here
+            var validator = Validators.Validator.GetBlockValidator();
+            var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+            var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
+
+            if(account != null)
+            {
+                //craft new block
+            }    
+
             
         }
 

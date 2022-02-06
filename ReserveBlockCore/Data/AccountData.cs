@@ -52,7 +52,10 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
+		public static void UpdateLocalAccountBalance()
+		{
 
+		}
 		public static void PrintWalletAccounts()
         {
 			Console.Clear();
@@ -199,6 +202,7 @@ namespace ReserveBlockCore.Data
 			Array.Copy(Checksum, 0, ret, RipeHash.Length, 4);
 			return ret;
 		}
+		
 		public static string Base58Encode(byte[] array)
 		{
 			const string ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";

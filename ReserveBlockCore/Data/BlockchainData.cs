@@ -32,6 +32,9 @@ namespace ReserveBlockCore.Data
                 // add the genesis block to our new blockchain
                 AddBlock(block);
 
+                //Updates state trei
+                StateData.UpdateStateTrei(transactions);
+
                 // move the processed mempool tx(s) into Finalized table
                 transactions.ForEach(x => { Transaction.Add(x); });
                 // clear mempool
@@ -53,7 +56,7 @@ namespace ReserveBlockCore.Data
             return trxs;
         }
         //Method needing validator functions still.
-        public static void CraftNewBlock()
+        public static void CraftNewBlock(string validator)
         {
             // start craft time
             var startCraftTimer = DateTime.UtcNow;
@@ -63,7 +66,7 @@ namespace ReserveBlockCore.Data
 
             var lastBlock = GetLastBlock();
             var height = lastBlock.Height + 1;
-            var timestamp = Utilities.TimeUtil.GetTime();
+            var timestamp = TimeUtil.GetTime();
             //Need to get master node validator.
 
             var transactionList = new List<Transaction>();
@@ -71,29 +74,38 @@ namespace ReserveBlockCore.Data
             var coinbase_tx = new Transaction
             {
                 Amount = 0,
-                ToAddress = "Input miner address here",
+                ToAddress = validator,
                 Fee = 0.00M,
                 Timestamp = timestamp,
-                FromAddress = "Genesis account will go here",
+                FromAddress = "Coinbase_TrxFees",
+            };
+
+            var coinbase_tx2 = new Transaction
+            {
+                Amount = GetBlockReward(),
+                ToAddress = validator,
+                Fee = 0.00M,
+                Timestamp = timestamp,
+                FromAddress = "Coinbase_BlkRwd",
             };
 
             //this is just for testing. Validator will always get reward regardless of tx count. 
             if (txPool.Count() > 0)
             {
-                coinbase_tx.ToAddress = "validator"; //this needs to be fixed.
-
                 coinbase_tx.Amount = GetTotalFees(txPool.FindAll().ToList());
                 coinbase_tx.Build();
+                coinbase_tx2.Build();
 
                 transactionList.Add(coinbase_tx);
+                transactionList.Add(coinbase_tx2);
                 transactionList.AddRange(txPool.FindAll());
 
                 txPool.DeleteAll();
             }
             else
             {
-                coinbase_tx.Build();
-                transactionList.Add(coinbase_tx);
+                coinbase_tx2.Build();
+                transactionList.Add(coinbase_tx2);
             }
 
             var block = new Block
@@ -101,7 +113,7 @@ namespace ReserveBlockCore.Data
                 Height = height,
                 Timestamp = timestamp,
                 Transactions = GiveOtherInfos(transactionList, height),
-                Validator = "validator"
+                Validator = validator
             };
             block.Build();
 
@@ -118,7 +130,7 @@ namespace ReserveBlockCore.Data
             AddBlock(block);
             PrintBlock(block);
 
-
+            //THis might be double redundant. Possibly fix.
             foreach (var tx in transactionList)
             {
                 Transaction.Add(tx);

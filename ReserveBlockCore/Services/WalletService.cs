@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Services
             nTx.Build();
 
             //balance check on funds
-            //This will need to improve to store the TXIn's once chain grows.
+            //This will change to state trei.
             var senderBalance = TransactionData.GetBalance(account.Address);
             if ((nTx.Amount + nTx.Fee) > senderBalance)
             {

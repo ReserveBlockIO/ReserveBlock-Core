@@ -11,10 +11,11 @@ namespace ReserveBlockCore.Data
 {
     internal class DbContext
     {
-        public static LiteDatabase DB { set; get; }
-        public static LiteDatabase DB_Wallet { set; get; }
-        public static LiteDatabase DB_Peers { set; get; }
-        public static LiteDatabase DB_Banlist { set; get; }
+        public static LiteDatabase DB { set; get; }// stores blocks
+        public static LiteDatabase DB_Wallet { set; get; } //stores wallet info
+        public static LiteDatabase DB_Peers { set; get; } //stores peer info
+        public static LiteDatabase DB_Banlist { set; get; } //stores banned peers 
+        public static LiteDatabase DB_StateTrei { get; set; } //stores blockchain state trei
 
         public static LiteDatabase DBTest { set; get; }
         public static LiteDatabase DBTest_Wallet { set; get; }
@@ -26,6 +27,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
         public const string RSRV_DB_BANLIST_NAME = @"rsrvbanldata.db";
         public const string RSRV_DB_PEERS_NAME = @"rsrvpeersdata.db";
+        public const string RSRV_DB_STATE_TREI = @"rsrvstatetrei.db";
 
         //db names for test
         public const string RSRV_DBTest_NAME = @"rsrvblkdata_test.db";
@@ -44,10 +46,12 @@ namespace ReserveBlockCore.Data
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
         public const string RSRV_PEERS = "rsrv_peers";
         public const string RSRV_VALIDATORS = "rsrv_validators";
+        public const string RSRV_STATE_TREI = "rsrv_state_trei";
 
         public static void Initialize()
         {
             DB = new LiteDatabase(RSRV_DB_NAME);
+            DB_StateTrei = new LiteDatabase(RSRV_DB_STATE_TREI);
             DB_Wallet = new LiteDatabase(RSRV_DB_WALLET_NAME);
             DB_Peers = new LiteDatabase(RSRV_DB_BANLIST_NAME);
             DB_Banlist = new LiteDatabase(RSRV_DB_PEERS_NAME);
