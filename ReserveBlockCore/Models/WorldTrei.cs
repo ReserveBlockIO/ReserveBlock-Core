@@ -12,6 +12,15 @@ namespace ReserveBlockCore.Models
             var worldState = wTrei.FindAll().FirstOrDefault();
             return worldState;
         }
+
+        public static void UpdateWorldTrei(Block block)
+        {
+            var wTrei = DbContext.DB.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
+            var worldState = wTrei.FindAll().FirstOrDefault();
+            worldState.StateRoot = block.StateRoot;
+
+            wTrei.Update(worldState);
+        }
     }
 
     

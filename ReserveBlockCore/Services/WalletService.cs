@@ -106,14 +106,14 @@ namespace ReserveBlockCore.Services
                 ToAddress = ToAddress,
                 Amount = Amount,
                 Fee = 0, //add feel calc method here
-                Nonce = 0, //Add method to get next nonce.
+                Nonce = AccountStateTrei.GetNextNonce(FromAddress), 
             };
             
             nTx.Build();
 
             //balance check on funds
             //This will change to state trei.
-            var senderBalance = TransactionData.GetBalance(account.Address);
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
             if ((nTx.Amount + nTx.Fee) > senderBalance)
             {
                 output = "Insufficient Funds";
@@ -163,6 +163,7 @@ namespace ReserveBlockCore.Services
                 ToAddress = txRequest.ToAddress,
                 Amount = txRequest.Amount,
                 Fee = txRequest.Fee,
+                Nonce = txRequest.Nonce,
             };
 
             newTxn.Build();
@@ -187,6 +188,7 @@ namespace ReserveBlockCore.Services
             //Needed to be done still!
             //Subtract amount from balance
             TransactionData.AddToPool(newTxn);
+            AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
             //Show funds pending for incoming address
             //^*************************************************************
 

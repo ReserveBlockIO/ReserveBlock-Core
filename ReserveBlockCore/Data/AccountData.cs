@@ -121,6 +121,14 @@ namespace ReserveBlockCore.Data
 				//do nothing as account is already in table. They are attempting to restore a key that already exist.
             }
 		}
+		public static void UpdateLocalBalance(string address, decimal amount)
+        {
+			var accountList = GetAccounts();
+			var localAccount = accountList.FindOne(x => x.Address == address);
+			localAccount.Balance -= amount;
+
+			accountList.Update(localAccount);
+		}
 		public static ILiteCollection<Account> GetAccounts()
 		{
 			var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);

@@ -62,6 +62,7 @@ namespace ReserveBlockCore.Data
             var startCraftTimer = DateTime.UtcNow;
 
             //Get tx's from Mempool
+            var processedTxPool = TransactionData.ProcessTxPool();
             var txPool = TransactionData.GetPool();
 
             var lastBlock = GetLastBlock();
@@ -90,15 +91,16 @@ namespace ReserveBlockCore.Data
             };
 
             //this is just for testing. Validator will always get reward regardless of tx count. 
-            if (txPool.Count() > 0)
+            if (processedTxPool.Count() > 0)
             {
-                coinbase_tx.Amount = GetTotalFees(txPool.FindAll().ToList());
+                coinbase_tx.Amount = GetTotalFees(processedTxPool);
                 coinbase_tx.Build();
                 coinbase_tx2.Build();
 
                 transactionList.Add(coinbase_tx);
                 transactionList.Add(coinbase_tx2);
-                transactionList.AddRange(txPool.FindAll());
+                
+                transactionList.AddRange(processedTxPool);
 
                 txPool.DeleteAll();
             }
@@ -127,11 +129,14 @@ namespace ReserveBlockCore.Data
             var buildTime = endTimer - startCraftTimer;
             block.BCraftTime = buildTime.Milliseconds;
 
+            //validates the coinbase tx's
             var blockValResult = ValidateBlock(block);
 
             if(blockValResult == true)
             {
                 AddBlock(block);
+                //Update World Trei with new State Root
+                WorldTrei.UpdateWorldTrei(block);
                 //Need to publish block to known nodes. 
                 PrintBlock(block);
 
@@ -220,7 +225,7 @@ namespace ReserveBlockCore.Data
             var blocks = GetBlocks();
             blocks.Insert(block);
         }
-        private static decimal GetTotalFees(IList<Transaction> txs)
+        private static decimal GetTotalFees(List<Transaction> txs)
         {
             var totFee = txs.AsEnumerable().Sum(x => x.Fee);
             return totFee;

@@ -45,6 +45,30 @@ namespace ReserveBlockCore.Data
             var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
             return collection;
         }
+        public static List<Transaction> ProcessTxPool()
+        {
+            var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
+
+            var memPoolTxList = collection.FindAll().ToList();
+
+            var approvedMemPoolList = new List<Transaction>();
+
+            memPoolTxList.ForEach(tx => { 
+                var signature = tx.Signature;
+                var sigCheck = VerifySignature(tx.Hash, signature);
+                if(sigCheck == true)
+                {
+                    var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
+                    var totalSend = (tx.Amount + tx.Fee);
+                    if (balance >= totalSend)
+                    {
+                        approvedMemPoolList.Add(tx);
+                    }
+                }
+            });
+
+            return approvedMemPoolList;
+        }
 
         public static ILiteCollection<Transaction> GetAll()
         {
