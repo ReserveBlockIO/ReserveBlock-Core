@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -18,10 +19,10 @@ namespace ReserveBlockCore.Models
 		public string Hash { get; set; }
 		public string PrevHash { get; set; }
 		public string MerkleRoot { get; set; }
-		public double TotalAmount { get; set; }
+		public string StateRoot { get; set; }
+		public decimal TotalAmount { get; set; }
 		public string Validator { get; set; }
-		public float TotalReward { get; set; }
-		public int Difficulty { get; set; }
+		public decimal TotalReward { get; set; }
 		public int Version { get; set; }
 		public int NumOfTx { get; set; }
 		public long Size { get; set; }
@@ -38,16 +39,16 @@ namespace ReserveBlockCore.Models
 			MerkleRoot = GetMerkleRoot();
 			PrevHash = GetLastBlack() != null ? GetLastBlack().Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
-			Difficulty = 1;
+			StateRoot = GetStateRoot();
 		}
 		public int NumberOfTransactions
 		{
 			get { return Transactions.Count(); }
 		}
-		private float GetTotalFees()
+		private decimal GetTotalFees()
 		{
-			var totFee = Transactions.AsEnumerable().Sum(x => x.Fee);
-			return (float)totFee;
+			var totFee = Transactions.AsEnumerable().Sum(x => x.Fee) + HalvingUtility.GetBlockReward();
+			return totFee;
 		}
 		public static ILiteCollection<Block> GetBlocks()
 		{
@@ -61,18 +62,23 @@ namespace ReserveBlockCore.Models
 			var block = blockchain.FindOne(Query.All(Query.Descending));
 			return block;
 		}
-		private double GetTotalAmount()
+		private decimal GetTotalAmount()
 		{
 			var totalAmount = Transactions.AsEnumerable().Sum(x => x.Amount);
-			return (double)totalAmount;
+			return totalAmount;
 		}
 		public string GetBlockHash()
 		{
-			var strSum = Version + PrevHash + MerkleRoot + Timestamp + Difficulty + Validator;
+			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator;
 			var hash = HashingService.GenerateHash(strSum);
 			return hash;
 		}
-
+		public string GetStateRoot()
+		{
+			var strSum = Hash.Substring(0,6) + PrevHash.Substring(0, 6) + MerkleRoot.Substring(0, 6) + Timestamp;
+			var hash = HashingService.GenerateHash(strSum);
+			return hash;
+		}
 		private string GetMerkleRoot()
 		{
 			// List<Transaction> txList = JsonConvert.DeserializeObject<List<Transaction>>(jsonTxs);

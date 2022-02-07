@@ -14,8 +14,8 @@ namespace ReserveBlockCore
         {
             var argList = args.ToList();
 
-            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
+            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
 
             if (args.Length != 0)
             {

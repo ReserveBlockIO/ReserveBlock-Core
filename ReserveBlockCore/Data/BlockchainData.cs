@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Data
                 AddBlock(block);
 
                 //Updates state trei
-                StateData.UpdateStateTrei(transactions);
+                StateData.CreateGenesisWorldTrei(block);
 
                 // move the processed mempool tx(s) into Finalized table
                 transactions.ForEach(x => { Transaction.Add(x); });
@@ -246,8 +246,8 @@ namespace ReserveBlockCore.Data
             Console.WriteLine(" * Previous Hash...: {0}", block.PrevHash);
             Console.WriteLine(" * Hash            : {0}", block.Hash);
             Console.WriteLine(" * Merkle Hash.....: {0}", block.MerkleRoot);
+            Console.WriteLine(" * State Hash.....: {0}", block.StateRoot);
             Console.WriteLine(" * Timestamp       : {0}", TimeUtil.ToDateTime(block.Timestamp));
-            Console.WriteLine(" * Difficulty......: {0}", block.Difficulty);
             Console.WriteLine(" * Chain Validator : {0}", block.Validator);
 
             Console.WriteLine(" * Number Of Tx(s) : {0}", block.NumOfTx);

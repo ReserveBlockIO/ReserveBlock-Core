@@ -1,6 +1,6 @@
 ﻿namespace ReserveBlockCore.Models
 {
-    public class StateTrei
+    public class AccountStateTrei
     {
         public string Key { get; set; }
         public long Nonce { get; set; }

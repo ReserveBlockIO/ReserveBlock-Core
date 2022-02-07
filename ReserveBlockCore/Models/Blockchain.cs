@@ -9,7 +9,6 @@ namespace ReserveBlockCore.Models
     public class Blockchain
     {
         public string ChainHash { get; set; }
-        public int Difficulty { get; set; } = 2; 
         public List<Transaction> PendingTransactions { get; set; }
         public decimal MasterNodeReward { get; set; } = 15M;
         public decimal DataNodeReward { get; set; } = 25M;

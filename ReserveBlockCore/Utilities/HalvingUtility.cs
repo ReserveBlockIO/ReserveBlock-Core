@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Utilities
         public static decimal GetBlockReward()
         {
             decimal blockReward = 32.00M;
-            int currentBlockHeight = (int)BlockchainData.GetLastBlock().Height;
+            int currentBlockHeight = BlockchainData.GetLastBlock() != null ? (int)BlockchainData.GetLastBlock().Height : 1;
             int blockHalvingInterval = 4730400; // Roughly every 3 year halving
 
             //An int will always result in a rounded down whole number. 4730399 / 4730400   = 0 | 9,460,799 / 4730400  = 1
