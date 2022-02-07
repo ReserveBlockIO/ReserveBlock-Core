@@ -12,6 +12,7 @@ namespace ReserveBlockCore.Models
 {
     internal class Account
     {
+        public long Id { get; set; }
         public string PrivateKey { set; get; }
         public string PublicKey { set; get; }
         public string Address { get; set; }

@@ -99,7 +99,7 @@ namespace ReserveBlockCore
             //if validator is NaN then there are no validators on network and block creation will stop. 
             if(validator != "NaN")
             {
-                var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
                 var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
 
                 if (account != null)

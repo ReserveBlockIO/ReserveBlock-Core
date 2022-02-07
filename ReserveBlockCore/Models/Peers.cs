@@ -8,6 +8,7 @@ namespace ReserveBlockCore.Models
 {
     internal class Peers
     {
+        public long Id { get; set; }
         public Guid NodeId { get; set; }
         public string Connection { get; set; }
         public DateTime LastReach { get; set; }

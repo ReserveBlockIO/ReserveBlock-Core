@@ -5,6 +5,7 @@ namespace ReserveBlockCore.Models
 {
     public class AccountStateTrei
     {
+        public long Id { get; set; }
         public string Key { get; set; }
         public long Nonce { get; set; }
         public decimal Balance { get; set; }
@@ -14,7 +15,7 @@ namespace ReserveBlockCore.Models
         public static decimal GetAccountBalance(string address)
         {
             var balance = 0.00M;
-            var accounts = DbContext.DB.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
+            var accounts = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
             var account = accounts.FindOne(x => x.Key == address);
             if(account != null)
             {
@@ -27,7 +28,7 @@ namespace ReserveBlockCore.Models
         public static long GetNextNonce(string address)
         {
             long nonce = 0;
-            var accounts = DbContext.DB.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
+            var accounts = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
             var account = accounts.FindOne(x => x.Key == address);
             if (account != null)
             {
