@@ -38,9 +38,9 @@ namespace ReserveBlockCore.Data
                 StateRoot = block.StateRoot,
             };
 
-            var wTrei = DbContext.DB.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
+            var wTrei = DbContext.DB_WorldStateTrei.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
             wTrei.Insert(worldTrei);
-            var aTrei = DbContext.DB.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
+            var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
             aTrei.InsertBulk(accStTrei);
         }
         //public static void UpdateWorldStateTrei(List<Transaction> prcTranList)

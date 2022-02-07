@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Services
             //^*************************************************************
             //Needed to be done still!
             //Subtract amount from balance
-            TransactionData.AddToPool(newTxn);
+            TransactionData.AddToPool(txRequest);
             AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
             //Show funds pending for incoming address
             //^*************************************************************

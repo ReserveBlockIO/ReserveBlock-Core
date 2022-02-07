@@ -52,10 +52,6 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
-		public static void UpdateLocalAccountBalance()
-		{
-
-		}
 		public static void PrintWalletAccounts()
         {
 			Console.Clear();
@@ -131,14 +127,14 @@ namespace ReserveBlockCore.Data
 		}
 		public static ILiteCollection<Account> GetAccounts()
 		{
-			var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-			
+			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			//accounts.EnsureIndex(x => x.id);
 			return accounts;
 		}
 
 		public static IEnumerable<Account> GetAccountsWithBalance()
 		{
-			var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
 			var accountsWithBal = accounts.Find(x => x.Balance > 0);
 
 			return accountsWithBal;
@@ -147,7 +143,7 @@ namespace ReserveBlockCore.Data
 		public static Account GetSingleAccount(string humanAddress)
         {
 			var account = new Account();
-			var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
 			account = accounts.FindOne(x => x.Address == humanAddress);
 
 			if(account == null)

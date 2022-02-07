@@ -140,7 +140,7 @@ namespace ReserveBlockCore.Data
                 //Need to publish block to known nodes. 
                 PrintBlock(block);
 
-                //THis might be double redundant. Possibly fix.
+                //This might be double redundant. Possibly fix.
                 foreach (var tx in transactionList)
                 {
                     Transaction.Add(tx);
