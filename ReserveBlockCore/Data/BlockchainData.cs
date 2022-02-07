@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Data
         {
             foreach (var trx in trxs)
             {
-                trx.BlockHeight = height;
+                trx.Height = height;
             }
             return trxs;
         }
@@ -127,14 +127,26 @@ namespace ReserveBlockCore.Data
             var buildTime = endTimer - startCraftTimer;
             block.BCraftTime = buildTime.Milliseconds;
 
-            AddBlock(block);
-            PrintBlock(block);
+            var blockValResult = ValidateBlock(block);
 
-            //THis might be double redundant. Possibly fix.
-            foreach (var tx in transactionList)
+            if(blockValResult == true)
             {
-                Transaction.Add(tx);
+                AddBlock(block);
+                //Need to publish block to known nodes. 
+                PrintBlock(block);
+
+                //THis might be double redundant. Possibly fix.
+                foreach (var tx in transactionList)
+                {
+                    Transaction.Add(tx);
+                }
             }
+            else
+            {
+                Console.WriteLine("Error! Block was not validated.");
+            }
+
+            
         }
         public static ILiteCollection<Block> GetBlocks()
         {
@@ -168,11 +180,40 @@ namespace ReserveBlockCore.Data
             var block = blockchain.FindOne(Query.All(Query.Descending));
             return block;
         }
-
         public static long GetHeight()
         {
             var lastBlock = GetLastBlock();
             return lastBlock.Height;
+        }
+        public static bool ValidateBlock(Block block)
+        {
+            bool result = false;
+
+            var txList = block.Transactions.ToList();
+
+            foreach(var tx in txList)
+            {
+                if (tx.FromAddress == "Coinbase_TrxFees")
+                {
+                    //validating fees to ensure block is not malformed.
+                    result = tx.Amount == txList.Sum(y => y.Fee) ? true : false;
+                    if (result == false)
+                    {
+                        break;
+                    }
+                }
+                if (tx.FromAddress == "Coinbase_BlkRwd")
+                {
+                    //validating block reward to ensure block is not malformed.
+                    result = tx.Amount == GetBlockReward() ? true : false;
+                    if (result == false)
+                    {
+                        break;
+                    }
+                }
+            }
+            
+            return result;
         }
         public static void AddBlock(Block block)
         {

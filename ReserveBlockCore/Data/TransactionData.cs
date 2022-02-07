@@ -19,13 +19,14 @@ namespace ReserveBlockCore.Data
             var gTrx = new Transaction
             {
                 Amount = 67500000,
-                BlockHeight = 0,
+                Height = 0,
                 FromAddress = "rbx_genesis_transaction",
                 ToAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH",
                 Fee = 0,
                 Hash = "", //this will be built down below. showing just to make this clear.
                 Timestamp = timeStamp,
-                Signature = "COINBASE_TX"
+                Signature = "COINBASE_TX",
+                Nonce = 0
             };
 
             gTrx.Build();
@@ -86,7 +87,7 @@ namespace ReserveBlockCore.Data
             transactions.EnsureIndex(x => x.Timestamp);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
-                .Where(x => x.BlockHeight == height)
+                .Where(x => x.Height == height)
                 .Limit(limit).ToList();
             return query;
 

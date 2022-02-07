@@ -17,14 +17,13 @@ namespace ReserveBlockCore.Models
         public string ToAddress { get; set; }
         public string FromAddress { get; set; }
         public decimal Amount { get; set; }
+        public long Nonce { get; set; }
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
         public string? NFTData { get; set; }
         public string Signature { get; set; }
+        public long Height { get; set; }
 
-        [ForeignKey("Block")]
-        public long BlockHeight { get; set; }
-        public virtual Block Block { get; set; }
 
         public void Build()
         {
@@ -32,7 +31,7 @@ namespace ReserveBlockCore.Models
         }
         public string GetHash()
         {
-            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + NFTData ;
+            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + NFTData ;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
         public static void Add(Transaction transaction)

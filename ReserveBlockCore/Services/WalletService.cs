@@ -106,7 +106,7 @@ namespace ReserveBlockCore.Services
                 ToAddress = ToAddress,
                 Amount = Amount,
                 Fee = 0, //add feel calc method here
-                
+                Nonce = 0, //Add method to get next nonce.
             };
             
             nTx.Build();

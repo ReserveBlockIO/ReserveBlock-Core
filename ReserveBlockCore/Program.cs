@@ -95,15 +95,20 @@ namespace ReserveBlockCore
 
         private static void blockBuilder_Elapsed(object sender)
         {
-            // do new block work here
             var validator = Validators.Validator.GetBlockValidator();
-            var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-            var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
-
-            if(account != null)
+            //if validator is NaN then there are no validators on network and block creation will stop. 
+            if(validator != "NaN")
             {
-                //craft new block
-            }    
+                var accounts = DbContext.DB.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
+
+                if (account != null)
+                {
+                    //craft new block
+                    BlockchainData.CraftNewBlock(validator);
+                }
+            }
+               
 
             
         }

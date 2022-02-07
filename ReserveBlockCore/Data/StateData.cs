@@ -13,7 +13,7 @@ namespace ReserveBlockCore.Data
                 return;
             var state = DbContext.DB.GetCollection<StateTrei>(DbContext.RSRV_STATE_TREI);
             var stateList = state.FindAll().ToString();
-
+            //var transactions = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             prcTranList.ForEach(x => {
                 var toAddr = state.Query().Where(y => y.Key == x.ToAddress).FirstOrDefault();
                 var fromAddr = state.Query().Where(y => y.Key == x.FromAddress).FirstOrDefault();
@@ -29,8 +29,8 @@ namespace ReserveBlockCore.Data
                         Balance = x.Amount,
                         Key = x.ToAddress,
                         Nonce = 1,
-                        StateRoot = x.Block.Hash,
-                        CodeHash = ""
+                        StateRoot = "",//Update
+                        CodeHash = ""//Update for NFT SC
                     };
 
                     state.Insert(nStateTreiRec);
