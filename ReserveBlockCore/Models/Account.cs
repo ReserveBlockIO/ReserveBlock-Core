@@ -10,7 +10,7 @@ using ReserveBlockCore.EllipticCurve;
 
 namespace ReserveBlockCore.Models
 {
-    internal class Account
+    public class Account
     {
         public long Id { get; set; }
         public string PrivateKey { set; get; }

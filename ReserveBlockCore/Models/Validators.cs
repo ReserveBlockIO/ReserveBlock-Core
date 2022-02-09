@@ -11,10 +11,10 @@ namespace ReserveBlockCore.Models
         public decimal Amount { get; set; } //Must be 1000 or more.
         public long SolvedBlocks { get; set; }
         public long LastBlockSolvedTime { get; set; } //timestamp
+        public bool IsActive { get; set; }
         public string NodeIP { get; set; } // this will be used to call out to next node after validator is complete. If node is online it will be chosen next. 
         public class Validator
         {
-
             public static List<Validators> ValidatorList { get; set; }
 
             public static void Add(Validators validator)

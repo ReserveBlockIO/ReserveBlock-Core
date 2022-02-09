@@ -52,6 +52,14 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
+
+		public static PrivateKey GetPrivateKey(Account account)
+        {
+			BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+			PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+			return privateKey;
+		}
 		public static void PrintWalletAccounts()
         {
 			Console.Clear();
