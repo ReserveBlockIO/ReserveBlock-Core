@@ -105,10 +105,13 @@ namespace ReserveBlockCore.Services
                 FromAddress = FromAddress,
                 ToAddress = ToAddress,
                 Amount = Amount,
-                Fee = 0, //add feel calc method here
+                Fee = 0, 
                 Nonce = AccountStateTrei.GetNextNonce(FromAddress), 
             };
-            
+
+            //Calculate fee for tx.
+            nTx.Fee = FeeCalcService.CalculateTXFee(nTx);
+
             nTx.Build();
 
             //balance check on funds
@@ -189,6 +192,7 @@ namespace ReserveBlockCore.Services
             //Subtract amount from balance
             TransactionData.AddToPool(txRequest);
             AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
+            StateData.UpdateAccountNonce(txRequest.FromAddress);
             //Show funds pending for incoming address
             //^*************************************************************
 

@@ -90,7 +90,6 @@ namespace ReserveBlockCore.Data
                 FromAddress = "Coinbase_BlkRwd",
             };
 
-            //this is just for testing. Validator will always get reward regardless of tx count. 
             if (processedTxPool.Count() > 0)
             {
                 coinbase_tx.Amount = GetTotalFees(processedTxPool);
@@ -102,6 +101,7 @@ namespace ReserveBlockCore.Data
                 
                 transactionList.AddRange(processedTxPool);
 
+                //need to only delete processed mempool tx's in event new ones get added while creating block.
                 txPool.DeleteAll();
             }
             else

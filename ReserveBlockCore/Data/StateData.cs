@@ -43,48 +43,42 @@ namespace ReserveBlockCore.Data
             var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
             aTrei.InsertBulk(accStTrei);
         }
-        //public static void UpdateWorldStateTrei(List<Transaction> prcTranList)
-        //{
-        //    if (prcTranList == null)
-        //        return;
-        //    var state = DbContext.DB.GetCollection<AccountStateTrei>(DbContext.RSRV_STATE_TREI);
-        //    var stateList = state.FindAll().ToString();
-        //    //var transactions = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    prcTranList.ForEach(x => {
-        //        var toAddr = state.Query().Where(y => y.Key == x.ToAddress).FirstOrDefault();
-        //        var fromAddr = state.Query().Where(y => y.Key == x.FromAddress).FirstOrDefault();
-        //        if (toAddr != null)
-        //        {
-        //            toAddr.Balance += x.Amount;
 
-        //            state.Update(toAddr);
-        //        }
-        //        else
-        //        {
-        //            AccountStateTrei nStateTreiRec = new AccountStateTrei {
-        //                Balance = x.Amount,
-        //                Key = x.ToAddress,
-        //                Nonce = 1,
-        //                StateRoot = "",//Update
-        //                CodeHash = ""//Update for NFT SC
-        //            };
+        public static void UpdateAccountNonce(string address, long ?nonce = null)
+        {
+            var account = GetSpecificAccountStateTrei(address);
+            if(nonce == null)
+            {
+                account.Nonce += 1;
+            }    
+            else
+            {
+                account.Nonce = nonce.Value;
+            }
+            var accountTrei = GetAccountStateTrei();
+            accountTrei.Update(account);
+        }
 
-        //            state.Insert(nStateTreiRec);
-        //        }
+        public static ILiteCollection<AccountStateTrei> GetAccountStateTrei()
+        {
+            var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
+            return aTrei;
+            
+        }
 
-        //        if (fromAddr != null)
-        //        {
-        //            fromAddr.Balance -= x.Amount;
-        //            fromAddr.Nonce += 1;
-        //            state.Update(toAddr);
-        //        }
-        //        else
-        //        {
-        //            //a From should never be null. 
-        //            //report an error if null.
-        //        }
-
-        //    });
-        //}
+        public static AccountStateTrei GetSpecificAccountStateTrei(string address)
+        {
+            var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
+            var account = aTrei.FindOne(x => x.Key == address);
+            if (account == null)
+            {
+                return null;
+            }
+            else
+            {
+                return account;
+            }
+        }
+        
     }
 }
