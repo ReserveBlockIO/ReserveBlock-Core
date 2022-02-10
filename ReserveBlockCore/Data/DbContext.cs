@@ -24,12 +24,12 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DBTest_Banlist { set; get; }
 
         //Database names
-        public const string RSRV_DB_NAME = @"rsrvblkdata.db";
-        public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
-        public const string RSRV_DB_BANLIST_NAME = @"rsrvbanldata.db";
-        public const string RSRV_DB_PEERS_NAME = @"rsrvpeersdata.db";
-        public const string RSRV_DB_WSTATE_TREI = @"rsrvwstatetrei.db";
-        public const string RSRV_DB_ASTATE_TREI = @"rsrvastatetrei.db";
+        public const string RSRV_DB_NAME = @"Databases\rsrvblkdata.db";
+        public const string RSRV_DB_WALLET_NAME = @"Databases\rsrvwaldata.db";
+        public const string RSRV_DB_BANLIST_NAME = @"Databases\rsrvbanldata.db";
+        public const string RSRV_DB_PEERS_NAME = @"Databases\rsrvpeersdata.db";
+        public const string RSRV_DB_WSTATE_TREI = @"Databases\rsrvwstatetrei.db";
+        public const string RSRV_DB_ASTATE_TREI = @"Databases\rsrvastatetrei.db";
 
         //db names for test
         public const string RSRV_DBTest_NAME = @"rsrvblkdata_test.db";
