@@ -32,13 +32,14 @@ namespace ReserveBlockCore.Services
                 if(sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
                 {
                     //validate account with signature check
-                    var signature = TransactionData.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
+                    var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
 
-                    var verifySig = TransactionData.VerifySignature(account.Address, signature);
+                    var verifySig = SignatureService.VerifySignature(account.Address, account.Address, signature);
 
                     if(verifySig == false)
                     {
                         output = "Signature check has failed. Please provide correct private key for public address: " + account.Address;
+                        return output;
                     }
                     var validatorTable = Validators.Validator.GetAll();
 
@@ -56,12 +57,13 @@ namespace ReserveBlockCore.Services
                         validator.SolvedBlocks = 0;
                         validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName; 
                         validator.IsActive = true;
+                        validator.Signature = signature;
 
                         validatorTable.Insert(validator);
                     }
-                    
+
                     //Publish out to other validators
-                    //SomePublishOutMethod();
+                    //SomePublishOutMethod(validator);
 
                     output = "Account found and activated as a validator! Thank you for service to the network!";
                 }
@@ -72,8 +74,14 @@ namespace ReserveBlockCore.Services
 
         public static string StopValidating(Account account)
         {
-            string output = "";
 
+            string output = "";
+            Validators validator = new Validators();
+            if (account == null) { throw new ArgumentNullException(nameof(account)); }
+            else
+            {
+
+            }
             return output;
         }
 

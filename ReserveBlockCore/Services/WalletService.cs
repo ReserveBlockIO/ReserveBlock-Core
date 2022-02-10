@@ -129,7 +129,7 @@ namespace ReserveBlockCore.Services
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = nTx.Hash;
-            var signature = TransactionData.CreateSignature(txHash, privateKey, account.PublicKey);
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (signature == "ERROR")
                 return "ERROR! There was an error signing your transaction. Please verify private key belongs to public address.";
 
@@ -177,7 +177,7 @@ namespace ReserveBlockCore.Services
             }
 
             //If we get here that means the hash rest passed above.
-            var isTxValid = TransactionData.VerifySignature(txRequest.Hash, txRequest.Signature);
+            var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
             if(isTxValid)
             {
                 txResult = true;
