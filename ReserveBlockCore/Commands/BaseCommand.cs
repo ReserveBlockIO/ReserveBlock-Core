@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Commands
                     BackupUtil.BackupWalletData();
                     Console.WriteLine("Reserve Block Wallet has been backed up.");
                     break;
-                case "1":
+                case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
                     BlockchainData.PrintBlock(genBlock);
                     break;
@@ -48,33 +48,39 @@ namespace ReserveBlockCore.Commands
                     var restoredAccount = new Account().Restore(privKey);
                     AccountData.WalletInfo(restoredAccount);
                     break;
-                case "4":
+                case "4": //Send Coins
                     WalletService.StartSend();
                     break;
-                case "5":
+                case "5": //Check Address Balance
                     //Insert Method
                     break;
-                case "6":
+                case "6": //Transaction History
                     //Insert Method
                     break;
-                case "7":
+                case "7": //Account Info
                     AccountData.PrintWalletAccounts();
                     break;
-                case "8":
-                    //Insert Method
+                case "8": //Startup Masternode
+                    ValidatorService.DoValidate();
                     break;
-                case "9":
+                case "9": //Startup Datanode
                     commandResult = "This feature is coming soon...";
                     break;
-                case "10":
+                case "10": //Enable API
                     Startup.APIEnabled = Startup.APIEnabled == false ? true : false;
                     if (Startup.APIEnabled)
                         Console.WriteLine("Reserveblock API has been turned on...");
                     else
                         Console.WriteLine("Reserveblock API has been turned off...");
                     break;
-                case "11":
-                    //Insert Method
+                case "11": //Stop Masternode
+                    ValidatorService.DoMasterNodeStop();
+                    break;
+                case "12": //Stop Datanode
+                    
+                    break;
+                case "13": //Exit
+                    commandResult = "_EXIT";
                     break;
 
                 default:
