@@ -144,7 +144,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    output = "Fail! Transaction Verify has failed. This is due to TX changes since it was hashed.";
+                    output = "Fail! Transaction Verify has failed.";
                 }
             }
             catch(Exception ex)
@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            //If we get here that means the hash rest passed above.
+            //If we get here that means the hash test passed above.
             var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
             if(isTxValid)
             {
@@ -187,15 +187,35 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            //^*************************************************************
-            //Needed to be done still!
-            //Subtract amount from balance
-            TransactionData.AddToPool(txRequest);
-            AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-            StateData.UpdateAccountNonce(txRequest.FromAddress);
-            //Show funds pending for incoming address
-            //^*************************************************************
+            if(account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
+            {
+                Console.WriteLine("This transaction will deactivate your masternode. Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
+                var confirmChoice = Console.ReadLine();
+                if (confirmChoice == null)
+                {
+                    return false;
+                }
+                else if (confirmChoice.ToLower() == "n")
+                {
+                    return false;
+                }
+                else
+                {
+                    var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower() && x.NodeIP == "SELF");
+                    ValidatorService.StopValidating(validator);
+                    TransactionData.AddToPool(txRequest);
+                    AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
+                    StateData.UpdateAccountNonce(txRequest.FromAddress);
+                }
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
+                StateData.UpdateAccountNonce(txRequest.FromAddress);
+            }
 
+            
 
             //Return verification result.
             return txResult;

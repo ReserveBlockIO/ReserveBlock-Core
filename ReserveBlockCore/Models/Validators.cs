@@ -28,8 +28,16 @@ namespace ReserveBlockCore.Models
 
             public static ILiteCollection<Validators> GetAll()
             {
-                var validators = DbContext.DB.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
+                var validators = DbContext.DB_Peers.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
                 return validators;
+            }
+
+            public static List<Validators> GetLocalValidator()
+            {
+                var validators = Validator.GetAll();
+                var query = validators.FindAll().Where(x => x.NodeIP == "SELF").ToList();
+
+                return query;
             }
 
             internal static void Initialize()
@@ -39,35 +47,35 @@ namespace ReserveBlockCore.Models
                 if (staker.Count() < 1)
                 {
                     // each account must stake at least 1000. We hard code in a few to get blocks moving. 
-                    Add(new Validators
-                    {
-                        Address = "Address_1",
-                        UniqueName = "Name1",
-                        Amount = 1000
-                    });
+                    //Add(new Validators
+                    //{
+                    //    Address = "Address_1",
+                    //    UniqueName = "Name1",
+                    //    Amount = 1000
+                    //});
 
-                    Add(new Validators
-                    {
-                        Address = "Address_2",
-                        UniqueName = "Name2",
-                        Amount = 1000
-                    });
+                    //Add(new Validators
+                    //{
+                    //    Address = "Address_2",
+                    //    UniqueName = "Name2",
+                    //    Amount = 1000
+                    //});
 
-                    Add(new Validators
-                    {
-                        Address = "Address_3",
-                        UniqueName = "Name3",
-                        Amount = 1000
-                    });
+                    //Add(new Validators
+                    //{
+                    //    Address = "Address_3",
+                    //    UniqueName = "Name3",
+                    //    Amount = 1000
+                    //});
 
-                    Add(new Validators
-                    {
-                        Address = "Address_4",
-                        UniqueName = "Name4",
-                        Amount = 1000
-                    });
+                    //Add(new Validators
+                    //{
+                    //    Address = "Address_4",
+                    //    UniqueName = "Name4",
+                    //    Amount = 1000
+                    //});
 
-                    ValidatorList.AddRange(GetAll().FindAll());
+                    //ValidatorList.AddRange(GetAll().FindAll());
                 }
                 else
                 {
