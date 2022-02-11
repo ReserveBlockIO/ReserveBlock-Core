@@ -6,7 +6,7 @@
 For more information and to follow latest news go to:
 https://reserveblock.io
 
-This repo is currently a work in progress. New commits pushing more of the RXBX wallet are staged. Keep an eye out for releases to test the blockchain.
+This repo is currently a work in progress. New commits pushing more of the RBX wallet are staged. Keep an eye out for releases to test the blockchain.
 During January we will be committing multiples stages of the code. Please follow to get latest updates!
 
 # What is ReserverBlock?
@@ -17,7 +17,7 @@ For more information please read the ReserverBlock whitepaper or litepaper.
 
 ### Reserver Block Is Built on the Following ###
 
-* RXBX CLI Main Code REPO
+* RBX CLI Main Code REPO
 * C#
 * .Net 6.0 | https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 * CLI
