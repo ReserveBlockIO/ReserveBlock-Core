@@ -167,7 +167,7 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHeight(int height)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height); ;
+            blocks.EnsureIndex(x => x.Height); 
             var block = blocks.FindOne(x => x.Height == height);
             return block;
         }
@@ -175,7 +175,7 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHash(string hash)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height); ;
+            blocks.EnsureIndex(x => x.Height); 
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -251,7 +251,7 @@ namespace ReserveBlockCore.Data
             Console.WriteLine(" * Previous Hash...: {0}", block.PrevHash);
             Console.WriteLine(" * Hash            : {0}", block.Hash);
             Console.WriteLine(" * Merkle Hash.....: {0}", block.MerkleRoot);
-            Console.WriteLine(" * State Hash.....: {0}", block.StateRoot);
+            Console.WriteLine(" * State Hash.....: {0}",  block.StateRoot);
             Console.WriteLine(" * Timestamp       : {0}", TimeUtil.ToDateTime(block.Timestamp));
             Console.WriteLine(" * Chain Validator : {0}", block.Validator);
 

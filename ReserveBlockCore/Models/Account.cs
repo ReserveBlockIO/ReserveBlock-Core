@@ -17,6 +17,7 @@ namespace ReserveBlockCore.Models
         public string PublicKey { set; get; }
         public string Address { get; set; }
         public decimal Balance { get; set; }
+        public bool IsValidating { get; set; }
         public bool IsEncrypted { get; set; }
 
         public Account Build()
