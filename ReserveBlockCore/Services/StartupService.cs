@@ -54,7 +54,9 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 8. Startup Masternode                |");
             Console.WriteLine("| 9. Startup Datanode                  |");
             Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-            Console.WriteLine("| 11. Exit                             |");
+            Console.WriteLine("| 11. Stop Masternode                  |");
+            Console.WriteLine("| 12. Stop Datanode                    |");
+            Console.WriteLine("| 13. Exit                             |");
             Console.WriteLine("|======================================|");
         }
     }
