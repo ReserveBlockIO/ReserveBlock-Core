@@ -47,9 +47,11 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();
             StartupService.StartupInitializeChain();
 
-            string url = "https://localhost:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
+            string url = "https://localhost:8001"; //local API to connect to wallet. This can be changed, but be cautious. 
+            string url2 = "https://localhost:3338"; //this is port for signalr connect and all p2p functions
 
             var commandLoopTask = Task.Run(() => CommandLoop(url));
+            var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
 
             var builder = Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
@@ -60,9 +62,22 @@ namespace ReserveBlockCore
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                 });
 
-            
+            var builder2 = Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseKestrel()
+                    .UseStartup<StartupP2P>()
+                    .UseUrls(url2)
+                    .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                });
 
-            await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
+            builder.RunConsoleAsync();
+            builder2.RunConsoleAsync();
+            
+            Task.WaitAll(commandLoopTask, commandLoopTask2);
+
+            //await Task.WhenAny(builder2.RunConsoleAsync(), commandLoopTask2);
+            //await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
 
         }
 
@@ -96,7 +111,10 @@ namespace ReserveBlockCore
             }
             
         }
-
+        private static void CommandLoop2(string url)
+        {
+            Console.ReadKey();
+        }
         private static void blockBuilder_Elapsed(object sender)
         {
             var validator = Validators.Validator.GetBlockValidator();
