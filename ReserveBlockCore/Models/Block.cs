@@ -15,6 +15,7 @@ namespace ReserveBlockCore.Models
     public class Block
     {
 		public long Height { get; set; }
+		public string ChainRefId { get; set; }
 		public long Timestamp { get; set; }
 		public string Hash { get; set; }
 		public string PrevHash { get; set; }
@@ -69,7 +70,7 @@ namespace ReserveBlockCore.Models
 		}
 		public string GetBlockHash()
 		{
-			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator;
+			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator + ChainRefId;
 			var hash = HashingService.GenerateHash(strSum);
 			return hash;
 		}

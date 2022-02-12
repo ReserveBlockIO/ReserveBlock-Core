@@ -14,9 +14,12 @@ namespace ReserveBlockCore.Data
     {
         public IList<Transaction> PendingTransactions = new List<Transaction>();
         public Blockchain Chain { get; set; }
-
+        public static string ChainRef { get; set; }
         internal static void InitializeChain()
         {
+            //blockchain reference id. Do not change this or you won't get blocks from mainnet/testnet potentially. 
+            ChainRef = "Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+
             var blocks = BlockData.GetBlocks();
             if (blocks.Count() < 1)
             {
@@ -115,7 +118,8 @@ namespace ReserveBlockCore.Data
                 Height = height,
                 Timestamp = timestamp,
                 Transactions = GiveOtherInfos(transactionList, height),
-                Validator = validator
+                Validator = validator,
+                ChainRefId = ChainRef
             };
             block.Build();
 
@@ -246,12 +250,13 @@ namespace ReserveBlockCore.Data
             public static void PrintBlock(Block block)
         {
             Console.WriteLine("\n===========\nBlock Info:");
+            Console.WriteLine(" * Chain Reference.: {0}", ChainRef);
             Console.WriteLine(" * Block Height....: {0}", block.Height);
             Console.WriteLine(" * Version         : {0}", block.Version);
             Console.WriteLine(" * Previous Hash...: {0}", block.PrevHash);
             Console.WriteLine(" * Hash            : {0}", block.Hash);
             Console.WriteLine(" * Merkle Hash.....: {0}", block.MerkleRoot);
-            Console.WriteLine(" * State Hash.....: {0}",  block.StateRoot);
+            Console.WriteLine(" * State Hash......: {0}",  block.StateRoot);
             Console.WriteLine(" * Timestamp       : {0}", TimeUtil.ToDateTime(block.Timestamp));
             Console.WriteLine(" * Chain Validator : {0}", block.Validator);
 
