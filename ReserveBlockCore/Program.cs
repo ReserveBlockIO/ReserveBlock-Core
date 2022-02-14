@@ -75,9 +75,11 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();
             StartupService.SetBlockchainChainRef();
+
             StartupService.TestConnect();
-            //StartupService.StartupPeers();
-            //StartupService.DownloadBlocks();
+            StartupService.StartupPeers();
+            StartupService.DownloadBlocks();
+
             StartupService.StartupInitializeChain();
 
             Task.WaitAll(commandLoopTask, commandLoopTask2);

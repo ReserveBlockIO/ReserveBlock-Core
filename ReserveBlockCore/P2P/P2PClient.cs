@@ -26,24 +26,28 @@ namespace ReserveBlockCore.P2P
         }
         public static void ConnectToPeers()
         {
+            ActivePeerList = new List<Peers>();
+
             List<Peers> peers = new List<Peers>();
             peers = Peers.PeerList();
 
             List<Peers> tempActivePeerList = new List<Peers>();
             peers.ForEach(x =>
             {
-                var peerIP = x.PeerIP != "192.168.1.63" ? x.PeerIP : "127.0.0.1";
-                var url = "https://" + peerIP + ":3338/blockchain";
+                var peerIP = x.PeerIP;
+                var url = "http://" + peerIP + ":3338/blockchain";
                 var connection = new HubConnectionBuilder().WithUrl(url).Build();
                 connection.StartAsync().Wait();
-                connection.InvokeCoreAsync("ConnectPeers", args: new[] { "NodeIP", "Hello" });
-                connection.On("PeerConnected", (string node, string message) =>
+                connection.InvokeCoreAsync("ConnectPeers", args: new[] { "NodeIP", "Hello", DateTime.UtcNow.Ticks.ToString() });
+                connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
                 {
-                    Console.WriteLine(node + " - Message: " + message);
-                    if(!ActivePeerList.Contains(x))
-                        tempActivePeerList.Add(x);
-                    Peers.UpdatePeerLastReach(x);
+                    Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
+                    
                 });
+
+                if (!ActivePeerList.Contains(x))
+                    tempActivePeerList.Add(x);
+                Peers.UpdatePeerLastReach(x);
             });
             //Update List
             ActivePeerList.AddRange(tempActivePeerList);
@@ -62,7 +66,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var url = "https://" + peer.PeerIP + ":3338/blockchain";
+                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
                     var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
                     connection.StartAsync().Wait();
@@ -93,7 +97,7 @@ namespace ReserveBlockCore.P2P
         }
         public static Block? GetBlock() //base example
         {
-            var currentBlock = BlockchainData.GetLastBlock().Height;
+            var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
             var nBlock = new Block();
             var peer = ActivePeerList.OrderByDescending(x => x.LastReach).FirstOrDefault();
 
@@ -106,13 +110,14 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var url = "https://" + peer.PeerIP + ":3338/blockchain";
+                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
                     var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
                     connection.StartAsync().Wait();
-                    connection.InvokeCoreAsync("SendBlock", args: new object?[] { -1 });
+                    connection.InvokeCoreAsync("SendBlock", args: new object?[] { currentBlock });
                     connection.On("BlockSent", (string message, Block? block) =>
                     {
+                        Console.WriteLine(message);
                         if (block != null)
                         {
                             nBlock = block;

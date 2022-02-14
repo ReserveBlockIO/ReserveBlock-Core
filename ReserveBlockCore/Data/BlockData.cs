@@ -31,7 +31,8 @@ namespace ReserveBlockCore.Data
                 Height = 0,
                 Timestamp = timeStamp,
                 Transactions = gTrxList,
-                Validator = "Alpha Validator"
+                Validator = "Alpha Validator",
+                ChainRefId = BlockchainData.ChainRef
             };
 
             block.Build();
