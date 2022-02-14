@@ -53,7 +53,9 @@ namespace ReserveBlockCore.Data
                 var txs = pool.FindAll().ToList();
                 foreach(var tx in txs)
                 {
-                    Console.WriteLine(tx);
+                    var txString = "From: " + tx.FromAddress + " To: " + tx.ToAddress + " Amount: " + tx.Amount.ToString() + " Fee: " + tx.Fee.ToString()
+                        + " TX ID: " + tx.Hash + " Timestamp: " + tx.Timestamp.ToString();
+                    Console.WriteLine(txString);
                 }
             }
             else

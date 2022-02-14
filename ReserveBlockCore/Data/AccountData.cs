@@ -36,8 +36,9 @@ namespace ReserveBlockCore.Data
         }
 		public static Account RestoreAccount(string privKey)
         {
+			var privateKeyMod = privKey.Replace(" ", ""); //remove any accidental spaces
 			Account account = new Account();
-			BigInteger b1 = BigInteger.Parse(privKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+			BigInteger b1 = BigInteger.Parse(privateKeyMod, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
 			PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 			var privKeySecretHex = privateKey.secret.ToString("x");
 			var pubKey = privateKey.publicKey();
@@ -45,7 +46,8 @@ namespace ReserveBlockCore.Data
 			account.PrivateKey = privKeySecretHex;
 			account.PublicKey = "04" + ByteToHex(pubKey.toString());		
 			account.Address = GetHumanAddress(account.PublicKey);
-			account.Balance = TransactionData.GetBalance(account.Address);
+			var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
+			account.Balance = accountState != null ? accountState.Balance : 0M;
 
 			AddToAccount(account);
 			//Now need to scan to check for transactions and balance - feature coming soon.
