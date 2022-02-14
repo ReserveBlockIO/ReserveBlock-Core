@@ -53,12 +53,12 @@ namespace ReserveBlockCore.P2P
             if(nextBlock != null)
             {
                 message = "BlockFound";
-                await Clients.All.SendAsync("BlockSent", message, nextBlock);
+                await Clients.Caller.SendAsync("BlockSent", message, nextBlock);
             }
             else
             {
                 message = "BlockNotFound";
-                await Clients.All.SendAsync("BlockSent", message, null);
+                await Clients.Caller.SendAsync("BlockSent", message, null);
             }
             
         }

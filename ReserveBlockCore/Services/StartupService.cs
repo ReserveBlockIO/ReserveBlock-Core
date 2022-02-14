@@ -25,6 +25,11 @@ namespace ReserveBlockCore.Services
             
         }
 
+        internal static void TestConnect()
+        {
+            P2PClient.TestLocal();
+        }
+
         internal static void SetBlockchainChainRef()
         {
             BlockchainData.ChainRef = "Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";

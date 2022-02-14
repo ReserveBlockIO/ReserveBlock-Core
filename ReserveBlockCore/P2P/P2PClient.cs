@@ -12,6 +12,18 @@ namespace ReserveBlockCore.P2P
     public class P2PClient
     {
         public static List<Peers> ActivePeerList { get; set; }
+
+        public static void TestLocal()
+        {
+            var connection = new HubConnectionBuilder().WithUrl("http://localhost:3338/blockchain").Build();
+
+            connection.StartAsync().Wait();
+            connection.InvokeCoreAsync("ConnectPeers", args: new[] { "Local", "Hello", DateTime.UtcNow.Ticks.ToString() });
+            connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
+            {
+                Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
+            });
+        }
         public static void ConnectToPeers()
         {
             List<Peers> peers = new List<Peers>();

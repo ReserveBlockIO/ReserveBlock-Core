@@ -46,7 +46,7 @@ namespace ReserveBlockCore
             }
 
             string url = "https://localhost:8001"; //local API to connect to wallet. This can be changed, but be cautious. 
-            string url2 = "https://*:3338"; //this is port for signalr connect and all p2p functions
+            string url2 = "http://*:3338"; //this is port for signalr connect and all p2p functions
             //string url2 = "https://*:3338" //This is non http version. Must comment out app.UseHttpsRedirection() in startupp2p
 
             var commandLoopTask = Task.Run(() => CommandLoop(url));
@@ -75,6 +75,7 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();
             StartupService.SetBlockchainChainRef();
+            StartupService.TestConnect();
             //StartupService.StartupPeers();
             //StartupService.DownloadBlocks();
             StartupService.StartupInitializeChain();
