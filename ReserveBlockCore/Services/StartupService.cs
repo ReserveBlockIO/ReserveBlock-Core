@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Services
@@ -40,24 +41,38 @@ namespace ReserveBlockCore.Services
             P2PClient.ConnectToPeers();
         }
         //may want to put this in a task to allow use of wallet still? 
-        internal static void DownloadBlocks()
+        internal static async Task<bool> DownloadBlocks()
         {
             if (P2PClient.ActivePeerList.Count != 0)
             {
                 var blocks = BlockData.GetBlocks();
                 if(blocks.Count() == 0)
                 {
-                    var height = P2PClient.GetCurrentHeight();
+                    var height = P2PClient.GetCurrentHeight(); //revisit this. 
                     Console.WriteLine("Downloading Blocks First.");
-                    var block = P2PClient.GetBlock();
+                    var block = await P2PClient.GetBlock();
+                    Console.WriteLine("Found Block: " + block.Height.ToString());
+                    var result = BlockValidatorService.ValidateBlock(block);
+                    if (result == false)
+                    {
+                        Console.WriteLine("Block was rejected from: " + block.Validator);
+                        //Add rejection notice for validator
+                    }
                     while (block.Height != height)
                     {
-                        block = P2PClient.GetBlock();
+                        block = await P2PClient.GetBlock();
+                        var resultLoop = BlockValidatorService.ValidateBlock(block);
+                        if (resultLoop == false)
+                        {
+                            Console.WriteLine("Block was rejected from: " + block.Validator);
+                            //Add rejection notice for validator
+                        }
                     }
                     
                 }
                 
             }
+            return true;
         }
         internal static void StartupInitializeChain()
         {

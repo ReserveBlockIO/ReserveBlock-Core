@@ -27,7 +27,7 @@ namespace ReserveBlockCore
             services.AddSignalR(options => {
                 options.KeepAliveInterval = TimeSpan.FromSeconds(10); //check connections everyone 10 seconds
                 options.ClientTimeoutInterval = TimeSpan.FromSeconds(45); //close connection after 45 seconds
-                
+                options.MaximumReceiveMessageSize = 1024000;
             });
         }
 

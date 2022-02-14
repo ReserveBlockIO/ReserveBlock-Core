@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Data
                 var acctStateTreiFrom = new AccountStateTrei {
                     Key = x.FromAddress,
                     Nonce = x.Nonce + 1, //increase Nonce for next use
-                    Balance = (x.Amount + x.Fee) * -1, //subtract from the address
+                    Balance = 0, //subtract from the address
                     StateRoot = block.StateRoot
                 };
 
@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Data
                 var acctStateTreiTo = new AccountStateTrei
                 {
                     Key = x.ToAddress,
-                    Nonce = x.Nonce + 1, //increase nonce for next use
+                    Nonce = 0, //increase nonce for next use
                     Balance = (x.Amount + x.Fee), //subtract from the address
                     StateRoot = block.StateRoot
                 };
@@ -57,6 +57,65 @@ namespace ReserveBlockCore.Data
             }
             var accountTrei = GetAccountStateTrei();
             accountTrei.Update(account);
+        }
+        public static void UpdateTreis(Block block)
+        {
+            var txList = block.Transactions.ToList();
+            var accStTrei = GetAccountStateTrei();
+
+            
+
+            txList.ForEach(x => {
+                if (block.Height == 0)
+                {
+                    var acctStateTreiFrom = new AccountStateTrei
+                    {
+                        Key = x.FromAddress,
+                        Nonce = x.Nonce + 1, //increase Nonce for next use
+                        Balance = 0, //subtract from the address
+                        StateRoot = block.StateRoot
+                    };
+
+                    accStTrei.Insert(acctStateTreiFrom);
+                }
+                else
+                {
+                    var from = GetSpecificAccountStateTrei(x.FromAddress);
+
+                    from.Nonce += 1;
+                    from.StateRoot = block.StateRoot;
+                    from.Balance -= (x.Amount + x.Fee);
+
+                    accStTrei.Update(from);
+                }
+                
+
+                var to = GetSpecificAccountStateTrei(x.ToAddress);
+
+                if(to == null)
+                {
+                    var acctStateTreiTo = new AccountStateTrei
+                    {
+                        Key = x.ToAddress,
+                        Nonce = 0, //increase nonce for next use
+                        Balance = (x.Amount + x.Fee), //subtract from the address
+                        StateRoot = block.StateRoot
+                    };
+
+                    accStTrei.Insert(acctStateTreiTo);
+                }
+                else
+                {
+                    to.Balance = x.Amount;
+                    to.StateRoot = block.StateRoot;
+
+                    accStTrei.Update(to);
+                }    
+
+            });
+
+            WorldTrei.UpdateWorldTrei(block);
+
         }
 
         public static ILiteCollection<AccountStateTrei> GetAccountStateTrei()

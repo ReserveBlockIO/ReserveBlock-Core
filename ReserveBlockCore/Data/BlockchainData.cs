@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Data
 {
@@ -16,8 +17,10 @@ namespace ReserveBlockCore.Data
         public IList<Transaction> PendingTransactions = new List<Transaction>();
         public Blockchain Chain { get; set; }
         public static string ChainRef { get; set; }
-        internal static void InitializeChain()
+        internal static async void InitializeChain()
         {
+            await StartupService.DownloadBlocks();
+
             var blocks = BlockData.GetBlocks();
             
             if (blocks.Count() < 1)
@@ -156,6 +159,14 @@ namespace ReserveBlockCore.Data
 
             
         }
+
+        //public static bool ValidateBlock(Block block)
+        //{
+        //    bool result = false;
+
+
+        //    return result;
+        //}
         public static ILiteCollection<Block> GetBlocks()
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
@@ -226,7 +237,11 @@ namespace ReserveBlockCore.Data
         public static void AddBlock(Block block)
         {
             var blocks = GetBlocks();
-            blocks.Insert(block);
+            blocks.EnsureIndex(x => x.Height);
+            //only input block if null
+            var blockCheck = blocks.FindOne(x => x.Height == block.Height);
+            if (blockCheck == null)
+                blocks.Insert(block);
         }
         private static decimal GetTotalFees(List<Transaction> txs)
         {

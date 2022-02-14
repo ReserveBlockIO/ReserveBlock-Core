@@ -13,6 +13,9 @@ namespace ReserveBlockCore.P2P
     {
         public static List<Peers> ActivePeerList { get; set; }
 
+        public static HubConnectionBuilder con = new HubConnectionBuilder();
+
+        #region Local Test
         public static void TestLocal()
         {
             var connection = new HubConnectionBuilder().WithUrl("http://localhost:3338/blockchain").Build();
@@ -24,6 +27,10 @@ namespace ReserveBlockCore.P2P
                 Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
             });
         }
+
+        #endregion
+
+        #region Connect to Peers
         public static void ConnectToPeers()
         {
             ActivePeerList = new List<Peers>();
@@ -32,7 +39,7 @@ namespace ReserveBlockCore.P2P
             peers = Peers.PeerList();
 
             List<Peers> tempActivePeerList = new List<Peers>();
-            peers.ForEach(x =>
+            peers.ForEach(async x =>
             {
                 var peerIP = x.PeerIP;
                 var url = "http://" + peerIP + ":3338/blockchain";
@@ -52,6 +59,64 @@ namespace ReserveBlockCore.P2P
             //Update List
             ActivePeerList.AddRange(tempActivePeerList);
         }
+
+        #endregion
+
+        #region Get Block
+        public static async Task<Block?> GetBlock() //base example
+         {
+            var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
+            var nBlock = new Block();
+            var peer = ActivePeerList.OrderByDescending(x => x.LastReach).FirstOrDefault();
+
+            if(peer == null)
+            {
+                //Need peers
+                return null;
+            }
+            else
+            {
+                try
+                {
+                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                    connection.StartAsync().Wait();
+                    nBlock = await connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+
+
+                    //connection.On("BlockSent", (string message, Block nextBlock) =>
+                    //{
+                    //    Console.WriteLine(message + nextBlock.Validator);
+                    //    if (nextBlock != null)
+                    //    {
+                    //        nBlock = nextBlock;
+                    //    }
+                    //});
+
+                    
+
+                    return nBlock;
+                }
+                catch (Exception ex)
+                {
+                    var tempActivePeerList = new List<Peers>();
+                    tempActivePeerList.AddRange(ActivePeerList);
+
+                    //remove dead peer
+                    tempActivePeerList.Remove(peer);
+
+                    ActivePeerList.AddRange(tempActivePeerList);
+
+                    return null;
+                }
+            }
+            
+        }
+
+        #endregion
+
+        #region Get Current Height of Node *Not working*
         public static long GetCurrentHeight()
         {
             var nBlock = new Block();
@@ -95,61 +160,13 @@ namespace ReserveBlockCore.P2P
                 }
             }
         }
-        public static Block? GetBlock() //base example
+
+        #endregion
+
+        public static async void SendTransactionMemPool(Transaction tx)
         {
-            var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
-            var nBlock = new Block();
-            var peer = ActivePeerList.OrderByDescending(x => x.LastReach).FirstOrDefault();
-
-            if(peer == null)
-            {
-                //Need peers
-                return null;
-            }
-            else
-            {
-                try
-                {
-                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                    connection.StartAsync().Wait();
-                    connection.InvokeCoreAsync("SendBlock", args: new object?[] { currentBlock });
-                    connection.On("BlockSent", (string message, Block? block) =>
-                    {
-                        Console.WriteLine(message);
-                        if (block != null)
-                        {
-                            nBlock = block;
-                        }
-                    });
-
-                    return nBlock;
-                }
-                catch (Exception ex)
-                {
-                    var tempActivePeerList = new List<Peers>();
-                    tempActivePeerList.AddRange(ActivePeerList);
-
-                    //remove dead peer
-                    tempActivePeerList.Remove(peer);
-
-                    ActivePeerList.AddRange(tempActivePeerList);
-
-                    return null;
-                }
-            }
-            
+            //broad out to all your known nodes.
         }
-        public static void SendBlock(Block block) //base example
-        {
-            var connection = new HubConnectionBuilder().WithUrl("https://localhost:3338/blockchain").Build();
-
-            connection.StartAsync().Wait();
-            connection.InvokeCoreAsync("SendMessage", args: new[] { "NodeIP", "hello this is my message" });
-            connection.On("BlockReceived", (string node, string message) => {
-                Console.WriteLine(node + " - Message: " + message);
-            });
-        }
+        
     }
 }
