@@ -42,7 +42,7 @@ namespace ReserveBlockCore.P2P
             
         }
         //Send Block to client from p2p server
-        public async Task SendBlock(long currentBlock)
+        public async Task<Block?> SendBlock(long currentBlock)
         {
             var peerIP = GetIP(Context);
 
@@ -50,17 +50,16 @@ namespace ReserveBlockCore.P2P
             var nextBlockHeight = currentBlock + 1;
             var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
 
-            if(nextBlock != null)
+            
+            if (nextBlock != null)
             {
-                message = "BlockFound";
-                await Clients.Caller.SendAsync("BlockSent", message, nextBlock);
+                return nextBlock;
             }
             else
             {
-                message = "BlockNotFound";
-                await Clients.Caller.SendAsync("BlockSent", message, null);
+                return null;
             }
-            
+
         }
         public async Task SharePeers(string node)
         {
