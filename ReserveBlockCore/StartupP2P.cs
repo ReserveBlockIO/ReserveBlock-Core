@@ -27,7 +27,7 @@ namespace ReserveBlockCore
             services.AddSignalR(options => {
                 options.KeepAliveInterval = TimeSpan.FromSeconds(10); //check connections everyone 10 seconds
                 options.ClientTimeoutInterval = TimeSpan.FromSeconds(45); //close connection after 45 seconds
-                options.MaximumParallelInvocationsPerClient = 3;
+                
             });
         }
 
@@ -38,13 +38,6 @@ namespace ReserveBlockCore
             {
                 app.UseDeveloperExceptionPage();
             }
-            //app.Use((context, func) =>
-            //{
-            //    if (APIEnabled)
-            //        return func.Invoke();
-            //    context.Response.StatusCode = 204;//if u want to return specific status code when not ready to accept requests
-            //    return Task.CompletedTask;
-            //});
 
             app.UseHttpsRedirection();
 

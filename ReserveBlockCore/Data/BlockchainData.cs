@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.P2P;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +18,8 @@ namespace ReserveBlockCore.Data
         public static string ChainRef { get; set; }
         internal static void InitializeChain()
         {
-            //blockchain reference id. Do not change this or you won't get blocks from mainnet/testnet potentially. 
-            ChainRef = "Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
-
             var blocks = BlockData.GetBlocks();
+            
             if (blocks.Count() < 1)
             {
                 var genesisTime = DateTime.UtcNow;
@@ -168,7 +167,7 @@ namespace ReserveBlockCore.Data
             var block = GetBlocks().FindAll().FirstOrDefault();
             return block;
         }
-        public static Block GetBlockByHeight(int height)
+        public static Block GetBlockByHeight(long height)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
             blocks.EnsureIndex(x => x.Height); 

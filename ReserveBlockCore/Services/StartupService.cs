@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Services
 {
@@ -22,6 +23,36 @@ namespace ReserveBlockCore.Services
                 DbContext.Initialize();
             }
             
+        }
+
+        internal static void SetBlockchainChainRef()
+        {
+            BlockchainData.ChainRef = "Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+        }
+
+        internal static void StartupPeers()
+        {
+            P2PClient.ConnectToPeers();
+        }
+        //may want to put this in a task to allow use of wallet still? 
+        internal static void DownloadBlocks()
+        {
+            if (P2PClient.ActivePeerList.Count != 0)
+            {
+                var blocks = BlockData.GetBlocks();
+                if(blocks.Count() == 0)
+                {
+                    var height = P2PClient.GetCurrentHeight();
+                    Console.WriteLine("Downloading Blocks First.");
+                    var block = P2PClient.GetBlock();
+                    while (block.Height != height)
+                    {
+                        block = P2PClient.GetBlock();
+                    }
+                    
+                }
+                
+            }
         }
         internal static void StartupInitializeChain()
         {
