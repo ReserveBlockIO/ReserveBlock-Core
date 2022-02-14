@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Models
 
         public static ILiteCollection<WorldTrei> GetWorldTrei()
         {
-            var wTrei = DbContext.DB_AccountStateTrei.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
+            var wTrei = DbContext.DB_WorldStateTrei.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
             return wTrei;
         }
     }

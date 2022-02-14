@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System.Globalization;
 using System.Numerics;
@@ -206,6 +207,7 @@ namespace ReserveBlockCore.Services
                     TransactionData.AddToPool(txRequest);
                     AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                     StateData.UpdateAccountNonce(txRequest.FromAddress);
+                    P2PClient.SendTXMempool(txRequest);//send out to mempool
                 }
             }
             else
@@ -213,6 +215,7 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                 StateData.UpdateAccountNonce(txRequest.FromAddress);
+                P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
 
             

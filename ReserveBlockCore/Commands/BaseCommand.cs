@@ -34,6 +34,10 @@ namespace ReserveBlockCore.Commands
                     BackupUtil.BackupWalletData();
                     Console.WriteLine("Reserve Block Wallet has been backed up.");
                     break;
+                case "/mempool":
+                    Console.WriteLine("Printing Mempool Results: ");
+                    TransactionData.PrintMemPool();
+                    break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
                     BlockchainData.PrintBlock(genBlock);

@@ -41,20 +41,27 @@ namespace ReserveBlockCore.P2P
             List<Peers> tempActivePeerList = new List<Peers>();
             peers.ForEach(async x =>
             {
-                var peerIP = x.PeerIP;
-                var url = "http://" + peerIP + ":3338/blockchain";
-                var connection = new HubConnectionBuilder().WithUrl(url).Build();
-                connection.StartAsync().Wait();
-                connection.InvokeCoreAsync("ConnectPeers", args: new[] { "NodeIP", "Hello", DateTime.UtcNow.Ticks.ToString() });
-                connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
+                try
                 {
-                    Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
-                    
-                });
+                    var peerIP = x.PeerIP;
+                    var url = "http://" + peerIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+                    connection.StartAsync().Wait();
+                    connection.InvokeCoreAsync("ConnectPeers", args: new[] { "NodeIP", "Hello", DateTime.UtcNow.Ticks.ToString() });
+                    connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
+                    {
+                        Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
 
-                if (!ActivePeerList.Contains(x))
-                    tempActivePeerList.Add(x);
-                Peers.UpdatePeerLastReach(x);
+                    });
+
+                    if (!ActivePeerList.Contains(x))
+                        tempActivePeerList.Add(x);
+                    Peers.UpdatePeerLastReach(x);
+                }
+                catch(Exception ex)
+                {
+
+                }
             });
             //Update List
             ActivePeerList.AddRange(tempActivePeerList);
@@ -157,6 +164,58 @@ namespace ReserveBlockCore.P2P
                     ActivePeerList.AddRange(tempActivePeerList);
 
                     return -1;
+                }
+            }
+        }
+
+        #endregion
+
+        #region Send Transactions to mempool 
+        public static async void SendTXMempool(Transaction txSend)
+        {
+            var peers = ActivePeerList.ToList();
+            if(peers == null)
+            {
+                Console.WriteLine("You have no peers to send transaction too.");
+            }
+            else
+            {
+                foreach(var peer in peers)
+                {
+                    try
+                    {
+                        var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                        var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                        connection.StartAsync().Wait();
+                        string message = await connection.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        var tempActivePeerList = new List<Peers>();
+                        tempActivePeerList.AddRange(ActivePeerList);
+
+                        //remove dead peer
+                        tempActivePeerList.Remove(peer);
+
+                        ActivePeerList.AddRange(tempActivePeerList); //update list with removed node
+                        //if list gets below certain amount request more nodes.
+                    }
                 }
             }
         }
