@@ -48,7 +48,7 @@ namespace ReserveBlockCore.Services
                 var blocks = BlockData.GetBlocks();
                 if(blocks.Count() == 0)
                 {
-                    var height = P2PClient.GetCurrentHeight(); //revisit this. 
+                    var height = BlockchainData.GetHeight(); //revisit this. 
                     Console.WriteLine("Downloading Blocks First.");
                     var block = await P2PClient.GetBlock();
                     Console.WriteLine("Found Block: " + block.Height.ToString());

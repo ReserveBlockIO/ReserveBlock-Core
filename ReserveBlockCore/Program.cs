@@ -3,14 +3,16 @@ using Microsoft.Extensions.Hosting;
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore
 {
     class Program
     {
-        private static Timer blockTimer;
-        private static Timer mempoolShareTimer;
+        private static Timer blockTimer;//for creating a new block at max every 30 seconds
+        private static Timer mempoolShareTimer;//Sharing and checking mempool with other nodes
+        private static Timer BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
         private static int MempoolCount = 0;
         public static List<Transaction> MempoolList = new List<Transaction>();
         static async Task Main(string[] args)
@@ -22,7 +24,10 @@ namespace ReserveBlockCore
 
             mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
             mempoolShareTimer.Change(60000, 1000); //waits 1 minute, then runs every 1 seconds for new tx's
-            
+
+            BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            BlockHeightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new block heights
+
             //add method to remove stale state trei records and stale validator records too
 
 
@@ -131,20 +136,23 @@ namespace ReserveBlockCore
         }
         private static void blockBuilder_Elapsed(object sender)
         {
-            var validator = Validators.Validator.GetBlockValidator();
-            //if validator is NaN then there are no validators on network and block creation will stop. 
-            if(validator != "NaN")
+            var localValidator = Validators.Validator.GetLocalValidator();
+            if(localValidator.Count != 0)
             {
-                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
-
-                if (account != null)
+                var validator = Validators.Validator.GetBlockValidator(); //need create consensus on who should actually do this. 
+                //if validator is NaN then there are no validators on network and block creation will stop. 
+                if (validator != "NaN")
                 {
-                    //craft new block
-                    BlockchainData.CraftNewBlock(validator);
+                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                    var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
+
+                    if (account != null)
+                    {
+                        //craft new block
+                        BlockchainData.CraftNewBlock(validator);
+                    }
                 }
             }
-            
         }
 
         private static void mempoolBroadcast_Elapsed(object sender)
@@ -171,6 +179,15 @@ namespace ReserveBlockCore
             
         }
 
+        private static async void blockHeightCheck_Elapsed(object sender)
+        {
+            var result = await P2PClient.GetCurrentHeight();
+            if(result.Item1 == true)
+            {
+
+            }
+
+        }
     }
 }
 

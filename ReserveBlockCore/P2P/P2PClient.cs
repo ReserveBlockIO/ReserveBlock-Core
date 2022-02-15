@@ -111,49 +111,54 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Get Current Height of Node *Not working*
-        public static long GetCurrentHeight()
+        #region Get Current Height of Nodes
+        public static async Task<(bool, long)> GetCurrentHeight()
         {
-            var nBlock = new Block();
-            long nHeight = 0;
-            var peer = ActivePeerList.OrderByDescending(x => x.LastReach).FirstOrDefault();
-            if (peer == null)
+            bool newHeightFound = false;
+            long height = 0;
+            long myHeight = BlockchainData.GetHeight();
+            var peers = ActivePeerList.ToList();
+            var validators = Validators.Validator.ValidatorList;
+
+            if (peers == null)
             {
-                //Need peers
-                return 0;
+                //can't get height without peers
             }
             else
             {
-                try
+                foreach (var peer in peers)
                 {
-                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                    connection.StartAsync().Wait();
-                    connection.InvokeCoreAsync("GetBlockHeight", args: new object?[] { "Height" });
-                    connection.On("BlockHeightSent", (long height, Block? block) =>
+                    try
                     {
-                        if (block != null)
+                        var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                        var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                        connection.StartAsync().Wait();
+                        long remoteNodeHeight = await connection.InvokeAsync<long>("SendBlockHeight");
+
+                        if(myHeight < remoteNodeHeight)
                         {
-                            nHeight = height;
+                            newHeightFound = true;
+                            height = remoteNodeHeight;
+                            break; // go ahead and stop and get new block.
                         }
-                    });
 
-                    return nHeight;
-                }
-                catch (Exception ex)
-                {
-                    var tempActivePeerList = new List<Peers>();
-                    tempActivePeerList.AddRange(ActivePeerList);
+                    }
+                    catch (Exception ex) //this means no repsosne from node
+                    {
+                        var tempActivePeerList = new List<Peers>();
+                        tempActivePeerList.AddRange(ActivePeerList);
 
-                    //remove dead peer
-                    tempActivePeerList.Remove(peer);
+                        //remove dead peer
+                        tempActivePeerList.Remove(peer);
 
-                    ActivePeerList.AddRange(tempActivePeerList);
-
-                    return -1;
+                        ActivePeerList.AddRange(tempActivePeerList); //update list with removed node
+                        //if list gets below certain amount request more nodes.
+                    }
                 }
             }
+
+            return (newHeightFound, height);
         }
 
         #endregion
@@ -274,14 +279,31 @@ namespace ReserveBlockCore.P2P
         }
         #endregion
 
-        public static async void BroadcastBlock(Block block)
+        #region Broadcast Blocks
+        public static async void BroadcastBlock(Block block, List<string>? ipList)
         {
-            var validators = Validators.Validator.GetAll().FindAll().Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
+            var validators = new List<Validators>();
+            if(ipList != null)
+            {
+                validators = Validators.Validator.GetAll().FindAll().Where(x => !ipList.Any(y => y == x.NodeIP)).Take(10).ToList();
+            }
+            else
+            {
+                //this will only happen when new node is being broadcasted by its crafter.
+                validators = Validators.Validator.GetAll().FindAll().Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
+            }
+            
             var vSendList = new List<string>();
 
             validators.ForEach(x => {
                 vSendList.Add(x.NodeIP);
             });
+
+            //Also add previous list so others do not broadcast to them. If they miss broadcast they can call out for a block at any time.
+            if(ipList != null)
+            {
+                vSendList.AddRange(ipList); 
+            }
 
             foreach(var validator in validators)
             {
@@ -292,5 +314,6 @@ namespace ReserveBlockCore.P2P
                 string message = await connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block, vSendList });
             }
         }
+        #endregion
     }
 }
