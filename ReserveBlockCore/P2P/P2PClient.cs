@@ -91,18 +91,6 @@ namespace ReserveBlockCore.P2P
                     connection.StartAsync().Wait();
                     nBlock = await connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
 
-
-                    //connection.On("BlockSent", (string message, Block nextBlock) =>
-                    //{
-                    //    Console.WriteLine(message + nextBlock.Validator);
-                    //    if (nextBlock != null)
-                    //    {
-                    //        nBlock = nextBlock;
-                    //    }
-                    //});
-
-                    
-
                     return nBlock;
                 }
                 catch (Exception ex)
@@ -174,6 +162,7 @@ namespace ReserveBlockCore.P2P
         public static async void SendTXMempool(Transaction txSend)
         {
             var peers = ActivePeerList.ToList();
+            
             if(peers == null)
             {
                 Console.WriteLine("You have no peers to send transaction too.");
@@ -203,7 +192,6 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
 
-
                     }
                     catch (Exception ex)
                     {
@@ -222,10 +210,68 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        public static async void SendTransactionMemPool(Transaction tx)
+        #region Broadcast Masternode
+        public static async void BroadcastMasterNode(Validators nValidator)
         {
-            //broad out to all your known nodes.
+            var peers = ActivePeerList.ToList();
+            var validators = Validators.Validator.ValidatorList;
+            if (peers == null)
+            {
+                Console.WriteLine("You have no peers to send node info too.");
+            }
+            else
+            {
+                foreach (var peer in peers)
+                {
+                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                    connection.StartAsync().Wait();
+                    string message = await connection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                    if (message == "VATN")
+                    {
+                        //success
+                        Validators.Validator.Initialize();
+                    }
+                    else if (message == "FTAV")
+                    {
+                        Console.WriteLine("Transaction Failed Verification Process on remote node");
+                    }
+                    else
+                    {
+                        //already in validator list
+                    }
+                }
+            }
+            if(validators != null)
+            {
+                Console.WriteLine("Sending your node info to all validators. Please note this may take a moment.");
+                foreach (var validator in validators)
+                {
+                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                    connection.StartAsync().Wait();
+                    string message = await connection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                    if (message == "VATN")
+                    {
+                        //success
+                        Validators.Validator.Initialize();
+                    }
+                    else if (message == "FTAV")
+                    {
+                        Console.WriteLine("Transaction Failed Verification Process on remote node");
+                    }
+                    else
+                    {
+                        //already in validator list
+                    }
+                }
+                Console.WriteLine("Done Sending. Thank you for joining the RBX Network!");
+            }
         }
-        
+        #endregion
     }
 }

@@ -52,6 +52,8 @@ namespace ReserveBlockCore.Services
                     BlockchainData.AddBlock(block);//add block to chain.
                                                    //need to remove TX's from mempool if they are still there.
                     StateData.UpdateTreis(block); //this updates account trei and world trei.
+                                                  //need to update local accounts if they existed in block
+                                                  //UpdateLocalAccount(); **TO BE DONE**
                 }
 
                 return result;//block accepted

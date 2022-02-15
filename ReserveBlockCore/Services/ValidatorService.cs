@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Services
 {
@@ -142,6 +143,7 @@ namespace ReserveBlockCore.Services
                         account.IsValidating = true;
                         var accountTable = AccountData.GetAccounts();
                         accountTable.Update(account);
+                        P2PClient.BroadcastMasterNode(validator); //broadcast validator to nodes and other validators.
                     }
 
                     //Publish out to other validators
@@ -217,6 +219,34 @@ namespace ReserveBlockCore.Services
                 }
             }
             
+        }
+
+        public static bool ValidateTheValidator(Validators validator)
+        {
+            bool result = false;
+            var sTreiAcct = StateData.GetSpecificAccountStateTrei(validator.Address);
+
+            if (sTreiAcct == null)
+            {
+                //output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
+                return result;
+            }
+            if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
+            {
+                //output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
+                return result;
+            }
+            if (validator.UniqueName != "" && UniqueNameCheck(validator.UniqueName) == false)
+            {
+                //output = "Unique name has already been taken. Please choose another.";
+                return result;
+            }
+            if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
+            {
+                result = true;
+            }
+
+            return result;
         }
 
         public static void StopValidating(Validators validator)

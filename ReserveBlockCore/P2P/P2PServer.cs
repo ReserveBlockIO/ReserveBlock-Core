@@ -40,8 +40,8 @@ namespace ReserveBlockCore.P2P
                 var totalTime = (endTime - timeTicks).TotalMilliseconds;
                 await Clients.All.SendAsync("PeerConnected", oNode, oMessage, totalTime.ToString("0"), BlockchainData.ChainRef);
             }
-            
         }
+
         //Send Block to client from p2p server
         public async Task<Block?> SendBlock(long currentBlock)
         {
@@ -51,7 +51,6 @@ namespace ReserveBlockCore.P2P
             var nextBlockHeight = currentBlock + 1;
             var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
 
-            
             if (nextBlock != null)
             {
                 return nextBlock;
@@ -60,8 +59,8 @@ namespace ReserveBlockCore.P2P
             {
                 return null;
             }
-
         }
+
         public async Task<string> SendToMempool(Transaction txReceived)
         {
             var peerIP = GetIP(Context);
@@ -102,7 +101,50 @@ namespace ReserveBlockCore.P2P
                     return "TFVP"; //transaction failed verification process
                 }
             }
-            
+        }
+
+        public async Task<string> SendValidator(Validators validator)
+        {
+            var peerIP = GetIP(Context);
+            validator.NodeIP = peerIP;
+
+            var validatorList = Validators.Validator.GetAll();
+
+            if (validatorList.Count() != 0)
+            {
+                var valFound = validatorList.FindOne(x => x.NodeIP == validator.NodeIP);
+                if (valFound == null)
+                {
+                    //Need to do VALIDATOR VALIDATION
+                    var result = ValidatorService.ValidateTheValidator(validator);
+                    if (result == true)
+                    {
+                        validatorList.Insert(validator);
+                        return "VATN";//added to validator list
+                    }
+                    else
+                    {
+                        return "FTAV"; //validator failed verification process
+                    }
+                }
+                else
+                {
+                    return "AIVL"; //already in validator list
+                }
+            }
+            else
+            {
+                var result = ValidatorService.ValidateTheValidator(validator);
+                if (result == true)
+                {
+                    validatorList.Insert(validator);
+                    return "VATN";//added to validator list
+                }
+                else
+                {
+                    return "FTAV"; //validator failed verification process
+                }
+            }
 
         }
         public async Task SharePeers(string node)
@@ -120,8 +162,6 @@ namespace ReserveBlockCore.P2P
                 message = "PeersFound";
                 await Clients.All.SendAsync("PeersShared", peers, message);
             }
-
-            
         }
 
         private static string GetIP(HubCallerContext context)

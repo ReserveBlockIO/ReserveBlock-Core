@@ -10,13 +10,18 @@ namespace ReserveBlockCore
     class Program
     {
         private static Timer blockTimer;
+        private static Timer mempoolShareTimer;
+        private static int MempoolCount = 0;
+        public static List<Transaction> MempoolList = new List<Transaction>();
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
 
-            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
-            
+            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
+
+            mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            mempoolShareTimer.Change(60000, 1000); //waits 1 minute, then runs every 1 seconds for new tx's
             
             //add method to remove stale state trei records and stale validator records too
 
@@ -139,8 +144,30 @@ namespace ReserveBlockCore
                     BlockchainData.CraftNewBlock(validator);
                 }
             }
-               
+            
+        }
 
+        private static void mempoolBroadcast_Elapsed(object sender)
+        {
+            var mempoolCount = TransactionData.GetPool().FindAll().Count();
+            
+
+            if(mempoolCount > MempoolCount)
+            {
+                //rebroadcast
+                //reset count
+                MempoolCount = mempoolCount;
+            }
+            else if(mempoolCount < MempoolCount)
+            {
+                //block added
+                //reset count
+                MempoolCount = mempoolCount;
+            }
+            else
+            {
+                //do nothing
+            }
             
         }
 
