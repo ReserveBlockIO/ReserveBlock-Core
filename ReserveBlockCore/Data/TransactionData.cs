@@ -43,6 +43,7 @@ namespace ReserveBlockCore.Data
         public static ILiteCollection<Transaction> GetPool()
         {
             var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
+            collection.EnsureIndex(x => x.Hash);
             return collection;
         }
         public static void PrintMemPool()

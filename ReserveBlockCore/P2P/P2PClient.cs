@@ -273,5 +273,24 @@ namespace ReserveBlockCore.P2P
             }
         }
         #endregion
+
+        public static async void BroadcastBlock(Block block)
+        {
+            var validators = Validators.Validator.GetAll().FindAll().Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
+            var vSendList = new List<string>();
+
+            validators.ForEach(x => {
+                vSendList.Add(x.NodeIP);
+            });
+
+            foreach(var validator in validators)
+            {
+                var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                connection.StartAsync().Wait();
+                string message = await connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block, vSendList });
+            }
+        }
     }
 }

@@ -51,15 +51,31 @@ namespace ReserveBlockCore.Services
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
                                                    //need to remove TX's from mempool if they are still there.
-                    StateData.UpdateTreis(block); //this updates account trei and world trei.
-                                                  //need to update local accounts if they existed in block
-                                                  //UpdateLocalAccount(); **TO BE DONE**
+                    StateData.UpdateTreis(block); 
+
+                    foreach (Transaction transaction in block.Transactions)
+                    {
+                        var mempool = TransactionData.GetPool();
+
+                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
+                        if(mempoolTx != null)
+                        {
+                            mempool.Delete(transaction.Hash);
+                        }
+
+                        var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
+                        if(account != null)
+                        {
+                            AccountData.UpdateLocalBalance(transaction.ToAddress, transaction.Amount);
+                        }
+                    }
                 }
 
                 return result;//block accepted
             }
             else
             {
+                //Genesis Block
                 result = true;
                 BlockchainData.AddBlock(block);
                 StateData.UpdateTreis(block);

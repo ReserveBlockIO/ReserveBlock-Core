@@ -24,7 +24,6 @@ namespace ReserveBlockCore.Models
         public string Signature { get; set; }
         public long Height { get; set; }
 
-
         public void Build()
         {
             Hash = GetHash();

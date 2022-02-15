@@ -107,7 +107,16 @@ namespace ReserveBlockCore.Data
                 transactionList.AddRange(processedTxPool);
 
                 //need to only delete processed mempool tx's in event new ones get added while creating block.
-                txPool.DeleteAll();
+
+                foreach(var tx in processedTxPool)
+                {
+                    var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
+                    if(txRec != null)
+                    {
+                        txPool.Delete(tx.Hash);
+                    }    
+                    
+                }
             }
             else
             {
@@ -147,10 +156,10 @@ namespace ReserveBlockCore.Data
                 PrintBlock(block);
 
                 //This might be double redundant. Possibly fix.
-                foreach (var tx in transactionList)
-                {
-                    Transaction.Add(tx);
-                }
+                //foreach (var tx in transactionList)
+                //{
+                //    Transaction.Add(tx);
+                //}
             }
             else
             {

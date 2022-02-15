@@ -27,6 +27,11 @@ namespace ReserveBlockCore.Services
                 });
 
                 var walletChoice = Console.ReadLine();
+                while(walletChoice == "")
+                {
+                    Console.WriteLine("You must choose a wallet please. Type a number from above and press enter please."); 
+                    walletChoice = Console.ReadLine();
+                }
                 var account = accountNumberList[walletChoice];
                 Console.WriteLine("********************************************************************");
                 Console.WriteLine("The chosen validator address is:");
