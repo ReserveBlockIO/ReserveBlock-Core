@@ -59,6 +59,10 @@ namespace ReserveBlockCore.Models
             //This will be a more stochastic ordered list. For now just grabbing a random person.
             public static string GetBlockValidator()
             {
+                if(ValidatorList == null)
+                {
+                    return "NaN";
+                }
                 var numOfValidators = ValidatorList.Count;
                 if(numOfValidators == 0)
                 {
