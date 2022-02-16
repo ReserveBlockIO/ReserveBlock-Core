@@ -55,9 +55,16 @@ namespace ReserveBlockCore.P2P
 
         public async Task<long> SendBlockHeight()
         {
-            var blockHeight = BlockchainData.GetHeight();
+            var blocks = BlockchainData.GetBlocks();
 
-            return blockHeight;
+            if(blocks.FindAll().Count() != 0)
+            {
+                var blockHeight = BlockchainData.GetHeight();
+
+                return blockHeight;
+            }
+            return -1;
+            
         }
 
         //Send Block to client from p2p server

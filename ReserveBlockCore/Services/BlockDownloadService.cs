@@ -17,7 +17,9 @@ namespace ReserveBlockCore.Services
             {
                 //call out to nodes and get blocks.
                 var nextBlock = myBlockHeight + i;
-                await P2PClient.GetBlock();
+                var newBlock = await P2PClient.GetBlock();
+
+                await BlockValidatorService.ValidateBlock(newBlock); 
             }
 
             return false; //we return false once complete to alert wallet it is done downloading bulk blocks

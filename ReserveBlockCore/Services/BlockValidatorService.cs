@@ -56,7 +56,6 @@ namespace ReserveBlockCore.Services
                 
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
-                                                   //need to remove TX's from mempool if they are still there.
                     StateData.UpdateTreis(block); 
 
                     foreach (Transaction transaction in block.Transactions)
@@ -66,7 +65,7 @@ namespace ReserveBlockCore.Services
                         var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
                         if(mempoolTx != null)
                         {
-                            mempool.Delete(transaction.Hash);
+                            mempool.DeleteMany(x => x.Hash == transaction.Hash);
                         }
 
                         var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();

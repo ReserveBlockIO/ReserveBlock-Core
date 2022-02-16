@@ -113,7 +113,7 @@ namespace ReserveBlockCore.Data
                 }
                 else
                 {
-                    to.Balance = x.Amount;
+                    to.Balance += x.Amount;
                     to.StateRoot = block.StateRoot;
 
                     accStTrei.Update(to);
