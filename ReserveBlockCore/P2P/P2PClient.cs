@@ -308,7 +308,7 @@ namespace ReserveBlockCore.P2P
             else
             {
                 //this will only happen when new node is being broadcasted by its crafter.
-                validators = Validators.Validator.GetAll().FindAll().Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
+                validators = Validators.Validator.GetAll().FindAll().Where(x => x.NodeIP != "SELF").Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
             }
             
             var vSendList = new List<string>();

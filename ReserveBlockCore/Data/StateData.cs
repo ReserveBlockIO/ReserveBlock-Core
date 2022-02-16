@@ -26,7 +26,7 @@ namespace ReserveBlockCore.Data
                 {
                     Key = x.ToAddress,
                     Nonce = 0, //increase nonce for next use
-                    Balance = (x.Amount + x.Fee), //subtract from the address
+                    Balance = (x.Amount), //subtract from the address
                     StateRoot = block.StateRoot
                 };
 
@@ -80,15 +80,22 @@ namespace ReserveBlockCore.Data
                 }
                 else
                 {
-                    var from = GetSpecificAccountStateTrei(x.FromAddress);
+                    if (x.FromAddress != "Coinbase_TrxFees" && x.FromAddress != "Coinbase_BlkRwd")
+                    {
+                        var from = GetSpecificAccountStateTrei(x.FromAddress);
 
-                    from.Nonce += 1;
-                    from.StateRoot = block.StateRoot;
-                    from.Balance -= (x.Amount + x.Fee);
+                        from.Nonce += 1;
+                        from.StateRoot = block.StateRoot;
+                        from.Balance -= (x.Amount + x.Fee);
 
-                    accStTrei.Update(from);
+                        accStTrei.Update(from);
+                    }
+                    else
+                    {
+                        //do nothing as its the coinbase fee
+                    }
+                    
                 }
-                
 
                 var to = GetSpecificAccountStateTrei(x.ToAddress);
 
@@ -97,8 +104,8 @@ namespace ReserveBlockCore.Data
                     var acctStateTreiTo = new AccountStateTrei
                     {
                         Key = x.ToAddress,
-                        Nonce = 0, //increase nonce for next use
-                        Balance = (x.Amount + x.Fee), //subtract from the address
+                        Nonce = 0, 
+                        Balance = x.Amount, 
                         StateRoot = block.StateRoot
                     };
 
