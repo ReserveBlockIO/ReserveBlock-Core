@@ -206,16 +206,16 @@ namespace ReserveBlockCore.Services
                     ValidatorService.StopValidating(validator);
                     TransactionData.AddToPool(txRequest);
                     AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                    StateData.UpdateAccountNonce(txRequest.FromAddress);
-                    P2PClient.SendTXMempool(txRequest);//send out to mempool
+                    //StateData.UpdateAccountNonce(txRequest.FromAddress);
+                    P2PClient.SendTXMempool(txRequest, null);//send out to mempool
                 }
             }
             else
             {
                 TransactionData.AddToPool(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                StateData.UpdateAccountNonce(txRequest.FromAddress);
-                P2PClient.SendTXMempool(txRequest);//send out to mempool
+                //StateData.UpdateAccountNonce(txRequest.FromAddress);
+                P2PClient.SendTXMempool(txRequest, null);//send out to mempool
             }
 
             

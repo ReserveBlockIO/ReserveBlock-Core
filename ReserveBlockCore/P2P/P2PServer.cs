@@ -79,7 +79,7 @@ namespace ReserveBlockCore.P2P
             }
         }
 
-        public async Task<string> SendToMempool(Transaction txReceived)
+        public async Task<string> SendToMempool(Transaction txReceived, List<string> ipList)
         {
             var peerIP = GetIP(Context);
 
@@ -93,6 +93,7 @@ namespace ReserveBlockCore.P2P
                     if(result == true)
                     {
                         mempool.Insert(txReceived);
+                        P2PClient.SendTXMempool(txReceived, ipList);
                         return "ATMP";//added to mempool
                     }
                     else

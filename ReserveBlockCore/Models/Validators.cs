@@ -61,7 +61,9 @@ namespace ReserveBlockCore.Models
             {
                 if(ValidatorList == null)
                 {
-                    return "NaN";
+                    Initialize();
+                    if (ValidatorList == null)
+                        return "NaN";
                 }
                 var numOfValidators = ValidatorList.Count;
                 if(numOfValidators == 0)

@@ -164,25 +164,45 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Send Transactions to mempool 
-        public static async void SendTXMempool(Transaction txSend)
+        public static async void SendTXMempool(Transaction txSend, List<string>? ipList)
         {
-            var peers = ActivePeerList.ToList();
-            
-            if(peers == null)
+            var validators = Validators.Validator.ValidatorList;
+
+            if (ipList != null)
+            {
+                validators = Validators.Validator.GetAll().FindAll().Where(x => !ipList.Any(y => y == x.NodeIP)).Take(10).ToList();
+            }
+            else
+            {
+                //this will only happen when new node is being broadcasted by its crafter.
+                validators = Validators.Validator.GetAll().FindAll().Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
+            }
+
+            if (validators == null)
             {
                 Console.WriteLine("You have no peers to send transaction too.");
             }
             else
             {
-                foreach(var peer in peers)
+                var vSendList = new List<string>();
+
+                validators.ForEach(x => {
+                    vSendList.Add(x.NodeIP);
+                });
+
+                if (ipList != null)
+                {
+                    vSendList.AddRange(ipList);
+                }
+                foreach (var peer in validators)
                 {
                     try
                     {
-                        var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                        var url = "http://" + peer.NodeIP + ":3338/blockchain";
                         var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
                         connection.StartAsync().Wait();
-                        string message = await connection.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+                        string message = await connection.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend, vSendList });
 
                         if (message == "ATMP")
                         {
@@ -200,16 +220,12 @@ namespace ReserveBlockCore.P2P
                     }
                     catch (Exception ex)
                     {
-                        var tempActivePeerList = new List<Peers>();
-                        tempActivePeerList.AddRange(ActivePeerList);
-
-                        //remove dead peer
-                        tempActivePeerList.Remove(peer);
-
-                        ActivePeerList.AddRange(tempActivePeerList); //update list with removed node
+                         //update list with removed node
                         //if list gets below certain amount request more nodes.
                     }
                 }
+
+
             }
         }
 

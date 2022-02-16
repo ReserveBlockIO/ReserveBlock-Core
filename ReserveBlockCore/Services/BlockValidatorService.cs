@@ -68,6 +68,8 @@ namespace ReserveBlockCore.Services
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                         }
+
+
                     }
                 }
 

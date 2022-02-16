@@ -62,8 +62,8 @@ namespace ReserveBlockCore.Data
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
             DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
             DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
-            DB_Peers = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
-            DB_Banlist = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
+            DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
+            DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
         }
 
         public static void InitializeTest()
