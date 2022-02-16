@@ -61,7 +61,7 @@ namespace ReserveBlockCore.Data
             return trxs;
         }
         //Method needing validator functions still.
-        public static void CraftNewBlock(string validator)
+        public static async Task<string> CraftNewBlock(string validator)
         {
             // start craft time
             var startCraftTimer = DateTime.UtcNow;
@@ -145,16 +145,13 @@ namespace ReserveBlockCore.Data
             block.BCraftTime = buildTime.Milliseconds;
 
             //validates the coinbase tx's
-            var blockValResult = ValidateBlock(block);
+            var blockValResult = await BlockValidatorService.ValidateBlock(block);
 
             if(blockValResult == true)
             {
-                AddBlock(block);
-                //Update World Trei with new State Root
-                WorldTrei.UpdateWorldTrei(block);
-                //Need to publish block to known nodes. 
-                PrintBlock(block);
+                
 
+                //add local TX to transactions
                 //This might be double redundant. Possibly fix.
                 //foreach (var tx in transactionList)
                 //{
@@ -166,7 +163,7 @@ namespace ReserveBlockCore.Data
                 Console.WriteLine("Error! Block was not validated.");
             }
 
-            
+            return "complete";
         }
 
         //public static bool ValidateBlock(Block block)

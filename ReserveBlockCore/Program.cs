@@ -135,7 +135,7 @@ namespace ReserveBlockCore
         {
             Console.ReadKey();
         }
-        private static void blockBuilder_Elapsed(object sender)
+        private static async void blockBuilder_Elapsed(object sender)
         {
             var localValidator = Validators.Validator.GetLocalValidator();
             if(localValidator.Count != 0)
@@ -150,7 +150,7 @@ namespace ReserveBlockCore
                     if (account != null)
                     {
                         //craft new block
-                        BlockchainData.CraftNewBlock(validator);
+                        await BlockchainData.CraftNewBlock(validator);
                     }
                 }
             }

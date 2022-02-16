@@ -39,7 +39,7 @@ namespace ReserveBlockCore.P2P
             peers = Peers.PeerList();
 
             List<Peers> tempActivePeerList = new List<Peers>();
-            peers.ForEach(async x =>
+            peers.ForEach(x =>
             {
                 try
                 {

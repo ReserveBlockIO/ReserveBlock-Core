@@ -66,7 +66,7 @@ namespace ReserveBlockCore.Services
                         var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
                         if(account != null)
                         {
-                            AccountData.UpdateLocalBalance(transaction.ToAddress, transaction.Amount);
+                            AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                         }
                     }
                 }
