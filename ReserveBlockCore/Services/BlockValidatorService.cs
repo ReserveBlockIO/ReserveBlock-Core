@@ -5,7 +5,7 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
-        public static bool ValidateBlock(Block block)
+        public static async Task<bool> ValidateBlock(Block block)
         {
             bool result = false;
 

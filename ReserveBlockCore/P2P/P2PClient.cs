@@ -279,10 +279,12 @@ namespace ReserveBlockCore.P2P
         }
         #endregion
 
-        #region Broadcast Blocks
+        #region Broadcast Blocks to Validators
         public static async void BroadcastBlock(Block block, List<string>? ipList)
         {
+            var peers = ActivePeerList.ToList();
             var validators = new List<Validators>();
+
             if(ipList != null)
             {
                 validators = Validators.Validator.GetAll().FindAll().Where(x => !ipList.Any(y => y == x.NodeIP)).Take(10).ToList();
@@ -313,6 +315,7 @@ namespace ReserveBlockCore.P2P
                 connection.StartAsync().Wait();
                 string message = await connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block, vSendList });
             }
+
         }
         #endregion
     }

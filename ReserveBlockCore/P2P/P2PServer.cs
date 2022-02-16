@@ -17,10 +17,21 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PServer : Hub
     {
-        public async Task GetBlock(Block nextBlock, string message)
+        public async Task ReceiveBlock(Block nextBlock, List<string> ipList)
         {
-
-            await Clients.All.SendAsync("BlockReceived", message);
+            Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
+            var result = await BlockValidatorService.ValidateBlock(nextBlock);
+            if (result == false)
+            {
+                Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
+                //Add rejection notice for validator
+            }
+            else
+            {
+                //Resend block out if passed validation
+                P2PClient.BroadcastBlock(nextBlock, ipList);
+            }
+            
         }
 
         //Send hello status to connecting peers from p2p server
@@ -38,7 +49,7 @@ namespace ReserveBlockCore.P2P
                 var oMessage = "Connected to IP: " + peerIP;
                 var endTime = DateTime.UtcNow;
                 var totalTime = (endTime - timeTicks).TotalMilliseconds;
-                await Clients.All.SendAsync("PeerConnected", oNode, oMessage, totalTime.ToString("0"), BlockchainData.ChainRef);
+                await Clients.Caller.SendAsync("PeerConnected", oNode, oMessage, totalTime.ToString("0"), BlockchainData.ChainRef);
             }
         }
 
