@@ -37,17 +37,23 @@ namespace ReserveBlockCore.Services
                     bool rejectBlock = false;
                     foreach (Transaction transaction in block.Transactions)
                     {
-                        var txResult = VerifyTX(transaction);
-                        rejectBlock = txResult == false ? rejectBlock = true : false;
+                        if(transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
+                        {
+                            var txResult = VerifyTX(transaction);
+                            rejectBlock = txResult == false ? rejectBlock = true : false;
+                        }
+                        else
+                        {
+                            //do nothing as its the coinbase fee
+                        }
 
                         if (rejectBlock)
                             break;
                     }
                     if (rejectBlock)
                         return result;//block rejected
-                }
-                else
-                {
+                
+                
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
                                                    //need to remove TX's from mempool if they are still there.
@@ -68,8 +74,6 @@ namespace ReserveBlockCore.Services
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                         }
-
-
                     }
                 }
 
@@ -84,9 +88,6 @@ namespace ReserveBlockCore.Services
                 return result;
             }
             //Need to add validator validation method.
-
-
-
             
         }
 

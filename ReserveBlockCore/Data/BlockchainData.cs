@@ -144,19 +144,12 @@ namespace ReserveBlockCore.Data
             var buildTime = endTimer - startCraftTimer;
             block.BCraftTime = buildTime.Milliseconds;
 
-            //validates the coinbase tx's
+            //AARON CHECK THIS! Seems to be returning false!
             var blockValResult = await BlockValidatorService.ValidateBlock(block);
 
             if(blockValResult == true)
             {
-                
-
-                //add local TX to transactions
-                //This might be double redundant. Possibly fix.
-                //foreach (var tx in transactionList)
-                //{
-                //    Transaction.Add(tx);
-                //}
+                P2PClient.BroadcastBlock(block, null);
             }
             else
             {

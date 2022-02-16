@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Services
 {
@@ -16,10 +17,10 @@ namespace ReserveBlockCore.Services
             {
                 //call out to nodes and get blocks.
                 var nextBlock = myBlockHeight + i;
-
+                await P2PClient.GetBlock();
             }
 
-            return false;
+            return false; //we return false once complete to alert wallet it is done downloading bulk blocks
         }
     }
 }

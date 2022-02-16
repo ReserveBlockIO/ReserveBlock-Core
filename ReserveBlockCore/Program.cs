@@ -24,10 +24,10 @@ namespace ReserveBlockCore
             blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
 
             mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            mempoolShareTimer.Change(60000, 1000); //waits 1 minute, then runs every 1 seconds for new tx's
+            mempoolShareTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new tx's
 
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            BlockHeightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new block heights
+            BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
 
             //add method to remove stale state trei records and stale validator records too
 
