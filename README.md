@@ -1,6 +1,7 @@
 ![license](https://img.shields.io/github/license/ReserveBlockIO/Core-CLI)
 ![build](https://img.shields.io/github/workflow/status/ReserveBlockIO/Core-CLI/.NET)
 ![issues](https://img.shields.io/github/issues/ReserveBlockIO/Core-CLI)
+![Discord](https://img.shields.io/discord/917499597692211260?label=discord)
 
 # ReserverBlock Core-CLI
 For more information and to follow latest news go to:
