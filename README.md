@@ -1,7 +1,16 @@
+[![Generic badge](https://img.shields.io/badge/IDE-VS2022-blue.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/C%23-10%2E0-blue.svg)](https://shields.io/)
+[![Generic badge](https://img.shields.io/badge/%2ENet%20Core-6%2E0-blue.svg)](https://shields.io/)
+
 ![license](https://img.shields.io/github/license/ReserveBlockIO/Core-CLI)
 ![build](https://img.shields.io/github/workflow/status/ReserveBlockIO/Core-CLI/.NET)
 ![issues](https://img.shields.io/github/issues/ReserveBlockIO/Core-CLI)
 ![Discord](https://img.shields.io/discord/917499597692211260?label=discord)
+
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ReserveBlockIO/Core-CLI)
+![GitHub last commit](https://img.shields.io/github/last-commit/ReserveBlockIO/Core-CLI)
+
+![GitHub Release Date](https://img.shields.io/github/release-date/ReserveBlockIO/Core-CLI)
 
 # ReserverBlock Core-CLI
 For more information and to follow latest news go to:
