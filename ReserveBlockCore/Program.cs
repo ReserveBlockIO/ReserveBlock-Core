@@ -138,6 +138,7 @@ namespace ReserveBlockCore
         private static async void blockBuilder_Elapsed(object sender)
         {
             var localValidator = Validators.Validator.GetLocalValidator();
+            //If no validators are detected then no need to run this code
             if(localValidator.Count != 0)
             {
                 var validator = Validators.Validator.GetBlockValidator(); //need create consensus on who should actually do this. 

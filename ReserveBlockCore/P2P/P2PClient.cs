@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿using LiteDB;
+using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using System;
@@ -110,6 +111,66 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        public static async Task<bool> GetValidatorList(bool isValidator = false)
+        {
+            //get seed validators
+            var validators = Validators.Validator.ValidatorList;
+            List<Validators>? validatorList = null;
+
+            if(validators != null)
+            {
+                foreach(var validator in validators)
+                {
+                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                    connection.StartAsync().Wait();
+                    validatorList = await connection.InvokeAsync<List<Validators>?>("SendValidators");
+
+                    if(validatorList != null)
+                    {
+                        var dbValidator = Validators.Validator.GetAll();
+                        dbValidator.InsertBulk(validatorList);
+                        Validators.Validator.Initialize();
+                        break;
+                    }
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        public static async Task<long?> GetValidatorCount()
+        {
+            //get seed validators
+            var validators = Validators.Validator.ValidatorList.Take(10);
+            long? validatorCount = null;
+
+            List<long> validatorCountList = new List<long>();
+            
+            if (validators != null)
+            {
+                foreach (var validator in validators)
+                {
+                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                    connection.StartAsync().Wait();
+                    validatorCount = await connection.InvokeAsync<long?>("SendValidatorCount");
+
+                    if (validatorCount != null)
+                    {
+                        validatorCountList.Add((long)validatorCount);
+                    }
+                }
+
+                return validatorCountList.Count() != 0 ? validatorCountList.Max() : null;
+            }
+
+            return null;
+        }
 
         #region Get Current Height of Nodes
         public static async Task<(bool, long)> GetCurrentHeight()
@@ -333,6 +394,87 @@ namespace ReserveBlockCore.P2P
             }
 
         }
+        #endregion
+
+        #region Get Next Validators
+        public static async Task<string> GetNextValidators(Validators currentVal, Block block)
+        {
+            string output = "";
+
+            //Modify list to not include yourself if there are more than 2 and to check past X amount of blocks for day to attempt to give everyone a chance.
+            var validators = Validators.Validator.ValidatorList;
+
+            //This will only really occur during start. Once chain has more validators this really won't occur, but just in case we only have 2 or less.
+            if (validators.Count <= 2)
+            {
+                var nextValidators = "";
+                var newVal = validators.Where(x => x.NodeIP != "SELF").FirstOrDefault();
+
+                if(newVal != null)
+                {
+                    //need to do a request to see if more nodes exist.
+                    return nextValidators = newVal.Address + ":" + currentVal.Address;
+                }
+                else
+                {
+                    //need to do a request to see if more nodes exist.
+                    return nextValidators = currentVal.Address + ":" + currentVal.Address;
+                }
+            }
+
+            //we take 2880 as that equals roughly the amount of blocks in 1 day.
+            //If there are less validators than blocks a day, then this should give everyone a chance to get at least 1 block a day.
+            //2 blocks every 1 minute. 120 every 1 hour. 2880 every 1 day
+            //This promotes a more validators creation concept than giving more weight to validators in the randomization of selection.
+            var blockchain = BlockchainData.GetBlocks();
+            
+            var validatorsList = validators.Where(x => x.NodeIP != "SELF" && x.EligibleBlockStart <= block.Height);
+            List<string> blocks = new List<string>();
+            if (validatorsList.Count() > 2880) 
+            {
+                //check time they were started.
+                blocks = blockchain.Find(Query.All(Query.Descending)).Take(5760).Select(x => x.Validator).ToList();
+            }
+            else
+            {
+                blocks = blockchain.Find(Query.All(Query.Descending)).Take(2880).Select(x => x.Validator).ToList();
+            }
+
+            //Check for validators in blocks above!!!!!!!!!!!!!!! 
+            
+
+           
+
+            if (validators != null)
+            {
+                foreach (var validator in validators)
+                {
+                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+
+                    connection.StartAsync().Wait();
+                    string message = await connection.InvokeAsync<string>("RequestNextValidator");
+
+                    if (message == "IVAT")
+                    {
+                        //success
+                        
+                    }
+                    else if (message == "FTAV")
+                    {
+                        
+                    }
+                    else
+                    {
+                        //already in validator list
+                    }
+                }
+                
+            }
+
+            return output;
+        }
+
         #endregion
     }
 }

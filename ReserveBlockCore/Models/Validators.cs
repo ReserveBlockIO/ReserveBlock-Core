@@ -9,8 +9,7 @@ namespace ReserveBlockCore.Models
         public string Address { get; set; }
         public string UniqueName { get; set; }
         public decimal Amount { get; set; } //Must be 1000 or more.
-        public long SolvedBlocks { get; set; }
-        public long LastBlockSolvedTime { get; set; } //timestamp
+        public long EligibleBlockStart { get; set; }
         public string Signature { get; set; }
         public bool IsActive { get; set; }
         public string NodeIP { get; set; } // this will be used to call out to next node after validator is complete. If node is online it will be chosen next. 

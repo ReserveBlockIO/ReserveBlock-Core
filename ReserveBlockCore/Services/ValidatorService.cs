@@ -89,10 +89,12 @@ namespace ReserveBlockCore.Services
                 StartupService.MainMenu();
             }
         }
-        public static string StartValidating(Account account, string uName = "")
+        public static async Task<string> StartValidating(Account account, string uName = "")
         {
             string output = "";
             Validators validator = new Validators();
+            
+
             if(account == null) { throw new ArgumentNullException(nameof(account)); }
             else 
             {
@@ -134,27 +136,41 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
-                        validator.Amount = account.Balance;
-                        validator.Address = account.Address;
-                        validator.LastBlockSolvedTime = 0;
-                        validator.SolvedBlocks = 0;
-                        validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName; 
-                        validator.IsActive = true;
-                        validator.Signature = signature;
+                        var validatorNodeCount = await P2PClient.GetValidatorCount();
+                        if(validatorNodeCount == null)
+                        {
+                            var result = await P2PClient.GetValidatorList();
+                            if(result == false)
+                            {
+                                output = "Could not find any validators to authenticate your request. Please try again later or manually add validators.";
+                            }
+                            else
+                            {
+                                validatorNodeCount = await P2PClient.GetValidatorCount();
+                                var blockHeight = BlockchainData.GetHeight();
 
-                        validatorTable.Insert(validator);
+                                //add total num of validators to block
+                                validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
+                                validator.Amount = account.Balance;
+                                validator.Address = account.Address;
+                                validator.EligibleBlockStart = validatorNodeCount == null ? blockHeight + 2: blockHeight + validatorNodeCount.Value;
+                                validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName;
+                                validator.IsActive = true;
+                                validator.Signature = signature;
 
-                        account.IsValidating = true;
-                        var accountTable = AccountData.GetAccounts();
-                        accountTable.Update(account);
-                        P2PClient.BroadcastMasterNode(validator); //broadcast validator to nodes and other validators.
+                                validatorTable.Insert(validator);
+
+                                account.IsValidating = true;
+                                var accountTable = AccountData.GetAccounts();
+                                accountTable.Update(account);
+                                P2PClient.BroadcastMasterNode(validator);
+
+                                output = "Account found and activated as a validator! Thank you for service to the network!";
+                            }    
+                        }
+                         //broadcast validator to nodes and other validators.
                     }
 
-                    //Publish out to other validators
-                    //SomePublishOutMethod(validator);
-
-                    output = "Account found and activated as a validator! Thank you for service to the network!";
                 }
             }
 

@@ -23,6 +23,8 @@ namespace ReserveBlockCore.Models
 		public string StateRoot { get; set; }
 		public decimal TotalAmount { get; set; }
 		public string Validator { get; set; }
+		public string ValidatorSignature { get; set; }
+		public string NextValidators { get; set; }
 		public decimal TotalReward { get; set; }
 		public int Version { get; set; }
 		public int NumOfTx { get; set; }
@@ -41,7 +43,18 @@ namespace ReserveBlockCore.Models
 			PrevHash = GetLastBlack() != null ? GetLastBlack().Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
+			NextValidators = ""; //Create method to get next validators.
 		}
+
+		public void BuildBlockSignature()
+        {
+			
+        }
+
+		public void GetNextValidators()
+        {
+			
+        }
 		public int NumberOfTransactions
 		{
 			get { return Transactions.Count(); }

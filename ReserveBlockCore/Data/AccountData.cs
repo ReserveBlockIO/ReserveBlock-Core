@@ -166,7 +166,7 @@ namespace ReserveBlockCore.Data
 			return accountsWithBal;
 		}
 
-		public static Account GetSingleAccount(string humanAddress)
+		public static Account? GetSingleAccount(string humanAddress)
         {
 			var account = new Account();
 			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
@@ -174,7 +174,7 @@ namespace ReserveBlockCore.Data
 
 			if(account == null)
             {
-				return account;//This means a null account was found. This should never happen, but just in case the DB is erased or some other memory issue.
+				return null;//This means a null account was found. This should never happen, but just in case the DB is erased or some other memory issue.
             }
 			return account;
 		}

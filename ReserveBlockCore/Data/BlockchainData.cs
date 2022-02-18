@@ -9,6 +9,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Services;
+using System.Numerics;
+using ReserveBlockCore.EllipticCurve;
+using System.Globalization;
 
 namespace ReserveBlockCore.Data
 {
@@ -46,25 +49,17 @@ namespace ReserveBlockCore.Data
                 trxPool.DeleteAll();
             }
         }
-
-        public static decimal GetBlockReward()
-        {
-            var BlockReward = HalvingUtility.GetBlockReward(); 
-            return BlockReward;
-        }
-        public static List<Transaction> GiveOtherInfos(List<Transaction> trxs, long height)
-        {
-            foreach (var trx in trxs)
-            {
-                trx.Height = height;
-            }
-            return trxs;
-        }
         //Method needing validator functions still.
         public static async Task<string> CraftNewBlock(string validator)
         {
             // start craft time
             var startCraftTimer = DateTime.UtcNow;
+            var validatorAccount = AccountData.GetSingleAccount(validator);
+
+            if(validatorAccount == null)
+            {
+                return "No local account found to match validator!";
+            }
 
             //Get tx's from Mempool
             var processedTxPool = TransactionData.ProcessTxPool();
@@ -134,6 +129,11 @@ namespace ReserveBlockCore.Data
             };
             block.Build();
 
+            BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            //Add validator signature
+            block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
 
             //block size
             var str = JsonConvert.SerializeObject(block);
@@ -144,7 +144,6 @@ namespace ReserveBlockCore.Data
             var buildTime = endTimer - startCraftTimer;
             block.BCraftTime = buildTime.Milliseconds;
 
-            //AARON CHECK THIS! Seems to be returning false!
             var blockValResult = await BlockValidatorService.ValidateBlock(block);
 
             if(blockValResult == true)
@@ -159,13 +158,20 @@ namespace ReserveBlockCore.Data
             return "complete";
         }
 
-        //public static bool ValidateBlock(Block block)
-        //{
-        //    bool result = false;
+        public static decimal GetBlockReward()
+        {
+            var BlockReward = HalvingUtility.GetBlockReward();
+            return BlockReward;
+        }
+        public static List<Transaction> GiveOtherInfos(List<Transaction> trxs, long height)
+        {
+            foreach (var trx in trxs)
+            {
+                trx.Height = height;
+            }
+            return trxs;
+        }
 
-
-        //    return result;
-        //}
         public static ILiteCollection<Block> GetBlocks()
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);

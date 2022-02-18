@@ -9,6 +9,21 @@ namespace ReserveBlockCore.Services
         {
             bool result = false;
 
+            if (block == null) return result; //null block submitted. reject 
+
+            var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
+
+            //validates the signature of the validator that crafted the block
+            if(verifyBlockSig != true)
+            {
+                return result;//block rejected due to failed validator signature
+            }
+            //Validates that the block has same chain ref
+            if(block.ChainRefId != BlockchainData.ChainRef)
+            {
+                return result;//block rejected due to chainref difference
+            }
+
             var newBlock = new Block{
                 Height = block.Height,
                 Timestamp = block.Timestamp,
@@ -39,7 +54,7 @@ namespace ReserveBlockCore.Services
                     {
                         if(transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var txResult = VerifyTX(transaction);
+                            var txResult = TransactionValidatorService.VerifyTX(transaction);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
                         }
                         else
@@ -51,7 +66,7 @@ namespace ReserveBlockCore.Services
                             break;
                     }
                     if (rejectBlock)
-                        return result;//block rejected
+                        return result;//block rejected due to bad transaction(s)
                 
                 
                     result = true;
@@ -110,6 +125,8 @@ namespace ReserveBlockCore.Services
             {
                 return txResult;
             }
+
+            //Need to check if person sending funds actually has them in the state trei.
 
             //If we get here that means the hash test passed above.
             var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);

@@ -8,8 +8,6 @@ namespace ReserveBlockCore.Services
     {
         public static async Task<bool> GetAllBlocks(long nHeight)
         {
-            bool result = false;
-
             var myBlockHeight = BlockchainData.GetHeight();
             var difference = nHeight - myBlockHeight;
 
@@ -19,7 +17,10 @@ namespace ReserveBlockCore.Services
                 var nextBlock = myBlockHeight + i;
                 var newBlock = await P2PClient.GetBlock();
 
-                await BlockValidatorService.ValidateBlock(newBlock); 
+                if(newBlock != null)
+                {
+                    await BlockValidatorService.ValidateBlock(newBlock);
+                }
             }
 
             return false; //we return false once complete to alert wallet it is done downloading bulk blocks

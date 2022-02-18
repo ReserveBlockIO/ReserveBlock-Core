@@ -33,7 +33,11 @@ namespace ReserveBlockCore.Services
 
         internal static void SetBlockchainChainRef()
         {
-            BlockchainData.ChainRef = "Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+            //mainnet
+            //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+
+            //testnet
+            BlockchainData.ChainRef = "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
         }
 
         internal static void StartupPeers()

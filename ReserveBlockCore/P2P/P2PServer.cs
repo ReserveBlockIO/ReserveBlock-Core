@@ -34,6 +34,40 @@ namespace ReserveBlockCore.P2P
             
         }
 
+        #region Send list of Validators to peer
+        public async Task<List<Validators>?> SendValidators()
+        {
+            var validators = Validators.Validator.GetAll();
+
+            var validatorList = validators.FindAll().ToList();
+
+            if (validatorList.Count() == 0)
+                return null;
+            
+            //Only send 10 as that will be plenty.
+            if (validatorList.Count() > 10)
+                return validatorList.Take(10).ToList();
+
+            return validatorList;
+        }
+
+        #endregion
+
+        #region Get Validator Count
+        public async Task<long?> SendValidatorCount()
+        {
+            var validators = Validators.Validator.GetAll();
+
+            var validatorList = validators.FindAll().ToList();
+
+            if (validatorList.Count() == 0)
+                return null;
+
+            return (long)validatorList.Count();
+        }
+
+        #endregion
+
         //Send hello status to connecting peers from p2p server
         public async Task ConnectPeers(string node, string message, string time)
         {
@@ -106,8 +140,7 @@ namespace ReserveBlockCore.P2P
                     else
                     {
                         return "TFVP"; //transaction failed verification process
-                    }
-                    ; 
+                    } 
                 }
                 else
                 {
@@ -146,6 +179,7 @@ namespace ReserveBlockCore.P2P
                     if (result == true)
                     {
                         validatorList.Insert(validator);
+                        Validators.Validator.Initialize();
                         return "VATN";//added to validator list
                     }
                     else
@@ -164,6 +198,7 @@ namespace ReserveBlockCore.P2P
                 if (result == true)
                 {
                     validatorList.Insert(validator);
+                    Validators.Validator.Initialize();
                     return "VATN";//added to validator list
                 }
                 else
