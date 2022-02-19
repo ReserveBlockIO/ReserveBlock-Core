@@ -13,8 +13,9 @@ namespace ReserveBlockCore.Models
     {
         public long Id { get; set; }
         public string PeerIP { get; set; }
-        public DateTime LastReach { get; set; }
-        public string ChainRefId { get; set; }
+        public bool IsIncoming { get; set; }
+        public bool IsOutgoing { get; set; }
+        public int FailCount { get; set; }
 
         public static List<Peers> PeerList()
         {
@@ -22,7 +23,7 @@ namespace ReserveBlockCore.Models
             if(peerList.Count() == 0)
             {
                 var seedList = SeedNodeService.SeedNodes();
-                peerList.InsertBulk(seedList);
+
                 return peerList.FindAll().ToList();
             }
             else

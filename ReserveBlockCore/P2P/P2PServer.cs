@@ -17,6 +17,8 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PServer : Hub
     {
+
+        #region Receive Block
         public async Task ReceiveBlock(Block nextBlock, List<string> ipList)
         {
             Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
@@ -31,8 +33,10 @@ namespace ReserveBlockCore.P2P
                 //Resend block out if passed validation
                 P2PClient.BroadcastBlock(nextBlock, ipList);
             }
-            
+
         }
+
+        #endregion
 
         #region Send list of Validators to peer
         public async Task<List<Validators>?> SendValidators()
@@ -43,7 +47,7 @@ namespace ReserveBlockCore.P2P
 
             if (validatorList.Count() == 0)
                 return null;
-            
+
             //Only send 10 as that will be plenty.
             if (validatorList.Count() > 10)
                 return validatorList.Take(10).ToList();
@@ -68,6 +72,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Connect Peers
         //Send hello status to connecting peers from p2p server
         public async Task ConnectPeers(string node, string message, string time)
         {
@@ -87,20 +92,26 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        #endregion
+
+        #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
             var blocks = BlockchainData.GetBlocks();
 
-            if(blocks.FindAll().Count() != 0)
+            if (blocks.FindAll().Count() != 0)
             {
                 var blockHeight = BlockchainData.GetHeight();
 
                 return blockHeight;
             }
             return -1;
-            
+
         }
 
+        #endregion
+
+        #region Send Block
         //Send Block to client from p2p server
         public async Task<Block?> SendBlock(long currentBlock)
         {
@@ -120,18 +131,21 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        #endregion
+
+        #region Send to Mempool
         public async Task<string> SendToMempool(Transaction txReceived, List<string> ipList)
         {
             var peerIP = GetIP(Context);
 
             var mempool = TransactionData.GetPool();
-            if(mempool.Count() != 0)
+            if (mempool.Count() != 0)
             {
                 var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
                 if (txFound == null)
                 {
                     var result = TransactionValidatorService.VerifyTX(txReceived);
-                    if(result == true)
+                    if (result == true)
                     {
                         mempool.Insert(txReceived);
                         P2PClient.SendTXMempool(txReceived, ipList);
@@ -140,7 +154,7 @@ namespace ReserveBlockCore.P2P
                     else
                     {
                         return "TFVP"; //transaction failed verification process
-                    } 
+                    }
                 }
                 else
                 {
@@ -162,6 +176,9 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        #endregion
+
+        #region Send Validator
         public async Task<string> SendValidator(Validators validator)
         {
             var peerIP = GetIP(Context);
@@ -208,12 +225,16 @@ namespace ReserveBlockCore.P2P
             }
 
         }
+
+        #endregion
+
+        #region Share Peers
         public async Task SharePeers(string node)
         {
             var peers = P2PClient.ActivePeerList;
             var message = "";
 
-            if(peers == null)
+            if (peers == null)
             {
                 message = "NoPeers";
                 await Clients.All.SendAsync("PeersShared", null, message);
@@ -225,6 +246,24 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        #endregion
+
+        #region Seed node check
+        public async Task<string> SeedNodeCheck()
+        {
+            //do check for validator. if yes return val otherwise return Hello.
+            var validators = Validators.Validator.GetAll();
+            var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count();
+
+            if(hasValidators > 0)
+                return "HelloVal";
+
+            return "Hello";
+        }
+        #endregion
+
+        #region Get IP
+
         private static string GetIP(HubCallerContext context)
         {
             var feature = context.Features.Get<IHttpConnectionFeature>();
@@ -232,5 +271,7 @@ namespace ReserveBlockCore.P2P
 
             return peerIP;
         }
+
+        #endregion
     }
 }

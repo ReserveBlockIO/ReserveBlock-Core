@@ -12,7 +12,7 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PClient
     {
-        public static List<Peers> ActivePeerList { get; set; }
+        public static List<Peers>? ActivePeerList { get; set; }
 
         public static HubConnectionBuilder con = new HubConnectionBuilder();
 
@@ -112,6 +112,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Validator List
         public static async Task<bool> GetValidatorList(bool isValidator = false)
         {
             //get seed validators
@@ -131,9 +132,15 @@ namespace ReserveBlockCore.P2P
                     if(validatorList != null)
                     {
                         var dbValidator = Validators.Validator.GetAll();
-                        dbValidator.InsertBulk(validatorList);
-                        Validators.Validator.Initialize();
-                        break;
+                        var dbValidatorList = dbValidator.FindAll().ToList();
+                        var insertList = validatorList.Except(dbValidatorList).ToList();
+                        if(insertList.Count() != 0)
+                        {
+                            dbValidator.InsertBulk(insertList);
+                            Validators.Validator.Initialize();
+                            break;
+                        }
+                            
                     }
                 }
                 return true;
@@ -142,6 +149,9 @@ namespace ReserveBlockCore.P2P
             return false;
         }
 
+        #endregion
+
+        #region Get Validator Count
         public static async Task<long?> GetValidatorCount()
         {
             //get seed validators
@@ -171,6 +181,8 @@ namespace ReserveBlockCore.P2P
 
             return null;
         }
+
+        #endregion
 
         #region Get Current Height of Nodes
         public static async Task<(bool, long)> GetCurrentHeight()
@@ -429,15 +441,15 @@ namespace ReserveBlockCore.P2P
             var blockchain = BlockchainData.GetBlocks();
             
             var validatorsList = validators.Where(x => x.NodeIP != "SELF" && x.EligibleBlockStart <= block.Height);
-            List<string> blocks = new List<string>();
+            List<string> blockValidators = new List<string>();
             if (validatorsList.Count() > 2880) 
             {
                 //check time they were started.
-                blocks = blockchain.Find(Query.All(Query.Descending)).Take(5760).Select(x => x.Validator).ToList();
+                blockValidators = blockchain.Find(Query.All(Query.Descending)).Take(5760).Select(x => x.Validator).ToList();
             }
             else
             {
-                blocks = blockchain.Find(Query.All(Query.Descending)).Take(2880).Select(x => x.Validator).ToList();
+                blockValidators = blockchain.Find(Query.All(Query.Descending)).Take(2880).Select(x => x.Validator).ToList();
             }
 
             //Check for validators in blocks above!!!!!!!!!!!!!!! 

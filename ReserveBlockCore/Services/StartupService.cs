@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Services
 {
@@ -42,9 +43,11 @@ namespace ReserveBlockCore.Services
 
         internal static void StartupPeers()
         {
+            //add seed nodes
+            SeedNodeService.SeedNodes();
+
             P2PClient.ConnectToPeers();
         }
-        //may want to put this in a task to allow use of wallet still? 
         internal static async Task<bool> DownloadBlocks() //download genesis block
         {
             if (P2PClient.ActivePeerList.Count != 0)
@@ -61,16 +64,6 @@ namespace ReserveBlockCore.Services
                         Console.WriteLine("Block was rejected from: " + block.Validator);
                         //Add rejection notice for validator
                     }
-                    //while (block.Height != height)
-                    //{
-                    //    block = await P2PClient.GetBlock();
-                    //    var resultLoop = BlockValidatorService.ValidateBlock(block);
-                    //    if (resultLoop == false)
-                    //    {
-                    //        Console.WriteLine("Block was rejected from: " + block.Validator);
-                    //        //Add rejection notice for validator
-                    //    }
-                    //}
                     
                 }
                 
@@ -96,6 +89,12 @@ namespace ReserveBlockCore.Services
         {
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+            AnsiConsole.Write(
+                new FigletText("ReserveBlock Wallet")
+                .LeftAligned()
+                .Color(Color.Blue));
+
             Console.WriteLine("ReserverBlock Main Menu");
             Console.WriteLine("|======================================|");
             Console.WriteLine("| 1. Genesis Block (Check)             |");
