@@ -75,7 +75,7 @@ namespace ReserveBlockCore.P2P
          {
             var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
             var nBlock = new Block();
-            var peer = ActivePeerList.OrderByDescending(x => x.LastReach).FirstOrDefault();
+            var peer = ActivePeerList.OrderByDescending(x => x.FailCount).FirstOrDefault();//might need to reverse this
 
             if(peer == null)
             {

@@ -23,7 +23,6 @@
   <ItemGroup>
     <Folder Include="Networks\" />
     <Folder Include="Databases\" />
-    <Folder Include="Nodes\" />
   </ItemGroup>
 
 </Project>
