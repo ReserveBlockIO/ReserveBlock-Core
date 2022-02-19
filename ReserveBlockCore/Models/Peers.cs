@@ -45,14 +45,14 @@ namespace ReserveBlockCore.Models
             var peer = GetAll().FindOne(x => x.PeerIP == incPeer.PeerIP);
             if(peer != null)
             {
-                peer.LastReach = DateTime.UtcNow;
+                //peer.LastReach = DateTime.UtcNow;
                 peers.Update(peer);
             }
             else
             {
                 Peers nPeer = new Peers { 
-                    ChainRefId = incPeer.ChainRefId,
-                    LastReach = DateTime.UtcNow,
+                    //ChainRefId = incPeer.ChainRefId,
+                    //LastReach = DateTime.UtcNow,
                     PeerIP = incPeer.PeerIP,
                 };
 
