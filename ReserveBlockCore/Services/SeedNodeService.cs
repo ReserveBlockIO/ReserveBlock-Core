@@ -70,6 +70,8 @@ namespace ReserveBlockCore.Services
 
         public static List<SeedNode> SeedNodes()
         {
+            SeedNodeList = new List<SeedNode>();
+
             List<SeedNode> seedNodes = new List<SeedNode>();
 
             seedNodes.Add(new SeedNode
