@@ -184,15 +184,15 @@ namespace ReserveBlockCore
         private static async void blockHeightCheck_Elapsed(object sender)
         {
             //if blocks are currently downloading this will stop it from running again.
-            if(BlocksDownloading != true)
-            {
-                var result = await P2PClient.GetCurrentHeight();
-                if (result.Item1 == true)
-                {
-                    BlocksDownloading = true;
-                    BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
-                }
-            }
+            //if(BlocksDownloading != true)
+            //{
+            //    var result = await P2PClient.GetCurrentHeight();
+            //    if (result.Item1 == true)
+            //    {
+            //        BlocksDownloading = true;
+            //        BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+            //    }
+            //}
             
 
         }

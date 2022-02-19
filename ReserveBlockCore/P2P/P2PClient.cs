@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Nodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,41 +33,104 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Connect to Peers
-        public static void ConnectToPeers()
+        public static async Task<bool> ConnectToPeers()
         {
-            ActivePeerList = new List<Peers>();
-
             List<Peers> peers = new List<Peers>();
             peers = Peers.PeerList();
 
-            List<Peers> tempActivePeerList = new List<Peers>();
-            peers.ForEach(x =>
+            int successCount = 0;
+           
+            var peerDB = Peers.GetAll();
+
+            if(peers.Count() == 0)
             {
-                try
+                NodeConnector.StartNodeConnecting();
+                peers = Peers.PeerList();
+            }
+
+            if (peers.Count() > 0)
+            {
+                if(peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
                 {
-                    var peerIP = x.PeerIP;
-                    var url = "http://" + peerIP + ":3338/blockchain";
-                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
-                    connection.StartAsync().Wait();
-                    connection.InvokeCoreAsync("ConnectPeers", args: new[] { "NodeIP", "Hello", DateTime.UtcNow.Ticks.ToString() });
-                    connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
+                    Random rnd = new Random();
+                    var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                    if(peerList.Count() >= 2)
                     {
-                        Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
-
-                    });
-
-                    if (!ActivePeerList.Contains(x))
-                        tempActivePeerList.Add(x);
-                    Peers.UpdatePeerLastReach(x);
+                        peers = peerList;
+                    }
+                    else
+                    {
+                        peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                    }
+                    
                 }
-                catch(Exception ex)
+                foreach (var peer in peers)
                 {
+                    try
+                    {
+                        var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                        var connection = new HubConnectionBuilder().WithUrl(url).Build();
+                        string response = "";
 
+                        var conResult = connection.StartAsync().Wait(5000);//giving peer 5 seconds to respond.
+                        if (conResult == false)
+                            return false;
+
+                        response = await connection.InvokeAsync<string>("PingPeers");
+
+                        if(response == "HelloPeer")
+                        {
+                            successCount += 1;
+                            peer.FailCount = 0; //peer responded. Reset fail count
+                            peerDB.Update(peer);
+                        }
+                        else
+                        {
+                            peer.FailCount += 1;
+                            peerDB.Update(peer);
+                        }
+                        
+                    }
+                    catch (Exception ex)
+                    {
+                        //peer did not response correctly or at all
+                        peer.FailCount += 1;
+                        peerDB.Update(peer);
+                    }
+                    
                 }
-            });
-            //Update List
-            ActivePeerList.AddRange(tempActivePeerList);
+                if(successCount > 0)
+                    return true;
+            }
+
+            return false;
         }
+
+        public static async Task<bool> PingBackPeer(string peerIP)
+        {
+            try
+            {
+                var url = "http://" + peerIP + ":3338/blockchain";
+                var connection = new HubConnectionBuilder().WithUrl(url).Build();
+                string response = "";
+                connection.StartAsync().Wait();
+                response = await connection.InvokeAsync<string>("PingBackPeer");
+
+                if (response == "HelloBackPeer")
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                //peer did not response correctly or at all
+                return false;
+            }
+
+            return false;
+        }
+ 
+
 
         #endregion
 

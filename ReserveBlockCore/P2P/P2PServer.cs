@@ -94,6 +94,36 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        public async Task<string> PingPeers()
+        {
+            var peerIP = GetIP(Context);
+
+            var peerDB = Peers.GetAll();
+
+            var peer = peerDB.FindOne(x => x.PeerIP == peerIP);
+
+            if(peer == null)
+            {
+                //this does a ping back on the peer to see if it can also be an outgoing node.
+                var result = await P2PClient.PingBackPeer(peerIP);
+
+                Peers nPeer = new Peers { 
+                    FailCount = 0,
+                    IsIncoming = true,
+                    IsOutgoing = result,
+                    PeerIP = peerIP,
+                };
+
+                peerDB.Insert(nPeer);
+            }
+            return "HelloPeer";
+        }
+
+        public async Task<string> PingBackPeer()
+        {
+            return "HelloBackPeer";
+        }
+
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {

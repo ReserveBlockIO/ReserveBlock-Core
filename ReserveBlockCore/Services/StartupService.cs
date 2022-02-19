@@ -41,12 +41,23 @@ namespace ReserveBlockCore.Services
             BlockchainData.ChainRef = "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
         }
 
-        internal static void StartupPeers()
+        internal static async void StartupPeers()
         {
             //add seed nodes
             SeedNodeService.SeedNodes();
+            bool result = false;
+   
+            result = await P2PClient.ConnectToPeers();
 
-            P2PClient.ConnectToPeers();
+            if(result == true)
+            {
+                //Connected to peers
+            }
+            else
+            {
+                //failed to connect to peers.
+            }
+            
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block
         {

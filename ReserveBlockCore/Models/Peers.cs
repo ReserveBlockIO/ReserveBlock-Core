@@ -19,11 +19,11 @@ namespace ReserveBlockCore.Models
 
         public static List<Peers> PeerList()
         {
+            
             var peerList = GetAll();
             if(peerList.Count() == 0)
             {
-                var seedList = SeedNodeService.SeedNodes();
-
+                
                 return peerList.FindAll().ToList();
             }
             else
