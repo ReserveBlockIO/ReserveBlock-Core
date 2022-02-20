@@ -13,6 +13,7 @@ namespace ReserveBlockCore
         private static Timer blockTimer;//for creating a new block at max every 30 seconds
         private static Timer mempoolShareTimer;//Sharing and checking mempool with other nodes
         private static Timer BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
+        private static Timer PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         private static int MempoolCount = 0;
         public static List<Transaction> MempoolList = new List<Transaction>();
         private static bool BlocksDownloading = false;
@@ -28,6 +29,10 @@ namespace ReserveBlockCore
 
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
+
+            PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            PeerCheckTimer.Change(60000, 300000); //waits 1 minute, then runs every 3 seconds for new block heights
+
 
             //add method to remove stale state trei records and stale validator records too
 
@@ -184,17 +189,30 @@ namespace ReserveBlockCore
         private static async void blockHeightCheck_Elapsed(object sender)
         {
             //if blocks are currently downloading this will stop it from running again.
-            //if(BlocksDownloading != true)
-            //{
-            //    var result = await P2PClient.GetCurrentHeight();
-            //    if (result.Item1 == true)
-            //    {
-            //        BlocksDownloading = true;
-            //        BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
-            //    }
-            //}
-            
+            if (BlocksDownloading != true)
+            {
 
+                var result = await P2PClient.GetCurrentHeight();
+                if (result.Item1 == true)
+                {
+                    BlocksDownloading = true;
+                    BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                }
+            }
+        }
+
+        private static async void peerCheckTimer_Elapsed(object sender)
+        {
+            var peerCheck = await P2PClient.PeerHealthCheck();
+
+            if(peerCheck == true)
+            {
+                //health check pass
+            }
+            else
+            {
+                //potentially no connected nodes.
+            }
         }
     }
 }

@@ -85,6 +85,7 @@ namespace ReserveBlockCore.P2P
                             successCount += 1;
                             peer.FailCount = 0; //peer responded. Reset fail count
                             peerDB.Update(peer);
+                            ActivePeerList.Add(peer);//adds peer to active list.
                         }
                         else
                         {
@@ -131,10 +132,89 @@ namespace ReserveBlockCore.P2P
 
             return false;
         }
- 
+
 
 
         #endregion
+
+        public static async Task<bool> PeerHealthCheck()
+        {
+            bool result = false;
+
+            var peers = ActivePeerList;
+
+            int successCount = 0;
+
+            var peerDB = Peers.GetAll();
+
+            if (peers != null)
+            {
+                if (peers.Count() == 0)
+                {
+                    NodeConnector.StartNodeConnecting();
+                    peers = Peers.PeerList();
+                    ActivePeerList = peers;//add new peers to active list
+
+                    if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
+                    {
+                        Random rnd = new Random();
+                        var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                        if (peerList.Count() >= 2)
+                        {
+                            peers = peerList;
+                        }
+                        else
+                        {
+                            peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                        }
+
+                        foreach (var peer in peers)
+                        {
+                            try
+                            {
+                                var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                                var connection = new HubConnectionBuilder().WithUrl(url).Build();
+                                string response = "";
+
+                                var conResult = connection.StartAsync().Wait(5000);//giving peer 5 seconds to respond.
+                                if (conResult == false)
+                                    return false;
+
+                                response = await connection.InvokeAsync<string>("PingPeers");
+
+                                if (response == "HelloPeer")
+                                {
+                                    successCount += 1;
+                                    peer.FailCount = 0; //peer responded. Reset fail count
+                                    peerDB.Update(peer);
+                                    ActivePeerList.Add(peer);//adds peer to active list.
+                                }
+                                else
+                                {
+                                    peer.FailCount += 1;
+                                    peerDB.Update(peer);
+                                }
+
+                            }
+                            catch (Exception ex)
+                            {
+                                //peer did not response correctly or at all
+                                peer.FailCount += 1;
+                                peerDB.Update(peer);
+                            }
+
+                        }
+
+                        if (successCount > 0)
+                            return true;
+                    }
+                }
+
+            }
+
+            return result;
+        }
+
 
         #region Get Block
         public static async Task<Block?> GetBlock() //base example
