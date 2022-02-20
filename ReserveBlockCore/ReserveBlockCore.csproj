@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>Assets\Images\rbx.ico</ApplicationIcon>
+    <PackageIcon>rbx.ico</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +24,17 @@
   <ItemGroup>
     <Folder Include="Networks\" />
     <Folder Include="Databases\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\Images\rbx.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

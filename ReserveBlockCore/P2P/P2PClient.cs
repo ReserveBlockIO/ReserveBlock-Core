@@ -68,6 +68,7 @@ namespace ReserveBlockCore.P2P
                 }
                 foreach (var peer in peers)
                 {
+                    Console.Write("Peer found: " + peer.PeerIP);
                     try
                     {
                         var url = "http://" + peer.PeerIP + ":3338/blockchain";
@@ -340,7 +341,7 @@ namespace ReserveBlockCore.P2P
             long height = 0;
 
             var blocks = BlockchainData.GetBlocks();
-            blocks.EnsureIndex(x => x.Height);
+
             if (blocks.Count() == 0)
                 return (true, -1);
 
@@ -374,13 +375,13 @@ namespace ReserveBlockCore.P2P
                     }
                     catch (Exception ex) //this means no repsosne from node
                     {
-                        var tempActivePeerList = new List<Peers>();
-                        tempActivePeerList.AddRange(ActivePeerList);
+                        //var tempActivePeerList = new List<Peers>();
+                        //tempActivePeerList.AddRange(ActivePeerList);
 
-                        //remove dead peer
-                        tempActivePeerList.Remove(peer);
+                        ////remove dead peer
+                        //tempActivePeerList.Remove(peer);
 
-                        ActivePeerList.AddRange(tempActivePeerList); //update list with removed node
+                        //ActivePeerList.AddRange(tempActivePeerList); //update list with removed node
                         //if list gets below certain amount request more nodes.
                     }
                 }

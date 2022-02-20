@@ -30,8 +30,13 @@ namespace ReserveBlockCore.Services
                     Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
                     count++;
                 });
-
-                var walletChoice = Console.ReadLine();
+                string walletChoice = "";
+                walletChoice = Console.ReadLine();
+                while (walletChoice == "")
+                {
+                    Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
+                    walletChoice = Console.ReadLine();
+                }
                 var wallet = accountNumberList[walletChoice];
                 Console.WriteLine("********************************************************************");
 

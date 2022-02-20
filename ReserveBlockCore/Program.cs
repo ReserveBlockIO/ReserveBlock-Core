@@ -192,7 +192,6 @@ namespace ReserveBlockCore
             //if blocks are currently downloading this will stop it from running again.
             if (BlocksDownloading != true)
             {
-
                 var result = await P2PClient.GetCurrentHeight();
                 if (result.Item1 == true)
                 {
