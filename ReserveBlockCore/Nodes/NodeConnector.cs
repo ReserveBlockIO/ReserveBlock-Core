@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Nodes
             //var nodeIp = SeedNodeService.PingSeedNode();
             //SeedNodeService.GetSeedNodePeers("");
             int successfulConnect = 0;
+            bool alreadyCalled = false;
 
             List<Peers> peers = new List<Peers>();
             peers = Peers.GetAll().FindAll().ToList();
@@ -19,6 +20,7 @@ namespace ReserveBlockCore.Nodes
             {
                 var nodeIp = await SeedNodeService.PingSeedNode();
                 SeedNodeService.GetSeedNodePeers(nodeIp);
+                alreadyCalled = true;
             }
 
             peers = Peers.GetAll().FindAll().ToList();
@@ -26,6 +28,12 @@ namespace ReserveBlockCore.Nodes
             {
                 //request peers from other nodes
                 //Then request from seeds
+                if(!alreadyCalled)
+                {
+                    var nodeIp = await SeedNodeService.PingSeedNode();
+                    SeedNodeService.GetSeedNodePeers(nodeIp);
+                }
+
             }
             else
             {

@@ -38,6 +38,8 @@ namespace ReserveBlockCore.P2P
             List<Peers> peers = new List<Peers>();
             peers = Peers.PeerList();
 
+            ActivePeerList = new List<Peers>();
+
             int successCount = 0;
            
             var peerDB = Peers.GetAll();

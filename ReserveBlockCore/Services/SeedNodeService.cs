@@ -10,7 +10,13 @@ namespace ReserveBlockCore.Services
         {
             bool nodeFound = false;
             var url = "NA";
-            foreach(var node in SeedNodeList)
+
+            Random rnd = new Random();
+
+            //randomizes seed list so not one is always the one being called.
+            var randomizedSeedNostList = SeedNodeList.OrderBy(x => rnd.Next()).ToList();
+
+            foreach (var node in randomizedSeedNostList)
             {
                 try
                 {
@@ -48,39 +54,48 @@ namespace ReserveBlockCore.Services
 
         public static async void GetSeedNodePeers(string url)
         {
-            using (HttpClient client = new HttpClient())
+            try
             {
-
-                string endpoint = url;
-                using (var Response = await client.GetAsync(endpoint + "/api/V1/GetNodes"))
+                using (HttpClient client = new HttpClient())
                 {
-                    if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+
+                    string endpoint = url + "/api/V1/GetNodes";
+                    using (var Response = await client.GetAsync(endpoint))
                     {
-                        string data = await Response.Content.ReadAsStringAsync();
-                        var peers = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
-                        var peerCount = peers.Count() - 1;
-                        for(var i = 0 ; i <= peerCount; i++)
+                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                         {
-                            var peer = peers[i];
-                            Peers nPeer = new Peers { 
-                                IsIncoming = false,
-                                IsOutgoing = true,
-                                PeerIP = peer,
-                                FailCount = 0
-                            };
+                            string data = await Response.Content.ReadAsStringAsync();
+                            var peers = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
+                            var peerCount = peers.Count() - 1;
+                            for (var i = 0; i <= peerCount; i++)
+                            {
+                                var peer = peers[i];
+                                Peers nPeer = new Peers
+                                {
+                                    IsIncoming = false,
+                                    IsOutgoing = true,
+                                    PeerIP = peer,
+                                    FailCount = 0
+                                };
 
-                            var dbPeers = Peers.GetAll();
-                            var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
-                            if(peerExist == null)
-                                dbPeers.Insert(nPeer);
+                                var dbPeers = Peers.GetAll();
+                                var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
+                                if (peerExist == null)
+                                    dbPeers.Insert(nPeer);
+                            }
                         }
-                    }
-                    else
-                    {
+                        else
+                        {
 
+                        }
                     }
                 }
             }
+            catch(Exception ex)
+            {
+
+            }
+            
         }
 
         public static List<SeedNode> SeedNodes()

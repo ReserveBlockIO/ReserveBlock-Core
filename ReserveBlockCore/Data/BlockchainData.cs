@@ -22,7 +22,7 @@ namespace ReserveBlockCore.Data
         public static string ChainRef { get; set; }
         internal static async void InitializeChain()
         {
-            //await StartupService.DownloadBlocks();
+            await StartupService.DownloadBlocks();
 
             var blocks = BlockData.GetBlocks();
             
