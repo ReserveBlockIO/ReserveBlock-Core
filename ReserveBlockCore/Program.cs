@@ -94,6 +94,7 @@ namespace ReserveBlockCore
 
             StartupService.TestConnect();
             StartupService.StartupPeers();
+            Thread.Sleep(5000);
             //StartupService.DownloadBlocks();
 
             StartupService.StartupInitializeChain();

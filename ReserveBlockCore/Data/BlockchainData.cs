@@ -43,8 +43,6 @@ namespace ReserveBlockCore.Data
                 //Updates state trei
                 StateData.CreateGenesisWorldTrei(block);
 
-                // move the processed mempool tx(s) into Finalized table
-                transactions.ForEach(x => { Transaction.Add(x); });
                 // clear mempool
                 trxPool.DeleteAll();
             }

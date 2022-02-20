@@ -23,7 +23,7 @@ namespace ReserveBlockCore.Services
                     using (HttpClient client = new HttpClient())
                     {
 
-                        string endpoint = node.NodeUrl;
+                        string endpoint = node.NodeUrl + @"/api/V1";
                         using (var Response = await client.GetAsync(endpoint))
                         {
                             if (Response.StatusCode == System.Net.HttpStatusCode.OK)
@@ -70,18 +70,22 @@ namespace ReserveBlockCore.Services
                             for (var i = 0; i <= peerCount; i++)
                             {
                                 var peer = peers[i];
-                                Peers nPeer = new Peers
+                                if(peer != "No Nodes")
                                 {
-                                    IsIncoming = false,
-                                    IsOutgoing = true,
-                                    PeerIP = peer,
-                                    FailCount = 0
-                                };
+                                    Peers nPeer = new Peers
+                                    {
+                                        IsIncoming = false,
+                                        IsOutgoing = true,
+                                        PeerIP = peer,
+                                        FailCount = 0
+                                    };
 
-                                var dbPeers = Peers.GetAll();
-                                var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
-                                if (peerExist == null)
-                                    dbPeers.Insert(nPeer);
+                                    var dbPeers = Peers.GetAll();
+                                    var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
+                                    if (peerExist == null)
+                                        dbPeers.Insert(nPeer);
+                                }
+                                
                             }
                         }
                         else

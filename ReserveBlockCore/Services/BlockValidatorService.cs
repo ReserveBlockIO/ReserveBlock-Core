@@ -11,6 +11,16 @@ namespace ReserveBlockCore.Services
 
             if (block == null) return result; //null block submitted. reject 
 
+            if (block.Height == 0)
+            {
+                //Genesis Block
+                result = true;
+                BlockchainData.AddBlock(block);
+                StateData.UpdateTreis(block);
+                return result;
+            }// write custom validate method for genesis with hardcoded expected values.
+            //DOCUSTOMEGENESISVALIDATE();
+
             var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
 
             //validates the signature of the validator that crafted the block

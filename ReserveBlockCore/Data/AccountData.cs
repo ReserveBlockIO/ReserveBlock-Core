@@ -50,7 +50,7 @@ namespace ReserveBlockCore.Data
 			account.Balance = accountState != null ? accountState.Balance : 0M;
 
 			AddToAccount(account);
-			//Now need to scan to check for transactions and balance - feature coming soon.
+			//Now need to scan to check for transactions  - feature coming soon.
 
 			return account;
 		}

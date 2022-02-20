@@ -149,11 +149,15 @@ namespace ReserveBlockCore.P2P
 
             if (peers != null)
             {
-                if (peers.Count() == 0)
+                //this will always fail is 1 record. Fix this
+                if (peers.Count() > 0)
                 {
-                    NodeConnector.StartNodeConnecting();
-                    peers = Peers.PeerList();
-                    ActivePeerList = peers;//add new peers to active list
+                    if(peers.Count() < 3)
+                    {
+                        NodeConnector.StartNodeConnecting();
+                        peers = Peers.PeerList();
+                        ActivePeerList = peers;//add new peers to active list
+                    }
 
                     if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
                     {
@@ -167,47 +171,46 @@ namespace ReserveBlockCore.P2P
                         {
                             peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
                         }
-
-                        foreach (var peer in peers)
+                    }   
+                    foreach (var peer in peers)
+                    {
+                        try
                         {
-                            try
+                            var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                            var connection = new HubConnectionBuilder().WithUrl(url).Build();
+                            string response = "";
+
+                            var conResult = connection.StartAsync().Wait(5000);//giving peer 5 seconds to respond.
+                            if (conResult == false)
+                                return false;
+
+                            response = await connection.InvokeAsync<string>("PingPeers");
+
+                            if (response == "HelloPeer")
                             {
-                                var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                                var connection = new HubConnectionBuilder().WithUrl(url).Build();
-                                string response = "";
-
-                                var conResult = connection.StartAsync().Wait(5000);//giving peer 5 seconds to respond.
-                                if (conResult == false)
-                                    return false;
-
-                                response = await connection.InvokeAsync<string>("PingPeers");
-
-                                if (response == "HelloPeer")
-                                {
-                                    successCount += 1;
-                                    peer.FailCount = 0; //peer responded. Reset fail count
-                                    peerDB.Update(peer);
-                                    ActivePeerList.Add(peer);//adds peer to active list.
-                                }
-                                else
-                                {
-                                    peer.FailCount += 1;
-                                    peerDB.Update(peer);
-                                }
-
+                                successCount += 1;
+                                peer.FailCount = 0; //peer responded. Reset fail count
+                                peerDB.Update(peer);
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                //peer did not response correctly or at all
                                 peer.FailCount += 1;
                                 peerDB.Update(peer);
                             }
 
                         }
+                        catch (Exception ex)
+                        {
+                            //peer did not response correctly or at all
+                            peer.FailCount += 1;
+                            peerDB.Update(peer);
+                        }
 
-                        if (successCount > 0)
-                            return true;
                     }
+
+                    if (successCount > 0)
+                        return true;
+                    
                 }
 
             }

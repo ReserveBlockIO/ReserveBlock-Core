@@ -205,6 +205,7 @@ namespace ReserveBlockCore.Services
                     var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower() && x.NodeIP == "SELF");
                     ValidatorService.StopValidating(validator);
                     TransactionData.AddToPool(txRequest);
+                    TransactionData.AddTxToWallet(txRequest);
                     AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                     //StateData.UpdateAccountNonce(txRequest.FromAddress);
                     P2PClient.SendTXMempool(txRequest, null);//send out to mempool

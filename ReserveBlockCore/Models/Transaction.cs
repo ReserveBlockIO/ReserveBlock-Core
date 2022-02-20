@@ -45,7 +45,7 @@ namespace ReserveBlockCore.Models
         }
         public static ILiteCollection<Transaction> GetAll()
         {
-            var trans = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
+            var trans = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             return trans;
         }
 
