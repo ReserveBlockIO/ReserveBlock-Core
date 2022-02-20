@@ -52,7 +52,7 @@ namespace ReserveBlockCore.Services
 
         }
 
-        public static async void GetSeedNodePeers(string url)
+        public static async Task GetSeedNodePeers(string url)
         {
             try
             {

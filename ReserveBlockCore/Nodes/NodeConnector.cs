@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Nodes
 {
     public class NodeConnector
     {
-        public static async void StartNodeConnecting()
+        public static async Task StartNodeConnecting()
         {
             //var nodeIp = SeedNodeService.PingSeedNode();
             //SeedNodeService.GetSeedNodePeers("");
@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Nodes
             if(peers.Count == 0)
             {
                 var nodeIp = await SeedNodeService.PingSeedNode();
-                SeedNodeService.GetSeedNodePeers(nodeIp);
+                await SeedNodeService.GetSeedNodePeers(nodeIp);
                 alreadyCalled = true;
             }
 
@@ -31,7 +31,7 @@ namespace ReserveBlockCore.Nodes
                 if(!alreadyCalled)
                 {
                     var nodeIp = await SeedNodeService.PingSeedNode();
-                    SeedNodeService.GetSeedNodePeers(nodeIp);
+                    await SeedNodeService.GetSeedNodePeers(nodeIp);
                 }
 
             }

@@ -205,7 +205,12 @@ namespace ReserveBlockCore.Data
         public static long GetHeight()
         {
             var lastBlock = GetLastBlock();
-            return lastBlock.Height;
+            if(lastBlock != null)
+            {
+                return lastBlock.Height;
+            }
+            return -1;
+            
         }
         public static bool ValidateBlock(Block block)
         {

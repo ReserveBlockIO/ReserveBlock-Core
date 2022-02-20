@@ -97,7 +97,7 @@ namespace ReserveBlockCore
             Thread.Sleep(5000);
             //StartupService.DownloadBlocks();
 
-            StartupService.StartupInitializeChain();
+            //StartupService.StartupInitializeChain();
 
             Task.WaitAll(commandLoopTask, commandLoopTask2);
 

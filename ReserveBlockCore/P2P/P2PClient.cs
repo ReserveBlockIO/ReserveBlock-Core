@@ -46,7 +46,7 @@ namespace ReserveBlockCore.P2P
 
             if(peers.Count() == 0)
             {
-                NodeConnector.StartNodeConnecting();
+                await NodeConnector.StartNodeConnecting();
                 peers = Peers.PeerList();
             }
 
@@ -74,18 +74,18 @@ namespace ReserveBlockCore.P2P
                         var connection = new HubConnectionBuilder().WithUrl(url).Build();
                         string response = "";
 
-                        var conResult = connection.StartAsync().Wait(5000);//giving peer 5 seconds to respond.
-                        if (conResult == false)
-                            return false;
-
-                        response = await connection.InvokeAsync<string>("PingPeers");
-
-                        if(response == "HelloPeer")
+                        var conResult = connection.StartAsync().Wait(15000);//giving peer 5 seconds to respond.
+                        if (conResult != false)
                         {
-                            successCount += 1;
-                            peer.FailCount = 0; //peer responded. Reset fail count
-                            peerDB.Update(peer);
-                            ActivePeerList.Add(peer);//adds peer to active list.
+                            response = await connection.InvokeAsync<string>("PingPeers");
+
+                            if (response == "HelloPeer")
+                            {
+                                successCount += 1;
+                                peer.FailCount = 0; //peer responded. Reset fail count
+                                peerDB.Update(peer);
+                                ActivePeerList.Add(peer);//adds peer to active list.
+                            }
                         }
                         else
                         {
