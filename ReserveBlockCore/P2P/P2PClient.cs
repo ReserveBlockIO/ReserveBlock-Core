@@ -335,6 +335,12 @@ namespace ReserveBlockCore.P2P
         {
             bool newHeightFound = false;
             long height = 0;
+
+            var blocks = BlockchainData.GetBlocks();
+            blocks.EnsureIndex(x => x.Height);
+            if (blocks.Count() == 0)
+                return (true, -1);
+
             long myHeight = BlockchainData.GetHeight();
             var peers = ActivePeerList.ToList();
             var validators = Validators.Validator.ValidatorList;
