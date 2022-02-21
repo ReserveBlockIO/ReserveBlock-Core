@@ -60,22 +60,56 @@ namespace ReserveBlockCore.P2P
             }
             if (hubConnection2 == null)
             {
-                return hubConnection3;
+                return hubConnection2;
             }
             if (hubConnection3 == null)
             {
-                return hubConnection4;
+                return hubConnection3;
             }
             if (hubConnection4 == null)
             {
-                return hubConnection5;
+                return hubConnection4;
             }
             if (hubConnection5 == null)
+            {
+                return hubConnection5;
+            }
+            if (hubConnection6 == null)
             {
                 return hubConnection6;
             }
 
             return null;
+        }
+
+        public static async Task<bool> ArePeersConnected()
+        {
+            if (hubConnection1 != null)
+            {
+                return true;
+            }
+            if (hubConnection2 != null)
+            {
+                return true;
+            }
+            if (hubConnection3 != null)
+            {
+                return true;
+            }
+            if (hubConnection4 != null)
+            {
+                return true;
+            }
+            if (hubConnection5 != null)
+            {
+                return true;
+            }
+            if (hubConnection6 != null)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         #region Hub Dispose

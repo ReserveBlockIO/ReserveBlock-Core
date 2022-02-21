@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Services
             if(result == true)
             {
                 //Connected to peers
-                StartupInitializeChain();
+                //StartupInitializeChain();
             }
             else
             {
@@ -57,7 +57,8 @@ namespace ReserveBlockCore.Services
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block
         {
-            if (P2PClient.ActivePeerList.Count != 0)
+            var peersConnected = await P2PClient.ArePeersConnected();
+            if (peersConnected)
             {
                 var blocks = BlockData.GetBlocks();
                 if(blocks.Count() == 0)
