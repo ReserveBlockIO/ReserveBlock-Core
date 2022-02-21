@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Models
 		}
 		public string GetBlockHash()
 		{
-			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator + ChainRefId;
+			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator + NextValidators + ChainRefId;
 			var hash = HashingService.GenerateHash(strSum);
 			return hash;
 		}

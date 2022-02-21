@@ -310,7 +310,7 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection1.On<string, string>("GetMessage", (message, data) => {
-                        if (message == "tx" || message == "blk")
+                        if (message == "tx" || message == "blk" || message == "val")
                         {
                             NodeDataProcessor.ProcessData(message, data);
                         }
@@ -336,7 +336,7 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection2.On<string, string>("GetMessage", (message, data) => {
-                        if (message == "tx" || message == "blk")
+                        if (message == "tx" || message == "blk" || message == "val")
                         {
                             NodeDataProcessor.ProcessData(message, data);
                         }
@@ -361,7 +361,7 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection3.On<string, string>("GetMessage", (message, data) => {
-                        if (message == "tx" || message == "blk")
+                        if (message == "tx" || message == "blk" || message == "val")
                         {
                             NodeDataProcessor.ProcessData(message, data);
                         }
@@ -386,7 +386,7 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection4.On<string, string>("GetMessage", (message, data) => {
-                        if (message == "tx" || message == "blk")
+                        if (message == "tx" || message == "blk" || message == "val")
                         {
                             NodeDataProcessor.ProcessData(message, data);
                         }
@@ -411,7 +411,7 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection5.On<string, string>("GetMessage", (message, data) => {
-                        if (message == "tx" || message == "blk")
+                        if (message == "tx" || message == "blk" || message == "val")
                         {
                             NodeDataProcessor.ProcessData(message, data);
                         }
@@ -436,7 +436,7 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection6.On<string, string>("GetMessage", (message, data) => {
-                        if (message == "tx" || message == "blk")
+                        if (message == "tx" || message == "blk" || message == "val")
                         {
                             NodeDataProcessor.ProcessData(message, data);
                         }
@@ -1195,7 +1195,95 @@ namespace ReserveBlockCore.P2P
         }
         #endregion
 
+        #region Ping Next Validators 
+        public static async Task<(bool, bool)> PingNextValidators(string mainVal, string backupVal)
+        {
+            bool main = false;
+            bool backup = false;
+
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal + ":3338/blockchain").Build();
+            var alive = hubConnection.StartAsync().Wait(3000);
+            if(alive == true)
+            {
+                var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
+
+                if (response == true)
+                {
+                    main = true;
+                    hubConnection.StopAsync().Wait();
+                }
+            }
+
+            var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal + ":3338/blockchain").Build();
+            var alive2 = hubConnection2.StartAsync().Wait(3000);
+
+            if (alive2 == true)
+            {
+                var response2 = await hubConnection2.InvokeAsync<bool>("PingNextValidator");
+
+                if (response2 == true)
+                {
+                    backup = true;
+                    hubConnection2.StopAsync().Wait();
+                }
+            }
+
+            return (main, backup);
+        }
+        #endregion
+
+        #region Broadcast Blocks to Peers
+        public static async void BroadcastBlock(Block block)
+        {
+            var peersConnected = await P2PClient.ArePeersConnected();
+
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
+            }
+            else
+            {
+                try
+                {
+                    if (hubConnection1 != null)
+                    {
+                        await hubConnection1.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+
+                    if (hubConnection2 != null)
+                    {
+                        await hubConnection2.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        await hubConnection3.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        await hubConnection4.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        await hubConnection5.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        await hubConnection6.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    Console.WriteLine("Error Sending Transaction. Please try again!");
+                }
+            }
+
+        }
+        #endregion
         /// <summary>
+        /// Methods below are obselete and will be removed after testing
         /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// </summary>      
 
@@ -1269,48 +1357,6 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        #endregion
-
-
-
-        #region Broadcast Blocks to Validators
-        public static async void BroadcastBlock(Block block, List<string>? ipList)
-        {
-            var peers = ActivePeerList.ToList();
-            var validators = new List<Validators>();
-
-            if(ipList != null)
-            {
-                validators = Validators.Validator.GetAll().FindAll().Where(x => !ipList.Any(y => y == x.NodeIP)).Take(10).ToList();
-            }
-            else
-            {
-                //this will only happen when new node is being broadcasted by its crafter.
-                validators = Validators.Validator.GetAll().FindAll().Where(x => x.NodeIP != "SELF").Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
-            }
-            
-            var vSendList = new List<string>();
-
-            validators.ForEach(x => {
-                vSendList.Add(x.NodeIP);
-            });
-
-            //Also add previous list so others do not broadcast to them. If they miss broadcast they can call out for a block at any time.
-            if(ipList != null)
-            {
-                vSendList.AddRange(ipList); 
-            }
-
-            foreach(var validator in validators)
-            {
-                var url = "http://" + validator.NodeIP + ":3338/blockchain";
-                var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                connection.StartAsync().Wait();
-                string message = await connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block, vSendList });
-            }
-
-        }
         #endregion
 
         #region Get Next Validators

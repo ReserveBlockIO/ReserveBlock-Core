@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Models
 {
@@ -60,21 +61,88 @@ namespace ReserveBlockCore.Models
             //This will be a more stochastic ordered list. For now just grabbing a random person.
             public static string GetBlockValidator()
             {
-                if(ValidatorList == null)
+                //Look at previous block and see if I am selected next validator.
+                var lastBlock = BlockchainData.GetLastBlock();
+                if(lastBlock == null)
                 {
-                    Initialize();
-                    if (ValidatorList == null)
-                        return "NaN";
+                    return "NaN"; //last block should not be null.
                 }
-                var numOfValidators = ValidatorList.Count;
-                if(numOfValidators == 0)
+                if(lastBlock.Height == 0) //this is just for genesis block as it has no next validators.
                 {
-                    return "NaN";
+                    var localVals = GetLocalValidator().First();
+                    return localVals.Address;
                 }
-                var random = new Random();
-                int choosed = random.Next(0, numOfValidators);
-                var validator = ValidatorList[choosed].Address;
-                return validator;
+                var nextValidators = lastBlock.NextValidators;
+
+                return nextValidators;
+            }
+
+            public static async Task<string> GetNextBlockValidators()
+            {
+                var output = "";
+                var lastBlock = BlockchainData.GetLastBlock();
+                var lastVal = lastBlock.Validator;
+                if(lastBlock.Height == 0)
+                {
+                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                    var account = accounts.FindAll().Where(x => x.IsValidating == true).FirstOrDefault();
+
+                    if(account != null)
+                    {
+                        output = account.Address + ":" + account.Address;
+                    }
+                }
+                else
+                {
+                    var validators = Validators.Validator.GetAll();
+                    var validatorCount = validators.Count();
+                    if (validatorCount == 1)
+                    {
+                        var nextValidator = validators.FindAll().FirstOrDefault();
+                        if(nextValidator != null)
+                        {
+                            output = nextValidator.Address + ":" + nextValidator.Address;
+                        }
+                    }
+                    else if(validatorCount == 2)
+                    {
+                        var nextValidator = validators.FindAll().Where(x => x.Address != lastBlock.Validator).FirstOrDefault();
+                        if( nextValidator != null)
+                        {
+                            output = nextValidator.Address + ":" + lastBlock.Validator;
+                        }
+                    }
+                    else
+                    {
+                        var lastValidator = validators.FindAll().Where(x => x.Address == lastBlock.Validator).FirstOrDefault();
+                        if(lastValidator != null)
+                        {
+                            var nextNum = lastValidator.Position + 1 > validatorCount ? 1 : lastValidator.Position + 1;
+                            
+                            var nextVal = validators.FindAll().Where(x => x.Position == nextNum).FirstOrDefault();
+                            var secondaryVal = validators.FindAll().Where(x => x.Position == nextNum + 1).FirstOrDefault();
+
+                            string mainAddr = nextVal.Address;
+                            string backupAddr = secondaryVal.Address;
+
+                            var check = await P2PClient.PingNextValidators(nextVal.NodeIP, secondaryVal.NodeIP);
+
+                            //This will need to be revised to get next validator not just revert to previous block validator. 
+                            //This could cause a loop.
+                            if(check.Item1 == false)
+                            {
+                                mainAddr = backupAddr;
+                            }
+                            if(check.Item2 == false)
+                            {
+                                backupAddr = lastBlock.Validator;
+                            }
+
+                            output = nextVal.Address + ":" + secondaryVal.Address;
+                        }
+                    }
+                }
+                return output;
             }
 
         }

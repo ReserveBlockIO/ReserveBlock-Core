@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Nodes
@@ -49,6 +50,39 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
                     
+                }
+
+                if(message == "val")
+                {
+                    await P2PClient.GetMasternodes();
+                }
+
+                if(message == "blk")
+                {
+                    var nextBlock = JsonConvert.DeserializeObject<Block>(data);
+                    var nextHeight = BlockchainData.GetHeight() + 1;
+                    var currentHeight = nextBlock.Height;
+
+                    if (nextHeight == currentHeight)
+                    {
+                        var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                        if (result == true)
+                        {
+                            Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
+                            //Add rejection notice for validator
+                        }
+                    }
+                    else
+                    {
+                        // means we need to download some blocks
+                        Program.BlocksDownloading = true;
+                        var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
+                        Program.BlocksDownloading = setDownload;
+                    }
                 }
             }
         }

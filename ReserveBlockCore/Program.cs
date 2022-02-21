@@ -11,22 +11,18 @@ namespace ReserveBlockCore
     class Program
     {
         private static Timer blockTimer;//for creating a new block at max every 30 seconds
-        private static Timer mempoolShareTimer;//Sharing and checking mempool with other nodes
         private static Timer BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
         private static Timer PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static int MempoolCount = 0;
         public static List<Transaction> MempoolList = new List<Transaction>();
-        private static bool BlocksDownloading = false;
+        public static bool BlocksDownloading = false;
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
 
-            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
-
-            //mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //mempoolShareTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new tx's
+            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
@@ -145,49 +141,75 @@ namespace ReserveBlockCore
         private static async void blockBuilder_Elapsed(object sender)
         {
             var localValidator = Validators.Validator.GetLocalValidator();
+            var lastBlock = BlockchainData.GetLastBlock();
+            var currentUnixTime = Utilities.TimeUtil.GetTime();
+            var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
             //If no validators are detected then no need to run this code
-            if(localValidator.Count != 0)
+            if (localValidator.Count != 0)
             {
                 var validator = Validators.Validator.GetBlockValidator(); //need create consensus on who should actually do this. 
                 //if validator is NaN then there are no validators on network and block creation will stop. 
                 if (validator != "NaN")
                 {
-                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                    var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
-
-                    if (account != null)
+                    if(lastBlock.Height != 0)
                     {
-                        //craft new block
-                        await BlockchainData.CraftNewBlock(validator);
+                        var nextVals = validator.Split(':');
+                        var mainVal = nextVals[0];
+                        var secondaryVal = nextVals[1];
+
+                        if (timeDiff >= 0.52M && timeDiff < 1.04M)
+                        {
+
+                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                            var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+
+                            if (account != null)
+                            {
+                                //craft new block
+                                await BlockchainData.CraftNewBlock(validator);
+                            }
+                        }
+                        if(timeDiff >= 1.04M && timeDiff < 2.0M)
+                        {
+                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                            var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
+
+                            if (account != null)
+                            {
+                                //craft new block
+                                await BlockchainData.CraftNewBlock(validator);
+                            }
+                        }
+                        if(timeDiff > 2.0M)
+                        {
+                            //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
+                            //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
+                            var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                            var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
+
+                            if (account != null)
+                            {
+                                //craft new block
+                                await BlockchainData.CraftNewBlock(validator);
+                            }
+                        }
                     }
+                    else
+                    {
+                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                        var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
+
+                        if (account != null)
+                        {
+                            //craft new block
+                            await BlockchainData.CraftNewBlock(validator);
+                        }
+                    }    
+                    
                 }
             }
         }
-
-        private static void mempoolBroadcast_Elapsed(object sender)
-        {
-            var mempoolCount = TransactionData.GetPool().FindAll().Count();
-            
-
-            if(mempoolCount > MempoolCount)
-            {
-                //rebroadcast
-                //reset count
-                MempoolCount = mempoolCount;
-            }
-            else if(mempoolCount < MempoolCount)
-            {
-                //block added
-                //reset count
-                MempoolCount = mempoolCount;
-            }
-            else
-            {
-                //do nothing
-            }
-            
-        }
-
         private static async void blockHeightCheck_Elapsed(object sender)
         {
             //if blocks are currently downloading this will stop it from running again.
@@ -227,7 +249,7 @@ namespace ReserveBlockCore
             else
             {
                 var getMasterNodes = await P2PClient.GetMasternodes();
-                if(getMasterNodes == true)
+                if (getMasterNodes == true)
                 {
                     Console.WriteLine("Masternode List Updated!");
                 }

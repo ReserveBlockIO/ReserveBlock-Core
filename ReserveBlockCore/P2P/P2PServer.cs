@@ -59,21 +59,35 @@ namespace ReserveBlockCore.P2P
         }
 
         #region Receive Block
-        public async Task ReceiveBlock(Block nextBlock, List<string> ipList)
+        public async Task ReceiveBlock(Block nextBlock)
         {
             Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
-            var result = await BlockValidatorService.ValidateBlock(nextBlock);
-            if (result == false)
+
+            var nextHeight = BlockchainData.GetHeight() + 1;
+            var currentHeight = nextBlock.Height;
+
+            if(nextHeight == currentHeight)
             {
-                Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
-                //Add rejection notice for validator
+                var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                if (result == true)
+                {
+                    string data = "";
+                    data = JsonConvert.SerializeObject(nextBlock);
+                    await SendMessageAllPeers("blk", data);
+                }
+                else
+                {
+                    Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
+                    //Add rejection notice for validator
+                }
             }
             else
             {
-                //Resend block out if passed validation
-                P2PClient.BroadcastBlock(nextBlock, ipList);
+                // means we need to download some blocks
+                Program.BlocksDownloading = true;
+                var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
+                Program.BlocksDownloading = setDownload;
             }
-
         }
 
         #endregion
@@ -302,7 +316,7 @@ namespace ReserveBlockCore.P2P
 
             string data = "";
 
-            var updateMasternodes = P2PClient.GetMasternodes();
+            var updateMasternodes = await P2PClient.GetMasternodes();
 
             var validatorList = Validators.Validator.GetAll();
 
@@ -379,25 +393,14 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Share Peers
-        public async Task SharePeers(string node)
+        #region Ping Next Validator
+        public async Task<bool> PingNextValidator()
         {
-            var peers = P2PClient.ActivePeerList;
-            var message = "";
-
-            if (peers == null)
-            {
-                message = "NoPeers";
-                await Clients.All.SendAsync("PeersShared", null, message);
-            }
-            else
-            {
-                message = "PeersFound";
-                await Clients.All.SendAsync("PeersShared", peers, message);
-            }
+            return true;
         }
 
         #endregion
+
 
         #region Seed node check
         public async Task<string> SeedNodeCheck()

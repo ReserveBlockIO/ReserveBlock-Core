@@ -10,17 +10,28 @@ namespace ReserveBlockCore.Services
         {
             var myBlockHeight = BlockchainData.GetHeight();
             var difference = nHeight - myBlockHeight;
-
-            for(int i = 1; i <= difference; i++)
+            try
             {
-                //call out to nodes and get blocks.
-                var nextBlock = myBlockHeight + i;
-                var newBlock = await P2PClient.GetBlock();
-
-                if(newBlock != null)
+                for (int i = 1; i <= difference; i++)
                 {
-                    //await BlockValidatorService.ValidateBlock(newBlock);
+                    //call out to nodes and get blocks.
+                    var nextBlockHeight = myBlockHeight + i;
+                    var newBlock = await P2PClient.GetBlock();
+
+                    if (newBlock.Count() > 0)
+                    {
+                        var nextBlock = newBlock.Where(x => x.Height == nextBlockHeight).FirstOrDefault();
+                        if (nextBlock != null)
+                        {
+                            await BlockValidatorService.ValidateBlock(nextBlock);
+                        }
+
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                //Error
             }
 
             return false; //we return false once complete to alert wallet it is done downloading bulk blocks

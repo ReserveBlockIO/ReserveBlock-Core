@@ -39,7 +39,8 @@ namespace ReserveBlockCore.Services
                 Timestamp = block.Timestamp,
                 Transactions = block.Transactions,
                 Validator = block.Validator,
-                ChainRefId = block.ChainRefId
+                ChainRefId = block.ChainRefId,
+                NextValidators = block.NextValidators
             };
 
             newBlock.Build();

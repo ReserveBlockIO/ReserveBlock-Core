@@ -65,9 +65,9 @@ namespace ReserveBlockCore.Data
 
             var lastBlock = GetLastBlock();
             var height = lastBlock.Height + 1;
-            var timestamp = TimeUtil.GetTime();
+            var nextValidators = await Validators.Validator.GetNextBlockValidators();
             //Need to get master node validator.
-
+            var timestamp = TimeUtil.GetTime();
             var transactionList = new List<Transaction>();
 
             var coinbase_tx = new Transaction
@@ -117,13 +117,15 @@ namespace ReserveBlockCore.Data
                 transactionList.Add(coinbase_tx2);
             }
 
+
             var block = new Block
             {
                 Height = height,
                 Timestamp = timestamp,
                 Transactions = GiveOtherInfos(transactionList, height),
                 Validator = validator,
-                ChainRefId = ChainRef
+                ChainRefId = ChainRef,
+                NextValidators = nextValidators
             };
             block.Build();
 
@@ -146,7 +148,7 @@ namespace ReserveBlockCore.Data
 
             if(blockValResult == true)
             {
-                P2PClient.BroadcastBlock(block, null);
+                P2PClient.BroadcastBlock(block);
             }
             else
             {
