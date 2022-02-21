@@ -27,7 +27,8 @@ namespace ReserveBlockCore
             services.AddSignalR(options => {
                 options.KeepAliveInterval = TimeSpan.FromSeconds(10); //check connections everyone 10 seconds
                 options.ClientTimeoutInterval = TimeSpan.FromSeconds(30); //close connection after 45 seconds
-                options.MaximumReceiveMessageSize = 22528; //22 mb
+                options.MaximumReceiveMessageSize = 5 * 1024 * 1024;
+                options.StreamBufferCapacity = 10;
             });
         }
 
@@ -48,7 +49,10 @@ namespace ReserveBlockCore
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<P2PServer>("/blockchain");
+                endpoints.MapHub<P2PServer>("/blockchain", options => { 
+                    options.ApplicationMaxBufferSize = 5 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
+                    options.TransportMaxBufferSize = 5 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
+                });
             });
         }
     }

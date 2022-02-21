@@ -30,8 +30,8 @@ namespace ReserveBlockCore
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
 
-            //PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //PeerCheckTimer.Change(60000, 5000); //waits 1 minute, then runs every 3 seconds for new block heights
+            PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            PeerCheckTimer.Change(60000, 60000); //waits 1 minute, then runs every 60 seconds
 
 
             //add method to remove stale state trei records and stale validator records too
@@ -200,14 +200,12 @@ namespace ReserveBlockCore
 
         private static async void peerCheckTimer_Elapsed(object sender)
         {
-            var peerCheck = await P2PClient.PeerHealthCheck();
+            var peersConnected = await P2PClient.ArePeersConnected();
 
-            if(peerCheck == true)
+            if (peersConnected.Item1 != true)
             {
-                //health check pass
-            }
-            else
-            {
+                Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                StartupService.StartupPeers();
                 //potentially no connected nodes.
             }
         }

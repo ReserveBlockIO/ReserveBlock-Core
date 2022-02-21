@@ -90,35 +90,59 @@ namespace ReserveBlockCore.P2P
         {
             var result = false;
             var resultCount = 0;
-            if (hubConnection1 != null)
+            if (hubConnection1 != null && IsConnected1)
             {
                 result = true;
                 resultCount += 1;
             }
-            if (hubConnection2 != null)
+            else
+            {
+                hubConnection1 = null;
+            }
+            if (hubConnection2 != null && IsConnected2)
             {
                 result = true;
                 resultCount += 1;
             }
-            if (hubConnection3 != null)
+            else
+            {
+                hubConnection2 = null;
+            }
+            if (hubConnection3 != null && IsConnected3)
             {
                 result = true;
                 resultCount += 1;
             }
-            if (hubConnection4 != null)
+            else
+            {
+                hubConnection3 = null;
+            }
+            if (hubConnection4 != null && IsConnected4)
             {
                 result = true;
                 resultCount += 1;
             }
-            if (hubConnection5 != null)
+            else
+            {
+                hubConnection4 = null;
+            }
+            if (hubConnection5 != null && IsConnected5)
             {
                 result = true;
                 resultCount += 1;
             }
-            if (hubConnection6 != null)
+            else
+            {
+                hubConnection5 = null;
+            }
+            if (hubConnection6 != null && IsConnected6)
             {
                 result = true;
                 resultCount += 1;
+            }
+            else
+            {
+                hubConnection6 = null;
             }
 
             return (result, resultCount);
@@ -173,8 +197,9 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection1.On<string>("GetMessage", (message) => {
-                Console.WriteLine(message);//pass message somewhere too
+            hubConnection1.On<string, string>("GetMessage", (message, data) => {
+                if(message == "tx" || message == "blk")
+                    NodeDataProcessor.ProcessData(message, data);
             });
 
             await hubConnection1.StartAsync();
@@ -186,7 +211,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection2.On<string>("GetMessage", (message) => {
+            hubConnection2.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -199,7 +224,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection3.On<string>("GetMessage", (message) => {
+            hubConnection3.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -212,7 +237,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection4.On<string>("GetMessage", (message) => {
+            hubConnection4.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -225,7 +250,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection5.On<string>("GetMessage", (message) => {
+            hubConnection5.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -238,7 +263,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection6.On<string>("GetMessage", (message) => {
+            hubConnection6.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -251,7 +276,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection7.On<string>("GetMessage", (message) => {
+            hubConnection7.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -264,7 +289,7 @@ namespace ReserveBlockCore.P2P
                 .WithUrl(url)
                 .Build();
 
-            hubConnection8.On<string>("GetMessage", (message) => {
+            hubConnection8.On<string, string>("GetMessage", (message, data) => {
                 Console.WriteLine(message);//pass message somewhere too
             });
 
@@ -898,45 +923,22 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Send Transactions to mempool 
-        public static async void SendTXMempool(Transaction txSend, List<string>? ipList)
+        public static async void SendTXMempool(Transaction txSend)
         {
-            var validators = Validators.Validator.ValidatorList;
+            var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (ipList != null)
+            if (peersConnected.Item1 == false)
             {
-                validators = Validators.Validator.GetAll().FindAll().Where(x => !ipList.Any(y => y == x.NodeIP)).Take(10).ToList();
+                //Need peers
+                Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
             }
             else
             {
-                //this will only happen when new node is being broadcasted by its crafter.
-                validators = Validators.Validator.GetAll().FindAll().Take(10).ToList(); //grab 10 validators to send to, those 10 will then send to 10, etc.
-            }
-
-            if (validators == null)
-            {
-                Console.WriteLine("You have no peers to send transaction too.");
-            }
-            else
-            {
-                var vSendList = new List<string>();
-
-                validators.ForEach(x => {
-                    vSendList.Add(x.NodeIP);
-                });
-
-                if (ipList != null)
+                try
                 {
-                    vSendList.AddRange(ipList);
-                }
-                foreach (var peer in validators)
-                {
-                    try
+                    if (hubConnection1 != null)
                     {
-                        var url = "http://" + peer.NodeIP + ":3338/blockchain";
-                        var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                        connection.StartAsync().Wait();
-                        string message = await connection.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend, vSendList });
+                        string message = await hubConnection1.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
 
                         if (message == "ATMP")
                         {
@@ -950,16 +952,100 @@ namespace ReserveBlockCore.P2P
                         {
                             //already in mempool
                         }
-
                     }
-                    catch (Exception ex)
+
+                    if (hubConnection2 != null)
                     {
-                         //update list with removed node
-                        //if list gets below certain amount request more nodes.
+                        string message = await hubConnection2.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
                     }
+                    if (hubConnection3 != null)
+                    {
+                        string message = await hubConnection3.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        string message = await hubConnection4.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        string message = await hubConnection5.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        string message = await hubConnection6.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+
                 }
-
-
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    Console.WriteLine("Error Sending Transaction. Please try again!");
+                }
             }
         }
 

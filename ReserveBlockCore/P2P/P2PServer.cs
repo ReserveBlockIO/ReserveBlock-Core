@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
@@ -24,7 +25,7 @@ namespace ReserveBlockCore.P2P
             var blockHeight = BlockchainData.GetHeight();
             PeerList.Add(Context.ConnectionId, peerIP);
 
-            await SendMessage("HelloPeerLocal", blockHeight.ToString());
+            await SendMessage("Hello Peer", blockHeight.ToString());
             await base.OnConnectedAsync();
         }
 
@@ -37,7 +38,7 @@ namespace ReserveBlockCore.P2P
             {
                 var peer = PeerList.FirstOrDefault(x => x.Key == connectionId);
                 var ip = peer.Value;
-                await SendMessageAllPeers(ip);
+                //await SendMessageAllPeers(ip);
                 //do some logic
             }
         }
@@ -47,9 +48,9 @@ namespace ReserveBlockCore.P2P
             await Clients.Caller.SendAsync("GetMessage", message, data);
         }
 
-        public async Task SendMessageAllPeers(string ip)
+        public async Task SendMessageAllPeers(string message, string data)
         {
-            await Clients.All.SendAsync("GetMessage", "Peer: " + ip + " has disconnected");
+            await Clients.All.SendAsync("GetMessage", message, data);
         }
 
         public async Task SendMessageAllValidators(string ip)
@@ -207,7 +208,53 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Send to Mempool
-        public async Task<string> SendToMempool(Transaction txReceived, List<string> ipList)
+        public async Task<string> SendTxToMempool(Transaction txReceived)
+        {
+            var result = "";
+
+            var data = JsonConvert.SerializeObject(txReceived);
+
+            var mempool = TransactionData.GetPool();
+            if (mempool.Count() != 0)
+            {
+                var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
+                if (txFound == null)
+                {
+                    var txResult = TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
+                    if (txResult == true)
+                    {
+                        mempool.Insert(txReceived);
+                        await SendMessageAllPeers("tx", data);
+                        return "ATMP";//added to mempool
+                    }
+                    else
+                    {
+                        return "TFVP"; //transaction failed verification process
+                    }
+                }
+                else
+                {
+                    return "AIMP"; //already in mempool
+                }
+            }
+            else
+            {
+                var txResult = TransactionValidatorService.VerifyTX(txReceived);
+                if (txResult == true)
+                {
+                    mempool.Insert(txReceived);
+                    await SendMessageAllPeers("tx", data); //sends tx to connected peers
+                    return "ATMP";//added to mempool
+                }
+                else
+                {
+                    return "TFVP"; //transaction failed verification process
+                }
+            }
+
+            return "";
+        }
+        public async Task<string> SendToMempool(Transaction txReceived)
         {
             var peerIP = GetIP(Context);
 
@@ -221,7 +268,7 @@ namespace ReserveBlockCore.P2P
                     if (result == true)
                     {
                         mempool.Insert(txReceived);
-                        P2PClient.SendTXMempool(txReceived, ipList);
+                        P2PClient.SendTXMempool(txReceived);
                         return "ATMP";//added to mempool
                     }
                     else
