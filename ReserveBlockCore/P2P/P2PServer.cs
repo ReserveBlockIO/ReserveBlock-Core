@@ -264,11 +264,45 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Masternodes
+        public async Task<List<Validators>?> GetMasternodes(int valCount)
+        {
+            var validatorList = Validators.Validator.GetAll();
+            var validatorListCount = validatorList.Count();
+
+            if(validatorListCount == 0)
+            {
+                return null;
+            }
+            else
+            {
+                if(valCount == 0)
+                {
+                    return validatorList.FindAll().ToList();
+                }
+                else
+                {
+                    if(valCount < validatorListCount)
+                    {
+                        return validatorList.FindAll().ToList();
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
         #region Send Validator
         public async Task<string> SendValidator(Validators validator)
         {
             var peerIP = GetIP(Context);
             validator.NodeIP = peerIP;
+
+            string data = "";
+
+            var updateMasternodes = P2PClient.GetMasternodes();
 
             var validatorList = Validators.Validator.GetAll();
 
@@ -277,12 +311,19 @@ namespace ReserveBlockCore.P2P
                 var valFound = validatorList.FindOne(x => x.NodeIP == validator.NodeIP);
                 if (valFound == null)
                 {
-                    //Need to do VALIDATOR VALIDATION
                     var result = ValidatorService.ValidateTheValidator(validator);
                     if (result == true)
                     {
+                        var valPosFound = validatorList.FindOne(x => x.Position == validator.Position);
+                        if(valPosFound != null)
+                        {
+                            validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
+                        }
                         validatorList.Insert(validator);
-                        Validators.Validator.Initialize();
+
+                        data = JsonConvert.SerializeObject(validator);
+
+                        await SendMessageAllPeers("val", data);
                         return "VATN";//added to validator list
                     }
                     else
@@ -292,6 +333,30 @@ namespace ReserveBlockCore.P2P
                 }
                 else
                 {
+                    //Update found record with new information
+                    var result = ValidatorService.ValidateTheValidator(validator);
+                    if (result == true)
+                    {
+                        var valPosFound = validatorList.FindOne(x => x.Position == validator.Position);
+                        if (valPosFound != null)
+                        {
+                            validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
+                        }
+
+                        valFound.Amount = validator.Amount;
+                        valFound.Signature = validator.Signature;
+                        valFound.Address = validator.Address;
+                        valFound.IsActive = validator.IsActive;
+                        valFound.EligibleBlockStart = validator.EligibleBlockStart;
+                        valFound.UniqueName = validator.UniqueName;
+                        valFound.FailCount = validator.FailCount;
+                        valFound.Position = validator.Position;
+
+                        validatorList.Update(valFound);
+
+                        data = JsonConvert.SerializeObject(valFound);
+                        await SendMessageAllPeers("val", data);
+                    }
                     return "AIVL"; //already in validator list
                 }
             }

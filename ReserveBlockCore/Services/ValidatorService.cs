@@ -127,6 +127,9 @@ namespace ReserveBlockCore.Services
                         output = "Signature check has failed. Please provide correct private key for public address: " + account.Address;
                         return output;
                     }
+
+                    //need to request validator list from someone. 
+
                     var validatorTable = Validators.Validator.GetAll();
 
                     var validatorCount = validatorTable.FindAll().Where(x => x.Address == account.Address).Count();
@@ -136,38 +139,49 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        var validatorNodeCount = await P2PClient.GetValidatorCount();
-                        if(validatorNodeCount == null)
+
+                        var result = await P2PClient.ArePeersConnected();
+
+                        if(result.Item1 == false)
                         {
-                            var result = await P2PClient.GetValidatorList();
-                            if(result == false)
+                            output = "Could not find any validators to authenticate your request. Please try again later or manually add validators.";
+                        }
+                        else
+                        {
+                            Console.WriteLine("Syncing Masternode List... Please wait.");
+                            var getMasterNodeResult = await P2PClient.GetMasternodes();
+
+                            if(getMasterNodeResult == true)
                             {
-                                output = "Could not find any validators to authenticate your request. Please try again later or manually add validators.";
+                                Console.WriteLine("Masternode List has been synced with peers.");
                             }
                             else
                             {
-                                validatorNodeCount = await P2PClient.GetValidatorCount();
-                                var blockHeight = BlockchainData.GetHeight();
+                                Console.WriteLine("Masternode List is up to date. Sending account out to peers!");
+                            }
+                            var blockHeight = BlockchainData.GetHeight();
 
-                                //add total num of validators to block
-                                validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
-                                validator.Amount = account.Balance;
-                                validator.Address = account.Address;
-                                validator.EligibleBlockStart = validatorNodeCount == null ? blockHeight + 2: blockHeight + validatorNodeCount.Value;
-                                validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName;
-                                validator.IsActive = true;
-                                validator.Signature = signature;
+                            //add total num of validators to block
+                            validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
+                            validator.Amount = account.Balance;
+                            validator.Address = account.Address;
+                            validator.EligibleBlockStart = blockHeight + 60;
+                            validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName;
+                            validator.IsActive = true;
+                            validator.Signature = signature;
+                            validator.FailCount = 0;
+                            validator.Position = validatorTable.FindAll().Count() + 1;
 
-                                validatorTable.Insert(validator);
+                            validatorTable.Insert(validator);
 
-                                account.IsValidating = true;
-                                var accountTable = AccountData.GetAccounts();
-                                accountTable.Update(account);
-                                P2PClient.BroadcastMasterNode(validator);
+                            account.IsValidating = true;
+                            var accountTable = AccountData.GetAccounts();
+                            accountTable.Update(account);
+                            P2PClient.BroadcastMasterNode(validator);
 
-                                output = "Account found and activated as a validator! Thank you for service to the network!";
-                            }    
-                        }
+                            output = "Account found and activated as a validator! Thank you for service to the network!";
+                        }    
+                        
                          //broadcast validator to nodes and other validators.
                     }
 

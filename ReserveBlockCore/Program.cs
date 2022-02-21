@@ -14,6 +14,7 @@ namespace ReserveBlockCore
         private static Timer mempoolShareTimer;//Sharing and checking mempool with other nodes
         private static Timer BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
         private static Timer PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
+        private static Timer ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static int MempoolCount = 0;
         public static List<Transaction> MempoolList = new List<Transaction>();
         private static bool BlocksDownloading = false;
@@ -31,7 +32,10 @@ namespace ReserveBlockCore
             BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            PeerCheckTimer.Change(60000, 60000); //waits 1 minute, then runs every 60 seconds
+            PeerCheckTimer.Change(60000, 1 * 10 * 6000); //waits 1 minute, then runs every 60 seconds
+
+            ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            ValidatorListTimer.Change(60000, 60 * 10 * 6000); //waits 1 minute, then runs every 1 hour
 
 
             //add method to remove stale state trei records and stale validator records too
@@ -207,6 +211,26 @@ namespace ReserveBlockCore
                 Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
                 StartupService.StartupPeers();
                 //potentially no connected nodes.
+            }
+        }
+
+        private static async void validatorListCheckTimer_Elapsed(object sender)
+        {
+            var peersConnected = await P2PClient.ArePeersConnected();
+
+            if (peersConnected.Item1 != true)
+            {
+                Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                StartupService.StartupPeers();
+                //potentially no connected nodes.
+            }
+            else
+            {
+                var getMasterNodes = await P2PClient.GetMasternodes();
+                if(getMasterNodes == true)
+                {
+                    Console.WriteLine("Masternode List Updated!");
+                }
             }
         }
     }

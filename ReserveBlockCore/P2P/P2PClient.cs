@@ -189,7 +189,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region HubConnection Peer Connect Methods - An IP is required
+        #region HubConnection Peer Connect Methods - An IP is required *OBSELETE*
         private async Task ConnectPeer1(string peerIP)
         {
             var url = "http://" + peerIP + ":3338/blockchain";
@@ -891,112 +891,313 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        /// <summary>
-        /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// </summary>
-
-        #region Local Test Example
-        public static void TestLocal()
+        #region Get Current Masternodes
+        public static async Task<bool> GetMasternodes()
         {
-            var connection = new HubConnectionBuilder().WithUrl("http://localhost:3338/blockchain").Build();
-
-            connection.StartAsync().Wait();
-            connection.InvokeCoreAsync("ConnectPeers", args: new[] { "Local", "Hello", DateTime.UtcNow.Ticks.ToString() });
-            connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
+            var peersConnected = await P2PClient.ArePeersConnected();
+            var output = false;
+            if (peersConnected.Item1 == false)
             {
-                Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
-            });
-        }
-
-        #endregion 
-
-        
-
-        #region Peer Health Check
-        public static async Task<bool> PeerHealthCheck()
-        {
-            bool result = false;
-
-            var peers = ActivePeerList;
-
-            int successCount = 0;
-
-            var peerDB = Peers.GetAll();
-
-            if (peers != null)
+                //Need peers
+                return output;
+            }
+            else
             {
-                //this will always fail is 1 record. Fix this
-                if (peers.Count() > 0)
+                try
                 {
-                    if(peers.Count() < 3)
+                    var validators = Validators.Validator.GetAll();
+                    var valCount = validators.FindAll().Count();
+
+                    if (hubConnection1 != null)
                     {
-                        NodeConnector.StartNodeConnecting();
-                        peers = Peers.PeerList();
-                        ActivePeerList = peers;//add new peers to active list
-                    }
-
-                    if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
-                    {
-                        Random rnd = new Random();
-                        var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                        if (peerList.Count() >= 2)
+                        List<Validators>? remoteValidators = await hubConnection1.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                        if(remoteValidators != null)
                         {
-                            peers = peerList;
-                        }
-                        else
-                        {
-                            peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                        }
-                    }   
-                    foreach (var peer in peers)
-                    {
-                        try
-                        {
-                            var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                            var connection = new HubConnectionBuilder().WithUrl(url).Build();
-                            string response = "";
-
-                            var conResult = connection.StartAsync().Wait(5000);//giving peer 5 seconds to respond.
-                            if (conResult == false)
-                                return false;
-
-                            response = await connection.InvokeAsync<string>("PingPeers");
-
-                            if (response == "HelloPeer")
+                            if(valCount == 0)
                             {
-                                successCount += 1;
-                                peer.FailCount = 0; //peer responded. Reset fail count
-                                peerDB.Update(peer);
+                                validators.InsertBulk(remoteValidators);
+                                output = true;
                             }
                             else
                             {
-                                peer.FailCount += 1;
-                                peerDB.Update(peer);
+                                var locValidators = validators.FindAll().ToList();
+                                var newValidators = remoteValidators.Except(locValidators);
+
+                                if(newValidators.Count() > 0)
+                                {
+                                    validators.InsertBulk(newValidators);
+                                    output = true;
+                                }
                             }
-
                         }
-                        catch (Exception ex)
+                    }
+                    if (hubConnection2 != null)
+                    {
+                        List<Validators>? remoteValidators = await hubConnection2.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                        if (remoteValidators != null)
                         {
-                            //peer did not response correctly or at all
-                            peer.FailCount += 1;
-                            peerDB.Update(peer);
-                        }
+                            if (valCount == 0)
+                            {
+                                validators.InsertBulk(remoteValidators);
+                                output = true;
+                            }
+                            else
+                            {
+                                var locValidators = validators.FindAll().ToList();
+                                var newValidators = remoteValidators.Except(locValidators);
 
+                                if (newValidators.Count() > 0)
+                                {
+                                    validators.InsertBulk(newValidators);
+                                    output = true;
+                                }
+                            }
+                        }
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        List<Validators>? remoteValidators = await hubConnection3.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                        if (remoteValidators != null)
+                        {
+                            if (valCount == 0)
+                            {
+                                validators.InsertBulk(remoteValidators);
+                                output = true;
+                            }
+                            else
+                            {
+                                var locValidators = validators.FindAll().ToList();
+                                var newValidators = remoteValidators.Except(locValidators);
+
+                                if (newValidators.Count() > 0)
+                                {
+                                    validators.InsertBulk(newValidators);
+                                    output = true;
+                                }
+                            }
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        List<Validators>? remoteValidators = await hubConnection4.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                        if (remoteValidators != null)
+                        {
+                            if (valCount == 0)
+                            {
+                                validators.InsertBulk(remoteValidators);
+                                output = true;
+                            }
+                            else
+                            {
+                                var locValidators = validators.FindAll().ToList();
+                                var newValidators = remoteValidators.Except(locValidators);
+
+                                if (newValidators.Count() > 0)
+                                {
+                                    validators.InsertBulk(newValidators);
+                                    output = true;
+                                }
+                            }
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        List<Validators>? remoteValidators = await hubConnection5.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                        if (remoteValidators != null)
+                        {
+                            if (valCount == 0)
+                            {
+                                validators.InsertBulk(remoteValidators);
+                                output = true;
+                            }
+                            else
+                            {
+                                var locValidators = validators.FindAll().ToList();
+                                var newValidators = remoteValidators.Except(locValidators);
+
+                                if (newValidators.Count() > 0)
+                                {
+                                    validators.InsertBulk(newValidators);
+                                    output = true;
+                                }
+                            }
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        List<Validators>? remoteValidators = await hubConnection6.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                        if (remoteValidators != null)
+                        {
+                            if (valCount == 0)
+                            {
+                                validators.InsertBulk(remoteValidators);
+                                output = true;
+                            }
+                            else
+                            {
+                                var locValidators = validators.FindAll().ToList();
+                                var newValidators = remoteValidators.Except(locValidators);
+
+                                if (newValidators.Count() > 0)
+                                {
+                                    validators.InsertBulk(newValidators);
+                                    output = true;
+                                }
+                            }
+                        }
                     }
 
-                    if (successCount > 0)
-                        return true;
-                    
                 }
-
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    return output;
+                }
             }
 
-            return result;
+            return output;
         }
 
         #endregion
 
-        
+        #region Broadcast Masternode
+        public static async void BroadcastMasterNode(Validators nValidator)
+        {
+            var peersConnected = await P2PClient.ArePeersConnected();
+
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                Console.WriteLine("Failed to broadcast Masternode. No peers are connected to you.");
+            }
+            else
+            {
+                try
+                {
+                    if (hubConnection1 != null)
+                    {
+                        string message = await hubConnection1.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            Validators.Validator.Initialize();
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+
+                    if (hubConnection2 != null)
+                    {
+                        string message = await hubConnection2.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            Validators.Validator.Initialize();
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        string message = await hubConnection3.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            Validators.Validator.Initialize();
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        string message = await hubConnection4.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            Validators.Validator.Initialize();
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        string message = await hubConnection5.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            Validators.Validator.Initialize();
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        string message = await hubConnection6.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            Validators.Validator.Initialize();
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    Console.WriteLine("Error Sending Validator Info.");
+                }
+            }
+
+        }
+        #endregion
+
+        /// <summary>
+        /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// </summary>      
 
         #region Get Validator List
         public static async Task<bool> GetValidatorList(bool isValidator = false)
@@ -1071,70 +1272,6 @@ namespace ReserveBlockCore.P2P
         #endregion
 
 
-
-        #region Broadcast Masternode
-        public static async void BroadcastMasterNode(Validators nValidator)
-        {
-            var peers = ActivePeerList.ToList();
-            var validators = Validators.Validator.ValidatorList;
-            if (peers == null)
-            {
-                Console.WriteLine("You have no peers to send node info too.");
-            }
-            else
-            {
-                foreach (var peer in peers)
-                {
-                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                    connection.StartAsync().Wait();
-                    string message = await connection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
-
-                    if (message == "VATN")
-                    {
-                        //success
-                        Validators.Validator.Initialize();
-                    }
-                    else if (message == "FTAV")
-                    {
-                        Console.WriteLine("Transaction Failed Verification Process on remote node");
-                    }
-                    else
-                    {
-                        //already in validator list
-                    }
-                }
-            }
-            if(validators != null)
-            {
-                Console.WriteLine("Sending your node info to all validators. Please note this may take a moment.");
-                foreach (var validator in validators)
-                {
-                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
-                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                    connection.StartAsync().Wait();
-                    string message = await connection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
-
-                    if (message == "VATN")
-                    {
-                        //success
-                        Validators.Validator.Initialize();
-                    }
-                    else if (message == "FTAV")
-                    {
-                        Console.WriteLine("Transaction Failed Verification Process on remote node");
-                    }
-                    else
-                    {
-                        //already in validator list
-                    }
-                }
-                Console.WriteLine("Done Sending. Thank you for joining the RBX Network!");
-            }
-        }
-        #endregion
 
         #region Broadcast Blocks to Validators
         public static async void BroadcastBlock(Block block, List<string>? ipList)
