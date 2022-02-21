@@ -27,11 +27,6 @@ namespace ReserveBlockCore.Services
             
         }
 
-        internal static void TestConnect()
-        {
-            P2PClient.TestLocal();
-        }
-
         internal static void SetBlockchainChainRef()
         {
             //mainnet
@@ -52,10 +47,11 @@ namespace ReserveBlockCore.Services
             if(result == true)
             {
                 //Connected to peers
+                StartupInitializeChain();
             }
             else
             {
-                //failed to connect to peers.
+                Console.WriteLine("Failed to automatically connect to peers. Please add manually.");
             }
             
         }

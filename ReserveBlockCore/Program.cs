@@ -21,17 +21,17 @@ namespace ReserveBlockCore
         {
             var argList = args.ToList();
 
-            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
+            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //blockTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
 
-            mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            mempoolShareTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new tx's
+            //mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //mempoolShareTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new tx's
 
-            BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
+            //BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
 
-            PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            PeerCheckTimer.Change(60000, 300000); //waits 1 minute, then runs every 3 seconds for new block heights
+            //PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //PeerCheckTimer.Change(60000, 5000); //waits 1 minute, then runs every 3 seconds for new block heights
 
 
             //add method to remove stale state trei records and stale validator records too
@@ -92,12 +92,9 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();
             StartupService.SetBlockchainChainRef();
 
-            StartupService.TestConnect();
             StartupService.StartupPeers();
-            Thread.Sleep(5000);
-            //StartupService.DownloadBlocks();
 
-            //StartupService.StartupInitializeChain();
+            Thread.Sleep(5000);
 
             Task.WaitAll(commandLoopTask, commandLoopTask2);
 

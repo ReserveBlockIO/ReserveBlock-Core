@@ -17,6 +17,45 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PServer : Hub
     {
+        private static Dictionary<string, string> PeerList = new Dictionary<string, string>();
+        public override async Task OnConnectedAsync()
+        {
+            var peerIP = GetIP(Context);
+            var blockHeight = BlockchainData.GetHeight();
+            PeerList.Add(Context.ConnectionId, peerIP);
+
+            await SendMessage("HelloPeerLocal", blockHeight.ToString());
+            await base.OnConnectedAsync();
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? ex)
+        {
+            string connectionId = Context.ConnectionId;
+            var check = PeerList.ContainsKey(connectionId);
+
+            if (check == true)
+            {
+                var peer = PeerList.FirstOrDefault(x => x.Key == connectionId);
+                var ip = peer.Value;
+                await SendMessageAllPeers(ip);
+                //do some logic
+            }
+        }
+
+        public async Task SendMessage(string message, string data)
+        {
+            await Clients.Caller.SendAsync("GetMessage", message, data);
+        }
+
+        public async Task SendMessageAllPeers(string ip)
+        {
+            await Clients.All.SendAsync("GetMessage", "Peer: " + ip + " has disconnected");
+        }
+
+        public async Task SendMessageAllValidators(string ip)
+        {
+            await Clients.All.SendAsync("GetMessage", "NewBlock");
+        }
 
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock, List<string> ipList)
@@ -94,6 +133,8 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Ping Peers
+
         public async Task<string> PingPeers()
         {
             var peerIP = GetIP(Context);
@@ -123,6 +164,8 @@ namespace ReserveBlockCore.P2P
         {
             return "HelloBackPeer";
         }
+
+        #endregion
 
         #region Send Block Height
         public async Task<long> SendBlockHeight()

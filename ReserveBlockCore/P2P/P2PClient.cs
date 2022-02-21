@@ -15,7 +15,245 @@ namespace ReserveBlockCore.P2P
     {
         public static List<Peers>? ActivePeerList { get; set; }
 
-        public static HubConnectionBuilder con = new HubConnectionBuilder();
+        #region HubConnection Variables
+        /// <summary>
+        /// Below are reserved for peers to download blocks and share mempool tx's.
+        /// </summary>
+        /// 
+        private static Dictionary<string, bool> HubList = new Dictionary<string, bool>();
+
+        private static HubConnection? hubConnection1;
+        public static bool IsConnected1 => hubConnection1?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubConnection2;
+        public static bool IsConnected2 => hubConnection2?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubConnection3;
+        public static bool IsConnected3 => hubConnection3?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubConnection4;
+        public static bool IsConnected4 => hubConnection4?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubConnection5;
+        public static bool IsConnected5 => hubConnection5?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubConnection6;
+        public static bool IsConnected6 => hubConnection6?.State == HubConnectionState.Connected;
+
+        /// <summary>
+        /// Below are reserved for validators to open up communications to get the next 2 nodes for block solving.
+        /// </summary>
+
+        private static HubConnection? hubConnection7; //reserved for validators
+        public static bool IsConnected7 => hubConnection7?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubConnection8; //reserved for validators
+        public static bool IsConnected8 => hubConnection8?.State == HubConnectionState.Connected;
+
+        #endregion
+
+        private static async Task<HubConnection?> GetAvailablePeerHubs()
+        {
+            if (hubConnection1 == null)
+            {
+                return hubConnection1;
+            }
+            if (hubConnection2 == null)
+            {
+                return hubConnection3;
+            }
+            if (hubConnection3 == null)
+            {
+                return hubConnection4;
+            }
+            if (hubConnection4 == null)
+            {
+                return hubConnection5;
+            }
+            if (hubConnection5 == null)
+            {
+                return hubConnection6;
+            }
+
+            return null;
+        }
+
+        #region Hub Dispose
+        public async ValueTask DisposeAsync()
+        {
+            if (hubConnection1 != null)
+            {
+                await hubConnection1.DisposeAsync();
+            }
+            if (hubConnection2 != null)
+            {
+                await hubConnection2.DisposeAsync();
+            }
+            if (hubConnection3 != null)
+            {
+                await hubConnection3.DisposeAsync();
+            }
+            if (hubConnection4 != null)
+            {
+                await hubConnection4.DisposeAsync();
+            }
+            if (hubConnection5 != null)
+            {
+                await hubConnection5.DisposeAsync();
+            }
+            if (hubConnection6 != null)
+            {
+                await hubConnection6.DisposeAsync();
+            }
+            if (hubConnection7 != null)
+            {
+                await hubConnection7.DisposeAsync();
+            }
+            if (hubConnection8 != null)
+            {
+                await hubConnection8.DisposeAsync();
+            }
+        }
+
+        #endregion
+
+        #region HubConnection Peer Connect Methods - An IP is required
+        private async Task ConnectPeer1(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection1 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection1.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection1.StartAsync();
+        }
+        private async Task ConnectPeer2(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection2 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection2.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection2.StartAsync();
+        }
+        private async Task ConnectPeer3(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection3 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection3.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection3.StartAsync();
+        }
+        private async Task ConnectPeer4(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection4 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection4.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection4.StartAsync();
+        }
+        private async Task ConnectPeer5(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection5 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection5.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection5.StartAsync();
+        }
+        private async Task ConnectPeer6(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection6 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection6.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection6.StartAsync();
+        }
+        private async Task ConnectPeer7(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection7 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection7.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection7.StartAsync();
+        }
+        private async Task ConnectPeer8(string peerIP)
+        {
+            var url = "http://" + peerIP + ":3338/blockchain";
+            hubConnection8 = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+            hubConnection8.On<string>("GetMessage", (message) => {
+                Console.WriteLine(message);//pass message somewhere too
+            });
+
+            await hubConnection8.StartAsync();
+        }
+
+        #endregion
+
+        private static async Task<bool> Connect(HubConnection hubConnection, string url)
+        {
+            try
+            {
+                hubConnection = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+
+                hubConnection.On<string, string>("GetMessage", (message, data) => {
+                    Console.WriteLine(message + " Block Height: " + data);
+                });
+
+
+                await hubConnection.StartAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
+            return false;
+
+        }
+
+        /// <summary>
+        /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// </summary>
 
         #region Local Test
         public static void TestLocal()
@@ -30,15 +268,13 @@ namespace ReserveBlockCore.P2P
             });
         }
 
-        #endregion
+        #endregion 
 
         #region Connect to Peers
         public static async Task<bool> ConnectToPeers()
         {
             List<Peers> peers = new List<Peers>();
             peers = Peers.PeerList();
-
-            ActivePeerList = new List<Peers>();
 
             int successCount = 0;
            
@@ -68,32 +304,24 @@ namespace ReserveBlockCore.P2P
                 }
                 foreach (var peer in peers)
                 {
-                    Console.Write("Peer found: " + peer.PeerIP);
+                    Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
+                    var hubCon = await GetAvailablePeerHubs();
                     try
                     {
                         var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                        var connection = new HubConnectionBuilder().WithUrl(url).Build();
-                        string response = "";
-
-                        var conResult = connection.StartAsync().Wait(15000);//giving peer 5 seconds to respond.
+                        var conResult = await Connect(hubCon, url);
                         if (conResult != false)
                         {
-                            response = await connection.InvokeAsync<string>("PingPeers");
-
-                            if (response == "HelloPeer")
-                            {
-                                successCount += 1;
-                                peer.FailCount = 0; //peer responded. Reset fail count
-                                peerDB.Update(peer);
-                                ActivePeerList.Add(peer);//adds peer to active list.
-                            }
+                            successCount += 1;
+                            peer.FailCount = 0; //peer responded. Reset fail count
+                            peerDB.Update(peer);
                         }
                         else
                         {
                             peer.FailCount += 1;
                             peerDB.Update(peer);
                         }
-                        
+
                     }
                     catch (Exception ex)
                     {
@@ -104,6 +332,7 @@ namespace ReserveBlockCore.P2P
                     
                 }
                 if(successCount > 0)
+                    
                     return true;
             }
 
@@ -138,6 +367,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Peer Health Check
         public static async Task<bool> PeerHealthCheck()
         {
             bool result = false;
@@ -219,6 +449,7 @@ namespace ReserveBlockCore.P2P
             return result;
         }
 
+        #endregion
 
         #region Get Block
         public static async Task<Block?> GetBlock() //base example
