@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetNewAddress()
         {
             //use Id to get specific commands
-            var output = "Command not recognized."; // this will only display if command not recognized.
+            var output = "Fail"; // this will only display if command not recognized.
             var account = AccountData.CreateNewAccount();
 
             output = account.Address + ":" + account.PrivateKey;
