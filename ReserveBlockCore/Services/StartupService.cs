@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Services
             if(result == true)
             {
                 //Connected to peers
-                //StartupInitializeChain();
+                StartupInitializeChain();
             }
             else
             {
@@ -58,20 +58,21 @@ namespace ReserveBlockCore.Services
         internal static async Task<bool> DownloadBlocks() //download genesis block
         {
             var peersConnected = await P2PClient.ArePeersConnected();
-            if (peersConnected)
+
+            if (peersConnected.Item1)
             {
                 var blocks = BlockData.GetBlocks();
                 if(blocks.Count() == 0)
                 {
                     Console.WriteLine("Downloading Blocks First.");
-                    var block = await P2PClient.GetBlock();
-                    Console.WriteLine("Found Block: " + block.Height.ToString());
-                    var result = await BlockValidatorService.ValidateBlock(block);
-                    if (result == false)
-                    {
-                        Console.WriteLine("Block was rejected from: " + block.Validator);
-                        //Add rejection notice for validator
-                    }
+                    var blockCol = await P2PClient.GetBlock();
+                    //Console.WriteLine("Found Block: " + block.Height.ToString());
+                    //var result = await BlockValidatorService.ValidateBlock(block);
+                    //if (result == false)
+                    //{
+                    //    Console.WriteLine("Block was rejected from: " + block.Validator);
+                    //    //Add rejection notice for validator
+                    //}
                     
                 }
                 

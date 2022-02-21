@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Services
 
                 if(newBlock != null)
                 {
-                    await BlockValidatorService.ValidateBlock(newBlock);
+                    //await BlockValidatorService.ValidateBlock(newBlock);
                 }
             }
 

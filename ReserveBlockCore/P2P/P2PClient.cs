@@ -52,65 +52,79 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        private static async Task<HubConnection?> GetAvailablePeerHubs()
+        #region Get Available HubConnections for Peers
+        private static async Task<int> GetAvailablePeerHubs()
         {
             if (hubConnection1 == null)
             {
-                return hubConnection1;
+                return (1);
             }
             if (hubConnection2 == null)
             {
-                return hubConnection2;
+                return (2);
             }
             if (hubConnection3 == null)
             {
-                return hubConnection3;
+                return (3);
             }
             if (hubConnection4 == null)
             {
-                return hubConnection4;
+                return (4);
             }
             if (hubConnection5 == null)
             {
-                return hubConnection5;
+                return (5);
             }
             if (hubConnection6 == null)
             {
-                return hubConnection6;
+                return (6);
             }
 
-            return null;
+            return (0);
         }
 
-        public static async Task<bool> ArePeersConnected()
+        #endregion
+
+        #region Check which HubConnections are actively connected
+        public static async Task<(bool, int)> ArePeersConnected()
         {
+            var result = false;
+            var resultCount = 0;
             if (hubConnection1 != null)
             {
-                return true;
+                result = true;
+                resultCount += 1;
             }
             if (hubConnection2 != null)
             {
-                return true;
+                result = true;
+                resultCount += 1;
             }
             if (hubConnection3 != null)
             {
-                return true;
+                result = true;
+                resultCount += 1;
             }
             if (hubConnection4 != null)
             {
-                return true;
+                result = true;
+                resultCount += 1;
             }
             if (hubConnection5 != null)
             {
-                return true;
+                result = true;
+                resultCount += 1;
             }
             if (hubConnection6 != null)
             {
-                return true;
+                result = true;
+                resultCount += 1;
             }
 
-            return false;
+            return (result, resultCount);
         }
+
+        #endregion
 
         #region Hub Dispose
         public async ValueTask DisposeAsync()
@@ -259,50 +273,147 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        private static async Task<bool> Connect(HubConnection hubConnection, string url)
+        #region Hubconnection Connect Methods 1-6
+        private static async Task<bool> Connect(int HubNum, string url)
         {
-            try
+            if(HubNum == 1)
             {
-                hubConnection = new HubConnectionBuilder()
-                .WithUrl(url)
-                .Build();
+                try
+                {
+                    hubConnection1 = new HubConnectionBuilder()
+                    .WithUrl(url)
+                    .Build();
 
-                hubConnection.On<string, string>("GetMessage", (message, data) => {
-                    Console.WriteLine(message + " Block Height: " + data);
-                });
+                    hubConnection1.On<string, string>("GetMessage", (message, data) => {
+                        Console.WriteLine(message + " Block Height: " + data);
+                    });
 
 
-                await hubConnection.StartAsync();
+                    await hubConnection1.StartAsync();
 
-                return true;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    return false;
+                }
             }
-            catch (Exception ex)
+            else if(HubNum == 2)
             {
-                return false;
-            }
+                try
+                {
+                    hubConnection2 = new HubConnectionBuilder()
+                    .WithUrl(url)
+                    .Build();
 
+                    hubConnection2.On<string, string>("GetMessage", (message, data) => {
+                        Console.WriteLine(message + " Block Height: " + data);
+                    });
+
+
+                    await hubConnection2.StartAsync();
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    return false;
+                }
+            }
+            else if(HubNum == 3)
+            {
+                try
+                {
+                    hubConnection3 = new HubConnectionBuilder()
+                    .WithUrl(url)
+                    .Build();
+
+                    hubConnection3.On<string, string>("GetMessage", (message, data) => {
+                        Console.WriteLine(message + " Block Height: " + data);
+                    });
+
+
+                    await hubConnection3.StartAsync();
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    return false;
+                }
+            }
+            else if(HubNum == 4)
+            {
+                try
+                {
+                    hubConnection4 = new HubConnectionBuilder()
+                    .WithUrl(url)
+                    .Build();
+
+                    hubConnection4.On<string, string>("GetMessage", (message, data) => {
+                        Console.WriteLine(message + " Block Height: " + data);
+                    });
+
+
+                    await hubConnection4.StartAsync();
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    return false;
+                }
+            }
+            else if (HubNum == 5)
+            {
+                try
+                {
+                    hubConnection5 = new HubConnectionBuilder()
+                    .WithUrl(url)
+                    .Build();
+
+                    hubConnection5.On<string, string>("GetMessage", (message, data) => {
+                        Console.WriteLine(message + " Block Height: " + data);
+                    });
+
+
+                    await hubConnection5.StartAsync();
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    return false;
+                }
+            }
+            else if(HubNum == 6)
+            {
+                try
+                {
+                    hubConnection6 = new HubConnectionBuilder()
+                    .WithUrl(url)
+                    .Build();
+
+                    hubConnection6.On<string, string>("GetMessage", (message, data) => {
+                        Console.WriteLine(message + " Block Height: " + data);
+                    });
+
+
+                    await hubConnection6.StartAsync();
+
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    return false;
+                }
+            }
+            
             return false;
 
         }
 
-        /// <summary>
-        /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// </summary>
-
-        #region Local Test
-        public static void TestLocal()
-        {
-            var connection = new HubConnectionBuilder().WithUrl("http://localhost:3338/blockchain").Build();
-
-            connection.StartAsync().Wait();
-            connection.InvokeCoreAsync("ConnectPeers", args: new[] { "Local", "Hello", DateTime.UtcNow.Ticks.ToString() });
-            connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
-            {
-                Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
-            });
-        }
-
-        #endregion 
+        #endregion
 
         #region Connect to Peers
         public static async Task<bool> ConnectToPeers()
@@ -311,10 +422,10 @@ namespace ReserveBlockCore.P2P
             peers = Peers.PeerList();
 
             int successCount = 0;
-           
+
             var peerDB = Peers.GetAll();
 
-            if(peers.Count() == 0)
+            if (peers.Count() == 0)
             {
                 await NodeConnector.StartNodeConnecting();
                 peers = Peers.PeerList();
@@ -322,11 +433,11 @@ namespace ReserveBlockCore.P2P
 
             if (peers.Count() > 0)
             {
-                if(peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
+                if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
                 {
                     Random rnd = new Random();
                     var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                    if(peerList.Count() >= 2)
+                    if (peerList.Count() >= 2)
                     {
                         peers = peerList;
                     }
@@ -334,12 +445,14 @@ namespace ReserveBlockCore.P2P
                     {
                         peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
                     }
-                    
+
                 }
                 foreach (var peer in peers)
                 {
                     Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
                     var hubCon = await GetAvailablePeerHubs();
+                    if (hubCon == 0)
+                        return false;
                     try
                     {
                         var url = "http://" + peer.PeerIP + ":3338/blockchain";
@@ -363,10 +476,10 @@ namespace ReserveBlockCore.P2P
                         peer.FailCount += 1;
                         peerDB.Update(peer);
                     }
-                    
+
                 }
-                if(successCount > 0)
-                    
+                if (successCount > 0)
+
                     return true;
             }
 
@@ -400,6 +513,27 @@ namespace ReserveBlockCore.P2P
 
 
         #endregion
+
+        /// <summary>
+        /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// </summary>
+
+        #region Local Test Example
+        public static void TestLocal()
+        {
+            var connection = new HubConnectionBuilder().WithUrl("http://localhost:3338/blockchain").Build();
+
+            connection.StartAsync().Wait();
+            connection.InvokeCoreAsync("ConnectPeers", args: new[] { "Local", "Hello", DateTime.UtcNow.Ticks.ToString() });
+            connection.On("PeerConnected", (string node, string message, string latency, string chainRef) =>
+            {
+                Console.WriteLine(node + " - Message: " + message + " latency: " + latency + " ms");
+            });
+        }
+
+        #endregion 
+
+        
 
         #region Peer Health Check
         public static async Task<bool> PeerHealthCheck()
@@ -486,41 +620,87 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Block
-        public static async Task<Block?> GetBlock() //base example
+        public static async Task<List<Block>> GetBlock() //base example
          {
             var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
             var nBlock = new Block();
-            var peer = ActivePeerList.OrderByDescending(x => x.FailCount).FirstOrDefault();//might need to reverse this
+            List<Block> blocks = new List<Block>();
+            var peersConnected = await P2PClient.ArePeersConnected();
 
-            if(peer == null)
+            if (peersConnected.Item1 == false)
             {
                 //Need peers
-                return null;
+                return blocks;
             }
             else
             {
                 try
                 {
-                    var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                    var connection = new HubConnectionBuilder().WithUrl(url).Build();
+                    if(hubConnection1 != null)
+                    {
+                        nBlock = await hubConnection1.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if(nBlock != null)
+                        {
+                            blocks.Add(nBlock);
+                        }
+                        
+                    }
+                    if (hubConnection2 != null)
+                    {
+                        nBlock = await hubConnection2.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if(!blocks.Exists(x => x.Height == nBlock.Height));
+                                blocks.Add(nBlock);
+                        }
+                        
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        nBlock = await hubConnection3.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        nBlock = await hubConnection4.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        nBlock = await hubConnection5.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        nBlock = await hubConnection6.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
 
-                    connection.StartAsync().Wait();
-                    nBlock = await connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                    return blocks;
 
-                    return nBlock;
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    var tempActivePeerList = new List<Peers>();
-                    tempActivePeerList.AddRange(ActivePeerList);
-
-                    //remove dead peer
-                    tempActivePeerList.Remove(peer);
-
-                    ActivePeerList.AddRange(tempActivePeerList);
-
-                    return null;
+                    //possible dead connection, or node is offline
+                    return blocks;
                 }
+
             }
             
         }
