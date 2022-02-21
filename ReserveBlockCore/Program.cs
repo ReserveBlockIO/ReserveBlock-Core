@@ -27,8 +27,8 @@ namespace ReserveBlockCore
             //mempoolShareTimer = new Timer(mempoolBroadcast_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //mempoolShareTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new tx's
 
-            //BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
+            BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
 
             //PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //PeerCheckTimer.Change(60000, 5000); //waits 1 minute, then runs every 3 seconds for new block heights

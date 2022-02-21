@@ -514,6 +514,210 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Block
+        public static async Task<List<Block>> GetBlock() //base example
+        {
+            var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
+            var nBlock = new Block();
+            List<Block> blocks = new List<Block>();
+            var peersConnected = await P2PClient.ArePeersConnected();
+
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                return blocks;
+            }
+            else
+            {
+                try
+                {
+                    if (hubConnection1 != null)
+                    {
+                        nBlock = await hubConnection1.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            blocks.Add(nBlock);
+                        }
+
+                    }
+                    if (hubConnection2 != null)
+                    {
+                        nBlock = await hubConnection2.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        nBlock = await hubConnection3.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        nBlock = await hubConnection4.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        nBlock = await hubConnection5.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        nBlock = await hubConnection6.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null)
+                        {
+                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
+                            blocks.Add(nBlock);
+                        }
+                    }
+
+                    return blocks;
+
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    return blocks;
+                }
+
+            }
+
+        }
+
+        #endregion
+
+        #region Get Current Height of Nodes
+        public static async Task<(bool, long)> GetCurrentHeight()
+        {
+            bool newHeightFound = false;
+            long height = 0;
+
+            var peersConnected = await P2PClient.ArePeersConnected();
+
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                return (newHeightFound, height);
+            }
+            else
+            {
+                var blocks = BlockchainData.GetBlocks();
+
+                if (blocks.Count() == 0)
+                    return (true, -1);
+
+                long myHeight = BlockchainData.GetHeight();
+
+                try
+                {
+                    if (hubConnection1 != null)
+                    {
+                        long remoteNodeHeight = await hubConnection1.InvokeAsync<long>("SendBlockHeight");
+
+                        if (myHeight < remoteNodeHeight)
+                        {
+                            newHeightFound = true;
+                            height = remoteNodeHeight;
+                        }
+
+                    }
+                    if (hubConnection2 != null)
+                    {
+                        long remoteNodeHeight = await hubConnection2.InvokeAsync<long>("SendBlockHeight");
+
+                        if (myHeight < remoteNodeHeight)
+                        {
+                            newHeightFound = true;
+                            if(remoteNodeHeight > height)
+                            {
+                                height = remoteNodeHeight;
+                            }
+                            
+                        }
+
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        long remoteNodeHeight = await hubConnection3.InvokeAsync<long>("SendBlockHeight");
+
+                        if (myHeight < remoteNodeHeight)
+                        {
+                            newHeightFound = true;
+                            if (remoteNodeHeight > height)
+                            {
+                                height = remoteNodeHeight;
+                            }
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        long remoteNodeHeight = await hubConnection4.InvokeAsync<long>("SendBlockHeight");
+
+                        if (myHeight < remoteNodeHeight)
+                        {
+                            newHeightFound = true;
+                            if (remoteNodeHeight > height)
+                            {
+                                height = remoteNodeHeight;
+                            }
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        long remoteNodeHeight = await hubConnection5.InvokeAsync<long>("SendBlockHeight");
+
+                        if (myHeight < remoteNodeHeight)
+                        {
+                            newHeightFound = true;
+                            if (remoteNodeHeight > height)
+                            {
+                                height = remoteNodeHeight;
+                            }
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        long remoteNodeHeight = await hubConnection6.InvokeAsync<long>("SendBlockHeight");
+
+                        if (myHeight < remoteNodeHeight)
+                        {
+                            newHeightFound = true;
+                            if (remoteNodeHeight > height)
+                            {
+                                height = remoteNodeHeight;
+                            }
+                        }
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    return (newHeightFound, height);
+                }
+            }
+
+            return (newHeightFound, height);
+        }
+
+        #endregion
+
         /// <summary>
         /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// </summary>
@@ -619,93 +823,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Get Block
-        public static async Task<List<Block>> GetBlock() //base example
-         {
-            var currentBlock = BlockchainData.GetLastBlock() != null ? BlockchainData.GetLastBlock().Height : -1; //-1 means fresh client with no blocks
-            var nBlock = new Block();
-            List<Block> blocks = new List<Block>();
-            var peersConnected = await P2PClient.ArePeersConnected();
-
-            if (peersConnected.Item1 == false)
-            {
-                //Need peers
-                return blocks;
-            }
-            else
-            {
-                try
-                {
-                    if(hubConnection1 != null)
-                    {
-                        nBlock = await hubConnection1.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if(nBlock != null)
-                        {
-                            blocks.Add(nBlock);
-                        }
-                        
-                    }
-                    if (hubConnection2 != null)
-                    {
-                        nBlock = await hubConnection2.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if(!blocks.Exists(x => x.Height == nBlock.Height));
-                                blocks.Add(nBlock);
-                        }
-                        
-                    }
-                    if (hubConnection3 != null)
-                    {
-                        nBlock = await hubConnection3.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
-                            blocks.Add(nBlock);
-                        }
-                    }
-                    if (hubConnection4 != null)
-                    {
-                        nBlock = await hubConnection4.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
-                            blocks.Add(nBlock);
-                        }
-                    }
-                    if (hubConnection5 != null)
-                    {
-                        nBlock = await hubConnection5.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
-                            blocks.Add(nBlock);
-                        }
-                    }
-                    if (hubConnection6 != null)
-                    {
-                        nBlock = await hubConnection6.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height)) ;
-                            blocks.Add(nBlock);
-                        }
-                    }
-
-                    return blocks;
-
-                }
-                catch(Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                    return blocks;
-                }
-
-            }
-            
-        }
-
-        #endregion
+        
 
         #region Get Validator List
         public static async Task<bool> GetValidatorList(bool isValidator = false)
@@ -775,64 +893,6 @@ namespace ReserveBlockCore.P2P
             }
 
             return null;
-        }
-
-        #endregion
-
-        #region Get Current Height of Nodes
-        public static async Task<(bool, long)> GetCurrentHeight()
-        {
-            bool newHeightFound = false;
-            long height = 0;
-
-            var blocks = BlockchainData.GetBlocks();
-
-            if (blocks.Count() == 0)
-                return (true, -1);
-
-            long myHeight = BlockchainData.GetHeight();
-            var peers = ActivePeerList.ToList();
-            var validators = Validators.Validator.ValidatorList;
-
-            if (peers == null)
-            {
-                //can't get height without peers
-            }
-            else
-            {
-                foreach (var peer in peers)
-                {
-                    try
-                    {
-                        var url = "http://" + peer.PeerIP + ":3338/blockchain";
-                        var connection = new HubConnectionBuilder().WithUrl(url).Build();
-
-                        connection.StartAsync().Wait();
-                        long remoteNodeHeight = await connection.InvokeAsync<long>("SendBlockHeight");
-
-                        if(myHeight < remoteNodeHeight)
-                        {
-                            newHeightFound = true;
-                            height = remoteNodeHeight;
-                            break; // go ahead and stop and get new block.
-                        }
-
-                    }
-                    catch (Exception ex) //this means no repsosne from node
-                    {
-                        //var tempActivePeerList = new List<Peers>();
-                        //tempActivePeerList.AddRange(ActivePeerList);
-
-                        ////remove dead peer
-                        //tempActivePeerList.Remove(peer);
-
-                        //ActivePeerList.AddRange(tempActivePeerList); //update list with removed node
-                        //if list gets below certain amount request more nodes.
-                    }
-                }
-            }
-
-            return (newHeightFound, height);
         }
 
         #endregion

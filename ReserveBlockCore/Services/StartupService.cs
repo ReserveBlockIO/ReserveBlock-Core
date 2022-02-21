@@ -66,13 +66,20 @@ namespace ReserveBlockCore.Services
                 {
                     Console.WriteLine("Downloading Blocks First.");
                     var blockCol = await P2PClient.GetBlock();
-                    //Console.WriteLine("Found Block: " + block.Height.ToString());
-                    //var result = await BlockValidatorService.ValidateBlock(block);
-                    //if (result == false)
-                    //{
-                    //    Console.WriteLine("Block was rejected from: " + block.Validator);
-                    //    //Add rejection notice for validator
-                    //}
+
+                    if(blockCol.Count() > 0)
+                    {
+                        foreach(var block in blockCol)
+                        {
+                            Console.WriteLine("Found Block: " + block.Height.ToString());
+                            var result = await BlockValidatorService.ValidateBlock(block);
+                            if (result == false)
+                            {
+                                Console.WriteLine("Block was rejected from: " + block.Validator);
+                                //Add rejection notice for validator
+                            }
+                        }
+                    }
                     
                 }
                 
