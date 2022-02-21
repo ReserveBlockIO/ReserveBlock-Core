@@ -52,8 +52,10 @@ namespace ReserveBlockCore.Services
             else
             {
                 Console.WriteLine("Failed to automatically connect to peers. Please add manually.");
+                //Put StartupInitializeChain();
+                //Here and once chain fails to connect it will create genesis 
             }
-            
+
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block
         {

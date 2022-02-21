@@ -27,19 +27,19 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainChainRef();
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 100000); //waits 1 minute, then runs every 10 seconds for new blocks
+            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            PeerCheckTimer.Change(60000, 1 * 10 * 6000); //waits 1 minute, then runs every 60 seconds
+            PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
 
             ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            ValidatorListTimer.Change(60000, 60 * 10 * 6000); //waits 1 minute, then runs every 1 hour
+            ValidatorListTimer.Change(90000, 60 * 10 * 6000); //waits 1 minute, then runs every 1 hour
 
             DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            DBCommitTimer.Change(60000, 5 * 10 * 6000); //waits 1 minute, then runs every 1 hour
+            DBCommitTimer.Change(90000, 5 * 10 * 6000); //waits 1.5 minute, then runs every 1 hour
 
 
             //add method to remove stale state trei records and stale validator records too
