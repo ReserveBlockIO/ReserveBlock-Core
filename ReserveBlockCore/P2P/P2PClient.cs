@@ -310,7 +310,11 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection1.On<string, string>("GetMessage", (message, data) => {
-                        Console.WriteLine(message + " Block Height: " + data);
+                        if (message == "tx" || message == "blk")
+                        {
+                            NodeDataProcessor.ProcessData(message, data);
+                        }
+                            
                     });
 
 
@@ -332,7 +336,10 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection2.On<string, string>("GetMessage", (message, data) => {
-                        Console.WriteLine(message + " Block Height: " + data);
+                        if (message == "tx" || message == "blk")
+                        {
+                            NodeDataProcessor.ProcessData(message, data);
+                        }
                     });
 
 
@@ -354,7 +361,10 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection3.On<string, string>("GetMessage", (message, data) => {
-                        Console.WriteLine(message + " Block Height: " + data);
+                        if (message == "tx" || message == "blk")
+                        {
+                            NodeDataProcessor.ProcessData(message, data);
+                        }
                     });
 
 
@@ -376,7 +386,10 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection4.On<string, string>("GetMessage", (message, data) => {
-                        Console.WriteLine(message + " Block Height: " + data);
+                        if (message == "tx" || message == "blk")
+                        {
+                            NodeDataProcessor.ProcessData(message, data);
+                        }
                     });
 
 
@@ -398,7 +411,10 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection5.On<string, string>("GetMessage", (message, data) => {
-                        Console.WriteLine(message + " Block Height: " + data);
+                        if (message == "tx" || message == "blk")
+                        {
+                            NodeDataProcessor.ProcessData(message, data);
+                        }
                     });
 
 
@@ -420,7 +436,10 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection6.On<string, string>("GetMessage", (message, data) => {
-                        Console.WriteLine(message + " Block Height: " + data);
+                        if (message == "tx" || message == "blk")
+                        {
+                            NodeDataProcessor.ProcessData(message, data);
+                        }
                     });
 
 
