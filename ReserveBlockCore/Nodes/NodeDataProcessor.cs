@@ -63,26 +63,42 @@ namespace ReserveBlockCore.Nodes
                     var nextHeight = BlockchainData.GetHeight() + 1;
                     var currentHeight = nextBlock.Height;
 
-                    if (nextHeight == currentHeight)
+                    if(currentHeight < nextHeight)
                     {
-                        var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                        if (result == true)
+                        //already have block
+                        var checkBlock = BlockchainData.GetBlockByHeight(currentHeight);
+
+                        if(checkBlock != null)
                         {
-                            Console.WriteLine("Block was added from: " + nextBlock.Validator);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
-                            //Add rejection notice for validator
+                            var localHash = checkBlock.Hash;
+                            var remoteHash = nextBlock.Hash;
                         }
                     }
                     else
                     {
-                        // means we need to download some blocks
-                        Program.BlocksDownloading = true;
-                        var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
-                        Program.BlocksDownloading = setDownload;
+                        if (nextHeight == currentHeight)
+                        {
+                            var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                            if (result == true)
+                            {
+                                Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
+                                //Add rejection notice for validator
+                            }
+                        }
+                        else
+                        {
+                            // means we need to download some blocks
+                            Program.BlocksDownloading = true;
+                            var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
+                            Program.BlocksDownloading = setDownload;
+                        }
                     }
+
+                    
                 }
             }
         }

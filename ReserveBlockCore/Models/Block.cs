@@ -43,7 +43,6 @@ namespace ReserveBlockCore.Models
 			PrevHash = GetLastBlack() != null ? GetLastBlack().Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
-			NextValidators = ""; //Create method to get next validators.
 		}
 
 		public void BuildBlockSignature()

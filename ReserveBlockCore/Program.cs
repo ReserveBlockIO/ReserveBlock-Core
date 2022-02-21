@@ -22,7 +22,7 @@ namespace ReserveBlockCore
             var argList = args.ToList();
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
+            blockTimer.Change(60000, 100000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
@@ -191,7 +191,7 @@ namespace ReserveBlockCore
                             if (account != null)
                             {
                                 //craft new block
-                                await BlockchainData.CraftNewBlock(validator);
+                                await BlockchainData.CraftNewBlock(backupValidator);
                             }
                         }
                     }
