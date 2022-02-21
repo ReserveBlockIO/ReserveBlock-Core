@@ -109,7 +109,7 @@ namespace ReserveBlockCore.Data
             {
                 transactions.ForEach(x =>
                 {
-                    var doesTxExist = transactions.Exists(x => x.Hash.Equals(x.Hash));
+                    var doesTxExist = transactions.Exists(x => x.Hash.Equals(tx.Hash));
                     if (doesTxExist == true)
                     {
                         result = true;
