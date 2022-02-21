@@ -26,8 +26,10 @@ namespace ReserveBlockCore.Nodes
                             var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
                             if (txFound == null)
                             {
+                                var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                
                                 var txResult = TransactionValidatorService.VerifyTX(transaction); //sends tx to connected peers
-                                if (txResult == true)
+                                if (txResult == true && dblspndChk == false)
                                 {
                                     mempool.Insert(transaction);
 
@@ -37,8 +39,10 @@ namespace ReserveBlockCore.Nodes
                         }
                         else
                         {
+                            var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+
                             var txResult = TransactionValidatorService.VerifyTX(transaction);
-                            if (txResult == true)
+                            if (txResult == true && dblspndChk == false)
                             {
                                 mempool.Insert(transaction);
                             }

@@ -98,6 +98,29 @@ namespace ReserveBlockCore.Data
             return approvedMemPoolList;
         }
 
+        public static async Task<bool> DoubleSpendCheck(Transaction tx)
+        {
+            bool result = false;
+            var blockchain = BlockchainData.GetBlocks();
+            var blocks = blockchain.Find(Query.All(Query.Descending)).Take(60).ToList();
+
+            var transactions = blocks.SelectMany(x => x.Transactions).ToList();
+            if(transactions.Count() > 0)
+            {
+                transactions.ForEach(x =>
+                {
+                    var doesTxExist = transactions.Exists(x => x.Hash.Equals(x.Hash));
+                    if (doesTxExist == true)
+                    {
+                        result = true;
+                    }
+
+                });
+            }
+
+            return result;
+        }
+
         public static ILiteCollection<Transaction> GetAll()
         {
             var collection = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);

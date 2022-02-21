@@ -220,6 +220,9 @@ namespace ReserveBlockCore.P2P
                 var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
                 if (txFound == null)
                 {
+                    var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
+                    if (dblspndChk == true)
+                        return "TFVP";
                     var txResult = TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
                     if (txResult == true)
                     {
@@ -239,6 +242,10 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
+                var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
+                if (dblspndChk == true)
+                    return "TFVP";
+
                 var txResult = TransactionValidatorService.VerifyTX(txReceived);
                 if (txResult == true)
                 {
