@@ -10,16 +10,21 @@ namespace ReserveBlockCore
 {
     class Program
     {
-        private static Timer blockTimer;//for creating a new block at max every 30 seconds
-        private static Timer BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
-        private static Timer PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
-        private static Timer ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
+        private static Timer? blockTimer;//for creating a new block at max every 30 seconds
+        private static Timer? BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
+        private static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
+        private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
+        private static Timer? DBCommitTimer;//checks dbs and commits log files. 
         private static int MempoolCount = 0;
         public static List<Transaction> MempoolList = new List<Transaction>();
         public static bool BlocksDownloading = false;
+        public static bool IsCrafting = false;
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
+
+            StartupService.StartupDatabase();
+            StartupService.SetBlockchainChainRef();
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             blockTimer.Change(60000, 100000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -32,6 +37,9 @@ namespace ReserveBlockCore
 
             ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             ValidatorListTimer.Change(60000, 60 * 10 * 6000); //waits 1 minute, then runs every 1 hour
+
+            DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            DBCommitTimer.Change(60000, 5 * 10 * 6000); //waits 1 minute, then runs every 1 hour
 
 
             //add method to remove stale state trei records and stale validator records too
@@ -89,9 +97,6 @@ namespace ReserveBlockCore
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
 
-            StartupService.StartupDatabase();
-            StartupService.SetBlockchainChainRef();
-
             StartupService.StartupPeers();
 
             Thread.Sleep(5000);
@@ -145,23 +150,63 @@ namespace ReserveBlockCore
             var currentUnixTime = Utilities.TimeUtil.GetTime();
             var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
             //If no validators are detected then no need to run this code
-            if (localValidator.Count != 0)
+            if(IsCrafting == false)
             {
-                var validator = Validators.Validator.GetBlockValidator(); //need create consensus on who should actually do this. 
-                //if validator is NaN then there are no validators on network and block creation will stop. 
-                if (validator != "NaN")
+                if (localValidator.Count != 0)
                 {
-                    if(lastBlock.Height != 0)
+                    IsCrafting = true;
+                    var validator = Validators.Validator.GetBlockValidator(); //need create consensus on who should actually do this. 
+                                                                              //if validator is NaN then there are no validators on network and block creation will stop. 
+                    if (validator != "NaN")
                     {
-                        var nextVals = validator.Split(':');
-                        var mainVal = nextVals[0];
-                        var secondaryVal = nextVals[1];
-
-                        if (timeDiff >= 0.52M && timeDiff < 1.04M)
+                        if (lastBlock.Height != 0)
                         {
+                            var nextVals = validator.Split(':');
+                            var mainVal = nextVals[0];
+                            var secondaryVal = nextVals[1];
 
+                            if (timeDiff >= 0.52M && timeDiff < 1.04M)
+                            {
+
+                                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+
+                                if (account != null)
+                                {
+                                    //craft new block
+                                    await BlockchainData.CraftNewBlock(validator);
+                                }
+                            }
+                            if (timeDiff >= 1.04M && timeDiff < 2.0M)
+                            {
+                                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
+
+                                if (account != null)
+                                {
+                                    //craft new block
+                                    await BlockchainData.CraftNewBlock(validator);
+                                }
+                            }
+                            if (timeDiff > 2.0M)
+                            {
+                                //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
+                                //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
+                                var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+                                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
+
+                                if (account != null)
+                                {
+                                    //craft new block
+                                    await BlockchainData.CraftNewBlock(backupValidator);
+                                }
+                            }
+                        }
+                        else
+                        {
                             var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                            var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+                            var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
 
                             if (account != null)
                             {
@@ -169,46 +214,12 @@ namespace ReserveBlockCore
                                 await BlockchainData.CraftNewBlock(validator);
                             }
                         }
-                        if(timeDiff >= 1.04M && timeDiff < 2.0M)
-                        {
-                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                            var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
 
-                            if (account != null)
-                            {
-                                //craft new block
-                                await BlockchainData.CraftNewBlock(validator);
-                            }
-                        }
-                        if(timeDiff > 2.0M)
-                        {
-                            //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
-                            //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
-                            var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
-                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                            var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
-
-                            if (account != null)
-                            {
-                                //craft new block
-                                await BlockchainData.CraftNewBlock(backupValidator);
-                            }
-                        }
                     }
-                    else
-                    {
-                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                        var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
-
-                        if (account != null)
-                        {
-                            //craft new block
-                            await BlockchainData.CraftNewBlock(validator);
-                        }
-                    }    
-                    
                 }
+                IsCrafting = false;
             }
+            
         }
         private static async void blockHeightCheck_Elapsed(object sender)
         {
@@ -253,6 +264,59 @@ namespace ReserveBlockCore
                 {
                     Console.WriteLine("Masternode List Updated!");
                 }
+            }
+        }
+
+        private static async void dbCommitCheckTimer_Elapsed(object sender)
+        {
+            //if blocks are currently downloading this will stop it from running again.
+            try
+            {
+                DbContext.DB.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                //error saving from db cache
+            }
+            try
+            {
+                DbContext.DB_AccountStateTrei.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                //error saving from db cache
+            }
+            try
+            {
+                DbContext.DB_Banlist.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                //error saving from db cache
+            }
+            try
+            {
+                DbContext.DB_Peers.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                //error saving from db cache
+            }
+            try
+            {
+                DbContext.DB_Wallet.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                //error saving from db cache
+            }
+            try
+            {
+                DbContext.DB_WorldStateTrei.Checkpoint();
+            }
+            catch (Exception ex)
+            {
+                //error saving from db cache
             }
         }
     }

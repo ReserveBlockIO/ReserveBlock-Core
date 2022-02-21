@@ -22,7 +22,7 @@ namespace ReserveBlockCore.Data
         {
             var startTimer = DateTime.UtcNow;
 
-            var timeStamp = 1642194044; //14 Jan. 2022 | This value is hard coded for the start of the chain.
+            var timeStamp = 1643932800; //2 Feb. 2022 | This value is hard coded for the start of the chain.
 
             //var validator = Genesis.GetAll().FirstOrDefault();
 
@@ -32,7 +32,9 @@ namespace ReserveBlockCore.Data
                 Timestamp = timeStamp,
                 Transactions = gTrxList,
                 Validator = "Alpha Validator",
-                ChainRefId = BlockchainData.ChainRef
+                ChainRefId = BlockchainData.ChainRef,
+                NextValidators = "GenesisBlock",
+                ValidatorSignature = "GenesisBlock"
             };
 
             block.Build();
