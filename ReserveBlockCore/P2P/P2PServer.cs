@@ -261,47 +261,6 @@ namespace ReserveBlockCore.P2P
 
             return "";
         }
-        public async Task<string> SendToMempool(Transaction txReceived)
-        {
-            var peerIP = GetIP(Context);
-
-            var mempool = TransactionData.GetPool();
-            if (mempool.Count() != 0)
-            {
-                var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
-                if (txFound == null)
-                {
-                    var result = TransactionValidatorService.VerifyTX(txReceived);
-                    if (result == true)
-                    {
-                        mempool.Insert(txReceived);
-                        P2PClient.SendTXMempool(txReceived);
-                        return "ATMP";//added to mempool
-                    }
-                    else
-                    {
-                        return "TFVP"; //transaction failed verification process
-                    }
-                }
-                else
-                {
-                    return "AIMP"; //already in mempool
-                }
-            }
-            else
-            {
-                var result = TransactionValidatorService.VerifyTX(txReceived);
-                if (result == true)
-                {
-                    mempool.Insert(txReceived);
-                    return "ATMP";//added to mempool
-                }
-                else
-                {
-                    return "TFVP"; //transaction failed verification process
-                }
-            }
-        }
 
         #endregion
 

@@ -743,6 +743,135 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send Transactions to mempool 
+        public static async void SendTXMempool(Transaction txSend)
+        {
+            var peersConnected = await P2PClient.ArePeersConnected();
+
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
+            }
+            else
+            {
+                try
+                {
+                    if (hubConnection1 != null)
+                    {
+                        string message = await hubConnection1.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+
+                    if (hubConnection2 != null)
+                    {
+                        string message = await hubConnection2.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection3 != null)
+                    {
+                        string message = await hubConnection3.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection4 != null)
+                    {
+                        string message = await hubConnection4.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection5 != null)
+                    {
+                        string message = await hubConnection5.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+                    if (hubConnection6 != null)
+                    {
+                        string message = await hubConnection6.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+
+                        if (message == "ATMP")
+                        {
+                            //success
+                        }
+                        else if (message == "TFVP")
+                        {
+                            Console.WriteLine("Transaction Failed Verification Process on remote node");
+                        }
+                        else
+                        {
+                            //already in mempool
+                        }
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                    Console.WriteLine("Error Sending Transaction. Please try again!");
+                }
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
         /// </summary>
@@ -922,134 +1051,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Transactions to mempool 
-        public static async void SendTXMempool(Transaction txSend)
-        {
-            var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1 == false)
-            {
-                //Need peers
-                Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
-            }
-            else
-            {
-                try
-                {
-                    if (hubConnection1 != null)
-                    {
-                        string message = await hubConnection1.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-
-                    if (hubConnection2 != null)
-                    {
-                        string message = await hubConnection2.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                    if (hubConnection3 != null)
-                    {
-                        string message = await hubConnection3.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                    if (hubConnection4 != null)
-                    {
-                        string message = await hubConnection4.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                    if (hubConnection5 != null)
-                    {
-                        string message = await hubConnection5.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                    if (hubConnection6 != null)
-                    {
-                        string message = await hubConnection6.InvokeCoreAsync<string>("SendToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                    Console.WriteLine("Error Sending Transaction. Please try again!");
-                }
-            }
-        }
-
-        #endregion
 
         #region Broadcast Masternode
         public static async void BroadcastMasterNode(Validators nValidator)
