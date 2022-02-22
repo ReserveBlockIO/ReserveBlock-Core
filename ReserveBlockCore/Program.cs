@@ -174,7 +174,7 @@ namespace ReserveBlockCore
                                 if (account != null)
                                 {
                                     //craft new block
-                                    await BlockchainData.CraftNewBlock(validator);
+                                    await BlockchainData.CraftNewBlock(mainVal);
                                 }
                             }
                             if (timeDiff >= 1.04M && timeDiff < 2.0M)
@@ -185,7 +185,7 @@ namespace ReserveBlockCore
                                 if (account != null)
                                 {
                                     //craft new block
-                                    await BlockchainData.CraftNewBlock(validator);
+                                    await BlockchainData.CraftNewBlock(secondaryVal);
                                 }
                             }
                             if (timeDiff > 2.0M)

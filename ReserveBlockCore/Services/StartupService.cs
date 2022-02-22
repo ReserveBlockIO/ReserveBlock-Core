@@ -41,7 +41,7 @@ namespace ReserveBlockCore.Services
             //add seed nodes
             SeedNodeService.SeedNodes();
             bool result = false;
-   
+
             result = await P2PClient.ConnectToPeers();
 
             if(result == true)

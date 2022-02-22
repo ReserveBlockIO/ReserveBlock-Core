@@ -72,22 +72,38 @@ namespace ReserveBlockCore.Nodes
                         {
                             var localHash = checkBlock.Hash;
                             var remoteHash = nextBlock.Hash;
+
+                            if(localHash != remoteHash)
+                            {
+                                Console.WriteLine("Possilbe block differ");
+                            }
                         }
                     }
                     else
                     {
                         if (nextHeight == currentHeight)
                         {
-                            var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                            if (result == true)
+                            var blockchain = BlockchainData.GetBlocks();
+                            var blockFind = blockchain.FindOne(x => x.Hash == nextBlock.Hash);
+                            if (blockFind != null)
                             {
-                                Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                                Console.WriteLine("You already have this block");
+
                             }
                             else
                             {
-                                Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
-                                //Add rejection notice for validator
+                                var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                                if (result == true)
+                                {
+                                    Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
+                                    //Add rejection notice for validator
+                                }
                             }
+                            
                         }
                         else
                         {

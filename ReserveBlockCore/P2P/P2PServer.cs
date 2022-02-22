@@ -19,6 +19,8 @@ namespace ReserveBlockCore.P2P
     public class P2PServer : Hub
     {
         private static Dictionary<string, string> PeerList = new Dictionary<string, string>();
+
+        #region Broadcast methods
         public override async Task OnConnectedAsync()
         {
             var peerIP = GetIP(Context);
@@ -57,6 +59,8 @@ namespace ReserveBlockCore.P2P
         {
             await Clients.All.SendAsync("GetMessage", "NewBlock");
         }
+
+        #endregion
 
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)
