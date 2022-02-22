@@ -309,10 +309,10 @@ namespace ReserveBlockCore.P2P
                     .WithUrl(url)
                     .Build();
 
-                    hubConnection1.On<string, string>("GetMessage", (message, data) => {
+                    hubConnection1.On<string, string>("GetMessage", async (message, data) =>  { 
                         if (message == "tx" || message == "blk" || message == "val")
                         {
-                            NodeDataProcessor.ProcessData(message, data);
+                            await NodeDataProcessor.ProcessData(message, data);
                         }
                             
                     });

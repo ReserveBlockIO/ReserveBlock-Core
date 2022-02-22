@@ -139,5 +139,25 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetAllTransactions")]
+        public async Task<string> GetAllTransactions()
+        {
+            //use Id to get specific commands
+            var output = "FAIL"; // this will only display if command not recognized.
+            var transactions = TransactionData.GetAll();
+
+            if (transactions.Count() == 0)
+            {
+                output = "No TX";
+            }
+            else
+            {
+                var transactionsList = transactions.FindAll().ToList();
+                output = JsonConvert.SerializeObject(transactionsList);
+            }
+
+            return output;
+        }
+
     }
 }

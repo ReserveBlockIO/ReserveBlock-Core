@@ -98,6 +98,8 @@ namespace ReserveBlockCore.Services
                         if(account != null)
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
+                            var txdata = TransactionData.GetAll();
+                            txdata.Insert(transaction);
                         }
                     }
                 }
