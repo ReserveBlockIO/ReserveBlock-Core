@@ -19,6 +19,8 @@ namespace ReserveBlockCore
         public static List<Transaction> MempoolList = new List<Transaction>();
         public static bool BlocksDownloading = false;
         public static bool IsCrafting = false;
+        public static bool TestURL = false;
+
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
@@ -44,7 +46,7 @@ namespace ReserveBlockCore
 
             //add method to remove stale state trei records and stale validator records too
 
-
+            //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
                 argList.ForEach(x => {
@@ -66,10 +68,16 @@ namespace ReserveBlockCore
                         //Launch testnet
                         Startup.IsTestNet = true;
                     }
+                    if (argC == "testurl")
+                    {
+                        //Launch testnet
+                        TestURL = true;
+                    }
                 });
             }
 
-            string url = "http://*:8080"; //local API to connect to wallet. This can be changed, but be cautious. 
+            
+            string url = TestURL == false ? "http://*:8080" : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:3338"; //this is port for signalr connect and all p2p functions
             //string url2 = "https://*:3338" //This is non http version. Must comment out app.UseHttpsRedirection() in startupp2p
             

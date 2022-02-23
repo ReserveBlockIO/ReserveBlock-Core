@@ -139,6 +139,29 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("ImportPrivateKey/{id}")]
+        public async Task<string> ImportPrivateKey(string id)
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+            var account = AccountData.RestoreAccount(id);
+
+            if (account == null)
+            {
+                output = "NAC";
+            }
+            else if(account.Address == null || account.Address == "")
+            {
+                output = "NAC";
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(account);
+            }
+
+            return output;
+        }
+
         [HttpGet("GetAllTransactions")]
         public async Task<string> GetAllTransactions()
         {

@@ -36,20 +36,34 @@ namespace ReserveBlockCore.Data
         }
 		public static Account RestoreAccount(string privKey)
         {
-			var privateKeyMod = privKey.Replace(" ", ""); //remove any accidental spaces
 			Account account = new Account();
-			BigInteger b1 = BigInteger.Parse(privateKeyMod, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-			PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-			var privKeySecretHex = privateKey.secret.ToString("x");
-			var pubKey = privateKey.publicKey();
+            try
+            {
+				var privateKeyMod = privKey.Replace(" ", ""); //remove any accidental spaces
+				BigInteger b1 = BigInteger.Parse(privateKeyMod, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+				PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+				var privKeySecretHex = privateKey.secret.ToString("x");
+				var pubKey = privateKey.publicKey();
 
-			account.PrivateKey = privKeySecretHex;
-			account.PublicKey = "04" + ByteToHex(pubKey.toString());		
-			account.Address = GetHumanAddress(account.PublicKey);
-			var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
-			account.Balance = accountState != null ? accountState.Balance : 0M;
+				account.PrivateKey = privKeySecretHex;
+				account.PublicKey = "04" + ByteToHex(pubKey.toString());
+				account.Address = GetHumanAddress(account.PublicKey);
+				//Update balance from state trei
+				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
+				account.Balance = accountState != null ? accountState.Balance : 0M;
 
-			AddToAccount(account);
+				var accountCheck = AccountData.GetSingleAccount(account.Address);
+				if(accountCheck == null)
+                {
+					AddToAccount(account); //only add if not already in accounts
+				}
+			}
+			catch (Exception ex)
+            {
+				//restore failed
+				Console.WriteLine("Account restore failed. Not a valid private key");
+            }
+			
 			//Now need to scan to check for transactions  - feature coming soon.
 
 			return account;
