@@ -162,6 +162,27 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("SendBlock/{id}")]
+        public async Task<string> SendBlock(string id)
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            long height = Convert.ToInt64(id);
+            var block = BlockchainData.GetBlockByHeight(height);
+
+            if (block == null)
+            {
+                output = "NNB";
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(block);
+            }
+
+            return output;
+        }
+
         [HttpGet("GetAllTransactions")]
         public async Task<string> GetAllTransactions()
         {
