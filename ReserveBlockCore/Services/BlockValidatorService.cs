@@ -52,7 +52,9 @@ namespace ReserveBlockCore.Services
 
             if(block.Height != 0)
             {
-                var blockCoinBaseResult = BlockchainData.ValidateBlock(block);
+                var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
+
+                //Need to check here the prev hash if it is correct!
 
                 if (blockCoinBaseResult == false)
                     return result;//block rejected

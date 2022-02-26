@@ -20,6 +20,7 @@ namespace ReserveBlockCore
         public static bool BlocksDownloading = false;
         public static bool IsCrafting = false;
         public static bool TestURL = false;
+        public static bool StopAllTimers = false;
 
         static async Task Main(string[] args)
         {
@@ -32,7 +33,7 @@ namespace ReserveBlockCore
             blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            BlockHeightTimer.Change(60000, 3000); //waits 1 minute, then runs every 3 seconds for new block heights
+            BlockHeightTimer.Change(60000, 15000); //waits 1 minute, then runs every 37 seconds for new block heights
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
@@ -41,8 +42,7 @@ namespace ReserveBlockCore
             ValidatorListTimer.Change(90000, 60 * 10 * 6000); //waits 1 minute, then runs every 1 hour
 
             DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            DBCommitTimer.Change(90000, 5 * 10 * 6000); //waits 1.5 minute, then runs every 1 hour
-
+            DBCommitTimer.Change(90000, 5 * 10 * 6000); //waits 1.5 minute, then runs every 5 minutes
 
             //add method to remove stale state trei records and stale validator records too
 
@@ -133,6 +133,7 @@ namespace ReserveBlockCore
 
                     if (commandResult == "_EXIT")
                     {
+                        StopAllTimers = true;
                         Console.WriteLine("Closing and Exiting Wallet Application.");
                         Environment.Exit(0);
                     }
@@ -153,179 +154,197 @@ namespace ReserveBlockCore
         }
         private static async void blockBuilder_Elapsed(object sender)
         {
-            var localValidator = Validators.Validator.GetLocalValidator();
-            var lastBlock = BlockchainData.GetLastBlock();
-            var currentUnixTime = Utilities.TimeUtil.GetTime();
-            var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
-            //If no validators are detected then no need to run this code
-            if(IsCrafting == false)
+            if(StopAllTimers == false)
             {
-                if (localValidator.Count != 0)
+                var localValidator = Validators.Validator.GetLocalValidator();
+                var lastBlock = BlockchainData.GetLastBlock();
+                var currentUnixTime = Utilities.TimeUtil.GetTime();
+                var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
+                //If no validators are detected then no need to run this code
+                if (IsCrafting == false)
                 {
-                    IsCrafting = true;
-                    var validator = Validators.Validator.GetBlockValidator(); //need create consensus on who should actually do this. 
-                                                                              //if validator is NaN then there are no validators on network and block creation will stop. 
-                    if (validator != "NaN")
+                    if (localValidator.Count != 0)
                     {
-                        if (lastBlock.Height != 0)
+                        IsCrafting = true;
+                        var validator = Validators.Validator.GetBlockValidator(); 
+                                                                                  
+                        if (validator != "NaN")
                         {
-                            var nextVals = validator.Split(':');
-                            var mainVal = nextVals[0];
-                            var secondaryVal = nextVals[1];
-
-                            if (timeDiff >= 0.52M && timeDiff < 1.04M)
+                            if (lastBlock.Height != 0)
                             {
+                                var nextVals = validator.Split(':');
+                                var mainVal = nextVals[0];
+                                var secondaryVal = nextVals[1];
 
+                                if (timeDiff >= 0.52M && timeDiff < 1.04M)
+                                {
+
+                                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                    var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+
+                                    if (account != null)
+                                    {
+                                        //craft new block
+                                        await BlockchainData.CraftNewBlock(mainVal);
+                                    }
+                                }
+                                if (timeDiff >= 1.04M && timeDiff < 2.0M)
+                                {
+                                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                    var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
+
+                                    if (account != null)
+                                    {
+                                        //craft new block
+                                        await BlockchainData.CraftNewBlock(secondaryVal);
+                                    }
+                                }
+                                if (timeDiff > 2.0M)
+                                {
+                                    //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
+                                    //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
+                                    var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+                                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                    var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
+
+                                    if (account != null)
+                                    {
+                                        //craft new block
+                                        await BlockchainData.CraftNewBlock(backupValidator);
+                                    }
+                                }
+                            }
+                            else
+                            {
                                 var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+                                var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
 
                                 if (account != null)
                                 {
                                     //craft new block
-                                    await BlockchainData.CraftNewBlock(mainVal);
+                                    await BlockchainData.CraftNewBlock(validator);
                                 }
                             }
-                            if (timeDiff >= 1.04M && timeDiff < 2.0M)
-                            {
-                                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
 
-                                if (account != null)
-                                {
-                                    //craft new block
-                                    await BlockchainData.CraftNewBlock(secondaryVal);
-                                }
-                            }
-                            if (timeDiff > 2.0M)
-                            {
-                                //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
-                                //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
-                                var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
-                                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
-
-                                if (account != null)
-                                {
-                                    //craft new block
-                                    await BlockchainData.CraftNewBlock(backupValidator);
-                                }
-                            }
                         }
-                        else
-                        {
-                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                            var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
-
-                            if (account != null)
-                            {
-                                //craft new block
-                                await BlockchainData.CraftNewBlock(validator);
-                            }
-                        }
-
                     }
+                    IsCrafting = false;
                 }
-                IsCrafting = false;
             }
-            
         }
         private static async void blockHeightCheck_Elapsed(object sender)
         {
-            //if blocks are currently downloading this will stop it from running again.
-            if (BlocksDownloading != true)
+            if (StopAllTimers == false)
             {
-                var result = await P2PClient.GetCurrentHeight();
-                if (result.Item1 == true)
+                //if blocks are currently downloading this will stop it from running again.
+                if (BlocksDownloading != true)
                 {
-                    BlocksDownloading = true;
-                    BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                    var result = await P2PClient.GetCurrentHeight();
+                    if (result.Item1 == true)
+                    {
+                        BlocksDownloading = true;
+                        BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                    }
                 }
             }
+            
         }
 
         private static async void peerCheckTimer_Elapsed(object sender)
         {
-            var peersConnected = await P2PClient.ArePeersConnected();
-
-            if (peersConnected.Item1 != true)
+            if (StopAllTimers == false)
             {
-                Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                StartupService.StartupPeers();
-                //potentially no connected nodes.
+                var peersConnected = await P2PClient.ArePeersConnected();
+
+                if (peersConnected.Item1 != true)
+                {
+                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                    StartupService.StartupPeers();
+                    //potentially no connected nodes.
+                }
             }
+            
         }
 
         private static async void validatorListCheckTimer_Elapsed(object sender)
         {
-            var peersConnected = await P2PClient.ArePeersConnected();
+            if (StopAllTimers == false)
+            {
+                var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1 != true)
-            {
-                Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                StartupService.StartupPeers();
-                //potentially no connected nodes.
-            }
-            else
-            {
-                var getMasterNodes = await P2PClient.GetMasternodes();
-                if (getMasterNodes == true)
+                if (peersConnected.Item1 != true)
                 {
-                    Console.WriteLine("Masternode List Updated!");
+                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                    StartupService.StartupPeers();
+                    //potentially no connected nodes.
+                }
+                else
+                {
+                    var getMasterNodes = await P2PClient.GetMasternodes();
+                    if (getMasterNodes == true)
+                    {
+                        Console.WriteLine("Masternode List Updated!");
+                    }
                 }
             }
+            
         }
 
         private static async void dbCommitCheckTimer_Elapsed(object sender)
         {
-            //if blocks are currently downloading this will stop it from running again.
-            try
+            if (StopAllTimers == false)
             {
-                DbContext.DB.Checkpoint();
+                //if blocks are currently downloading this will stop it from running again.
+                try
+                {
+                    DbContext.DB.Checkpoint();
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+                try
+                {
+                    DbContext.DB_AccountStateTrei.Checkpoint();
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+                try
+                {
+                    DbContext.DB_Banlist.Checkpoint();
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+                try
+                {
+                    DbContext.DB_Peers.Checkpoint();
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+                try
+                {
+                    DbContext.DB_Wallet.Checkpoint();
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+                try
+                {
+                    DbContext.DB_WorldStateTrei.Checkpoint();
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
             }
-            catch (Exception ex)
-            {
-                //error saving from db cache
-            }
-            try
-            {
-                DbContext.DB_AccountStateTrei.Checkpoint();
-            }
-            catch (Exception ex)
-            {
-                //error saving from db cache
-            }
-            try
-            {
-                DbContext.DB_Banlist.Checkpoint();
-            }
-            catch (Exception ex)
-            {
-                //error saving from db cache
-            }
-            try
-            {
-                DbContext.DB_Peers.Checkpoint();
-            }
-            catch (Exception ex)
-            {
-                //error saving from db cache
-            }
-            try
-            {
-                DbContext.DB_Wallet.Checkpoint();
-            }
-            catch (Exception ex)
-            {
-                //error saving from db cache
-            }
-            try
-            {
-                DbContext.DB_WorldStateTrei.Checkpoint();
-            }
-            catch (Exception ex)
-            {
-                //error saving from db cache
-            }
+            
         }
     }
 }

@@ -162,6 +162,8 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        //Sends block information - for like block explorers
+
         [HttpGet("SendBlock/{id}")]
         public async Task<string> SendBlock(string id)
         {
@@ -200,6 +202,25 @@ namespace ReserveBlockCore.Controllers
                 output = JsonConvert.SerializeObject(transactionsList);
             }
 
+            return output;
+        }
+
+        
+        [HttpGet("SendExit")]
+        public async Task SendExit()
+        {
+            //use Id to get specific commands
+            var output = "Starting Stop"; // this will only display if command not recognized.
+
+            Program.StopAllTimers = true;
+            Thread.Sleep(1000);
+            Environment.Exit(0);
+        }
+
+        [HttpGet("SendExitComplete")]
+        public async Task<string> SendExitComplete()
+        {
+            var output = "SA"; 
             return output;
         }
 

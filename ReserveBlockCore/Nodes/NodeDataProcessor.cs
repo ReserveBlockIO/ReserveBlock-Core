@@ -108,9 +108,16 @@ namespace ReserveBlockCore.Nodes
                         else
                         {
                             // means we need to download some blocks
-                            Program.BlocksDownloading = true;
-                            var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
-                            Program.BlocksDownloading = setDownload;
+                            //Check to make sure blocks aren't already being downloaded, so we don't downloaded them multiple times
+                            if(Program.BlocksDownloading == false)
+                            {
+                                Program.BlocksDownloading = true; //trigger lock so blocks aren't downloaded
+                                //issue happens here that blocks could already be downloading!
+                                //FIX THIS AARON!
+                                var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
+                                Program.BlocksDownloading = setDownload;
+                            }
+                            
                         }
                     }
 
