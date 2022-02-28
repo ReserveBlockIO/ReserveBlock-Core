@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LiteDB;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
@@ -36,18 +37,112 @@ namespace ReserveBlockCore.Services
             BlockchainData.ChainRef = "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
         }
 
-        internal static async void StartupPeers()
+        internal static void StartupMemBlocks()
+        {
+            var blockChain = BlockchainData.GetBlocks();
+            var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
+
+            Program.MemBlocks = blocks.Take(15).ToList();
+        }
+
+        internal static async Task DownloadBlocksOnStart()
+        {
+            Program.StopAllTimers = true;
+            var download = true;
+            while(download) //this will loop forever till download happens
+            {
+                var result = await P2PClient.GetCurrentHeight();
+                if (result.Item1 == true)
+                {
+                    Program.BlocksDownloading = true;
+                    Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);                    
+                }
+                else
+                {
+                    download = false; //exit the while. 
+                    Program.StopAllTimers = false;
+                    var accounts = AccountData.GetAccounts();
+                    var accountList = accounts.FindAll().ToList();
+                    if(accountList.Count() > 0)
+                    {
+                        var stateTrei = StateData.GetAccountStateTrei();
+                        foreach(var account in accountList)
+                        {
+                            var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                            if(stateRec != null)
+                            {
+                                account.Balance = stateRec.Balance;
+                                accounts.Update(account);//updating local record with synced state trei
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+
+        internal static void CheckForDuplicateBlocks()
+        {
+            var blockChain = BlockchainData.GetBlocks();
+            var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
+            var dupBlocksList = blocks.GroupBy(x => x.Height).Where(y => y.Count() > 1).Select(z => z.Key).ToList();
+
+            if(dupBlocksList.Count != 0)
+            {
+                //Reset blocks and all balances and redownload chain. No exception here.
+                var accounts = AccountData.GetAccounts();
+                var transactions = TransactionData.GetAll();
+                var stateTrei = StateData.GetAccountStateTrei();
+                var worldTrei = WorldTrei.GetWorldTrei();
+
+                var accountList = accounts.FindAll();
+                if(accountList.Count() > 0)
+                {
+                    foreach(var account in accountList)
+                    {
+                        account.Balance = 0.0M;
+                        accounts.Update(account);//resets balances to 0.
+                    }
+                }
+
+                transactions.DeleteAll();//delete all local transactions
+                stateTrei.DeleteAll(); //removes all state trei data
+                worldTrei.DeleteAll();  //removes the state trei
+                blockChain.DeleteAll();//remove all blocks
+                try
+                {
+                    DbContext.DB.Rebuild();
+                    DbContext.DB_AccountStateTrei.Rebuild();
+                    DbContext.DB_WorldStateTrei.Rebuild();
+                    DbContext.DB_Wallet.Rebuild();
+
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+            }
+        }
+
+        internal static async Task StartupPeers()
         {
             //add seed nodes
             SeedNodeService.SeedNodes();
             bool result = false;
-
-            result = await P2PClient.ConnectToPeers();
+            try
+            {
+                result = await P2PClient.ConnectToPeers();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            
 
             if(result == true)
             {
                 //Connected to peers
-                StartupInitializeChain();
+                await BlockchainData.InitializeChain();
             }
             else
             {
@@ -55,7 +150,6 @@ namespace ReserveBlockCore.Services
                 //Put StartupInitializeChain();
                 //Here and once chain fails to connect it will create genesis 
             }
-
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block
         {

@@ -2,7 +2,7 @@
   "profiles": {
     "ReserveBlockCore": {
       "commandName": "Project",
-      "commandLineArgs": "enableapi hidecli"
+      "commandLineArgs": "enableapi hidecli testurl"
     },
     "WSL": {
       "commandName": "WSL2",

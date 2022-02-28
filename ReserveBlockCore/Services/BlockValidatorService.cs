@@ -5,7 +5,7 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
-        public static async Task<bool> ValidateBlock(Block block)
+        public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
 
@@ -18,8 +18,7 @@ namespace ReserveBlockCore.Services
                 BlockchainData.AddBlock(block);
                 StateData.UpdateTreis(block);
                 return result;
-            }// write custom validate method for genesis with hardcoded expected values.
-            //DOCUSTOMEGENESISVALIDATE();
+            }
 
             var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
 
@@ -50,6 +49,11 @@ namespace ReserveBlockCore.Services
                 return result;//block rejected
             }
 
+            if(!newBlock.MerkleRoot.Equals(block.MerkleRoot))
+            {
+                return result;//block rejected
+            }
+
             if(block.Height != 0)
             {
                 var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
@@ -67,7 +71,7 @@ namespace ReserveBlockCore.Services
                     {
                         if(transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var txResult = TransactionValidatorService.VerifyTX(transaction);
+                            var txResult = TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
                         }
                         else
@@ -84,6 +88,7 @@ namespace ReserveBlockCore.Services
                 
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
+                    BlockQueueService.UpdateMemBlocks();//update mem blocks
                     StateData.UpdateTreis(block); 
 
                     foreach (Transaction transaction in block.Transactions)

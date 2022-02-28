@@ -10,30 +10,55 @@ namespace ReserveBlockCore
 {
     class Program
     {
+
+        #region Constants
+
         private static Timer? blockTimer;//for creating a new block at max every 30 seconds
         private static Timer? BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
         private static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? DBCommitTimer;//checks dbs and commits log files. 
-        private static int MempoolCount = 0;
+        public static List<Block> MemBlocks = new List<Block>();
+        public static List<Block> QueuedBlocks = new List<Block>();
         public static List<Transaction> MempoolList = new List<Transaction>();
         public static bool BlocksDownloading = false;
         public static bool IsCrafting = false;
         public static bool TestURL = false;
         public static bool StopAllTimers = false;
+        public static bool PeersConnecting = false;
+
+        #endregion
 
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
 
-            StartupService.StartupDatabase();
-            StartupService.SetBlockchainChainRef();
+            StartupService.StartupDatabase();// initializes databases
+            StartupService.SetBlockchainChainRef(); // sets blockchain reference id
+            StartupService.CheckForDuplicateBlocks();//Check for duplicate block adds due to back close
+
+            try
+            {
+                PeersConnecting = true;
+                BlocksDownloading = true;
+                await StartupService.StartupPeers();
+                PeersConnecting = false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());   
+            }
+            
+
+
+            await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
+            StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
-            BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            BlockHeightTimer.Change(60000, 15000); //waits 1 minute, then runs every 37 seconds for new block heights
+            //BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //BlockHeightTimer.Change(60000, 15000); //waits 1 minute, then runs every 37 seconds for new block heights
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
@@ -105,7 +130,7 @@ namespace ReserveBlockCore
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
 
-            StartupService.StartupPeers();
+            
 
             Thread.Sleep(5000);
 

@@ -209,7 +209,7 @@ namespace ReserveBlockCore.P2P
                     });
 
 
-                    await hubConnection1.StartAsync();
+                    hubConnection1.StartAsync().Wait();
 
                     return true;
                 }
@@ -234,14 +234,16 @@ namespace ReserveBlockCore.P2P
                     });
 
 
-                    await hubConnection2.StartAsync();
+                    hubConnection2.StartAsync().Wait();
 
                     return true;
                 }
                 catch (Exception ex)
                 {
+                    var capExcept = ex;
                     return false;
                 }
+
             }
             else if(HubNum == 3)
             {
@@ -259,7 +261,7 @@ namespace ReserveBlockCore.P2P
                     });
 
 
-                    await hubConnection3.StartAsync();
+                    hubConnection3.StartAsync().Wait();
 
                     return true;
                 }
@@ -284,7 +286,7 @@ namespace ReserveBlockCore.P2P
                     });
 
 
-                    await hubConnection4.StartAsync();
+                    hubConnection4.StartAsync().Wait();
 
                     return true;
                 }
@@ -309,7 +311,7 @@ namespace ReserveBlockCore.P2P
                     });
 
 
-                    await hubConnection5.StartAsync();
+                    hubConnection5.StartAsync().Wait();
 
                     return true;
                 }
@@ -334,7 +336,7 @@ namespace ReserveBlockCore.P2P
                     });
 
 
-                    await hubConnection6.StartAsync();
+                    hubConnection6.StartAsync().Wait();
 
                     return true;
                 }
@@ -381,6 +383,11 @@ namespace ReserveBlockCore.P2P
                         peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
                     }
 
+                }
+                else
+                {
+                    await NodeConnector.StartNodeConnecting();
+                    peers = Peers.PeerList();
                 }
                 foreach (var peer in peers)
                 {
@@ -472,6 +479,7 @@ namespace ReserveBlockCore.P2P
                         if (nBlock != null)
                         {
                             blocks.Add(nBlock);
+                            currentBlock += 1;
                         }
 
                     }
@@ -483,6 +491,7 @@ namespace ReserveBlockCore.P2P
                             if (!blocks.Exists(x => x.Height == nBlock.Height))
                             {
                                 blocks.Add(nBlock);
+                                currentBlock += 1;
                             }
                         }
 
@@ -495,6 +504,7 @@ namespace ReserveBlockCore.P2P
                             if (!blocks.Exists(x => x.Height == nBlock.Height))
                             {
                                 blocks.Add(nBlock);
+                                currentBlock += 1;
                             }
                             
                         }
@@ -507,6 +517,7 @@ namespace ReserveBlockCore.P2P
                             if (!blocks.Exists(x => x.Height == nBlock.Height))
                             {
                                 blocks.Add(nBlock);
+                                currentBlock += 1;
                             }
                             
                         }
@@ -519,6 +530,7 @@ namespace ReserveBlockCore.P2P
                             if (!blocks.Exists(x => x.Height == nBlock.Height))
                             {
                                 blocks.Add(nBlock);
+                                currentBlock += 1;
                             }
                             
                         }
@@ -531,6 +543,7 @@ namespace ReserveBlockCore.P2P
                             if (!blocks.Exists(x => x.Height == nBlock.Height))
                             {
                                 blocks.Add(nBlock);
+                                currentBlock += 1;
                             }
                             
                         }

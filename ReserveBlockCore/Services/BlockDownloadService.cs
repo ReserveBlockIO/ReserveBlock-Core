@@ -8,33 +8,40 @@ namespace ReserveBlockCore.Services
     {
         public static async Task<bool> GetAllBlocks(long nHeight)
         {
-            var myBlockHeight = BlockchainData.GetHeight();
-            var difference = nHeight - myBlockHeight;
-            try
+            if(Program.PeersConnecting == false)
             {
-                for (int i = 1; i <= difference; i++)
+                var myBlockHeight = BlockchainData.GetHeight();
+                var difference = nHeight - myBlockHeight;
+                try
                 {
-                    //call out to nodes and get blocks.
-                    var nextBlockHeight = myBlockHeight + i;
-                    var newBlock = await P2PClient.GetBlock();
-
-                    if (newBlock.Count() > 0)
+                    for (int i = 1; i <= difference; i++)
                     {
-                        var nextBlock = newBlock.Where(x => x.Height == nextBlockHeight).FirstOrDefault();
-                        if (nextBlock != null)
-                        {
-                            await BlockValidatorService.ValidateBlock(nextBlock);
-                        }
+                        //call out to nodes and get blocks.
+                        var nextBlockHeight = myBlockHeight + i;
+                        var newBlock = await P2PClient.GetBlock();
 
+                        if (newBlock.Count() > 0)
+                        {
+                            foreach (var block in newBlock)
+                            {
+                                if (block != null)
+                                {
+                                    await BlockValidatorService.ValidateBlock(block, true);
+                                }
+                            }
+
+
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                //Error
-            }
+                catch (Exception ex)
+                {
+                    //Error
+                }
 
-            return false; //we return false once complete to alert wallet it is done downloading bulk blocks
+                return false; //we return false once complete to alert wallet it is done downloading bulk blocks
+            }
+            return false;
         }
     }
 }

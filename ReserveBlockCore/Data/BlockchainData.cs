@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Data
         public IList<Transaction> PendingTransactions = new List<Transaction>();
         public Blockchain Chain { get; set; }
         public static string ChainRef { get; set; }
-        internal static async void InitializeChain()
+        internal static async Task InitializeChain()
         {
             await StartupService.DownloadBlocks();
 
@@ -251,7 +251,9 @@ namespace ReserveBlockCore.Data
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
+            {
                 blocks.Insert(block);
+            }
         }
         private static decimal GetTotalFees(List<Transaction> txs)
         {
