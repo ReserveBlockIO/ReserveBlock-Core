@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Services
                 return result;//block rejected due to chainref difference
             }
 
-            var newBlock = new Block{
+            var newBlock = new Block {
                 Height = block.Height,
                 Timestamp = block.Timestamp,
                 Transactions = block.Transactions,
