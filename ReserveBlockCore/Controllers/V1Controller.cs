@@ -244,7 +244,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         [HttpGet("StartValidating/{addr}/{uname}")]
-        public async Task<(bool, string)> StartValidating(string addr, string uname)
+        public async Task<string> StartValidating(string addr, string uname)
         {
             var output = false;
             var result = "FAIL";
@@ -262,16 +262,22 @@ namespace ReserveBlockCore.Controllers
                     if(nodeNameCheck == false)
                     {
                         result = "Node name already taken.";
-                        return (output, result);
+                        return result;
                     }
-                    var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
+                    try
+                    {
+                        var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
+                        result = valResult;
+                    }
+                    catch (Exception ex)
+                    {
 
-                    result = valResult;
+                    }
                     output = true;
                 }
             }
 
-            return (output, result);
+            return result;
         }
         
         [HttpGet("SendExit")]
