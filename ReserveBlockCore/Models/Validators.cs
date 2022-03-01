@@ -118,9 +118,11 @@ namespace ReserveBlockCore.Models
                         if(lastValidator != null)
                         {
                             var nextNum = lastValidator.Position + 1 > validatorCount ? 1 : lastValidator.Position + 1;
-                            
+                            var secondNextNum = nextNum + 1 > validatorCount ? 1 : nextNum + 1;
+
+
                             var nextVal = validators.FindAll().Where(x => x.Position == nextNum).FirstOrDefault();
-                            var secondaryVal = validators.FindAll().Where(x => x.Position == nextNum + 1).FirstOrDefault();
+                            var secondaryVal = validators.FindAll().Where(x => x.Position == secondNextNum).FirstOrDefault();
 
                             string mainAddr = nextVal.Address;
                             string backupAddr = secondaryVal.Address;
