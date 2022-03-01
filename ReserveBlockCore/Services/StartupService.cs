@@ -37,6 +37,52 @@ namespace ReserveBlockCore.Services
             BlockchainData.ChainRef = "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
         }
 
+        //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
+        internal static void SetBootstrapValidators()
+        {
+            var validators = Validators.Validator.GetAll();
+
+            var val1Check = validators.FindOne(x => x.Address == "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g");
+
+            if(val1Check == null)
+            {
+                var validator1 = new Validators
+                {
+                    Address = "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g",
+                    EligibleBlockStart = 0,
+                    Amount = 3010M,
+                    FailCount = 0,
+                    IsActive = true,
+                    NodeIP = "185.199.226.121",
+                    Position = 1,
+                    Signature = "MEQCIDVBdYv+Wfpil+j6d06JbCuWihrTUHP9xCqdAICVaVdXAiBpkyinNKZANOfz4rkao8KmzO461TevS5YGr8BNAdBBZg==.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
+                    UniqueName = "GenesisValidator1"
+                };
+
+                validators.Insert(validator1);
+            }
+
+            var val2Check = validators.FindOne(x => x.Address == "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq");
+
+            if(val2Check == null)
+            {
+                var validator2 = new Validators
+                {
+                    Address = "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq",
+                    EligibleBlockStart = 0,
+                    Amount = 1999M,
+                    FailCount = 0,
+                    IsActive = true,
+                    NodeIP = "185.199.226.121",
+                    Position = 1,
+                    Signature = "MEUCIEVutYCQT5ruAKnh8BeLpNkx5lvKFji00H2R37IiO1YIAiEAgHuHBpcMb+2NJs8SMxCP05JGUQ2glB0bkgmQ9YEtBX0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
+                    UniqueName = "GenesisValidator1"
+                };
+
+                validators.Insert(validator2);
+            }
+        }
+
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();

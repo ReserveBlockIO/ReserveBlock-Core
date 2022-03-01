@@ -177,9 +177,21 @@ namespace ReserveBlockCore.Services
                             account.IsValidating = true;
                             var accountTable = AccountData.GetAccounts();
                             accountTable.Update(account);
-                            P2PClient.BroadcastMasterNode(validator);
 
-                            output = "Account found and activated as a validator! Thank you for service to the network!";
+                            
+                            P2PClient.BroadcastMasterNode(validator);
+                            var broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
+
+                            if(broadcastResult == true)
+                            {
+                                output = "Account found and activated as a validator! Thank you for service to the network!";
+                            }
+                            else
+                            {
+                                output = "Account was activated, but failed to broadcast to validators. You may not be chosen for nodes, please monitor.";
+                            }
+
+                            
                         }    
                         
                          //broadcast validator to nodes and other validators.
@@ -297,7 +309,7 @@ namespace ReserveBlockCore.Services
 
         }
 
-        private static bool UniqueNameCheck(string uName)
+        public static bool UniqueNameCheck(string uName)
         {
             bool output = false;
             var validatorTable = Validators.Validator.GetAll();

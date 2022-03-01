@@ -978,6 +978,49 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        public static async Task<bool> BroadcastValidatorNode(Validators nValidator)
+        {
+            var validators = Validators.Validator.GetAll();
+            var validatorList = validators.FindAll();
+            int successCount = 0;
+
+            if (validatorList.Count() > 0)
+            {
+                foreach(var validator in validatorList)
+                {
+                    var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+                    var alive = hubConnection.StartAsync().Wait(5000); //give validator 5 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        var message = await hubConnection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+
+                        if (message == "VATN")
+                        {
+                            //success
+                            successCount += 1;
+                            hubConnection.StopAsync().Wait();//close connection when done to avoid any memory build up.
+                        }
+                        else if (message == "FTAV")
+                        {
+                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                        }
+                        else
+                        {
+                            //already in validator list
+                        }
+                    }
+                }
+
+                if(successCount > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+
+        }
+
         #region Broadcast Masternode
         public static async void BroadcastMasterNode(Validators nValidator)
         {
@@ -992,7 +1035,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    if (hubConnection1 != null)
+                    if (hubConnection1 != null && IsConnected1)
                     {
                         string message = await hubConnection1.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 
@@ -1011,7 +1054,7 @@ namespace ReserveBlockCore.P2P
                         }
                     }
 
-                    if (hubConnection2 != null)
+                    if (hubConnection2 != null && IsConnected2)
                     {
                         string message = await hubConnection2.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 
@@ -1029,7 +1072,7 @@ namespace ReserveBlockCore.P2P
                             //already in validator list
                         }
                     }
-                    if (hubConnection3 != null)
+                    if (hubConnection3 != null && IsConnected3)
                     {
                         string message = await hubConnection3.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 
@@ -1047,7 +1090,7 @@ namespace ReserveBlockCore.P2P
                             //already in validator list
                         }
                     }
-                    if (hubConnection4 != null)
+                    if (hubConnection4 != null && IsConnected4)
                     {
                         string message = await hubConnection4.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 
@@ -1065,7 +1108,7 @@ namespace ReserveBlockCore.P2P
                             //already in validator list
                         }
                     }
-                    if (hubConnection5 != null)
+                    if (hubConnection5 != null && IsConnected5)
                     {
                         string message = await hubConnection5.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 
@@ -1083,7 +1126,7 @@ namespace ReserveBlockCore.P2P
                             //already in validator list
                         }
                     }
-                    if (hubConnection6 != null)
+                    if (hubConnection6 != null && IsConnected6)
                     {
                         string message = await hubConnection6.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 

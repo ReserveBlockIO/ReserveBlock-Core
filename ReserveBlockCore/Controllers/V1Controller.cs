@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -205,6 +207,72 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}")]
+        public async Task<string> SendTransaction(string faddr, string taddr, string amt)
+        {
+            var output = "FAIL";
+            var fromAddress = faddr;
+            var toAddress = taddr; 
+            var strAmount = amt;
+
+            var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
+
+            if (addrCheck == false)
+            {
+                return output;
+            }
+
+            decimal amount = new decimal();
+
+            try
+            {
+                amount = decimal.Parse(strAmount);
+            }
+            catch
+            {
+                return output;
+            }
+
+            var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
+
+            if(result.Contains("Success"))
+            {
+                output = result;
+            }
+
+            return output;
+        }
+
+        [HttpGet("StartValidating/{addr}/{uname}")]
+        public async Task<(bool, string)> StartValidating(string addr, string uname)
+        {
+            var output = false;
+            var result = "FAIL";
+            var address = addr;
+            var uniqueName = uname;
+
+            var valAccount = AccountData.GetPossibleValidatorAccounts();
+            if (valAccount.Count() > 0)
+            {
+                var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
+                if(accountCheck != null)
+                {
+                    //do validator logic
+                    var nodeNameCheck = ValidatorService.UniqueNameCheck(uniqueName);
+                    if(nodeNameCheck == false)
+                    {
+                        result = "Node name already taken.";
+                        return (output, result);
+                    }
+                    var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
+
+                    result = valResult;
+                    output = true;
+                }
+            }
+
+            return (output, result);
+        }
         
         [HttpGet("SendExit")]
         public async Task SendExit()

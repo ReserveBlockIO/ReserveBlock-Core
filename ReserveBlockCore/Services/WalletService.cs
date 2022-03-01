@@ -94,7 +94,7 @@ namespace ReserveBlockCore.Services
                 StartupService.MainMenu();
             }
         }
-        private static string SendTXOut(string FromAddress, string ToAddress, decimal Amount)
+        public static string SendTXOut(string FromAddress, string ToAddress, decimal Amount)
         {
             string output = "Bad TX Format... Please Try Again";
             var account = AccountData.GetSingleAccount(FromAddress);

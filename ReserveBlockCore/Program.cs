@@ -35,6 +35,7 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();// initializes databases
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
+            StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
             StartupService.CheckForDuplicateBlocks();//Check for duplicate block adds due to back close
 
             try
@@ -49,8 +50,6 @@ namespace ReserveBlockCore
                 Console.WriteLine(ex.ToString());   
             }
             
-
-
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
             StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
@@ -101,7 +100,6 @@ namespace ReserveBlockCore
                 });
             }
 
-            
             string url = TestURL == false ? "http://*:8080" : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:3338"; //this is port for signalr connect and all p2p functions
             //string url2 = "https://*:3338" //This is non http version. Must comment out app.UseHttpsRedirection() in startupp2p
@@ -130,16 +128,12 @@ namespace ReserveBlockCore
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
 
-            
-
             Thread.Sleep(5000);
 
             Task.WaitAll(commandLoopTask, commandLoopTask2);
 
-            
             //await Task.WhenAny(builder2.RunConsoleAsync(), commandLoopTask2);
             //await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
-
         }
 
         private static void CommandLoop(string url)
@@ -284,7 +278,7 @@ namespace ReserveBlockCore
                 if (peersConnected.Item1 != true)
                 {
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    StartupService.StartupPeers();
+                    await StartupService.StartupPeers();
                     //potentially no connected nodes.
                 }
             }
@@ -300,7 +294,7 @@ namespace ReserveBlockCore
                 if (peersConnected.Item1 != true)
                 {
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    StartupService.StartupPeers();
+                    await StartupService.StartupPeers();
                     //potentially no connected nodes.
                 }
                 else

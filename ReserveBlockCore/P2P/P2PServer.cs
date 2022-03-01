@@ -312,7 +312,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Validator
+        #region Send Validator - Receives the new validator
         public async Task<string> SendValidator(Validators validator)
         {
             var peerIP = GetIP(Context);
@@ -326,7 +326,7 @@ namespace ReserveBlockCore.P2P
 
             if (validatorList.Count() != 0)
             {
-                var valFound = validatorList.FindOne(x => x.NodeIP == validator.NodeIP);
+                var valFound = validatorList.FindOne(x => x.NodeIP == validator.NodeIP || x.Address == validator.Address);
                 if (valFound == null)
                 {
                     var result = ValidatorService.ValidateTheValidator(validator);
