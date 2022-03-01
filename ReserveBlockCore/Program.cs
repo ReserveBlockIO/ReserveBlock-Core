@@ -42,6 +42,7 @@ namespace ReserveBlockCore
             {
                 PeersConnecting = true;
                 BlocksDownloading = true;
+                StopAllTimers = true;
                 await StartupService.StartupPeers();
                 PeersConnecting = false;
             }
@@ -49,9 +50,6 @@ namespace ReserveBlockCore
             {
                 Console.WriteLine(ex.ToString());   
             }
-            
-            await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
-            StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -127,6 +125,9 @@ namespace ReserveBlockCore
 
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
+
+            await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
+            StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
             Thread.Sleep(5000);
 
@@ -207,7 +208,7 @@ namespace ReserveBlockCore
                                         await BlockchainData.CraftNewBlock(mainVal);
                                     }
                                 }
-                                if (timeDiff >= 1.04M && timeDiff < 2.0M)
+                                if (timeDiff >= 1.5M && timeDiff < 2.0M)
                                 {
                                     var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
                                     var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
@@ -218,7 +219,7 @@ namespace ReserveBlockCore
                                         await BlockchainData.CraftNewBlock(secondaryVal);
                                     }
                                 }
-                                if (timeDiff > 2.0M)
+                                if (timeDiff > 2.20M)
                                 {
                                     //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
                                     //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.

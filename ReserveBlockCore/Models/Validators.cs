@@ -133,12 +133,13 @@ namespace ReserveBlockCore.Models
                             {
                                 mainAddr = backupAddr;
                             }
+
                             if(check.Item2 == false)
                             {
                                 backupAddr = lastBlock.Validator;
                             }
 
-                            output = nextVal.Address + ":" + secondaryVal.Address;
+                            output = mainAddr + ":" + backupAddr;
                         }
                     }
                 }
