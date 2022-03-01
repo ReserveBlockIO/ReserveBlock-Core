@@ -37,19 +37,10 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
             StartupService.CheckForDuplicateBlocks();//Check for duplicate block adds due to back close
-
-            try
-            {
-                PeersConnecting = true;
-                BlocksDownloading = true;
-                StopAllTimers = true;
-                await StartupService.StartupPeers();
-                PeersConnecting = false;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());   
-            }
+            PeersConnecting = true;
+            BlocksDownloading = true;
+            StopAllTimers = true;
+            
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -125,6 +116,17 @@ namespace ReserveBlockCore
 
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
+
+            try
+            {
+
+                await StartupService.StartupPeers();
+                PeersConnecting = false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
 
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
             StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching

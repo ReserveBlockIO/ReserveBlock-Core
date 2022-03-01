@@ -114,7 +114,7 @@ namespace ReserveBlockCore.Models
                     }
                     else
                     {
-                        var lastValidator = validators.FindAll().Where(x => x.Address == lastBlock.Validator).FirstOrDefault();
+                        var lastValidator = validators.FindAll().Where(x => x.Address == lastBlock.Validator).FirstOrDefault();//ISSUE IS HERE!
                         if(lastValidator != null)
                         {
                             var nextNum = lastValidator.Position + 1 > validatorCount ? 1 : lastValidator.Position + 1;
@@ -134,14 +134,58 @@ namespace ReserveBlockCore.Models
                             if(check.Item1 == false)
                             {
                                 mainAddr = backupAddr;
+                                nextVal.FailCount += 1;
+                                validators.Update(nextVal);
                             }
 
                             if(check.Item2 == false)
                             {
                                 backupAddr = lastBlock.Validator;
+                                secondaryVal.FailCount += 1;
+                                validators.Update(secondaryVal);
                             }
 
                             output = mainAddr + ":" + backupAddr;
+                        }
+                        else
+                        {
+                            //means the genesis validator must be working
+                            var lastValidatorsPair = lastBlock.NextValidators;
+                            var nextVals = lastValidatorsPair.Split(':');
+                            var mainVal = nextVals[0];
+                            var secondaryVal = nextVals[1];
+
+                            var newValidator = validators.FindAll().Where(x => x.Address == secondaryVal).FirstOrDefault();
+                            if(newValidator != null)
+                            {
+                                var nextNum = newValidator.Position + 1 > validatorCount ? 1 : newValidator.Position + 1;
+                                var secondNextNum = nextNum + 1 > validatorCount ? 1 : nextNum + 1;
+
+                                var nextVali = validators.FindAll().Where(x => x.Position == nextNum).FirstOrDefault();
+                                var secondaryVali = validators.FindAll().Where(x => x.Position == secondNextNum).FirstOrDefault();
+
+                                string mainAddr = nextVali.Address;
+                                string backupAddr = secondaryVali.Address;
+
+                                var check = await P2PClient.PingNextValidators(nextVali.NodeIP, secondaryVali.NodeIP);
+
+                                if (check.Item1 == false)
+                                {
+                                    mainAddr = backupAddr;
+                                    nextVali.FailCount += 1;
+                                    validators.Update(nextVali);
+                                }
+
+                                if (check.Item2 == false)
+                                {
+                                    backupAddr = lastBlock.Validator;
+                                    secondaryVali.FailCount += 1;
+                                    validators.Update(secondaryVali);
+                                }
+
+                                output = mainAddr + ":" + backupAddr;
+                            }
+
                         }
                     }
                 }

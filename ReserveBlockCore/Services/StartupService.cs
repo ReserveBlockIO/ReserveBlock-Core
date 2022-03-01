@@ -105,6 +105,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
+                    Program.BlocksDownloading = false;
                     download = false; //exit the while. 
                     Program.StopAllTimers = false;
                     var accounts = AccountData.GetAccounts();
