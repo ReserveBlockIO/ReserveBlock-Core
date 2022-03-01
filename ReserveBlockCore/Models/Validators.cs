@@ -160,9 +160,11 @@ namespace ReserveBlockCore.Models
                             {
                                 var nextNum = newValidator.Position + 1 > validatorCount ? 1 : newValidator.Position + 1;
                                 var secondNextNum = nextNum + 1 > validatorCount ? 1 : nextNum + 1;
+                                var thirdNextNum = secondNextNum + 1 > validatorCount ? 1 : secondNextNum + 1;
 
                                 var nextVali = validators.FindAll().Where(x => x.Position == nextNum).FirstOrDefault();
                                 var secondaryVali = validators.FindAll().Where(x => x.Position == secondNextNum).FirstOrDefault();
+                                var thirdVali = validators.FindAll().Where(x => x.Position == thirdNextNum).FirstOrDefault();
 
                                 string mainAddr = nextVali.Address;
                                 string backupAddr = secondaryVali.Address;
@@ -178,7 +180,7 @@ namespace ReserveBlockCore.Models
 
                                 if (check.Item2 == false)
                                 {
-                                    backupAddr = lastBlock.Validator;
+                                    backupAddr = lastBlock.Validator != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? lastBlock.Validator : thirdVali.Address;
                                     secondaryVali.FailCount += 1;
                                     validators.Update(secondaryVali);
                                 }
