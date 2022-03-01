@@ -34,10 +34,10 @@ namespace ReserveBlockCore.Models
                 return validators;
             }
 
-            public static List<Validators> GetLocalValidator()
+            public static List<Account> GetLocalValidator()
             {
-                var validators = Validator.GetAll();
-                var query = validators.FindAll().Where(x => x.NodeIP == "SELF").ToList();
+                var validators = AccountData.GetPossibleValidatorAccounts();
+                var query = validators.ToList();
 
                 return query;
             }

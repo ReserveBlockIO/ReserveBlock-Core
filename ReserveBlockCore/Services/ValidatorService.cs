@@ -207,7 +207,7 @@ namespace ReserveBlockCore.Services
         {
             Console.Clear();
             var validatortList = Validators.Validator.GetLocalValidator();
-            var accountNumberList = new Dictionary<string, Validators>();
+            var accountNumberList = new Dictionary<string, Account>();
 
             if (validatortList.Count() == 0)
             {
@@ -228,7 +228,6 @@ namespace ReserveBlockCore.Services
 
                     Console.WriteLine("\n #" + count.ToString());
                     Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    Console.WriteLine("\nNode Name :\n{0}", x.UniqueName);
                     count++;
                 });
 
@@ -257,7 +256,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     Console.Clear();
-                    StopValidating(validator);
+                    //StopValidating(validator);
 
                     Console.WriteLine("The chosen addresses is no longer a validator...");
                     Console.WriteLine("Returning you to main menu in 5 seconds...");

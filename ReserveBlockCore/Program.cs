@@ -54,7 +54,7 @@ namespace ReserveBlockCore
             StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
+            blockTimer.Change(60000, 120000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             //BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //BlockHeightTimer.Change(60000, 15000); //waits 1 minute, then runs every 37 seconds for new block heights
