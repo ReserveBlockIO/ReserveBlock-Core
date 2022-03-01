@@ -73,10 +73,10 @@ namespace ReserveBlockCore.Services
                     Amount = 1999M,
                     FailCount = 0,
                     IsActive = true,
-                    NodeIP = "185.199.226.121",
+                    NodeIP = "192.3.3.171",
                     Position = 1,
                     Signature = "MEUCIEVutYCQT5ruAKnh8BeLpNkx5lvKFji00H2R37IiO1YIAiEAgHuHBpcMb+2NJs8SMxCP05JGUQ2glB0bkgmQ9YEtBX0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
-                    UniqueName = "GenesisValidator1"
+                    UniqueName = "GenesisValidator2"
                 };
 
                 validators.Insert(validator2);
