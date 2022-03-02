@@ -182,7 +182,7 @@ namespace ReserveBlockCore.Models
                                 string mainAddr = nextVali.Address;
                                 string backupAddr = secondaryVali.Address;
 
-                                var check = await P2PClient.PingNextValidators(nextVali.NodeIP, secondaryVali.NodeIP);
+                                var check = await P2PClient.PingNextValidators(nextVali, secondaryVali);
 
                                 if (check.Item1 == false)
                                 {

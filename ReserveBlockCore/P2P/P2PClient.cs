@@ -694,7 +694,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    if (hubConnection1 != null)
+                    if (hubConnection1 != null && IsConnected1)
                     {
                         string message = await hubConnection1.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
@@ -712,7 +712,7 @@ namespace ReserveBlockCore.P2P
                         }
                     }
 
-                    if (hubConnection2 != null)
+                    if (hubConnection2 != null && IsConnected2)
                     {
                         string message = await hubConnection2.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
@@ -729,7 +729,7 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
-                    if (hubConnection3 != null)
+                    if (hubConnection3 != null && IsConnected3)
                     {
                         string message = await hubConnection3.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
@@ -746,7 +746,7 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
-                    if (hubConnection4 != null)
+                    if (hubConnection4 != null && IsConnected4)
                     {
                         string message = await hubConnection4.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
@@ -763,7 +763,7 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
-                    if (hubConnection5 != null)
+                    if (hubConnection5 != null && IsConnected5)
                     {
                         string message = await hubConnection5.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
@@ -780,7 +780,7 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
-                    if (hubConnection6 != null)
+                    if (hubConnection6 != null && IsConnected6)
                     {
                         string message = await hubConnection6.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
@@ -978,6 +978,8 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Broadcast Validators for Masternodes
+
         public static async Task<bool> BroadcastValidatorNode(Validators nValidator)
         {
             var validators = Validators.Validator.GetAll();
@@ -1021,7 +1023,9 @@ namespace ReserveBlockCore.P2P
 
         }
 
-        #region Broadcast Masternode
+        #endregion
+
+        #region Broadcast Masternode *DEPRECATED
         public static async void BroadcastMasterNode(Validators nValidator)
         {
             var peersConnected = await P2PClient.ArePeersConnected();
