@@ -65,7 +65,7 @@ namespace ReserveBlockCore.Data
 
             var lastBlock = GetLastBlock();
             var height = lastBlock.Height + 1;
-            var nextValidators = await Validators.Validator.GetNextBlockValidators();
+            var nextValidators = await Validators.Validator.GetNextBlockValidators(validator);
             //Need to get master node validator.
             var timestamp = TimeUtil.GetTime();
             var transactionList = new List<Transaction>();
