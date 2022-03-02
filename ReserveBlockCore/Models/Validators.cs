@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Models
@@ -77,7 +78,7 @@ namespace ReserveBlockCore.Models
                 return nextValidators;
             }
 
-            public static async Task<string> GetNextBlockValidators()
+            public static async Task<string> GetNextBlockValidators(string localValidator)
             {
                 var output = "";
                 var lastBlock = BlockchainData.GetLastBlock();
@@ -114,35 +115,45 @@ namespace ReserveBlockCore.Models
                     }
                     else
                     {
-                        var lastValidator = validators.FindAll().Where(x => x.Address == lastBlock.Validator).FirstOrDefault();//ISSUE IS HERE!
+                        var lastValidator = validators.FindAll().Where(x => x.Address == lastBlock.Validator).FirstOrDefault();
                         if(lastValidator != null)
                         {
-                            var nextNum = lastValidator.Position + 1 > validatorCount ? 1 : lastValidator.Position + 1;
-                            var secondNextNum = nextNum + 1 > validatorCount ? 1 : nextNum + 1;
+                            var lastValidatorsPair = lastBlock.NextValidators;//get last validators to determine if main or secondary did the solve.
+                            var nextVals = lastValidatorsPair.Split(':');
+                            var mainVal = nextVals[0];
+                            var secVal = nextVals[1];
 
+                            int posCount = lastValidator.Address == mainVal ? 0 : 1;
+                            int posCount2 = lastValidator.Address == mainVal ? 1 : 2;
 
-                            var nextVal = validators.FindAll().Where(x => x.Position == nextNum).FirstOrDefault();
-                            var secondaryVal = validators.FindAll().Where(x => x.Position == secondNextNum).FirstOrDefault();
+                            var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
+                            var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
-                            string mainAddr = nextVal.Address;
-                            string backupAddr = secondaryVal.Address;
+                            var numMain = lastValidator.Position + posCount >= valiCount ? 0 : lastValidator.Position + posCount;
+                            var numSec = lastValidator.Position + posCount2 >= valiCount ? 0 : lastValidator.Position + posCount2;
 
-                            var check = await P2PClient.PingNextValidators(nextVal.NodeIP, secondaryVal.NodeIP);
+                            var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
+                            var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
+
+                            string mainAddr = mainValidator.Address;
+                            string backupAddr = secondValidator.Address;
+
+                            var check = await P2PClient.PingNextValidators(mainValidator.NodeIP, secondValidator.NodeIP);
 
                             //This will need to be revised to get next validator not just revert to previous block validator. 
                             //This could cause a loop.
                             if(check.Item1 == false)
                             {
                                 mainAddr = backupAddr;
-                                nextVal.FailCount += 1;
-                                validators.Update(nextVal);
+                                mainValidator.FailCount += 1;
+                                validators.Update(mainValidator);
                             }
 
                             if(check.Item2 == false)
                             {
                                 backupAddr = lastBlock.Validator;
-                                secondaryVal.FailCount += 1;
-                                validators.Update(secondaryVal);
+                                secondValidator.FailCount += 1;
+                                validators.Update(secondValidator);
                             }
 
                             output = mainAddr + ":" + backupAddr;
@@ -155,7 +166,9 @@ namespace ReserveBlockCore.Models
                             var mainVal = nextVals[0];
                             var secondaryVal = nextVals[1];
 
-                            var newValidator = validators.FindAll().Where(x => x.Address == secondaryVal).FirstOrDefault();
+                            string queryAddress = mainVal == localValidator ? mainVal : secondaryVal;
+
+                            var newValidator = validators.FindAll().Where(x => x.Address == queryAddress).FirstOrDefault();
                             if(newValidator != null)
                             {
                                 var nextNum = newValidator.Position + 1 > validatorCount ? 1 : newValidator.Position + 1;
@@ -193,6 +206,8 @@ namespace ReserveBlockCore.Models
                 }
                 return output;
             }
+
+            
 
         }
     }

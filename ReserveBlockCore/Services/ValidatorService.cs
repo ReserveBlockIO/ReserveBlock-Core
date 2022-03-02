@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Extensions;
 
 namespace ReserveBlockCore.Services
 {
