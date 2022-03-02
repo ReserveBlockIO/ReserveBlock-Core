@@ -1157,12 +1157,13 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Ping Next Validators 
-        public static async Task<(bool, bool)> PingNextValidators(string mainVal, string backupVal)
+        public static async Task<(bool, bool)> PingNextValidators(Validators mainVal, Validators backupVal)
         {
             bool main = false;
             bool backup = false;
+            var validators = Validators.Validator.GetAll();
 
-            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal + ":3338/blockchain").Build();
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":3338/blockchain").Build();
             var alive = hubConnection.StartAsync().Wait(3000);
             if(alive == true)
             {
@@ -1171,11 +1172,13 @@ namespace ReserveBlockCore.P2P
                 if (response == true)
                 {
                     main = true;
+                    mainVal.FailCount = 0;
+                    validators.Update(mainVal);
                     hubConnection.StopAsync().Wait();
                 }
             }
 
-            var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal + ":3338/blockchain").Build();
+            var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":3338/blockchain").Build();
             var alive2 = hubConnection2.StartAsync().Wait(3000);
 
             if (alive2 == true)
@@ -1185,6 +1188,8 @@ namespace ReserveBlockCore.P2P
                 if (response2 == true)
                 {
                     backup = true;
+                    backupVal.FailCount = 0;
+                    validators.Update(backupVal);
                     hubConnection2.StopAsync().Wait();
                 }
             }
@@ -1207,38 +1212,74 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    if (hubConnection1 != null)
+                    if (hubConnection1 != null && IsConnected1)
                     {
                         await hubConnection1.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
                     }
-
-                    if (hubConnection2 != null)
-                    {
-                        await hubConnection2.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                    if (hubConnection3 != null)
-                    {
-                        await hubConnection3.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                    if (hubConnection4 != null)
-                    {
-                        await hubConnection4.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                    if (hubConnection5 != null)
-                    {
-                        await hubConnection5.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                    if (hubConnection6 != null)
-                    {
-                        await hubConnection6.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-
                 }
                 catch (Exception ex)
                 {
                     //possible dead connection, or node is offline
                     Console.WriteLine("Error Sending Transaction. Please try again!");
                 }
+                try
+                {
+
+                    if (hubConnection2 != null && IsConnected2)
+                    {
+                        await hubConnection2.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+
+                try
+                {
+                    if (hubConnection3 != null && IsConnected3)
+                    {
+                        await hubConnection3.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                try
+                {
+                    if (hubConnection4 != null && IsConnected4)
+                    {
+                        await hubConnection4.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                try
+                {
+                    if (hubConnection5 != null && IsConnected5)
+                    {
+                        await hubConnection5.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                try
+                {
+                    if (hubConnection6 != null && IsConnected6)
+                    {
+                        await hubConnection6.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                
             }
 
         }

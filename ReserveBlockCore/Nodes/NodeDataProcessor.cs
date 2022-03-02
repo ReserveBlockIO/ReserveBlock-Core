@@ -37,7 +37,7 @@ namespace ReserveBlockCore.Nodes
                                         if (txResult == true && dblspndChk == false)
                                         {
                                             mempool.Insert(transaction);
-
+                                            P2PClient.SendTXMempool(transaction);
                                         }
                                     }
 
@@ -50,6 +50,7 @@ namespace ReserveBlockCore.Nodes
                                     if (txResult == true && dblspndChk == false)
                                     {
                                         mempool.Insert(transaction);
+                                        P2PClient.SendTXMempool(transaction);
                                     }
                                 }
                             }
@@ -100,6 +101,7 @@ namespace ReserveBlockCore.Nodes
                                         if (result == true)
                                         {
                                             Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                                            P2PClient.BroadcastBlock(nextBlock);//broadcast out to your connected nodes
                                         }
                                         else
                                         {

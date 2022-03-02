@@ -207,7 +207,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower() && x.NodeIP == "SELF");
+                    var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
                     ValidatorService.StopValidating(validator);
                     TransactionData.AddToPool(txRequest);
                     TransactionData.AddTxToWallet(txRequest);

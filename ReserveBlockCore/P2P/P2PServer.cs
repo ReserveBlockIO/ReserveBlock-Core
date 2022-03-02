@@ -326,7 +326,7 @@ namespace ReserveBlockCore.P2P
 
             if (validatorList.Count() != 0)
             {
-                var valFound = validatorList.FindOne(x => x.NodeIP == validator.NodeIP || x.Address == validator.Address);
+                var valFound = validatorList.FindOne(x => x.Address == validator.Address); // basically if a validator stays offline the address because blacklisted
                 if (valFound == null)
                 {
                     var result = ValidatorService.ValidateTheValidator(validator);
@@ -411,7 +411,7 @@ namespace ReserveBlockCore.P2P
         {
             //do check for validator. if yes return val otherwise return Hello.
             var validators = Validators.Validator.GetAll();
-            var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count();
+            var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count(); //revise this to use local account and IsValidating
 
             if(hasValidators > 0)
                 return "HelloVal";

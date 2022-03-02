@@ -172,18 +172,20 @@ namespace ReserveBlockCore.Services
                             validator.Signature = signature;
                             validator.FailCount = 0;
                             validator.Position = validatorTable.FindAll().Count() + 1;
-
-                            validatorTable.Insert(validator);
-
-                            account.IsValidating = true;
-                            var accountTable = AccountData.GetAccounts();
-                            accountTable.Update(account);
-
                             
-                            P2PClient.BroadcastMasterNode(validator);
                             var broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
 
                             if(broadcastResult == true)
+                            {
+                                validatorTable.Insert(validator);
+                                account.IsValidating = true;
+                                var accountTable = AccountData.GetAccounts();
+                                accountTable.Update(account);
+                            }    
+
+                            var getUpdatedListWithme = await P2PClient.GetMasternodes();
+
+                            if (broadcastResult == true)
                             {
                                 output = "Account found and activated as a validator! Thank you for service to the network!";
                             }
@@ -290,7 +292,7 @@ namespace ReserveBlockCore.Services
             }
             if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
             {
-                result = true;
+                result = true; //success
             }
 
             return result;
@@ -298,7 +300,7 @@ namespace ReserveBlockCore.Services
 
         public static void StopValidating(Validators validator)
         {           
-            Validators.Validator.GetAll().Delete(validator.Id);
+            //Validators.Validator.GetAll().Delete(validator.Id);
 
             var accounts = AccountData.GetAccounts();
             var myAccount = accounts.FindOne(x => x.Address == validator.Address);

@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Models
                             string mainAddr = mainValidator.Address;
                             string backupAddr = secondValidator.Address;
 
-                            var check = await P2PClient.PingNextValidators(mainValidator.NodeIP, secondValidator.NodeIP);
+                            var check = await P2PClient.PingNextValidators(mainValidator, secondValidator);
 
                             //This will need to be revised to get next validator not just revert to previous block validator. 
                             //This could cause a loop.
