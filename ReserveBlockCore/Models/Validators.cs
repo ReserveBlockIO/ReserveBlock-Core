@@ -131,7 +131,7 @@ namespace ReserveBlockCore.Models
                             var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
                             var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
-                            var numMain = lastValidator.Position + posCount >= valiCount ? ((lastValidator.Position + posCount2) - valiCount) : lastValidator.Position + posCount;
+                            var numMain = lastValidator.Position + posCount >= valiCount ? ((lastValidator.Position + posCount) - valiCount) : lastValidator.Position + posCount;
                             var numSec = lastValidator.Position + posCount2 >= valiCount ? ((lastValidator.Position + posCount2) - valiCount) : lastValidator.Position + posCount2;
 
                             var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
@@ -173,22 +173,15 @@ namespace ReserveBlockCore.Models
                             var newValidator = validators.FindAll().Where(x => x.Address == queryAddress).FirstOrDefault();
                             if(newValidator != null)
                             {
-                                int posCount = 2;
-                                int posCount2 = 3;
-                                int posCount3 = 4;
-
-                                if (backupValidator == localValidator)
-                                {
-                                    posCount = 0;
-                                    posCount2 = 1;
-                                    posCount3 = 2;
-                                }
+                                int posCount = 0;
+                                int posCount2 = 1;
+                                int posCount3 = 2;
 
                                 var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
                                 var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
                                 //I think issue is with the List and the fact the highest number is 2 could  be caught in a circular loop
-                                var numMain = newValidator.Position + posCount >= valiCount ? ((newValidator.Position + posCount2) - valiCount) : newValidator.Position + posCount;
+                                var numMain = newValidator.Position + posCount >= valiCount ? ((newValidator.Position + posCount) - valiCount) : newValidator.Position + posCount;
                                 var numSec = newValidator.Position + posCount2 >= valiCount ? ((newValidator.Position + posCount2) - valiCount) : newValidator.Position + posCount2;
                                 var numThree = newValidator.Position + posCount3 >= valiCount ? ((newValidator.Position + posCount3) - valiCount) : newValidator.Position + posCount3;
 
