@@ -137,6 +137,7 @@ namespace ReserveBlockCore.Services
                     if (validatorCount > 0)
                     {
                         output = "Account is already a validator";
+                        return output;
                     }
                     else
                     {
@@ -146,6 +147,7 @@ namespace ReserveBlockCore.Services
                         if(result.Item1 == false)
                         {
                             output = "Could not find any validators to authenticate your request. Please try again later or manually add validators.";
+                            return output;
                         }
                         else
                         {
@@ -172,18 +174,32 @@ namespace ReserveBlockCore.Services
                             validator.Signature = signature;
                             validator.FailCount = 0;
                             validator.Position = validatorTable.FindAll().Count() + 1;
-                            
-                            var broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
+
+                            bool broadcastResult = false;
+
+                            account.IsValidating = true;
+                            var accountTable = AccountData.GetAccounts();
+                            accountTable.Update(account);
+
+                            try
+                            {
+                                output = "You have locally added your validator! Please wait while we broadcast out to network!";
+                                broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
+                            }
+                            catch(Exception ex)
+                            {
+
+                            }
 
                             if(broadcastResult == true)
                             {
-                                validatorTable.Insert(validator);
-                                account.IsValidating = true;
-                                var accountTable = AccountData.GetAccounts();
-                                accountTable.Update(account);
+                                //validatorTable.Insert(validator);
+                                //account.IsValidating = true;
+                                //var accountTable = AccountData.GetAccounts();
+                                //accountTable.Update(account);
                             }    
 
-                            var getUpdatedListWithme = await P2PClient.GetMasternodes();
+                            var getUpdatedListWithme = await P2PClient.GetMasternodes(); //we should get our own validator here.
 
                             if (broadcastResult == true)
                             {

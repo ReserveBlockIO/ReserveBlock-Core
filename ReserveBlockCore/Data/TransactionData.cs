@@ -112,10 +112,32 @@ namespace ReserveBlockCore.Data
                     var doesTxExist = transactions.Exists(x => x.Hash.Equals(tx.Hash));
                     if (doesTxExist == true)
                     {
-                        result = true;
+                        result = true;//douple spend has occured
                     }
 
                 });
+            }
+
+            if(result == true)
+            {
+                return result;//douple spend has occured
+            }
+
+            var mempool = TransactionData.GetPool();
+            var txs = mempool.FindAll().Where(x => x.FromAddress == tx.FromAddress).ToList();
+
+            if(txs.Count() > 0)
+            {
+                var amount = txs.Sum(x => x.Amount);
+                var stateTreiAcct = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                if(stateTreiAcct != null)
+                {
+                    var amountTotal = amount + tx.Amount;
+                    if(amountTotal > stateTreiAcct.Balance)
+                    {
+                        result = true; //douple spend has occured
+                    }
+                }
             }
 
             return result;

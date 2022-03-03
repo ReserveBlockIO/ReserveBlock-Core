@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Controllers
                 peerCount = "0";
             }
 
-            output = blockHeight + ":" + peerCount;
+            output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString();
 
             return output;
         }
@@ -117,6 +117,26 @@ namespace ReserveBlockCore.Controllers
             {
                 var accountList = accounts.ToList();
                 output = JsonConvert.SerializeObject(accountList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetValidatorInfo/{id}")]
+        public async Task<string> GetValidatorInfo(string id)
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+            var validators = Validators.Validator.GetAll();
+            var validator = validators.FindOne(x => x.Address == id);
+
+            if(validator != null)
+            {
+                output = validator.UniqueName;
+            }
+            else
+            {
+                output = "Validator not on network yet.";
             }
 
             return output;
@@ -219,6 +239,7 @@ namespace ReserveBlockCore.Controllers
 
             if (addrCheck == false)
             {
+                output = "This is not a valid RBX address to send to. Please verify again.";
                 return output;
             }
 
@@ -257,11 +278,9 @@ namespace ReserveBlockCore.Controllers
                 var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
                 if(accountCheck != null)
                 {
-                    //do validator logic
-                    var nodeNameCheck = ValidatorService.UniqueNameCheck(uniqueName);
-                    if(nodeNameCheck == false)
+                    if(accountCheck.IsValidating)
                     {
-                        result = "Node name already taken.";
+                        result = "Node is already flagged as validator.";
                         return result;
                     }
                     try

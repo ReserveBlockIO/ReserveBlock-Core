@@ -130,6 +130,7 @@ namespace ReserveBlockCore.Services
 
         internal static void CheckForDuplicateBlocks()
         {
+            ClearSelfValidator();
             var blockChain = BlockchainData.GetBlocks();
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
             var dupBlocksList = blocks.GroupBy(x => x.Height).Where(y => y.Count() > 1).Select(z => z.Key).ToList();
@@ -171,6 +172,28 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static void ClearSelfValidator()
+        {
+            var validators = Validators.Validator.GetAll();
+            var validator = validators.FindOne(x => x.NodeIP == "SELF");
+            if (validator != null)
+            {
+                var accounts = AccountData.GetAccounts();
+                var account = accounts.FindOne(x => x.Address == validator.Address);
+
+                if(account != null)
+                {
+                    account.IsValidating = false;
+                    accounts.Update(account);
+                }
+                var isDeleted = validators.Delete(validator.Id);
+                if(isDeleted)
+                {
+                    DbContext.DB_Peers.Checkpoint();//commits from log file
+                    //success
+                }
+            }
+        }
         internal static async Task StartupPeers()
         {
             //add seed nodes

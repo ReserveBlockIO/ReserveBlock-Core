@@ -125,7 +125,7 @@ namespace ReserveBlockCore.Services
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
             if ((nTx.Amount + nTx.Fee) > senderBalance)
             {
-                output = "Insufficient Funds";
+                output = "Insufficient Funds. You have: " + senderBalance.ToString() + " RBX on the network and the total was: " + (nTx.Amount + nTx.Fee).ToString() + " RBX";
                 Console.WriteLine("\nError! Sender ({0}) don't have enough balance!", account.Address);
                 Console.WriteLine("Sender ({0}) balance is {1}", account.Address, senderBalance);
                 return output;
@@ -137,7 +137,9 @@ namespace ReserveBlockCore.Services
             var txHash = nTx.Hash;
             var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (signature == "ERROR")
+            {
                 return "ERROR! There was an error signing your transaction. Please verify private key belongs to public address.";
+            }
 
             nTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
 
@@ -178,6 +180,13 @@ namespace ReserveBlockCore.Services
             newTxn.Build();
 
             if(!newTxn.Hash.Equals(txRequest.Hash))
+            {
+                return txResult;
+            }
+
+            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
+            var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
+            if (txExist)
             {
                 return txResult;
             }

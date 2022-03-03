@@ -990,27 +990,39 @@ namespace ReserveBlockCore.P2P
             {
                 foreach(var validator in validatorList)
                 {
-                    var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
-                    var alive = hubConnection.StartAsync().Wait(5000); //give validator 5 secs to connect. Should be plenty
-                    if (alive == true)
+                    try
                     {
-                        var message = await hubConnection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
+                        var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+                        var alive = hubConnection.StartAsync().Wait(5000); //give validator 5 secs to connect. Should be plenty
+                        if (alive == true)
+                        {
+                            var message = await hubConnection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
 
-                        if (message == "VATN")
-                        {
-                            //success
-                            successCount += 1;
-                            hubConnection.StopAsync().Wait();//close connection when done to avoid any memory build up.
-                        }
-                        else if (message == "FTAV")
-                        {
-                            Console.WriteLine("Failed to add Validator on remote node(s)");
+                            if (message == "VATN")
+                            {
+                                //success
+                                successCount += 1;
+                                hubConnection.StopAsync().Wait();//close connection when done to avoid any memory build up.
+                            }
+                            else if (message == "FTAV")
+                            {
+                                Console.WriteLine("Failed to add Validator on remote node(s)");
+                            }
+                            else
+                            {
+                                //already in validator list
+                            }
                         }
                         else
                         {
-                            //already in validator list
+                            //hubConnection.StopAsync().Wait();
                         }
                     }
+                    catch(Exception ex)
+                    {
+
+                    }
+                    
                 }
 
                 if(successCount > 0)

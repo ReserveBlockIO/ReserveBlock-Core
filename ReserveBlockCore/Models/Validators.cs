@@ -187,7 +187,19 @@ namespace ReserveBlockCore.Models
 
                                 var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
                                 var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
-                                var thirdValidator = valiList.ToCircular().Where(x => x.Position > numThree).FirstOrDefault();
+
+                                Validators thirdValidator = new Validators();
+                                var addressThird = "";
+                                if (valiList.Count() > 2)
+                                {
+                                    thirdValidator = valiList.ToCircular().Where(x => x.Position > numThree).FirstOrDefault();
+                                    addressThird = thirdValidator.Address != "" ? thirdValidator.Address : localValidator;
+                                }
+                                else
+                                {
+                                    addressThird = localValidator;
+                                }
+                                
 
                                 string mainAddr = mainValidator.Address;
                                 string backupAddr = secondValidator.Address;
@@ -203,7 +215,7 @@ namespace ReserveBlockCore.Models
 
                                 if (check.Item2 == false)
                                 {
-                                    backupAddr = lastBlock.Validator != backupValidator ? lastBlock.Validator : thirdValidator.Address;
+                                    backupAddr = lastBlock.Validator != backupValidator ? lastBlock.Validator : addressThird;
                                     secondValidator.FailCount += 1;
                                     validators.Update(secondValidator);
                                 }

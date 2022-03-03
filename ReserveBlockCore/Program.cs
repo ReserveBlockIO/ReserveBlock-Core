@@ -36,7 +36,7 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();// initializes databases
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
-            StartupService.CheckForDuplicateBlocks();//Check for duplicate block adds due to back close
+            
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
@@ -117,6 +117,7 @@ namespace ReserveBlockCore
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
 
+            StartupService.CheckForDuplicateBlocks();//Check for duplicate block adds due to back close
             try
             {
 
