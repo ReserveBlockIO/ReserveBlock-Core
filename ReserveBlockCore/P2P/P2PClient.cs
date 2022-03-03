@@ -1168,7 +1168,7 @@ namespace ReserveBlockCore.P2P
             var validators = Validators.Validator.GetAll();
 
             var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":3338/blockchain").Build();
-            var alive = hubConnection.StartAsync().Wait(3000);
+            var alive = hubConnection.StartAsync().Wait(6000);
             if(alive == true)
             {
                 var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
@@ -1183,7 +1183,7 @@ namespace ReserveBlockCore.P2P
             }
 
             var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":3338/blockchain").Build();
-            var alive2 = hubConnection2.StartAsync().Wait(3000);
+            var alive2 = hubConnection2.StartAsync().Wait(6000);
 
             if (alive2 == true)
             {

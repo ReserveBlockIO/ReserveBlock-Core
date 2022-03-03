@@ -21,6 +21,8 @@ namespace ReserveBlockCore.Models
         {
             public static List<Validators> ValidatorList { get; set; }
 
+            public static string backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+
             public static void Add(Validators validator)
             {
                 var validators = GetAll();
@@ -123,14 +125,14 @@ namespace ReserveBlockCore.Models
                             var mainVal = nextVals[0];
                             var secVal = nextVals[1];
 
-                            int posCount = lastValidator.Address == mainVal ? 0 : 1;
-                            int posCount2 = lastValidator.Address == mainVal ? 1 : 2;
+                            int posCount = lastValidator.Address == secVal ? 0 : 0;
+                            int posCount2 = lastValidator.Address == secVal ? 1 : 1;
 
                             var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
                             var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
-                            var numMain = lastValidator.Position + posCount >= valiCount ? 0 : lastValidator.Position + posCount;
-                            var numSec = lastValidator.Position + posCount2 >= valiCount ? 0 : lastValidator.Position + posCount2;
+                            var numMain = lastValidator.Position + posCount >= valiCount ? ((lastValidator.Position + posCount2) - valiCount) : lastValidator.Position + posCount;
+                            var numSec = lastValidator.Position + posCount2 >= valiCount ? ((lastValidator.Position + posCount2) - valiCount) : lastValidator.Position + posCount2;
 
                             var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
                             var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
@@ -171,31 +173,46 @@ namespace ReserveBlockCore.Models
                             var newValidator = validators.FindAll().Where(x => x.Address == queryAddress).FirstOrDefault();
                             if(newValidator != null)
                             {
-                                var nextNum = newValidator.Position + 1 > validatorCount ? 1 : newValidator.Position + 1;
-                                var secondNextNum = nextNum + 1 > validatorCount ? 1 : nextNum + 1;
-                                var thirdNextNum = secondNextNum + 1 > validatorCount ? 1 : secondNextNum + 1;
+                                int posCount = 2;
+                                int posCount2 = 3;
+                                int posCount3 = 4;
 
-                                var nextVali = validators.FindAll().Where(x => x.Position == nextNum).FirstOrDefault();
-                                var secondaryVali = validators.FindAll().Where(x => x.Position == secondNextNum).FirstOrDefault();
-                                var thirdVali = validators.FindAll().Where(x => x.Position == thirdNextNum).FirstOrDefault();
+                                if (backupValidator == localValidator)
+                                {
+                                    posCount = 0;
+                                    posCount2 = 1;
+                                    posCount3 = 2;
+                                }
 
-                                string mainAddr = nextVali.Address;
-                                string backupAddr = secondaryVali.Address;
+                                var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
+                                var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
-                                var check = await P2PClient.PingNextValidators(nextVali, secondaryVali);
+                                //I think issue is with the List and the fact the highest number is 2 could  be caught in a circular loop
+                                var numMain = newValidator.Position + posCount >= valiCount ? ((newValidator.Position + posCount2) - valiCount) : newValidator.Position + posCount;
+                                var numSec = newValidator.Position + posCount2 >= valiCount ? ((newValidator.Position + posCount2) - valiCount) : newValidator.Position + posCount2;
+                                var numThree = newValidator.Position + posCount3 >= valiCount ? ((newValidator.Position + posCount3) - valiCount) : newValidator.Position + posCount3;
+
+                                var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
+                                var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
+                                var thirdValidator = valiList.ToCircular().Where(x => x.Position > numThree).FirstOrDefault();
+
+                                string mainAddr = mainValidator.Address;
+                                string backupAddr = secondValidator.Address;
+
+                                var check = await P2PClient.PingNextValidators(mainValidator, secondValidator);
 
                                 if (check.Item1 == false)
                                 {
                                     mainAddr = backupAddr;
-                                    nextVali.FailCount += 1;
-                                    validators.Update(nextVali);
+                                    mainValidator.FailCount += 1;
+                                    validators.Update(mainValidator);
                                 }
 
                                 if (check.Item2 == false)
                                 {
-                                    backupAddr = lastBlock.Validator != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? lastBlock.Validator : thirdVali.Address;
-                                    secondaryVali.FailCount += 1;
-                                    validators.Update(secondaryVali);
+                                    backupAddr = lastBlock.Validator != backupValidator ? lastBlock.Validator : thirdValidator.Address;
+                                    secondValidator.FailCount += 1;
+                                    validators.Update(secondValidator);
                                 }
 
                                 output = mainAddr + ":" + backupAddr;
