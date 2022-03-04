@@ -1027,6 +1027,7 @@ namespace ReserveBlockCore.P2P
 
                 if(successCount > 0)
                 {
+                    await P2PClient.GetMasternodes();
                     return true;
                 }
             }
@@ -1178,37 +1179,54 @@ namespace ReserveBlockCore.P2P
             bool main = false;
             bool backup = false;
             var validators = Validators.Validator.GetAll();
-
             var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":3338/blockchain").Build();
-            var alive = hubConnection.StartAsync().Wait(6000);
-            if(alive == true)
+            try
             {
-                var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
-
-                if (response == true)
+                var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
+                if (alive == true)
                 {
-                    main = true;
-                    mainVal.FailCount = 0;
-                    validators.Update(mainVal);
-                    hubConnection.StopAsync().Wait();
+                    var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
+
+                    if (response == true)
+                    {
+                        main = true;
+                        mainVal.FailCount = 0;
+                        validators.Update(mainVal);
+                        hubConnection.StopAsync().Wait();
+                    }
                 }
             }
+            catch(Exception ex)
+            {
+                mainVal.FailCount += 1;
+                validators.Update(mainVal);
+            }
+            
 
             var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":3338/blockchain").Build();
-            var alive2 = hubConnection2.StartAsync().Wait(6000);
-
-            if (alive2 == true)
+            try
             {
-                var response2 = await hubConnection2.InvokeAsync<bool>("PingNextValidator");
+                var alive2 = hubConnection2.StartAsync().Wait(6000);
 
-                if (response2 == true)
+                if (alive2 == true)
                 {
-                    backup = true;
-                    backupVal.FailCount = 0;
-                    validators.Update(backupVal);
-                    hubConnection2.StopAsync().Wait();
+                    var response2 = await hubConnection2.InvokeAsync<bool>("PingNextValidator");
+
+                    if (response2 == true)
+                    {
+                        backup = true;
+                        backupVal.FailCount = 0;
+                        validators.Update(backupVal);
+                        hubConnection2.StopAsync().Wait();
+                    }
                 }
             }
+            catch(Exception ex)
+            {
+                backupVal.FailCount += 1;
+                validators.Update(backupVal);
+            }
+            
 
             return (main, backup);
         }

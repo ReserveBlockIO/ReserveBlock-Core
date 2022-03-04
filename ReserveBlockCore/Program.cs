@@ -40,7 +40,7 @@ namespace ReserveBlockCore
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
-            
+
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -52,7 +52,7 @@ namespace ReserveBlockCore
             PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
 
             ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            ValidatorListTimer.Change(90000, 60 * 10 * 6000); //waits 1 minute, then runs every 1 hour
+            ValidatorListTimer.Change(70000, 2 * 10 * 6000); //waits 1 minute, then runs every 2 minutes
 
             DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             DBCommitTimer.Change(90000, 5 * 10 * 6000); //waits 1.5 minute, then runs every 5 minutes
