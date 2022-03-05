@@ -14,7 +14,7 @@ namespace ReserveBlockCore.P2P
     public class P2PClient
     {
         public static List<Peers>? ActivePeerList { get; set; }
-        public static List<string> ReportedIPs { get; set; }
+        public static List<string> ReportedIPs = new List<string>();
 
         #region HubConnection Variables
         /// <summary>
@@ -193,6 +193,8 @@ namespace ReserveBlockCore.P2P
         #region Hubconnection Connect Methods 1-6
         private static async Task<bool> Connect(int HubNum, string url)
         {
+            List<string> ipList = new List<string>();
+            ipList = ReportedIPs;
             if(HubNum == 1)
             {
                 try
@@ -210,7 +212,8 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                ReportedIPs.Add(data.ToString());
+                                ipList.Add(data.ToString());
+                                ReportedIPs = ipList;
                             }    
                         }
                             
@@ -243,7 +246,8 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                ReportedIPs.Add(data.ToString());
+                                ipList.Add(data.ToString());
+                                ReportedIPs = ipList;
                             }
                         }
                     });
@@ -277,7 +281,8 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                ReportedIPs.Add(data.ToString());
+                                ipList.Add(data.ToString());
+                                ReportedIPs = ipList;
                             }
                         }
                     });
@@ -309,7 +314,8 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                ReportedIPs.Add(data.ToString());
+                                ipList.Add(data.ToString());
+                                ReportedIPs = ipList;
                             }
                         }
                     });
@@ -341,7 +347,8 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                ReportedIPs.Add(data.ToString());
+                                ipList.Add(data.ToString());
+                                ReportedIPs = ipList;
                             }
                         }
                     });
@@ -373,7 +380,8 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                ReportedIPs.Add(data.ToString());
+                                ipList.Add(data.ToString());
+                                ReportedIPs = ipList;
                             }
                         }
                     });
