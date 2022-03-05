@@ -203,7 +203,7 @@ namespace ReserveBlockCore
                             var mainVal = nextVals[0];
                             var secondaryVal = nextVals[1];
 
-                            if (lastBlock.Height != 0 && (mainVal == ValidatorAddress || secondaryVal == ValidatorAddress))
+                            if (lastBlock.Height != 0)
                             {
                                 if (timeDiff >= 0.52M && timeDiff < 1.04M)
                                 {
