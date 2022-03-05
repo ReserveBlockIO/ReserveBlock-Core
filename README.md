@@ -25,7 +25,7 @@ ReserveBlock Foundation (reserveblock.io), is the first open-source platform all
 
 For more information please read the ReserverBlock whitepaper or litepaper.
 
-### Reserver Block Is Built on the Following ###
+### ReserveBlock Is Built on the Following ###
 
 * RBX CLI Main Code REPO
 * C#
