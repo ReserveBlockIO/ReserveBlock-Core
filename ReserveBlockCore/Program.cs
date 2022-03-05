@@ -16,7 +16,6 @@ namespace ReserveBlockCore
         #region Constants
 
         private static Timer? blockTimer;//for creating a new block at max every 30 seconds
-        private static Timer? BlockHeightTimer; //Checking Height of other nodes to see if new block is needed
         private static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? DBCommitTimer;//checks dbs and commits log files. 
@@ -30,6 +29,7 @@ namespace ReserveBlockCore
         public static bool PeersConnecting = false;
         public static int BlockValidateFailCount = 0;
         public static bool BlockCrafting = false;
+        public static string ValidatorAddress = "";
 
         #endregion
 
@@ -41,16 +41,14 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
             StartupService.CheckLastBlock();
+            StartupService.ResetEntireChain(); //Might need to put this back in other spot.***************************
 
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
 
-            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
-
-            //BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //BlockHeightTimer.Change(60000, 15000); //waits 1 minute, then runs every 37 seconds for new block heights
+            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
@@ -93,7 +91,7 @@ namespace ReserveBlockCore
                 });
             }
 
-            string url = TestURL == false ? "http://*:8080" : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
+            string url = TestURL == false ? "http://*:7292" : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:3338"; //this is port for signalr connect and all p2p functions
             //string url2 = "https://*:3338" //This is non http version. Must comment out app.UseHttpsRedirection() in startupp2p
             
@@ -202,63 +200,32 @@ namespace ReserveBlockCore
                             var mainVal = nextVals[0];
                             var secondaryVal = nextVals[1];
 
-                            if (lastBlock.Height != 0)
+                            if (lastBlock.Height != 0 && (mainVal == ValidatorAddress || secondaryVal == ValidatorAddress))
                             {
                                 if (timeDiff >= 0.52M && timeDiff < 1.04M)
                                 {
-                                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                    var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
-
-                                    if (account != null)
+                                    if(mainVal == ValidatorAddress)
                                     {
-                                        //craft new block
-                                        await BlockchainData.CraftNewBlock(mainVal);
+                                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                        var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+
+                                        if (account != null)
+                                        {
+                                            //craft new block
+                                            await BlockchainData.CraftNewBlock(mainVal);
+                                        }
                                     }
+                                    
                                 }
                                 if (timeDiff >= 1.5M && timeDiff < 2.0M)
                                 {
                                     //CALL OUT TO FIRST NODE AND MAKE SURE THEY DID NOT MAKE BLOCK!!!!
-                                    bool craftBlock = false;
-                                    try
+                                    if(secondaryVal == ValidatorAddress)
                                     {
-                                        var mainValidator = validators.FindOne(x => x.Address == mainVal);
-                                        if (mainValidator != null)
+                                        bool craftBlock = false;
+                                        try
                                         {
-                                            var result = await P2PClient.CallCrafter(mainValidator);
-                                            if (result == true)
-                                            {
-                                                var height = lastBlock.Height;
-                                                BlockCrafting = true;
-                                                var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
-                                                if (block != null)
-                                                {
-                                                    var blocks = BlockchainData.GetBlocks();
-                                                    var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
-                                                    if (blockFromChain == null)
-                                                    {
-                                                        var blockResult = await BlockValidatorService.ValidateBlock(block);
-                                                        if (blockResult == true)
-                                                        {
-                                                            //block added and found!
-                                                            BlockCrafting = false;
-                                                        }
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    //if peer is online but not crafting that should not happen.
-                                                }
-                                            }
-                                            else
-                                            {
-                                                craftBlock = true;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            await P2PClient.GetMasternodes();
-                                            validators = Validators.Validator.GetAll();
-                                            mainValidator = validators.FindOne(x => x.Address == mainVal);
+                                            var mainValidator = validators.FindOne(x => x.Address == mainVal);
                                             if (mainValidator != null)
                                             {
                                                 var result = await P2PClient.CallCrafter(mainValidator);
@@ -267,7 +234,7 @@ namespace ReserveBlockCore
                                                     var height = lastBlock.Height;
                                                     BlockCrafting = true;
                                                     var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
-                                                    if(block != null)
+                                                    if (block != null)
                                                     {
                                                         var blocks = BlockchainData.GetBlocks();
                                                         var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
@@ -285,29 +252,68 @@ namespace ReserveBlockCore
                                                     {
                                                         //if peer is online but not crafting that should not happen.
                                                     }
-                                                    
                                                 }
                                                 else
                                                 {
                                                     craftBlock = true;
                                                 }
                                             }
+                                            else
+                                            {
+                                                await P2PClient.GetMasternodes();
+                                                validators = Validators.Validator.GetAll();
+                                                mainValidator = validators.FindOne(x => x.Address == mainVal);
+                                                if (mainValidator != null)
+                                                {
+                                                    var result = await P2PClient.CallCrafter(mainValidator);
+                                                    if (result == true)
+                                                    {
+                                                        var height = lastBlock.Height;
+                                                        BlockCrafting = true;
+                                                        var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
+                                                        if (block != null)
+                                                        {
+                                                            var blocks = BlockchainData.GetBlocks();
+                                                            var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
+                                                            if (blockFromChain == null)
+                                                            {
+                                                                var blockResult = await BlockValidatorService.ValidateBlock(block);
+                                                                if (blockResult == true)
+                                                                {
+                                                                    //block added and found!
+                                                                    BlockCrafting = false;
+                                                                }
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            //if peer is online but not crafting that should not happen.
+                                                        }
+
+                                                    }
+                                                    else
+                                                    {
+                                                        craftBlock = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            craftBlock = true;
+                                            BlockCrafting = false;
+                                        }
+
+                                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                        var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
+
+                                        if (account != null && craftBlock == true)
+                                        {
+                                            //craft new block
+                                            await BlockchainData.CraftNewBlock(secondaryVal);
                                         }
                                     }
-                                    catch(Exception ex)
-                                    {
-                                        craftBlock = true;
-                                        BlockCrafting = false;
-                                    }
-
-                                    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                    var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
-
-                                    if (account != null && craftBlock == true)
-                                    {
-                                        //craft new block
-                                        await BlockchainData.CraftNewBlock(secondaryVal);
-                                    }
+                                    
                                 }
                                 if (timeDiff > 2.20M)
                                 {
@@ -322,8 +328,6 @@ namespace ReserveBlockCore
                                         var result = P2PClient.PingNextValidators(mainValidator, secondValidator);
                                     }
 
-
-                                    
                                     var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
                                     var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
                                     var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();

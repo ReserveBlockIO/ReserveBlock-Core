@@ -14,6 +14,7 @@ namespace ReserveBlockCore.P2P
     public class P2PClient
     {
         public static List<Peers>? ActivePeerList { get; set; }
+        public static List<string> ReportedIPs { get; set; }
 
         #region HubConnection Variables
         /// <summary>
@@ -201,9 +202,16 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection1.On<string, string>("GetMessage", async (message, data) =>  { 
-                        if (message == "tx" || message == "blk" || message == "val")
+                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            await NodeDataProcessor.ProcessData(message, data);
+                            if(message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data);
+                            }
+                            else
+                            {
+                                ReportedIPs.Add(data.ToString());
+                            }    
                         }
                             
                     });
@@ -227,9 +235,16 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection2.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val")
+                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            await NodeDataProcessor.ProcessData(message, data);
+                            if (message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data);
+                            }
+                            else
+                            {
+                                ReportedIPs.Add(data.ToString());
+                            }
                         }
                     });
 
@@ -254,9 +269,16 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection3.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val")
+                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            await NodeDataProcessor.ProcessData(message, data);
+                            if (message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data);
+                            }
+                            else
+                            {
+                                ReportedIPs.Add(data.ToString());
+                            }
                         }
                     });
 
@@ -279,9 +301,16 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection4.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val")
+                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            await NodeDataProcessor.ProcessData(message, data);
+                            if (message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data);
+                            }
+                            else
+                            {
+                                ReportedIPs.Add(data.ToString());
+                            }
                         }
                     });
 
@@ -304,9 +333,16 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection5.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val")
+                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            await NodeDataProcessor.ProcessData(message, data);
+                            if (message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data);
+                            }
+                            else
+                            {
+                                ReportedIPs.Add(data.ToString());
+                            }
                         }
                     });
 
@@ -329,9 +365,16 @@ namespace ReserveBlockCore.P2P
                     .Build();
 
                     hubConnection6.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val")
+                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            await NodeDataProcessor.ProcessData(message, data);
+                            if (message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data);
+                            }
+                            else
+                            {
+                                ReportedIPs.Add(data.ToString());
+                            }
                         }
                     });
 
@@ -1307,6 +1350,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Newly crafted block
         public static async Task<Block?> GetNewlyCraftedBlock(long height, Validators validator)
         {
             Block block = null;
@@ -1334,6 +1378,8 @@ namespace ReserveBlockCore.P2P
 
             return block;
         }
+
+        #endregion
 
         #region Broadcast Blocks to Peers
         public static async void BroadcastBlock(Block block)

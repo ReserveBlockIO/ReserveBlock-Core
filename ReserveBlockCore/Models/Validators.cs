@@ -16,7 +16,8 @@ namespace ReserveBlockCore.Models
         public string Signature { get; set; }
         public bool IsActive { get; set; }
         public int FailCount { get; set; }
-        public string NodeIP { get; set; } // this will be used to call out to next node after validator is complete. If node is online it will be chosen next. 
+        public string NodeIP { get; set; } 
+        public string NodeReferenceId { get; set; } 
         public class Validator
         {
             public static List<Validators> ValidatorList { get; set; }

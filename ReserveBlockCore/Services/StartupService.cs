@@ -57,7 +57,8 @@ namespace ReserveBlockCore.Services
                     NodeIP = "185.199.226.121",
                     Position = 1,
                     Signature = "MEQCIDVBdYv+Wfpil+j6d06JbCuWihrTUHP9xCqdAICVaVdXAiBpkyinNKZANOfz4rkao8KmzO461TevS5YGr8BNAdBBZg==.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
-                    UniqueName = "GenesisValidator1"
+                    UniqueName = "GenesisValidator1",
+                    NodeReferenceId = BlockchainData.ChainRef
                 };
 
                 validators.Insert(validator1);
@@ -77,7 +78,8 @@ namespace ReserveBlockCore.Services
                     NodeIP = "192.3.3.171",
                     Position = 2,
                     Signature = "MEUCIEVutYCQT5ruAKnh8BeLpNkx5lvKFji00H2R37IiO1YIAiEAgHuHBpcMb+2NJs8SMxCP05JGUQ2glB0bkgmQ9YEtBX0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
-                    UniqueName = "GenesisValidator2"
+                    UniqueName = "GenesisValidator2",
+                    NodeReferenceId = BlockchainData.ChainRef
                 };
 
                 validators.Insert(validator2);
@@ -158,7 +160,7 @@ namespace ReserveBlockCore.Services
             ///////////////////////////////////////////////////////////////////////
             //These methods will eventually no longer be needed once out of testnet.
             ClearSelfValidator();
-            ResetEntireChain();
+            //ResetEntireChain();
             //ResetChainToPoint();
             //
             ///////////////////////////////////////////////////////////////////////
@@ -209,61 +211,66 @@ namespace ReserveBlockCore.Services
             var blockChain = BlockchainData.GetBlocks();
 
             var genesisBlock = BlockchainData.GetGenesisBlock();
-
-            if(genesisBlock.ChainRefId == "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh")
+            if(genesisBlock != null)
             {
-                TransactionData.CreateGenesisTransction();
-
-                TransactionData.GenesisTransactionsCreated = true;
-
-                var accounts = AccountData.GetAccounts();
-                var transactions = TransactionData.GetAll();
-                var stateTrei = StateData.GetAccountStateTrei();
-                var worldTrei = WorldTrei.GetWorldTrei();
-                var validators = Validators.Validator.GetAll();
-                var peers = Peers.GetAll();
-
-                var accountList = accounts.FindAll();
-                if (accountList.Count() > 0)
+                //put the old chain reference id here to reset chain for ALL nodes
+                if (genesisBlock.ChainRefId == "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh")
                 {
-                    foreach (var account in accountList)
+                    TransactionData.CreateGenesisTransction();
+
+                    TransactionData.GenesisTransactionsCreated = true;
+
+                    var accounts = AccountData.GetAccounts();
+                    var transactions = TransactionData.GetAll();
+                    var stateTrei = StateData.GetAccountStateTrei();
+                    var worldTrei = WorldTrei.GetWorldTrei();
+                    var validators = Validators.Validator.GetAll();
+                    var peers = Peers.GetAll();
+
+                    var accountList = accounts.FindAll();
+                    if (accountList.Count() > 0)
                     {
-                        account.Balance = 0.0M;
-                        account.IsValidating = false;
-                        accounts.Update(account);//resets balances to 0.
+                        foreach (var account in accountList)
+                        {
+                            account.Balance = 0.0M;
+                            account.IsValidating = false;
+                            accounts.Update(account);//resets balances to 0.
+                        }
                     }
+                    peers.DeleteAll();
+                    validators.DeleteAll();
+                    transactions.DeleteAll();//delete all local transactions
+                    stateTrei.DeleteAll(); //removes all state trei data
+                    worldTrei.DeleteAll();  //removes the state trei
+                    blockChain.DeleteAll();//remove all blocks
+
+                    try
+                    {
+                        DbContext.DB.Rebuild();
+                        DbContext.DB_AccountStateTrei.Rebuild();
+                        DbContext.DB_WorldStateTrei.Rebuild();
+                        DbContext.DB_Wallet.Rebuild();
+                        DbContext.DB_Peers.Rebuild();
+
+                        DbContext.DB.Checkpoint();
+                        DbContext.DB_AccountStateTrei.Checkpoint();
+                        DbContext.DB_WorldStateTrei.Checkpoint();
+                        DbContext.DB_Wallet.Checkpoint();
+                        DbContext.DB_Peers.Checkpoint();
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        //error saving from db cache
+                    }
+
+                    //re-add bootstrap validators
+                    SetBootstrapValidators();
                 }
-                peers.DeleteAll();
-                validators.DeleteAll();
-                transactions.DeleteAll();//delete all local transactions
-                stateTrei.DeleteAll(); //removes all state trei data
-                worldTrei.DeleteAll();  //removes the state trei
-                blockChain.DeleteAll();//remove all blocks
-
-                try
-                {
-                    DbContext.DB.Rebuild();
-                    DbContext.DB_AccountStateTrei.Rebuild();
-                    DbContext.DB_WorldStateTrei.Rebuild();
-                    DbContext.DB_Wallet.Rebuild();
-                    DbContext.DB_Peers.Rebuild();
-
-                    DbContext.DB.Checkpoint();
-                    DbContext.DB_AccountStateTrei.Checkpoint();
-                    DbContext.DB_WorldStateTrei.Checkpoint();
-                    DbContext.DB_Wallet.Checkpoint();
-                    DbContext.DB_Peers.Checkpoint();
-
-                    
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-
-                //re-add bootstrap validators
-                SetBootstrapValidators();
             }
+
+            
         }
 
         internal static void ResetChainToPoint()
@@ -341,6 +348,42 @@ namespace ReserveBlockCore.Services
             try
             {
                 result = await P2PClient.ConnectToPeers();
+
+                if(result == true)
+                {
+                    var ipList = P2PClient.ReportedIPs;
+                    if(ipList.Count() > 0)
+                    {
+                        var ipListSorted = ipList.GroupBy(x => x).Select(y => new { IP = y, Count = y.Count() }).OrderByDescending(x => x.Count);
+                        if(ipListSorted.Count() > 0)
+                        {
+                            var nodeIP = ipListSorted.First().IP.First();
+                            var validators = Validators.Validator.GetAll();
+                            var accounts = AccountData.GetAccounts();
+                            var myAccount = accounts.FindOne(x => x.IsValidating == true);
+                            if(myAccount != null)
+                            {
+                                var myValidator = validators.FindOne(x => x.NodeIP == nodeIP && x.Address == myAccount.Address);
+                                if (myValidator != null)
+                                {
+                                    Program.ValidatorAddress = myValidator.Address;
+                                }
+                                else
+                                {
+                                    await P2PClient.GetMasternodes();
+                                    validators = Validators.Validator.GetAll();
+                                    myValidator = validators.FindOne(x => x.NodeIP == nodeIP && x.Address == myAccount.Address);
+                                    if (myValidator != null)
+                                    {
+                                        Program.ValidatorAddress = myValidator.Address;
+                                    }
+                                }
+                            }
+                            
+                        }
+
+                    }
+                }
             }
             catch(Exception ex)
             {

@@ -27,7 +27,7 @@ namespace ReserveBlockCore.P2P
             var blockHeight = BlockchainData.GetHeight();
             PeerList.Add(Context.ConnectionId, peerIP);
 
-            await SendMessage("Hello Peer", blockHeight.ToString());
+            await SendMessage("IP", peerIP);
             await base.OnConnectedAsync();
         }
 
@@ -320,6 +320,16 @@ namespace ReserveBlockCore.P2P
 
             string data = "";
 
+            if(validator.NodeReferenceId == null)
+            {
+                return "FTAV";
+            }
+
+            if(validator.NodeReferenceId != BlockchainData.ChainRef)
+            {
+                return "FTAV";
+            }
+
             var updateMasternodes = await P2PClient.GetMasternodes();
 
             var validatorList = Validators.Validator.GetAll();
@@ -369,6 +379,7 @@ namespace ReserveBlockCore.P2P
                         valFound.UniqueName = validator.UniqueName;
                         valFound.FailCount = validator.FailCount;
                         valFound.Position = validator.Position;
+                        valFound.NodeReferenceId = validator.NodeReferenceId;
 
                         validatorList.Update(valFound);
 

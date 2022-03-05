@@ -131,6 +131,14 @@ namespace ReserveBlockCore.Services
 
                     //need to request validator list from someone. 
 
+                    var accounts = AccountData.GetAccounts();
+                    var IsThereValidator = accounts.FindOne(x => x.IsValidating == true);
+                    if(IsThereValidator != null)
+                    {
+                        output = "This wallet already has a validator active on it. You can only have 1 validator active per wallet: " + IsThereValidator.Address;
+                        return output;
+                    }
+
                     var validatorTable = Validators.Validator.GetAll();
 
                     var validatorCount = validatorTable.FindAll().Where(x => x.Address == account.Address).Count();
@@ -174,6 +182,7 @@ namespace ReserveBlockCore.Services
                             validator.Signature = signature;
                             validator.FailCount = 0;
                             validator.Position = validatorTable.FindAll().Count() + 1;
+                            validator.NodeReferenceId = BlockchainData.ChainRef;
 
                             bool broadcastResult = false;
 
