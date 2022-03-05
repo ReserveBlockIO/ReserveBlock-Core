@@ -380,7 +380,7 @@ namespace ReserveBlockCore.Services
                             var nodeIP = ipListSorted.First().IP.First();
                             var validators = Validators.Validator.GetAll();
                             var accounts = AccountData.GetAccounts();
-                            var myAccount = accounts.FindOne(x => x.IsValidating == true);
+                            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH");
                             if(myAccount != null)
                             {
                                 var myValidator = validators.FindOne(x => x.NodeIP == nodeIP && x.Address == myAccount.Address);
@@ -479,7 +479,7 @@ namespace ReserveBlockCore.Services
                 .LeftAligned()
                 .Color(Color.Blue));
 
-            Console.WriteLine("ReserverBlock Main Menu");
+            Console.WriteLine("ReserveBlock Main Menu");
             Console.WriteLine("|======================================|");
             Console.WriteLine("| 1. Genesis Block (Check)             |");
             Console.WriteLine("| 2. Create Account                    |");

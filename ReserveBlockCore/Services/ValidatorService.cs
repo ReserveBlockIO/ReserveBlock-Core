@@ -213,9 +213,11 @@ namespace ReserveBlockCore.Services
                             if (broadcastResult == true)
                             {
                                 output = "Account found and activated as a validator! Thank you for service to the network!";
+                                Program.ValidatorAddress = validator.Address;
                             }
                             else
                             {
+                                
                                 output = "Account was activated, but failed to broadcast to validators. You may not be chosen for nodes, please monitor.";
                             }
 

@@ -92,7 +92,7 @@ namespace ReserveBlockCore.Data
             {
 				Console.Clear();
 				Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
-				Console.WriteLine("ReserverBlock Main Menu");
+				Console.WriteLine("ReserveBlock Main Menu");
 				Console.WriteLine("|======================================|");
 				Console.WriteLine("| 1. Genesis Block (Check)             |");
 				Console.WriteLine("| 2. Create Account                    |");
