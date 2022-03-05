@@ -18,7 +18,7 @@ namespace ReserveBlockCore.Services
         {
             //Establish block, wallet, ban list, and peers db
             Console.WriteLine("Initializing Reserve Block Database...");
-            if(Startup.IsTestNet == true)
+            if (Startup.IsTestNet == true)
             {
                 DbContext.InitializeTest();
             }
@@ -26,7 +26,7 @@ namespace ReserveBlockCore.Services
             {
                 DbContext.Initialize();
             }
-            
+
         }
 
         internal static void SetBlockchainChainRef()
@@ -45,7 +45,7 @@ namespace ReserveBlockCore.Services
 
             var val1Check = validators.FindOne(x => x.Address == "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g");
 
-            if(val1Check == null)
+            if (val1Check == null)
             {
                 var validator1 = new Validators
                 {
@@ -65,7 +65,7 @@ namespace ReserveBlockCore.Services
 
             var val2Check = validators.FindOne(x => x.Address == "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq");
 
-            if(val2Check == null)
+            if (val2Check == null)
             {
                 var validator2 = new Validators
                 {
@@ -84,6 +84,28 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static void CheckLastBlock()
+        {
+            try
+            {
+                var lastBlock = BlockchainData.GetLastBlock();
+                var worldTrei = WorldTrei.GetWorldTreiRecord();
+                if (lastBlock != null && worldTrei != null)
+                {
+                    if (worldTrei.StateRoot != lastBlock.StateRoot)
+                    {
+                        //redownload old block and check the state trei from transactions to see if any were affected and need to be modified.
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                //blocks most likely null
+            }
+            
+        }
+
+
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
@@ -91,6 +113,8 @@ namespace ReserveBlockCore.Services
 
             Program.MemBlocks = blocks.Take(15).ToList();
         }
+
+
 
         internal static async Task DownloadBlocksOnStart()
         {

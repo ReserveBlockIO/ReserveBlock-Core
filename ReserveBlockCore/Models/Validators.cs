@@ -70,11 +70,7 @@ namespace ReserveBlockCore.Models
                 {
                     return "NaN"; //last block should not be null.
                 }
-                if(lastBlock.Height == 0) //this is just for genesis block as it has no next validators.
-                {
-                    var localVals = GetLocalValidator().First();
-                    return localVals.Address;
-                }
+                
                 var nextValidators = lastBlock.NextValidators;
 
                 return nextValidators;
@@ -107,10 +103,10 @@ namespace ReserveBlockCore.Models
                             output = nextValidator.Address + ":" + nextValidator.Address;
                         }
                     }
-                    else if(validatorCount == 2)
+                    else if (validatorCount == 2)
                     {
-                        var nextValidator = validators.FindAll().Where(x => x.Address != lastBlock.Validator).FirstOrDefault();
-                        if( nextValidator != null)
+                        var nextValidator = validators.FindAll().Where(x => x.Address != localValidator).FirstOrDefault();
+                        if (nextValidator != null)
                         {
                             output = nextValidator.Address + ":" + lastBlock.Validator;
                         }
@@ -190,12 +186,12 @@ namespace ReserveBlockCore.Models
                                 var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
                                 var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
 
-                                Validators thirdValidator = new Validators();
+                                Validators? thirdValidator;
                                 var addressThird = "";
                                 if (valiList.Count() > 2)
                                 {
                                     thirdValidator = valiList.ToCircular().Where(x => x.Position > numSec3).FirstOrDefault();
-                                    addressThird = thirdValidator.Address != "" ? thirdValidator.Address : localValidator;
+                                    addressThird = thirdValidator != null ? thirdValidator.Address : localValidator;
                                 }
                                 else
                                 {

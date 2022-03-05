@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using LiteDB;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore
 {
@@ -38,7 +40,8 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();// initializes databases
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
-            
+            StartupService.CheckLastBlock();
+
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
@@ -195,12 +198,12 @@ namespace ReserveBlockCore
                                                                                   
                         if (nextValidators != "NaN")
                         {
+                            var nextVals = nextValidators.Split(':');
+                            var mainVal = nextVals[0];
+                            var secondaryVal = nextVals[1];
+
                             if (lastBlock.Height != 0)
                             {
-                                var nextVals = nextValidators.Split(':');
-                                var mainVal = nextVals[0];
-                                var secondaryVal = nextVals[1];
-
                                 if (timeDiff >= 0.52M && timeDiff < 1.04M)
                                 {
                                     var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
@@ -332,17 +335,17 @@ namespace ReserveBlockCore
                                     }
                                 }
                             }
-                            //else
-                            //{
-                            //    var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                            //    var account = accounts.Query().Where(x => x.Address == validator).FirstOrDefault();
+                            else
+                            {
+                                var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                                var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
 
-                            //    if (account != null)
-                            //    {
-                            //        //craft new block
-                            //        await BlockchainData.CraftNewBlock(validator);
-                            //    }
-                            //}
+                                if (account != null)
+                                {
+                                    //craft new block
+                                    await BlockchainData.CraftNewBlock(mainVal);
+                                }
+                            }
 
                         }
                     }

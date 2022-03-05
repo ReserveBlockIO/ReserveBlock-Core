@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Utilities
             {
                 //Genesis Block
                 result = true;
-                StateData.UpdateTreis(block);
+                //StateData.UpdateTreis(block);
                 return result;
             }
 
@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Utilities
                 NextValidators = block.NextValidators
             };
 
-            newBlock.Build();
+            newBlock.Rebuild(block);
 
             //This will also check that the prev hash matches too
             if (!newBlock.Hash.Equals(block.Hash))
@@ -90,27 +90,27 @@ namespace ReserveBlockCore.Utilities
 
                     result = true;
                    
-                    BlockQueueService.UpdateMemBlocks();//update mem blocks
-                    StateData.UpdateTreis(block);
+                    //BlockQueueService.UpdateMemBlocks();//update mem blocks
+                    //StateData.UpdateTreis(block);
 
-                    foreach (Transaction transaction in block.Transactions)
-                    {
-                        var mempool = TransactionData.GetPool();
+                    //foreach (Transaction transaction in block.Transactions)
+                    //{
+                    //    var mempool = TransactionData.GetPool();
 
-                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
-                        if (mempoolTx != null)
-                        {
-                            mempool.DeleteMany(x => x.Hash == transaction.Hash);
-                        }
+                    //    var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
+                    //    if (mempoolTx != null)
+                    //    {
+                    //        mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                    //    }
 
-                        var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
-                        if (account != null)
-                        {
-                            AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
-                            var txdata = TransactionData.GetAll();
-                            txdata.Insert(transaction);
-                        }
-                    }
+                    //    var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
+                    //    if (account != null)
+                    //    {
+                    //        AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
+                    //        var txdata = TransactionData.GetAll();
+                    //        txdata.Insert(transaction);
+                    //    }
+                    //}
                 }
 
                 return result;//block accepted
@@ -119,7 +119,7 @@ namespace ReserveBlockCore.Utilities
             {
                 //Genesis Block
                 result = true;
-                StateData.UpdateTreis(block);
+                //StateData.UpdateTreis(block);
                 return result;
             }
             //Need to add validator validation method.

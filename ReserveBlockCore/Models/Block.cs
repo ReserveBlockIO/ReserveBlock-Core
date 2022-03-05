@@ -44,7 +44,19 @@ namespace ReserveBlockCore.Models
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
-
+		public void Rebuild(Block block)
+        {
+			var prevBlockHeight = block.Height - 1;
+			var blk = BlockchainData.GetBlockByHeight(prevBlockHeight);
+			Version = 1; //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
+			NumOfTx = Transactions.Count;
+			TotalAmount = GetTotalAmount();
+			TotalReward = GetTotalFees();
+			MerkleRoot = GetMerkleRoot();
+			PrevHash = blk.Hash; //This is done because chain starting there won't be a previous hash. 
+			Hash = GetBlockHash();
+			StateRoot = GetStateRoot();
+		}
 		public void BuildBlockSignature()
         {
 			

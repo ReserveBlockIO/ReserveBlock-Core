@@ -50,8 +50,8 @@ namespace ReserveBlockCore
             {
                 endpoints.MapControllers();
                 endpoints.MapHub<P2PServer>("/blockchain", options => { 
-                    options.ApplicationMaxBufferSize = 5 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 5 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
+                    options.ApplicationMaxBufferSize = 2 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
+                    options.TransportMaxBufferSize = 2 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
                 });
             });
         }
