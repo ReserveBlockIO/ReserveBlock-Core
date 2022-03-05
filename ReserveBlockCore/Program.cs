@@ -43,14 +43,14 @@ namespace ReserveBlockCore
             BlocksDownloading = true;
             StopAllTimers = true;
 
-            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
+            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             //BlockHeightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //BlockHeightTimer.Change(60000, 15000); //waits 1 minute, then runs every 37 seconds for new block heights
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
+            PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
 
             ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             ValidatorListTimer.Change(70000, 2 * 10 * 6000); //waits 1 minute, then runs every 2 minutes
