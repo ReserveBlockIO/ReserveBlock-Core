@@ -12,15 +12,15 @@
 
 ![GitHub Release Date](https://img.shields.io/github/release-date/ReserveBlockIO/Core-CLI)
 
-# ReserverBlock Core-CLI
+# ReserveBlock Core-CLI
 For more information and to follow latest news go to:
 https://reserveblock.io
 
 This repo is currently a work in progress. New commits pushing more of the RBX wallet are staged. Keep an eye out for releases to test the blockchain.
 During January we will be committing multiples stages of the code. Please follow to get latest updates!
 
-# What is ReserverBlock?
-ReserverBlock is an NFT centric blockchain aiming to focus on NFTs and deliver a blockchain built around them. 
+# What is ReserveBlock?
+ReserveBlock is an NFT centric blockchain aiming to focus on NFTs and deliver a blockchain built around them. 
 ReserveBlock Foundation (reserveblock.io), is the first open-source platform allowing for the creation of a decentralized NFT Centric Blockchain, which is independently governed and democratizes NFTs for everyone.
 
 For more information please read the ReserverBlock whitepaper or litepaper.
