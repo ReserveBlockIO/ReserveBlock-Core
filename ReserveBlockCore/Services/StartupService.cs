@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using LiteDB;
@@ -14,6 +15,25 @@ namespace ReserveBlockCore.Services
 {
     internal class StartupService
     {
+
+        internal static void AnotherInstanceCheck()
+        {
+            using (TcpClient tcpClient = new TcpClient())
+            {
+                try
+                {
+                    tcpClient.Connect("127.0.0.1", 3338);
+                    Console.WriteLine("Application already running on port 3338. Please verify only one instance is open.");
+                    Thread.Sleep(2000);
+                    Environment.Exit(0);
+
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Port closed");
+                }
+            }
+        }
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
