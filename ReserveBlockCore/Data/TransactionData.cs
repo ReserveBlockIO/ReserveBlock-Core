@@ -13,25 +13,40 @@ namespace ReserveBlockCore.Data
 {
     internal class TransactionData
     {
+        public static bool GenesisTransactionsCreated = false;
         public static void CreateGenesisTransction()
         {
-            var timeStamp = TimeUtil.GetTime();
-            var gTrx = new Transaction
+            if (GenesisTransactionsCreated != true)
             {
-                Amount = 67500000,
-                Height = 0,
-                FromAddress = "rbx_genesis_transaction",
-                ToAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH",
-                Fee = 0,
-                Hash = "", //this will be built down below. showing just to make this clear.
-                Timestamp = timeStamp,
-                Signature = "COINBASE_TX",
-                Nonce = 0
-            };
+                var trxPool = TransactionData.GetPool();
+                trxPool.DeleteAll();
 
-            gTrx.Build();
+                var timeStamp = TimeUtil.GetTime();
 
-            AddToPool(gTrx);
+                var stateTrei = StateData.GetAccountStateTrei();
+                var stateTreiList = stateTrei.Find(x => x.Key != "rbx_genesis_transaction").ToList();
+
+                stateTreiList.ForEach(x => {
+                    var gTrx = new Transaction
+                    {
+                        Amount = x.Key == "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? Decimal.Round((x.Balance - 94M), 0) : Decimal.Round(x.Balance + 1M, 0),
+                        Height = 0,
+                        FromAddress = "rbx_genesis_transaction",
+                        ToAddress = x.Key,
+                        Fee = 0,
+                        Hash = "", //this will be built down below. showing just to make this clear.
+                        Timestamp = timeStamp,
+                        Signature = "COINBASE_TX",
+                        Nonce = 0
+                    };
+
+                    gTrx.Build();
+
+                    AddToPool(gTrx);
+                });
+
+            }
+
         }
         public static void AddTxToWallet(Transaction transaction)
         {

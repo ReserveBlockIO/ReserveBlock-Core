@@ -1,11 +1,12 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Services;
 
-namespace ReserveBlockCore.Services
+namespace ReserveBlockCore.Utilities
 {
-    public class BlockValidatorService
+    public class BlockchainRescanUtility
     {
-        public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
+        public static bool ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
 
@@ -13,13 +14,8 @@ namespace ReserveBlockCore.Services
 
             if (block.Height == 0)
             {
-                if (block.ChainRefId != BlockchainData.ChainRef)
-                {
-                    return result;//block rejected due to chainref difference
-                }
                 //Genesis Block
                 result = true;
-                BlockchainData.AddBlock(block);
                 StateData.UpdateTreis(block);
                 return result;
             }
@@ -27,17 +23,18 @@ namespace ReserveBlockCore.Services
             var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
 
             //validates the signature of the validator that crafted the block
-            if(verifyBlockSig != true)
+            if (verifyBlockSig != true)
             {
                 return result;//block rejected due to failed validator signature
             }
             //Validates that the block has same chain ref
-            if(block.ChainRefId != BlockchainData.ChainRef)
+            if (block.ChainRefId != BlockchainData.ChainRef)
             {
                 return result;//block rejected due to chainref difference
             }
 
-            var newBlock = new Block {
+            var newBlock = new Block
+            {
                 Height = block.Height,
                 Timestamp = block.Timestamp,
                 Transactions = block.Transactions,
@@ -51,20 +48,15 @@ namespace ReserveBlockCore.Services
             //This will also check that the prev hash matches too
             if (!newBlock.Hash.Equals(block.Hash))
             {
-                Program.BlockValidateFailCount += 1;
-                if (Program.BlockValidateFailCount == 3)
-                {
-                    //await BlockDownloadService.BlockCollisionResolve(block);
-                }
                 return result;//block rejected
             }
 
-            if(!newBlock.MerkleRoot.Equals(block.MerkleRoot))
+            if (!newBlock.MerkleRoot.Equals(block.MerkleRoot))
             {
                 return result;//block rejected
             }
 
-            if(block.Height != 0)
+            if (block.Height != 0)
             {
                 var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
 
@@ -79,7 +71,7 @@ namespace ReserveBlockCore.Services
                     bool rejectBlock = false;
                     foreach (Transaction transaction in block.Transactions)
                     {
-                        if(transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
+                        if (transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                         {
                             var txResult = TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
@@ -94,25 +86,25 @@ namespace ReserveBlockCore.Services
                     }
                     if (rejectBlock)
                         return result;//block rejected due to bad transaction(s)
-                
-                
+
+
                     result = true;
-                    BlockchainData.AddBlock(block);//add block to chain.
+                   
                     BlockQueueService.UpdateMemBlocks();//update mem blocks
-                    StateData.UpdateTreis(block); 
+                    StateData.UpdateTreis(block);
 
                     foreach (Transaction transaction in block.Transactions)
                     {
                         var mempool = TransactionData.GetPool();
 
                         var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
-                        if(mempoolTx != null)
+                        if (mempoolTx != null)
                         {
                             mempool.DeleteMany(x => x.Hash == transaction.Hash);
                         }
 
                         var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
-                        if(account != null)
+                        if (account != null)
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                             var txdata = TransactionData.GetAll();
@@ -127,12 +119,11 @@ namespace ReserveBlockCore.Services
             {
                 //Genesis Block
                 result = true;
-                BlockchainData.AddBlock(block);
                 StateData.UpdateTreis(block);
                 return result;
             }
             //Need to add validator validation method.
-            
+
         }
 
 

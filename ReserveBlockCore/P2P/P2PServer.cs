@@ -405,6 +405,13 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Call Crafter
+        public async Task<bool> CallCrafter()
+        {
+            return true;
+        }
+
+        #endregion
 
         #region Seed node check
         public async Task<string> SeedNodeCheck()

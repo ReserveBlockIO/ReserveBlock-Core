@@ -18,7 +18,7 @@ namespace ReserveBlockCore.Nodes
                 }
                 else
                 {
-                    if (Program.StopAllTimers == false) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
+                    if (Program.StopAllTimers == false && Program.BlockCrafting == false) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
                     {
                         if (message == "tx")
                         {
@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Nodes
 
                                     if (localHash != remoteHash)
                                     {
-                                        Console.WriteLine("Possilbe block differ");
+                                        Console.WriteLine("Possible block differ");
                                     }
                                 }
                             }

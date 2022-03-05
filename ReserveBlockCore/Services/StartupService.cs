@@ -7,6 +7,7 @@ using LiteDB;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Utilities;
 using Spectre.Console;
 
 namespace ReserveBlockCore.Services
@@ -34,7 +35,7 @@ namespace ReserveBlockCore.Services
             //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
             //testnet
-            BlockchainData.ChainRef = "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+            BlockchainData.ChainRef = "t2_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
         }
 
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
@@ -130,7 +131,14 @@ namespace ReserveBlockCore.Services
 
         internal static void CheckForDuplicateBlocks()
         {
+            ///////////////////////////////////////////////////////////////////////
+            //These methods will eventually no longer be needed once out of testnet.
             ClearSelfValidator();
+            ResetEntireChain();
+            //ResetChainToPoint();
+            //
+            ///////////////////////////////////////////////////////////////////////
+
             var blockChain = BlockchainData.GetBlocks();
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
             var dupBlocksList = blocks.GroupBy(x => x.Height).Where(y => y.Count() > 1).Select(z => z.Key).ToList();
@@ -169,6 +177,113 @@ namespace ReserveBlockCore.Services
                 {
                     //error saving from db cache
                 }
+            }
+        }
+
+        internal static void ResetEntireChain()
+        {
+            var blockChain = BlockchainData.GetBlocks();
+
+            var genesisBlock = BlockchainData.GetGenesisBlock();
+
+            if(genesisBlock.ChainRefId == "t_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh")
+            {
+                TransactionData.CreateGenesisTransction();
+
+                TransactionData.GenesisTransactionsCreated = true;
+
+                var accounts = AccountData.GetAccounts();
+                var transactions = TransactionData.GetAll();
+                var stateTrei = StateData.GetAccountStateTrei();
+                var worldTrei = WorldTrei.GetWorldTrei();
+                var validators = Validators.Validator.GetAll();
+                var peers = Peers.GetAll();
+
+                var accountList = accounts.FindAll();
+                if (accountList.Count() > 0)
+                {
+                    foreach (var account in accountList)
+                    {
+                        account.Balance = 0.0M;
+                        account.IsValidating = false;
+                        accounts.Update(account);//resets balances to 0.
+                    }
+                }
+                peers.DeleteAll();
+                validators.DeleteAll();
+                transactions.DeleteAll();//delete all local transactions
+                stateTrei.DeleteAll(); //removes all state trei data
+                worldTrei.DeleteAll();  //removes the state trei
+                blockChain.DeleteAll();//remove all blocks
+
+                try
+                {
+                    DbContext.DB.Rebuild();
+                    DbContext.DB_AccountStateTrei.Rebuild();
+                    DbContext.DB_WorldStateTrei.Rebuild();
+                    DbContext.DB_Wallet.Rebuild();
+                    DbContext.DB_Peers.Rebuild();
+
+                    DbContext.DB.Checkpoint();
+                    DbContext.DB_AccountStateTrei.Checkpoint();
+                    DbContext.DB_WorldStateTrei.Checkpoint();
+                    DbContext.DB_Wallet.Checkpoint();
+                    DbContext.DB_Peers.Checkpoint();
+
+                    
+                }
+                catch (Exception ex)
+                {
+                    //error saving from db cache
+                }
+
+                //re-add bootstrap validators
+                SetBootstrapValidators();
+            }
+        }
+
+        internal static void ResetChainToPoint()
+        {
+            var blockFixHeight = 19941;
+            var blocks = BlockchainData.GetBlocks();
+            var block = BlockchainData.GetBlockByHeight(blockFixHeight);
+            int failCount = 0;
+            if(block != null)
+            {
+                if(block.Hash == "baca9daedafe1b480927e6eefbd366380c0fa2191c444bd246d6f34b43393928")
+                {
+                    var stateTrei = StateData.GetAccountStateTrei();
+
+                    stateTrei.DeleteAll();
+                    DbContext.DB_AccountStateTrei.Checkpoint();
+
+                    blocks.DeleteMany(x => x.Height >= blockFixHeight);
+                    DbContext.DB.Checkpoint();
+                    var blocksFromGenesis = blocks.Find(Query.All(Query.Ascending));
+
+                    foreach (var blk in blocksFromGenesis)
+                    {
+                        var result = BlockchainRescanUtility.ValidateBlock(blk);
+                        if(result == false)
+                        {
+                            failCount++;
+                        }
+                    }
+
+                }
+                else
+                {
+                    //do nothing
+                }
+            }
+
+            if(failCount > 0)
+            {
+                Console.WriteLine("Resync Failed. Download whole chain.");
+            }
+            else
+            {
+                Console.WriteLine("Resync Completed.");
             }
         }
 

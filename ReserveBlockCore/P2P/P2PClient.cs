@@ -599,6 +599,13 @@ namespace ReserveBlockCore.P2P
                         }
 
                     }
+                }
+                catch(Exception ex)
+                {
+                    //node is offline
+                }
+                try
+                {
                     if (hubConnection2 != null && IsConnected2)
                     {
                         long remoteNodeHeight = await hubConnection2.InvokeAsync<long>("SendBlockHeight");
@@ -606,14 +613,22 @@ namespace ReserveBlockCore.P2P
                         if (myHeight < remoteNodeHeight)
                         {
                             newHeightFound = true;
-                            if(remoteNodeHeight > height)
+                            if (remoteNodeHeight > height)
                             {
-                                height = remoteNodeHeight;
+                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
                             }
-                            
+
                         }
 
                     }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
                     if (hubConnection3 != null && IsConnected3)
                     {
                         long remoteNodeHeight = await hubConnection3.InvokeAsync<long>("SendBlockHeight");
@@ -623,10 +638,18 @@ namespace ReserveBlockCore.P2P
                             newHeightFound = true;
                             if (remoteNodeHeight > height)
                             {
-                                height = remoteNodeHeight;
+                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
                     if (hubConnection4 != null && IsConnected4)
                     {
                         long remoteNodeHeight = await hubConnection4.InvokeAsync<long>("SendBlockHeight");
@@ -636,10 +659,18 @@ namespace ReserveBlockCore.P2P
                             newHeightFound = true;
                             if (remoteNodeHeight > height)
                             {
-                                height = remoteNodeHeight;
+                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
                     if (hubConnection5 != null && IsConnected5)
                     {
                         long remoteNodeHeight = await hubConnection5.InvokeAsync<long>("SendBlockHeight");
@@ -649,10 +680,18 @@ namespace ReserveBlockCore.P2P
                             newHeightFound = true;
                             if (remoteNodeHeight > height)
                             {
-                                height = remoteNodeHeight;
+                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
                     if (hubConnection6 != null && IsConnected6)
                     {
                         long remoteNodeHeight = await hubConnection6.InvokeAsync<long>("SendBlockHeight");
@@ -662,7 +701,7 @@ namespace ReserveBlockCore.P2P
                             newHeightFound = true;
                             if (remoteNodeHeight > height)
                             {
-                                height = remoteNodeHeight;
+                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
                             }
                         }
                     }
@@ -670,18 +709,17 @@ namespace ReserveBlockCore.P2P
                 }
                 catch (Exception ex)
                 {
-                    //possible dead connection, or node is offline
-                    return (newHeightFound, height);
+                    //node is offline
                 }
+                
             }
-
             return (newHeightFound, height);
         }
 
         #endregion
 
         #region Send Transactions to mempool 
-        public static async void SendTXMempool(Transaction txSend) //SENDMESSAGEALLPEERSFROM HERE!
+        public static async void SendTXMempool(Transaction txSend) 
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 
@@ -983,7 +1021,7 @@ namespace ReserveBlockCore.P2P
         public static async Task<bool> BroadcastValidatorNode(Validators nValidator)
         {
             var validators = Validators.Validator.GetAll();
-            var validatorList = validators.FindAll();
+            var validatorList = validators.FindAll().Where(x => x.FailCount < 30);
             int successCount = 0;
 
             if (validatorList.Count() > 0)
@@ -1002,7 +1040,8 @@ namespace ReserveBlockCore.P2P
                             {
                                 //success
                                 successCount += 1;
-                                hubConnection.StopAsync().Wait();//close connection when done to avoid any memory build up.
+                                hubConnection.StopAsync().Wait();
+                                await hubConnection.DisposeAsync();//close connection when done to avoid any memory build up.
                             }
                             else if (message == "FTAV")
                             {
@@ -1193,6 +1232,7 @@ namespace ReserveBlockCore.P2P
                         mainVal.FailCount = 0;
                         validators.Update(mainVal);
                         hubConnection.StopAsync().Wait();
+                        await hubConnection.DisposeAsync();
                     }
                 }
             }
@@ -1218,6 +1258,7 @@ namespace ReserveBlockCore.P2P
                         backupVal.FailCount = 0;
                         validators.Update(backupVal);
                         hubConnection2.StopAsync().Wait();
+                        await hubConnection.DisposeAsync();
                     }
                 }
             }
@@ -1231,6 +1272,68 @@ namespace ReserveBlockCore.P2P
             return (main, backup);
         }
         #endregion
+
+        #region Call Crafter for block crafting
+        public static async Task<bool> CallCrafter(Validators validator)
+        {
+            bool result = false;
+            var validators = Validators.Validator.GetAll();
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+            try
+            {
+                var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
+                if (alive == true)
+                {
+                    var response = await hubConnection.InvokeAsync<bool>("CallCrafter");
+
+                    if (response == true)
+                    {
+                        result = true;
+                        hubConnection.StopAsync().Wait();
+                        await hubConnection.DisposeAsync();
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                validator.FailCount += 1;
+                validators.Update(validator);
+            }
+
+            return result;
+        }
+
+
+        #endregion
+
+        public static async Task<Block?> GetNewlyCraftedBlock(long height, Validators validator)
+        {
+            Block block = null;
+            var validators = Validators.Validator.GetAll();
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+            try
+            {
+                var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
+                if (alive == true)
+                {
+                    block = await hubConnection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height });
+                    if (block != null)
+                    {
+                        hubConnection.StopAsync().Wait();
+                        await hubConnection.DisposeAsync();
+                        return block;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                validator.FailCount += 1;
+                validators.Update(validator);
+            }
+
+            return block;
+        }
 
         #region Broadcast Blocks to Peers
         public static async void BroadcastBlock(Block block)

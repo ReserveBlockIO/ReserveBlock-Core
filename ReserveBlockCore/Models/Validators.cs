@@ -39,7 +39,7 @@ namespace ReserveBlockCore.Models
 
             public static List<Account> GetLocalValidator()
             {
-                var validators = AccountData.GetPossibleValidatorAccounts();
+                var validators = AccountData.GetLocalValidator();
                 var query = validators.ToList();
 
                 return query;
@@ -117,25 +117,24 @@ namespace ReserveBlockCore.Models
                     }
                     else
                     {
-                        var lastValidator = validators.FindAll().Where(x => x.Address == lastBlock.Validator).FirstOrDefault();
-                        if(lastValidator != null)
+                        var currentValidator = validators.FindAll().Where(x => x.Address == localValidator).FirstOrDefault();
+                        if(currentValidator != null)
                         {
                             var lastValidatorsPair = lastBlock.NextValidators;//get last validators to determine if main or secondary did the solve.
                             var nextVals = lastValidatorsPair.Split(':');
                             var mainVal = nextVals[0];
                             var secVal = nextVals[1];
 
-                            int posCount = lastValidator.Address == secVal ? 0 : 0;
-                            int posCount2 = lastValidator.Address == secVal ? 1 : 1;
+                            int posCount = currentValidator.Address == secVal ? 0 : 0;
+                            int posCount2 = currentValidator.Address == secVal ? 1 : 1;
 
                             var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
                             var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
-                            var numMain = lastValidator.Position + posCount >= valiCount ? ((lastValidator.Position + posCount) - valiCount) : lastValidator.Position + posCount;
-                            var numSec = lastValidator.Position + posCount2 >= valiCount ? ((lastValidator.Position + posCount2) - valiCount) : lastValidator.Position + posCount2;
-
+                            var numMain = currentValidator.Position + posCount >= valiCount ? ((currentValidator.Position + posCount) - valiCount) : currentValidator.Position + posCount;
+                            
                             var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
-                            var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
+                            var secondValidator = valiList.ToCircular().Where(x => x.Position > mainValidator.Position).FirstOrDefault();
 
                             string mainAddr = mainValidator.Address;
                             string backupAddr = secondValidator.Address;
@@ -157,6 +156,8 @@ namespace ReserveBlockCore.Models
                                 secondValidator.FailCount += 1;
                                 validators.Update(secondValidator);
                             }
+
+                            
 
                             output = mainAddr + ":" + backupAddr;
                         }
@@ -182,17 +183,15 @@ namespace ReserveBlockCore.Models
 
                                 //I think issue is with the List and the fact the highest number is 2 could  be caught in a circular loop
                                 var numMain = newValidator.Position + posCount >= valiCount ? ((newValidator.Position + posCount) - valiCount) : newValidator.Position + posCount;
-                                var numSec = newValidator.Position + posCount2 >= valiCount ? ((newValidator.Position + posCount2) - valiCount) : newValidator.Position + posCount2;
-                                var numThree = newValidator.Position + posCount3 >= valiCount ? ((newValidator.Position + posCount3) - valiCount) : newValidator.Position + posCount3;
-
+                                
                                 var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
-                                var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
+                                var secondValidator = valiList.ToCircular().Where(x => x.Position > mainValidator.Position).FirstOrDefault();
 
                                 Validators thirdValidator = new Validators();
                                 var addressThird = "";
                                 if (valiList.Count() > 2)
                                 {
-                                    thirdValidator = valiList.ToCircular().Where(x => x.Position > numThree).FirstOrDefault();
+                                    thirdValidator = valiList.ToCircular().Where(x => x.Position > secondValidator.Position).FirstOrDefault();
                                     addressThird = thirdValidator.Address != "" ? thirdValidator.Address : localValidator;
                                 }
                                 else

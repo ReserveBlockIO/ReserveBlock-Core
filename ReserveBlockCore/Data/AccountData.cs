@@ -180,6 +180,14 @@ namespace ReserveBlockCore.Data
 			return accountsWithBal;
 		}
 
+		public static IEnumerable<Account> GetLocalValidator()
+		{
+			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			var accountsWithBal = accounts.Find(x => x.IsValidating == true);
+
+			return accountsWithBal;
+		}
+
 		public static Account? GetSingleAccount(string humanAddress)
         {
 			var account = new Account();

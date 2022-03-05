@@ -8,7 +8,7 @@ namespace ReserveBlockCore.Services
     {
         public static async Task<bool> GetAllBlocks(long nHeight)
         {
-            if(Program.PeersConnecting == false)
+            if(Program.PeersConnecting == false && Program.BlockValidateFailCount < 3)
             {
                 var myBlockHeight = BlockchainData.GetHeight();
                 var difference = nHeight - myBlockHeight;
@@ -18,15 +18,19 @@ namespace ReserveBlockCore.Services
                     {
                         //call out to nodes and get blocks.
                         var nextBlockHeight = myBlockHeight + i;
-                        var newBlock = await P2PClient.GetBlock();
+                        var newBlocks = await P2PClient.GetBlock();
 
-                        if (newBlock.Count() > 0)
+                        if (newBlocks.Count() > 0)
                         {
-                            foreach (var block in newBlock)
+                            foreach (var block in newBlocks)
                             {
                                 if (block != null)
                                 {
-                                    await BlockValidatorService.ValidateBlock(block, true);
+                                    var blockResult = await BlockValidatorService.ValidateBlock(block, true);
+                                    if(blockResult == false)
+                                    {
+
+                                    }
                                 }
                             }
 
@@ -43,5 +47,11 @@ namespace ReserveBlockCore.Services
             }
             return false;
         }
+
+        public static async Task BlockCollisionResolve(Block badBlock, Block goodBlock)
+        {
+
+        }
+
     }
 }
