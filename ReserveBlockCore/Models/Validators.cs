@@ -167,7 +167,7 @@ namespace ReserveBlockCore.Models
                             var mainVal = nextVals[0];
                             var secondaryVal = nextVals[1];
 
-                            string queryAddress = mainVal == localValidator ? mainVal : secondaryVal;
+                            string queryAddress = mainVal != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? mainVal : secondaryVal;
 
                             var newValidator = validators.FindAll().Where(x => x.Address == queryAddress).FirstOrDefault();
                             if(newValidator != null)

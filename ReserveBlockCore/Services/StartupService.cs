@@ -119,6 +119,15 @@ namespace ReserveBlockCore.Services
                         //redownload old block and check the state trei from transactions to see if any were affected and need to be modified.
                     }
                 }
+
+                var blocks = BlockchainData.GetBlocks();
+                var badBlock = blocks.FindOne(x => x.Height == 339 && x.Hash == "e64bc942a82c175a83b16ea2cd5905775c75c2ea0bdd87277f094095f806da27");
+                if(badBlock != null)
+                {
+                    var newHeight = badBlock.Height - 1;
+                    blocks.DeleteMany(x => x.Height == badBlock.Height);
+                    DbContext.DB.Checkpoint();
+                }
             }
             catch(Exception ex)
             {

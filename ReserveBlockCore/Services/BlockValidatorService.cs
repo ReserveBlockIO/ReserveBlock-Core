@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Services
 {
@@ -8,6 +9,16 @@ namespace ReserveBlockCore.Services
         public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
+
+            var badBlocks = BadBlocksUtility.GetBadBlocks();
+            if(badBlocks.ContainsKey(block.Height))
+            {
+                var badBlockHash = badBlocks[block.Height];
+                if(badBlockHash == block.Hash)
+                {
+                    return result;//reject because its on our bad block list
+                }
+            }
 
             if (block == null) return result; //null block submitted. reject 
 
