@@ -292,7 +292,8 @@ namespace ReserveBlockCore
                                                         }
                                                         else
                                                         {
-                                                            //if peer is online but not crafting that should not happen.
+                                                            //Peer can be online, but not making the block.
+                                                            craftBlock = true;
                                                         }
 
                                                     }
@@ -316,6 +317,7 @@ namespace ReserveBlockCore
                                         {
                                             //craft new block
                                             await BlockchainData.CraftNewBlock(secondaryVal);
+                                            BlockCrafting = false;
                                         }
                                     }
                                     
