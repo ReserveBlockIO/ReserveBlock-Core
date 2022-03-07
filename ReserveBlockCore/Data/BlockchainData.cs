@@ -148,7 +148,7 @@ namespace ReserveBlockCore.Data
 
             if(blockValResult == true)
             {
-                P2PClient.BroadcastBlock(block);
+                await P2PClient.BroadcastBlock(block);
             }
             else
             {

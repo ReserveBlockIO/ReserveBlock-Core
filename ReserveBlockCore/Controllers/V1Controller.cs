@@ -162,7 +162,7 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("TurnOnValidator/{id}")]
+        [HttpGet("TurnOffValidator/{id}")]
         public async Task<string> TurnOffValidator(string id)
         {
             var output = "Command not recognized."; // this will only display if command not recognized.
