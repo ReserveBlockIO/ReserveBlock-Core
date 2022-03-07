@@ -1390,7 +1390,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Broadcast Blocks to Peers
-        public static async void BroadcastBlock(Block block)
+        public static async Task BroadcastBlock(Block block)
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 

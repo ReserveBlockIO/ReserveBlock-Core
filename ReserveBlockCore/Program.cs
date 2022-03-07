@@ -137,7 +137,7 @@ namespace ReserveBlockCore
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
             StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
-            Thread.Sleep(5000);
+            Thread.Sleep(3000);
 
             Task.WaitAll(commandLoopTask, commandLoopTask2);
 
@@ -184,6 +184,8 @@ namespace ReserveBlockCore
         {
             if(StopAllTimers == false)
             {
+                //process block queue first
+                await BlockQueueService.ProcessBlockQueue();
                 var localValidator = Validators.Validator.GetLocalValidator();
                 var lastBlock = BlockchainData.GetLastBlock();
                 var currentUnixTime = Utilities.TimeUtil.GetTime();

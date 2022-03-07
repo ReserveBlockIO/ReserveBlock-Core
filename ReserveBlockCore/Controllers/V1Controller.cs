@@ -122,6 +122,68 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("TurnOnValidator/{id}")]
+        public async Task<string> TurnOnValidator(string id)
+        {
+            var output = "Command not recognized."; // this will only display if command not recognized.
+            var validators = Validators.Validator.GetAll();
+            var validator = validators.FindOne(x => x.Address == id);
+
+            if(validator != null)
+            {
+                var accounts = AccountData.GetAccounts();
+                var presentValidator = accounts.FindOne(x => x.IsValidating == true);
+                if(presentValidator != null)
+                {
+                    output = "There is already a account flagged as validator in this wallet: " + presentValidator.Address;
+                }
+                else
+                {
+                    var account = AccountData.GetSingleAccount(id);
+                    if (account != null)
+                    {
+                        account.IsValidating = true;
+                        accounts.Update(account);
+                        Program.ValidatorAddress = account.Address;
+                        output = "Success! The requested account has been turned on: " + account.Address;
+                    }
+                    else
+                    {
+                        output = "The requested account was not found in wallet. You may need to import it.";
+                    }
+                }
+            }
+            else
+            {
+                output = "STV";
+            }
+            
+
+            return output;
+        }
+
+        [HttpGet("TurnOnValidator/{id}")]
+        public async Task<string> TurnOffValidator(string id)
+        {
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            var accounts = AccountData.GetAccounts();
+            var presentValidator = accounts.FindOne(x => x.IsValidating == true);
+            if (presentValidator != null)
+            {
+                presentValidator.IsValidating = false;
+                accounts.Update(presentValidator);
+                Program.ValidatorAddress = ""; 
+                output = "The validator has been turned off: " + presentValidator.Address;
+            }
+            else
+            {
+                output = "There are currently no active validators running.";
+            }
+            
+            return output;
+        }
+
         [HttpGet("GetValidatorInfo/{id}")]
         public async Task<string> GetValidatorInfo(string id)
         {

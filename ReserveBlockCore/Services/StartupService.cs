@@ -38,15 +38,7 @@ namespace ReserveBlockCore.Services
         {
             //Establish block, wallet, ban list, and peers db
             Console.WriteLine("Initializing Reserve Block Database...");
-            if (Startup.IsTestNet == true)
-            {
-                DbContext.InitializeTest();
-            }
-            else
-            {
-                DbContext.Initialize();
-            }
-
+            DbContext.Initialize();
         }
 
         internal static void SetBlockchainChainRef()
@@ -380,37 +372,17 @@ namespace ReserveBlockCore.Services
 
                 if(result == true)
                 {
-                    var ipList = P2PClient.ReportedIPs;
-                    if(ipList.Count() > 0)
+                    await P2PClient.GetMasternodes();
+                    
+                    var accounts = AccountData.GetAccounts();
+                    var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH");
+                    if(myAccount != null)
                     {
-                        var ipListSorted = ipList.GroupBy(x => x).Select(y => new { IP = y, Count = y.Count() }).OrderByDescending(x => x.Count);
-                        if(ipListSorted.Count() > 0)
-                        {
-                            var nodeIP = ipListSorted.First().IP.First();
-                            var validators = Validators.Validator.GetAll();
-                            var accounts = AccountData.GetAccounts();
-                            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH");
-                            if(myAccount != null)
-                            {
-                                var myValidator = validators.FindOne(x => x.NodeIP == nodeIP && x.Address == myAccount.Address);
-                                if (myValidator != null)
-                                {
-                                    Program.ValidatorAddress = myValidator.Address;
-                                }
-                                else
-                                {
-                                    await P2PClient.GetMasternodes();
-                                    validators = Validators.Validator.GetAll();
-                                    myValidator = validators.FindOne(x => x.NodeIP == nodeIP && x.Address == myAccount.Address);
-                                    if (myValidator != null)
-                                    {
-                                        Program.ValidatorAddress = myValidator.Address;
-                                    }
-                                }
-                            }
-                            
-                        }
-
+                        Program.ValidatorAddress = myAccount.Address;
+                    }
+                    else
+                    {
+                        //No validator account on start up
                     }
                 }
             }
@@ -441,6 +413,7 @@ namespace ReserveBlockCore.Services
                 var blocks = BlockData.GetBlocks();
                 if(blocks.Count() == 0)
                 {
+                    //This just gets first few blocks to start chain off.
                     Console.WriteLine("Downloading Blocks First.");
                     var blockCol = await P2PClient.GetBlock();
 

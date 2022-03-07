@@ -52,6 +52,18 @@ namespace ReserveBlockCore.Data
 				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
 				account.Balance = accountState != null ? accountState.Balance : 0M;
 
+				var validators = Validators.Validator.GetAll();
+				var validator = validators.FindOne(x => x.Address == account.Address);
+				var accounts = AccountData.GetAccounts();
+				var accountsValidating = accounts.FindOne(x => x.IsValidating == true);
+				if(accountsValidating == null)
+                {
+					if (validator != null)
+					{
+
+					}
+				}
+                
 				var accountCheck = AccountData.GetSingleAccount(account.Address);
 				if(accountCheck == null)
                 {

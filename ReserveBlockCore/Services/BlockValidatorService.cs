@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Services
             bool result = false;
 
             var badBlocks = BadBlocksUtility.GetBadBlocks();
+
             if(badBlocks.ContainsKey(block.Height))
             {
                 var badBlockHash = badBlocks[block.Height];
@@ -62,11 +63,6 @@ namespace ReserveBlockCore.Services
             //This will also check that the prev hash matches too
             if (!newBlock.Hash.Equals(block.Hash))
             {
-                Program.BlockValidateFailCount += 1;
-                if (Program.BlockValidateFailCount == 3)
-                {
-                    //await BlockDownloadService.BlockCollisionResolve(block);
-                }
                 return result;//block rejected
             }
 

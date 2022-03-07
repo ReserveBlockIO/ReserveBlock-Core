@@ -178,6 +178,12 @@ namespace ReserveBlockCore.Data
             blocks.EnsureIndex(x => x.Height);
             return blocks;
         }
+        public static ILiteCollection<Block> GetBlockQueue()
+        {
+            var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
+            blocks.EnsureIndex(x => x.Height);
+            return blocks;
+        }
         public static Block GetGenesisBlock()
         {
             var block = GetBlocks().FindAll().FirstOrDefault();

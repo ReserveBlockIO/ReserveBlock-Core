@@ -8,8 +8,11 @@ namespace ReserveBlockCore.Services
     {
         public static async Task<bool> GetAllBlocks(long nHeight)
         {
-            if(Program.PeersConnecting == false && Program.BlockValidateFailCount < 3)
+            if(Program.PeersConnecting == false)
             {
+                BlockQueueService.QueueProcessing = true;
+                await BlockQueueService.ProcessBlockQueue();
+
                 var myBlockHeight = BlockchainData.GetHeight();
                 var difference = nHeight - myBlockHeight;
                 try
@@ -37,10 +40,12 @@ namespace ReserveBlockCore.Services
 
                         }
                     }
+                    BlockQueueService.QueueProcessing = false;
                 }
                 catch (Exception ex)
                 {
                     //Error
+                    BlockQueueService.QueueProcessing = false;
                 }
 
                 return false; //we return false once complete to alert wallet it is done downloading bulk blocks

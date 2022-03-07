@@ -64,6 +64,8 @@ namespace ReserveBlockCore.Nodes
 
                         if (message == "blk")
                         {
+                            await BlockQueueService.ProcessBlockQueue();
+
                             var nextBlock = JsonConvert.DeserializeObject<Block>(data);
                             var nextHeight = BlockchainData.GetHeight() + 1;
                             var currentHeight = nextBlock.Height;
@@ -88,28 +90,13 @@ namespace ReserveBlockCore.Nodes
                             {
                                 if (nextHeight == currentHeight)
                                 {
-                                    var blockchain = BlockchainData.GetBlocks();
-                                    var blockFind = blockchain.FindOne(x => x.Hash == nextBlock.Hash);
-                                    if (blockFind != null)
-                                    {
-                                        Console.WriteLine("You already have this block");
+                                    var broadcast = await BlockQueueService.AddBlock(nextBlock);
 
-                                    }
-                                    else
+                                    if (broadcast == true)
                                     {
-                                        var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                                        if (result == true)
-                                        {
-                                            Console.WriteLine("Block was added from: " + nextBlock.Validator);
-                                            P2PClient.BroadcastBlock(nextBlock);//broadcast out to your connected nodes
-                                        }
-                                        else
-                                        {
-                                            Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
-                                            //Add rejection notice for validator
-                                        }
+                                        Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                                        P2PClient.BroadcastBlock(nextBlock);//broadcast out to your connected nodes
                                     }
-
                                 }
                                 else
                                 {

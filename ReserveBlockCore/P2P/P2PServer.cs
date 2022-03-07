@@ -66,23 +66,21 @@ namespace ReserveBlockCore.P2P
         public async Task ReceiveBlock(Block nextBlock)
         {
             Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
+            await BlockQueueService.ProcessBlockQueue();
 
             var nextHeight = BlockchainData.GetHeight() + 1;
             var currentHeight = nextBlock.Height;
 
             if(nextHeight == currentHeight)
             {
-                var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                if (result == true)
+                //var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                var broadcast = await BlockQueueService.AddBlock(nextBlock);
+
+                if(broadcast == true)
                 {
                     string data = "";
                     data = JsonConvert.SerializeObject(nextBlock);
                     await SendMessageAllPeers("blk", data);
-                }
-                else
-                {
-                    Console.WriteLine("Block was rejected from: " + nextBlock.Validator);
-                    //Add rejection notice for validator
                 }
             }
             else
