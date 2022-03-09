@@ -251,11 +251,16 @@ namespace ReserveBlockCore
                                                                 //block added and found!
                                                                 BlockCrafting = false;
                                                             }
+                                                            else
+                                                            {
+                                                                craftBlock = true;
+                                                            }
                                                         }
                                                     }
                                                     else
                                                     {
                                                         //if peer is online but not crafting that should not happen.
+                                                        craftBlock = true;
                                                     }
                                                 }
                                                 else
@@ -288,6 +293,10 @@ namespace ReserveBlockCore
                                                                     //block added and found!
                                                                     BlockCrafting = false;
                                                                 }
+                                                                else
+                                                                {
+                                                                    craftBlock = true;
+                                                                }
                                                             }
                                                         }
                                                         else
@@ -311,7 +320,7 @@ namespace ReserveBlockCore
                                         }
 
                                         var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                        var account = accounts.Query().Where(x => x.Address == secondaryVal).FirstOrDefault();
+                                        var account = accounts.FindOne(x => x.Address == secondaryVal);
 
                                         if (account != null && craftBlock == true)
                                         {
@@ -319,6 +328,7 @@ namespace ReserveBlockCore
                                             await BlockchainData.CraftNewBlock(secondaryVal);
                                             BlockCrafting = false;
                                         }
+                                        BlockCrafting = false;
                                     }
                                     
                                 }
@@ -327,23 +337,108 @@ namespace ReserveBlockCore
                                     //CALL OUT TO FIRST AND SECOND NODE AND MAKE SURE THEY DID NOT MAKE BLOCK!!!!
                                     //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
                                     //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
-                                    var mainValidator = validators.FindOne(x => x.Address == mainVal);
-                                    var secondValidator = validators.FindOne(x => x.Address == secondaryVal);
-
-                                    if(mainValidator != null && secondValidator != null)
+                                    bool craftBlock = false;
+                                    try
                                     {
-                                        var result = P2PClient.PingNextValidators(mainValidator, secondValidator);
-                                    }
+                                        await P2PClient.GetMasternodes(); //ensure we have validators
+                                        var mainValidator = validators.FindOne(x => x.Address == mainVal);
+                                        var secondValidator = validators.FindOne(x => x.Address == secondaryVal);
 
+                                        if (mainValidator != null)
+                                        {
+                                            var result = await P2PClient.CallCrafter(mainValidator);
+                                            if (result == true)
+                                            {
+                                                var height = lastBlock.Height;
+                                                BlockCrafting = true;
+                                                var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
+                                                if (block != null)
+                                                {
+                                                    var blocks = BlockchainData.GetBlocks();
+                                                    var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
+                                                    if (blockFromChain == null)
+                                                    {
+                                                        var blockResult = await BlockValidatorService.ValidateBlock(block);
+                                                        if (blockResult == true)
+                                                        {
+                                                            //block added and found!
+                                                            BlockCrafting = false;
+                                                        }
+                                                        else
+                                                        {
+                                                            craftBlock = true;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    //if peer is online but not crafting that should not happen.
+                                                    craftBlock = true;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                craftBlock = true;
+                                            }
+                                        }
+                                        
+                                        if (secondValidator != null)
+                                        {
+                                            var result = await P2PClient.CallCrafter(secondValidator);
+                                            if (result == true)
+                                            {
+                                                var height = lastBlock.Height;
+                                                BlockCrafting = true;
+                                                var block = await P2PClient.GetNewlyCraftedBlock(height, secondValidator);
+                                                if (block != null)
+                                                {
+                                                    var blocks = BlockchainData.GetBlocks();
+                                                    var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
+                                                    if (blockFromChain == null)
+                                                    {
+                                                        var blockResult = await BlockValidatorService.ValidateBlock(block);
+                                                        if (blockResult == true)
+                                                        {
+                                                            //block added and found!
+                                                            BlockCrafting = false;
+                                                            craftBlock = false;
+                                                        }
+                                                        else
+                                                        {
+                                                            craftBlock = true;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    //Peer can be online, but not making the block.
+                                                    craftBlock = true;
+                                                }
+
+                                            }
+                                            else
+                                            {
+                                                craftBlock = true;
+                                            }
+                                        }
+                                        
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        craftBlock = true;
+                                    }
                                     var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
                                     var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
                                     var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
 
-                                    if (account != null)
+                                    if (account != null && craftBlock == true)
                                     {
                                         //craft new block
                                         await BlockchainData.CraftNewBlock(backupValidator);
+                                        BlockCrafting = false;
                                     }
+
+                                    BlockCrafting = false;
                                 }
                             }
                             else

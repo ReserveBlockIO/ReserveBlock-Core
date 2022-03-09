@@ -1376,6 +1376,11 @@ namespace ReserveBlockCore.P2P
                         await hubConnection.DisposeAsync();
                         return block;
                     }
+                    else
+                    {
+                        hubConnection.StopAsync().Wait();
+                        await hubConnection.DisposeAsync();
+                    }
                 }
             }
             catch (Exception ex)
