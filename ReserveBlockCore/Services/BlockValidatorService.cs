@@ -49,6 +49,11 @@ namespace ReserveBlockCore.Services
                 return result;//block rejected due to chainref difference
             }
 
+            if(block.Version != BlockchainData.BlockVersion)
+            {
+                return result;
+            }
+
             var newBlock = new Block {
                 Height = block.Height,
                 Timestamp = block.Timestamp,

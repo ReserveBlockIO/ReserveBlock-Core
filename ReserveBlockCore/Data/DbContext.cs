@@ -45,10 +45,12 @@ namespace ReserveBlockCore.Data
         public const string RSRV_WSTATE_TREI = "rsrv_wstate_trei";
         public const string RSRV_ASTATE_TREI = "rsrv_astate_trei";
         public const string RSRV_CONFIG = "rsrv_config";
+        public const string RSRV_CONFIG_RULES = "rsrv_config_rules";
 
         public static void Initialize()
         {
-            string path = Directory.GetCurrentDirectory() + @"\Databases\";
+            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            string path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -60,7 +62,7 @@ namespace ReserveBlockCore.Data
             DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
             DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
             DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
-
+            DB_Config = new LiteDatabase(path + RSRV_DB_CONFIG);
         }
 
         public static void CloseDB()
@@ -72,6 +74,7 @@ namespace ReserveBlockCore.Data
             DB_Banlist.Dispose();
             DB_WorldStateTrei.Dispose();
             DB_AccountStateTrei.Dispose();
+            DB_Config.Dispose();
         }
 
     }

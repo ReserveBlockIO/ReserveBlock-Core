@@ -36,11 +36,15 @@ namespace ReserveBlockCore.Nodes
                                         var txResult = TransactionValidatorService.VerifyTX(transaction); //sends tx to connected peers
                                         if (txResult == true && dblspndChk == false)
                                         {
+                                            P2PServer.TxRebroadcastDict.Add(transaction.Hash, 1);
                                             mempool.Insert(transaction);
                                             P2PClient.SendTXMempool(transaction);
                                         }
                                     }
-
+                                    else
+                                    {
+                                        
+                                    }
                                 }
                                 else
                                 {
@@ -49,6 +53,7 @@ namespace ReserveBlockCore.Nodes
                                     var txResult = TransactionValidatorService.VerifyTX(transaction);
                                     if (txResult == true && dblspndChk == false)
                                     {
+                                        P2PServer.TxRebroadcastDict.Add(transaction.Hash, 1);
                                         mempool.Insert(transaction);
                                         P2PClient.SendTXMempool(transaction);
                                     }

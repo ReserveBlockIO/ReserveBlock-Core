@@ -16,7 +16,6 @@ namespace ReserveBlockCore.Services
             var accountList = AccountData.GetAccountsWithBalance();
             var accountNumberList = new Dictionary<string, Account>();
 
-
             if (accountList.Count() > 0)
             {
                 int count = 1;
@@ -204,32 +203,30 @@ namespace ReserveBlockCore.Services
 
             if(account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
             {
-                Console.WriteLine("This transaction will deactivate your masternode. Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
-                var confirmChoice = Console.ReadLine();
-                if (confirmChoice == null)
-                {
-                    return false;
-                }
-                else if (confirmChoice.ToLower() == "n")
-                {
-                    return false;
-                }
-                else
-                {
-                    var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
-                    ValidatorService.StopValidating(validator);
-                    TransactionData.AddToPool(txRequest);
-                    TransactionData.AddTxToWallet(txRequest);
-                    AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                    //StateData.UpdateAccountNonce(txRequest.FromAddress);
-                    P2PClient.SendTXMempool(txRequest);//send out to mempool
-                }
+                //Console.WriteLine("This transaction will deactivate your masternode. Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
+                //var confirmChoice = Console.ReadLine();
+                //if (confirmChoice == null)
+                //{
+                //    return false;
+                //}
+                //else if (confirmChoice.ToLower() == "n")
+                //{
+                //    return false;
+                //}
+                //else
+                //{
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
+                ValidatorService.StopValidating(validator);
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest);
+                AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
+                P2PClient.SendTXMempool(txRequest);//send out to mempool
+                //}
             }
             else
             {
                 TransactionData.AddToPool(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                //StateData.UpdateAccountNonce(txRequest.FromAddress);
                 P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
 

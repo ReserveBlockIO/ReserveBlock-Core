@@ -22,28 +22,44 @@ namespace ReserveBlockCore.Data
                 trxPool.DeleteAll();
 
                 var timeStamp = TimeUtil.GetTime();
+                var gTrx = new Transaction
+                {
+                    Amount = 67500000,
+                    Height = 0,
+                    FromAddress = "rbx_genesis_transaction",
+                    ToAddress = Program.GenesisAddress, 
+                    Fee = 0,
+                    Hash = "", //this will be built down below. showing just to make this clear.
+                    Timestamp = timeStamp,
+                    Signature = "COINBASE_TX",
+                    Nonce = 0
+                };
 
-                var stateTrei = StateData.GetAccountStateTrei();
-                var stateTreiList = stateTrei.Find(x => x.Key != "rbx_genesis_transaction").ToList();
+                gTrx.Build();
 
-                stateTreiList.ForEach(x => {
-                    var gTrx = new Transaction
-                    {
-                        Amount = x.Key == "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? Decimal.Round((x.Balance - 94M), 0) : Decimal.Round(x.Balance + 1M, 0),
-                        Height = 0,
-                        FromAddress = "rbx_genesis_transaction",
-                        ToAddress = x.Key,
-                        Fee = 0,
-                        Hash = "", //this will be built down below. showing just to make this clear.
-                        Timestamp = timeStamp,
-                        Signature = "COINBASE_TX",
-                        Nonce = 0
-                    };
+                AddToPool(gTrx);
 
-                    gTrx.Build();
+                //var stateTrei = StateData.GetAccountStateTrei();
+                //var stateTreiList = stateTrei.Find(x => x.Key != "rbx_genesis_transaction").ToList();
 
-                    AddToPool(gTrx);
-                });
+                //stateTreiList.ForEach(x => {
+                //    var gTrx = new Transaction
+                //    {
+                //        Amount = x.Key == "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? Decimal.Round((x.Balance - 94M), 0) : Decimal.Round(x.Balance + 1M, 0),
+                //        Height = 0,
+                //        FromAddress = "rbx_genesis_transaction",
+                //        ToAddress = x.Key,
+                //        Fee = 0,
+                //        Hash = "", //this will be built down below. showing just to make this clear.
+                //        Timestamp = timeStamp,
+                //        Signature = "COINBASE_TX",
+                //        Nonce = 0
+                //    };
+
+                //    gTrx.Build();
+
+                //    AddToPool(gTrx);
+                //});
 
             }
 

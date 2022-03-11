@@ -89,28 +89,7 @@ namespace ReserveBlockCore.Utilities
 
 
                     result = true;
-                   
-                    //BlockQueueService.UpdateMemBlocks();//update mem blocks
-                    //StateData.UpdateTreis(block);
-
-                    //foreach (Transaction transaction in block.Transactions)
-                    //{
-                    //    var mempool = TransactionData.GetPool();
-
-                    //    var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
-                    //    if (mempoolTx != null)
-                    //    {
-                    //        mempool.DeleteMany(x => x.Hash == transaction.Hash);
-                    //    }
-
-                    //    var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
-                    //    if (account != null)
-                    //    {
-                    //        AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
-                    //        var txdata = TransactionData.GetAll();
-                    //        txdata.Insert(transaction);
-                    //    }
-                    //}
+                    
                 }
 
                 return result;//block accepted

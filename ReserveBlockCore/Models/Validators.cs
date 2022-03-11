@@ -22,7 +22,7 @@ namespace ReserveBlockCore.Models
         {
             public static List<Validators> ValidatorList { get; set; }
 
-            public static string backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+            public static string backupValidator = Program.GenesisAddress;
 
             public static void Add(Validators validator)
             {
@@ -167,7 +167,7 @@ namespace ReserveBlockCore.Models
                             var mainVal = nextVals[0];
                             var secondaryVal = nextVals[1];
 
-                            string queryAddress = mainVal != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? mainVal : secondaryVal;
+                            string queryAddress = mainVal != Program.GenesisAddress ? mainVal : secondaryVal;
 
                             var newValidator = validators.FindAll().Where(x => x.Address == queryAddress).FirstOrDefault();
                             if(newValidator != null)

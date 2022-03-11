@@ -20,6 +20,8 @@ namespace ReserveBlockCore.Data
         public IList<Transaction> PendingTransactions = new List<Transaction>();
         public Blockchain Chain { get; set; }
         public static string ChainRef { get; set; }
+
+        public static int BlockVersion { get; set; }
         internal static async Task InitializeChain()
         {
             await StartupService.DownloadBlocks();

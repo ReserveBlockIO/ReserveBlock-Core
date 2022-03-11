@@ -32,6 +32,11 @@ namespace ReserveBlockCore
         public static int BlockValidateFailCount = 0;
         public static bool BlockCrafting = false;
         public static string ValidatorAddress = "";
+        public static bool IsTestNet = false;
+        public static int Port = 3338;
+        public static int APIPort = 7292;
+        public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+        public static byte AddressPrefix = 0x3C; //address prefix 'R'
 
         #endregion
 
@@ -39,19 +44,59 @@ namespace ReserveBlockCore
         {
             var argList = args.ToList();
 
+            if (args.Length != 0)
+            {
+                argList.ForEach(x => {
+                    var argC = x.ToLower();
+                    if (argC == "enableapi")
+                    {
+                        Startup.APIEnabled = true; //api disabled by default
+                    }
+                    if (argC == "gui")
+                    {
+                        //launch gui
+                    }
+                    if (argC == "testnet")
+                    {
+                        //Launch testnet
+                        IsTestNet = true;
+                        GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
+                        Port = 13338;
+                        APIPort = 17292;
+                        AddressPrefix = 0x89; //address prefix 'x'
+                    }
+                    if (argC == "testurl")
+                    {
+                        //Launch testnet
+                        TestURL = true;
+                    }
+                });
+            }
+
             StartupService.AnotherInstanceCheck();
             StartupService.StartupDatabase();// initializes databases
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
-            StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
+            StartupService.SetBlockchainVersion(); //sets the block version for rules
+            if(IsTestNet == true)
+            {
+                StartupService.SetBootstrapValidatorsTestNet();
+            }
+            else
+            {
+                StartupService.SetBootstrapValidators(); //sets initial validators from bootstrap list.
+            }
+             
+            //StartupService.ResetStateTreis();
+
             StartupService.CheckLastBlock();
-            StartupService.ResetEntireChain(); //Might need to put this back in other spot.***************************
+            //StartupService.ResetEntireChain(); //Might need to put this back in other spot.***************************
 
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
 
-            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 13000); //waits 1 minute, then runs every 10 seconds for new blocks
+            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //blockTimer.Change(60000, 13000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
@@ -65,38 +110,11 @@ namespace ReserveBlockCore
             //add method to remove stale state trei records and stale validator records too
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
-            if (args.Length != 0)
-            {
-                argList.ForEach(x => {
-                    var argC = x.ToLower();
-                    if(argC == "enableapi")
-                    {
-                        Startup.APIEnabled = true; //api disabled by default
-                    }
-                    if(argC == "hidecli")
-                    {
-                        //maybe add hidden cli feature
-                    }
-                    if(argC == "gui")
-                    {
-                        //launch gui
-                    }
-                    if(argC == "testnet")
-                    {
-                        //Launch testnet
-                        Startup.IsTestNet = true;
-                    }
-                    if (argC == "testurl")
-                    {
-                        //Launch testnet
-                        TestURL = true;
-                    }
-                });
-            }
+            
 
-            string url = TestURL == false ? "http://*:7292" : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
-            string url2 = "http://*:3338"; //this is port for signalr connect and all p2p functions
-            //string url2 = "https://*:3338" //This is non http version. Must comment out app.UseHttpsRedirection() in startupp2p
+            string url = TestURL == false ? "http://*:" + APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
+            string url2 = "http://*:" + Port; //this is port for signalr connect and all p2p functions
+            //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
             
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
@@ -188,7 +206,7 @@ namespace ReserveBlockCore
                 await BlockQueueService.ProcessBlockQueue();
                 var localValidator = Validators.Validator.GetLocalValidator();
                 var lastBlock = BlockchainData.GetLastBlock();
-                var currentUnixTime = Utilities.TimeUtil.GetTime();
+                var currentUnixTime = TimeUtil.GetTime();
                 var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
                 var validators = Validators.Validator.GetAll();
                 //If no validators are detected then no need to run this code
@@ -427,7 +445,7 @@ namespace ReserveBlockCore
                                     {
                                         craftBlock = true;
                                     }
-                                    var backupValidator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+                                    var backupValidator = Program.GenesisAddress;
                                     var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
                                     var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
 

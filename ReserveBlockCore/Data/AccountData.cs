@@ -218,7 +218,7 @@ namespace ReserveBlockCore.Data
 			byte[] PubKey = HexToByte(pubKeyHash);
 			byte[] PubKeySha = Sha256(PubKey);
 			byte[] PubKeyShaRIPE = RipeMD160(PubKeySha);
-			byte[] PreHashWNetwork = AppendReserveBlockNetwork(PubKeyShaRIPE, 0x3C);//This will create Address starting with 'R'
+			byte[] PreHashWNetwork = AppendReserveBlockNetwork(PubKeyShaRIPE, Program.AddressPrefix);//This will create Address starting with 'R'
 			byte[] PublicHash = Sha256(PreHashWNetwork);
 			byte[] PublicHashHash = Sha256(PublicHash);
 			byte[] Address = ConcatAddress(PreHashWNetwork, PublicHashHash);

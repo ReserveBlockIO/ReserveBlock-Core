@@ -800,7 +800,14 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
+                }
+                catch (Exception ex)
+                {
 
+                }
+
+                try
+                {
                     if (hubConnection2 != null && IsConnected2)
                     {
                         string message = await hubConnection2.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
@@ -818,6 +825,14 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+
+                }
+
+                try
+                {
                     if (hubConnection3 != null && IsConnected3)
                     {
                         string message = await hubConnection3.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
@@ -835,6 +850,14 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+
+                }
+
+                try
+                {
                     if (hubConnection4 != null && IsConnected4)
                     {
                         string message = await hubConnection4.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
@@ -852,6 +875,14 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+
+                }
+
+                try
+                {
                     if (hubConnection5 != null && IsConnected5)
                     {
                         string message = await hubConnection5.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
@@ -869,6 +900,14 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+
+                }
+
+                try
+                {
                     if (hubConnection6 != null && IsConnected6)
                     {
                         string message = await hubConnection6.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
@@ -886,14 +925,16 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
-
                 }
                 catch (Exception ex)
                 {
-                    //possible dead connection, or node is offline
-                    Console.WriteLine("Error Sending Transaction. Please try again!");
+
                 }
+
             }
+
+            
+
         }
 
         #endregion

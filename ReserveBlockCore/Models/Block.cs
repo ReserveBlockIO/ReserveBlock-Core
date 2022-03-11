@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Models
 		//Methods
 		public void Build()
 		{
-			Version = 1; //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
+			Version = BlockchainData.BlockVersion; //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
 			NumOfTx = Transactions.Count;
 			TotalAmount = GetTotalAmount();
 			TotalReward = GetTotalFees();

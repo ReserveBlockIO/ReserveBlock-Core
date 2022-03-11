@@ -22,7 +22,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    tcpClient.Connect("127.0.0.1", 3338);
+                    tcpClient.Connect("127.0.0.1", Program.Port);
                     Console.WriteLine("Application already running on port 3338. Please verify only one instance is open.");
                     Thread.Sleep(2000);
                     Environment.Exit(0);
@@ -48,6 +48,16 @@ namespace ReserveBlockCore.Services
 
             //testnet
             BlockchainData.ChainRef = "t2_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+
+            if(Program.IsTestNet)
+            {
+                BlockchainData.ChainRef = "t_testnet";
+            }
+        }
+
+        internal static void SetBlockchainVersion()
+        {
+            BlockchainData.BlockVersion = 1;
         }
 
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
@@ -98,6 +108,53 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static void SetBootstrapValidatorsTestNet()
+        {
+            var validators = Validators.Validator.GetAll();
+
+            var val1Check = validators.FindOne(x => x.Address == "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g");
+
+            if (val1Check == null)
+            {
+                var validator1 = new Validators
+                {
+                    Address = "xSYaH36ZyFBZGqCJnQocuyBo3aRaav7RGg",
+                    EligibleBlockStart = 0,
+                    Amount = 1001M,
+                    FailCount = 0,
+                    IsActive = true,
+                    NodeIP = "185.199.226.121",
+                    Position = 1,
+                    Signature = "MEYCIQDvmKsH3WkDIg6gubCoxSaBFI89G4qNhO2yWBtrZjxPPAIhANwliGMjvGN8EPMyVptNf8wWJxvdM6ltR9alGqnKvkPp.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
+                    UniqueName = "GenesisValidator1",
+                    NodeReferenceId = BlockchainData.ChainRef
+                };
+
+                validators.Insert(validator1);
+            }
+
+            var val2Check = validators.FindOne(x => x.Address == "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq");
+
+            if (val2Check == null)
+            {
+                var validator2 = new Validators
+                {
+                    Address = "xSDZibXgBPGDGKH5EzzkWdLLRPXNm7NMrC",
+                    EligibleBlockStart = 0,
+                    Amount = 1001M,
+                    FailCount = 0,
+                    IsActive = true,
+                    NodeIP = "192.3.3.171",
+                    Position = 2,
+                    Signature = "MEUCIQDxNnLLawh4ua+yq5iPWEKoVi1NreAdj3BUwz2+kGaS8AIgAk0Q9KdMbAluHbtyKHZjtgGzgkc8dO6mJWSgcZEZgg0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
+                    UniqueName = "GenesisValidator2",
+                    NodeReferenceId = BlockchainData.ChainRef
+                };
+
+                validators.Insert(validator2);
+            }
+        }
+
         internal static void CheckLastBlock()
         {
             try
@@ -134,7 +191,7 @@ namespace ReserveBlockCore.Services
             var blockChain = BlockchainData.GetBlocks();
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
 
-            Program.MemBlocks = blocks.Take(15).ToList();
+            Program.MemBlocks = blocks.Take(50).ToList();
         }
 
 
@@ -294,6 +351,71 @@ namespace ReserveBlockCore.Services
             
         }
 
+        internal static void ResetStateTreis()
+        {
+            var blockChain = BlockchainData.GetBlocks().FindAll();
+            var failCount = 0;
+            List<Block> failBlocks = new List<Block>();
+
+            var transactions = TransactionData.GetAll();
+            var stateTrei = StateData.GetAccountStateTrei();
+            var worldTrei = WorldTrei.GetWorldTrei();
+
+            transactions.DeleteAll();//delete all local transactions
+            stateTrei.DeleteAll(); //removes all state trei data
+            worldTrei.DeleteAll();  //removes the state trei
+
+            DbContext.DB_AccountStateTrei.Rebuild();
+            DbContext.DB_WorldStateTrei.Rebuild();
+
+            DbContext.DB.Checkpoint();
+            DbContext.DB_AccountStateTrei.Checkpoint();
+            DbContext.DB_WorldStateTrei.Checkpoint();
+
+            foreach (var block in blockChain)
+            {
+                var result = BlockchainRescanUtility.ValidateBlock(block, true);
+                if(result != false)
+                {
+                    StateData.UpdateTreis(block);
+
+                    foreach (Transaction transaction in block.Transactions)
+                    {
+                        var mempool = TransactionData.GetPool();
+
+                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
+                        if (mempoolTx != null)
+                        {
+                            mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                        }
+
+                        var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
+                        if (account != null)
+                        {
+                            AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
+                            var txdata = TransactionData.GetAll();
+                            txdata.Insert(transaction);
+                        }
+                    }
+                }
+                else
+                {
+                    //issue with chain and must redownload
+                    failBlocks.Add(block);
+                    failCount++;
+                }
+            }
+
+            if(failCount == 0)
+            {
+                
+            }
+            else
+            {
+                //chain is invalid. Delete and redownload
+            }
+        }
+
         internal static void ResetChainToPoint()
         {
             var blockFixHeight = 19941;
@@ -375,7 +497,7 @@ namespace ReserveBlockCore.Services
                     await P2PClient.GetMasternodes();
                     
                     var accounts = AccountData.GetAccounts();
-                    var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH");
+                    var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
                     if(myAccount != null)
                     {
                         Program.ValidatorAddress = myAccount.Address;

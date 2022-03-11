@@ -15,7 +15,7 @@ namespace ReserveBlockCore.Services
             var blockChain = BlockchainData.GetBlocks();
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
 
-            Program.MemBlocks = blocks.Take(15).ToList();
+            Program.MemBlocks = blocks.Take(50).ToList();
         }
 
         public static async Task ProcessBlockQueue()

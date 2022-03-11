@@ -19,6 +19,7 @@ namespace ReserveBlockCore.P2P
     public class P2PServer : Hub
     {
         private static Dictionary<string, string> PeerList = new Dictionary<string, string>();
+        public static Dictionary<string, int> TxRebroadcastDict = new Dictionary<string, int>();
 
         #region Broadcast methods
         public override async Task OnConnectedAsync()
@@ -243,7 +244,9 @@ namespace ReserveBlockCore.P2P
                     if (txResult == true)
                     {
                         mempool.Insert(txReceived);
+                        TxRebroadcastDict.Add(txReceived.Hash, 1);
                         await SendMessageAllPeers("tx", data);
+                        P2PClient.SendTXMempool(txReceived);
                         return "ATMP";//added to mempool
                     }
                     else
@@ -253,6 +256,30 @@ namespace ReserveBlockCore.P2P
                 }
                 else
                 {
+                    var hashPresent = TxRebroadcastDict.ContainsKey(txReceived.Hash);
+                    if(hashPresent == true)
+                    {
+                        var broadcastCount = TxRebroadcastDict[txReceived.Hash];
+                        if(broadcastCount < 3)
+                        {
+                            TxRebroadcastDict[txReceived.Hash] += 1;
+                            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
+                            var txExist = memBlocksTxs.Exists(x => x.Hash == txReceived.Hash);
+                            if (!txExist)
+                            {
+                                await SendMessageAllPeers("tx", data); // send to everyone connected to me (In connects)
+                                P2PClient.SendTXMempool(txReceived); // send to everyone I am connected too (out connects)
+                            }
+                            else
+                            {
+                                TxRebroadcastDict.Remove(txReceived.Hash); // remove from broadcast
+                            }
+                        }
+                        else
+                        {
+                            TxRebroadcastDict.Remove(txReceived.Hash); // remove from broadcast
+                        }
+                    }
                     return "AIMP"; //already in mempool
                 }
             }

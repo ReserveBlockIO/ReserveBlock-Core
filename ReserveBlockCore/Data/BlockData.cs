@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Data
         public static Block CreateGenesisBlock(IList<Transaction> gTrxList)
         {
             var startTimer = DateTime.UtcNow;
-            var validatorAccount = AccountData.GetSingleAccount("RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH");
+            var validatorAccount = AccountData.GetSingleAccount(Program.GenesisAddress);
 
             var timeStamp = 1643932800; //4 Feb. 2022 | This value is hard coded for the start of the chain.
 
@@ -34,9 +34,9 @@ namespace ReserveBlockCore.Data
                 Height = 0,
                 Timestamp = timeStamp,
                 Transactions = gTrxList,
-                Validator = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH",
+                Validator = Program.GenesisAddress,
                 ChainRefId = BlockchainData.ChainRef,
-                NextValidators = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH:RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH",
+                NextValidators = Program.GenesisAddress + ":" + Program.GenesisAddress,
             };
 
             block.Build();
