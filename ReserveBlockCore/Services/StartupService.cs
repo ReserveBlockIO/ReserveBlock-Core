@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Services
         {
             var validators = Validators.Validator.GetAll();
 
-            var val1Check = validators.FindOne(x => x.Address == "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g");
+            var val1Check = validators.FindOne(x => x.Address == "xSYaH36ZyFBZGqCJnQocuyBo3aRaav7RGg");
 
             if (val1Check == null)
             {
@@ -133,7 +133,7 @@ namespace ReserveBlockCore.Services
                 validators.Insert(validator1);
             }
 
-            var val2Check = validators.FindOne(x => x.Address == "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq");
+            var val2Check = validators.FindOne(x => x.Address == "xSDZibXgBPGDGKH5EzzkWdLLRPXNm7NMrC");
 
             if (val2Check == null)
             {

@@ -96,7 +96,7 @@ namespace ReserveBlockCore
             StopAllTimers = true;
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 13000); //waits 1 minute, then runs every 10 seconds for new blocks
+            blockTimer.Change(60000, 60000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
@@ -438,6 +438,10 @@ namespace ReserveBlockCore
                                             {
                                                 craftBlock = true;
                                             }
+                                        }
+                                        else
+                                        {
+                                            craftBlock = true;
                                         }
                                         
                                     }

@@ -71,6 +71,7 @@ namespace ReserveBlockCore.Models
                 {
                     return "NaN"; //last block should not be null.
                 }
+
                 
                 var nextValidators = lastBlock.NextValidators;
 

@@ -1537,7 +1537,7 @@ namespace ReserveBlockCore.P2P
             {
                 foreach(var validator in validators)
                 {
-                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var url = "http://" + validator.NodeIP + ":" + Program.Port +  "/blockchain";
                     var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
                     connection.StartAsync().Wait();
@@ -1578,7 +1578,7 @@ namespace ReserveBlockCore.P2P
             {
                 foreach (var validator in validators)
                 {
-                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var url = "http://" + validator.NodeIP + ":" + Program.Port + "/blockchain";
                     var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
                     connection.StartAsync().Wait();
@@ -1651,7 +1651,7 @@ namespace ReserveBlockCore.P2P
             {
                 foreach (var validator in validators)
                 {
-                    var url = "http://" + validator.NodeIP + ":3338/blockchain";
+                    var url = "http://" + validator.NodeIP + ":" + Program.Port + "/blockchain";
                     var connection = new HubConnectionBuilder().WithUrl(url).Build();
 
                     connection.StartAsync().Wait();
