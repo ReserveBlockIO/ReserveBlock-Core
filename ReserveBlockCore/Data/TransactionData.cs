@@ -115,15 +115,21 @@ namespace ReserveBlockCore.Data
             if(memPoolTxList.Count() > 0)
             {
                 memPoolTxList.ForEach(tx => {
-                    var signature = tx.Signature;
-                    var sigCheck = VerifySignature(tx.Hash, signature);
-                    if (sigCheck == true)
+                    if(!approvedMemPoolList.Contains(tx))
                     {
-                        var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
-                        var totalSend = (tx.Amount + tx.Fee);
-                        if (balance >= totalSend)
+                        var signature = tx.Signature;
+                        var sigCheck = VerifySignature(tx.Hash, signature);
+                        if (sigCheck == true)
                         {
-                            approvedMemPoolList.Add(tx);
+                            var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
+                            //var sumOfSend = memPoolTxList.Where(x => x.FromAddress == tx.FromAddress).Sum(x => x.Amount);
+                            //var sumOfSendFee = memPoolTxList.Where(x => x.FromAddress == tx.FromAddress).Sum(x => x.Fee);
+
+                            var totalSend = (tx.Amount + tx.Fee);
+                            if (balance >= totalSend)
+                            {
+                                approvedMemPoolList.Add(tx);
+                            }
                         }
                     }
                 });

@@ -44,7 +44,7 @@ namespace ReserveBlockCore.Services
                 var timeDiff = currentTime - txRequest.Timestamp;
                 var minuteDiff = timeDiff / 60M;
 
-                if (minuteDiff > 5.0M)
+                if (minuteDiff > 180.0M)
                 {
                     return txResult;
                 }

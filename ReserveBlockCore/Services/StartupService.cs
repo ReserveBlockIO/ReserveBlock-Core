@@ -49,7 +49,7 @@ namespace ReserveBlockCore.Services
             //testnet
             BlockchainData.ChainRef = "t2_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
-            if(Program.IsTestNet)
+            if (Program.IsTestNet)
             {
                 BlockchainData.ChainRef = "t_testnet";
             }
@@ -153,6 +153,51 @@ namespace ReserveBlockCore.Services
 
                 validators.Insert(validator2);
             }
+        }
+
+        internal static void ClearStaleMempool()
+        {
+            bool memTxDeleted = false;
+            var pool = TransactionData.GetPool();
+            if(pool.Count() > 0)
+            {
+                var poolList = pool.FindAll().ToList();
+                foreach(var tx in poolList)
+                {
+                    var time = tx.Timestamp;
+                    var currentTime = TimeUtil.GetTime();
+                    var timeDiff = currentTime - time;
+                    var minuteDiff = timeDiff / 60M;
+
+                    if(minuteDiff > 180.0M)
+                    {
+                        pool.DeleteMany(x => x.Hash == tx.Hash);
+                        memTxDeleted = true;
+                    }
+                }
+
+                DbContext.DB.Checkpoint();
+            }
+
+            if(memTxDeleted)
+            {
+                var accounts = AccountData.GetAccounts();
+                if (accounts.Count() > 0)
+                {
+                    var accountList = accounts.FindAll().ToList();
+                    foreach(var account  in accountList)
+                    {
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                        if(stateTrei != null)
+                        {
+                            account.Balance = stateTrei.Balance;
+                            accounts.Update(account);
+                        }
+                    }
+                }
+            }
+            
+
         }
 
         internal static void CheckLastBlock()

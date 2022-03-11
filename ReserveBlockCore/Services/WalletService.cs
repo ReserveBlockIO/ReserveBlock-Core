@@ -221,6 +221,7 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                 P2PClient.SendTXMempool(txRequest);//send out to mempool
+                //add method to send to nearest validators too
                 //}
             }
             else
