@@ -448,7 +448,7 @@ namespace ReserveBlockCore.P2P
                         return false;
                     try
                     {
-                        var url = "http://" + peer.PeerIP + ":3338/blockchain";
+                        var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
                         var conResult = await Connect(hubCon, url);
                         if (conResult != false)
                         {
@@ -483,7 +483,7 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                var url = "http://" + peerIP + ":3338/blockchain";
+                var url = "http://" + peerIP + ":" + Program.Port + "/blockchain";
                 var connection = new HubConnectionBuilder().WithUrl(url).Build();
                 string response = "";
                 connection.StartAsync().Wait();
@@ -1122,7 +1122,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+                        var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
                         var alive = hubConnection.StartAsync().Wait(5000); //give validator 5 secs to connect. Should be plenty
                         if (alive == true)
                         {
@@ -1310,7 +1310,7 @@ namespace ReserveBlockCore.P2P
             bool main = false;
             bool backup = false;
             var validators = Validators.Validator.GetAll();
-            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":3338/blockchain").Build();
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
                 var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
@@ -1335,7 +1335,7 @@ namespace ReserveBlockCore.P2P
             }
             
 
-            var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":3338/blockchain").Build();
+            var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
                 var alive2 = hubConnection2.StartAsync().Wait(6000);
@@ -1370,7 +1370,7 @@ namespace ReserveBlockCore.P2P
         {
             bool result = false;
             var validators = Validators.Validator.GetAll();
-            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
                 var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
@@ -1404,7 +1404,7 @@ namespace ReserveBlockCore.P2P
         {
             Block block = null;
             var validators = Validators.Validator.GetAll();
-            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":3338/blockchain").Build();
+            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
                 var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
