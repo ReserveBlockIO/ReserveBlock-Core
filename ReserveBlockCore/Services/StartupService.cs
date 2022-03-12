@@ -179,7 +179,7 @@ namespace ReserveBlockCore.Services
                 DbContext.DB.Checkpoint();
             }
 
-            if(memTxDeleted)
+            if(memTxDeleted == true)
             {
                 var accounts = AccountData.GetAccounts();
                 if (accounts.Count() > 0)

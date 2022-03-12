@@ -66,30 +66,33 @@ namespace ReserveBlockCore.P2P
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)
         {
-            Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
-            await BlockQueueService.ProcessBlockQueue();
-
-            var nextHeight = BlockchainData.GetHeight() + 1;
-            var currentHeight = nextBlock.Height;
-
-            if(nextHeight == currentHeight)
+            if(Program.BlocksDownloading == false)
             {
-                //var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                var broadcast = await BlockQueueService.AddBlock(nextBlock);
+                Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
+                await BlockQueueService.ProcessBlockQueue();
 
-                if(broadcast == true)
+                var nextHeight = BlockchainData.GetHeight() + 1;
+                var currentHeight = nextBlock.Height;
+
+                if (nextHeight == currentHeight)
                 {
-                    string data = "";
-                    data = JsonConvert.SerializeObject(nextBlock);
-                    await SendMessageAllPeers("blk", data);
+                    //var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                    var broadcast = await BlockQueueService.AddBlock(nextBlock);
+
+                    if (broadcast == true)
+                    {
+                        string data = "";
+                        data = JsonConvert.SerializeObject(nextBlock);
+                        await SendMessageAllPeers("blk", data);
+                    }
                 }
-            }
-            else
-            {
-                // means we need to download some blocks
-                Program.BlocksDownloading = true;
-                var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
-                Program.BlocksDownloading = setDownload;
+                else
+                {
+                    // means we need to download some blocks
+                    Program.BlocksDownloading = true;
+                    var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
+                    Program.BlocksDownloading = setDownload;
+                }
             }
         }
 

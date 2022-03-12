@@ -117,13 +117,13 @@ namespace ReserveBlockCore.Services
                     {
                         var mempool = TransactionData.GetPool();
 
-                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
-                        if(mempoolTx != null)
+                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash);
+                        if(mempoolTx.Count() > 0)
                         {
                             mempool.DeleteMany(x => x.Hash == transaction.Hash);
                         }
 
-                        var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
+                        var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
                         if(account != null)
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);

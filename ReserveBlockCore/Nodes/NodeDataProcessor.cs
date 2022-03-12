@@ -100,7 +100,7 @@ namespace ReserveBlockCore.Nodes
                                     if (broadcast == true)
                                     {
                                         Console.WriteLine("Block was added from: " + nextBlock.Validator);
-                                        P2PClient.BroadcastBlock(nextBlock);//broadcast out to your connected nodes
+                                        await P2PClient.BroadcastBlock(nextBlock);//broadcast out to your connected nodes
                                     }
                                 }
                                 else

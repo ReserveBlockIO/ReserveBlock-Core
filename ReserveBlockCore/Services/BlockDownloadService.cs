@@ -11,7 +11,6 @@ namespace ReserveBlockCore.Services
             if(Program.PeersConnecting == false)
             {
                 BlockQueueService.QueueProcessing = true;
-                await BlockQueueService.ProcessBlockQueue();
 
                 var myBlockHeight = BlockchainData.GetHeight();
                 var difference = nHeight - myBlockHeight;

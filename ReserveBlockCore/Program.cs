@@ -77,6 +77,8 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();// initializes databases
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBlockchainVersion(); //sets the block version for rules
+            StartupService.ClearStaleMempool();
+
             if(IsTestNet == true)
             {
                 StartupService.SetBootstrapValidatorsTestNet();
@@ -95,8 +97,8 @@ namespace ReserveBlockCore
             BlocksDownloading = true;
             StopAllTimers = true;
 
-            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 13000); //waits 1 minute, then runs every 10 seconds for new blocks
+            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //blockTimer.Change(60000, 13000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
