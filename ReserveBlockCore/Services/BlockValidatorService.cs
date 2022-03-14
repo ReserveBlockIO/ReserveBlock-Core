@@ -49,7 +49,9 @@ namespace ReserveBlockCore.Services
                 return result;//block rejected due to chainref difference
             }
 
-            if(block.Version != BlockchainData.BlockVersion)
+            var blockVersion = BlockVersionUtility.GetBlockVersion(block.Height);
+
+            if(block.Version != blockVersion)
             {
                 return result;
             }
@@ -93,7 +95,7 @@ namespace ReserveBlockCore.Services
                     {
                         if(transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var txResult = TransactionValidatorService.VerifyTX(transaction, blockDownloads);
+                            var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
                         }
                         else

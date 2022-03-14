@@ -102,7 +102,7 @@ namespace ReserveBlockCore.Data
                 transactionList.AddRange(processedTxPool);
 
                 //need to only delete processed mempool tx's in event new ones get added while creating block.
-
+                //delete after block is added, so they can't  be re-added before block is over.
                 foreach(var tx in processedTxPool)
                 {
                     var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
@@ -110,7 +110,6 @@ namespace ReserveBlockCore.Data
                     {
                         txPool.DeleteMany(x => x.Hash == tx.Hash);
                     }    
-                    
                 }
             }
             else

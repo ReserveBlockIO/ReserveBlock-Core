@@ -57,7 +57,7 @@ namespace ReserveBlockCore.Services
 
         internal static void SetBlockchainVersion()
         {
-            BlockchainData.BlockVersion = 1;
+            //BlockchainData.BlockVersion = BlockVersionUtility.GetBlockVersion();
         }
 
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
@@ -236,7 +236,7 @@ namespace ReserveBlockCore.Services
             var blockChain = BlockchainData.GetBlocks();
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
 
-            Program.MemBlocks = blocks.Take(50).ToList();
+            Program.MemBlocks = blocks.Take(200).ToList();
         }
 
 
@@ -396,7 +396,7 @@ namespace ReserveBlockCore.Services
             
         }
 
-        internal static void ResetStateTreis()
+        internal static async void ResetStateTreis()
         {
             var blockChain = BlockchainData.GetBlocks().FindAll();
             var failCount = 0;
@@ -419,7 +419,7 @@ namespace ReserveBlockCore.Services
 
             foreach (var block in blockChain)
             {
-                var result = BlockchainRescanUtility.ValidateBlock(block, true);
+                var result = await BlockchainRescanUtility.ValidateBlock(block, true);
                 if(result != false)
                 {
                     StateData.UpdateTreis(block);
@@ -461,7 +461,7 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static void ResetChainToPoint()
+        internal static async void ResetChainToPoint()
         {
             var blockFixHeight = 19941;
             var blocks = BlockchainData.GetBlocks();
@@ -482,7 +482,7 @@ namespace ReserveBlockCore.Services
 
                     foreach (var blk in blocksFromGenesis)
                     {
-                        var result = BlockchainRescanUtility.ValidateBlock(blk);
+                        var result = await BlockchainRescanUtility.ValidateBlock(blk);
                         if(result == false)
                         {
                             failCount++;

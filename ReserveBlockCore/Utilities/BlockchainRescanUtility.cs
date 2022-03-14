@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class BlockchainRescanUtility
     {
-        public static bool ValidateBlock(Block block, bool blockDownloads = false)
+        public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
 
@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Utilities
                     {
                         if (transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var txResult = TransactionValidatorService.VerifyTX(transaction, blockDownloads);
+                            var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
                         }
                         else

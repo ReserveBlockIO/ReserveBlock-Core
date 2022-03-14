@@ -269,6 +269,26 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetLastBlock")]
+        public async Task<string> GetLastBlock()
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            var block = BlockchainData.GetLastBlock();
+
+            if (block == null)
+            {
+                output = "NNB";
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(block);
+            }
+
+            return output;
+        }
+
         [HttpGet("GetAllTransactions")]
         public async Task<string> GetAllTransactions()
         {

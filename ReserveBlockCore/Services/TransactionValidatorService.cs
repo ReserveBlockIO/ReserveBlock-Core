@@ -7,7 +7,7 @@ namespace ReserveBlockCore.Services
 {
     public class TransactionValidatorService
     {
-        public static bool VerifyTX(Transaction txRequest, bool blockDownloads = false)
+        public static async Task<bool> VerifyTX(Transaction txRequest, bool blockDownloads = false)
         {
             bool txResult = false;
 
@@ -29,14 +29,6 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
-            var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
-            if(txExist)
-            {
-                return txResult;
-            }
-
             //Timestamp Check
             if(!blockDownloads)
             {
@@ -49,7 +41,14 @@ namespace ReserveBlockCore.Services
                     return txResult;
                 }
             }
-            
+
+            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
+            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
+            var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
+            if (txExist)
+            {
+                return txResult;
+            }
 
             //Hash Check
             var newTxn = new Transaction()

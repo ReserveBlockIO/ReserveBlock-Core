@@ -74,6 +74,41 @@ namespace ReserveBlockCore.Data
             }
         }
 
+        public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
+        {
+            var result = false;
+
+            var blockchain = BlockchainData.GetBlocks();
+            var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
+
+            var transactions = blocks.SelectMany(x => x.Transactions).ToList();
+            if (transactions.Count() > 0)
+            {
+                var txExist = transactions.Exists(x => x.Hash == tx.Hash);
+                if (txExist == true)
+                {
+                    result = true;//douple spend has occured
+                }
+            }
+            return result;
+        }
+
+        public static async Task<bool> IsTxTimestampStale(Transaction tx)
+        {
+            var result = false;
+
+            var currentTime = TimeUtil.GetTime();
+            var timeDiff = currentTime - tx.Timestamp;
+            var minuteDiff = timeDiff / 60M;
+
+            if (minuteDiff > 180.0M)
+            {
+                result = true;
+            }
+
+            return result;
+        }
+
         public static void AddToPool(Transaction transaction)
         {
             var TransactionPool = GetPool();
@@ -115,7 +150,8 @@ namespace ReserveBlockCore.Data
             if(memPoolTxList.Count() > 0)
             {
                 memPoolTxList.ForEach(tx => {
-                    if(!approvedMemPoolList.Contains(tx))
+                    var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
+                    if(!txExist)
                     {
                         var signature = tx.Signature;
                         var sigCheck = VerifySignature(tx.Hash, signature);
@@ -138,24 +174,23 @@ namespace ReserveBlockCore.Data
             return approvedMemPoolList;
         }
 
+       
+
         public static async Task<bool> DoubleSpendCheck(Transaction tx)
         {
             bool result = false;
             var blockchain = BlockchainData.GetBlocks();
-            var blocks = blockchain.Find(Query.All(Query.Descending)).Take(60).ToList();
+            var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
 
             var transactions = blocks.SelectMany(x => x.Transactions).ToList();
             if(transactions.Count() > 0)
             {
-                transactions.ForEach(x =>
+                var txExist = transactions.Exists(x => x.Hash == tx.Hash);
+                if (txExist == true)
                 {
-                    var doesTxExist = transactions.Exists(x => x.Hash.Equals(tx.Hash));
-                    if (doesTxExist == true)
-                    {
-                        result = true;//douple spend has occured
-                    }
+                    result = true;//douple spend has occured
+                }
 
-                });
             }
 
             if(result == true)

@@ -25,39 +25,69 @@ namespace ReserveBlockCore.Nodes
                             var transaction = JsonConvert.DeserializeObject<Transaction>(data);
                             if (transaction != null)
                             {
-                                var mempool = TransactionData.GetPool();
-                                if (mempool.Count() != 0)
+                                var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
+                                if(!isTxStale)
                                 {
-                                    var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
-                                    if (txFound == null)
+                                    var mempool = TransactionData.GetPool();
+                                    if (mempool.Count() != 0)
                                     {
-                                        var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
-
-                                        var txResult = TransactionValidatorService.VerifyTX(transaction); //sends tx to connected peers
-                                        if (txResult == true && dblspndChk == false)
+                                        var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
+                                        if (txFound == null)
                                         {
-                                            P2PServer.TxRebroadcastDict.Add(transaction.Hash, 1);
-                                            mempool.Insert(transaction);
-                                            P2PClient.SendTXMempool(transaction);
+
+                                            var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                            if (txResult == true)
+                                            {
+                                                var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                                if (dblspndChk == false && isCraftedIntoBlock == false)
+                                                {
+                                                    mempool.Insert(transaction);
+                                                    P2PClient.SendTXMempool(transaction);
+                                                }
+                                            }
+
+                                        }
+                                        else
+                                        {
+
+                                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                            if (!isCraftedIntoBlock)
+                                            {
+                                                P2PClient.SendTXMempool(transaction); // send to everyone I am connected too (out connects)
+                                            }
+                                            else
+                                            {
+                                                try
+                                                {
+                                                    mempool.DeleteMany(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    //delete failed
+                                                }
+                                            }                                            
                                         }
                                     }
                                     else
                                     {
-                                        
-                                    }
-                                }
-                                else
-                                {
-                                    var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
 
-                                    var txResult = TransactionValidatorService.VerifyTX(transaction);
-                                    if (txResult == true && dblspndChk == false)
-                                    {
-                                        P2PServer.TxRebroadcastDict.Add(transaction.Hash, 1);
-                                        mempool.Insert(transaction);
-                                        P2PClient.SendTXMempool(transaction);
+                                        var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                        if (txResult == true)
+                                        {
+                                            var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                            if (dblspndChk == false && isCraftedIntoBlock == false)
+                                            {
+                                                mempool.Insert(transaction);
+                                                P2PClient.SendTXMempool(transaction);
+                                            }
+                                        }
                                     }
                                 }
+                                
                             }
 
                         }
@@ -100,7 +130,6 @@ namespace ReserveBlockCore.Nodes
                                     if (broadcast == true)
                                     {
                                         Console.WriteLine("Block was added from: " + nextBlock.Validator);
-                                        await P2PClient.BroadcastBlock(nextBlock);//broadcast out to your connected nodes
                                     }
                                 }
                                 else

@@ -240,69 +240,128 @@ namespace ReserveBlockCore.P2P
                 var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
                 if (txFound == null)
                 {
-                    var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
-                    if (dblspndChk == true)
-                        return "TFVP";
-                    var txResult = TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
-                    if (txResult == true)
+                    var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                    if(!isTxStale)
                     {
-                        mempool.Insert(txReceived);
-                        TxRebroadcastDict.Add(txReceived.Hash, 1);
-                        await SendMessageAllPeers("tx", data);
-                        P2PClient.SendTXMempool(txReceived);
-                        return "ATMP";//added to mempool
-                    }
-                    else
-                    {
-                        return "TFVP"; //transaction failed verification process
-                    }
-                }
-                else
-                {
-                    var hashPresent = TxRebroadcastDict.ContainsKey(txReceived.Hash);
-                    if(hashPresent == true)
-                    {
-                        var broadcastCount = TxRebroadcastDict[txReceived.Hash];
-                        if(broadcastCount < 3)
+                        var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
+                        if (txResult == false)
                         {
-                            TxRebroadcastDict[txReceived.Hash] += 1;
-                            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
-                            var txExist = memBlocksTxs.Exists(x => x.Hash == txReceived.Hash);
-                            if (!txExist)
+                            try
                             {
-                                await SendMessageAllPeers("tx", data); // send to everyone connected to me (In connects)
-                                P2PClient.SendTXMempool(txReceived); // send to everyone I am connected too (out connects)
+                                mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                TxRebroadcastDict.Remove(txReceived.Hash); // remove from broadcast
+                                //delete failed
                             }
+                            return "TFVP";
+                        }
+                        var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
+                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+
+                        if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
+                        {
+                            mempool.Insert(txReceived);
+                            await SendMessageAllPeers("tx", data);
+                            P2PClient.SendTXMempool(txReceived);
+                            return "ATMP";//added to mempool
                         }
                         else
                         {
-                            TxRebroadcastDict.Remove(txReceived.Hash); // remove from broadcast
+                            try
+                            {
+                                mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                            }
+                            catch (Exception ex)
+                            {
+                                //delete failed
+                            }
+                            return "TFVP"; //transaction failed verification process
                         }
                     }
-                    return "AIMP"; //already in mempool
+                    
+
+                }
+                else
+                {
+
+                    var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                    if (!isTxStale)
+                    {
+                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                        if (!isCraftedIntoBlock)
+                        {
+                            await SendMessageAllPeers("tx", data); // send to everyone connected to me (In connects)
+                            P2PClient.SendTXMempool(txReceived); // send to everyone I am connected too (out connects)
+                        }
+                        else
+                        {
+                            try
+                            {
+                                mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                            }
+                            catch (Exception ex)
+                            {
+                                //delete failed
+                            }
+                        }
+
+                        return "AIMP"; //already in mempool
+                    }
+                    else
+                    {
+                        try
+                        {
+                            mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                        }
+                        catch (Exception ex)
+                        {
+                            //delete failed
+                        }
+                    }
+                    
                 }
             }
             else
             {
-                var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
-                if (dblspndChk == true)
-                    return "TFVP";
-
-                var txResult = TransactionValidatorService.VerifyTX(txReceived);
-                if (txResult == true)
+                var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                if (!isTxStale)
                 {
-                    mempool.Insert(txReceived);
-                    await SendMessageAllPeers("tx", data); //sends tx to connected peers
-                    return "ATMP";//added to mempool
+                    var txResult = await TransactionValidatorService.VerifyTX(txReceived);
+                    if (txResult == false)
+                    {
+                        try
+                        {
+                            mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                        }
+                        catch (Exception ex)
+                        {
+                            //delete failed
+                        }
+                        return "TFVP";
+                    }
+                    var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
+                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                    if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
+                    {
+                        mempool.Insert(txReceived);
+                        await SendMessageAllPeers("tx", data); //sends tx to connected peers
+                        return "ATMP";//added to mempool
+                    }
+                    else
+                    {
+                        try
+                        {
+                            mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                        }
+                        catch (Exception ex)
+                        {
+                            //delete failed
+                        }
+                        return "TFVP"; //transaction failed verification process
+                    }
                 }
-                else
-                {
-                    return "TFVP"; //transaction failed verification process
-                }
+                
             }
 
             return "";
