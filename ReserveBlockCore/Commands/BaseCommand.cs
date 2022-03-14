@@ -21,6 +21,9 @@ namespace ReserveBlockCore.Commands
                 case "/help":
                     commandResult = "Help Command List Goes Here...";
                     break;
+                case "/printvars":
+                    StaticVariableUtility.PrintStaticVariables();
+                    break;
                 case "/exit":
                     commandResult = "_EXIT";
                     break;

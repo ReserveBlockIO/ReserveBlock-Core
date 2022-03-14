@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Nodes
                                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
                                             if (!isCraftedIntoBlock)
                                             {
-                                                P2PClient.SendTXMempool(transaction); // send to everyone I am connected too (out connects)
+                                                //P2PClient.SendTXMempool(transaction); // send to everyone I am connected too (out connects)
                                             }
                                             else
                                             {
@@ -132,7 +132,7 @@ namespace ReserveBlockCore.Nodes
                                         Console.WriteLine("Block was added from: " + nextBlock.Validator);
                                     }
                                 }
-                                else
+                                if (nextHeight < currentHeight)
                                 {
                                     // means we need to download some blocks
                                     //Check to make sure blocks aren't already being downloaded, so we don't downloaded them multiple times

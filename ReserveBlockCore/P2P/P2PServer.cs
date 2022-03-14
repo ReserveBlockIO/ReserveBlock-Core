@@ -86,7 +86,8 @@ namespace ReserveBlockCore.P2P
                         await SendMessageAllPeers("blk", data);
                     }
                 }
-                else
+                
+                if(nextHeight < currentHeight)
                 {
                     // means we need to download some blocks
                     Program.BlocksDownloading = true;
@@ -291,8 +292,8 @@ namespace ReserveBlockCore.P2P
                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
                         if (!isCraftedIntoBlock)
                         {
-                            await SendMessageAllPeers("tx", data); // send to everyone connected to me (In connects)
-                            P2PClient.SendTXMempool(txReceived); // send to everyone I am connected too (out connects)
+                            //await SendMessageAllPeers("tx", data); // send to everyone connected to me (In connects)
+                            //P2PClient.SendTXMempool(txReceived); // send to everyone I am connected too (out connects)
                         }
                         else
                         {
