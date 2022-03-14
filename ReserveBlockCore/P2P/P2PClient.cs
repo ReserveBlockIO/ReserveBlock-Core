@@ -1113,7 +1113,7 @@ namespace ReserveBlockCore.P2P
         public static async Task<bool> BroadcastValidatorNode(Validators nValidator)
         {
             var validators = Validators.Validator.GetAll();
-            var validatorList = validators.FindAll().Where(x => x.FailCount < 30);
+            var validatorList = validators.FindAll().Where(x => x.FailCount < 10);
             int successCount = 0;
 
             if (validatorList.Count() > 0)

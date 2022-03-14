@@ -24,6 +24,8 @@ namespace ReserveBlockCore.Models
 
             public static string backupValidator = Program.GenesisAddress;
 
+            public static int FailCountLimit = 10;
+
             public static void Add(Validators validator)
             {
                 var validators = GetAll();
@@ -126,7 +128,7 @@ namespace ReserveBlockCore.Models
                             int posCount = currentValidator.Address == secVal ? 0 : 0;
                             int posCount2 = currentValidator.Address == secVal ? 1 : 1;
 
-                            var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
+                            var valiList = validators.FindAll().Where(x => x.FailCount <= FailCountLimit).ToList();
                             var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
                             var numMain = currentValidator.Position + posCount >= valiCount ? ((currentValidator.Position + posCount) - valiCount) : currentValidator.Position + posCount;
@@ -177,7 +179,7 @@ namespace ReserveBlockCore.Models
                                 int posCount2 = 1;
                                 int posCount3 = 2;
 
-                                var valiList = validators.FindAll().Where(x => x.FailCount <= 30).ToList();
+                                var valiList = validators.FindAll().Where(x => x.FailCount <= FailCountLimit).ToList();
                                 var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
 
                                 //I think issue is with the List and the fact the highest number is 2 could  be caught in a circular loop
