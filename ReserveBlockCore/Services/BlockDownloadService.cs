@@ -29,7 +29,7 @@ namespace ReserveBlockCore.Services
                                 if (block != null)
                                 {
                                     var blockResult = await BlockValidatorService.ValidateBlock(block, true);
-                                    if(blockResult == false)
+                                    if (blockResult == false)
                                     {
 
                                     }
@@ -44,6 +44,12 @@ namespace ReserveBlockCore.Services
                 catch (Exception ex)
                 {
                     //Error
+                    if (Program.PrintConsoleErrors == true)
+                    {
+                        Console.WriteLine("Failure in GetAllBlocks Method");
+                        Console.WriteLine(ex.Message);
+                    }
+                    
                     BlockQueueService.QueueProcessing = false;
                 }
 

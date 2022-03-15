@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Nodes;
+using ReserveBlockCore.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -144,6 +145,12 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection6 = null;
+            }
+
+            if(result == false)
+            {
+                //attempt to reconnect to peers.
+                await StartupService.StartupPeers();
             }
 
             return (result, resultCount);
@@ -534,6 +541,13 @@ namespace ReserveBlockCore.P2P
                         }
 
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection2 != null && IsConnected2)
                     {
                         nBlock = await hubConnection2.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
@@ -547,6 +561,13 @@ namespace ReserveBlockCore.P2P
                         }
 
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection3 != null && IsConnected3)
                     {
                         nBlock = await hubConnection3.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
@@ -557,9 +578,16 @@ namespace ReserveBlockCore.P2P
                                 blocks.Add(nBlock);
                                 currentBlock += 1;
                             }
-                            
+
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection4 != null && IsConnected4)
                     {
                         nBlock = await hubConnection4.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
@@ -570,9 +598,16 @@ namespace ReserveBlockCore.P2P
                                 blocks.Add(nBlock);
                                 currentBlock += 1;
                             }
-                            
+
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection5 != null && IsConnected5)
                     {
                         nBlock = await hubConnection5.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
@@ -583,9 +618,16 @@ namespace ReserveBlockCore.P2P
                                 blocks.Add(nBlock);
                                 currentBlock += 1;
                             }
-                            
+
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection6 != null && IsConnected6)
                     {
                         nBlock = await hubConnection6.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
@@ -596,18 +638,16 @@ namespace ReserveBlockCore.P2P
                                 blocks.Add(nBlock);
                                 currentBlock += 1;
                             }
-                            
+
                         }
                     }
-
-                    return blocks;
-
                 }
                 catch (Exception ex)
                 {
                     //possible dead connection, or node is offline
-                    return blocks;
                 }
+
+                return blocks;
 
             }
 
@@ -951,10 +991,12 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
+                var validators = Validators.Validator.GetAll();
+                var valCount = validators.FindAll().Count();
+
                 try
                 {
-                    var validators = Validators.Validator.GetAll();
-                    var valCount = validators.FindAll().Count();
+                    
 
                     if (hubConnection1 != null)
                     {
@@ -979,6 +1021,14 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+
+                try
+                {
                     if (hubConnection2 != null)
                     {
                         List<Validators>? remoteValidators = await hubConnection2.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
@@ -1002,6 +1052,13 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection3 != null)
                     {
                         List<Validators>? remoteValidators = await hubConnection3.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
@@ -1025,6 +1082,13 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection4 != null)
                     {
                         List<Validators>? remoteValidators = await hubConnection4.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
@@ -1048,6 +1112,13 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection5 != null)
                     {
                         List<Validators>? remoteValidators = await hubConnection5.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
@@ -1071,6 +1142,13 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    //possible dead connection, or node is offline
+                }
+                try
+                {
                     if (hubConnection6 != null)
                     {
                         List<Validators>? remoteValidators = await hubConnection6.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
@@ -1094,13 +1172,12 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     }
-
                 }
                 catch (Exception ex)
                 {
                     //possible dead connection, or node is offline
-                    return output;
                 }
+    
             }
 
             return output;

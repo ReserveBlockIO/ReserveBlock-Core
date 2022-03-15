@@ -37,6 +37,7 @@ namespace ReserveBlockCore
         public static int APIPort = 7292;
         public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
+        public static bool PrintConsoleErrors = false;
 
         #endregion
 
