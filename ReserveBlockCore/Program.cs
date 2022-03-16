@@ -7,6 +7,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Diagnostics;
 using System.Net.Sockets;
 
 namespace ReserveBlockCore
@@ -38,13 +39,13 @@ namespace ReserveBlockCore
         public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
+        public static Process proc = new Process();
 
         #endregion
-
         static async Task Main(string[] args)
         {
             var argList = args.ToList();
-
+            
             if (args.Length != 0)
             {
                 argList.ForEach(x => {
@@ -52,6 +53,19 @@ namespace ReserveBlockCore
                     if (argC == "enableapi")
                     {
                         Startup.APIEnabled = true; //api disabled by default
+                    }
+                    if(argC == "hidecli")
+                    {
+                        ProcessStartInfo start = new ProcessStartInfo();
+                        start.FileName = Directory.GetCurrentDirectory() + @"\ReserveBlockCore.exe";
+                        start.WindowStyle = ProcessWindowStyle.Hidden; //Hides GUI
+                        start.CreateNoWindow = true; //Hides console
+                        start.Arguments = "enableapi";
+
+                        proc.StartInfo = start;
+                        proc.Start();
+
+                        Environment.Exit(0);
                     }
                     if (argC == "gui")
                     {
