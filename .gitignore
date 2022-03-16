@@ -9,6 +9,7 @@
 *.db
 *.bak
 *.pubxml
+.DS_Store
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

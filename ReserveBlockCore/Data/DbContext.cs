@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace ReserveBlockCore.Data
 {
@@ -50,7 +51,17 @@ namespace ReserveBlockCore.Data
         public static void Initialize()
         {
             var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            string path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
