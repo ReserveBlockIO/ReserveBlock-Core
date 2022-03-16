@@ -57,7 +57,7 @@ namespace ReserveBlockCore
                     if(argC == "hidecli")
                     {
                         ProcessStartInfo start = new ProcessStartInfo();
-                        start.FileName = Directory.GetCurrentDirectory() + @"\ReserveBlockCore.exe";
+                        start.FileName = Directory.GetCurrentDirectory() + @"\RBXCore\ReserveBlockCore.exe";
                         start.WindowStyle = ProcessWindowStyle.Hidden; //Hides GUI
                         start.CreateNoWindow = true; //Hides console
                         start.Arguments = "enableapi";
