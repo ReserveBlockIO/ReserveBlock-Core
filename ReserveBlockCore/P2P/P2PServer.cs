@@ -156,7 +156,6 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Ping Peers
-
         public async Task<string> PingPeers()
         {
             var peerIP = GetIP(Context);
@@ -506,6 +505,37 @@ namespace ReserveBlockCore.P2P
 
         #region Call Crafter
         public async Task<bool> CallCrafter()
+        {
+            return true;
+        }
+
+        #endregion
+
+        #region Send Banned Addresses
+        public async Task<List<Validators>?> GetBannedMasternodes()
+        {
+            var validatorList = Validators.Validator.GetAll();
+            var validatorListCount = validatorList.Count();
+
+            if (validatorListCount == 0)
+            {
+                return null;
+            }
+            else
+            {
+                var bannedNodes = validatorList.FindAll().Where(x => x.FailCount >= 10).ToList();
+                if(bannedNodes.Count() > 0)
+                {
+                    return bannedNodes;
+                }
+            }
+
+            return null;
+        }
+        #endregion 
+
+        #region Check Masternode
+        public async Task<bool> MasternodeOnline()
         {
             return true;
         }

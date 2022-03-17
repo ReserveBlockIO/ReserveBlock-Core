@@ -380,6 +380,18 @@ namespace ReserveBlockCore.Controllers
 
             return result;
         }
+
+        [HttpGet("GetMasternodes")]
+        public async Task<string> GetMasternodes()
+        {
+            string output = "";
+            var validators = Validators.Validator.GetAll();
+            var validatorList = validators.FindAll().ToList();
+
+            output = JsonConvert.SerializeObject(validatorList);
+
+            return output;
+        }
         
         [HttpGet("SendExit")]
         public async Task SendExit()

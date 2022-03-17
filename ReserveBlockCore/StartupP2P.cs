@@ -25,7 +25,7 @@ namespace ReserveBlockCore
         {
             services.AddControllers();
             services.AddSignalR(options => {
-                options.KeepAliveInterval = TimeSpan.FromSeconds(10); //check connections everyone 10 seconds
+                options.KeepAliveInterval = TimeSpan.FromSeconds(30); //check connections everyone 10 seconds
                 options.ClientTimeoutInterval = TimeSpan.FromSeconds(300); //close connection after 45 seconds
                 options.MaximumReceiveMessageSize = 5 * 1024 * 1024;
                 options.StreamBufferCapacity = 10;
