@@ -60,6 +60,50 @@ namespace ReserveBlockCore.Services
             //BlockchainData.BlockVersion = BlockVersionUtility.GetBlockVersion();
         }
 
+        internal static void RunRules()
+        {
+            var rules = ConfigData.GetConfigRules();
+            var ruleResetFailCount = rules.FindOne(x => x.RuleName == "ResetFailCounts");
+
+            if(ruleResetFailCount == null)
+            {
+                ConfigRules cRule = new ConfigRules {
+                    RuleName = "ResetFailCounts",
+                    IsRuleApplied = true,
+                };
+
+                rules.Insert(cRule);
+
+                var validators = Validators.Validator.GetAll();
+                var valList = validators.FindAll().ToList();
+                if(valList.Count > 0)
+                {
+                    foreach(var val in valList)
+                    {
+                        val.FailCount = 0;
+                        validators.Update(val);
+                    }
+                }
+            }
+            else
+            {
+                if(ruleResetFailCount.IsRuleApplied == false)
+                {
+                    var validators = Validators.Validator.GetAll();
+                    var valList = validators.FindAll().ToList();
+                    if (valList.Count > 0)
+                    {
+                        foreach (var val in valList)
+                        {
+                            val.FailCount = 0;
+                            validators.Update(val);
+                        }
+                    }
+                }
+            }
+
+
+        }
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
         internal static void SetBootstrapValidators()
         {
@@ -215,13 +259,14 @@ namespace ReserveBlockCore.Services
                 }
 
                 var blocks = BlockchainData.GetBlocks();
-                var badBlock = blocks.FindOne(x => x.Height == 339 && x.Hash == "e64bc942a82c175a83b16ea2cd5905775c75c2ea0bdd87277f094095f806da27");
+                var badBlock = blocks.FindOne(x => x.Height == 16535 && x.Hash == "4c1da24028819fcf3fece1e518187b9cb26e3fd5b52a9332e588cf1008f73be8");
                 if(badBlock != null)
                 {
                     var newHeight = badBlock.Height - 1;
                     blocks.DeleteMany(x => x.Height == badBlock.Height);
                     DbContext.DB.Checkpoint();
                 }
+                
             }
             catch(Exception ex)
             {

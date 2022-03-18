@@ -40,6 +40,7 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
+        public static string CLIVersion = "1.11.0";
 
         #endregion
         static async Task Main(string[] args)
@@ -93,8 +94,9 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.ClearStaleMempool();
+            StartupService.RunRules();
 
-            if(IsTestNet == true)
+            if (IsTestNet == true)
             {
                 StartupService.SetBootstrapValidatorsTestNet();
             }

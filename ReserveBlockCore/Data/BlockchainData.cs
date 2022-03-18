@@ -68,6 +68,14 @@ namespace ReserveBlockCore.Data
             var lastBlock = GetLastBlock();
             var height = lastBlock.Height + 1;
             var nextValidators = await Validators.Validator.GetNextBlockValidators(validator);
+
+            if(nextValidators == null || nextValidators == "")
+            {
+                //Attempt to get masternodes as they cannot be null
+                await P2PClient.GetMasternodes();
+                return "Failed to retrieve next validators!";
+            }
+
             //Need to get master node validator.
             var timestamp = TimeUtil.GetTime();
             var transactionList = new List<Transaction>();

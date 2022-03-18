@@ -392,7 +392,17 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
-        
+
+        [HttpGet("GetCLIVersion")]
+        public async Task<string> GetCLIVersion()
+        {
+            string output = "";
+
+            output = Program.CLIVersion;
+
+            return output;
+        }
+
         [HttpGet("SendExit")]
         public async Task SendExit()
         {
