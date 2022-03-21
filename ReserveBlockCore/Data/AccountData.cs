@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Data
 
 			return account;
         }
-		public static Account RestoreAccount(string privKey)
+		public static Account RestoreAccount(string privKey, bool rescanForTx = false)
         {
 			Account account = new Account();
             try
@@ -63,11 +63,15 @@ namespace ReserveBlockCore.Data
 
 					}
 				}
-                
+
 				var accountCheck = AccountData.GetSingleAccount(account.Address);
 				if(accountCheck == null)
                 {
 					AddToAccount(account); //only add if not already in accounts
+					if(rescanForTx == true)
+                    {
+						//rescan for all tx's sent out and all tx's received.
+                    }
 				}
 			}
 			catch (Exception ex)
