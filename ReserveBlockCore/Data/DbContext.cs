@@ -61,7 +61,7 @@ namespace ReserveBlockCore.Data
             }
             else
             {
-                if(!Debugger.IsAttached)
+                if(Debugger.IsAttached)
                 {
                     path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
