@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace ReserveBlockCore.Data
 {
@@ -60,7 +61,14 @@ namespace ReserveBlockCore.Data
             }
             else
             {
-                path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                if(!Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
             }
             if (!Directory.Exists(path))
             {
