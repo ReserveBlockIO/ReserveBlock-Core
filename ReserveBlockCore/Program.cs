@@ -118,8 +118,8 @@ namespace ReserveBlockCore
             BlocksDownloading = true;
             StopAllTimers = true;
 
-            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new blocks
+            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //blockTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new blocks
 
             heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             heightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -526,7 +526,9 @@ namespace ReserveBlockCore
                         }
                         else
                         {
-                            Nodes.ForEach(x => { 
+                            //testing purposes only.
+                            Nodes.ForEach(x =>
+                            {
                                 Console.WriteLine(x.NodeIP);
                                 Console.WriteLine(x.NodeHeight.ToString());
                                 Console.WriteLine(x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime() : "N/A");
@@ -551,6 +553,15 @@ namespace ReserveBlockCore
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
                     await StartupService.StartupPeers();
                     //potentially no connected nodes.
+                }
+                else
+                {
+                    if(peersConnected.Item2 != 6)
+                    {
+                        bool result = false;
+                        //Get more nodes!
+                        result = await P2PClient.ConnectToPeers();
+                    }
                 }
             }
             

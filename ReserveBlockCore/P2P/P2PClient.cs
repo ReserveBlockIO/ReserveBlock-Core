@@ -60,26 +60,32 @@ namespace ReserveBlockCore.P2P
         {
             if (hubConnection1 == null || !IsConnected1)
             {
+                hubConnection1 = null;
                 return (1);
             }
             if (hubConnection2 == null || !IsConnected2)
             {
+                hubConnection2 = null;
                 return (2);
             }
             if (hubConnection3 == null || !IsConnected3)
             {
+                hubConnection3 = null;
                 return (3);
             }
             if (hubConnection4 == null || !IsConnected4)
             {
+                hubConnection4 = null;
                 return (4);
             }
             if (hubConnection5 == null || !IsConnected5)
             {
+                hubConnection5 = null;
                 return (5);
             }
             if (hubConnection6 == null || !IsConnected6)
             {
+                hubConnection6 = null;
                 return (6);
             }
 
@@ -91,6 +97,7 @@ namespace ReserveBlockCore.P2P
         #region Check which HubConnections are actively connected
         public static async Task<(bool, int)> ArePeersConnected()
         {
+            var nodeList = Program.Nodes;
             var result = false;
             var resultCount = 0;
             if (hubConnection1 != null && IsConnected1)
@@ -101,6 +108,16 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection1 = null;
+                var nodeInfo = NodeDict[1];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    NodeDict[1] = null;
+                }
             }
             if (hubConnection2 != null && IsConnected2)
             {
@@ -110,6 +127,16 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection2 = null;
+                var nodeInfo = NodeDict[2];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    NodeDict[2] = null;
+                }
             }
             if (hubConnection3 != null && IsConnected3)
             {
@@ -119,6 +146,16 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection3 = null;
+                var nodeInfo = NodeDict[3];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    NodeDict[3] = null;
+                }
             }
             if (hubConnection4 != null && IsConnected4)
             {
@@ -128,6 +165,16 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection4 = null;
+                var nodeInfo = NodeDict[4];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    NodeDict[4] = null;
+                }
             }
             if (hubConnection5 != null && IsConnected5)
             {
@@ -137,6 +184,16 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection5 = null;
+                var nodeInfo = NodeDict[5];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    NodeDict[5] = null;
+                }
             }
             if (hubConnection6 != null && IsConnected6)
             {
@@ -146,6 +203,16 @@ namespace ReserveBlockCore.P2P
             else
             {
                 hubConnection6 = null;
+                var nodeInfo = NodeDict[6];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    NodeDict[6] = null;
+                }
             }
 
             //if(result == false)
@@ -235,7 +302,7 @@ namespace ReserveBlockCore.P2P
                     hubConnection1.StartAsync().Wait();
 
                     
-                    NodeDict[1] = url;
+                    NodeDict[1] = url.Replace("http://", "").Replace("/blockchain", "");
                     
 
                     return true;
@@ -274,7 +341,7 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection2.StartAsync().Wait();
 
-                    NodeDict[2] = url;
+                    NodeDict[2] = url.Replace("http://", "").Replace("/blockchain", "");
                     
                     return true;
                 }
@@ -314,7 +381,7 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection3.StartAsync().Wait();
 
-                    NodeDict[3] = url;
+                    NodeDict[3] = url.Replace("http://", "").Replace("/blockchain", "");
                     
                     return true;
                 }
@@ -352,7 +419,7 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection4.StartAsync().Wait();
 
-                    NodeDict[4] = url;
+                    NodeDict[4] = url.Replace("http://", "").Replace("/blockchain", "");
 
                     return true;
                 }
@@ -390,7 +457,7 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection5.StartAsync().Wait();
 
-                    NodeDict[5] = url;
+                    NodeDict[5] = url.Replace("http://", "").Replace("/blockchain", "");
                     
                     return true;
                 }
@@ -428,7 +495,7 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection6.StartAsync().Wait();
 
-                    NodeDict[6] = url;
+                    NodeDict[6] = url.Replace("http://", "").Replace("/blockchain", "");
                     
                     return true;
                 }
@@ -448,6 +515,7 @@ namespace ReserveBlockCore.P2P
         public static async Task<bool> ConnectToPeers()
         {
             List<Peers> peers = new List<Peers>();
+            var nodes = Program.Nodes;
             peers = Peers.PeerList();
 
             int successCount = 0;
@@ -472,7 +540,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
-                        peers = peers.Where(x => x.FailCount <= 4 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                        peers = peers.Where(x => x.FailCount <= 9 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
                     }
 
                 }
@@ -483,25 +551,33 @@ namespace ReserveBlockCore.P2P
                 }
                 foreach (var peer in peers)
                 {
-                    Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
+                    
                     var hubCon = await GetAvailablePeerHubs();
                     if (hubCon == 0)
                         return false;
                     try
                     {
-                        var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
-                        var conResult = await Connect(hubCon, url);
-                        if (conResult != false)
+                        var urlCheck = peer.PeerIP + ":" + Program.Port;
+                        var nodeExist = nodes.Exists(x => x.NodeIP == urlCheck);
+
+                        if(!nodeExist)
                         {
-                            successCount += 1;
-                            peer.FailCount = 0; //peer responded. Reset fail count
-                            peerDB.Update(peer);
+                            Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
+                            var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
+                            var conResult = await Connect(hubCon, url);
+                            if (conResult != false)
+                            {
+                                successCount += 1;
+                                peer.FailCount = 0; //peer responded. Reset fail count
+                                peerDB.Update(peer);
+                            }
+                            else
+                            {
+                                peer.FailCount += 1;
+                                peerDB.Update(peer);
+                            }
                         }
-                        else
-                        {
-                            peer.FailCount += 1;
-                            peerDB.Update(peer);
-                        }
+                        
 
                     }
                     catch (Exception ex)
