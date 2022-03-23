@@ -12,7 +12,7 @@ namespace ReserveBlockCore.Utilities
     {
         public static void BackupWalletData()
         {
-            string path = Directory.GetCurrentDirectory() + @"\rsrvwaldata.db";
+            string path = Directory.GetCurrentDirectory() + @"\Databases\rsrvwaldata.db";
             
             using (FileStream stream = File.Open(path, FileMode.Open, FileAccess.Read,  FileShare.ReadWrite))
             {

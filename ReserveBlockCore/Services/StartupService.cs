@@ -34,6 +34,18 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
+
+        internal static void SetupNodeDictionary()
+        {
+            P2PClient.NodeDict = new Dictionary<int, string>();
+            P2PClient.NodeDict.Add(1, null);
+            P2PClient.NodeDict.Add(2, null);
+            P2PClient.NodeDict.Add(3, null);
+            P2PClient.NodeDict.Add(4, null);
+            P2PClient.NodeDict.Add(5, null);
+            P2PClient.NodeDict.Add(6, null);
+
+        }
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db

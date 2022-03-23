@@ -18,6 +18,7 @@ namespace ReserveBlockCore
         #region Constants
 
         private static Timer? blockTimer;//for creating a new block at max every 30 seconds
+        private static Timer? heightTimer; //timer for getting height from other nodes
         private static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? DBCommitTimer;//checks dbs and commits log files. 
@@ -25,7 +26,9 @@ namespace ReserveBlockCore
         public static List<Block> MemBlocks = new List<Block>();
         public static List<Block> QueuedBlocks = new List<Block>();
         public static List<Transaction> MempoolList = new List<Transaction>();
+        public static List<NodeInfo> Nodes = new List<NodeInfo>();
         public static bool BlocksDownloading = false;
+        public static bool HeightCheckLock = false;
         public static bool IsCrafting = false;
         public static bool TestURL = false;
         public static bool StopAllTimers = false;
@@ -40,7 +43,7 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
-        public static string CLIVersion = "1.11.0";
+        public static string CLIVersion = "1.12.0";
 
         #endregion
         static async Task Main(string[] args)
@@ -93,6 +96,7 @@ namespace ReserveBlockCore
             StartupService.StartupDatabase();// initializes databases
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.SetBlockchainVersion(); //sets the block version for rules
+            StartupService.SetupNodeDictionary();
             StartupService.ClearStaleMempool();
             StartupService.RunRules();
 
@@ -115,10 +119,13 @@ namespace ReserveBlockCore
             StopAllTimers = true;
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 13000); //waits 1 minute, then runs every 10 seconds for new blocks
+            blockTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new blocks
+
+            heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            heightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 60 seconds
+            PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 4 minutes
 
             ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             ValidatorListTimer.Change(70000, 2 * 10 * 6000); //waits 1 minute, then runs every 2 minutes
@@ -138,6 +145,7 @@ namespace ReserveBlockCore
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
 
+            //for web API using Kestrel
             var builder = Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
@@ -147,6 +155,7 @@ namespace ReserveBlockCore
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                 });
 
+            //for p2p using signalr
             var builder2 = Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
@@ -231,7 +240,7 @@ namespace ReserveBlockCore
                 //If no validators are detected then no need to run this code
                 if (IsCrafting == false)
                 {
-                    if (localValidator.Count != 0)
+                    if (localValidator.Count == 0) // Change back to != 0
                     {
                         IsCrafting = true;
                         var nextValidators = Validators.Validator.GetBlockValidator(); 
@@ -507,11 +516,24 @@ namespace ReserveBlockCore
                 //if blocks are currently downloading this will stop it from running again.
                 if (BlocksDownloading != true)
                 {
-                    var result = await P2PClient.GetCurrentHeight();
-                    if (result.Item1 == true)
+                    if(HeightCheckLock == false)
                     {
-                        BlocksDownloading = true;
-                        BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                        HeightCheckLock = true;
+                        var nodeHeightDict = await P2PClient.GetNodeHeight();
+                        if(nodeHeightDict == false)
+                        {
+                            //do some reconnect logic possibly here.
+                        }
+                        else
+                        {
+                            Nodes.ForEach(x => { 
+                                Console.WriteLine(x.NodeIP);
+                                Console.WriteLine(x.NodeHeight.ToString());
+                                Console.WriteLine(x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime() : "N/A");
+                                Console.WriteLine(x.NodeLatency.ToString() + " ms");
+                            });
+                        }
+                        HeightCheckLock = false;
                     }
                 }
             }

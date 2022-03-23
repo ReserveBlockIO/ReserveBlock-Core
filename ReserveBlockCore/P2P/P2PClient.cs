@@ -16,6 +16,7 @@ namespace ReserveBlockCore.P2P
     {
         public static List<Peers>? ActivePeerList { get; set; }
         public static List<string> ReportedIPs = new List<string>();
+        public static Dictionary<int, string>? NodeDict { get; set; }
 
         #region HubConnection Variables
         /// <summary>
@@ -147,11 +148,11 @@ namespace ReserveBlockCore.P2P
                 hubConnection6 = null;
             }
 
-            if(result == false)
-            {
-                //attempt to reconnect to peers.
-                await StartupService.StartupPeers();
-            }
+            //if(result == false)
+            //{
+            //    //attempt to reconnect to peers.
+            //    await StartupService.StartupPeers();
+            //}
 
             return (result, resultCount);
         }
@@ -201,13 +202,17 @@ namespace ReserveBlockCore.P2P
         private static async Task<bool> Connect(int HubNum, string url)
         {
             List<string> ipList = new List<string>();
+
             ipList = ReportedIPs;
             if(HubNum == 1)
             {
                 try
                 {
                     hubConnection1 = new HubConnectionBuilder()
-                    .WithUrl(url)
+                    .WithUrl(url, options => { 
+                        
+                    })
+                    .WithAutomaticReconnect()
                     .Build();
 
                     hubConnection1.On<string, string>("GetMessage", async (message, data) =>  { 
@@ -229,6 +234,10 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection1.StartAsync().Wait();
 
+                    
+                    NodeDict[1] = url;
+                    
+
                     return true;
                 }
                 catch (Exception ex)
@@ -241,7 +250,10 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     hubConnection2 = new HubConnectionBuilder()
-                    .WithUrl(url)
+                    .WithUrl(url, options => {
+                        
+                    })
+                    .WithAutomaticReconnect()
                     .Build();
 
                     hubConnection2.On<string, string>("GetMessage", async (message, data) => {
@@ -262,6 +274,8 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection2.StartAsync().Wait();
 
+                    NodeDict[2] = url;
+                    
                     return true;
                 }
                 catch (Exception ex)
@@ -276,7 +290,10 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     hubConnection3 = new HubConnectionBuilder()
-                    .WithUrl(url)
+                    .WithUrl(url, options => {
+                        
+                    })
+                    .WithAutomaticReconnect()
                     .Build();
 
                     hubConnection3.On<string, string>("GetMessage", async (message, data) => {
@@ -297,6 +314,8 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection3.StartAsync().Wait();
 
+                    NodeDict[3] = url;
+                    
                     return true;
                 }
                 catch (Exception ex)
@@ -309,7 +328,10 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     hubConnection4 = new HubConnectionBuilder()
-                    .WithUrl(url)
+                    .WithUrl(url, options => {
+                        
+                    })
+                    .WithAutomaticReconnect()
                     .Build();
 
                     hubConnection4.On<string, string>("GetMessage", async (message, data) => {
@@ -330,6 +352,8 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection4.StartAsync().Wait();
 
+                    NodeDict[4] = url;
+
                     return true;
                 }
                 catch (Exception ex)
@@ -342,7 +366,10 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     hubConnection5 = new HubConnectionBuilder()
-                    .WithUrl(url)
+                    .WithUrl(url, options => {
+                        
+                    })
+                    .WithAutomaticReconnect()
                     .Build();
 
                     hubConnection5.On<string, string>("GetMessage", async (message, data) => {
@@ -363,6 +390,8 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection5.StartAsync().Wait();
 
+                    NodeDict[5] = url;
+                    
                     return true;
                 }
                 catch (Exception ex)
@@ -375,7 +404,10 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     hubConnection6 = new HubConnectionBuilder()
-                    .WithUrl(url)
+                    .WithUrl(url, options => {
+                        
+                    })
+                    .WithAutomaticReconnect()
                     .Build();
 
                     hubConnection6.On<string, string>("GetMessage", async (message, data) => {
@@ -396,6 +428,8 @@ namespace ReserveBlockCore.P2P
 
                     hubConnection6.StartAsync().Wait();
 
+                    NodeDict[6] = url;
+                    
                     return true;
                 }
                 catch (Exception ex)
@@ -651,6 +685,339 @@ namespace ReserveBlockCore.P2P
 
             }
 
+        }
+
+        #endregion
+
+        #region Get Height of Nodes for Timed Events
+        public static async Task<bool> GetNodeHeight()
+        {
+            Dictionary<string, long> nodeHeightDict = new Dictionary<string, long>();
+            var nodeList = Program.Nodes;
+            var peersConnected = await P2PClient.ArePeersConnected();
+            bool result = false;
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                return result;
+            }
+            else
+            {
+                try
+                {
+                    if (hubConnection1 != null && IsConnected1)
+                    {
+                        var startTimer = DateTime.UtcNow;
+                        long remoteNodeHeight = await hubConnection1.InvokeAsync<long>("SendBlockHeight");
+                        var endTimer = DateTime.UtcNow;
+                        var totalMS = (endTimer - startTimer).Milliseconds;
+                        
+                        var nodeInfo = NodeDict[1];
+
+                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
+
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            node.NodeLastChecked = DateTime.UtcNow;
+                            node.NodeLatency = totalMS;
+                            node.NodeHeight = remoteNodeHeight;
+                        }
+                        else
+                        {
+                            NodeInfo nNodeInfo = new NodeInfo { 
+                                NodeHeight = remoteNodeHeight,
+                                NodeLatency = totalMS,
+                                NodeIP = nodeInfo,
+                                NodeLastChecked = DateTime.UtcNow
+                            };
+
+                            Program.Nodes.Add(nNodeInfo);
+                        }
+
+                        result = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                    var nodeInfo = NodeDict[1];
+                    if (nodeInfo != null)
+                    {
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            Program.Nodes.Remove(node);
+                        }
+                        hubConnection1 = null;
+                        NodeDict[1] = null;
+                    }
+                }
+
+                try
+                {
+                    if (hubConnection2 != null && IsConnected2)
+                    {
+                        var startTimer = DateTime.UtcNow;
+                        long remoteNodeHeight = await hubConnection2.InvokeAsync<long>("SendBlockHeight");
+                        var endTimer = DateTime.UtcNow;
+                        var totalMS = (endTimer - startTimer).Milliseconds;
+
+                        var nodeInfo = NodeDict[2];
+
+                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
+
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            node.NodeLastChecked = DateTime.UtcNow;
+                            node.NodeLatency = totalMS;
+                            node.NodeHeight = remoteNodeHeight;
+                        }
+                        else
+                        {
+                            NodeInfo nNodeInfo = new NodeInfo
+                            {
+                                NodeHeight = remoteNodeHeight,
+                                NodeLatency = totalMS,
+                                NodeIP = nodeInfo,
+                                NodeLastChecked = DateTime.UtcNow
+                            };
+
+                            Program.Nodes.Add(nNodeInfo);
+                        }
+
+                        result = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                    var nodeInfo = NodeDict[2];
+                    if(nodeInfo != null)
+                    {
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            Program.Nodes.Remove(node);
+                        }
+                        hubConnection2 = null;
+                        NodeDict[2] = null;
+                    }
+                    
+                }
+
+                try
+                {
+                    if (hubConnection3 != null && IsConnected3)
+                    {
+                        var startTimer = DateTime.UtcNow;
+                        long remoteNodeHeight = await hubConnection3.InvokeAsync<long>("SendBlockHeight");
+                        var endTimer = DateTime.UtcNow;
+                        var totalMS = (endTimer - startTimer).Milliseconds;
+
+                        var nodeInfo = NodeDict[3];
+
+                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
+
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            node.NodeLastChecked = DateTime.UtcNow;
+                            node.NodeLatency = totalMS;
+                            node.NodeHeight = remoteNodeHeight;
+                        }
+                        else
+                        {
+                            NodeInfo nNodeInfo = new NodeInfo
+                            {
+                                NodeHeight = remoteNodeHeight,
+                                NodeLatency = totalMS,
+                                NodeIP = nodeInfo,
+                                NodeLastChecked = DateTime.UtcNow
+                            };
+
+                            Program.Nodes.Add(nNodeInfo);
+                        }
+
+                        result = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                    var nodeInfo = NodeDict[3];
+                    if (nodeInfo != null)
+                    {
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            Program.Nodes.Remove(node);
+                        }
+                        hubConnection3 = null;
+                        NodeDict[3] = null;
+                    }
+                }
+
+                try
+                {
+                    if (hubConnection4 != null && IsConnected4)
+                    {
+                        var startTimer = DateTime.UtcNow;
+                        long remoteNodeHeight = await hubConnection4.InvokeAsync<long>("SendBlockHeight");
+                        var endTimer = DateTime.UtcNow;
+                        var totalMS = (endTimer - startTimer).Milliseconds;
+
+                        var nodeInfo = NodeDict[4];
+
+                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
+
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            node.NodeLastChecked = DateTime.UtcNow;
+                            node.NodeLatency = totalMS;
+                            node.NodeHeight = remoteNodeHeight;
+                        }
+                        else
+                        {
+                            NodeInfo nNodeInfo = new NodeInfo
+                            {
+                                NodeHeight = remoteNodeHeight,
+                                NodeLatency = totalMS,
+                                NodeIP = nodeInfo,
+                                NodeLastChecked = DateTime.UtcNow
+                            };
+
+                            Program.Nodes.Add(nNodeInfo);
+                        }
+
+                        result = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                    var nodeInfo = NodeDict[4];
+                    if (nodeInfo != null)
+                    {
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            Program.Nodes.Remove(node);
+                        }
+                        hubConnection4 = null;
+                        NodeDict[4] = null;
+                    }
+                }
+
+                try
+                {
+                    if (hubConnection5 != null && IsConnected5)
+                    {
+                        var startTimer = DateTime.UtcNow;
+                        long remoteNodeHeight = await hubConnection5.InvokeAsync<long>("SendBlockHeight");
+                        var endTimer = DateTime.UtcNow;
+                        var totalMS = (endTimer - startTimer).Milliseconds;
+
+                        var nodeInfo = NodeDict[5];
+
+                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
+
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            node.NodeLastChecked = DateTime.UtcNow;
+                            node.NodeLatency = totalMS;
+                            node.NodeHeight = remoteNodeHeight;
+                        }
+                        else
+                        {
+                            NodeInfo nNodeInfo = new NodeInfo
+                            {
+                                NodeHeight = remoteNodeHeight,
+                                NodeLatency = totalMS,
+                                NodeIP = nodeInfo,
+                                NodeLastChecked = DateTime.UtcNow
+                            };
+
+                            Program.Nodes.Add(nNodeInfo);
+                        }
+
+                        result = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                    var nodeInfo = NodeDict[5];
+                    if (nodeInfo != null)
+                    {
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            Program.Nodes.Remove(node);
+                        }
+                        hubConnection5 = null;
+                        NodeDict[5] = null;
+                    }
+                }
+
+                try
+                {
+                    if (hubConnection6 != null && IsConnected6)
+                    {
+                        var startTimer = DateTime.UtcNow;
+                        long remoteNodeHeight = await hubConnection6.InvokeAsync<long>("SendBlockHeight");
+                        var endTimer = DateTime.UtcNow;
+                        var totalMS = (endTimer - startTimer).Milliseconds;
+
+                        var nodeInfo = NodeDict[6];
+
+                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
+
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            node.NodeLastChecked = DateTime.UtcNow;
+                            node.NodeLatency = totalMS;
+                            node.NodeHeight = remoteNodeHeight;
+                        }
+                        else
+                        {
+                            NodeInfo nNodeInfo = new NodeInfo
+                            {
+                                NodeHeight = remoteNodeHeight,
+                                NodeLatency = totalMS,
+                                NodeIP = nodeInfo,
+                                NodeLastChecked = DateTime.UtcNow
+                            };
+
+                            Program.Nodes.Add(nNodeInfo);
+                        }
+
+                        result = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                    var nodeInfo = NodeDict[6];
+                    if (nodeInfo != null)
+                    {
+                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
+                        if (node != null)
+                        {
+                            Program.Nodes.Remove(node);
+                        }
+                        hubConnection6 = null;
+                        NodeDict[6] = null;
+                    }
+                }
+
+            }
+
+            return result;
         }
 
         #endregion

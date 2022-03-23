@@ -8,8 +8,10 @@ namespace ReserveBlockCore.Models
 {
     internal class NodeInfo
     {
-        public int Id { get; set; }
-        public string ChainRefId { get; set; } 
+        public string? NodeIP { get; set; } 
+        public long NodeHeight { get; set; }
+        public int NodeLatency { get; set; }
+        public DateTime? NodeLastChecked { get; set; }
         
     }
 }
