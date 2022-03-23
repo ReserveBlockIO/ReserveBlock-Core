@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Models;
+using LiteDB;
 
 namespace ReserveBlockCore.Commands
 {
@@ -37,6 +38,17 @@ namespace ReserveBlockCore.Commands
                     BackupUtil.BackupWalletData();
                     Console.WriteLine("Reserve Block Wallet has been backed up.");
                     break;
+                case "/restorewallet":
+                    Console.WriteLine("Please enter backup file directory... ");
+                    string? path = @Console.ReadLine();
+                    string[] keys = File.ReadAllLines(path);
+                    foreach (string key in keys)
+                    {
+                        Console.WriteLine("\n" + key);
+                        var nrestoredAccount = AccountData.RestoreAccount(key); ;
+                        AccountData.WalletInfo(nrestoredAccount);
+                    }
+                    break;
                 case "/mempool":
                     Console.WriteLine("Printing Mempool Results: ");
                     TransactionData.PrintMemPool();
@@ -52,7 +64,7 @@ namespace ReserveBlockCore.Commands
                 case "3": // Restore Account
                     Console.WriteLine("Please enter private key... ");
                     var privKey = Console.ReadLine();
-                    var restoredAccount = new Account().Restore(privKey);
+                    var restoredAccount = AccountData.RestoreAccount(privKey); ;
                     AccountData.WalletInfo(restoredAccount);
                     break;
                 case "4": //Send Coins
@@ -62,7 +74,16 @@ namespace ReserveBlockCore.Commands
                     //Insert Method
                     break;
                 case "6": //Transaction History
-                    //Insert Method
+                    List<Transaction> lst = GetListOfTransactions();
+                    foreach (Transaction t in lst)
+                    {
+                        Console.WriteLine("To Address: {0}", t.ToAddress);
+                        Console.WriteLine("From Address: {0}", t.FromAddress);
+                        Console.WriteLine("Amounr: {0}", t.Amount);
+                        Console.WriteLine("Fee: {0}", t.Fee);
+                    }
+                    Console.ReadLine();
+                    Console.WriteLine("done");
                     break;
                 case "7": //Account Info
                     AccountData.PrintWalletAccounts();
@@ -84,12 +105,10 @@ namespace ReserveBlockCore.Commands
                     ValidatorService.DoMasterNodeStop();
                     break;
                 case "12": //Stop Datanode
-                    
                     break;
                 case "13": //Exit
                     commandResult = "_EXIT";
                     break;
-
                 default:
                     commandResult = "Not a recognized command. Please Try Again...";
                     break;
@@ -99,6 +118,17 @@ namespace ReserveBlockCore.Commands
 
         }
 
+        public static List<Transaction> GetListOfTransactions()
+        {
+            List<Transaction> lst = new List<Transaction>();
+            var info = BlockData.GetBlocks();
+            foreach (var item in info.FindAll())
+            {
+                lst.AddRange(item.Transactions);
+            }
+
+            return lst;
+        }
 
     }
 }

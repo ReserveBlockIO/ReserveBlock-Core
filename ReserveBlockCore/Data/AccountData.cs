@@ -56,8 +56,8 @@ namespace ReserveBlockCore.Data
 				var validator = validators.FindOne(x => x.Address == account.Address);
 				var accounts = AccountData.GetAccounts();
 				var accountsValidating = accounts.FindOne(x => x.IsValidating == true);
-				if(accountsValidating == null)
-                {
+				if (accountsValidating == null)
+				{
 					if (validator != null)
 					{
 
@@ -65,13 +65,23 @@ namespace ReserveBlockCore.Data
 				}
 
 				var accountCheck = AccountData.GetSingleAccount(account.Address);
-				if(accountCheck == null)
-                {
-					AddToAccount(account); //only add if not already in accounts
-					if(rescanForTx == true)
-                    {
-						//rescan for all tx's sent out and all tx's received.
-                    }
+				if (accountCheck == null)
+				{
+					AddToAccount(account);
+					if (rescanForTx)
+					{
+						List<Transaction> lst = ReserveBlockCore.Commands.BaseCommand.GetListOfTransactions();
+						var trans = lst.FindAll(x => x.ToAddress == account.Address).ToList<Transaction>();
+						if (trans != null)
+						{
+							foreach (Transaction tran in trans)
+							{
+								tran.Amount = tran.Amount > 0 ? tran.Amount * -1 : tran.Amount;
+								TransactionData.AddTxToWallet(tran);
+							}
+						}
+						//rescan for all tx's sent out and all tx's received
+					}//only add if not already in account
 				}
 			}
 			catch (Exception ex)

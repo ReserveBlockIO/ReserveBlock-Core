@@ -1,9 +1,11 @@
-﻿using System;
+﻿using ReserveBlockCore.Data;
+using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ReserveBlockCore.Utilities
@@ -11,6 +13,18 @@ namespace ReserveBlockCore.Utilities
     internal class BackupUtil
     {
         public static void BackupWalletData()
+        {
+            var accounts = AccountData.GetAccounts();
+            var accountsAll = accounts.FindAll();
+            List<string> accountList = new List<string>();
+            /*      if (accountsAll.Count() > 0)
+                  {
+                    accountList = accountsAll.Select(x => x.PrivateKey).ToList().FindAll(z => z.Length == 64).ToList();
+                  }*/
+            string path = Directory.GetCurrentDirectory() + @"\Databases\Backup.txt";
+            File.AppendAllLines(path, accountList);
+        }
+        public static void BackupWalletData2()
         {
             string path = Directory.GetCurrentDirectory() + @"\Databases\rsrvwaldata.db";
             
