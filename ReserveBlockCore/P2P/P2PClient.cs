@@ -514,18 +514,20 @@ namespace ReserveBlockCore.P2P
         #region Connect to Peers
         public static async Task<bool> ConnectToPeers()
         {
-            List<Peers> peers = new List<Peers>();
+            //List<Peers> peers = new List<Peers>();
             var nodes = Program.Nodes;
-            peers = Peers.PeerList();
+            //peers = Peers.PeerList();
 
             int successCount = 0;
 
             var peerDB = Peers.GetAll();
+            var peers = peerDB.FindAll();
 
             if (peers.Count() == 0)
             {
                 await NodeConnector.StartNodeConnecting();
-                peers = Peers.PeerList();
+                peerDB = Peers.GetAll();
+                peers = peerDB.FindAll();
             }
 
             if (peers.Count() > 0)
@@ -547,7 +549,8 @@ namespace ReserveBlockCore.P2P
                 else
                 {
                     await NodeConnector.StartNodeConnecting();
-                    peers = Peers.PeerList();
+                    peerDB = Peers.GetAll();
+                    peers = peerDB.FindAll();
                 }
                 foreach (var peer in peers)
                 {

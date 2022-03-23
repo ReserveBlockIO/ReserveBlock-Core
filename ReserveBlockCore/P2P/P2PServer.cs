@@ -25,6 +25,25 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {
             var peerIP = GetIP(Context);
+            //Save Peer here
+            var peers = Peers.GetAll();
+            var peerList = peers.FindAll();
+            if(peerList.Count() > 0)
+            {
+                var peerExist = peerList.Where(x => x.PeerIP == peerIP).FirstOrDefault();
+                if(peerExist == null)
+                {
+                    Peers nPeer = new Peers
+                    {
+                        FailCount = 0,
+                        IsIncoming = true,
+                        IsOutgoing = false,
+                        PeerIP = peerIP,
+                    };
+
+                    peers.Insert(nPeer);
+                }
+            }
             var blockHeight = BlockchainData.GetHeight();
             PeerList.Add(Context.ConnectionId, peerIP);
 
