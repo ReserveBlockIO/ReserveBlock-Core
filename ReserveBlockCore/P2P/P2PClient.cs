@@ -1444,7 +1444,7 @@ namespace ReserveBlockCore.P2P
                 {
                     
 
-                    if (hubConnection1 != null)
+                    if (hubConnection1 != null && IsConnected1)
                     {
                         List<Validators>? remoteValidators = await hubConnection1.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
                         if(remoteValidators != null)
@@ -1475,7 +1475,7 @@ namespace ReserveBlockCore.P2P
 
                 try
                 {
-                    if (hubConnection2 != null)
+                    if (hubConnection2 != null && IsConnected2)
                     {
                         List<Validators>? remoteValidators = await hubConnection2.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
                         if (remoteValidators != null)
@@ -1505,7 +1505,7 @@ namespace ReserveBlockCore.P2P
                 }
                 try
                 {
-                    if (hubConnection3 != null)
+                    if (hubConnection3 != null && IsConnected3)
                     {
                         List<Validators>? remoteValidators = await hubConnection3.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
                         if (remoteValidators != null)
@@ -1535,7 +1535,7 @@ namespace ReserveBlockCore.P2P
                 }
                 try
                 {
-                    if (hubConnection4 != null)
+                    if (hubConnection4 != null && IsConnected4)
                     {
                         List<Validators>? remoteValidators = await hubConnection4.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
                         if (remoteValidators != null)
@@ -1565,7 +1565,7 @@ namespace ReserveBlockCore.P2P
                 }
                 try
                 {
-                    if (hubConnection5 != null)
+                    if (hubConnection5 != null && IsConnected5)
                     {
                         List<Validators>? remoteValidators = await hubConnection5.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
                         if (remoteValidators != null)
@@ -1595,7 +1595,7 @@ namespace ReserveBlockCore.P2P
                 }
                 try
                 {
-                    if (hubConnection6 != null)
+                    if (hubConnection6 != null && IsConnected6)
                     {
                         List<Validators>? remoteValidators = await hubConnection6.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
                         if (remoteValidators != null)
