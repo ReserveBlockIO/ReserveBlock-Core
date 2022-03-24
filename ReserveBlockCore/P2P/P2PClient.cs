@@ -271,21 +271,21 @@ namespace ReserveBlockCore.P2P
             List<string> ipList = new List<string>();
 
             ipList = ReportedIPs;
-            if(HubNum == 1)
+            if (HubNum == 1)
             {
                 try
                 {
                     hubConnection1 = new HubConnectionBuilder()
-                    .WithUrl(url, options => { 
-                        
+                    .WithUrl(url, options => {
+
                     })
                     .WithAutomaticReconnect()
                     .Build();
 
-                    hubConnection1.On<string, string>("GetMessage", async (message, data) =>  { 
+                    hubConnection1.On<string, string>("GetMessage", async (message, data) => {
                         if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
-                            if(message != "IP")
+                            if (message != "IP")
                             {
                                 await NodeDataProcessor.ProcessData(message, data);
                             }
@@ -293,17 +293,17 @@ namespace ReserveBlockCore.P2P
                             {
                                 ipList.Add(data.ToString());
                                 ReportedIPs = ipList;
-                            }    
+                            }
                         }
-                            
+
                     });
 
 
                     hubConnection1.StartAsync().Wait();
 
-                    
+
                     NodeDict[1] = url.Replace("http://", "").Replace("/blockchain", "");
-                    
+
 
                     return true;
                 }
@@ -312,13 +312,13 @@ namespace ReserveBlockCore.P2P
                     return false;
                 }
             }
-            else if(HubNum == 2)
+            else if (HubNum == 2)
             {
                 try
                 {
                     hubConnection2 = new HubConnectionBuilder()
                     .WithUrl(url, options => {
-                        
+
                     })
                     .WithAutomaticReconnect()
                     .Build();
@@ -342,7 +342,7 @@ namespace ReserveBlockCore.P2P
                     hubConnection2.StartAsync().Wait();
 
                     NodeDict[2] = url.Replace("http://", "").Replace("/blockchain", "");
-                    
+
                     return true;
                 }
                 catch (Exception ex)
@@ -352,13 +352,13 @@ namespace ReserveBlockCore.P2P
                 }
 
             }
-            else if(HubNum == 3)
+            else if (HubNum == 3)
             {
                 try
                 {
                     hubConnection3 = new HubConnectionBuilder()
                     .WithUrl(url, options => {
-                        
+
                     })
                     .WithAutomaticReconnect()
                     .Build();
@@ -382,7 +382,7 @@ namespace ReserveBlockCore.P2P
                     hubConnection3.StartAsync().Wait();
 
                     NodeDict[3] = url.Replace("http://", "").Replace("/blockchain", "");
-                    
+
                     return true;
                 }
                 catch (Exception ex)
@@ -390,13 +390,13 @@ namespace ReserveBlockCore.P2P
                     return false;
                 }
             }
-            else if(HubNum == 4)
+            else if (HubNum == 4)
             {
                 try
                 {
                     hubConnection4 = new HubConnectionBuilder()
                     .WithUrl(url, options => {
-                        
+
                     })
                     .WithAutomaticReconnect()
                     .Build();
@@ -434,7 +434,7 @@ namespace ReserveBlockCore.P2P
                 {
                     hubConnection5 = new HubConnectionBuilder()
                     .WithUrl(url, options => {
-                        
+
                     })
                     .WithAutomaticReconnect()
                     .Build();
@@ -458,7 +458,7 @@ namespace ReserveBlockCore.P2P
                     hubConnection5.StartAsync().Wait();
 
                     NodeDict[5] = url.Replace("http://", "").Replace("/blockchain", "");
-                    
+
                     return true;
                 }
                 catch (Exception ex)
@@ -466,13 +466,13 @@ namespace ReserveBlockCore.P2P
                     return false;
                 }
             }
-            else if(HubNum == 6)
+            else if (HubNum == 6)
             {
                 try
                 {
                     hubConnection6 = new HubConnectionBuilder()
                     .WithUrl(url, options => {
-                        
+
                     })
                     .WithAutomaticReconnect()
                     .Build();
@@ -496,7 +496,7 @@ namespace ReserveBlockCore.P2P
                     hubConnection6.StartAsync().Wait();
 
                     NodeDict[6] = url.Replace("http://", "").Replace("/blockchain", "");
-                    
+
                     return true;
                 }
                 catch (Exception ex)
@@ -504,7 +504,7 @@ namespace ReserveBlockCore.P2P
                     return false;
                 }
             }
-            
+
             return false;
 
         }
@@ -554,7 +554,7 @@ namespace ReserveBlockCore.P2P
                 }
                 foreach (var peer in peers)
                 {
-                    
+
                     var hubCon = await GetAvailablePeerHubs();
                     if (hubCon == 0)
                         return false;
@@ -563,7 +563,7 @@ namespace ReserveBlockCore.P2P
                         var urlCheck = peer.PeerIP + ":" + Program.Port;
                         var nodeExist = nodes.Exists(x => x.NodeIP == urlCheck);
 
-                        if(!nodeExist)
+                        if (!nodeExist)
                         {
                             Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
                             var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
@@ -580,7 +580,7 @@ namespace ReserveBlockCore.P2P
                                 peerDB.Update(peer);
                             }
                         }
-                        
+
 
                     }
                     catch (Exception ex)
@@ -790,7 +790,7 @@ namespace ReserveBlockCore.P2P
                         long remoteNodeHeight = await hubConnection1.InvokeAsync<long>("SendBlockHeight");
                         var endTimer = DateTime.UtcNow;
                         var totalMS = (endTimer - startTimer).Milliseconds;
-                        
+
                         var nodeInfo = NodeDict[1];
 
                         nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
@@ -804,7 +804,7 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
-                            NodeInfo nNodeInfo = new NodeInfo { 
+                            NodeInfo nNodeInfo = new NodeInfo {
                                 NodeHeight = remoteNodeHeight,
                                 NodeLatency = totalMS,
                                 NodeIP = nodeInfo,
@@ -873,7 +873,7 @@ namespace ReserveBlockCore.P2P
                 {
                     //node is offline
                     var nodeInfo = NodeDict[2];
-                    if(nodeInfo != null)
+                    if (nodeInfo != null)
                     {
                         var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
                         if (node != null)
@@ -883,7 +883,7 @@ namespace ReserveBlockCore.P2P
                         hubConnection2 = null;
                         NodeDict[2] = null;
                     }
-                    
+
                 }
 
                 try
@@ -1137,7 +1137,7 @@ namespace ReserveBlockCore.P2P
 
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     //node is offline
                 }
@@ -1248,7 +1248,7 @@ namespace ReserveBlockCore.P2P
                 {
                     //node is offline
                 }
-                
+
             }
             return (newHeightFound, height);
         }
@@ -1256,7 +1256,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Send Transactions to mempool 
-        public static async void SendTXMempool(Transaction txSend) 
+        public static async void SendTXMempool(Transaction txSend)
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 
@@ -1419,7 +1419,7 @@ namespace ReserveBlockCore.P2P
 
             }
 
-            
+
 
         }
 
@@ -1442,14 +1442,14 @@ namespace ReserveBlockCore.P2P
 
                 try
                 {
-                    
+
 
                     if (hubConnection1 != null && IsConnected1)
                     {
                         List<Validators>? remoteValidators = await hubConnection1.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if(remoteValidators != null)
+                        if (remoteValidators != null)
                         {
-                            if(valCount == 0)
+                            if (valCount == 0)
                             {
                                 validators.InsertBulk(remoteValidators);
                                 output = true;
@@ -1623,7 +1623,7 @@ namespace ReserveBlockCore.P2P
                 {
                     //possible dead connection, or node is offline
                 }
-    
+
             }
 
             return output;
@@ -1636,17 +1636,16 @@ namespace ReserveBlockCore.P2P
         public static async Task<bool> BroadcastValidatorNode(Validators nValidator)
         {
             var validators = Validators.Validator.GetAll();
-            var validatorList = validators.FindAll().Where(x => x.FailCount < 10);
+            var validatorList = validators.FindAll().Where(x => x.IsActive == true);
             int successCount = 0;
 
             if (validatorList.Count() > 0)
             {
-                foreach(var validator in validatorList)
-                {
+                await Parallel.ForEachAsync(validatorList, async (validator, token) => {
                     try
                     {
                         var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
-                        var alive = hubConnection.StartAsync().Wait(5000); //give validator 5 secs to connect. Should be plenty
+                        var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
                         if (alive == true)
                         {
                             var message = await hubConnection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
@@ -1660,7 +1659,7 @@ namespace ReserveBlockCore.P2P
                             }
                             else if (message == "FTAV")
                             {
-                                Console.WriteLine("Failed to add Validator on remote node(s)");
+                                //Console.WriteLine("Failed to add Validator on remote node(s)");
                             }
                             else
                             {
@@ -1670,16 +1669,18 @@ namespace ReserveBlockCore.P2P
                         else
                         {
                             //hubConnection.StopAsync().Wait();
+                            validator.IsActive = false;
+                            validator.LastChecked = DateTime.UtcNow;
+                            validators.Update(validator);
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
 
                     }
-                    
-                }
+                });
 
-                if(successCount > 0)
+                if (successCount > 0)
                 {
                     await P2PClient.GetMasternodes();
                     return true;
@@ -1836,7 +1837,7 @@ namespace ReserveBlockCore.P2P
             var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
-                var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
+                var alive = hubConnection.StartAsync().Wait(3000); //inside a try as target can actively refuse it.
                 if (alive == true)
                 {
                     var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
@@ -1851,17 +1852,17 @@ namespace ReserveBlockCore.P2P
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 mainVal.FailCount += 1;
                 validators.Update(mainVal);
             }
-            
+
 
             var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
-                var alive2 = hubConnection2.StartAsync().Wait(6000);
+                var alive2 = hubConnection2.StartAsync().Wait(3000);
 
                 if (alive2 == true)
                 {
@@ -1877,12 +1878,12 @@ namespace ReserveBlockCore.P2P
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 backupVal.FailCount += 1;
                 validators.Update(backupVal);
             }
-            
+
 
             return (main, backup);
         }
@@ -1896,7 +1897,7 @@ namespace ReserveBlockCore.P2P
             var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
             try
             {
-                var alive = hubConnection.StartAsync().Wait(6000); //inside a try as target can actively refuse it.
+                var alive = hubConnection.StartAsync().Wait(3000); //inside a try as target can actively refuse it.
                 if (alive == true)
                 {
                     var response = await hubConnection.InvokeAsync<bool>("CallCrafter");
@@ -1909,10 +1910,19 @@ namespace ReserveBlockCore.P2P
                         return result;
                     }
                 }
+                else
+                {
+                    validator.FailCount += 1;
+                    validator.IsActive = false;
+                    validator.LastChecked = DateTime.UtcNow;
+                    validators.Update(validator);
+                }
             }
             catch (Exception ex)
             {
                 validator.FailCount += 1;
+                validator.IsActive = false;
+                validator.LastChecked = DateTime.UtcNow;
                 validators.Update(validator);
             }
 
@@ -1946,10 +1956,19 @@ namespace ReserveBlockCore.P2P
                         await hubConnection.DisposeAsync();
                     }
                 }
+                else
+                {
+                    validator.FailCount += 1;
+                    validator.IsActive = false;
+                    validator.LastChecked = DateTime.UtcNow;
+                    validators.Update(validator);
+                }
             }
             catch (Exception ex)
             {
                 validator.FailCount += 1;
+                validator.IsActive = false;
+                validator.LastChecked = DateTime.UtcNow;
                 validators.Update(validator);
             }
 
@@ -2039,11 +2058,67 @@ namespace ReserveBlockCore.P2P
                 {
 
                 }
-                
+
             }
 
         }
         #endregion
+
+        #region Send Inactive Nodes
+
+        public static async Task SendInactiveNodes(List<Validators> inactiveValidators)
+        {
+            var validators = Validators.Validator.GetAll();
+            var activeValidators = validators.FindAll().Where(x => x.IsActive == true).ToList();
+
+            foreach (var inacValidator in inactiveValidators)
+            {
+                await Parallel.ForEachAsync(activeValidators, async (validator, token) =>
+                {
+                    try
+                    {
+                        var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                        var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                        if (alive == true)
+                        {
+                            await hubConnection.InvokeAsync("SendInactiveValidator", inacValidator);
+                            hubConnection.StopAsync().Wait(3000);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                });
+            }
+        }
+
+        #endregion
+
+        public static async Task BroadcastValidatorOnline(string address)
+        {
+            var validators = Validators.Validator.GetAll();
+            var activeValidators = validators.FindAll().Where(x => x.IsActive == true).ToList();
+
+            await Parallel.ForEachAsync(activeValidators, async (validator, token) =>
+            {
+                try
+                {
+                    var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                    var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        await hubConnection.InvokeAsync("SendValidatorOnline", address);
+                        hubConnection.StopAsync().Wait(3000);
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            });
+        }
+
         /// <summary>
         /// Methods below are obselete and will be removed after testing
         /// ///////////////////////////////////////////////////////////////////////////////////////////////////////////////

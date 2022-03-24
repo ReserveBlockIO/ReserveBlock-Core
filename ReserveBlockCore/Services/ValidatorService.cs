@@ -183,6 +183,8 @@ namespace ReserveBlockCore.Services
                             validator.FailCount = 0;
                             validator.Position = validatorTable.FindAll().Count() + 1;
                             validator.NodeReferenceId = BlockchainData.ChainRef;
+                            validator.WalletVersion = Program.CLIVersion;
+                            validator.LastChecked = DateTime.UtcNow;
 
                             bool broadcastResult = false;
 
@@ -190,16 +192,11 @@ namespace ReserveBlockCore.Services
                             var accountTable = AccountData.GetAccounts();
                             accountTable.Update(account);
 
-                            try
-                            {
-                                output = "You have locally added your validator! Please wait while we broadcast out to network!";
-                                broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
-                            }
-                            catch(Exception ex)
-                            {
-
-                            }
-
+                           
+                            output = "You have locally added your validator! Please wait while we broadcast out to network!";
+                            broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
+                            
+                            
                             if(broadcastResult == true)
                             {
                                 //validatorTable.Insert(validator);

@@ -74,47 +74,8 @@ namespace ReserveBlockCore.Services
 
         internal static void RunRules()
         {
-            var rules = ConfigData.GetConfigRules();
-            var ruleResetFailCount = rules.FindOne(x => x.RuleName == "ResetFailCounts");
-
-            if(ruleResetFailCount == null)
-            {
-                ConfigRules cRule = new ConfigRules {
-                    RuleName = "ResetFailCounts",
-                    IsRuleApplied = true,
-                };
-
-                rules.Insert(cRule);
-
-                var validators = Validators.Validator.GetAll();
-                var valList = validators.FindAll().ToList();
-                if(valList.Count > 0)
-                {
-                    foreach(var val in valList)
-                    {
-                        val.FailCount = 0;
-                        validators.Update(val);
-                    }
-                }
-            }
-            else
-            {
-                if(ruleResetFailCount.IsRuleApplied == false)
-                {
-                    var validators = Validators.Validator.GetAll();
-                    var valList = validators.FindAll().ToList();
-                    if (valList.Count > 0)
-                    {
-                        foreach (var val in valList)
-                        {
-                            val.FailCount = 0;
-                            validators.Update(val);
-                        }
-                    }
-                }
-            }
-
-
+            RuleService.ResetValidators();
+            RuleService.ResetFailCounts();
         }
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
         internal static void SetBootstrapValidators()
@@ -136,7 +97,9 @@ namespace ReserveBlockCore.Services
                     Position = 1,
                     Signature = "MEQCIDVBdYv+Wfpil+j6d06JbCuWihrTUHP9xCqdAICVaVdXAiBpkyinNKZANOfz4rkao8KmzO461TevS5YGr8BNAdBBZg==.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
                     UniqueName = "GenesisValidator1",
-                    NodeReferenceId = BlockchainData.ChainRef
+                    NodeReferenceId = BlockchainData.ChainRef,
+                    WalletVersion = Program.CLIVersion,
+                    LastChecked = DateTime.UtcNow
                 };
 
                 validators.Insert(validator1);
@@ -157,7 +120,9 @@ namespace ReserveBlockCore.Services
                     Position = 2,
                     Signature = "MEUCIEVutYCQT5ruAKnh8BeLpNkx5lvKFji00H2R37IiO1YIAiEAgHuHBpcMb+2NJs8SMxCP05JGUQ2glB0bkgmQ9YEtBX0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
                     UniqueName = "GenesisValidator2",
-                    NodeReferenceId = BlockchainData.ChainRef
+                    NodeReferenceId = BlockchainData.ChainRef,
+                    WalletVersion = Program.CLIVersion,
+                    LastChecked = DateTime.UtcNow
                 };
 
                 validators.Insert(validator2);
@@ -183,7 +148,9 @@ namespace ReserveBlockCore.Services
                     Position = 1,
                     Signature = "MEYCIQDvmKsH3WkDIg6gubCoxSaBFI89G4qNhO2yWBtrZjxPPAIhANwliGMjvGN8EPMyVptNf8wWJxvdM6ltR9alGqnKvkPp.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
                     UniqueName = "GenesisValidator1",
-                    NodeReferenceId = BlockchainData.ChainRef
+                    NodeReferenceId = BlockchainData.ChainRef,
+                    WalletVersion = Program.CLIVersion,
+                    LastChecked = DateTime.UtcNow
                 };
 
                 validators.Insert(validator1);
@@ -204,7 +171,9 @@ namespace ReserveBlockCore.Services
                     Position = 2,
                     Signature = "MEUCIQDxNnLLawh4ua+yq5iPWEKoVi1NreAdj3BUwz2+kGaS8AIgAk0Q9KdMbAluHbtyKHZjtgGzgkc8dO6mJWSgcZEZgg0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
                     UniqueName = "GenesisValidator2",
-                    NodeReferenceId = BlockchainData.ChainRef
+                    NodeReferenceId = BlockchainData.ChainRef,
+                    WalletVersion = Program.CLIVersion,
+                    LastChecked = DateTime.UtcNow
                 };
 
                 validators.Insert(validator2);
@@ -560,6 +529,20 @@ namespace ReserveBlockCore.Services
             else
             {
                 Console.WriteLine("Resync Completed.");
+            }
+        }
+
+        internal static async Task BroadcastValidatorOnline()
+        {
+            var accounts = AccountData.GetAccounts();
+            var accountList = accounts.FindAll();
+            if(accountList.Count() > 0)
+            {
+                var account = accountList.Where(x => x.IsValidating == true).FirstOrDefault();
+                if(account != null)
+                {
+                    await P2PClient.BroadcastValidatorOnline(account.Address);
+                }
             }
         }
 

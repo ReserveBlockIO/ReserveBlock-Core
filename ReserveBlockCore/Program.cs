@@ -27,8 +27,10 @@ namespace ReserveBlockCore
         public static List<Block> QueuedBlocks = new List<Block>();
         public static List<Transaction> MempoolList = new List<Transaction>();
         public static List<NodeInfo> Nodes = new List<NodeInfo>();
+        public static List<Validators> InactiveValidators = new List<Validators>();
         public static bool BlocksDownloading = false;
         public static bool HeightCheckLock = false;
+        public static bool InactiveNodeSendLock = false;
         public static bool IsCrafting = false;
         public static bool TestURL = false;
         public static bool StopAllTimers = false;
@@ -98,7 +100,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetupNodeDictionary();
             StartupService.ClearStaleMempool();
-            StartupService.RunRules();
+            StartupService.RunRules(); //rules for cleaning up wallet data.
 
             if (IsTestNet == true)
             {
@@ -118,8 +120,8 @@ namespace ReserveBlockCore
             BlocksDownloading = true;
             StopAllTimers = true;
 
-            //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            //blockTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new blocks
+            blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            blockTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new blocks
 
             heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             heightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -181,6 +183,7 @@ namespace ReserveBlockCore
             }
 
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
+            await StartupService.BroadcastValidatorOnline();
             StartupService.StartupMemBlocks();//adds last 15 blocks to memory for stale tx searching
 
             Thread.Sleep(3000);
@@ -191,6 +194,7 @@ namespace ReserveBlockCore
             //await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
         }
 
+        #region Command Loops
         private static void CommandLoop(string url)
         {
             StartupService.StartupMenu();
@@ -226,6 +230,10 @@ namespace ReserveBlockCore
         {
             Console.ReadKey();
         }
+
+        #endregion
+
+        #region Block Building
         private static async void blockBuilder_Elapsed(object sender)
         {
             if(StopAllTimers == false)
@@ -509,6 +517,10 @@ namespace ReserveBlockCore
                 }
             }
         }
+
+#endregion
+
+        #region Block Height Check
         private static async void blockHeightCheck_Elapsed(object sender)
         {
             if (StopAllTimers == false)
@@ -527,13 +539,14 @@ namespace ReserveBlockCore
                         else
                         {
                             //testing purposes only.
-                            Nodes.ForEach(x =>
-                            {
-                                Console.WriteLine(x.NodeIP);
-                                Console.WriteLine(x.NodeHeight.ToString());
-                                Console.WriteLine(x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime() : "N/A");
-                                Console.WriteLine(x.NodeLatency.ToString() + " ms");
-                            });
+                            //Nodes.ForEach(x =>
+                            //{
+                            //    Console.WriteLine(x.NodeIP);
+                            //    Console.WriteLine(x.NodeHeight.ToString());
+                            //    Console.WriteLine(x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime() : "N/A");
+                            //    Console.WriteLine(x.NodeLatency.ToString() + " ms");
+                                
+                            //});
                         }
                         HeightCheckLock = false;
                     }
@@ -542,6 +555,9 @@ namespace ReserveBlockCore
             
         }
 
+        #endregion
+
+        #region Peer Online Check
         private static async void peerCheckTimer_Elapsed(object sender)
         {
             if (StopAllTimers == false)
@@ -567,6 +583,9 @@ namespace ReserveBlockCore
             
         }
 
+        #endregion
+
+        #region Validator Checks
         private static async void validatorListCheckTimer_Elapsed(object sender)
         {
             if (StopAllTimers == false)
@@ -586,11 +605,26 @@ namespace ReserveBlockCore
                     {
                         Console.WriteLine("Masternode List Updated!");
                     }
+
+                    if(InactiveValidators.Count() > 0)
+                    {
+                        if(InactiveNodeSendLock == false)
+                        {
+                            InactiveNodeSendLock = true;
+                            await P2PClient.SendInactiveNodes(InactiveValidators);
+                            InactiveNodeSendLock = false;
+                        }
+                    }
+
+                    await StartupService.BroadcastValidatorOnline();
                 }
             }
             
         }
 
+        #endregion
+
+        #region DB Commits
         private static async void dbCommitCheckTimer_Elapsed(object sender)
         {
             if (StopAllTimers == false)
@@ -647,9 +681,11 @@ namespace ReserveBlockCore
             }
             
         }
+
+        #endregion
     }
 
-   
+
 }
 
 

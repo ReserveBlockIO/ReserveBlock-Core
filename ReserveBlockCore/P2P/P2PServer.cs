@@ -38,7 +38,7 @@ namespace ReserveBlockCore.P2P
                         FailCount = 0,
                         IsIncoming = true,
                         IsOutgoing = false,
-                        PeerIP = peerIP,
+                        PeerIP = peerIP
                     };
 
                     peers.Insert(nPeer);
@@ -192,7 +192,7 @@ namespace ReserveBlockCore.P2P
                     FailCount = 0,
                     IsIncoming = true,
                     IsOutgoing = result,
-                    PeerIP = peerIP,
+                    PeerIP = peerIP
                 };
 
                 peerDB.Insert(nPeer);
@@ -486,6 +486,8 @@ namespace ReserveBlockCore.P2P
                         valFound.FailCount = validator.FailCount;
                         valFound.Position = validator.Position;
                         valFound.NodeReferenceId = validator.NodeReferenceId;
+                        valFound.LastChecked = validator.LastChecked;
+                        valFound.WalletVersion = validator.WalletVersion;
 
                         validatorList.Update(valFound);
 
@@ -572,6 +574,28 @@ namespace ReserveBlockCore.P2P
                 return "HelloVal";
 
             return "Hello";
+        }
+        #endregion
+
+        #region Check Inactive Validator and flag 
+        public async Task SendInactiveValidator(Validators validator)
+        {
+            var result = await P2PClient.CallCrafter(validator);
+        }
+        #endregion
+
+        #region Send Validator Online
+        public async Task SendValidatorOnline(string address)
+        {
+            var validators = Validators.Validator.GetAll();
+            var validatorLocal = validators.FindOne(x => x.Address == address);
+            if(validatorLocal != null)
+            {
+                validatorLocal.LastChecked = DateTime.UtcNow;
+                validatorLocal.IsActive = true;
+                validatorLocal.FailCount = 0;
+                validators.Update(validatorLocal);
+            }
         }
         #endregion
 

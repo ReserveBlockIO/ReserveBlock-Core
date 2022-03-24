@@ -18,6 +18,8 @@ namespace ReserveBlockCore.Models
         public int FailCount { get; set; }
         public string NodeIP { get; set; } 
         public string NodeReferenceId { get; set; } 
+        public string WalletVersion { get; set; }
+        public DateTime LastChecked { get; set; }
         public class Validator
         {
             public static List<Validators> ValidatorList { get; set; }
@@ -85,6 +87,7 @@ namespace ReserveBlockCore.Models
                 var output = "";
                 var lastBlock = BlockchainData.GetLastBlock();
                 var lastVal = lastBlock.Validator;
+                bool validatorFound = false;
                 if(lastBlock.Height == 0)
                 {
                     var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
@@ -120,109 +123,178 @@ namespace ReserveBlockCore.Models
                         var currentValidator = validators.FindAll().Where(x => x.Address == localValidator).FirstOrDefault();
                         if(currentValidator != null)
                         {
-                            var lastValidatorsPair = lastBlock.NextValidators;//get last validators to determine if main or secondary did the solve.
-                            var nextVals = lastValidatorsPair.Split(':');
-                            var mainVal = nextVals[0];
-                            var secVal = nextVals[1];
+                            bool mainFound = false;
+                            string mainV = "";
+                            bool secondaryFound = false;
+                            string secV = "";
 
-                            int posCount = currentValidator.Address == secVal ? 0 : 0;
-                            int posCount2 = currentValidator.Address == secVal ? 1 : 1;
-
-                            var valiList = validators.FindAll().Where(x => x.FailCount <= FailCountLimit).ToList();
-                            var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
-
-                            var numMain = currentValidator.Position + posCount >= valiCount ? ((currentValidator.Position + posCount) - valiCount) : currentValidator.Position + posCount;
-                            var numSec = currentValidator.Position + posCount2 >= valiCount ? (currentValidator.Position + posCount2 - valiCount) : currentValidator.Position + posCount2;
-
-                            var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
-                            var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
-
-                            string mainAddr = mainValidator.Address;
-                            string backupAddr = secondValidator.Address;
-
-                            var check = await P2PClient.PingNextValidators(mainValidator, secondValidator);
-
-                            //This will need to be revised to get next validator not just revert to previous block validator. 
-                            //This could cause a loop.
-                            if(check.Item1 == false)
+                            while(validatorFound == false)
                             {
-                                mainAddr = backupAddr;
-                                mainValidator.FailCount += 1;
-                                validators.Update(mainValidator);
-                            }
+                                var validList = validators.FindAll().Where(x => x.IsActive == true).ToList();
+                                if(validList.Count() > 0)
+                                {
+                                    if(validList.Count() == 1)
+                                    {
+                                        var nxtValidator = validList.FirstOrDefault();
+                                        if(nxtValidator != null)
+                                        {
+                                            output = nxtValidator.Address + ":" + nxtValidator.Address;
+                                            validatorFound = true;
+                                        }
+                                    }
+                                    else if (validList.Count() == 2)
+                                    {
+                                        var nextValidator = validList.Where(x => x.Address != localValidator).FirstOrDefault();
+                                        if (nextValidator != null)
+                                        {
+                                            output = nextValidator.Address + ":" + lastBlock.Validator;
+                                            validatorFound = true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Random rnd = new Random();
+                                        var rndValidators = validList.Where(x => x.IsActive == true).OrderBy(x => rnd.Next()).Take(2).ToList();
+                                        var mainValidator = rndValidators[0];
+                                        var secondValidator = rndValidators[1];
+                                        var pingResults = await P2PClient.PingNextValidators(mainValidator, secondValidator);
+                                        if (pingResults.Item1 == false)
+                                        {
+                                            mainValidator.FailCount += 1;
+                                            mainValidator.IsActive = false;
+                                            mainValidator.LastChecked = DateTime.UtcNow;
+                                            validators.Update(mainValidator);
+                                            Program.InactiveValidators.Add(mainValidator);
+                                        }
+                                        else
+                                        {
+                                            if(mainFound == false)
+                                            {
+                                                mainFound = true;
+                                                mainV = mainValidator.Address;
+                                            }
+                                            
+                                        }
 
-                            if(check.Item2 == false)
-                            {
-                                backupAddr = lastBlock.Validator;
-                                secondValidator.FailCount += 1;
-                                validators.Update(secondValidator);
-                            }
+                                        if (pingResults.Item2 == false)
+                                        {
+                                            secondValidator.FailCount += 1;
+                                            secondValidator.IsActive = false;
+                                            secondValidator.LastChecked = DateTime.UtcNow;
+                                            validators.Update(secondValidator);
+                                            Program.InactiveValidators.Add(secondValidator);
+                                        }
+                                        else
+                                        {
+                                            if(secondaryFound == false)
+                                            {
+                                                secondaryFound = true;
+                                                secV = secondValidator.Address;
+                                            }
+                                            
+                                        }
 
+                                        if(mainFound && secondaryFound)
+                                        {
+                                            validatorFound = true;
+                                            output = mainV + ":" + secV;
+                                        }
+
+                                    }
+                                }
+                                else
+                                {
+                                    //no valid - blocks will stop
+                                }
+                            }
                             
-
-                            output = mainAddr + ":" + backupAddr;
                         }
                         else
                         {
                             //means the genesis validator must be working
-                            var lastValidatorsPair = lastBlock.NextValidators;
-                            var nextVals = lastValidatorsPair.Split(':');
-                            var mainVal = nextVals[0];
-                            var secondaryVal = nextVals[1];
+                            bool mainFound = false;
+                            string mainV = "";
+                            bool secondaryFound = false;
+                            string secV = "";
 
-                            string queryAddress = mainVal != Program.GenesisAddress ? mainVal : secondaryVal;
-
-                            var newValidator = validators.FindAll().Where(x => x.Address == queryAddress).FirstOrDefault();
-                            if(newValidator != null)
+                            while (validatorFound == false)
                             {
-                                int posCount = 0;
-                                int posCount2 = 1;
-                                int posCount3 = 2;
-
-                                var valiList = validators.FindAll().Where(x => x.FailCount <= FailCountLimit).ToList();
-                                var valiCount = valiList.OrderByDescending(x => x.Position).FirstOrDefault().Position;
-
-                                //I think issue is with the List and the fact the highest number is 2 could  be caught in a circular loop
-                                var numMain = newValidator.Position + posCount >= valiCount ? ((newValidator.Position + posCount) - valiCount) : newValidator.Position + posCount;
-                                var numSec = newValidator.Position + posCount2 >= valiCount ? (newValidator.Position + posCount2 - valiCount) : newValidator.Position + posCount2;
-                                var numSec3 = newValidator.Position + posCount3 >= valiCount ? (newValidator.Position + posCount3 - valiCount) : newValidator.Position + posCount3;
-
-                                var mainValidator = valiList.ToCircular().Where(x => x.Position > numMain).FirstOrDefault();
-                                var secondValidator = valiList.ToCircular().Where(x => x.Position > numSec).FirstOrDefault();
-
-                                Validators? thirdValidator;
-                                var addressThird = "";
-                                if (valiList.Count() > 2)
+                                var validList = validators.FindAll().Where(x => x.IsActive == true).ToList();
+                                if (validList.Count() > 0)
                                 {
-                                    thirdValidator = valiList.ToCircular().Where(x => x.Position > numSec3).FirstOrDefault();
-                                    addressThird = thirdValidator != null ? thirdValidator.Address : localValidator;
+                                    if (validList.Count() == 1)
+                                    {
+                                        var nxtValidator = validList.FirstOrDefault();
+                                        if (nxtValidator != null)
+                                        {
+                                            output = nxtValidator.Address + ":" + nxtValidator.Address;
+                                            validatorFound = true;
+                                        }
+                                    }
+                                    else if (validList.Count() == 2)
+                                    {
+                                        var nextValidator = validList.Where(x => x.Address != localValidator).FirstOrDefault();
+                                        if (nextValidator != null)
+                                        {
+                                            output = nextValidator.Address + ":" + lastBlock.Validator;
+                                            validatorFound = true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Random rnd = new Random();
+                                        var rndValidators = validList.Where(x => x.IsActive == true).OrderBy(x => rnd.Next()).Take(2).ToList();
+                                        var mainValidator = rndValidators[0];
+                                        var secondValidator = rndValidators[1];
+                                        var pingResults = await P2PClient.PingNextValidators(mainValidator, secondValidator);
+                                        if (pingResults.Item1 == false)
+                                        {
+                                            mainValidator.FailCount += 1;
+                                            mainValidator.IsActive = false;
+                                            mainValidator.LastChecked = DateTime.UtcNow;
+                                            validators.Update(mainValidator);
+                                            Program.InactiveValidators.Add(mainValidator);
+                                        }
+                                        else
+                                        {
+                                            if (mainFound == false)
+                                            {
+                                                mainFound = true;
+                                                mainV = mainValidator.Address;
+                                            }
+
+                                        }
+
+                                        if (pingResults.Item2 == false)
+                                        {
+                                            secondValidator.FailCount += 1;
+                                            secondValidator.IsActive = false;
+                                            secondValidator.LastChecked = DateTime.UtcNow;
+                                            validators.Update(secondValidator);
+                                            Program.InactiveValidators.Add(secondValidator);
+                                        }
+                                        else
+                                        {
+                                            if (secondaryFound == false)
+                                            {
+                                                secondaryFound = true;
+                                                secV = secondValidator.Address;
+                                            }
+
+                                        }
+
+                                        if (mainFound && secondaryFound)
+                                        {
+                                            validatorFound = true;
+                                            output = mainV + ":" + secV;
+                                        }
+
+                                    }
                                 }
                                 else
                                 {
-                                    addressThird = localValidator;
+                                    //no valid - blocks will stop
                                 }
-                                
-
-                                string mainAddr = mainValidator.Address;
-                                string backupAddr = secondValidator.Address;
-
-                                var check = await P2PClient.PingNextValidators(mainValidator, secondValidator);
-
-                                if (check.Item1 == false)
-                                {
-                                    mainAddr = backupAddr;
-                                    mainValidator.FailCount += 1;
-                                    validators.Update(mainValidator);
-                                }
-
-                                if (check.Item2 == false)
-                                {
-                                    backupAddr = lastBlock.Validator != backupValidator ? lastBlock.Validator : addressThird;
-                                    secondValidator.FailCount += 1;
-                                    validators.Update(secondValidator);
-                                }
-
-                                output = mainAddr + ":" + backupAddr;
                             }
 
                         }

@@ -386,11 +386,24 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             var validators = Validators.Validator.GetAll();
-            var validatorList = validators.FindAll().ToList();
+            var validatorList = validators.FindAll().Where(x => x.IsActive == true).ToList();
 
             output = JsonConvert.SerializeObject(validatorList);
 
             return output;
+        }
+
+        [HttpGet("GetPeerInfo")]
+        public async Task<string> GetPeerInfo()
+        {
+            string output = "";
+
+            var nodeInfoList = Program.Nodes;
+
+            output = JsonConvert.SerializeObject(nodeInfoList);
+
+            return output;
+
         }
 
         [HttpGet("GetCLIVersion")]

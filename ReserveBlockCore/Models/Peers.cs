@@ -16,7 +16,6 @@ namespace ReserveBlockCore.Models
         public bool IsIncoming { get; set; }
         public bool IsOutgoing { get; set; }
         public int FailCount { get; set; }
-
         public static List<Peers> PeerList()
         {
             
