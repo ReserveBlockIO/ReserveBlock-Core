@@ -76,6 +76,7 @@ namespace ReserveBlockCore.Services
         {
             RuleService.ResetValidators();
             RuleService.ResetFailCounts();
+            RuleService.RemoveOldValidators();
         }
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
         internal static void SetBootstrapValidators()

@@ -117,5 +117,16 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
+
+        public static void RemoveOldValidators()
+        {
+            var validators = Validators.Validator.GetAll();
+            var validatorList = validators.FindAll().Where(x => x.WalletVersion == null).ToList();
+
+            if(validatorList.Count > 0)
+            {
+                validators.DeleteMany(x => x.WalletVersion == null);
+            }
+        }
     }
 }

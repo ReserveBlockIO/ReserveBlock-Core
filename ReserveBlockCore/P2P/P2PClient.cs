@@ -1457,7 +1457,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address)).ToList();
+                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
                                 if (newValidators.Count() > 0)
                                 {
@@ -1488,7 +1488,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address)).ToList();
+                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
                                 if (newValidators.Count() > 0)
                                 {
@@ -1518,7 +1518,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address)).ToList();
+                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
                                 if (newValidators.Count() > 0)
                                 {
@@ -1548,7 +1548,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address)).ToList();
+                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
                                 if (newValidators.Count() > 0)
                                 {
@@ -1578,7 +1578,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address)).ToList();
+                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
                                 if (newValidators.Count() > 0)
                                 {
@@ -1608,7 +1608,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address)).ToList();
+                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
                                 if (newValidators.Count() > 0)
                                 {

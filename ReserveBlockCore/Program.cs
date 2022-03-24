@@ -544,8 +544,8 @@ namespace ReserveBlockCore
                             //    Console.WriteLine(x.NodeIP);
                             //    Console.WriteLine(x.NodeHeight.ToString());
                             //    Console.WriteLine(x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime() : "N/A");
-                            //    Console.WriteLine(x.NodeLatency.ToString() + " ms");
-                                
+                            //    Console.WriteLine((x.NodeLatency / 10).ToString() + " ms");
+
                             //});
                         }
                         HeightCheckLock = false;
