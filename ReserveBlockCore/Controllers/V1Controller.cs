@@ -350,7 +350,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> StartValidating(string addr, string uname)
         {
             var output = false;
-            var result = "FAIL";
+            var result = "Done";
             var address = addr;
             var uniqueName = uname;
 

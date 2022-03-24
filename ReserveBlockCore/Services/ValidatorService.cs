@@ -192,12 +192,13 @@ namespace ReserveBlockCore.Services
                             var accountTable = AccountData.GetAccounts();
                             accountTable.Update(account);
 
-                           
+                            Program.ValidatorAddress = validator.Address;
+
                             output = "You have locally added your validator! Please wait while we broadcast out to network!";
                             broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
                             
-                            
-                            if(broadcastResult == true)
+
+                            if (broadcastResult == true)
                             {
                                 //validatorTable.Insert(validator);
                                 //account.IsValidating = true;
@@ -214,8 +215,8 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {
-                                
-                                output = "Account was activated, but failed to broadcast to validators. You may not be chosen for nodes, please monitor.";
+                                Program.ValidatorAddress = validator.Address;
+                                output = "Account found and activated as a validator! Thank you for service to the network!";
                             }
 
                             
