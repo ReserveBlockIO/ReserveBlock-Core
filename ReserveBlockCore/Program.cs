@@ -248,7 +248,7 @@ namespace ReserveBlockCore
                 //If no validators are detected then no need to run this code
                 if (IsCrafting == false)
                 {
-                    if (localValidator.Count == 0) // Change back to != 0
+                    if (localValidator.Count != 0) // Change back to != 0
                     {
                         IsCrafting = true;
                         var nextValidators = Validators.Validator.GetBlockValidator(); 
