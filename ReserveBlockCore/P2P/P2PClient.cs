@@ -2070,27 +2070,36 @@ namespace ReserveBlockCore.P2P
         {
             var validators = Validators.Validator.GetAll();
             var activeValidators = validators.FindAll().Where(x => x.IsActive == true).ToList();
+            var inacValiList = inactiveValidators.ToList();
 
-            foreach (var inacValidator in inactiveValidators)
+            try
             {
-                await Parallel.ForEachAsync(activeValidators, async (validator, token) =>
+                foreach (var inacValidator in inacValiList)
                 {
-                    try
+                    await Parallel.ForEachAsync(activeValidators, async (validator, token) =>
                     {
-                        var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
-                        var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
-                        if (alive == true)
+                        try
                         {
-                            await hubConnection.InvokeAsync("SendInactiveValidator", inacValidator);
-                            hubConnection.StopAsync().Wait(3000);
+                            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                            var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                            if (alive == true)
+                            {
+                                await hubConnection.InvokeAsync("SendInactiveValidator", inacValidator);
+                                hubConnection.StopAsync().Wait(3000);
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
+                        catch (Exception ex)
+                        {
 
-                    }
-                });
+                        }
+                    });
+                }
             }
+            catch(Exception ex)
+            {
+
+            }
+            
         }
 
         #endregion

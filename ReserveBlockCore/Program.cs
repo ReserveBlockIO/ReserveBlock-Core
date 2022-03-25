@@ -248,7 +248,7 @@ namespace ReserveBlockCore
                 //If no validators are detected then no need to run this code
                 if (IsCrafting == false)
                 {
-                    if (localValidator.Count != 0) // Change back to != 0
+                    if (localValidator.Count() != 0) 
                     {
                         IsCrafting = true;
                         var nextValidators = Validators.Validator.GetBlockValidator(); 
@@ -518,7 +518,7 @@ namespace ReserveBlockCore
             }
         }
 
-#endregion
+        #endregion
 
         #region Block Height Check
         private static async void blockHeightCheck_Elapsed(object sender)
@@ -612,6 +612,7 @@ namespace ReserveBlockCore
                         {
                             InactiveNodeSendLock = true;
                             await P2PClient.SendInactiveNodes(InactiveValidators);
+                            InactiveValidators = new List<Validators>();
                             InactiveNodeSendLock = false;
                         }
                     }

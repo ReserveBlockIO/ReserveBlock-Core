@@ -125,12 +125,24 @@ namespace ReserveBlockCore.Services
                             mempool.DeleteMany(x => x.Hash == transaction.Hash);
                         }
 
+                        //Adds receiving TX to wallet
                         var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
                         if(account != null)
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                             var txdata = TransactionData.GetAll();
                             txdata.Insert(transaction);
+                        }
+
+                        //Adds sent TX to wallet
+                        var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == transaction.FromAddress);
+                        if(fromAccount != null)
+                        {
+                            var txData = TransactionData.GetAll();
+                            var fromTx = transaction;
+                            fromTx.Amount = transaction.Amount * -1M;
+                            fromTx.Fee = transaction.Fee * -1M;
+                            txData.Insert(fromTx);
                         }
                     }
                 }
