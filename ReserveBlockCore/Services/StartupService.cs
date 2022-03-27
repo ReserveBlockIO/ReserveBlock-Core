@@ -226,6 +226,27 @@ namespace ReserveBlockCore.Services
 
         }
 
+        internal static void SetValidator()
+        {
+            var accounts = AccountData.GetAccounts();
+            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+            if (myAccount != null)
+            {
+                Program.ValidatorAddress = myAccount.Address;
+
+                var validators = Validators.Validator.GetAll();
+                var validator = validators.FindOne(x => x.Address == Program.ValidatorAddress);
+
+                validator.IsActive = true;
+                validator.FailCount = 0;
+                validator.LastChecked = DateTime.UtcNow;
+
+                validators.Update(validator);
+            }
+
+            
+        }
+
         internal static void CheckLastBlock()
         {
             try
@@ -241,12 +262,13 @@ namespace ReserveBlockCore.Services
                 }
 
                 var blocks = BlockchainData.GetBlocks();
-                var badBlock = blocks.FindOne(x => x.Height == 16535 && x.Hash == "4c1da24028819fcf3fece1e518187b9cb26e3fd5b52a9332e588cf1008f73be8");
-                if(badBlock != null)
+                var goodBlock = blocks.FindOne(x => x.Height == 19783 && x.Hash == "26fceca5f99d8775e690b193fed87fb4a55162b5b1c2b6f9bb1ffb13570d9d74");
+                if(goodBlock == null)
                 {
-                    var newHeight = badBlock.Height - 1;
-                    blocks.DeleteMany(x => x.Height == badBlock.Height);
+                    blocks.DeleteMany(x => x.Height >= 19783);
                     DbContext.DB.Checkpoint();
+
+                    ResetStateTreis();
                 }
                 
             }
@@ -283,7 +305,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     Program.BlocksDownloading = false;
-                    download = false; //exit the while. 
+                    download = false; //exit the while.
                     Program.StopAllTimers = false;
                     var accounts = AccountData.GetAccounts();
                     var accountList = accounts.FindAll().ToList();
@@ -302,7 +324,10 @@ namespace ReserveBlockCore.Services
                     }
                 }
             }
-            
+            Program.BlocksDownloading = false;
+            download = false; //exit the while. 
+            Program.StopAllTimers = false;
+
         }
 
         internal static void CheckForDuplicateBlocks()
@@ -444,6 +469,17 @@ namespace ReserveBlockCore.Services
             DbContext.DB_AccountStateTrei.Checkpoint();
             DbContext.DB_WorldStateTrei.Checkpoint();
 
+            var accounts = AccountData.GetAccounts();
+            var accountList = accounts.FindAll().ToList();
+            if (accountList.Count() > 0)
+            {
+                foreach (var account in accountList)
+                {
+                    account.Balance = 0M;
+                    accounts.Update(account);//updating local record with synced state trei
+                }
+            }
+
             foreach (var block in blockChain)
             {
                 var result = await BlockchainRescanUtility.ValidateBlock(block, true);
@@ -467,6 +503,18 @@ namespace ReserveBlockCore.Services
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                             var txdata = TransactionData.GetAll();
                             txdata.Insert(transaction);
+                        }
+
+                        //Adds sent TX to wallet
+                        var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == transaction.FromAddress);
+                        if (fromAccount != null)
+                        {
+                            var txData = TransactionData.GetAll();
+                            var fromTx = transaction;
+                            fromTx.Amount = transaction.Amount * -1M;
+                            fromTx.Fee = transaction.Fee * -1M;
+                            txData.Insert(fromTx);
+                            AccountData.UpdateLocalBalance(fromAccount.Address, (transaction.Amount + transaction.Fee));
                         }
                     }
                 }

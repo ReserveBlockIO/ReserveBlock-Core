@@ -165,6 +165,14 @@ namespace ReserveBlockCore.Data
 
 			accountList.Update(localAccount);
 		}
+		public static void UpdateLocalBalanceSub(string address, decimal amount)
+		{
+			var accountList = GetAccounts();
+			var localAccount = accountList.FindOne(x => x.Address == address);
+			localAccount.Balance += amount;
+
+			accountList.Update(localAccount);
+		}
 
 		public static void UpdateLocalBalanceAdd(string address, decimal amount)
 		{

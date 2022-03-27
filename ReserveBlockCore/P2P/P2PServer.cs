@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -597,6 +598,77 @@ namespace ReserveBlockCore.P2P
                 validators.Update(validatorLocal);
             }
         }
+        #endregion
+
+
+        #region Request Block Craft
+        public async Task<Block?> RequestBlockCraft(long nextBlockHeight)
+        {
+            var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
+
+            if (nextBlock != null)
+            {
+                return nextBlock;
+            }
+            else
+            {
+                if (Program.IsCrafting == false && Program.RemoteCraftLock == false)
+                {
+                    StartupService.SetValidator();
+                    //process block queue first
+                    await BlockQueueService.ProcessBlockQueue();
+                    var localValidator = Validators.Validator.GetLocalValidator();
+                    var lastBlock = BlockchainData.GetLastBlock();
+                    var currentUnixTime = TimeUtil.GetTime();
+                    var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
+                    var validators = Validators.Validator.GetAll();
+
+                    Program.IsCrafting = true;
+                    Program.BlockCrafting = true;
+                    var nextValidators = Validators.Validator.GetBlockValidator();
+
+                    var nextVals = nextValidators.Split(':');
+                    var mainVal = nextVals[0];
+                    var secondaryVal = nextVals[1];
+
+                    if (mainVal == Program.ValidatorAddress)
+                    {
+                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+                        var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
+
+                        if (account != null)
+                        {
+                            //craft new block
+                            await BlockchainData.CraftNewBlock(mainVal);
+                            nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
+                            Program.IsCrafting = false;
+                            Program.BlockCrafting = false;
+                        }
+                    }
+                }
+
+                return nextBlock;
+            }
+        }
+
+        #endregion
+
+        #region Remote Lock Crafting Ability
+
+        public async Task LockValidator()
+        {
+            Program.RemoteCraftLock = true;
+        }
+
+        #endregion
+
+        #region Remote Unlock Crafting Ability
+
+        public async Task UnlockValidator()
+        {
+            Program.RemoteCraftLock = false;
+        }
+
         #endregion
 
         #region Get IP

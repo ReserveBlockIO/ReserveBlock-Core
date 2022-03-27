@@ -37,6 +37,7 @@ namespace ReserveBlockCore
         public static bool PeersConnecting = false;
         public static int BlockValidateFailCount = 0;
         public static bool BlockCrafting = false;
+        public static bool RemoteCraftLock = false;
         public static string ValidatorAddress = "";
         public static bool IsTestNet = false;
         public static int Port = 3338;
@@ -100,6 +101,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetupNodeDictionary();
             StartupService.ClearStaleMempool();
+            StartupService.SetValidator();
             StartupService.RunRules(); //rules for cleaning up wallet data.
 
             if (IsTestNet == true)
@@ -113,7 +115,7 @@ namespace ReserveBlockCore
              
             //StartupService.ResetStateTreis();
 
-            StartupService.CheckLastBlock();
+            
             //StartupService.ResetEntireChain(); //Might need to put this back in other spot.***************************
 
             PeersConnecting = true;
@@ -121,7 +123,7 @@ namespace ReserveBlockCore
             StopAllTimers = true;
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds for new blocks
+            blockTimer.Change(60000, 2000); //waits 1 minute, then runs every 2 seconds for new blocks
 
             heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             heightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -170,6 +172,7 @@ namespace ReserveBlockCore
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
 
+            StartupService.CheckLastBlock();
             StartupService.CheckForDuplicateBlocks();//Check for duplicate block adds due to back close. This will also reset chain
 
             try
@@ -238,6 +241,7 @@ namespace ReserveBlockCore
         {
             if(StopAllTimers == false)
             {
+                StartupService.SetValidator();
                 //process block queue first
                 await BlockQueueService.ProcessBlockQueue();
                 var localValidator = Validators.Validator.GetLocalValidator();
@@ -246,9 +250,9 @@ namespace ReserveBlockCore
                 var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
                 var validators = Validators.Validator.GetAll();
                 //If no validators are detected then no need to run this code
-                if (IsCrafting == false)
+                if (IsCrafting == false && RemoteCraftLock == false)
                 {
-                    if (localValidator.Count() != 0) 
+                    if (ValidatorAddress != "") 
                     {
                         IsCrafting = true;
                         var nextValidators = Validators.Validator.GetBlockValidator(); 
@@ -261,7 +265,7 @@ namespace ReserveBlockCore
 
                             if (lastBlock.Height != 0)
                             {
-                                if (timeDiff >= 0.52M && timeDiff < 1.04M)
+                                if (timeDiff >= 0.52M && timeDiff < 1.20M)
                                 {
                                     if(mainVal == ValidatorAddress)
                                     {
@@ -276,11 +280,12 @@ namespace ReserveBlockCore
                                     }
                                     
                                 }
-                                if (timeDiff >= 1.5M && timeDiff < 2.0M)
+                                if (timeDiff >= 1.3M && timeDiff <= 2.0M)
                                 {
                                     //CALL OUT TO FIRST NODE AND MAKE SURE THEY DID NOT MAKE BLOCK!!!!
                                     if(secondaryVal == ValidatorAddress)
                                     {
+                                        
                                         bool craftBlock = false;
                                         try
                                         {
@@ -292,23 +297,15 @@ namespace ReserveBlockCore
                                                 {
                                                     var height = lastBlock.Height;
                                                     BlockCrafting = true;
-                                                    var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
-                                                    if (block != null)
+                                                    var IFCResult = await P2PClient.InitiateForeignCraft(mainVal, height);
+                                                    
+                                                    if (IFCResult.Item1 == true)
                                                     {
-                                                        var blocks = BlockchainData.GetBlocks();
-                                                        var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
-                                                        if (blockFromChain == null)
+                                                        if(IFCResult.Item2 != null)
                                                         {
-                                                            var blockResult = await BlockValidatorService.ValidateBlock(block);
-                                                            if (blockResult == true)
-                                                            {
-                                                                //block added and found!
-                                                                BlockCrafting = false;
-                                                            }
-                                                            else
-                                                            {
-                                                                craftBlock = true;
-                                                            }
+                                                            await BlockQueueService.AddBlock(IFCResult.Item2);
+                                                            craftBlock = false;
+                                                            BlockCrafting = false;
                                                         }
                                                     }
                                                     else
@@ -334,28 +331,20 @@ namespace ReserveBlockCore
                                                     {
                                                         var height = lastBlock.Height;
                                                         BlockCrafting = true;
-                                                        var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
-                                                        if (block != null)
+                                                        var IFCResult = await P2PClient.InitiateForeignCraft(mainVal, height);
+
+                                                        if (IFCResult.Item1 == true)
                                                         {
-                                                            var blocks = BlockchainData.GetBlocks();
-                                                            var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
-                                                            if (blockFromChain == null)
+                                                            if (IFCResult.Item2 != null)
                                                             {
-                                                                var blockResult = await BlockValidatorService.ValidateBlock(block);
-                                                                if (blockResult == true)
-                                                                {
-                                                                    //block added and found!
-                                                                    BlockCrafting = false;
-                                                                }
-                                                                else
-                                                                {
-                                                                    craftBlock = true;
-                                                                }
+                                                                await BlockQueueService.AddBlock(IFCResult.Item2);
+                                                                craftBlock = false;
+                                                                BlockCrafting = false;
                                                             }
                                                         }
                                                         else
                                                         {
-                                                            //Peer can be online, but not making the block.
+                                                            //if peer is online but not crafting that should not happen.
                                                             craftBlock = true;
                                                         }
 
@@ -386,18 +375,15 @@ namespace ReserveBlockCore
                                     }
                                     
                                 }
-                                if (timeDiff > 2.20M)
+                                if (timeDiff > 3.0M)
                                 {
-                                    //CALL OUT TO FIRST AND SECOND NODE AND MAKE SURE THEY DID NOT MAKE BLOCK!!!!
-                                    //This will eventually be randomized and chosen through network, but for launch hard coding so blocks don't freeze after 2 mins of 
-                                    //non-responsive nodes. Though they are checked before being selected, but can still go offline in 30 seconds after check.
                                     bool craftBlock = false;
+                                    var mainValidator = validators.FindOne(x => x.Address == mainVal);
+                                    var secondValidator = validators.FindOne(x => x.Address == secondaryVal);
                                     try
                                     {
                                         await P2PClient.GetMasternodes(); //ensure we have validators
-                                        var mainValidator = validators.FindOne(x => x.Address == mainVal);
-                                        var secondValidator = validators.FindOne(x => x.Address == secondaryVal);
-
+                                        
                                         if (mainValidator != null)
                                         {
                                             var result = await P2PClient.CallCrafter(mainValidator);
@@ -405,23 +391,15 @@ namespace ReserveBlockCore
                                             {
                                                 var height = lastBlock.Height;
                                                 BlockCrafting = true;
-                                                var block = await P2PClient.GetNewlyCraftedBlock(height, mainValidator);
-                                                if (block != null)
+                                                var IFCResult = await P2PClient.InitiateForeignCraft(mainValidator.Address, height);
+
+                                                if (IFCResult.Item1 == true)
                                                 {
-                                                    var blocks = BlockchainData.GetBlocks();
-                                                    var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
-                                                    if (blockFromChain == null)
+                                                    if (IFCResult.Item2 != null)
                                                     {
-                                                        var blockResult = await BlockValidatorService.ValidateBlock(block);
-                                                        if (blockResult == true)
-                                                        {
-                                                            //block added and found!
-                                                            BlockCrafting = false;
-                                                        }
-                                                        else
-                                                        {
-                                                            craftBlock = true;
-                                                        }
+                                                        await BlockQueueService.AddBlock(IFCResult.Item2);
+                                                        craftBlock = false;
+                                                        BlockCrafting = false;
                                                     }
                                                 }
                                                 else
@@ -443,29 +421,20 @@ namespace ReserveBlockCore
                                             {
                                                 var height = lastBlock.Height;
                                                 BlockCrafting = true;
-                                                var block = await P2PClient.GetNewlyCraftedBlock(height, secondValidator);
-                                                if (block != null)
+                                                var IFCResult = await P2PClient.InitiateForeignCraft(secondValidator.Address, height);
+
+                                                if (IFCResult.Item1 == true)
                                                 {
-                                                    var blocks = BlockchainData.GetBlocks();
-                                                    var blockFromChain = blocks.FindOne(x => x.Height == block.Height);
-                                                    if (blockFromChain == null)
+                                                    if (IFCResult.Item2 != null)
                                                     {
-                                                        var blockResult = await BlockValidatorService.ValidateBlock(block);
-                                                        if (blockResult == true)
-                                                        {
-                                                            //block added and found!
-                                                            BlockCrafting = false;
-                                                            craftBlock = false;
-                                                        }
-                                                        else
-                                                        {
-                                                            craftBlock = true;
-                                                        }
+                                                        await BlockQueueService.AddBlock(IFCResult.Item2);
+                                                        craftBlock = false;
+                                                        BlockCrafting = false;
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    //Peer can be online, but not making the block.
+                                                    //if peer is online but not crafting that should not happen.
                                                     craftBlock = true;
                                                 }
 
@@ -491,8 +460,9 @@ namespace ReserveBlockCore
 
                                     if (account != null && craftBlock == true)
                                     {
-                                        //craft new block
+                                        P2PClient.LockForeignCrafters(mainValidator, secondValidator);
                                         await BlockchainData.CraftNewBlock(backupValidator);
+                                        P2PClient.UnlockForeignCrafters(mainValidator, secondValidator);
                                         BlockCrafting = false;
                                     }
 

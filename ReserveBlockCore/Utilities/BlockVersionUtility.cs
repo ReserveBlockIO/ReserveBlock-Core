@@ -22,6 +22,10 @@ namespace ReserveBlockCore.Utilities
             {
                 blockVersion = 4;
             }
+            if(height > 19783)
+            {
+                blockVersion = 5;
+            }
 
             return blockVersion;
         }

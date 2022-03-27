@@ -153,17 +153,20 @@ namespace ReserveBlockCore.Data
             var buildTime = endTimer - startCraftTimer;
             block.BCraftTime = buildTime.Milliseconds;
 
-            var blockValResult = await BlockValidatorService.ValidateBlock(block);
-
-            if(blockValResult == true)
+            if(Program.RemoteCraftLock == false)
             {
-                await P2PClient.BroadcastBlock(block);
-            }
-            else
-            {
-                Console.WriteLine("Error! Block was not validated.");
-            }
+                var blockValResult = await BlockValidatorService.ValidateBlock(block);
 
+                if (blockValResult == true)
+                {
+                    await P2PClient.BroadcastBlock(block);
+                }
+                else
+                {
+                    Console.WriteLine("Error! Block was not validated.");
+                }
+            }
+            
             return "complete";
         }
 

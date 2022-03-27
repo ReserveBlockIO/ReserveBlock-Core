@@ -2104,6 +2104,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Broadcast Validator Online
         public static async Task BroadcastValidatorOnline(string address)
         {
             var validators = Validators.Validator.GetAll();
@@ -2127,6 +2128,135 @@ namespace ReserveBlockCore.P2P
                 }
             });
         }
+
+        #endregion
+
+        #region Initiate Outside Craft
+
+        public static async Task<(bool, Block?)> InitiateForeignCraft(string address, long nextBlockHeight)
+        {
+            try
+            {
+                var validators = Validators.Validator.GetAll();
+                var validator = validators.FindOne(x => x.Address == address);
+
+                if(validator != null)
+                {
+                    var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                    var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        var nBlock = await hubConnection.InvokeCoreAsync<Block?>("RequestBlockCraft", args: new object?[] { nextBlockHeight });
+                        hubConnection.StopAsync().Wait(3000);
+                        if(nBlock != null)
+                        {
+                            return (true, nBlock);
+                        }
+                    }
+                }
+                else
+                {
+                    return (false, null);
+                }
+                
+            }
+            catch(Exception ex)
+            {
+                return (false, null);
+            }
+
+            return (false, null);
+        }
+
+        #endregion
+
+        #region Lock Foreign Crafter
+
+        public static async void LockForeignCrafters(Validators? mainVal, Validators? secondaryVal)
+        {
+            try
+            {
+                if (mainVal != null)
+                {
+                    var hubConnectionM = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                    var alive = hubConnectionM.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        await hubConnectionM.InvokeAsync("LockValidator");
+                        hubConnectionM.StopAsync().Wait(3000);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //return (false, null);
+            }
+
+            try
+            {
+
+                if (secondaryVal != null)
+                {
+                    var hubConnectionS = new HubConnectionBuilder().WithUrl("http://" + secondaryVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                    var alive = hubConnectionS.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        await hubConnectionS.InvokeAsync("LockValidator");
+                        hubConnectionS.StopAsync().Wait(3000);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
+
+        #endregion
+
+        #region Unlock Foreign Crafter
+
+        public static async void UnlockForeignCrafters(Validators? mainVal, Validators? secondaryVal)
+        {
+            try
+            {
+                if (mainVal != null)
+                {
+                    var hubConnectionM = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                    var alive = hubConnectionM.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        await hubConnectionM.InvokeAsync("UnlockValidator");
+                        hubConnectionM.StopAsync().Wait(3000);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+            }
+
+            try
+            {
+
+                if (secondaryVal != null)
+                {
+                    var hubConnectionS = new HubConnectionBuilder().WithUrl("http://" + secondaryVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                    var alive = hubConnectionS.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                    if (alive == true)
+                    {
+                        await hubConnectionS.InvokeAsync("UnlockValidator");
+                        hubConnectionS.StopAsync().Wait(3000);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Methods below are obselete and will be removed after testing

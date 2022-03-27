@@ -1,6 +1,8 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
+using System.Text;
 
 namespace ReserveBlockCore.Utilities
 {
@@ -44,6 +46,56 @@ namespace ReserveBlockCore.Utilities
             }
             
             Console.WriteLine("End.");
+        }
+
+        public static async Task<string> GetStaticVars()
+        {
+            var peersConnected = await P2PClient.ArePeersConnected();
+            var blockHeight = BlockchainData.GetHeight();
+            var accounts = AccountData.GetAccounts();
+            var localValidator = accounts.FindOne(x => x.IsValidating == true);
+            var validator = localValidator != null ? localValidator.Address : "No Validator";
+
+            var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
+            var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
+            var isBlocksDownloading = "Blocks Downloading: " + Program.BlocksDownloading.ToString();
+            var isCrafting = "Is Crafting: " + Program.IsCrafting.ToString();
+            var isPeersConnecting = "Peers Connecting Startup: " + Program.PeersConnecting.ToString();
+            var isStopAllTimers = "Stop all timers: " + Program.StopAllTimers.ToString();
+            var isQueueProcessing = "Queue Processing: " + BlockQueueService.QueueProcessing;
+            var isPeerConnected = "Peers connected: " + peersConnected.Item1.ToString();
+            var peerConnectedCount = "Peers connected Count: " + peersConnected.Item2.ToString();
+            var blockHeightStr = "Block Height: " + blockHeight.ToString();
+            var validatorStr = "Validator Address From DB: " + validator;
+            var remoteLock = "Remote Lock: " + Program.RemoteCraftLock.ToString();
+
+            StringBuilder strBld = new StringBuilder();
+            strBld.AppendLine(validatorAddress);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isBlockCrafting);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isBlocksDownloading);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isCrafting);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isPeersConnecting);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isStopAllTimers);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isQueueProcessing);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isPeerConnected);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(peerConnectedCount);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(blockHeightStr);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(validatorStr);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(remoteLock);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine();
+            return strBld.ToString();
         }
     }
 }
