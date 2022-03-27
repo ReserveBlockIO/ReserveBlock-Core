@@ -522,6 +522,14 @@ namespace ReserveBlockCore
                     }
                 }
             }
+            try
+            {
+                DebugUtility.WriteToDebugFile();
+            }
+            catch (Exception ex)
+            {
+
+            }
             
         }
 

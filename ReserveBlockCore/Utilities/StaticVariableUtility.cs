@@ -55,6 +55,8 @@ namespace ReserveBlockCore.Utilities
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
+            var nodes = Program.Nodes;
+            var lastBlock = BlockchainData.GetLastBlock();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -68,6 +70,8 @@ namespace ReserveBlockCore.Utilities
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
             var remoteLock = "Remote Lock: " + Program.RemoteCraftLock.ToString();
+            var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
+                + " - Validator: " + lastBlock.Validator + " - Next Validators: " + lastBlock.NextValidators;
 
             StringBuilder strBld = new StringBuilder();
             strBld.AppendLine(validatorAddress);
@@ -94,7 +98,19 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(remoteLock);
             strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine();
+            strBld.AppendLine("-------------------------------Node Info-----------------------------");
+            nodes.ForEach(x => {
+                var ip = x.NodeIP;
+                var lastcheck = x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime().ToLongTimeString() : "NA";
+                var height = x.NodeHeight.ToString();
+                var latency = x.NodeLatency.ToString();
+
+                strBld.AppendLine("Node: " + ip + " - Last Checked: " + lastcheck + " - Height: " + height + " - Latency: " + latency);
+                strBld.AppendLine("---------------------------------------------------------------------");
+            });
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine("-------------------------------Block Info----------------------------");
+            strBld.AppendLine(lastBlockInfo);
             return strBld.ToString();
         }
     }

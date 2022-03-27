@@ -97,7 +97,8 @@ namespace ReserveBlockCore.P2P
         #region Check which HubConnections are actively connected
         public static async Task<(bool, int)> ArePeersConnected()
         {
-            var nodeList = Program.Nodes;
+            var nodes = Program.Nodes;
+            var nodeList = nodes.ToList();
             var result = false;
             var resultCount = 0;
             if (hubConnection1 != null && IsConnected1)
@@ -772,7 +773,8 @@ namespace ReserveBlockCore.P2P
         public static async Task<bool> GetNodeHeight()
         {
             Dictionary<string, long> nodeHeightDict = new Dictionary<string, long>();
-            var nodeList = Program.Nodes;
+            var nodes = Program.Nodes;
+            var nodeList = nodes.ToList();
             var peersConnected = await P2PClient.ArePeersConnected();
             bool result = false;
             if (peersConnected.Item1 == false)

@@ -647,6 +647,8 @@ namespace ReserveBlockCore.P2P
                     }
                 }
 
+                Program.IsCrafting = false;
+                Program.BlockCrafting = false;
                 return nextBlock;
             }
         }

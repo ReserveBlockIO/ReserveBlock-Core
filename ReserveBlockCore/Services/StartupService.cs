@@ -268,7 +268,7 @@ namespace ReserveBlockCore.Services
                     blocks.DeleteMany(x => x.Height >= 19783);
                     DbContext.DB.Checkpoint();
 
-                    ResetStateTreis();
+                    //ResetStateTreis();
                 }
                 
             }
