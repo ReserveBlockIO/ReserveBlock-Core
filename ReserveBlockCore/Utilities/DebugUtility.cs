@@ -7,31 +7,38 @@ namespace ReserveBlockCore.Utilities
     {
         public static async void WriteToDebugFile()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var text = await StaticVariableUtility.GetStaticVars();
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            try
             {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if (Debugger.IsAttached)
+                var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+                var text = await StaticVariableUtility.GetStaticVars();
+                string path = "";
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                    path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    if (Debugger.IsAttached)
+                    {
+                        path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    }
+                    else
+                    {
+                        path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    }
                 }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
 
-            await File.WriteAllTextAsync(path + "debug.txt", text);
+                await File.WriteAllTextAsync(path + "debug.txt", text);
+            }
+            catch(Exception ex)
+            {
+
+            }
         }
     }
 }

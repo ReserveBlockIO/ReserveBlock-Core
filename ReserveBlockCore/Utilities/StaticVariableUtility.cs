@@ -56,6 +56,7 @@ namespace ReserveBlockCore.Utilities
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
             var nodes = Program.Nodes;
+            var nodeList = nodes.ToList();
             var lastBlock = BlockchainData.GetLastBlock();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
@@ -99,7 +100,7 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(remoteLock);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
-            nodes.ForEach(x => {
+            nodeList.ForEach(x => {
                 var ip = x.NodeIP;
                 var lastcheck = x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime().ToLongTimeString() : "NA";
                 var height = x.NodeHeight.ToString();
