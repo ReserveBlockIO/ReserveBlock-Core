@@ -311,6 +311,16 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("UnlockRemoteCraft")]
+        public async Task<string> UnlockRemoteCraft()
+        {
+            Program.RemoteCraftLock = false;
+            var output = "Completed"; 
+            
+            return output;
+        }
+
+
         [HttpGet("GetAllTransactions")]
         public async Task<string> GetAllTransactions()
         {
