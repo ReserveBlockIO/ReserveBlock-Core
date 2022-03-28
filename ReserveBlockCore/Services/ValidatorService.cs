@@ -336,6 +336,50 @@ namespace ReserveBlockCore.Services
 
         }
 
+        public static async void ClearDuplicates()
+        {
+            try
+            {
+                var validators = Validators.Validator.GetAll();
+                var validatorList = validators.FindAll().ToList();
+
+                List<Validators> dups = validatorList.GroupBy(x => new {
+                    x.Address,
+                    x.NodeIP
+                })
+                .Where(x => x.Count() > 1)
+                .Select(x => x.First())
+                .ToList();
+
+                if (dups.Count() > 0)
+                {
+                    dups.ForEach(x =>
+                    {
+                        var dupList = validatorList.Where(y => y.Address == x.Address && y.NodeIP == x.NodeIP).ToList();
+                        if (dupList.Exists(z => z.IsActive == true))
+                        {
+                            Console.WriteLine(x.Address);
+                            var dupsDel = dupList.Where(z => z.IsActive == false).ToList();
+                            validators.DeleteMany(z => z.Address == x.Address && z.IsActive == false);
+                        }
+                        else
+                        {
+                            var countRem = dupList.Count() - 1;
+                            var dupsDel = dupList.Take(countRem);
+                            dupsDel.ToList().ForEach(d =>
+                            {
+                                validators.DeleteMany(p => p.Id == d.Id);
+                            });
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         public static bool UniqueNameCheck(string uName)
         {
             bool output = false;

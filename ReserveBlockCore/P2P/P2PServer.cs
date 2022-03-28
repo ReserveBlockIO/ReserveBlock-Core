@@ -401,20 +401,9 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                if(valCount == 0)
-                {
-                    return validatorList.FindAll().ToList();
-                }
-                else
-                {
-                    if(valCount < validatorListCount)
-                    {
-                        return validatorList.FindAll().ToList();
-                    }
-                }
-            }
 
-            return null;
+                return validatorList.FindAll().ToList();
+            }
         }
 
         #endregion
@@ -614,7 +603,6 @@ namespace ReserveBlockCore.P2P
             {
                 if (Program.IsCrafting == false && Program.RemoteCraftLock == false)
                 {
-                    StartupService.SetValidator();
                     //process block queue first
                     await BlockQueueService.ProcessBlockQueue();
                     var localValidator = Validators.Validator.GetLocalValidator();
@@ -643,9 +631,13 @@ namespace ReserveBlockCore.P2P
                             nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
                             Program.IsCrafting = false;
                             Program.BlockCrafting = false;
+
+                            return nextBlock;
                         }
                     }
                 }
+
+                nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
 
                 Program.IsCrafting = false;
                 Program.BlockCrafting = false;

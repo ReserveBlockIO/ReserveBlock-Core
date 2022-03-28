@@ -46,6 +46,11 @@ namespace ReserveBlockCore.Services
             P2PClient.NodeDict.Add(6, null);
 
         }
+
+        internal static void ClearValidatorDups()
+        {
+            ValidatorService.ClearDuplicates();
+        }
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
@@ -235,13 +240,15 @@ namespace ReserveBlockCore.Services
                 Program.ValidatorAddress = myAccount.Address;
 
                 var validators = Validators.Validator.GetAll();
-                var validator = validators.FindOne(x => x.Address == Program.ValidatorAddress);
+                var validator = validators.FindOne(x => x.Address == myAccount.Address);
+                if(validator != null)
+                {
+                    validator.IsActive = true;
+                    validator.FailCount = 0;
+                    validator.LastChecked = DateTime.UtcNow;
 
-                validator.IsActive = true;
-                validator.FailCount = 0;
-                validator.LastChecked = DateTime.UtcNow;
-
-                validators.Update(validator);
+                    validators.Update(validator);
+                }
             }
 
             
@@ -368,10 +375,10 @@ namespace ReserveBlockCore.Services
                 blockChain.DeleteAll();//remove all blocks
                 try
                 {
-                    DbContext.DB.Rebuild();
-                    DbContext.DB_AccountStateTrei.Rebuild();
-                    DbContext.DB_WorldStateTrei.Rebuild();
-                    DbContext.DB_Wallet.Rebuild();
+                    DbContext.DB.Checkpoint();
+                    DbContext.DB_AccountStateTrei.Checkpoint();
+                    DbContext.DB_WorldStateTrei.Checkpoint();
+                    DbContext.DB_Wallet.Checkpoint();
 
                 }
                 catch (Exception ex)
@@ -421,19 +428,11 @@ namespace ReserveBlockCore.Services
 
                     try
                     {
-                        DbContext.DB.Rebuild();
-                        DbContext.DB_AccountStateTrei.Rebuild();
-                        DbContext.DB_WorldStateTrei.Rebuild();
-                        DbContext.DB_Wallet.Rebuild();
-                        DbContext.DB_Peers.Rebuild();
-
                         DbContext.DB.Checkpoint();
                         DbContext.DB_AccountStateTrei.Checkpoint();
                         DbContext.DB_WorldStateTrei.Checkpoint();
                         DbContext.DB_Wallet.Checkpoint();
                         DbContext.DB_Peers.Checkpoint();
-
-
                     }
                     catch (Exception ex)
                     {
@@ -461,9 +460,6 @@ namespace ReserveBlockCore.Services
             transactions.DeleteAll();//delete all local transactions
             stateTrei.DeleteAll(); //removes all state trei data
             worldTrei.DeleteAll();  //removes the state trei
-
-            DbContext.DB_AccountStateTrei.Rebuild();
-            DbContext.DB_WorldStateTrei.Rebuild();
 
             DbContext.DB.Checkpoint();
             DbContext.DB_AccountStateTrei.Checkpoint();

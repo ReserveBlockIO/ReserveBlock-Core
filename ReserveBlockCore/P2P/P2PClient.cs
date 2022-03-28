@@ -543,7 +543,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
-                        peers = peers.Where(x => x.FailCount <= 9 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                        peers = peers.Where(x => x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
                     }
 
                 }
@@ -1647,7 +1647,7 @@ namespace ReserveBlockCore.P2P
                     try
                     {
                         var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
-                        var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                        var alive = hubConnection.StartAsync().Wait(4000); //give validator 3 secs to connect. Should be plenty
                         if (alive == true)
                         {
                             var message = await hubConnection.InvokeCoreAsync<string>("SendValidator", args: new object?[] { nValidator });
@@ -1657,7 +1657,6 @@ namespace ReserveBlockCore.P2P
                                 //success
                                 successCount += 1;
                                 hubConnection.StopAsync().Wait();
-                                await hubConnection.DisposeAsync();//close connection when done to avoid any memory build up.
                             }
                             else if (message == "FTAV")
                             {
@@ -2112,23 +2111,26 @@ namespace ReserveBlockCore.P2P
             var validators = Validators.Validator.GetAll();
             var activeValidators = validators.FindAll().Where(x => x.IsActive == true).ToList();
 
-            await Parallel.ForEachAsync(activeValidators, async (validator, token) =>
+            if(activeValidators.Count() > 0)
             {
-                try
+                await Parallel.ForEachAsync(activeValidators, async (validator, token) =>
                 {
-                    var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
-                    var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
-                    if (alive == true)
+                    try
                     {
-                        await hubConnection.InvokeAsync("SendValidatorOnline", address);
-                        hubConnection.StopAsync().Wait(3000);
+                        var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                        var alive = hubConnection.StartAsync().Wait(3000); //give validator 3 secs to connect. Should be plenty
+                        if (alive == true)
+                        {
+                            await hubConnection.InvokeAsync("SendValidatorOnline", address);
+                            hubConnection.StopAsync().Wait(3000);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
+                    catch (Exception ex)
+                    {
 
-                }
-            });
+                    }
+                });
+            }            
         }
 
         #endregion

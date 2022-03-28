@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Controllers
                 peerCount = "0";
             }
 
-            output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString();
+            output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString() + ":" + Program.IsResyncing.ToString();
 
             return output;
         }
@@ -284,6 +284,28 @@ namespace ReserveBlockCore.Controllers
             else
             {
                 output = JsonConvert.SerializeObject(block);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetRollbackBlocks/{id}")]
+        public async Task<string> GetRollbackBlocks(string id)
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            int num = Convert.ToInt32(id);
+
+            var result = await BlockRollbackUtility.RollbackBlocks(num);
+
+            if(result == true)
+            {
+                output = "Process has completed.";
+            }
+            else
+            {
+                output = "Process has failed. You will need to re-download all blocks.";
             }
 
             return output;
