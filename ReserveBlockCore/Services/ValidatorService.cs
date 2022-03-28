@@ -358,7 +358,6 @@ namespace ReserveBlockCore.Services
                         var dupList = validatorList.Where(y => y.Address == x.Address && y.NodeIP == x.NodeIP).ToList();
                         if (dupList.Exists(z => z.IsActive == true))
                         {
-                            Console.WriteLine(x.Address);
                             var dupsDel = dupList.Where(z => z.IsActive == false).ToList();
                             validators.DeleteMany(z => z.Address == x.Address && z.IsActive == false);
                         }
