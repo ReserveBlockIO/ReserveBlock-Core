@@ -303,38 +303,48 @@ namespace ReserveBlockCore.Services
             var download = true;
             while(download) //this will loop forever till download happens
             {
-                var result = await P2PClient.GetCurrentHeight();
-                if (result.Item1 == true)
+                if(Program.IsResyncing == false)
                 {
-                    Program.BlocksDownloading = true;
-                    Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);                    
-                }
-                else
-                {
-                    Program.BlocksDownloading = false;
-                    download = false; //exit the while.
-                    Program.StopAllTimers = false;
-                    var accounts = AccountData.GetAccounts();
-                    var accountList = accounts.FindAll().ToList();
-                    if(accountList.Count() > 0)
+                    var result = await P2PClient.GetCurrentHeight();
+                    if (result.Item1 == true)
                     {
-                        var stateTrei = StateData.GetAccountStateTrei();
-                        foreach(var account in accountList)
+                        Program.BlocksDownloading = true;
+                        Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                    }
+                    else
+                    {
+                        Program.BlocksDownloading = false;
+                        download = false; //exit the while.
+                        Program.StopAllTimers = false;
+                        var accounts = AccountData.GetAccounts();
+                        var accountList = accounts.FindAll().ToList();
+                        if (accountList.Count() > 0)
                         {
-                            var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                            if(stateRec != null)
+                            var stateTrei = StateData.GetAccountStateTrei();
+                            foreach (var account in accountList)
                             {
-                                account.Balance = stateRec.Balance;
-                                accounts.Update(account);//updating local record with synced state trei
+                                var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                                if (stateRec != null)
+                                {
+                                    account.Balance = stateRec.Balance;
+                                    accounts.Update(account);//updating local record with synced state trei
+                                }
                             }
                         }
                     }
                 }
+                else
+                {
+                    download = false;
+                }
+                
             }
-            Program.BlocksDownloading = false;
+            if(Program.IsResyncing == false)
+            {
+                Program.BlocksDownloading = false;
+                Program.StopAllTimers = false;
+            }
             download = false; //exit the while. 
-            Program.StopAllTimers = false;
-
         }
 
         internal static void CheckForDuplicateBlocks()
