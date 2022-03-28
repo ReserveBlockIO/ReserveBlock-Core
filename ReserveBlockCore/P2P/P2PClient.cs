@@ -537,7 +537,7 @@ namespace ReserveBlockCore.P2P
                 {
                     Random rnd = new Random();
                     var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                    if (peerList.Count() >= 2)
+                    if (peerList.Count() >= 4)
                     {
                         peers = peerList;
                     }
