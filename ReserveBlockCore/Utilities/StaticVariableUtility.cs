@@ -71,6 +71,7 @@ namespace ReserveBlockCore.Utilities
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
             var remoteLock = "Remote Lock: " + Program.RemoteCraftLock.ToString();
+            var remoteLockTime = "Remote Lock Time: " + (Program.RemoteCraftLockTime == null ?  "NA" : Program.RemoteCraftLockTime.Value.ToShortTimeString());
             var isResyncing = "Chain Resyncing? : " + Program.IsResyncing.ToString();
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator + " - Next Validators: " + lastBlock.NextValidators;
@@ -99,6 +100,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(validatorStr);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(remoteLock);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(remoteLockTime);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isResyncing);
             strBld.AppendLine("---------------------------------------------------------------------");

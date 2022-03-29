@@ -4,6 +4,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Nodes;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -522,80 +523,81 @@ namespace ReserveBlockCore.P2P
             int successCount = 0;
 
             var peerDB = Peers.GetAll();
-            var peers = peerDB.FindAll();
-
-            if (peers.Count() == 0)
+            if(peerDB != null)
             {
-                await NodeConnector.StartNodeConnecting();
-                peerDB = Peers.GetAll();
-                peers = peerDB.FindAll();
-            }
+                var peers = peerDB.FindAll();
 
-            if (peers.Count() > 0)
-            {
-                if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
-                {
-                    Random rnd = new Random();
-                    var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                    if (peerList.Count() >= 4)
-                    {
-                        peers = peerList;
-                    }
-                    else
-                    {
-                        peers = peers.Where(x => x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                    }
-
-                }
-                else
+                if (peers.Count() == 0)
                 {
                     await NodeConnector.StartNodeConnecting();
                     peerDB = Peers.GetAll();
                     peers = peerDB.FindAll();
                 }
-                foreach (var peer in peers)
+
+                if (peers.Count() > 0)
                 {
-
-                    var hubCon = await GetAvailablePeerHubs();
-                    if (hubCon == 0)
-                        return false;
-                    try
+                    if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
                     {
-                        var urlCheck = peer.PeerIP + ":" + Program.Port;
-                        var nodeExist = nodes.Exists(x => x.NodeIP == urlCheck);
-
-                        if (!nodeExist)
+                        Random rnd = new Random();
+                        var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                        if (peerList.Count() >= 4)
                         {
-                            Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
-                            var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
-                            var conResult = await Connect(hubCon, url);
-                            if (conResult != false)
-                            {
-                                successCount += 1;
-                                peer.FailCount = 0; //peer responded. Reset fail count
-                                peerDB.Update(peer);
-                            }
-                            else
-                            {
-                                peer.FailCount += 1;
-                                peerDB.Update(peer);
-                            }
+                            peers = peerList;
+                        }
+                        else
+                        {
+                            peers = peers.Where(x => x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
                         }
 
-
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        //peer did not response correctly or at all
-                        peer.FailCount += 1;
-                        peerDB.Update(peer);
+
                     }
+                    foreach (var peer in peers)
+                    {
 
+                        var hubCon = await GetAvailablePeerHubs();
+                        if (hubCon == 0)
+                            return false;
+                        try
+                        {
+                            var urlCheck = peer.PeerIP + ":" + Program.Port;
+                            var nodeExist = nodes.Exists(x => x.NodeIP == urlCheck);
+
+                            if (!nodeExist)
+                            {
+                                Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
+                                var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
+                                var conResult = await Connect(hubCon, url);
+                                if (conResult != false)
+                                {
+                                    successCount += 1;
+                                    peer.FailCount = 0; //peer responded. Reset fail count
+                                    peerDB.Update(peer);
+                                }
+                                else
+                                {
+                                    peer.FailCount += 1;
+                                    peerDB.Update(peer);
+                                }
+                            }
+
+
+                        }
+                        catch (Exception ex)
+                        {
+                            //peer did not response correctly or at all
+                            //Need to track peers that fail, but in memory.
+                        }
+
+                    }
+                    if (successCount > 0)
+
+                        return true;
                 }
-                if (successCount > 0)
-
-                    return true;
             }
+            
 
             return false;
         }
@@ -1440,191 +1442,196 @@ namespace ReserveBlockCore.P2P
             else
             {
                 var validators = Validators.Validator.GetAll();
-                var valCount = validators.FindAll().Count();
 
-                try
+                if(validators != null)
                 {
+                    var valCount = validators.FindAll().Count();
 
-
-                    if (hubConnection1 != null && IsConnected1)
+                    try
                     {
-                        List<Validators>? remoteValidators = await hubConnection1.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if (remoteValidators != null)
-                        {
-                            if (valCount == 0)
-                            {
-                                validators.InsertBulk(remoteValidators);
-                                output = true;
-                            }
-                            else
-                            {
-                                var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
 
-                                if (newValidators.Count() > 0)
+
+                        if (hubConnection1 != null && IsConnected1)
+                        {
+                            List<Validators>? remoteValidators = await hubConnection1.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                            if (remoteValidators != null)
+                            {
+                                if (valCount == 0)
                                 {
-                                    validators.InsertBulk(newValidators);
+                                    validators.InsertBulk(remoteValidators);
                                     output = true;
+                                }
+                                else
+                                {
+                                    var locValidators = validators.FindAll().ToList();
+                                    var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+
+                                    if (newValidators.Count() > 0)
+                                    {
+                                        validators.InsertBulk(newValidators);
+                                        output = true;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2)
+                    catch (Exception ex)
                     {
-                        List<Validators>? remoteValidators = await hubConnection2.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if (remoteValidators != null)
-                        {
-                            if (valCount == 0)
-                            {
-                                validators.InsertBulk(remoteValidators);
-                                output = true;
-                            }
-                            else
-                            {
-                                var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+                        //possible dead connection, or node is offline
+                    }
 
-                                if (newValidators.Count() > 0)
+                    try
+                    {
+                        if (hubConnection2 != null && IsConnected2)
+                        {
+                            List<Validators>? remoteValidators = await hubConnection2.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                            if (remoteValidators != null)
+                            {
+                                if (valCount == 0)
                                 {
-                                    validators.InsertBulk(newValidators);
+                                    validators.InsertBulk(remoteValidators);
                                     output = true;
+                                }
+                                else
+                                {
+                                    var locValidators = validators.FindAll().ToList();
+                                    var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+
+                                    if (newValidators.Count() > 0)
+                                    {
+                                        validators.InsertBulk(newValidators);
+                                        output = true;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
+                    catch (Exception ex)
                     {
-                        List<Validators>? remoteValidators = await hubConnection3.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if (remoteValidators != null)
+                        //possible dead connection, or node is offline
+                    }
+                    try
+                    {
+                        if (hubConnection3 != null && IsConnected3)
                         {
-                            if (valCount == 0)
+                            List<Validators>? remoteValidators = await hubConnection3.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                            if (remoteValidators != null)
                             {
-                                validators.InsertBulk(remoteValidators);
-                                output = true;
-                            }
-                            else
-                            {
-                                var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
-
-                                if (newValidators.Count() > 0)
+                                if (valCount == 0)
                                 {
-                                    validators.InsertBulk(newValidators);
+                                    validators.InsertBulk(remoteValidators);
                                     output = true;
+                                }
+                                else
+                                {
+                                    var locValidators = validators.FindAll().ToList();
+                                    var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+
+                                    if (newValidators.Count() > 0)
+                                    {
+                                        validators.InsertBulk(newValidators);
+                                        output = true;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
+                    catch (Exception ex)
                     {
-                        List<Validators>? remoteValidators = await hubConnection4.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if (remoteValidators != null)
+                        //possible dead connection, or node is offline
+                    }
+                    try
+                    {
+                        if (hubConnection4 != null && IsConnected4)
                         {
-                            if (valCount == 0)
+                            List<Validators>? remoteValidators = await hubConnection4.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                            if (remoteValidators != null)
                             {
-                                validators.InsertBulk(remoteValidators);
-                                output = true;
-                            }
-                            else
-                            {
-                                var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
-
-                                if (newValidators.Count() > 0)
+                                if (valCount == 0)
                                 {
-                                    validators.InsertBulk(newValidators);
+                                    validators.InsertBulk(remoteValidators);
                                     output = true;
+                                }
+                                else
+                                {
+                                    var locValidators = validators.FindAll().ToList();
+                                    var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+
+                                    if (newValidators.Count() > 0)
+                                    {
+                                        validators.InsertBulk(newValidators);
+                                        output = true;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
+                    catch (Exception ex)
                     {
-                        List<Validators>? remoteValidators = await hubConnection5.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if (remoteValidators != null)
+                        //possible dead connection, or node is offline
+                    }
+                    try
+                    {
+                        if (hubConnection5 != null && IsConnected5)
                         {
-                            if (valCount == 0)
+                            List<Validators>? remoteValidators = await hubConnection5.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                            if (remoteValidators != null)
                             {
-                                validators.InsertBulk(remoteValidators);
-                                output = true;
-                            }
-                            else
-                            {
-                                var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
-
-                                if (newValidators.Count() > 0)
+                                if (valCount == 0)
                                 {
-                                    validators.InsertBulk(newValidators);
+                                    validators.InsertBulk(remoteValidators);
                                     output = true;
+                                }
+                                else
+                                {
+                                    var locValidators = validators.FindAll().ToList();
+                                    var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+
+                                    if (newValidators.Count() > 0)
+                                    {
+                                        validators.InsertBulk(newValidators);
+                                        output = true;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
+                    catch (Exception ex)
                     {
-                        List<Validators>? remoteValidators = await hubConnection6.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
-                        if (remoteValidators != null)
+                        //possible dead connection, or node is offline
+                    }
+                    try
+                    {
+                        if (hubConnection6 != null && IsConnected6)
                         {
-                            if (valCount == 0)
+                            List<Validators>? remoteValidators = await hubConnection6.InvokeCoreAsync<List<Validators>?>("GetMasternodes", args: new object?[] { valCount });
+                            if (remoteValidators != null)
                             {
-                                validators.InsertBulk(remoteValidators);
-                                output = true;
-                            }
-                            else
-                            {
-                                var locValidators = validators.FindAll().ToList();
-                                var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
-
-                                if (newValidators.Count() > 0)
+                                if (valCount == 0)
                                 {
-                                    validators.InsertBulk(newValidators);
+                                    validators.InsertBulk(remoteValidators);
                                     output = true;
+                                }
+                                else
+                                {
+                                    var locValidators = validators.FindAll().ToList();
+                                    var newValidators = remoteValidators.Where(x => !locValidators.Any(y => x.Address == y.Address) && x.WalletVersion != null).ToList();
+
+                                    if (newValidators.Count() > 0)
+                                    {
+                                        validators.InsertBulk(newValidators);
+                                        output = true;
+                                    }
                                 }
                             }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        //possible dead connection, or node is offline
+                    }
                 }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
+                
 
             }
 
@@ -1835,56 +1842,58 @@ namespace ReserveBlockCore.P2P
             bool main = false;
             bool backup = false;
             var validators = Validators.Validator.GetAll();
-            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
-            try
+            if(validators != null)
             {
-                var alive = hubConnection.StartAsync().Wait(3000); //inside a try as target can actively refuse it.
-                if (alive == true)
+                var hubConnection = new HubConnectionBuilder().WithUrl("http://" + mainVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                try
                 {
-                    var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
-
-                    if (response == true)
+                    var alive = hubConnection.StartAsync().Wait(3000); //inside a try as target can actively refuse it.
+                    if (alive == true)
                     {
-                        main = true;
-                        mainVal.FailCount = 0;
-                        validators.Update(mainVal);
-                        hubConnection.StopAsync().Wait();
-                        await hubConnection.DisposeAsync();
+                        var response = await hubConnection.InvokeAsync<bool>("PingNextValidator");
+
+                        if (response == true)
+                        {
+                            main = true;
+                            mainVal.FailCount = 0;
+                            validators.Update(mainVal);
+                            hubConnection.StopAsync().Wait();
+                            await hubConnection.DisposeAsync();
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                mainVal.FailCount += 1;
-                validators.Update(mainVal);
-            }
-
-
-            var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
-            try
-            {
-                var alive2 = hubConnection2.StartAsync().Wait(3000);
-
-                if (alive2 == true)
+                catch (Exception ex)
                 {
-                    var response2 = await hubConnection2.InvokeAsync<bool>("PingNextValidator");
+                    //mainVal.FailCount += 1;
+                    //validators.Update(mainVal);
+                }
 
-                    if (response2 == true)
+
+                var hubConnection2 = new HubConnectionBuilder().WithUrl("http://" + backupVal.NodeIP + ":" + Program.Port + "/blockchain").Build();
+                try
+                {
+                    var alive2 = hubConnection2.StartAsync().Wait(3000);
+
+                    if (alive2 == true)
                     {
-                        backup = true;
-                        backupVal.FailCount = 0;
-                        validators.Update(backupVal);
-                        hubConnection2.StopAsync().Wait();
-                        await hubConnection.DisposeAsync();
+                        var response2 = await hubConnection2.InvokeAsync<bool>("PingNextValidator");
+
+                        if (response2 == true)
+                        {
+                            backup = true;
+                            backupVal.FailCount = 0;
+                            validators.Update(backupVal);
+                            hubConnection2.StopAsync().Wait();
+                            await hubConnection.DisposeAsync();
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    //backupVal.FailCount += 1;
+                    //validators.Update(backupVal);
+                }
             }
-            catch (Exception ex)
-            {
-                backupVal.FailCount += 1;
-                validators.Update(backupVal);
-            }
-
 
             return (main, backup);
         }
@@ -1895,37 +1904,43 @@ namespace ReserveBlockCore.P2P
         {
             bool result = false;
             var validators = Validators.Validator.GetAll();
-            var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
-            try
+            if(validators != null)
             {
-                var alive = hubConnection.StartAsync().Wait(3000); //inside a try as target can actively refuse it.
-                if (alive == true)
+                try
                 {
-                    var response = await hubConnection.InvokeAsync<bool>("CallCrafter");
+                    var hubConnection = new HubConnectionBuilder().WithUrl("http://" + validator.NodeIP + ":" + Program.Port + "/blockchain").Build();
 
-                    if (response == true)
+                    var alive = hubConnection.StartAsync().Wait(3000); //inside a try as target can actively refuse it.
+                    if (alive == true)
                     {
-                        result = true;
-                        hubConnection.StopAsync().Wait();
-                        await hubConnection.DisposeAsync();
-                        return result;
+                        var response = await hubConnection.InvokeAsync<bool>("CallCrafter");
+
+                        if (response == true)
+                        {
+                            result = true;
+                            hubConnection.StopAsync().Wait();
+                            await hubConnection.DisposeAsync();
+                            return result;
+                        }
+                    }
+                    else
+                    {
+                        validator.FailCount += 1;
+                        validator.IsActive = false;
+                        validator.LastChecked = DateTime.UtcNow;
+                        validators.Update(validator);
                     }
                 }
-                else
+                catch (Exception ex)
                 {
                     validator.FailCount += 1;
                     validator.IsActive = false;
                     validator.LastChecked = DateTime.UtcNow;
                     validators.Update(validator);
                 }
+
             }
-            catch (Exception ex)
-            {
-                validator.FailCount += 1;
-                validator.IsActive = false;
-                validator.LastChecked = DateTime.UtcNow;
-                validators.Update(validator);
-            }
+            
 
             return result;
         }
@@ -2195,6 +2210,7 @@ namespace ReserveBlockCore.P2P
             catch (Exception ex)
             {
                 //return (false, null);
+                
             }
 
             try
@@ -2213,7 +2229,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-
+                
             }
         }
 
@@ -2239,6 +2255,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
+                
             }
 
             try
@@ -2257,6 +2274,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
+                
             }
         }
 

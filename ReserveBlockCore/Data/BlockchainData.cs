@@ -52,122 +52,130 @@ namespace ReserveBlockCore.Data
         //Method needing validator functions still.
         public static async Task<string> CraftNewBlock(string validator)
         {
-            // start craft time
-            var startCraftTimer = DateTime.UtcNow;
-            var validatorAccount = AccountData.GetSingleAccount(validator);
-
-            if(validatorAccount == null)
+            try
             {
-                return "No local account found to match validator!";
-            }
+                var startCraftTimer = DateTime.UtcNow;
+                var validatorAccount = AccountData.GetSingleAccount(validator);
 
-            //Get tx's from Mempool
-            var processedTxPool = TransactionData.ProcessTxPool();
-            var txPool = TransactionData.GetPool();
-
-            var lastBlock = GetLastBlock();
-            var height = lastBlock.Height + 1;
-            var nextValidators = await Validators.Validator.GetNextBlockValidators(validator);
-
-            if(nextValidators == null || nextValidators == "")
-            {
-                //Attempt to get masternodes as they cannot be null
-                await P2PClient.GetMasternodes();
-                return "Failed to retrieve next validators!";
-            }
-
-            //Need to get master node validator.
-            var timestamp = TimeUtil.GetTime();
-            var transactionList = new List<Transaction>();
-
-            var coinbase_tx = new Transaction
-            {
-                Amount = 0,
-                ToAddress = validator,
-                Fee = 0.00M,
-                Timestamp = timestamp,
-                FromAddress = "Coinbase_TrxFees",
-            };
-
-            var coinbase_tx2 = new Transaction
-            {
-                Amount = GetBlockReward(),
-                ToAddress = validator,
-                Fee = 0.00M,
-                Timestamp = timestamp,
-                FromAddress = "Coinbase_BlkRwd",
-            };
-
-            if (processedTxPool.Count() > 0)
-            {
-                coinbase_tx.Amount = GetTotalFees(processedTxPool);
-                coinbase_tx.Build();
-                coinbase_tx2.Build();
-
-                transactionList.Add(coinbase_tx);
-                transactionList.Add(coinbase_tx2);
-                
-                transactionList.AddRange(processedTxPool);
-
-                //need to only delete processed mempool tx's in event new ones get added while creating block.
-                //delete after block is added, so they can't  be re-added before block is over.
-                foreach(var tx in processedTxPool)
+                if (validatorAccount == null)
                 {
-                    var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
-                    if(txRec != null)
-                    {
-                        txPool.DeleteMany(x => x.Hash == tx.Hash);
-                    }    
+                    return "No local account found to match validator!";
                 }
-            }
-            else
-            {
-                coinbase_tx2.Build();
-                transactionList.Add(coinbase_tx2);
-            }
 
+                //Get tx's from Mempool
+                var processedTxPool = TransactionData.ProcessTxPool();
+                var txPool = TransactionData.GetPool();
 
-            var block = new Block
-            {
-                Height = height,
-                Timestamp = timestamp,
-                Transactions = GiveOtherInfos(transactionList, height),
-                Validator = validator,
-                ChainRefId = ChainRef,
-                NextValidators = nextValidators
-            };
-            block.Build();
+                var lastBlock = GetLastBlock();
+                var height = lastBlock.Height + 1;
+                var nextValidators = await Validators.Validator.GetNextBlockValidators(validator);
 
-            BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-            //Add validator signature
-            block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
-
-            //block size
-            var str = JsonConvert.SerializeObject(block);
-            block.Size = str.Length;
-
-            // get craft time    
-            var endTimer = DateTime.UtcNow;
-            var buildTime = endTimer - startCraftTimer;
-            block.BCraftTime = buildTime.Milliseconds;
-
-            if(Program.RemoteCraftLock == false)
-            {
-                var blockValResult = await BlockValidatorService.ValidateBlock(block);
-
-                if (blockValResult == true)
+                if (nextValidators == null || nextValidators == "")
                 {
-                    await P2PClient.BroadcastBlock(block);
+                    //Attempt to get masternodes as they cannot be null
+                    await P2PClient.GetMasternodes();
+                    return "Failed to retrieve next validators!";
+                }
+
+                //Need to get master node validator.
+                var timestamp = TimeUtil.GetTime();
+                var transactionList = new List<Transaction>();
+
+                var coinbase_tx = new Transaction
+                {
+                    Amount = 0,
+                    ToAddress = validator,
+                    Fee = 0.00M,
+                    Timestamp = timestamp,
+                    FromAddress = "Coinbase_TrxFees",
+                };
+
+                var coinbase_tx2 = new Transaction
+                {
+                    Amount = GetBlockReward(),
+                    ToAddress = validator,
+                    Fee = 0.00M,
+                    Timestamp = timestamp,
+                    FromAddress = "Coinbase_BlkRwd",
+                };
+
+                if (processedTxPool.Count() > 0)
+                {
+                    coinbase_tx.Amount = GetTotalFees(processedTxPool);
+                    coinbase_tx.Build();
+                    coinbase_tx2.Build();
+
+                    transactionList.Add(coinbase_tx);
+                    transactionList.Add(coinbase_tx2);
+
+                    transactionList.AddRange(processedTxPool);
+
+                    //need to only delete processed mempool tx's in event new ones get added while creating block.
+                    //delete after block is added, so they can't  be re-added before block is over.
+                    foreach (var tx in processedTxPool)
+                    {
+                        var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
+                        if (txRec != null)
+                        {
+                            txPool.DeleteMany(x => x.Hash == tx.Hash);
+                        }
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Error! Block was not validated.");
+                    coinbase_tx2.Build();
+                    transactionList.Add(coinbase_tx2);
                 }
+
+
+                var block = new Block
+                {
+                    Height = height,
+                    Timestamp = timestamp,
+                    Transactions = GiveOtherInfos(transactionList, height),
+                    Validator = validator,
+                    ChainRefId = ChainRef,
+                    NextValidators = nextValidators
+                };
+                block.Build();
+
+                BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                //Add validator signature
+                block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
+
+                //block size
+                var str = JsonConvert.SerializeObject(block);
+                block.Size = str.Length;
+
+                // get craft time    
+                var endTimer = DateTime.UtcNow;
+                var buildTime = endTimer - startCraftTimer;
+                block.BCraftTime = buildTime.Milliseconds;
+
+                if (Program.RemoteCraftLock == false)
+                {
+                    var blockValResult = await BlockValidatorService.ValidateBlock(block);
+
+                    if (blockValResult == true)
+                    {
+                        await P2PClient.BroadcastBlock(block);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error! Block was not validated.");
+                    }
+                }
+
+                return "complete";
             }
-            
-            return "complete";
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+            }
+            // start craft time
+            return "fail";
         }
 
         public static decimal GetBlockReward()
@@ -186,9 +194,18 @@ namespace ReserveBlockCore.Data
 
         public static ILiteCollection<Block> GetBlocks()
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height);
-            return blocks;
+            try
+            {
+                var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
+                blocks.EnsureIndex(x => x.Height);
+                return blocks;
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
+                return null;
+            }
+            
         }
         public static ILiteCollection<Block> GetBlockQueue()
         {

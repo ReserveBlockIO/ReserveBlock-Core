@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,8 +35,17 @@ namespace ReserveBlockCore.Models
 
         public static ILiteCollection<Peers> GetAll()
         {
-            var peers = DbContext.DB_Peers.GetCollection<Peers>(DbContext.RSRV_PEERS);
-            return peers;
+            try
+            {
+                var peers = DbContext.DB_Peers.GetCollection<Peers>(DbContext.RSRV_PEERS);
+                return peers;
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.Message, "Peers.GetAll()");
+                return null;
+            }
+            
         }
 
         public static void UpdatePeerLastReach(Peers incPeer)

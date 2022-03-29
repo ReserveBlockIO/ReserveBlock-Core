@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
 using LiteDB;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Data
 {
@@ -184,9 +185,18 @@ namespace ReserveBlockCore.Data
 		}
 		public static ILiteCollection<Account> GetAccounts()
 		{
-			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-			//accounts.EnsureIndex(x => x.id);
-			return accounts;
+            try
+            {
+				var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+				//accounts.EnsureIndex(x => x.id);
+				return accounts;
+			}
+			catch(Exception ex)
+            {
+				ErrorLogUtility.LogError(ex.Message, "AccountData.GetAccounts()");
+				return null;
+			}
+			
 		}
 
 		public static IEnumerable<Account> GetAccountsWithBalance()

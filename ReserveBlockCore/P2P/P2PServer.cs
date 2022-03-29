@@ -652,6 +652,7 @@ namespace ReserveBlockCore.P2P
         public async Task LockValidator()
         {
             Program.RemoteCraftLock = true;
+            Program.RemoteCraftLockTime = DateTime.Now;
         }
 
         #endregion
@@ -661,6 +662,7 @@ namespace ReserveBlockCore.P2P
         public async Task UnlockValidator()
         {
             Program.RemoteCraftLock = false;
+            Program.RemoteCraftLockTime = null;
         }
 
         #endregion

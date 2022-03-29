@@ -39,6 +39,7 @@ namespace ReserveBlockCore
         public static int BlockValidateFailCount = 0;
         public static bool BlockCrafting = false;
         public static bool RemoteCraftLock = false;
+        public static DateTime? RemoteCraftLockTime = null;
         public static string ValidatorAddress = "";
         public static bool IsTestNet = false;
         public static int Port = 3338;
@@ -47,7 +48,7 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
-        public static string CLIVersion = "1.14.0";
+        public static string CLIVersion = "1.15.0";
 
         #endregion
         static async Task Main(string[] args)
@@ -125,10 +126,10 @@ namespace ReserveBlockCore
             StopAllTimers = true;
 
             blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            blockTimer.Change(60000, 4000); //waits 1 minute, then runs every 2 seconds for new blocks
+            blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            heightTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
+            heightTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
 
             PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 4 minutes
@@ -243,6 +244,23 @@ namespace ReserveBlockCore
         {
             if(StopAllTimers == false)
             {
+                if(RemoteCraftLockTime != null)
+                {
+                    try
+                    {
+                        var currentTime = DateTime.Now;
+                        var lockTimeDiff = currentTime - RemoteCraftLockTime.Value;
+                        if (lockTimeDiff.TotalMinutes > (double)3)
+                        {
+                            RemoteCraftLock = false;
+                            RemoteCraftLockTime = null;
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+
+                    }
+                }
                 
                 //process block queue first
                 await BlockQueueService.ProcessBlockQueue();
@@ -263,7 +281,7 @@ namespace ReserveBlockCore
                     var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
                     var validators = Validators.Validator.GetAll();
                     //If no validators are detected then no need to run this code
-                    if (IsCrafting == false && RemoteCraftLock == false)
+                    if (IsCrafting == false && RemoteCraftLock == false && validators != null)
                     {
                         if (ValidatorAddress != "")
                         {
@@ -285,16 +303,19 @@ namespace ReserveBlockCore
                                     {
                                         if (mainVal == ValidatorAddress)
                                         {
-                                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                            var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
-
-                                            if (account != null)
+                                            var accounts = AccountData.GetAccounts();
+                                            if(accounts != null)
                                             {
-                                                P2PClient.LockForeignCrafters(null, secondValidator);
-                                                //craft new block
-                                                await BlockchainData.CraftNewBlock(mainVal);
+                                                var account = accounts.FindOne(x => x.Address == mainVal);
 
-                                                P2PClient.UnlockForeignCrafters(null, secondValidator);
+                                                if (account != null)
+                                                {
+                                                    P2PClient.LockForeignCrafters(null, secondValidator);
+                                                    //craft new block
+                                                    await BlockchainData.CraftNewBlock(mainVal);
+
+                                                    P2PClient.UnlockForeignCrafters(null, secondValidator);
+                                                }
                                             }
                                         }
 
@@ -337,42 +358,7 @@ namespace ReserveBlockCore
                                                         craftBlock = true;
                                                     }
                                                 }
-                                                else
-                                                {
-                                                    await P2PClient.GetMasternodes();
-                                                    validators = Validators.Validator.GetAll();
-                                                    mainValidator = validators.FindOne(x => x.Address == mainVal);
-                                                    if (mainValidator != null)
-                                                    {
-                                                        var result = await P2PClient.CallCrafter(mainValidator);
-                                                        if (result == true)
-                                                        {
-                                                            var height = lastBlock.Height;
-                                                            BlockCrafting = true;
-                                                            var IFCResult = await P2PClient.InitiateForeignCraft(mainVal, height);
-
-                                                            if (IFCResult.Item1 == true)
-                                                            {
-                                                                if (IFCResult.Item2 != null)
-                                                                {
-                                                                    await BlockQueueService.AddBlock(IFCResult.Item2);
-                                                                    craftBlock = false;
-                                                                    BlockCrafting = false;
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                //if peer is online but not crafting that should not happen.
-                                                                craftBlock = true;
-                                                            }
-
-                                                        }
-                                                        else
-                                                        {
-                                                            craftBlock = true;
-                                                        }
-                                                    }
-                                                }
+                                                
                                             }
                                             catch (Exception ex)
                                             {
@@ -380,20 +366,24 @@ namespace ReserveBlockCore
                                                 BlockCrafting = false;
                                             }
 
-                                            var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                            var account = accounts.FindOne(x => x.Address == secondaryVal);
-
-                                            if (account != null && craftBlock == true)
+                                            var accounts = AccountData.GetAccounts();
+                                            if(accounts != null)
                                             {
-                                                //craft new block
-                                                P2PClient.LockForeignCrafters(mainValidator, null);
-                                                //craft new block
-                                                await BlockchainData.CraftNewBlock(secondaryVal);
+                                                var account = accounts.FindOne(x => x.Address == secondaryVal);
 
-                                                P2PClient.UnlockForeignCrafters(mainValidator, null);
+                                                if (account != null && craftBlock == true)
+                                                {
+                                                    //craft new block
+                                                    P2PClient.LockForeignCrafters(mainValidator, null);
+                                                    //craft new block
+                                                    await BlockchainData.CraftNewBlock(secondaryVal);
+
+                                                    P2PClient.UnlockForeignCrafters(mainValidator, null);
+                                                    BlockCrafting = false;
+                                                }
                                                 BlockCrafting = false;
                                             }
-                                            BlockCrafting = false;
+                                            
                                         }
 
                                     }
@@ -476,18 +466,22 @@ namespace ReserveBlockCore
                                             craftBlock = true;
                                         }
                                         var backupValidator = Program.GenesisAddress;
-                                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                                        var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
-
-                                        if (account != null && craftBlock == true)
+                                        var accounts = AccountData.GetAccounts();
+                                        if(accounts != null)
                                         {
-                                            P2PClient.LockForeignCrafters(mainValidator, secondValidator);
-                                            await BlockchainData.CraftNewBlock(backupValidator);
-                                            P2PClient.UnlockForeignCrafters(mainValidator, secondValidator);
+                                            var account = accounts.Query().Where(x => x.Address == backupValidator).FirstOrDefault();
+
+                                            if (account != null && craftBlock == true)
+                                            {
+                                                P2PClient.LockForeignCrafters(mainValidator, secondValidator);
+                                                await BlockchainData.CraftNewBlock(backupValidator);
+                                                P2PClient.UnlockForeignCrafters(mainValidator, secondValidator);
+                                                BlockCrafting = false;
+                                            }
+
                                             BlockCrafting = false;
                                         }
-
-                                        BlockCrafting = false;
+                                        
                                     }
                                 }
                                 else
@@ -506,6 +500,8 @@ namespace ReserveBlockCore
                         }
                         IsCrafting = false;
                     }
+
+
                 }
 
             }
@@ -564,23 +560,31 @@ namespace ReserveBlockCore
         {
             if (StopAllTimers == false)
             {
-                var peersConnected = await P2PClient.ArePeersConnected();
+                try
+                {
+                    var peersConnected = await P2PClient.ArePeersConnected();
 
-                if (peersConnected.Item1 != true)
-                {
-                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    await StartupService.StartupPeers();
-                    //potentially no connected nodes.
-                }
-                else
-                {
-                    if(peersConnected.Item2 != 6)
+                    if (peersConnected.Item1 != true)
                     {
-                        bool result = false;
-                        //Get more nodes!
-                        result = await P2PClient.ConnectToPeers();
+                        Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                        await StartupService.StartupPeers();
+                        //potentially no connected nodes.
+                    }
+                    else
+                    {
+                        if (peersConnected.Item2 != 6)
+                        {
+                            bool result = false;
+                            //Get more nodes!
+                            result = await P2PClient.ConnectToPeers();
+                        }
                     }
                 }
+                catch(Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.Message, "Program.peerCheckTimer_Elapsed()");
+                }
+                
             }
             
         }
