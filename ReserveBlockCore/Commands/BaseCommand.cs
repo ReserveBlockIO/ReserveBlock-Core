@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Commands
                     Console.Clear();
                     break;
                 case "/backupwallet":
-                    BackupUtil.BackupWalletData();
+                    BackupUtil.BackupWalletData("Not Yet Added.");
                     Console.WriteLine("Reserve Block Wallet has been backed up.");
                     break;
                 case "/mempool":
@@ -68,7 +68,15 @@ namespace ReserveBlockCore.Commands
                     AccountData.PrintWalletAccounts();
                     break;
                 case "8": //Startup Masternode
-                    ValidatorService.DoValidate();
+                    if(Program.StopAllTimers == false && Program.BlocksDownloading == false)
+                    {
+                        ValidatorService.DoValidate();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please wait to start. wallet is still activating features.");
+                    }
+                    
                     break;
                 case "9": //Startup Datanode
                     commandResult = "This feature is coming soon...";

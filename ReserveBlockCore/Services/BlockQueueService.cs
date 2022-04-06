@@ -9,6 +9,7 @@ namespace ReserveBlockCore.Services
     public class BlockQueueService
     {
         public static bool QueueProcessing = false;
+        public static long LastHeightBroadcasted = -1;
 
         public static void UpdateMemBlocks()
         {
@@ -28,19 +29,26 @@ namespace ReserveBlockCore.Services
                 if (blockQueueAll.Count() > 0)
                 {
                     var queueOrdered = blockQueueAll.OrderBy(x => x.Height).ThenBy(x => x.Timestamp).ToList();
+                    var blockchain = BlockchainData.GetBlocks();
                     foreach (var block in queueOrdered)
                     {
-                        var blockchain = BlockchainData.GetBlocks();
-                        var findBlock = blockchain.FindOne(x => x.Height == block.Height);
-                        if (findBlock == null)
+                        try
                         {
-                            await BlockValidatorService.ValidateBlock(block);//insert into blockchain
-                            blockQueue.DeleteMany(x => x.Height == block.Height);//delete from queue
-                            
+                            var findBlock = blockchain.FindOne(x => x.Height == block.Height);
+                            if (findBlock == null)
+                            {
+                                await BlockValidatorService.ValidateBlock(block);//insert into blockchain
+                                blockQueue.DeleteMany(x => x.Height == block.Height);//delete from queue
+
+                            }
+                            else
+                            {
+                                blockQueue.DeleteMany(x => x.Height == block.Height); //delete from queue
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            blockQueue.DeleteMany(x => x.Height == block.Height); //delete from queue
+
                         }
                     }
                 }
@@ -65,7 +73,12 @@ namespace ReserveBlockCore.Services
                     blockQueue.Insert(block);
                     try
                     {
-                        await P2PClient.BroadcastBlock(block);
+                        //REVIEW THIS. POTENTIAL LOOP BROADCAST
+                        if(block.Height == LastHeightBroadcasted + 1)
+                        {
+                            await P2PClient.BroadcastBlock(block);
+                            LastHeightBroadcasted = block.Height;
+                        }
                     }
                     catch (Exception ex)
                     {

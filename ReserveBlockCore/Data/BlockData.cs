@@ -34,18 +34,15 @@ namespace ReserveBlockCore.Data
                 Height = 0,
                 Timestamp = timeStamp,
                 Transactions = gTrxList,
-                Validator = Program.GenesisAddress,
+                Validator = "Genesis Validator",
                 ChainRefId = BlockchainData.ChainRef,
-                NextValidators = Program.GenesisAddress + ":" + Program.GenesisAddress,
+                TotalValidators = 0,
+                ValidatorAnswer = "Genesis Answer"
             };
 
             block.Build();
 
-            BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-            //Add validator signature
-            block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
+            block.ValidatorSignature = "Genesis Signature";
 
             //Get the block size
             var str = JsonConvert.SerializeObject(block);

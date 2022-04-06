@@ -12,7 +12,7 @@ namespace ReserveBlockCore.Services
             {
                 BlockQueueService.QueueProcessing = true;
 
-                var myBlockHeight = BlockchainData.GetHeight();
+                var myBlockHeight = Program.BlockHeight;
                 var difference = nHeight - myBlockHeight;
                 try
                 {

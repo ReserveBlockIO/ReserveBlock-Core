@@ -44,6 +44,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
         public const string RSRV_PEERS = "rsrv_peers";
         public const string RSRV_VALIDATORS = "rsrv_validators";
+        public const string RSRV_ADJUDICATORS = "rsrv_adjudicators";
         public const string RSRV_WSTATE_TREI = "rsrv_wstate_trei";
         public const string RSRV_ASTATE_TREI = "rsrv_astate_trei";
         public const string RSRV_CONFIG = "rsrv_config";
@@ -74,6 +75,108 @@ namespace ReserveBlockCore.Data
             {
                 Directory.CreateDirectory(path);
             }
+            DB = new LiteDatabase(path + RSRV_DB_NAME);
+            DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
+            DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
+            DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
+            DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
+            DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
+            DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
+            DB_Config = new LiteDatabase(path + RSRV_DB_CONFIG);
+        }
+
+        public static void DeleteCorruptDb()
+        {
+            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+            }
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            DB.Dispose();
+
+            File.Delete(path + RSRV_DB_NAME);
+
+            DB = new LiteDatabase(path + RSRV_DB_NAME);
+
+        }
+
+        public static void MigrateDbNewChainRef()
+        {
+            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+            }
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            DB.Checkpoint();
+            DB_Queue.Checkpoint();
+            DB_WorldStateTrei.Checkpoint();
+            DB_AccountStateTrei.Checkpoint();
+            DB_Wallet.Checkpoint();
+            DB_Peers.Checkpoint();
+            DB_Banlist.Checkpoint();
+            DB_Config.Checkpoint();
+
+            //dispose connection to DB
+            CloseDB();
+            if (File.Exists(path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak")))
+            {
+                File.Delete(path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+                File.Move(path + RSRV_DB_WALLET_NAME, path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+            }
+            else
+            {
+                File.Move(path + RSRV_DB_WALLET_NAME, path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+            }
+            
+
+            File.Delete(path + RSRV_DB_NAME);
+            File.Delete(path + RSRV_DB_QUEUE_NAME);
+            File.Delete(path + RSRV_DB_WSTATE_TREI);
+            File.Delete(path + RSRV_DB_ASTATE_TREI);
+            File.Delete(path + RSRV_DB_WALLET_NAME);
+            File.Delete(path + RSRV_DB_PEERS_NAME);
+            File.Delete(path + RSRV_DB_BANLIST_NAME);
+            File.Delete(path + RSRV_DB_CONFIG);
+
+            //recreate DBs
             DB = new LiteDatabase(path + RSRV_DB_NAME);
             DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);

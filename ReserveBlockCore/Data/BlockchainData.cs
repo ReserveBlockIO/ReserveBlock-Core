@@ -50,7 +50,7 @@ namespace ReserveBlockCore.Data
             }
         }
         //Method needing validator functions still.
-        public static async Task<string> CraftNewBlock(string validator)
+        public static async Task<Block?> CraftNewBlock(string validator, int totalVals, string valAnswer)
         {
             try
             {
@@ -59,23 +59,15 @@ namespace ReserveBlockCore.Data
 
                 if (validatorAccount == null)
                 {
-                    return "No local account found to match validator!";
+                    return null;
                 }
 
                 //Get tx's from Mempool
                 var processedTxPool = TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
-                var lastBlock = GetLastBlock();
+                var lastBlock = Program.LastBlock;
                 var height = lastBlock.Height + 1;
-                var nextValidators = await Validators.Validator.GetNextBlockValidators(validator);
-
-                if (nextValidators == null || nextValidators == "")
-                {
-                    //Attempt to get masternodes as they cannot be null
-                    await P2PClient.GetMasternodes();
-                    return "Failed to retrieve next validators!";
-                }
 
                 //Need to get master node validator.
                 var timestamp = TimeUtil.GetTime();
@@ -127,7 +119,6 @@ namespace ReserveBlockCore.Data
                     transactionList.Add(coinbase_tx2);
                 }
 
-
                 var block = new Block
                 {
                     Height = height,
@@ -135,7 +126,8 @@ namespace ReserveBlockCore.Data
                     Transactions = GiveOtherInfos(transactionList, height),
                     Validator = validator,
                     ChainRefId = ChainRef,
-                    NextValidators = nextValidators
+                    TotalValidators = totalVals,
+                    ValidatorAnswer = valAnswer
                 };
                 block.Build();
 
@@ -154,28 +146,22 @@ namespace ReserveBlockCore.Data
                 var buildTime = endTimer - startCraftTimer;
                 block.BCraftTime = buildTime.Milliseconds;
 
-                if (Program.RemoteCraftLock == false)
-                {
-                    var blockValResult = await BlockValidatorService.ValidateBlock(block);
 
-                    if (blockValResult == true)
-                    {
-                        await P2PClient.BroadcastBlock(block);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Error! Block was not validated.");
-                    }
+                var blockValResult = await BlockValidatorService.ValidateBlockForTask(block);
+
+                if (blockValResult == true)
+                {
+                    return block;
                 }
 
-                return "complete";
+                
             }
             catch (Exception ex)
             {
                 ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
-            return "fail";
+            return null;
         }
 
         public static decimal GetBlockReward()
@@ -288,6 +274,21 @@ namespace ReserveBlockCore.Data
             if (blockCheck == null)
             {
                 blocks.Insert(block);
+
+                //Update in memory fields.
+                Program.LastBlock = block;
+                Program.BlockHeight = block.Height;
+            }
+            else
+            {
+                var blockList = blocks.Find(Query.All(Query.Descending)).ToList();
+                var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
+                if (eBlock == null)
+                {
+                    //database corrupt
+                    Program.DatabaseCorruptionDetected = true;
+                    //DbContext.DeleteCorruptDb();
+                }
             }
         }
         private static decimal GetTotalFees(List<Transaction> txs)

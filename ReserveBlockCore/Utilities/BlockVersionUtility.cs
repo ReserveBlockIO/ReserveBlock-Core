@@ -8,25 +8,6 @@ namespace ReserveBlockCore.Utilities
         {
             int blockVersion = 1;
 
-            if(height > 16000)
-            {
-                blockVersion = 2;
-            }
-
-            if(height > 16534)
-            {
-                blockVersion = 3;
-            }
-
-            if(height > 17296)
-            {
-                blockVersion = 4;
-            }
-            if(height > 19783)
-            {
-                blockVersion = 5;
-            }
-
             return blockVersion;
         }
     }

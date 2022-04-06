@@ -45,7 +45,7 @@ namespace ReserveBlockCore.P2P
                     peers.Insert(nPeer);
                 }
             }
-            var blockHeight = BlockchainData.GetHeight();
+            var blockHeight = Program.BlockHeight;
             PeerList.Add(Context.ConnectionId, peerIP);
 
             await SendMessage("IP", peerIP);
@@ -65,7 +65,7 @@ namespace ReserveBlockCore.P2P
                 //do some logic
             }
         }
-
+        
         public async Task SendMessage(string message, string data)
         {
             await Clients.Caller.SendAsync("GetMessage", message, data);
@@ -76,11 +76,6 @@ namespace ReserveBlockCore.P2P
             await Clients.All.SendAsync("GetMessage", message, data);
         }
 
-        public async Task SendMessageAllValidators(string ip)
-        {
-            await Clients.All.SendAsync("GetMessage", "NewBlock");
-        }
-
         #endregion
 
         #region Receive Block
@@ -88,32 +83,34 @@ namespace ReserveBlockCore.P2P
         {
             if(Program.BlocksDownloading == false)
             {
-                Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
-                await BlockQueueService.ProcessBlockQueue();
-
-                var nextHeight = BlockchainData.GetHeight() + 1;
-                var currentHeight = nextBlock.Height;
-
-                if (nextHeight == currentHeight)
+                if(nextBlock.ChainRefId == BlockchainData.ChainRef)
                 {
-                    //var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                    var broadcast = await BlockQueueService.AddBlock(nextBlock);
+                    await BlockQueueService.ProcessBlockQueue();
 
-                    if (broadcast == true)
+                    var nextHeight = Program.BlockHeight + 1;
+                    var currentHeight = nextBlock.Height;
+
+                    if (nextHeight == currentHeight)
                     {
-                        string data = "";
-                        data = JsonConvert.SerializeObject(nextBlock);
-                        await SendMessageAllPeers("blk", data);
+                        var broadcast = await BlockQueueService.AddBlock(nextBlock);
+
+                        if (broadcast == true)
+                        {
+                            string data = "";
+                            data = JsonConvert.SerializeObject(nextBlock);
+                            await SendMessageAllPeers("blk", data);
+                        }
+                    }
+
+                    if (nextHeight < currentHeight)
+                    {
+                        // means we need to download some blocks
+                        Program.BlocksDownloading = true;
+                        var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
+                        Program.BlocksDownloading = setDownload;
                     }
                 }
-                
-                if(nextHeight < currentHeight)
-                {
-                    // means we need to download some blocks
-                    Program.BlocksDownloading = true;
-                    var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
-                    Program.BlocksDownloading = setDownload;
-                }
+                //Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
             }
         }
 
@@ -211,16 +208,28 @@ namespace ReserveBlockCore.P2P
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
-            var blocks = BlockchainData.GetBlocks();
-
-            if (blocks.FindAll().Count() != 0)
+            if (Program.BlockHeight != -1)
             {
-                var blockHeight = BlockchainData.GetHeight();
+                var blockHeight = Program.BlockHeight;
 
                 return blockHeight;
             }
             return -1;
 
+        }
+
+        #endregion
+
+        #region Send Adjudicator
+        public async Task<Adjudicators?> SendLeadAdjudicator()
+        {
+            var leadAdj = Program.LeadAdjudicator;
+            if(leadAdj == null)
+            {
+                leadAdj = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
+            }
+
+            return leadAdj;
         }
 
         #endregion
@@ -426,7 +435,12 @@ namespace ReserveBlockCore.P2P
                 return "FTAV";
             }
 
-            var updateMasternodes = await P2PClient.GetMasternodes();
+            //if(validator.WalletVersion != Program.CLIVersion)
+            //{
+            //    return "FTAV";
+            //}
+
+            //var updateMasternodes = await P2PClient.GetMasternodes();
 
             var validatorList = Validators.Validator.GetAll();
 
@@ -565,106 +579,6 @@ namespace ReserveBlockCore.P2P
 
             return "Hello";
         }
-        #endregion
-
-        #region Check Inactive Validator and flag 
-        public async Task SendInactiveValidator(Validators validator)
-        {
-            var result = await P2PClient.CallCrafter(validator);
-        }
-        #endregion
-
-        #region Send Validator Online
-        public async Task SendValidatorOnline(string address)
-        {
-            var validators = Validators.Validator.GetAll();
-            var validatorLocal = validators.FindOne(x => x.Address == address);
-            if(validatorLocal != null)
-            {
-                validatorLocal.LastChecked = DateTime.UtcNow;
-                validatorLocal.IsActive = true;
-                validatorLocal.FailCount = 0;
-                validators.Update(validatorLocal);
-            }
-        }
-        #endregion
-
-
-        #region Request Block Craft
-        public async Task<Block?> RequestBlockCraft(long nextBlockHeight)
-        {
-            var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
-
-            if (nextBlock != null)
-            {
-                return nextBlock;
-            }
-            else
-            {
-                if (Program.IsCrafting == false && Program.RemoteCraftLock == false)
-                {
-                    //process block queue first
-                    await BlockQueueService.ProcessBlockQueue();
-                    var localValidator = Validators.Validator.GetLocalValidator();
-                    var lastBlock = BlockchainData.GetLastBlock();
-                    var currentUnixTime = TimeUtil.GetTime();
-                    var timeDiff = (currentUnixTime - lastBlock.Timestamp) / 60.0M;
-                    var validators = Validators.Validator.GetAll();
-
-                    Program.IsCrafting = true;
-                    Program.BlockCrafting = true;
-                    var nextValidators = Validators.Validator.GetBlockValidator();
-
-                    var nextVals = nextValidators.Split(':');
-                    var mainVal = nextVals[0];
-                    var secondaryVal = nextVals[1];
-
-                    if (mainVal == Program.ValidatorAddress)
-                    {
-                        var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-                        var account = accounts.Query().Where(x => x.Address == mainVal).FirstOrDefault();
-
-                        if (account != null)
-                        {
-                            //craft new block
-                            await BlockchainData.CraftNewBlock(mainVal);
-                            nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
-                            Program.IsCrafting = false;
-                            Program.BlockCrafting = false;
-
-                            return nextBlock;
-                        }
-                    }
-                }
-
-                nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight + 1);
-
-                Program.IsCrafting = false;
-                Program.BlockCrafting = false;
-                return nextBlock;
-            }
-        }
-
-        #endregion
-
-        #region Remote Lock Crafting Ability
-
-        public async Task LockValidator()
-        {
-            Program.RemoteCraftLock = true;
-            Program.RemoteCraftLockTime = DateTime.Now;
-        }
-
-        #endregion
-
-        #region Remote Unlock Crafting Ability
-
-        public async Task UnlockValidator()
-        {
-            Program.RemoteCraftLock = false;
-            Program.RemoteCraftLockTime = null;
-        }
-
         #endregion
 
         #region Get IP

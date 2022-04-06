@@ -20,10 +20,15 @@ namespace ReserveBlockCore.Utilities
             var peersConnected = await P2PClient.ArePeersConnected();
             Console.WriteLine("Peers connected: " + peersConnected.Item1.ToString());
             Console.WriteLine("Peers connected Count: " + peersConnected.Item2.ToString());
-            var blockHeight = BlockchainData.GetHeight();
+            var blockHeight = Program.BlockHeight.ToString();
             Console.WriteLine("Block Height: " + blockHeight.ToString());
             Program.PrintConsoleErrors = Program.PrintConsoleErrors == false ? true : false;
             Console.WriteLine("Showing Block Download Errors: " + Program.PrintConsoleErrors.ToString());
+            Console.WriteLine("Adjudicate? " + Program.Adjudicate.ToString());
+            Console.WriteLine("Adjudicate Locked? " + Program.AdjudicateLock.ToString());
+            Console.WriteLine("Lead Adjudicator: " + (Program.LeadAdjudicator != null ? Program.LeadAdjudicator.Address : "NA"));
+            Console.WriteLine("Last Adjudicate Time: " + Program.LastAdjudicateTime.ToString());
+
             Console.WriteLine("Re-establish Peers? y/n");
             var reconnect = Console.ReadLine();
             if(reconnect != null)
@@ -51,13 +56,13 @@ namespace ReserveBlockCore.Utilities
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();
-            var blockHeight = BlockchainData.GetHeight();
+            var blockHeight = Program.BlockHeight;
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
             var nodes = Program.Nodes;
             var nodeList = nodes.ToList();
-            var lastBlock = BlockchainData.GetLastBlock();
+            var lastBlock = Program.LastBlock;
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -73,8 +78,9 @@ namespace ReserveBlockCore.Utilities
             var remoteLock = "Remote Lock: " + Program.RemoteCraftLock.ToString();
             var remoteLockTime = "Remote Lock Time: " + (Program.RemoteCraftLockTime == null ?  "NA" : Program.RemoteCraftLockTime.Value.ToShortTimeString());
             var isResyncing = "Chain Resyncing? : " + Program.IsResyncing.ToString();
+            var isCorrupt = "Database Corruption Detected? : " + Program.DatabaseCorruptionDetected.ToString();
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
-                + " - Validator: " + lastBlock.Validator + " - Next Validators: " + lastBlock.NextValidators;
+                + " - Validator: " + lastBlock.Validator;
 
             StringBuilder strBld = new StringBuilder();
             strBld.AppendLine(validatorAddress);

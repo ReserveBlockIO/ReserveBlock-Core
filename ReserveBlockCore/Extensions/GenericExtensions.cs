@@ -9,5 +9,12 @@
                 foreach (var x in source) yield return x;
             }
         }
+
+        public static string ToRawTx(this string source)
+        {
+            var output = "";
+
+            return output;
+        }
     }
 }

@@ -214,10 +214,10 @@ namespace ReserveBlockCore.Data
 			return accountsWithBal;
 		}
 
-		public static IEnumerable<Account> GetLocalValidator()
+		public static Account GetLocalValidator()
 		{
 			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-			var accountsWithBal = accounts.Find(x => x.IsValidating == true);
+			var accountsWithBal = accounts.FindOne(x => x.IsValidating == true);
 
 			return accountsWithBal;
 		}

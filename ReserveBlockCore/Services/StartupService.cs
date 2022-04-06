@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
@@ -64,7 +67,7 @@ namespace ReserveBlockCore.Services
             //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
             //testnet
-            BlockchainData.ChainRef = "t2_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+            BlockchainData.ChainRef = "t3_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
             if (Program.IsTestNet)
             {
@@ -77,114 +80,60 @@ namespace ReserveBlockCore.Services
             //BlockchainData.BlockVersion = BlockVersionUtility.GetBlockVersion();
         }
 
+        internal static void CheckBlockRefVerToDb()
+        {
+            var genesisBlock = BlockchainData.GetGenesisBlock();
+            if(genesisBlock != null)
+            {
+                if(genesisBlock.ChainRefId != BlockchainData.ChainRef)
+                {
+                    //migrate to new chain ref.
+                    DbContext.MigrateDbNewChainRef();
+                }
+            }
+        }
+
+        internal static void SetBlockHeight()
+        {
+            Program.BlockHeight = BlockchainData.GetHeight();
+        }
+
+        internal static void SetLastBlock()
+        {
+            if(Program.BlockHeight != -1)
+            {
+                Program.LastBlock = BlockchainData.GetLastBlock();
+            }
+        }
+
         internal static void RunRules()
         {
-            RuleService.ResetValidators();
-            RuleService.ResetFailCounts();
-            RuleService.RemoveOldValidators();
+            //RuleService.ResetValidators();
+            //RuleService.ResetFailCounts();
+            //RuleService.RemoveOldValidators();
         }
+
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
-        internal static void SetBootstrapValidators()
+        internal static void SetBootstrapAdjudicator()
         {
-            var validators = Validators.Validator.GetAll();
-
-            var val1Check = validators.FindOne(x => x.Address == "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g");
-
-            if (val1Check == null)
+            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
+            var adjudicator = adjudicators.FindOne(x => x.Address == "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY");
+            if(adjudicator == null)
             {
-                var validator1 = new Validators
-                {
-                    Address = "RTX8Tg9PJMW6JTTdu7A5aKEDajawo9cr6g",
-                    EligibleBlockStart = 0,
-                    Amount = 3010M,
-                    FailCount = 0,
+                Adjudicators adj1 = new Adjudicators {
+                    Address = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY",
                     IsActive = true,
-                    NodeIP = "185.199.226.121",
-                    Position = 1,
-                    Signature = "MEQCIDVBdYv+Wfpil+j6d06JbCuWihrTUHP9xCqdAICVaVdXAiBpkyinNKZANOfz4rkao8KmzO461TevS5YGr8BNAdBBZg==.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
-                    UniqueName = "GenesisValidator1",
-                    NodeReferenceId = BlockchainData.ChainRef,
-                    WalletVersion = Program.CLIVersion,
-                    LastChecked = DateTime.UtcNow
+                    IsLeadAdjuidcator = true,
+                    LastChecked = DateTime.UtcNow,
+                    NodeIP = "173.254.253.106",
+                    Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
+                    UniqueName = "Trillium Adjudicator 1",
+                    WalletVersion = Program.CLIVersion  
                 };
 
-                validators.Insert(validator1);
+                adjudicators.Insert(adj1);
             }
-
-            var val2Check = validators.FindOne(x => x.Address == "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq");
-
-            if (val2Check == null)
-            {
-                var validator2 = new Validators
-                {
-                    Address = "RTC7uEaVWVakHwYQMhMDAyNkxYgjzV9WZq",
-                    EligibleBlockStart = 0,
-                    Amount = 1999M,
-                    FailCount = 0,
-                    IsActive = true,
-                    NodeIP = "192.3.3.171",
-                    Position = 2,
-                    Signature = "MEUCIEVutYCQT5ruAKnh8BeLpNkx5lvKFji00H2R37IiO1YIAiEAgHuHBpcMb+2NJs8SMxCP05JGUQ2glB0bkgmQ9YEtBX0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
-                    UniqueName = "GenesisValidator2",
-                    NodeReferenceId = BlockchainData.ChainRef,
-                    WalletVersion = Program.CLIVersion,
-                    LastChecked = DateTime.UtcNow
-                };
-
-                validators.Insert(validator2);
-            }
-        }
-
-        internal static void SetBootstrapValidatorsTestNet()
-        {
-            var validators = Validators.Validator.GetAll();
-
-            var val1Check = validators.FindOne(x => x.Address == "xSYaH36ZyFBZGqCJnQocuyBo3aRaav7RGg");
-
-            if (val1Check == null)
-            {
-                var validator1 = new Validators
-                {
-                    Address = "xSYaH36ZyFBZGqCJnQocuyBo3aRaav7RGg",
-                    EligibleBlockStart = 0,
-                    Amount = 1001M,
-                    FailCount = 0,
-                    IsActive = true,
-                    NodeIP = "185.199.226.121",
-                    Position = 1,
-                    Signature = "MEYCIQDvmKsH3WkDIg6gubCoxSaBFI89G4qNhO2yWBtrZjxPPAIhANwliGMjvGN8EPMyVptNf8wWJxvdM6ltR9alGqnKvkPp.JTVCpmPPZMCTVyWhZzitGN4hnNT9YyhX5P6nMi15b8YezkrMsiygEnfMxCQdpwUjqwTsKdJBmjPt16NLaeFjnLR",
-                    UniqueName = "GenesisValidator1",
-                    NodeReferenceId = BlockchainData.ChainRef,
-                    WalletVersion = Program.CLIVersion,
-                    LastChecked = DateTime.UtcNow
-                };
-
-                validators.Insert(validator1);
-            }
-
-            var val2Check = validators.FindOne(x => x.Address == "xSDZibXgBPGDGKH5EzzkWdLLRPXNm7NMrC");
-
-            if (val2Check == null)
-            {
-                var validator2 = new Validators
-                {
-                    Address = "xSDZibXgBPGDGKH5EzzkWdLLRPXNm7NMrC",
-                    EligibleBlockStart = 0,
-                    Amount = 1001M,
-                    FailCount = 0,
-                    IsActive = true,
-                    NodeIP = "192.3.3.171",
-                    Position = 2,
-                    Signature = "MEUCIQDxNnLLawh4ua+yq5iPWEKoVi1NreAdj3BUwz2+kGaS8AIgAk0Q9KdMbAluHbtyKHZjtgGzgkc8dO6mJWSgcZEZgg0=.5mvvTz8QoF7FXwBufMjjhsyhhefAHcKHvLZQjb7FJqyaMq5JKofg8n8wJSf13kunqXDMWSU66aZCuSvbGpDRkbLZ",
-                    UniqueName = "GenesisValidator2",
-                    NodeReferenceId = BlockchainData.ChainRef,
-                    WalletVersion = Program.CLIVersion,
-                    LastChecked = DateTime.UtcNow
-                };
-
-                validators.Insert(validator2);
-            }
-        }
+        } 
 
         internal static void ClearStaleMempool()
         {
@@ -238,45 +187,45 @@ namespace ReserveBlockCore.Services
             if (myAccount != null)
             {
                 Program.ValidatorAddress = myAccount.Address;
-
-                var validators = Validators.Validator.GetAll();
-                var validator = validators.FindOne(x => x.Address == myAccount.Address);
-                if(validator != null)
-                {
-                    validator.IsActive = true;
-                    validator.FailCount = 0;
-                    validator.LastChecked = DateTime.UtcNow;
-
-                    validators.Update(validator);
-                }
             }
+        }
 
-            
+        internal static void SetSelfAdjudicator()
+        {
+            var leadAdj = Program.LeadAdjudicator;
+            var account = AccountData.GetSingleAccount(leadAdj.Address);
+            if(account != null)
+            {
+                Program.Adjudicate = true;
+            }
+        }
+
+        internal static async Task SetLeadAdjudicator()
+        {
+            var adjudicatorLead = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
+            if(adjudicatorLead != null)
+            {
+                Program.LeadAdjudicator = adjudicatorLead;
+            }
+            else
+            {
+                Program.LeadAdjudicator = await P2PClient.GetLeadAdjudicator();
+            }
         }
 
         internal static void CheckLastBlock()
         {
             try
             {
-                var lastBlock = BlockchainData.GetLastBlock();
-                var worldTrei = WorldTrei.GetWorldTreiRecord();
-                if (lastBlock != null && worldTrei != null)
-                {
-                    if (worldTrei.StateRoot != lastBlock.StateRoot)
-                    {
-                        //redownload old block and check the state trei from transactions to see if any were affected and need to be modified.
-                    }
-                }
-
-                var blocks = BlockchainData.GetBlocks();
-                var goodBlock = blocks.FindOne(x => x.Height == 19783 && x.Hash == "26fceca5f99d8775e690b193fed87fb4a55162b5b1c2b6f9bb1ffb13570d9d74");
-                if(goodBlock == null)
-                {
-                    blocks.DeleteMany(x => x.Height >= 19783);
-                    DbContext.DB.Checkpoint();
-
-                    //ResetStateTreis();
-                }
+                //var lastBlock = BlockchainData.GetLastBlock();
+                //var worldTrei = WorldTrei.GetWorldTreiRecord();
+                //if (lastBlock != null && worldTrei != null)
+                //{
+                //    if (worldTrei.StateRoot != lastBlock.StateRoot)
+                //    {
+                //        //redownload old block and check the state trei from transactions to see if any were affected and need to be modified.
+                //    }
+                //}
                 
             }
             catch(Exception ex)
@@ -293,6 +242,37 @@ namespace ReserveBlockCore.Services
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
 
             Program.MemBlocks = blocks.Take(200).ToList();
+        }
+
+        public static async Task ConnectoToAdjudicator()
+        {
+            if(Program.ValidatorAddress != null && Program.ValidatorAddress != "")
+            {
+                var account = AccountData.GetLocalValidator();
+                var validators = Validators.Validator.GetAll();
+                var validator = validators.FindOne(x => x.Address == account.Address);
+                if(validator != null)
+                {
+
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
+
+                    var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
+                    if(adjudicator != null)
+                    {
+                        var url = "http://" + adjudicator.NodeIP + ":" + Program.Port + "/adjudicator";
+                        await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                    }
+                    else
+                    {
+                        Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                    }
+                    
+                }
+
+            }
         }
 
 
@@ -349,16 +329,10 @@ namespace ReserveBlockCore.Services
 
         internal static void CheckForDuplicateBlocks()
         {
-            ///////////////////////////////////////////////////////////////////////
-            //These methods will eventually no longer be needed once out of testnet.
-            ClearSelfValidator();
-            //ResetEntireChain();
-            //ResetChainToPoint();
-            //
-            ///////////////////////////////////////////////////////////////////////
+            //ClearSelfValidator();
 
             var blockChain = BlockchainData.GetBlocks();
-            var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
+            var blocks = blockChain.FindAll().ToList();
             var dupBlocksList = blocks.GroupBy(x => x.Height).Where(y => y.Count() > 1).Select(z => z.Key).ToList();
 
             if(dupBlocksList.Count != 0)
@@ -450,7 +424,7 @@ namespace ReserveBlockCore.Services
                     }
 
                     //re-add bootstrap validators
-                    SetBootstrapValidators();
+                    SetBootstrapAdjudicator();
                 }
             }
 
@@ -587,20 +561,6 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static async Task BroadcastValidatorOnline()
-        {
-            var accounts = AccountData.GetAccounts();
-            var accountList = accounts.FindAll();
-            if(accountList.Count() > 0)
-            {
-                var account = accountList.Where(x => x.IsValidating == true).FirstOrDefault();
-                if(account != null)
-                {
-                    await P2PClient.BroadcastValidatorOnline(account.Address);
-                }
-            }
-        }
-
         internal static void ClearSelfValidator()
         {
             var validators = Validators.Validator.GetAll();
@@ -634,8 +594,6 @@ namespace ReserveBlockCore.Services
 
                 if(result == true)
                 {
-                    await P2PClient.GetMasternodes();
-                    
                     var accounts = AccountData.GetAccounts();
                     var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
                     if(myAccount != null)
@@ -672,8 +630,7 @@ namespace ReserveBlockCore.Services
 
             if (peersConnected.Item1)
             {
-                var blocks = BlockData.GetBlocks();
-                if(blocks.Count() == 0)
+                if(Program.BlockHeight == -1)
                 {
                     //This just gets first few blocks to start chain off.
                     Console.WriteLine("Downloading Blocks First.");
@@ -697,10 +654,6 @@ namespace ReserveBlockCore.Services
                 
             }
             return true;
-        }
-        internal static void StartupInitializeChain()
-        {
-            BlockchainData.InitializeChain();
         }
         internal static void StartupMenu()
         {

@@ -13,19 +13,11 @@ namespace ReserveBlockCore.Data
             var accStTrei = new List<AccountStateTrei>();
 
             trxList.ForEach(x => {
-                var acctStateTreiFrom = new AccountStateTrei {
-                    Key = x.FromAddress,
-                    Nonce = x.Nonce + 1, //increase Nonce for next use
-                    Balance = 0, //subtract from the address
-                    StateRoot = block.StateRoot
-                };
-
-                accStTrei.Add(acctStateTreiFrom);
 
                 var acctStateTreiTo = new AccountStateTrei
                 {
                     Key = x.ToAddress,
-                    Nonce = 0, //increase nonce for next use
+                    Nonce = 0, 
                     Balance = (x.Amount), //subtract from the address
                     StateRoot = block.StateRoot
                 };

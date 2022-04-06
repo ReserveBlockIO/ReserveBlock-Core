@@ -21,11 +21,12 @@ namespace ReserveBlockCore.Models
 		public string PrevHash { get; set; }
 		public string MerkleRoot { get; set; }
 		public string StateRoot { get; set; }
-		public decimal TotalAmount { get; set; }
 		public string Validator { get; set; }
 		public string ValidatorSignature { get; set; }
-		public string NextValidators { get; set; }
+		public string ValidatorAnswer { get; set; }
 		public decimal TotalReward { get; set; }
+		public int TotalValidators { get; set; }
+		public decimal TotalAmount { get; set; }
 		public int Version { get; set; }
 		public int NumOfTx { get; set; }
 		public long Size { get; set; }
@@ -38,34 +39,23 @@ namespace ReserveBlockCore.Models
 			Version = BlockVersionUtility.GetBlockVersion(Height); //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
 			NumOfTx = Transactions.Count;
 			TotalAmount = GetTotalAmount();
-			TotalReward = GetTotalFees();
+			TotalReward = Program.BlockHeight != -1 ? GetTotalFees() : 0M;
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = GetLastBlack() != null ? GetLastBlack().Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
+			PrevHash = Program.BlockHeight != -1 ? Program.LastBlock.Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
 		public void Rebuild(Block block)
         {
-			var prevBlockHeight = block.Height - 1;
-			var blk = BlockchainData.GetBlockByHeight(prevBlockHeight);
 			Version = BlockVersionUtility.GetBlockVersion(Height);  //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
 			NumOfTx = Transactions.Count;
 			TotalAmount = GetTotalAmount();
 			TotalReward = GetTotalFees();
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = blk.Hash; //This is done because chain starting there won't be a previous hash. 
+			PrevHash = Program.LastBlock.Hash;
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
-		public void BuildBlockSignature()
-        {
-			
-        }
-
-		public void GetNextValidators()
-        {
-			
-        }
 		public int NumberOfTransactions
 		{
 			get { return Transactions.Count(); }
@@ -81,12 +71,6 @@ namespace ReserveBlockCore.Models
 			block.EnsureIndex(x => x.Height);
 			return block;
 		}
-		private static Block GetLastBlack()
-		{
-			var blockchain = GetBlocks();
-			var block = blockchain.FindOne(Query.All(Query.Descending));
-			return block;
-		}
 		private decimal GetTotalAmount()
 		{
 			var totalAmount = Transactions.AsEnumerable().Sum(x => x.Amount);
@@ -94,7 +78,7 @@ namespace ReserveBlockCore.Models
 		}
 		public string GetBlockHash()
 		{
-			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator + NextValidators + ChainRefId;
+			var strSum = Version + PrevHash + MerkleRoot + Timestamp + NumOfTx + Validator + TotalValidators.ToString() + ValidatorAnswer + ChainRefId;
 			var hash = HashingService.GenerateHash(strSum);
 			return hash;
 		}

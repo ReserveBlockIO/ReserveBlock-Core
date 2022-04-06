@@ -10,9 +10,9 @@ namespace ReserveBlockCore.Utilities
 {
     internal class BackupUtil
     {
-        public static void BackupWalletData()
+        public static void BackupWalletData(string dbPath)
         {
-            string path = Directory.GetCurrentDirectory() + @"\Databases\rsrvwaldata.db";
+            string path = dbPath;
             
             using (FileStream stream = File.Open(path, FileMode.Open, FileAccess.Read,  FileShare.ReadWrite))
             {

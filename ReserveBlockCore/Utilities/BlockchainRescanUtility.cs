@@ -40,7 +40,6 @@ namespace ReserveBlockCore.Utilities
                 Transactions = block.Transactions,
                 Validator = block.Validator,
                 ChainRefId = block.ChainRefId,
-                NextValidators = block.NextValidators
             };
 
             newBlock.Rebuild(block);

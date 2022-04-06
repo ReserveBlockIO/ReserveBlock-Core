@@ -20,46 +20,31 @@ namespace ReserveBlockCore.Data
             {
                 var trxPool = TransactionData.GetPool();
                 trxPool.DeleteAll();
-
                 var timeStamp = TimeUtil.GetTime();
-                var gTrx = new Transaction
+
+                var balanceSheet = GenesisBalanceUtility.GenesisBalances();
+                foreach(var item in balanceSheet)
                 {
-                    Amount = 67500000,
-                    Height = 0,
-                    FromAddress = "rbx_genesis_transaction",
-                    ToAddress = Program.GenesisAddress, 
-                    Fee = 0,
-                    Hash = "", //this will be built down below. showing just to make this clear.
-                    Timestamp = timeStamp,
-                    Signature = "COINBASE_TX",
-                    Nonce = 0
-                };
+                    var addr = item.Key;
+                    var balance = item.Value;
+                    var gTrx = new Transaction
+                    {
+                        Amount = balance,
+                        Height = 0,
+                        FromAddress = "rbx_genesis_transaction",
+                        ToAddress = addr,
+                        Fee = 0,
+                        Hash = "", //this will be built down below. showing just to make this clear.
+                        Timestamp = timeStamp,
+                        Signature = "COINBASE_TX",
+                        Nonce = 0
+                    };
 
-                gTrx.Build();
+                    gTrx.Build();
 
-                AddToPool(gTrx);
+                    AddToPool(gTrx);
 
-                //var stateTrei = StateData.GetAccountStateTrei();
-                //var stateTreiList = stateTrei.Find(x => x.Key != "rbx_genesis_transaction").ToList();
-
-                //stateTreiList.ForEach(x => {
-                //    var gTrx = new Transaction
-                //    {
-                //        Amount = x.Key == "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH" ? Decimal.Round((x.Balance - 94M), 0) : Decimal.Round(x.Balance + 1M, 0),
-                //        Height = 0,
-                //        FromAddress = "rbx_genesis_transaction",
-                //        ToAddress = x.Key,
-                //        Fee = 0,
-                //        Hash = "", //this will be built down below. showing just to make this clear.
-                //        Timestamp = timeStamp,
-                //        Signature = "COINBASE_TX",
-                //        Nonce = 0
-                //    };
-
-                //    gTrx.Build();
-
-                //    AddToPool(gTrx);
-                //});
+                }
 
             }
 
@@ -117,9 +102,17 @@ namespace ReserveBlockCore.Data
 
         public static ILiteCollection<Transaction> GetPool()
         {
-            var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
-            collection.EnsureIndex(x => x.Hash);
-            return collection;
+            try
+            {
+                var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
+                collection.EnsureIndex(x => x.Hash);
+                return collection;
+            }
+            catch(Exception ex)
+            {
+                return null;
+            }
+            
         }
         public static void PrintMemPool()
         {
@@ -274,36 +267,6 @@ namespace ReserveBlockCore.Data
                 .Offset((pageNumber - 1) * resultPerPage)
                 .Limit(resultPerPage).ToList();
             return query;
-        }
-
-        public static decimal GetBalance(string address)
-        {
-            decimal balance = 0;
-            decimal spending = 0;
-            decimal income = 0;
-
-            var collection = GetAll();
-            var transactions = collection.Find(x => x.FromAddress == address || x.ToAddress == address);
-
-            foreach (Transaction tx in transactions)
-            {
-                var sender = tx.FromAddress;
-                var recipient = tx.ToAddress;
-
-                if (address.ToLower().Equals(sender.ToLower()))
-                {
-                    spending += tx.Amount + tx.Fee;
-                }
-
-                if (address.ToLower().Equals(recipient.ToLower()))
-                {
-                    income += tx.Amount;
-                }
-
-                balance = income - spending;
-            }
-
-            return balance;
         }
 
         public static string CreateSignature(string message, PrivateKey PrivKey, string pubKey)

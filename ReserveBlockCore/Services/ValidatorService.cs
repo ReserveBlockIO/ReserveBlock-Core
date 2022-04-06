@@ -2,6 +2,7 @@
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Extensions;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Services
 {
@@ -94,6 +95,12 @@ namespace ReserveBlockCore.Services
         {
             string output = "";
             Validators validator = new Validators();
+
+            if(Program.StopAllTimers == true || Program.BlocksDownloading == true)
+            {
+                output = "Wallet is still starting. Please wait";
+                return output;
+            }
             
 
             if(account == null) { throw new ArgumentNullException(nameof(account)); }
@@ -150,79 +157,31 @@ namespace ReserveBlockCore.Services
                     else
                     {
 
-                        var result = await P2PClient.ArePeersConnected();
+                        //add total num of validators to block
+                        validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
+                        validator.Amount = account.Balance;
+                        validator.Address = account.Address;
+                        validator.EligibleBlockStart = -1;
+                        validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName;
+                        validator.IsActive = true;
+                        validator.Signature = signature;
+                        validator.FailCount = 0;
+                        validator.Position = validatorTable.FindAll().Count() + 1;
+                        validator.NodeReferenceId = BlockchainData.ChainRef;
+                        validator.WalletVersion = Program.CLIVersion;
+                        validator.LastChecked = DateTime.UtcNow;
 
-                        if(result.Item1 == false)
-                        {
-                            output = "Could not find any validators to authenticate your request. Please try again later or manually add validators.";
-                            return output;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Syncing Masternode List... Please wait.");
-                            var getMasterNodeResult = await P2PClient.GetMasternodes();
+                        validatorTable.Insert(validator);
 
-                            if(getMasterNodeResult == true)
-                            {
-                                Console.WriteLine("Masternode List has been synced with peers.");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Masternode List is up to date. Sending account out to peers!");
-                            }
-                            var blockHeight = BlockchainData.GetHeight();
+                        account.IsValidating = true;
+                        var accountTable = AccountData.GetAccounts();
+                        accountTable.Update(account);
 
-                            //add total num of validators to block
-                            validator.NodeIP = "SELF"; //this is as new as other users will fill this in once connected
-                            validator.Amount = account.Balance;
-                            validator.Address = account.Address;
-                            validator.EligibleBlockStart = blockHeight + 60;
-                            validator.UniqueName = uName == "" ? Guid.NewGuid().ToString() : uName;
-                            validator.IsActive = true;
-                            validator.Signature = signature;
-                            validator.FailCount = 0;
-                            validator.Position = validatorTable.FindAll().Count() + 1;
-                            validator.NodeReferenceId = BlockchainData.ChainRef;
-                            validator.WalletVersion = Program.CLIVersion;
-                            validator.LastChecked = DateTime.UtcNow;
+                        Program.ValidatorAddress = validator.Address;
 
-                            bool broadcastResult = false;
+                        output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                            account.IsValidating = true;
-                            var accountTable = AccountData.GetAccounts();
-                            accountTable.Update(account);
-
-                            Program.ValidatorAddress = validator.Address;
-
-                            output = "You have locally added your validator! Please wait while we broadcast out to network!";
-                            broadcastResult = await P2PClient.BroadcastValidatorNode(validator);
-                            
-
-                            if (broadcastResult == true)
-                            {
-                                //validatorTable.Insert(validator);
-                                //account.IsValidating = true;
-                                //var accountTable = AccountData.GetAccounts();
-                                //accountTable.Update(account);
-                            }    
-
-                            var getUpdatedListWithme = await P2PClient.GetMasternodes(); //we should get our own validator here.
-
-                            if (broadcastResult == true)
-                            {
-                                output = "Account found and activated as a validator! Thank you for service to the network!";
-                                Program.ValidatorAddress = validator.Address;
-                            }
-                            else
-                            {
-                                Program.ValidatorAddress = validator.Address;
-                                output = "Account found and activated as a validator! Thank you for service to the network!";
-                            }
-
-                            
-                        }    
-                        
-                         //broadcast validator to nodes and other validators.
+                        await StartupService.ConnectoToAdjudicator();
                     }
 
                 }
@@ -234,64 +193,64 @@ namespace ReserveBlockCore.Services
         public static void DoMasterNodeStop()
         {
             Console.Clear();
-            var validatortList = Validators.Validator.GetLocalValidator();
-            var accountNumberList = new Dictionary<string, Account>();
+            //var validatortList = Validators.Validator.GetLocalValidator();
+            //var accountNumberList = new Dictionary<string, Account>();
 
-            if (validatortList.Count() == 0)
-            {
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("No active validator accounts found.");
-                Console.WriteLine("Please note that if there was ever a time your account went below 1000 RBX you would have been automatically removed from the validator network.");
-                Console.WriteLine("Returning you to main menu...");
-                Thread.Sleep(5000);
-                StartupService.MainMenu();
-            }
-            else
-            {
-                int count = 1;
-                validatortList.ToList().ForEach(x => {
-                    accountNumberList.Add(count.ToString(), x);
-                    Console.WriteLine("********************************************************************");
-                    Console.WriteLine("Please choose an address below to stop being a validator by typing its # and pressing enter.");
+            //if (validatortList.Count() == 0)
+            //{
+            //    Console.WriteLine("********************************************************************");
+            //    Console.WriteLine("No active validator accounts found.");
+            //    Console.WriteLine("Please note that if there was ever a time your account went below 1000 RBX you would have been automatically removed from the validator network.");
+            //    Console.WriteLine("Returning you to main menu...");
+            //    Thread.Sleep(5000);
+            //    StartupService.MainMenu();
+            //}
+            //else
+            //{
+            //    int count = 1;
+            //    validatortList.ToList().ForEach(x => {
+            //        accountNumberList.Add(count.ToString(), x);
+            //        Console.WriteLine("********************************************************************");
+            //        Console.WriteLine("Please choose an address below to stop being a validator by typing its # and pressing enter.");
 
-                    Console.WriteLine("\n #" + count.ToString());
-                    Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    count++;
-                });
+            //        Console.WriteLine("\n #" + count.ToString());
+            //        Console.WriteLine("\nAddress :\n{0}", x.Address);
+            //        count++;
+            //    });
 
-                var walletChoice = Console.ReadLine();
-                var validator = accountNumberList[walletChoice];
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("The chosen validator address is:");
-                string validatorAddress = validator.Address;
-                Console.WriteLine(validatorAddress);
-                Console.WriteLine("Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
-                var confirmChoice = Console.ReadLine();
+            //    var walletChoice = Console.ReadLine();
+            //    var validator = accountNumberList[walletChoice];
+            //    Console.WriteLine("********************************************************************");
+            //    Console.WriteLine("The chosen validator address is:");
+            //    string validatorAddress = validator.Address;
+            //    Console.WriteLine(validatorAddress);
+            //    Console.WriteLine("Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
+            //    var confirmChoice = Console.ReadLine();
 
-                if (confirmChoice == null)
-                {
-                    Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
-                    Console.WriteLine("Returning you to main menu...");
-                    Thread.Sleep(5000);
-                    StartupService.MainMenu();
-                }
-                else if (confirmChoice.ToLower() == "n")
-                {
-                    Console.WriteLine("Returning you to main menu...");
-                    Thread.Sleep(3000);
-                    StartupService.MainMenu();
-                }
-                else
-                {
-                    Console.Clear();
-                    //StopValidating(validator);
+            //    if (confirmChoice == null)
+            //    {
+            //        Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
+            //        Console.WriteLine("Returning you to main menu...");
+            //        Thread.Sleep(5000);
+            //        StartupService.MainMenu();
+            //    }
+            //    else if (confirmChoice.ToLower() == "n")
+            //    {
+            //        Console.WriteLine("Returning you to main menu...");
+            //        Thread.Sleep(3000);
+            //        StartupService.MainMenu();
+            //    }
+            //    else
+            //    {
+            //        Console.Clear();
+            //        //StopValidating(validator);
 
-                    Console.WriteLine("The chosen addresses is no longer a validator...");
-                    Console.WriteLine("Returning you to main menu in 5 seconds...");
-                    Thread.Sleep(5000);
-                    StartupService.MainMenu();
-                }
-            }
+            //        Console.WriteLine("The chosen addresses is no longer a validator...");
+            //        Console.WriteLine("Returning you to main menu in 5 seconds...");
+            //        Thread.Sleep(5000);
+            //        StartupService.MainMenu();
+            //    }
+            //}
             
         }
 
@@ -343,35 +302,39 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 var validatorList = validators.FindAll().ToList();
 
-                List<Validators> dups = validatorList.GroupBy(x => new {
-                    x.Address,
-                    x.NodeIP
-                })
-                .Where(x => x.Count() > 1)
-                .Select(x => x.First())
-                .ToList();
-
-                if (dups.Count() > 0)
+                if(validatorList.Count() > 0)
                 {
-                    dups.ForEach(x =>
+                    List<Validators> dups = validatorList.GroupBy(x => new {
+                        x.Address,
+                        x.NodeIP
+                    })
+                    .Where(x => x.Count() > 1)
+                    .Select(x => x.First())
+                    .ToList();
+
+                    if (dups.Count() > 0)
                     {
-                        var dupList = validatorList.Where(y => y.Address == x.Address && y.NodeIP == x.NodeIP).ToList();
-                        if (dupList.Exists(z => z.IsActive == true))
+                        dups.ForEach(x =>
                         {
-                            var dupsDel = dupList.Where(z => z.IsActive == false).ToList();
-                            validators.DeleteMany(z => z.Address == x.Address && z.IsActive == false);
-                        }
-                        else
-                        {
-                            var countRem = dupList.Count() - 1;
-                            var dupsDel = dupList.Take(countRem);
-                            dupsDel.ToList().ForEach(d =>
+                            var dupList = validatorList.Where(y => y.Address == x.Address && y.NodeIP == x.NodeIP).ToList();
+                            if (dupList.Exists(z => z.IsActive == true))
                             {
-                                validators.DeleteMany(p => p.Id == d.Id);
-                            });
-                        }
-                    });
+                                var dupsDel = dupList.Where(z => z.IsActive == false).ToList();
+                                validators.DeleteMany(z => z.Address == x.Address && z.IsActive == false);
+                            }
+                            else
+                            {
+                                var countRem = dupList.Count() - 1;
+                                var dupsDel = dupList.Take(countRem);
+                                dupsDel.ToList().ForEach(d =>
+                                {
+                                    validators.DeleteMany(p => p.Id == d.Id);
+                                });
+                            }
+                        });
+                    }
                 }
+                
             }
             catch (Exception ex)
             {

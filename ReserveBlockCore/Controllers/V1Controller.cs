@@ -66,7 +66,7 @@ namespace ReserveBlockCore.Controllers
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
             var peerCount = "";
-            var blockHeight = BlockchainData.GetHeight().ToString();
+            var blockHeight = Program.BlockHeight.ToString();
 
             var peersConnected = await P2PClient.ArePeersConnected();
             if (peersConnected.Item1 == true)
@@ -275,7 +275,7 @@ namespace ReserveBlockCore.Controllers
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
 
-            var block = BlockchainData.GetLastBlock();
+            var block = Program.LastBlock;
 
             if (block == null)
             {
@@ -417,10 +417,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodes()
         {
             string output = "";
-            var validators = Validators.Validator.GetAll();
-            var validatorList = validators.FindAll().Where(x => x.IsActive == true).ToList();
-
-            output = JsonConvert.SerializeObject(validatorList);
+            var validators = P2PAdjServer.FortisPool.ToList();
+            output = JsonConvert.SerializeObject(validators);
 
             return output;
         }
