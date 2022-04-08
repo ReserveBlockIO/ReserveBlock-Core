@@ -61,7 +61,7 @@ namespace ReserveBlockCore
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
         public static int MajorVer = 1;
-        public static int MinorVer = 17;
+        public static int MinorVer = 18;
         public static int BuildVer = 0;
         public static string CLIVersion = "";
 

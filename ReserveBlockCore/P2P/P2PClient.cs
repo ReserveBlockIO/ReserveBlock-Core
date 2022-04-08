@@ -522,7 +522,7 @@ namespace ReserveBlockCore.P2P
                 .Build();
 
                 hubAdjConnection1.On<string, string>("GetAdjMessage", async (message, data) => {
-                    if (message == "task" || message == "taskResult" || message == "fortisPool" || message == "status")
+                    if (message == "task" || message == "taskResult" || message == "fortisPool" || message == "status" || message == "tx")
                     {
                         switch(message)
                         {
@@ -537,6 +537,9 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "status":
                                 Console.WriteLine(data);
+                                break;
+                            case "tx":
+                                await ValidatorProcessor.ProcessData(message, data);
                                 break;
                         }
                     }
