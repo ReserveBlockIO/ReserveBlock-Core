@@ -37,10 +37,13 @@ namespace ReserveBlockCore.P2P
                 var address = httpContext.Request.Headers["address"].ToString();
                 var uName = httpContext.Request.Headers["uName"].ToString();
                 var signature = httpContext.Request.Headers["signature"].ToString();
+                var walletVersion = httpContext.Request.Headers["walver"].ToString();
+
+                var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
                 var fortisPool = FortisPool.ToList();
 
-                if (address != "" && uName != "" && signature != "")
+                if (address != "" && uName != "" && signature != "" && walletVersionVerify == true)
                 {
                     try
                     {
@@ -62,6 +65,7 @@ namespace ReserveBlockCore.P2P
                                         fortisPools.ConnectDate = DateTime.UtcNow;
                                         fortisPools.Address = address;
                                         fortisPools.ConnectionId = connectionId;
+                                        fortisPools.WalletVersion = walletVersion;
 
                                         FortisPool.Add(fortisPools);
                                         Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
@@ -75,6 +79,8 @@ namespace ReserveBlockCore.P2P
                                             validator.Address = address;
                                             validator.ConnectionId = connectionId;
                                             validator.UniqueName = uName;
+                                            validator.IpAddress = peerIP;
+                                            validator.WalletVersion = walletVersion;
                                             Console.WriteLine("User Updated! RBX Addr: " + address + " Unique Name: " + uName);
                                         }
                                     }
@@ -166,13 +172,10 @@ namespace ReserveBlockCore.P2P
         #region Receive Block and Task Answer
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
         {
-            Console.WriteLine("Answer Received");
             if (Program.BlocksDownloading == false)
             {
-                Console.WriteLine("Answer Received 2");
                 if (Program.Adjudicate)
                 {
-                    Console.WriteLine("Answer Received 3");
                     var fortisPool = FortisPool.ToList();
                     if(fortisPool.Exists(x => x.Address == taskResult.Address))
                     {
@@ -185,15 +188,96 @@ namespace ReserveBlockCore.P2P
                                 taskResult.SubmitTime = DateTime.UtcNow;
                                 TaskAnswerList.Add(taskResult);
                                 return true;
-                                Console.WriteLine("Answer Received Success: True");
                             }
                         }
                     }
                 }
             }
-            Console.WriteLine("Fail");
             return false;
             
+        }
+
+        #endregion
+
+        #region Receive TX to relay
+
+        public async Task ReceiveTX(Transaction transaction)
+        {
+            if (Program.BlocksDownloading == false)
+            {
+                if (Program.Adjudicate)
+                {
+                    if (transaction != null)
+                    {
+                        var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
+                        if (!isTxStale)
+                        {
+                            var mempool = TransactionData.GetPool();
+                            if (mempool.Count() != 0)
+                            {
+                                var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
+                                if (txFound == null)
+                                {
+
+                                    var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                    if (txResult == true)
+                                    {
+                                        var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                        if (dblspndChk == false && isCraftedIntoBlock == false)
+                                        {
+                                            mempool.Insert(transaction);
+                                            var txOutput = "";
+                                            txOutput = JsonConvert.SerializeObject(transaction);
+                                            await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                        }
+                                    }
+
+                                }
+                                else
+                                {
+
+                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                    if (!isCraftedIntoBlock)
+                                    {
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            mempool.DeleteMany(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            //delete failed
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+
+                                var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                if (txResult == true)
+                                {
+                                    var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                    if (dblspndChk == false && isCraftedIntoBlock == false)
+                                    {
+                                        mempool.Insert(transaction);
+                                        var txOutput = "";
+                                        txOutput = JsonConvert.SerializeObject(transaction);
+                                        await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
         }
 
         #endregion

@@ -24,6 +24,8 @@ namespace ReserveBlockCore.Services
             _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(60),
                 TimeSpan.FromSeconds(2));
 
+
+
             return Task.CompletedTask;
         }
         private async void DoWork(object? state)
@@ -143,6 +145,10 @@ namespace ReserveBlockCore.Services
                                 }
                             }
                         }
+                    }
+                    else
+                    {
+                        //dipose timer.
                     }
                 }
             }

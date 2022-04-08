@@ -159,6 +159,36 @@ namespace ReserveBlockCore.Data
                             {
                                 approvedMemPoolList.Add(tx);
                             }
+                            else
+                            {
+                                var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                                if (txToDelete != null)
+                                {
+                                    try
+                                    {
+                                        collection.DeleteMany(x => x.Hash == txToDelete.Hash);
+                                    }
+                                    catch (Exception ex)
+                                    {
+
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                            if(txToDelete != null)
+                            {
+                                try
+                                {
+                                    collection.DeleteMany(x => x.Hash == txToDelete.Hash);
+                                }
+                                catch (Exception ex)
+                                {
+
+                                }
+                            }
                         }
                     }
                 });

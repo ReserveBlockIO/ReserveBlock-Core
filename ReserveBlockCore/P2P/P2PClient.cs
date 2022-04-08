@@ -516,6 +516,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("address", address);
                     options.Headers.Add("uName", uName);
                     options.Headers.Add("signature", signature);
+                    options.Headers.Add("walver", Program.CLIVersion);
                 })
                 .WithAutomaticReconnect()
                 .Build();
@@ -670,6 +671,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send Task Answer
         public static async Task SendTaskAnswer(TaskAnswer taskAnswer)
         {
             var adjudicatorConnected = IsAdjConnected1;
@@ -699,6 +701,30 @@ namespace ReserveBlockCore.P2P
                 //reconnect and then send
             }
         }
+
+        #endregion
+
+        #region Send TX To Adjudicators
+        public static async Task SendTXToAdjudicator(Transaction tx)
+        {
+            var adjudicatorConnected = IsAdjConnected1;
+            if (adjudicatorConnected && hubAdjConnection1 != null)
+            {
+                try
+                {
+                    await hubAdjConnection1.InvokeAsync("ReceiveTX", tx);
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+            else
+            {
+                //reconnect and then send
+            }
+        }
+        #endregion
 
         #region Get Block
         public static async Task<List<Block>> GetBlock() //base example

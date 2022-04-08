@@ -89,6 +89,74 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
 
+                    if(message == "tx")
+                    {
+                        var transaction = JsonConvert.DeserializeObject<Transaction>(data);
+                        if (transaction != null)
+                        {
+                            var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
+                            if (!isTxStale)
+                            {
+                                var mempool = TransactionData.GetPool();
+                                if (mempool.Count() != 0)
+                                {
+                                    var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
+                                    if (txFound == null)
+                                    {
+
+                                        var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                        if (txResult == true)
+                                        {
+                                            var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                            if (dblspndChk == false && isCraftedIntoBlock == false)
+                                            {
+                                                mempool.Insert(transaction);
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+
+                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                        if (!isCraftedIntoBlock)
+                                        {
+                                        }
+                                        else
+                                        {
+                                            try
+                                            {
+                                                mempool.DeleteMany(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                //delete failed
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+
+                                    var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                    if (txResult == true)
+                                    {
+                                        var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                        if (dblspndChk == false && isCraftedIntoBlock == false)
+                                        {
+                                            mempool.Insert(transaction);
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+
                 }
 
             }

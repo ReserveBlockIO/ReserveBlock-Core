@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Models
                 var staker = GetAll();
                 if (staker.Count() < 1)
                 {
-                    
+
                 }
                 else
                 {

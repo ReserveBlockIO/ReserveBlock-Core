@@ -291,8 +291,7 @@ namespace ReserveBlockCore.P2P
                         if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
                         {
                             mempool.Insert(txReceived);
-                            await SendMessageAllPeers("tx", data);
-                            P2PClient.SendTXMempool(txReceived);
+                            await P2PClient.SendTXToAdjudicator(txReceived);
                             return "ATMP";//added to mempool
                         }
                         else
@@ -320,8 +319,6 @@ namespace ReserveBlockCore.P2P
                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
                         if (!isCraftedIntoBlock)
                         {
-                            //await SendMessageAllPeers("tx", data); // send to everyone connected to me (In connects)
-                            //P2PClient.SendTXMempool(txReceived); // send to everyone I am connected too (out connects)
                         }
                         else
                         {
