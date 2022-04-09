@@ -127,8 +127,6 @@ namespace ReserveBlockCore.Services
                     {
                         foreach (Transaction transaction in block.Transactions)
                         {
-
-
                             var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash);
                             if (mempoolTx.Count() > 0)
                             {

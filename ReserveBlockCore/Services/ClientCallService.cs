@@ -101,6 +101,8 @@ namespace ReserveBlockCore.Services
                                                         findWinner = false;
                                                         Program.AdjudicateLock = false;
                                                         Program.LastAdjudicateTime = TimeUtil.GetTime();
+
+                                                        P2PAdjServer.BroadcastedTrxList = new List<Transaction>();
                                                     }
                                                     else
                                                     {

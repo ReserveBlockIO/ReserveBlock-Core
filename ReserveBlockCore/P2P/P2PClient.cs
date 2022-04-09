@@ -711,11 +711,28 @@ namespace ReserveBlockCore.P2P
         public static async Task SendTXToAdjudicator(Transaction tx)
         {
             var adjudicatorConnected = IsAdjConnected1;
-            if (adjudicatorConnected && hubAdjConnection1 != null)
+            if (adjudicatorConnected == true && hubAdjConnection1 != null)
             {
                 try
                 {
-                    await hubAdjConnection1.InvokeAsync("ReceiveTX", tx);
+                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { tx });
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+            else
+            {
+                //reconnect and then send
+            }
+
+            var adjudicator2Connected = IsAdjConnected2;
+            if (adjudicator2Connected == true && hubAdjConnection2 != null)
+            {
+                try
+                {
+                    var result = await hubAdjConnection2.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { tx });
                 }
                 catch (Exception ex)
                 {

@@ -50,6 +50,8 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
+            //REMOVE THIS ON NEW UPDATE
+            
             //Hash Check
             var newTxn = new Transaction()
             {
@@ -65,7 +67,31 @@ namespace ReserveBlockCore.Services
 
             if (!newTxn.Hash.Equals(txRequest.Hash))
             {
-                return txResult;
+                var amountCheck = txRequest.Amount % 1 == 0;
+                var amountFormat = 0M;
+                if (amountCheck)
+                {
+                    var amountStr = txRequest.Amount.ToString("#");
+                    amountFormat = decimal.Parse(amountStr);
+                }
+
+                var newTxnMod = new Transaction()
+                {
+                    Timestamp = txRequest.Timestamp,
+                    FromAddress = txRequest.FromAddress,
+                    ToAddress = txRequest.ToAddress,
+                    Amount = amountFormat,
+                    Fee = txRequest.Fee,
+                    Nonce = txRequest.Nonce,
+                };
+
+                newTxnMod.Build();
+
+                if (!newTxnMod.Hash.Equals(txRequest.Hash))
+                {
+                    return txResult;
+                }
+                
             }
 
             //Signature Check - Final Check to return true.

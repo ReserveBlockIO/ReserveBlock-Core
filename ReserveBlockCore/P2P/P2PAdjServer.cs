@@ -25,6 +25,7 @@ namespace ReserveBlockCore.P2P
         public static TaskQuestion? CurrentTaskQuestion = null;
 
         public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
+        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();
         
         #region Broadcast methods
         public override async Task OnConnectedAsync()
@@ -201,8 +202,9 @@ namespace ReserveBlockCore.P2P
 
         #region Receive TX to relay
 
-        public async Task ReceiveTX(Transaction transaction)
+        public async Task<bool> ReceiveTX(Transaction transaction)
         {
+            bool output = false;
             if (Program.BlocksDownloading == false)
             {
                 if (Program.Adjudicate)
@@ -231,6 +233,8 @@ namespace ReserveBlockCore.P2P
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction);
                                             await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                            BroadcastedTrxList.Add(transaction);
+                                            output = true;
                                         }
                                     }
 
@@ -241,6 +245,13 @@ namespace ReserveBlockCore.P2P
                                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
                                     if (!isCraftedIntoBlock)
                                     {
+                                        if(!BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
+                                        {
+                                            var txOutput = "";
+                                            txOutput = JsonConvert.SerializeObject(transaction);
+                                            await SendAdjMessageAll("tx", txOutput);
+                                            BroadcastedTrxList.Add(transaction);
+                                        }
                                     }
                                     else
                                     {
@@ -270,6 +281,7 @@ namespace ReserveBlockCore.P2P
                                         var txOutput = "";
                                         txOutput = JsonConvert.SerializeObject(transaction);
                                         await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                        output = true;
                                     }
                                 }
                             }
@@ -278,6 +290,8 @@ namespace ReserveBlockCore.P2P
                     }
                 }
             }
+
+            return output;
         }
 
         #endregion

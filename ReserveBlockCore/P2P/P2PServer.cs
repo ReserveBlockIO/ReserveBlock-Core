@@ -371,7 +371,7 @@ namespace ReserveBlockCore.P2P
                     if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
                     {
                         mempool.Insert(txReceived);
-                        await SendMessageAllPeers("tx", data); //sends tx to connected peers
+                        await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
                         return "ATMP";//added to mempool
                     }
                     else

@@ -109,7 +109,7 @@ namespace ReserveBlockCore.Services
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = FromAddress,
                 ToAddress = ToAddress,
-                Amount = Amount,
+                Amount = Amount + 0.0M,
                 Fee = 0, 
                 Nonce = AccountStateTrei.GetNextNonce(FromAddress), 
             };

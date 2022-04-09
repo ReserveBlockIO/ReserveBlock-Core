@@ -109,7 +109,7 @@ namespace ReserveBlockCore.Data
                         var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
                         if (txRec != null)
                         {
-                            txPool.DeleteMany(x => x.Hash == tx.Hash);
+                            //txPool.DeleteMany(x => x.Hash == tx.Hash);
                         }
                     }
                 }

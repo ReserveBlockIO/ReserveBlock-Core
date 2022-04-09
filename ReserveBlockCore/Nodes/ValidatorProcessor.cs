@@ -123,6 +123,7 @@ namespace ReserveBlockCore.Nodes
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
                                         if (!isCraftedIntoBlock)
                                         {
+
                                         }
                                         else
                                         {
