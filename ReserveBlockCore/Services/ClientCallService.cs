@@ -95,6 +95,8 @@ namespace ReserveBlockCore.Services
 
                                                         P2PAdjServer.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);// = new List<TaskAnswer>();
 
+                                                        Thread.Sleep(1000);
+
                                                         await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
                                                         Console.WriteLine("Task Sent.");
 

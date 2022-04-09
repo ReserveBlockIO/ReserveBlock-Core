@@ -54,6 +54,8 @@ namespace ReserveBlockCore.Data
         {
             try
             {
+                await BlockQueueService.ProcessBlockQueue();
+
                 var startCraftTimer = DateTime.UtcNow;
                 var validatorAccount = AccountData.GetSingleAccount(validator);
 
