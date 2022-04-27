@@ -682,7 +682,7 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 2. Create Account                    |");
             Console.WriteLine("| 3. Restore Account                   |");
             Console.WriteLine("| 4. Send Coins                        |");
-            Console.WriteLine("| 5. Check Address Balance             |");
+            Console.WriteLine("| 5. Get Latest Block                  |");
             Console.WriteLine("| 6. Transaction History               |");
             Console.WriteLine("| 7. Account Info                      |");
             Console.WriteLine("| 8. Startup Masternode                |");

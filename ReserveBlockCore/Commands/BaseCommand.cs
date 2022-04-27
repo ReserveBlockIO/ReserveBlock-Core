@@ -58,8 +58,10 @@ namespace ReserveBlockCore.Commands
                 case "4": //Send Coins
                     WalletService.StartSend();
                     break;
-                case "5": //Check Address Balance
+                case "5": //Get Latest Block
                     //Insert Method
+                    var currentBlock = BlockchainData.GetLastBlock();
+                    BlockchainData.PrintBlock(currentBlock);
                     break;
                 case "6": //Transaction History
                     //Insert Method

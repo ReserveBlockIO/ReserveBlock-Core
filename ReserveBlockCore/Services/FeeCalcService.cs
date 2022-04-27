@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Services
 
         public static void CalculateDataFee()
         {
-            //calc for data fee 
+            //calc for data fee
         }
     }
 }

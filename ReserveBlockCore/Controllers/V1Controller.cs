@@ -404,7 +404,7 @@ namespace ReserveBlockCore.Controllers
                     }
                     catch (Exception ex)
                     {
-
+                        ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
                     }
                     output = true;
                 }
