@@ -59,7 +59,6 @@ namespace ReserveBlockCore.Commands
                     WalletService.StartSend();
                     break;
                 case "5": //Get Latest Block
-                    //Insert Method
                     var currentBlock = BlockchainData.GetLastBlock();
                     BlockchainData.PrintBlock(currentBlock);
                     break;

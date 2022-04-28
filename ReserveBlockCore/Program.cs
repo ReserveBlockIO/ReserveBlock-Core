@@ -123,8 +123,30 @@ namespace ReserveBlockCore
                         //Launch testnet
                         TestURL = true;
                     }
+
+                    if(argC.Contains("privKey"))
+                    {
+                        try
+                        {
+                            var keySplit = argC.Split(new char[] { '=' });
+                            var privateKey = keySplit[1];
+                            var account = AccountData.RestoreAccount(privateKey);
+                            if(account != null)
+                            {
+                                Console.WriteLine("Account Loaded: " + account.Address);
+                            }
+                            
+                        }
+                        catch (Exception ex)
+                        {
+                            //bad key
+                        }
+                    }
                 });
             }
+
+            //THis is for adjudicator start. This might need to be removed.
+            P2PAdjServer.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
 
             StartupService.AnotherInstanceCheck();
 
