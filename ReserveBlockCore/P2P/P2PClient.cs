@@ -18,6 +18,7 @@ namespace ReserveBlockCore.P2P
         public static List<Peers>? ActivePeerList { get; set; }
         public static List<string> ReportedIPs = new List<string>();
         public static long LastSentBlockHeight = -1;
+        public static DateTime? AdjudicatorConnectDate = null;
         public static Dictionary<int, string>? NodeDict { get; set; }
 
         #region HubConnection Variables
@@ -521,8 +522,10 @@ namespace ReserveBlockCore.P2P
                 .WithAutomaticReconnect()
                 .Build();
 
+                AdjudicatorConnectDate = DateTime.UtcNow;
+
                 hubAdjConnection1.On<string, string>("GetAdjMessage", async (message, data) => {
-                    if (message == "task" || message == "taskResult" || message == "fortisPool" || message == "status" || message == "tx")
+                    if (message == "task" || message == "taskResult" || message == "fortisPool" || message == "status" || message == "tx" || message == "badBlock")
                     {
                         switch(message)
                         {
@@ -540,6 +543,9 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "tx":
                                 await ValidatorProcessor.ProcessData(message, data);
+                                break;
+                            case "badBlock":
+                                //do something
                                 break;
                         }
                     }

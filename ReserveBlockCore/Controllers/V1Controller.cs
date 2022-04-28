@@ -423,6 +423,23 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetValidatorPoolInfo")]
+        public async Task<string> GetValidatorPoolInfo()
+        {
+            string output = "";
+            var isConnected = P2PClient.IsAdjConnected1;
+            DateTime? connectDate = P2PClient.AdjudicatorConnectDate != null ? P2PClient.AdjudicatorConnectDate.Value : null;
+
+            var connectedInfo = new[]
+            {
+                new { ValidatorConnectedToPool = isConnected, PoolConnectDate = connectDate }
+            };
+
+            output = JsonConvert.SerializeObject(connectedInfo);
+
+            return output;
+        }
+
         [HttpGet("GetPeerInfo")]
         public async Task<string> GetPeerInfo()
         {
