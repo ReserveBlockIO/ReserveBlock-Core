@@ -100,13 +100,20 @@ This document was adapted from the open-source contribution guidelines for [Face
 # How do I get set up?
 
 **Summary of set up**
+
 - For development Visual Studio 2022 is recommended for development. VS Code will also work, but not as much advanced debugging.
 - For use setup is simple as binaries are pre-compiled for ease and you can compile them yourself too if desired. Wallet once opened does all initial setup.
+
 **Configuration**
+
 - Recommended to have at least 4gb of ram, and 4 core processor. Chain size is constantly growing, so ample hard drive space is recommended for long term use
+
 **Dependencies**
+
 - .Net Core 6 is only dependency for this project. Core is available on all platforms (Win, Mac, Linux)
+
 **Deployment instructions**
+
 - Install .net core 6 on your machine. Install can be found here: https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 - Once .net is installed you can either download a pre-built binary or compile your own. 
 - Deploy the wallet by either opening the ReserveBlockCore.exe or the GUI
