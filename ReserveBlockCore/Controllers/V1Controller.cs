@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Controllers
                 peerCount = "0";
             }
 
-            output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString() + ":" + Program.IsResyncing.ToString();
+            output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString() + ":" + Program.IsResyncing.ToString() + ":" + Program.IsChainSynced.ToString();
 
             return output;
         }

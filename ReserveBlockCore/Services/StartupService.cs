@@ -323,6 +323,7 @@ namespace ReserveBlockCore.Services
             {
                 Program.BlocksDownloading = false;
                 Program.StopAllTimers = false;
+                Program.IsChainSynced = true;
             }
             download = false; //exit the while. 
         }

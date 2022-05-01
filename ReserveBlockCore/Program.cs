@@ -51,6 +51,7 @@ namespace ReserveBlockCore
         public static bool DatabaseCorruptionDetected = false;
         public static bool BlockCrafting = false;
         public static bool RemoteCraftLock = false;
+        public static bool IsChainSynced = false;
         public static DateTime? RemoteCraftLockTime = null;
         public static string ValidatorAddress = "";
         public static bool IsTestNet = false;

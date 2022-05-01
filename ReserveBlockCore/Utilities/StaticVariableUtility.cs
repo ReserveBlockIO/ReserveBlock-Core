@@ -66,10 +66,12 @@ namespace ReserveBlockCore.Utilities
             var adjudicator = Program.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
             var fortisPoolCount = P2PAdjServer.FortisPool.Count().ToString();
+            var isChainSynced = Program.IsChainSynced.ToString();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
             var isBlocksDownloading = "Blocks Downloading: " + Program.BlocksDownloading.ToString();
+            var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;
             var isCrafting = "Is Crafting: " + Program.IsCrafting.ToString();
             var isPeersConnecting = "Peers Connecting Startup: " + Program.PeersConnecting.ToString();
             var isStopAllTimers = "Stop all timers: " + Program.StopAllTimers.ToString();
@@ -85,6 +87,7 @@ namespace ReserveBlockCore.Utilities
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "Fortis Pool Count: " + fortisPoolCount;
+
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 
@@ -94,6 +97,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(isBlockCrafting);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isBlocksDownloading);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isChainSyncing);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isCrafting);
             strBld.AppendLine("---------------------------------------------------------------------");
