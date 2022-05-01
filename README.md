@@ -97,16 +97,27 @@ By contributing, you agree that your contributions will be licensed under its MI
 This document was adapted from the open-source contribution guidelines for [Facebook's Draft](https://github.com/facebook/draft-js/blob/a9316a723f9e918afde44dea68b5f9f39b7d9b00/CONTRIBUTING.md)
 
 
-# How do I get set up? (Coming Soon)
+# How do I get set up?
 
-* Summary of set up
-*   Comning soon
-* Configuration
-*   Comning soon
-* Dependencies
-*   Comning soon
-* Deployment instructions
-*   Comning soon
+**Summary of set up**
+
+- For development Visual Studio 2022 is recommended for development. VS Code will also work, but not as much advanced debugging.
+- For use setup is simple as binaries are pre-compiled for ease and you can compile them yourself too if desired. Wallet once opened does all initial setup.
+
+**Configuration**
+
+- Recommended to have at least 4gb of ram, and 4 core processor. Chain size is constantly growing, so ample hard drive space is recommended for long term use
+
+**Dependencies**
+
+- .Net Core 6 is only dependency for this project. Core is available on all platforms (Win, Mac, Linux)
+
+**Deployment instructions**
+
+- Install .net core 6 on your machine. Install can be found here: https://dotnet.microsoft.com/en-us/download/dotnet/6.0
+- Once .net is installed you can either download a pre-built binary or compile your own. 
+- Deploy the wallet by either opening the ReserveBlockCore.exe or the GUI
+- For Linux you can run the wallet with dotnet run ReserveBlockCore.dll 
 
 # Who do I talk to? ###
 
