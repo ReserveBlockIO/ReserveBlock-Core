@@ -56,7 +56,13 @@ namespace ReserveBlockCore.Controllers
             var output = "Fail"; // this will only display if command not recognized.
             var account = AccountData.CreateNewAccount();
 
-            output = account.Address + ":" + account.PrivateKey;
+            var newAddressInfo = new[]
+            {
+                new { Address = account.Address, PrivateKey = account.PrivateKey}
+            };
+
+            output = JsonConvert.SerializeObject(newAddressInfo);
+            //output = account.Address + ":" + account.PrivateKey;
 
             return output;
         }
@@ -78,7 +84,16 @@ namespace ReserveBlockCore.Controllers
                 peerCount = "0";
             }
 
-            output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString() + ":" + Program.IsResyncing.ToString() + ":" + Program.IsChainSynced.ToString();
+
+            var walletInfo = new[]
+            {
+                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Program.BlocksDownloading.ToString(), 
+                    IsResyncing = Program.IsResyncing.ToString(), IsChainSynced =  Program.IsChainSynced.ToString()}
+            };
+
+            output = JsonConvert.SerializeObject(walletInfo);
+
+            //output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString() + ":" + Program.IsResyncing.ToString() + ":" + Program.IsChainSynced.ToString();
 
             return output;
         }
