@@ -273,10 +273,16 @@ namespace ReserveBlockCore.P2P
                 {
                     hubConnection1 = new HubConnectionBuilder()
                     .WithUrl(url, options => {
-
+   
                     })
                     .WithAutomaticReconnect()
                     .Build();
+
+                    hubConnection1.Reconnected += (sender) =>
+                    {
+
+                        return Task.CompletedTask;
+                    };
 
                     hubConnection1.On<string, string>("GetMessage", async (message, data) => {
                         if (message == "tx" || message == "blk" || message == "val" || message == "IP")
@@ -333,7 +339,6 @@ namespace ReserveBlockCore.P2P
                             }
                         }
                     });
-
 
                     hubConnection2.StartAsync().Wait();
 
@@ -758,7 +763,7 @@ namespace ReserveBlockCore.P2P
             var currentBlock = Program.BlockHeight != -1 ? Program.LastBlock.Height : -1; //-1 means fresh client with no blocks
             var nBlock = new Block();
             List<Block> blocks = new List<Block>();
-            var peersConnected = await P2PClient.ArePeersConnected();
+            var peersConnected = await ArePeersConnected();
 
             if (peersConnected.Item1 == false)
             {
@@ -777,7 +782,6 @@ namespace ReserveBlockCore.P2P
                             blocks.Add(nBlock);
                             currentBlock += 1;
                         }
-
                     }
                 }
                 catch (Exception ex)

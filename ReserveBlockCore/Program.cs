@@ -253,7 +253,6 @@ namespace ReserveBlockCore
 
             await StartupService.ConnectoToAdjudicator();
             
-
             StartupService.StartupMemBlocks();
 
             Thread.Sleep(3000);
@@ -299,24 +298,6 @@ namespace ReserveBlockCore
         private static void CommandLoop2(string url)
         {
             Console.ReadKey();
-        }
-
-        #endregion
-
-        private void AdjudicateProcess()
-        {
-            Console.WriteLine("test");
-        }
-
-        #region Block Building
-        private static async void blockBuilder_Elapsed(object sender)
-        {
-            //await _hubContext.Clients.All.SendAsync("GetAdjMessage", "Con", "Hey man");
-            //await ClientCallService._hubContext.Clients.All.SendAsync("GetAdjMessage", "status", "Hey man");
-            if (StopAllTimers == false)
-            {
-                
-            }
         }
 
         #endregion

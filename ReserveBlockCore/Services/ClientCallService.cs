@@ -12,6 +12,8 @@ namespace ReserveBlockCore.Services
         private readonly IHostApplicationLifetime _appLifetime;
         private int executionCount = 0;
         private Timer _timer = null!;
+        private Timer _fortisPoolTimer = null;
+        private static bool FirstRun = false;
 
         public ClientCallService(IHubContext<P2PAdjServer> hubContext, IHostApplicationLifetime appLifetime)
         {
@@ -21,12 +23,42 @@ namespace ReserveBlockCore.Services
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(60),
+            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(180),
                 TimeSpan.FromSeconds(2));
 
+            _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(240),
+                TimeSpan.FromMinutes(5));
 
 
             return Task.CompletedTask;
+        }
+        private async void DoFortisPoolWork(object? state)
+        {
+            try
+            {
+                if (Program.StopAllTimers == false)
+                {
+                    if (Program.Adjudicate)
+                    {
+                        var fortisPool = P2PAdjServer.FortisPool;
+
+                        var fortisPoolStr = "";
+                        fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
+
+                        var explorerNode = fortisPool.Where(x => x.Address == "RHNCRbgCs7KGdXk17pzRYAYPRKCkSMwasf").FirstOrDefault();
+
+                        if (explorerNode != null)
+                        {
+                            await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                //no node found
+                Console.WriteLine("****************DoFortisPoolWork - Failed****************");
+            }
         }
         private async void DoWork(object? state)
         {
@@ -40,6 +72,12 @@ namespace ReserveBlockCore.Services
 
                         if (fortisPool.Count() > 0)
                         {
+                            if(FirstRun == false)
+                            {
+                                //
+                                FirstRun = true;
+                                Console.WriteLine("Doing the work");
+                            }
                             //get last block timestamp and current timestamp if they are more than 1 mins apart start new task
                             var lastBlockSubmitUnixTime = Program.LastAdjudicateTime;
                             var currentUnixTime = TimeUtil.GetTime();
@@ -58,7 +96,7 @@ namespace ReserveBlockCore.Services
 
                                     if (taskAnswerList.Count() > 0)
                                     {
-                                        Console.WriteLine("Entered Top of mEthod to solve");
+                                        Console.WriteLine("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
                                         bool findWinner = true;
                                         while (findWinner)
                                         {
@@ -159,6 +197,8 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("Client Call Service");
+                Program.AdjudicateLock = false;
             }
             
         }

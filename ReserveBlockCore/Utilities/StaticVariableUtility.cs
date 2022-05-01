@@ -63,6 +63,9 @@ namespace ReserveBlockCore.Utilities
             var nodes = Program.Nodes;
             var nodeList = nodes.ToList();
             var lastBlock = Program.LastBlock;
+            var adjudicator = Program.Adjudicate.ToString();
+            var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
+            var fortisPoolCount = P2PAdjServer.FortisPool.Count().ToString();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -79,6 +82,9 @@ namespace ReserveBlockCore.Utilities
             var remoteLockTime = "Remote Lock Time: " + (Program.RemoteCraftLockTime == null ?  "NA" : Program.RemoteCraftLockTime.Value.ToShortTimeString());
             var isResyncing = "Chain Resyncing? : " + Program.IsResyncing.ToString();
             var isCorrupt = "Database Corruption Detected? : " + Program.DatabaseCorruptionDetected.ToString();
+            var adjudicatorText = "Is Adjudicating?: " + adjudicator;
+            var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
+            var fortisPoolText = "Fortis Pool Count: " + fortisPoolCount;
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 
@@ -110,6 +116,12 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(remoteLockTime);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isResyncing);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(adjudicatorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(adjConnection);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(fortisPoolText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
             nodeList.ForEach(x => {

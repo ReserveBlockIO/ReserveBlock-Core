@@ -69,7 +69,7 @@ namespace ReserveBlockCore.P2P
                                         fortisPools.WalletVersion = walletVersion;
 
                                         FortisPool.Add(fortisPools);
-                                        Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
+                                        //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
                                     }
                                     else
                                     {
@@ -82,15 +82,17 @@ namespace ReserveBlockCore.P2P
                                             validator.UniqueName = uName;
                                             validator.IpAddress = peerIP;
                                             validator.WalletVersion = walletVersion;
-                                            Console.WriteLine("User Updated! RBX Addr: " + address + " Unique Name: " + uName);
+                                            //Console.WriteLine("User Updated! RBX Addr: " + address + " Unique Name: " + uName);
                                         }
                                     }
 
                                     var fortisPoolStr = "";
-                                    fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
-                                    await SendAdjMessageAll("fortisPool", fortisPoolStr);
 
-                                    Console.WriteLine("Fortis Pool Sent");
+                                    //Pausing this temporarily. 
+                                    //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
+                                    //await SendAdjMessageAll("fortisPool", fortisPoolStr);
+                                    //RKY4KEZrYc1Uj7vcKnmuSkqCkCPwFxPono
+                                    //Console.WriteLine("Fortis Pool Sent");
                                     if (CurrentTaskQuestion == null)
                                     {
                                         await SendAdjMessageSingle("status", "Connected");
@@ -103,7 +105,7 @@ namespace ReserveBlockCore.P2P
                                         string taskQuestionStr = "";
                                         taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
                                         await SendAdjMessageAll("task", taskQuestionStr);
-                                        Console.WriteLine("Task Sent All");
+                                        //Console.WriteLine("Task Sent All");
                                     }
                                     else
                                     {
@@ -114,7 +116,7 @@ namespace ReserveBlockCore.P2P
                                         string taskQuestionStr = "";
                                         taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
                                         await SendAdjMessageSingle("task", taskQuestionStr);
-                                        Console.WriteLine("Task Sent Single");
+                                        //Console.WriteLine("Task Sent Single");
                                     }
 
                                     
@@ -133,7 +135,8 @@ namespace ReserveBlockCore.P2P
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Error: " + ex.Message.ToString());
+                        //Console.WriteLine("Error: " + ex.Message.ToString());
+                        //Console.WriteLine("Error: " + (ex.StackTrace != null ? ex.StackTrace.ToString() : "No Stack Trace"));
                     }
                 }
                 else
@@ -152,8 +155,8 @@ namespace ReserveBlockCore.P2P
             string connectionId = Context.ConnectionId;
             FortisPool.RemoveAll(x => x.ConnectionId == connectionId);
             var fortisPoolStr = "";
-            fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
-            await SendAdjMessageAll("fortisPool", fortisPoolStr);
+            //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
+            //await SendAdjMessageAll("fortisPool", fortisPoolStr);
             await base.OnDisconnectedAsync(ex);
         }
 
