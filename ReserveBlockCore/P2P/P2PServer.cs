@@ -21,6 +21,7 @@ namespace ReserveBlockCore.P2P
     {
         private static Dictionary<string, string> PeerList = new Dictionary<string, string>();
         public static Dictionary<string, int> TxRebroadcastDict = new Dictionary<string, int>();
+        public static int PeerConnectedCount = 0;
 
         #region Broadcast methods
         public override async Task OnConnectedAsync()
@@ -47,6 +48,7 @@ namespace ReserveBlockCore.P2P
             }
             var blockHeight = Program.BlockHeight;
             PeerList.Add(Context.ConnectionId, peerIP);
+            PeerConnectedCount++;
 
             await SendMessage("IP", peerIP);
             await base.OnConnectedAsync();
@@ -56,7 +58,7 @@ namespace ReserveBlockCore.P2P
         {
             string connectionId = Context.ConnectionId;
             var check = PeerList.ContainsKey(connectionId);
-
+            PeerConnectedCount--;
             if (check == true)
             {
                 var peer = PeerList.FirstOrDefault(x => x.Key == connectionId);
@@ -77,6 +79,12 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        public static async Task<int> GetConnectedPeerCount()
+        {
+            var peerCount = PeerConnectedCount;
+            return peerCount;
+        }
 
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)

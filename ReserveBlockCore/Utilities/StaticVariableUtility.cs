@@ -67,6 +67,7 @@ namespace ReserveBlockCore.Utilities
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
             var fortisPoolCount = P2PAdjServer.FortisPool.Count().ToString();
             var isChainSynced = Program.IsChainSynced.ToString();
+            var peerCount = await P2PServer.GetConnectedPeerCount();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -78,6 +79,7 @@ namespace ReserveBlockCore.Utilities
             var isQueueProcessing = "Queue Processing: " + BlockQueueService.QueueProcessing;
             var isPeerConnected = "Peers connected: " + peersConnected.Item1.ToString();
             var peerConnectedCount = "Peers connected Count: " + peersConnected.Item2.ToString();
+            var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
             var remoteLock = "Remote Lock: " + Program.RemoteCraftLock.ToString();
@@ -103,6 +105,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(isCrafting);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isPeersConnecting);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(peerConnectedToMe);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isStopAllTimers);
             strBld.AppendLine("---------------------------------------------------------------------");
