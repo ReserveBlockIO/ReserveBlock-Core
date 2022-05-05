@@ -61,7 +61,6 @@ namespace ReserveBlockCore
                 endpoints.MapHub<P2PAdjServer>("/adjudicator", options => {
                     options.ApplicationMaxBufferSize = 1 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
                     options.TransportMaxBufferSize = 1 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
-
                 });
 
             });

@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Nodes
                 {
                     if(message == "task")
                     {
+                        P2PClient.LastTaskSentTime = DateTime.Now;
                         var taskQuestion = JsonConvert.DeserializeObject<TaskQuestion>(data);
                         switch(taskQuestion.TaskType)
                         {
@@ -32,7 +33,7 @@ namespace ReserveBlockCore.Nodes
                     if(message == "taskResult")
                     {
                         await BlockQueueService.ProcessBlockQueue();
-
+                        P2PClient.LastTaskResultTime = DateTime.Now;
                         var nextBlock = JsonConvert.DeserializeObject<Block>(data);
                         var nextHeight = Program.BlockHeight + 1;
                         var currentHeight = nextBlock.Height;

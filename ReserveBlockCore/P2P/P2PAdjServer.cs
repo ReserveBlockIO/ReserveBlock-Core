@@ -26,7 +26,9 @@ namespace ReserveBlockCore.P2P
 
         public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
         public static List<Transaction> BroadcastedTrxList = new List<Transaction>();
-        
+
+        public static int ValConnectedCount = 0;
+
         #region Broadcast methods
         public override async Task OnConnectedAsync()
         {
@@ -57,7 +59,7 @@ namespace ReserveBlockCore.P2P
                                 if (verifySig != false)
                                 {
                                 
-                                    var exist = fortisPool.Exists(x => x.ConnectionId == connectionId || x.Address == address);
+                                    var exist = fortisPool.Exists(x => x.Address == address);
                                     if (!exist)
                                     {
                                         FortisPool fortisPools = new FortisPool();
@@ -69,11 +71,12 @@ namespace ReserveBlockCore.P2P
                                         fortisPools.WalletVersion = walletVersion;
 
                                         FortisPool.Add(fortisPools);
+                                        ValConnectedCount++;
                                         //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
                                     }
                                     else
                                     {
-                                        var validator = FortisPool.Where(x => x.Address == address || x.ConnectionId == connectionId).FirstOrDefault();
+                                        var validator = FortisPool.Where(x => x.Address == address).FirstOrDefault();
                                         if (validator != null)
                                         {
                                             validator.ConnectDate = DateTime.UtcNow;
@@ -83,6 +86,19 @@ namespace ReserveBlockCore.P2P
                                             validator.IpAddress = peerIP;
                                             validator.WalletVersion = walletVersion;
                                             //Console.WriteLine("User Updated! RBX Addr: " + address + " Unique Name: " + uName);
+                                        }
+                                        else
+                                        {
+                                            FortisPool fortisPools = new FortisPool();
+                                            fortisPools.IpAddress = peerIP;
+                                            fortisPools.UniqueName = uName;
+                                            fortisPools.ConnectDate = DateTime.UtcNow;
+                                            fortisPools.Address = address;
+                                            fortisPools.ConnectionId = connectionId;
+                                            fortisPools.WalletVersion = walletVersion;
+
+                                            FortisPool.Add(fortisPools);
+                                            ValConnectedCount++;
                                         }
                                     }
 
@@ -109,6 +125,7 @@ namespace ReserveBlockCore.P2P
                                     }
                                     else
                                     {
+                                        await SendAdjMessageSingle("status", "Connected");
                                         var taskQuest = CurrentTaskQuestion;
                                         TaskQuestion nTaskQuestion = new TaskQuestion();
                                         nTaskQuestion.TaskType = taskQuest.TaskType;
@@ -118,18 +135,28 @@ namespace ReserveBlockCore.P2P
                                         await SendAdjMessageSingle("task", taskQuestionStr);
                                         //Console.WriteLine("Task Sent Single");
                                     }
-
                                     
+
                                 }
                             }
                             else
                             {
                                 await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify.");
+                                if(Program.OptionalLogging == true)
+                                {
+                                    LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
+                                }
+                                
                             }
                         }
                         else
                         {
                             await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX.");
+                            if(Program.OptionalLogging == true)
+                            {
+                                LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
+                            }
+                            
                         }
                     
                     }
@@ -142,18 +169,23 @@ namespace ReserveBlockCore.P2P
                 else
                 {
                     await SendAdjMessageSingle("status", "Connected, but missing field(s). Address, Unique name, and Signature required.");
+                    if (Program.OptionalLogging == true)
+                    {
+                        LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
+                    }
                 }
 
-                
             }
 
             
             await base.OnConnectedAsync();
         }
+
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             string connectionId = Context.ConnectionId;
             FortisPool.RemoveAll(x => x.ConnectionId == connectionId);
+            ValConnectedCount--;
             var fortisPoolStr = "";
             //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
             //await SendAdjMessageAll("fortisPool", fortisPoolStr);
@@ -172,6 +204,12 @@ namespace ReserveBlockCore.P2P
 
 
         #endregion
+
+        public static async Task<int> GetConnectedValCount()
+        {
+            var peerCount = ValConnectedCount;
+            return peerCount;
+        }
 
         #region Receive Block and Task Answer
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)

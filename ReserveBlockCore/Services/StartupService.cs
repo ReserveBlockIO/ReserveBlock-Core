@@ -27,6 +27,7 @@ namespace ReserveBlockCore.Services
                 {
                     tcpClient.Connect("127.0.0.1", Program.Port);
                     Console.WriteLine("Application already running on port 3338. Please verify only one instance is open.");
+                    LogUtility.Log("CLI Already Running. Closing new instance.", "InstanceCheck");
                     Thread.Sleep(2000);
                     Environment.Exit(0);
 
@@ -68,6 +69,7 @@ namespace ReserveBlockCore.Services
 
             //testnet
             BlockchainData.ChainRef = "t3_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+            LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
 
             if (Program.IsTestNet)
             {
@@ -96,6 +98,7 @@ namespace ReserveBlockCore.Services
         internal static void SetBlockHeight()
         {
             Program.BlockHeight = BlockchainData.GetHeight();
+            LogUtility.Log("RBX Height - " + Program.BlockHeight.ToString(), "Main");
         }
 
         internal static void SetLastBlock()
@@ -288,11 +291,13 @@ namespace ReserveBlockCore.Services
                     var result = await P2PClient.GetCurrentHeight();
                     if (result.Item1 == true)
                     {
+                        LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
                         Program.BlocksDownloading = true;
                         Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
                     }
                     else
                     {
+                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
                         Program.BlocksDownloading = false;
                         download = false; //exit the while.
                         Program.StopAllTimers = false;
@@ -338,6 +343,7 @@ namespace ReserveBlockCore.Services
 
             if(dupBlocksList.Count != 0)
             {
+                LogUtility.Log("Duplicate Blocks Found!", "StartupService: dupBlocksList.Count != 0 / meaning dup found!");
                 //Reset blocks and all balances and redownload chain. No exception here.
                 var accounts = AccountData.GetAccounts();
                 var transactions = TransactionData.GetAll();
@@ -353,6 +359,8 @@ namespace ReserveBlockCore.Services
                         accounts.Update(account);//resets balances to 0.
                     }
                 }
+
+                Program.BlockHeight = -1;
 
                 transactions.DeleteAll();//delete all local transactions
                 stateTrei.DeleteAll(); //removes all state trei data
@@ -600,6 +608,7 @@ namespace ReserveBlockCore.Services
                     if(myAccount != null)
                     {
                         Program.ValidatorAddress = myAccount.Address;
+                        LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
                     }
                     else
                     {

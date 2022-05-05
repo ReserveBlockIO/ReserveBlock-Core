@@ -6,8 +6,6 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace ReserveBlockCore.Controllers
 {
     [Route("api/[controller]")]
@@ -60,6 +58,8 @@ namespace ReserveBlockCore.Controllers
             {
                 new { Address = account.Address, PrivateKey = account.PrivateKey}
             };
+
+            LogUtility.Log("New Address Created: " + account.Address, "V1Controller.GetNewAddress()");
 
             output = JsonConvert.SerializeObject(newAddressInfo);
             //output = account.Address + ":" + account.PrivateKey;
@@ -467,6 +467,7 @@ namespace ReserveBlockCore.Controllers
             return output;
 
         }
+
         [HttpGet("GetDebugInfo")]
         public async Task<string> GetDebugInfo()
         {
@@ -485,12 +486,33 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("ReadRBXLog")]
+        public async Task<string> ReadRBXLog()
+        {
+            string output = "";
+
+            output = await LogUtility.ReadLog();
+
+            return output;
+        }
+
+        [HttpGet("ClearRBXLog")]
+        public async Task<string> ClearRBXLog()
+        {
+            string output = "";
+
+            await LogUtility.ClearLog();
+
+            output = "Log Cleared";
+            return output;
+        }
+
         [HttpGet("SendExit")]
         public async Task SendExit()
         {
             //use Id to get specific commands
             var output = "Starting Stop"; // this will only display if command not recognized.
-
+            LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
             Program.StopAllTimers = true;
             Thread.Sleep(1000);
             Environment.Exit(0);

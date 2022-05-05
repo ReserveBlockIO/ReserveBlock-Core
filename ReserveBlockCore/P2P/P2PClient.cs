@@ -19,6 +19,8 @@ namespace ReserveBlockCore.P2P
         public static List<string> ReportedIPs = new List<string>();
         public static long LastSentBlockHeight = -1;
         public static DateTime? AdjudicatorConnectDate = null;
+        public static DateTime? LastTaskSentTime = null;
+        public static DateTime? LastTaskResultTime = null;
         public static Dictionary<int, string>? NodeDict { get; set; }
 
         #region HubConnection Variables
@@ -278,12 +280,6 @@ namespace ReserveBlockCore.P2P
                     .WithAutomaticReconnect()
                     .Build();
 
-                    hubConnection1.Reconnected += (sender) =>
-                    {
-
-                        return Task.CompletedTask;
-                    };
-
                     hubConnection1.On<string, string>("GetMessage", async (message, data) => {
                         if (message == "tx" || message == "blk" || message == "val" || message == "IP")
                         {
@@ -523,9 +519,33 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("uName", uName);
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Program.CLIVersion);
+
                 })
                 .WithAutomaticReconnect()
                 .Build();
+
+                LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
+
+                hubAdjConnection1.Reconnecting += (sender) =>
+                {
+                    LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
+                    return Task.CompletedTask;
+                };
+
+                hubAdjConnection1.Reconnected += (sender) =>
+                {
+                    LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
+                    return Task.CompletedTask;
+                };
+
+                hubAdjConnection1.Closed += (sender) =>
+                {
+                    LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
+                    return Task.CompletedTask;
+                };
 
                 AdjudicatorConnectDate = DateTime.UtcNow;
 
@@ -545,6 +565,7 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "status":
                                 Console.WriteLine(data);
+                                LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
                                 break;
                             case "tx":
                                 await ValidatorProcessor.ProcessData(message, data);
@@ -1579,6 +1600,7 @@ namespace ReserveBlockCore.P2P
             {
                 //Need peers
                 Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
+                LogUtility.Log("TX failed. No Peers: " + txSend.Hash, "P2PClient.SendTXMempool()");
             }
             else
             {

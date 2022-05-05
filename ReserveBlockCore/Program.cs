@@ -52,6 +52,7 @@ namespace ReserveBlockCore
         public static bool BlockCrafting = false;
         public static bool RemoteCraftLock = false;
         public static bool IsChainSynced = false;
+        public static bool OptionalLogging = false;
         public static DateTime? RemoteCraftLockTime = null;
         public static string ValidatorAddress = "";
         public static bool IsTestNet = false;
@@ -66,6 +67,7 @@ namespace ReserveBlockCore
         public static int BuildVer = 0;
         public static string CLIVersion = "";
 
+
         private readonly IHubContext<P2PAdjServer> _hubContext;
 
         private Program(IHubContext<P2PAdjServer> hubContext)
@@ -74,6 +76,8 @@ namespace ReserveBlockCore
         }
 
         #endregion
+
+        #region Main
         static async Task Main(string[] args)
         {
             DateTime originDate = new DateTime(2022, 1, 1);
@@ -83,7 +87,10 @@ namespace ReserveBlockCore
             BuildVer = dateDiff;
 
             CLIVersion = MajorVer.ToString() + "." + MinorVer.ToString() + "." + BuildVer.ToString() + "-pre";
+            LogUtility.Log("", "Main", true);
+            LogUtility.Log("RBX Wallet - " + CLIVersion, "Main");
 
+            //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             var argList = args.ToList();
             if (args.Length != 0)
             {
@@ -186,8 +193,6 @@ namespace ReserveBlockCore
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
-            
-
             heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             heightTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
 
@@ -202,7 +207,7 @@ namespace ReserveBlockCore
 
             //add method to remove stale state trei records and stale validator records too
 
-            //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
+            
             
 
             string url = TestURL == false ? "http://*:" + APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
@@ -230,10 +235,16 @@ namespace ReserveBlockCore
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                    webBuilder.ConfigureKestrel(options => { 
+                        
+                        
+                    });
                 });
 
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
+
+            LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
             StartupService.CheckForDuplicateBlocks();//Commenting this out as duplicate blocks should not happen.
@@ -260,9 +271,13 @@ namespace ReserveBlockCore
 
             Task.WaitAll(commandLoopTask, commandLoopTask2);
 
+            LogUtility.Log("Wallet Started and Running...", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
+
             //await Task.WhenAny(builder2.RunConsoleAsync(), commandLoopTask2);
             //await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
         }
+
+        #endregion
 
         #region Command Loops
         private static void CommandLoop(string url)
@@ -283,6 +298,7 @@ namespace ReserveBlockCore
                     {
                         StopAllTimers = true;
                         Console.WriteLine("Closing and Exiting Wallet Application.");
+                        Thread.Sleep(2000);
                         Environment.Exit(0);
                     }
 
@@ -381,6 +397,7 @@ namespace ReserveBlockCore
                     if (peersConnected.Item1 != true)
                     {
                         Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                        LogUtility.Log("Connection to Peers Lost", "peerCheckTimer_Elapsed()");
                         await StartupService.StartupPeers();
                         //potentially no connected nodes.
                     }
@@ -417,6 +434,7 @@ namespace ReserveBlockCore
                 if (peersConnected.Item1 != true)
                 {
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                    LogUtility.Log("Connection to Peers Lost", "validatorListCheckTimer_Elapsed()");
                     await StartupService.StartupPeers();
                     //potentially no connected nodes.
                 }
@@ -429,6 +447,7 @@ namespace ReserveBlockCore
                         if (connection != true)
                         {
                             Console.WriteLine("You have lost connection to the adjudicator. Attempting to reconnect...");
+                            LogUtility.Log("Connection to Adj Lost", "validatorListCheckTimer_Elapsed()");
                             await StartupService.ConnectoToAdjudicator();
                         }
                     }

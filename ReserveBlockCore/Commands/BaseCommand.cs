@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Commands
             switch (command)
             {
                 case "/help":
-                    commandResult = "Help Command List Goes Here...";
+                    commandResult = "Help Command List Goes Here... Coming soon";
                     break;
                 case "/printvars":
                     StaticVariableUtility.PrintStaticVariables();
@@ -40,6 +40,12 @@ namespace ReserveBlockCore.Commands
                 case "/mempool":
                     Console.WriteLine("Printing Mempool Results: ");
                     TransactionData.PrintMemPool();
+                    break;
+                case "/recp":
+                    BaseCommandServices.ReconnectPeers();
+                    break;
+                case "/optlog":
+                    Program.OptionalLogging = true;
                     break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
@@ -85,9 +91,15 @@ namespace ReserveBlockCore.Commands
                 case "10": //Enable API
                     Startup.APIEnabled = Startup.APIEnabled == false ? true : false;
                     if (Startup.APIEnabled)
-                        Console.WriteLine("Reserveblock API has been turned on...");
+                    {
+                        Console.WriteLine("Reserveblock API has been turned -->ON<--...");
+                        LogUtility.Log("Reserveblock API has been turned -->ON<--", "BaseCommands");
+                    }
                     else
-                        Console.WriteLine("Reserveblock API has been turned off...");
+                    {
+                        Console.WriteLine("Reserveblock API has been turned -->OFF<--...");
+                        LogUtility.Log("Reserveblock API has been turned -->OFF<--", "BaseCommands");
+                    }
                     break;
                 case "11": //Stop Masternode
                     ValidatorService.DoMasterNodeStop();
