@@ -13,10 +13,12 @@ namespace ReserveBlockCore.Services
 
         public static void UpdateMemBlocks()
         {
-            var blockChain = BlockchainData.GetBlocks();
-            var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
+            Program.MemBlocks.Clear();
+            Program.MemBlocks.TrimExcess();
+            Program.MemBlocks = null;
 
-            Program.MemBlocks = blocks.Take(200).ToList();
+            var blockChain = BlockchainData.GetBlocks();
+            Program.MemBlocks = blockChain.Find(Query.All(Query.Descending)).Take(300).ToList();
         }
 
         public static async Task ProcessBlockQueue()

@@ -10,16 +10,16 @@ namespace ReserveBlockCore.Services
         {
             bool result = false;
 
-            var badBlocks = BadBlocksUtility.GetBadBlocks();
+            //var badBlocks = BadBlocksUtility.GetBadBlocks();
 
-            if(badBlocks.ContainsKey(block.Height))
-            {
-                var badBlockHash = badBlocks[block.Height];
-                if(badBlockHash == block.Hash)
-                {
-                    return result;//reject because its on our bad block list
-                }
-            }
+            //if (badBlocks.ContainsKey(block.Height))
+            //{
+            //    var badBlockHash = badBlocks[block.Height];
+            //    if (badBlockHash == block.Hash)
+            //    {
+            //        return result;//reject because its on our bad block list
+            //    }
+            //}
 
             if (block == null) return result; //null block submitted. reject 
 
