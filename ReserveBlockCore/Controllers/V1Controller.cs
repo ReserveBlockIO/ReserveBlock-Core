@@ -428,6 +428,16 @@ namespace ReserveBlockCore.Controllers
             return result;
         }
 
+        [HttpGet("GetMemBlockCluster")]
+        public async Task<string> GetMemBlockCluster()
+        {
+            string output = "";
+            var blocks = Program.MemBlocks;
+            output = JsonConvert.SerializeObject(blocks);
+
+            return output;
+        }
+
         [HttpGet("GetMasternodes")]
         public async Task<string> GetMasternodes()
         {
