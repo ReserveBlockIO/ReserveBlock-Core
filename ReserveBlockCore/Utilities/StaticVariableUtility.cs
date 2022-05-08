@@ -35,6 +35,7 @@ namespace ReserveBlockCore.Utilities
             var valCount = await P2PAdjServer.GetConnectedValCount();
             var lastTaskSent = P2PClient.LastTaskSentTime.ToString();
             var lastTaskResult = P2PClient.LastTaskResultTime.ToString();
+            var lastTaskBlockHeight = P2PClient.LastTaskBlockHeight.ToString();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -57,8 +58,9 @@ namespace ReserveBlockCore.Utilities
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
-            var lastTaskSentText = "*Only for Validators* Last Task Sent at: " + lastTaskSent;
-            var lastTaskResultText = "*Only for Validators* Last Task Result Sent at: " + lastTaskResult;
+            var lastTaskSentText = "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + lastTaskSent;
+            var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
+            var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -106,9 +108,11 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(valCountText);
             strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastTaskResultText);
+            strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastTaskSentText);
             strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastTaskResultText);
+            strBld.AppendLine(lastTaskBlockHeightText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
             nodeList.ForEach(x => {

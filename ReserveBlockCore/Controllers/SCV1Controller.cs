@@ -106,7 +106,8 @@ namespace ReserveBlockCore.Controllers
                 scReturnData.SmartContractCode = "Some Code Goes Here... <(*L*<)";
                 scReturnData.SmartContractMain = scMain;
 
-                var json = JsonConvert.SerializeObject(scReturnData);
+                var json = JsonConvert.SerializeObject(scReturnData, Formatting.Indented);
+                //var json = JsonConvert.SerializeObject(scReturnData);
 
                 output = json;
             }

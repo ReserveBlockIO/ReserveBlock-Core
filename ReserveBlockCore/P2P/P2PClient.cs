@@ -21,6 +21,7 @@ namespace ReserveBlockCore.P2P
         public static DateTime? AdjudicatorConnectDate = null;
         public static DateTime? LastTaskSentTime = null;
         public static DateTime? LastTaskResultTime = null;
+        public static long LastTaskBlockHeight = 0;
         public static Dictionary<int, string>? NodeDict { get; set; }
 
         #region HubConnection Variables
