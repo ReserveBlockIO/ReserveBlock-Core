@@ -39,9 +39,9 @@ namespace ReserveBlockCore.Controllers
         }
 
         [HttpPost("SCPassTest")]
-        public string SCPassTest([FromBody] object jsonData)
+        public object SCPassTest([FromBody] object jsonData)
         {
-            var output = jsonData.ToString();
+            var output = jsonData;
 
             return output;
         }
