@@ -79,19 +79,22 @@ namespace ReserveBlockCore.Controllers
 
                 var scFeatures = scMain.Features;
 
-                scFeatures.ForEach(x => {
-                    switch (x.FeatureName)
-                    {
-                        case FeatureName.Royalty:
-                        // Some Method
-                        case FeatureName.Evolving:
-                        // Some Method
-                        case FeatureName.Ticket:
+                if(scMain.Features != null)
+                {
+                    scFeatures.ForEach(x => {
+                        switch (x.FeatureName)
+                        {
+                            case FeatureName.Royalty:
                             // Some Method
-                            break;
-                    }
+                            case FeatureName.Evolving:
+                            // Some Method
+                            case FeatureName.Ticket:
+                                // Some Method
+                                break;
+                        }
 
-                });
+                    });
+                }
 
                 scMain.IsPublic = false;
                 scMain.Signature = $"{scMain.Address} + -Signature";
