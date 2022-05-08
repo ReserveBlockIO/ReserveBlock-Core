@@ -52,7 +52,7 @@ namespace ReserveBlockCore.Controllers
             var output = jsonData.ToString();
             try
             {
-                var scMain = JsonConvert.DeserializeObject<SmartContractMain>((string)jsonData);
+                var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
 
                 var json = JsonConvert.SerializeObject(scMain);
 
@@ -68,14 +68,14 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpPost("GetSmartContract")]
-        public string GetSmartContract([FromBody]object jsonData)
+        [HttpPost("CreateSmartContract")]
+        public string CreateSmartContract([FromBody]object jsonData)
         {
             var output = "";
 
             try
             {
-                var scMain = JsonConvert.DeserializeObject<SmartContractMain>((string)jsonData);
+                var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
 
                 var scFeatures = scMain.Features;
 
