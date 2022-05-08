@@ -50,12 +50,20 @@ namespace ReserveBlockCore.Controllers
         public string SCPassDesTest([FromBody] object jsonData)
         {
             var output = jsonData.ToString();
+            try
+            {
+                var scMain = JsonConvert.DeserializeObject<SmartContractMain>((string)jsonData);
 
-            var scMain = JsonConvert.DeserializeObject<SmartContractMain>((string)jsonData);
+                var json = JsonConvert.SerializeObject(scMain);
 
-            var json = JsonConvert.SerializeObject(scMain);
+                output = json;
+            }
+            catch (Exception ex)
+            {
+                output = $"Error - {ex.Message}. Please Try Again.";
+            }
 
-            output = json;
+            
 
             return output;
         }

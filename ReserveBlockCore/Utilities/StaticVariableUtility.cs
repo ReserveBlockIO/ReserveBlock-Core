@@ -55,10 +55,10 @@ namespace ReserveBlockCore.Utilities
             var isCorrupt = "Database Corruption Detected? : " + Program.DatabaseCorruptionDetected.ToString();
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
-            var fortisPoolText = "Fortis Pool Count: " + fortisPoolCount.ToString();
-            var valCountText = "Validator Pool Count: " + valCount.ToString();
-            var lastTaskSentText = "Last Task Sent at: " + lastTaskSent;
-            var lastTaskResultText = "Last Task Result Sent at: " + lastTaskResult;
+            var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();
+            var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
+            var lastTaskSentText = "*Only for Validators* Last Task Sent at: " + lastTaskSent;
+            var lastTaskResultText = "*Only for Validators* Last Task Result Sent at: " + lastTaskResult;
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
