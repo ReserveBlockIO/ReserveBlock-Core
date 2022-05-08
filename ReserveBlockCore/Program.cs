@@ -88,6 +88,7 @@ namespace ReserveBlockCore
 
             CLIVersion = MajorVer.ToString() + "." + MinorVer.ToString() + "." + BuildVer.ToString() + "-pre";
             LogUtility.Log("", "Main", true);
+
             LogUtility.Log("RBX Wallet - " + CLIVersion, "Main");
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
