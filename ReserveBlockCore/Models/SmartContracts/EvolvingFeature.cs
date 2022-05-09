@@ -5,6 +5,7 @@
         public int EvolutionState { get; set; }
         public EvolveParamaterType EvolveParamaterType { get; set; }
         public object EvolveParamater { get; set; }
+        public string AssetId { get; set; }
     }
 
     public enum EvolveParamaterType

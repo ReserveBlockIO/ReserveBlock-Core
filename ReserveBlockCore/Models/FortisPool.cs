@@ -8,5 +8,6 @@
         public string IpAddress { get; set; }
         public string WalletVersion { get; set; }
         public DateTime ConnectDate { get; set; }
+        public DateTime? LastAnswerSendDate { get; set; }
     }
 }

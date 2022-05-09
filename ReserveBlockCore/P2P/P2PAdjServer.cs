@@ -58,9 +58,9 @@ namespace ReserveBlockCore.P2P
                                 var verifySig = SignatureService.VerifySignature(address, address, signature);
                                 if (verifySig != false)
                                 {
-                                
-                                    var exist = fortisPool.Exists(x => x.Address == address);
-                                    if (!exist)
+
+                                    var valExist = fortisPool.Where(x => x.Address == address).FirstOrDefault();
+                                    if (valExist == null)
                                     {
                                         FortisPool fortisPools = new FortisPool();
                                         fortisPools.IpAddress = peerIP;
@@ -184,7 +184,7 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             string connectionId = Context.ConnectionId;
-            FortisPool.RemoveAll(x => x.ConnectionId == connectionId);
+            //FortisPool.RemoveAll(x => x.ConnectionId == connectionId);
             ValConnectedCount--;
             var fortisPoolStr = "";
             //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
@@ -218,6 +218,7 @@ namespace ReserveBlockCore.P2P
             {
                 if (Program.Adjudicate)
                 {
+                    //This will result in users not getting their answers chosen if they are not in list.
                     var fortisPool = FortisPool.ToList();
                     if(fortisPool.Exists(x => x.Address == taskResult.Address))
                     {

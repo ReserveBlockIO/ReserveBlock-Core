@@ -583,7 +583,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                
+                LogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
             }
         }
 

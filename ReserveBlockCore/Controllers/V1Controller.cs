@@ -438,6 +438,16 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetTaskAnswersList")]
+        public async Task<string> GetTaskAnswersList()
+        {
+            string output = "";
+            var taskAnswerList = P2PAdjServer.TaskAnswerList;
+            output = JsonConvert.SerializeObject(taskAnswerList);
+
+            return output;
+        }
+
         [HttpGet("GetMasternodes")]
         public async Task<string> GetMasternodes()
         {

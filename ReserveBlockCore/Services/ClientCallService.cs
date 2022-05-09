@@ -40,7 +40,8 @@ namespace ReserveBlockCore.Services
                 {
                     if (Program.Adjudicate)
                     {
-                        var fortisPool = P2PAdjServer.FortisPool;
+                        var currentTime = DateTime.Now.AddMinutes(-15);
+                        var fortisPool = P2PAdjServer.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
 
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
@@ -111,7 +112,7 @@ namespace ReserveBlockCore.Services
                                                     if (result == true)
                                                     {
                                                         Console.WriteLine("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                        
+                                                        Console.WriteLine(DateTime.Now.ToString());
                                                         string data = "";
                                                         data = JsonConvert.SerializeObject(nextBlock);
                                                         
@@ -131,7 +132,16 @@ namespace ReserveBlockCore.Services
                                                         
                                                         taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
 
-                                                        P2PAdjServer.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);// = new List<TaskAnswer>();
+
+                                                        await ProcessFortisPool(taskAnswerList);
+                                                        Console.WriteLine("Fortis Pool Processed");
+
+                                                        if(P2PAdjServer.TaskAnswerList != null)
+                                                        {
+                                                            //P2PAdjServer.TaskAnswerList.Clear();
+                                                            //P2PAdjServer.TaskAnswerList.TrimExcess();
+                                                            P2PAdjServer.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                        }
 
                                                         Thread.Sleep(1000);
 
@@ -202,6 +212,45 @@ namespace ReserveBlockCore.Services
             }
             
         }
+
+        public async Task ProcessFortisPool(List<TaskAnswer> taskAnswerList)
+        {
+            try
+            {
+                var pool = P2PAdjServer.FortisPool;
+                var result = pool.GroupBy(x => x.Address).Where(x => x.Count() > 1).Select(y => y.OrderByDescending(z => z.ConnectDate).ToList()).ToList();
+
+                if (result.Count() > 0)
+                {
+                    result.ForEach(x =>
+                    {
+                        var recKeep = x.First();
+                        P2PAdjServer.FortisPool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                    });
+                }
+
+                if (taskAnswerList != null)
+                {
+                    foreach (TaskAnswer taskAnswer in taskAnswerList)
+                    {
+                        var validator = P2PAdjServer.FortisPool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
+                        {
+                            if (validator != null)
+                            {
+                                validator.LastAnswerSendDate = DateTime.Now;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.Message);
+            }
+
+        }
+
+
 
         public Task StopAsync(CancellationToken cancellationToken)
         {

@@ -10,6 +10,5 @@
         public Guid SmartContractUID { get; set; }//System Set
         public string Signature { get; set; }//System Set
         public List<SmartContractFeatures> Features { get; set; }
-
     }
 }
