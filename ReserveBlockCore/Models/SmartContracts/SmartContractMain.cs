@@ -1,4 +1,7 @@
-﻿namespace ReserveBlockCore.Models.SmartContracts
+﻿using LiteDB;
+using ReserveBlockCore.Data;
+
+namespace ReserveBlockCore.Models.SmartContracts
 {
     public class SmartContractMain
     {
@@ -10,5 +13,30 @@
         public Guid SmartContractUID { get; set; }//System Set
         public string Signature { get; set; }//System Set
         public List<SmartContractFeatures> Features { get; set; }
+
+        public class SmartContractData
+        {
+            public static ILiteCollection<SmartContractMain> GetSCs()
+            {
+                var scs = DbContext.DB_Assets.GetCollection<SmartContractMain>(DbContext.RSRV_ASSETS);
+                return scs;
+            }
+
+            public static SmartContractMain? GetSmartContract(Guid smartContractUID)
+            {
+                var scs = GetSCs();
+                if(scs != null)
+                {
+                    var sc = scs.FindOne(x => x.SmartContractUID == smartContractUID);
+                    if(sc != null)
+                    {
+                        return sc;
+                    }
+                }
+
+                return null;
+            }
+        }
+
     }
 }

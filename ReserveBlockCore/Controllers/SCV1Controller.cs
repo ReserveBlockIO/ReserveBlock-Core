@@ -63,7 +63,47 @@ namespace ReserveBlockCore.Controllers
                 output = $"Error - {ex.Message}. Please Try Again.";
             }
 
-            
+            return output;
+        }
+
+        [HttpGet("GetAllSmartContracts")]
+        public async Task<string> GetAllSmartContracts()
+        {
+            var output = "";
+
+            var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
+
+            if(scs.Count() > 0)
+            {
+                var json = JsonConvert.SerializeObject(scs);
+                output = json;
+            }
+            else
+            {
+                output = "null";
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetSingleSmartContract")]
+        public async Task<string> GetSingleSmartContract(string id)
+        {
+            var output = "";
+
+            Guid scUID = Guid.Parse(id);
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+            if (sc != null)
+            {
+                var json = JsonConvert.SerializeObject(sc);
+                output = json;
+            }
+            else
+            {
+                output = "null";
+            }
 
             return output;
         }

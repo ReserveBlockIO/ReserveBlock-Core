@@ -14,6 +14,7 @@ namespace ReserveBlockCore.Data
     internal class DbContext
     {
         public static LiteDatabase DB { set; get; }// stores blocks
+        public static LiteDatabase DB_Assets { set; get; }// stores blocks
         public static LiteDatabase DB_Queue { set; get; }// stores blocks
         public static LiteDatabase DB_Wallet { set; get; } //stores wallet info
         public static LiteDatabase DB_Peers { set; get; } //stores peer info
@@ -24,6 +25,7 @@ namespace ReserveBlockCore.Data
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
+        public const string RSRV_DB_ASSETS = @"rsrvassetdata.db";
         public const string RSRV_DB_QUEUE_NAME = @"rsrvblkqueuedata.db";
         public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
         public const string RSRV_DB_BANLIST_NAME = @"rsrvbanldata.db";
@@ -49,6 +51,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_ASTATE_TREI = "rsrv_astate_trei";
         public const string RSRV_CONFIG = "rsrv_config";
         public const string RSRV_CONFIG_RULES = "rsrv_config_rules";
+        public const string RSRV_ASSETS = "rsrv_assets";
 
         public static void Initialize()
         {
@@ -76,6 +79,7 @@ namespace ReserveBlockCore.Data
                 Directory.CreateDirectory(path);
             }
             DB = new LiteDatabase(path + RSRV_DB_NAME);
+            DB = new LiteDatabase(path + RSRV_DB_ASSETS);
             DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
             DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
@@ -153,6 +157,7 @@ namespace ReserveBlockCore.Data
             DB_Peers.Checkpoint();
             DB_Banlist.Checkpoint();
             DB_Config.Checkpoint();
+            DB_Assets.Checkpoint();
 
             //dispose connection to DB
             CloseDB();
@@ -175,6 +180,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_PEERS_NAME);
             File.Delete(path + RSRV_DB_BANLIST_NAME);
             File.Delete(path + RSRV_DB_CONFIG);
+            File.Delete(path + RSRV_DB_ASSETS);
 
             //recreate DBs
             DB = new LiteDatabase(path + RSRV_DB_NAME);
@@ -185,6 +191,7 @@ namespace ReserveBlockCore.Data
             DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
             DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
             DB_Config = new LiteDatabase(path + RSRV_DB_CONFIG);
+            DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS);
         }
 
         public static void CloseDB()
@@ -197,6 +204,7 @@ namespace ReserveBlockCore.Data
             DB_WorldStateTrei.Dispose();
             DB_AccountStateTrei.Dispose();
             DB_Config.Dispose();
+            DB_Assets.Dispose();
         }
 
     }
