@@ -36,6 +36,13 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                 return null;
             }
+
+            public static void SaveSmartContract(SmartContractMain scMain)
+            {
+                var scs = GetSCs();
+
+                scs.Insert(scMain);
+            }
         }
 
     }
