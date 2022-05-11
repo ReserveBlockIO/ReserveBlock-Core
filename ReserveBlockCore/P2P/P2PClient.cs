@@ -22,6 +22,7 @@ namespace ReserveBlockCore.P2P
         public static DateTime? LastTaskSentTime = null;
         public static DateTime? LastTaskResultTime = null;
         public static long LastTaskBlockHeight = 0;
+        public static bool LastTaskError = false;
         public static Dictionary<int, string>? NodeDict { get; set; }
 
         #region HubConnection Variables
@@ -722,14 +723,20 @@ namespace ReserveBlockCore.P2P
                             var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
                             if (result)
                             {
+                                LastTaskError = false;
+                                LastTaskSentTime = DateTime.Now;
                                 LastSentBlockHeight = taskAnswer.Block.Height;
+                            }
+                            else
+                            {
+                                LastTaskError = true;
                             }
                         }
                     }
                 }
                 catch(Exception ex)
                 {
-
+                    LastTaskError = true;
                 }
             }
             else

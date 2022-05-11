@@ -25,6 +25,7 @@ namespace ReserveBlockCore.P2P
         public static TaskQuestion? CurrentTaskQuestion = null;
 
         public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
+        public static List<TaskAnswer> RejectedTaskAnswerList = new List<TaskAnswer>();
         public static List<Transaction> BroadcastedTrxList = new List<Transaction>();
 
         public static int ValConnectedCount = 0;
@@ -233,6 +234,11 @@ namespace ReserveBlockCore.P2P
                                 return true;
                             }
                         }
+                    }
+                    else
+                    {
+                        RejectedTaskAnswerList.Add(taskResult);
+                        return false;
                     }
                 }
             }

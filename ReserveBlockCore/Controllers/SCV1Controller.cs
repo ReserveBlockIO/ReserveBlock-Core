@@ -136,6 +136,8 @@ namespace ReserveBlockCore.Controllers
                     });
                 }
 
+                scMain.SmartContractAsset.AssetId = Guid.NewGuid();
+
                 scMain.IsPublic = false;
                 scMain.Signature = $"{scMain.Address} + -Signature";
                 scMain.SmartContractUID = Guid.NewGuid();

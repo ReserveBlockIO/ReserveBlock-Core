@@ -79,7 +79,7 @@ namespace ReserveBlockCore.Data
                 Directory.CreateDirectory(path);
             }
             DB = new LiteDatabase(path + RSRV_DB_NAME);
-            DB = new LiteDatabase(path + RSRV_DB_ASSETS);
+            DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS);
             DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
             DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);

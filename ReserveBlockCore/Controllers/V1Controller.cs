@@ -442,8 +442,23 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetTaskAnswersList()
         {
             string output = "";
-            var taskAnswerList = P2PAdjServer.TaskAnswerList;
+            var taskAnswerList = P2PAdjServer.TaskAnswerList.Select(x => new {
+                Address = x.Address,
+                BlockHeight = x.Block != null ? x.Block.Height : 0,
+                SubmitTime = x.SubmitTime
+            });
             output = JsonConvert.SerializeObject(taskAnswerList);
+
+            return output;
+        }
+
+        [HttpGet("GetMasternodesSent")]
+        public async Task<string> GetMasternodesSent()
+        {
+            string output = "";
+            var currentTime = DateTime.Now.AddMinutes(-15);
+            var fortisPool = P2PAdjServer.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
+            output = JsonConvert.SerializeObject(fortisPool);
 
             return output;
         }
@@ -453,6 +468,7 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             var validators = P2PAdjServer.FortisPool.ToList();
+
             output = JsonConvert.SerializeObject(validators);
 
             return output;

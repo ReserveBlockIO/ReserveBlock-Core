@@ -21,7 +21,6 @@ namespace ReserveBlockCore.Nodes
                 {
                     if(message == "task")
                     {
-                        P2PClient.LastTaskSentTime = DateTime.Now;
                         var taskQuestion = JsonConvert.DeserializeObject<TaskQuestion>(data);
                         switch(taskQuestion.TaskType)
                         {
