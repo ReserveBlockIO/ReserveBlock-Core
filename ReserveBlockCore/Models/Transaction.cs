@@ -54,9 +54,9 @@ namespace ReserveBlockCore.Models
     public enum TransactionType
     {
         TX,
-        NFT,
-        NFT_TX,
-        ADNR,
-        DSTR
+        NFT, //mint
+        NFT_TX, //transfer or sale
+        ADNR, //address dnr
+        DSTR //DST shop registration
     }
 }

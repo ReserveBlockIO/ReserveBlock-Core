@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Controllers
 
             var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
 
-            if(scs.Count() > 0)
+            if (scs.Count() > 0)
             {
                 var json = JsonConvert.SerializeObject(scs);
                 output = json;
@@ -119,7 +119,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         [HttpPost("CreateSmartContract")]
-        public async Task<string> CreateSmartContract([FromBody]object jsonData)
+        public async Task<string> CreateSmartContract([FromBody] object jsonData)
         {
             var output = "";
 
@@ -143,7 +143,7 @@ namespace ReserveBlockCore.Controllers
                         Amount = 0.0M,
                         Fee = 0,
                         Nonce = AccountStateTrei.GetNextNonce(scMain.Address),
-                        TransactionType = TransactionType.TX,
+                        TransactionType = TransactionType.NFT,
                         Data = scReturnData.SmartContractCode
                     };
 
@@ -172,16 +172,23 @@ namespace ReserveBlockCore.Controllers
                     var json = JsonConvert.SerializeObject(scInfo, Formatting.Indented);
                     output = json;
                 }
-                
+
             }
             catch (Exception ex)
             {
                 output = $"Error - {ex.Message}. Please Try Again...";
             }
-           
+
 
             return output;
         }
 
+        [HttpGet("PublishSmartContract/{id}")]
+        public async Task<string> PublishSmartContract(string id)
+        {
+            var output = "";
+
+            return output;
+        }
     }
 }
