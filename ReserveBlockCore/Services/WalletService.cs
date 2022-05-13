@@ -112,6 +112,7 @@ namespace ReserveBlockCore.Services
                 Amount = Amount + 0.0M,
                 Fee = 0, 
                 Nonce = AccountStateTrei.GetNextNonce(FromAddress), 
+                TransactionType = TransactionType.TX,
             };
 
             //Calculate fee for tx.

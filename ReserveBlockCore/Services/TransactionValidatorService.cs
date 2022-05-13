@@ -61,6 +61,8 @@ namespace ReserveBlockCore.Services
                 Amount = txRequest.Amount,
                 Fee = txRequest.Fee,
                 Nonce = txRequest.Nonce,
+                TransactionType = txRequest.TransactionType,
+                Data = txRequest.Data,
             };
 
             newTxn.Build();
@@ -83,6 +85,8 @@ namespace ReserveBlockCore.Services
                     Amount = amountFormat,
                     Fee = txRequest.Fee,
                     Nonce = txRequest.Nonce,
+                    TransactionType = txRequest.TransactionType,
+                    Data = txRequest.Data,
                 };
 
                 newTxnMod.Build();
@@ -129,6 +133,8 @@ namespace ReserveBlockCore.Services
                 Amount = txRequest.Amount,
                 Fee = txRequest.Fee,
                 Nonce = txRequest.Nonce,
+                TransactionType = txRequest.TransactionType,
+                Data = txRequest.Data,
             };
 
             newTxn.Build();

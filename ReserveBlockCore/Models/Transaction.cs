@@ -24,10 +24,12 @@ namespace ReserveBlockCore.Models
         public long Nonce { get; set; }
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
-        public string? NFTData { get; set; }
+        public string? Data { get; set; }
         [StringLength(512)]
         public string Signature { get; set; }
         public long Height { get; set; }
+
+        public TransactionType TransactionType { get; set; }
 
         public void Build()
         {
@@ -35,7 +37,7 @@ namespace ReserveBlockCore.Models
         }
         public string GetHash()
         {
-            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + NFTData ;
+            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + TransactionType + Data ;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
         public static void Add(Transaction transaction)
@@ -48,6 +50,13 @@ namespace ReserveBlockCore.Models
             var trans = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             return trans;
         }
-
+    }
+    public enum TransactionType
+    {
+        TX,
+        NFT,
+        NFT_TX,
+        ADNR,
+        DSTR
     }
 }
