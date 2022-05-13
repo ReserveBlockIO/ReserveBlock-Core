@@ -125,21 +125,54 @@ namespace ReserveBlockCore.Controllers
 
             try
             {
-                var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
-
-                var result = await SmartContractWriterService.WriteSmartContract(scMain);
-
                 SmartContractReturnData scReturnData = new SmartContractReturnData();
+                var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
+                try
+                {
+                    var result = await SmartContractWriterService.WriteSmartContract(scMain);
+                    scReturnData.Success = true;
+                    scReturnData.SmartContractCode = result.Item1;
+                    scReturnData.SmartContractMain = result.Item2;
+                    SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);
 
-                scReturnData.Success = true;
-                scReturnData.SmartContractCode = result.Item1;
-                scReturnData.SmartContractMain = result.Item2;
+                    var nTx = new Transaction
+                    {
+                        Timestamp = TimeUtil.GetTime(),
+                        FromAddress = scReturnData.SmartContractMain.Address,
+                        ToAddress = scReturnData.SmartContractMain.Address,
+                        Amount = 0.0M,
+                        Fee = 0,
+                        Nonce = AccountStateTrei.GetNextNonce(scMain.Address),
+                        TransactionType = TransactionType.TX,
+                        Data = scReturnData.SmartContractCode
+                    };
 
-                SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);//save smart contract to DB.
+                    //Calculate fee for tx.
+                    nTx.Fee = FeeCalcService.CalculateTXFee(nTx);
 
-                var json = JsonConvert.SerializeObject(scReturnData, Formatting.Indented);
+                    nTx.Build();
 
-                output = json;
+                    var scInfo = new[]
+                    {
+                    new {Success = true, SmartContract = result.Item2, SmartContractCode = result.Item1, Transaction = nTx}
+                    };
+                    var json = JsonConvert.SerializeObject(scInfo, Formatting.Indented);
+                    output = json;
+                }
+                catch (Exception ex)
+                {
+                    scReturnData.Success = false;
+                    scReturnData.SmartContractCode = "Failure";
+                    scReturnData.SmartContractMain = scMain;
+
+                    var scInfo = new[]
+                    {
+                    new {Success = false, SmartContract = scReturnData.SmartContractCode, SmartContractCode = scReturnData.SmartContractMain}
+                    };
+                    var json = JsonConvert.SerializeObject(scInfo, Formatting.Indented);
+                    output = json;
+                }
+                
             }
             catch (Exception ex)
             {
