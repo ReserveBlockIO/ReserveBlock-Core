@@ -86,7 +86,7 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetSingleSmartContract")]
+        [HttpGet("GetSingleSmartContract/{id}")]
         public async Task<string> GetSingleSmartContract(string id)
         {
             var output = "";
@@ -95,9 +95,19 @@ namespace ReserveBlockCore.Controllers
 
             var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
 
+            var result = await SmartContractReaderService.ReadSmartContract(sc);
+
+            var scMain = result.Item2;
+            var scCode = result.Item1;
+
+            var scInfo = new[]
+            {
+                new { SmartContract = scMain, SmartContractCode = scCode}
+            };
+
             if (sc != null)
             {
-                var json = JsonConvert.SerializeObject(sc);
+                var json = JsonConvert.SerializeObject(scInfo);
                 output = json;
             }
             else
