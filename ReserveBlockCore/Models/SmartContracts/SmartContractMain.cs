@@ -12,7 +12,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         public bool IsPublic { get; set; } //System Set
         public Guid SmartContractUID { get; set; }//System Set
         public string Signature { get; set; }//System Set
-        public List<SmartContractFeatures> Features { get; set; }
+        public List<SmartContractFeatures>? Features { get; set; }
 
         public class SmartContractData
         {
