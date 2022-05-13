@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Trillium
     {
         public static Dictionary<string, string[]>? ReadSmartContract()
         {
+            //This is the Runtime that will process smart contract and perform self-executable task.
             var npath = Directory.GetCurrentDirectory() + @"\samples\hello\";
 
             List<string> pathList = new List<string>();
