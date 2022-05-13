@@ -8,6 +8,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -17,7 +18,7 @@ namespace ReserveBlockCore
 {
     class Program
     {
-
+        
         #region Constants
 
         private static Timer? blockTimer;//for creating a new block at max every 30 seconds
@@ -80,6 +81,7 @@ namespace ReserveBlockCore
         #region Main
         static async Task Main(string[] args)
         {
+
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 

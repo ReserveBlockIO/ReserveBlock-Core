@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Models;
+﻿using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using System.Text;
 
@@ -6,7 +7,7 @@ namespace ReserveBlockCore.Services
 {
     public static class SmartContractWriterService
     {
-        public static void WriteSmartContract(SmartContractMain scMain)
+        public static async Task<(string, SmartContractMain)> WriteSmartContract(SmartContractMain scMain)
         {
             var scUID = Guid.NewGuid();
             var features = "";
@@ -15,6 +16,10 @@ namespace ReserveBlockCore.Services
             StringBuilder strRoyaltyBld = new StringBuilder();
             StringBuilder strEvolveBld = new StringBuilder();
 
+            scMain.SmartContractUID = scUID;
+            scMain.Signature = signature;
+
+
             var appendChar = "\"|->\"";
 
             var scAsset = scMain.SmartContractAsset;
@@ -22,13 +27,18 @@ namespace ReserveBlockCore.Services
 
             if (featuresList != null)
             {
+                var Flist = new List<SmartContractFeatures>();
                 if (featuresList.Count == 1)
                 {
                     var feature = featuresList.First();
                     features = ((int)feature.FeatureName).ToString();
                     if (feature.FeatureName == FeatureName.Royalty)
                     {
-                        var royalty = (RoyaltyFeature)feature.FeatureFeatures;
+                        var royalty = ((JObject)feature.FeatureFeatures).ToObject<RoyaltyFeature>();
+                        feature.FeatureFeatures = royalty;
+
+                        Flist.Add(feature); 
+                        
                         //create royalty code block
                         strBuild.AppendLine("let RoyaltyType = \"" + ((int)royalty.RoyaltyType).ToString() + "\"");
                         strBuild.AppendLine("let RoyaltyAmount = \"" + royalty.RoyaltyAmount.ToString() + "\"");
@@ -57,7 +67,10 @@ namespace ReserveBlockCore.Services
 
                         if (x.FeatureName == FeatureName.Royalty)
                         {
-                            var royalty = (RoyaltyFeature)x.FeatureFeatures;
+                            var royalty = ((JObject)x.FeatureFeatures).ToObject<RoyaltyFeature>();
+                            x.FeatureFeatures = royalty;
+
+                            Flist.Add(x);
                             //create royalty code block
                             strBuild.AppendLine("let RoyaltyType = \"" + ((int)royalty.RoyaltyType).ToString() + "\"");
                             strBuild.AppendLine("let RoyaltyAmount = \"" + royalty.RoyaltyAmount.ToString() + "\"");
@@ -71,8 +84,10 @@ namespace ReserveBlockCore.Services
 
                     });
                 }
+                scMain.Features = Flist;
 
             }
+
 
             //NFT Main Data
             strBuild.AppendLine(("let Name = \"{#NFTName}\"").Replace("{#NFTName}", scMain.Name));
@@ -91,9 +106,12 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine("{");
             strBuild.AppendLine("send(GetNFTData(Name, Description, Address))");
             strBuild.AppendLine("send(GetNFTAssetData(FileName, Location, FileSize, Extension))");
-            if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+            if (featuresList != null)
             {
-                strBuild.AppendLine("send(GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress))");
+                if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+                {
+                    strBuild.AppendLine("send(GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress))");
+                }
             }
             strBuild.AppendLine("}");
             strBuild.AppendLine("function GetNFTData(name : string, desc : string, addr : string) : string");
@@ -105,14 +123,19 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine("return (fileName + " + appendChar + " + loc + " + appendChar + " + fileSize + " + appendChar + " + ext)");
             strBuild.AppendLine("}");
 
-            if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+            if (featuresList != null)
             {
-                strBuild.Append(strRoyaltyBld);
+                if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+                {
+                    strBuild.Append(strRoyaltyBld);
+                }
             }
 
             strBuild.AppendLine("NftMain()");
 
             var scText = strBuild.ToString();
+
+            return (scText, scMain);
 
         }
     }

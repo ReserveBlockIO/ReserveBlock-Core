@@ -1,5 +1,7 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace ReserveBlockCore.Models.SmartContracts
 {
@@ -37,11 +39,48 @@ namespace ReserveBlockCore.Models.SmartContracts
                 return null;
             }
 
-            public static void SaveSmartContract(SmartContractMain scMain)
+            public static void SaveSmartContract(SmartContractMain scMain, string scText)
             {
                 var scs = GetSCs();
 
                 scs.Insert(scMain);
+
+                SaveSCLocally(scMain, scText);
+            }
+            public static async void SaveSCLocally(SmartContractMain scMain, string scText)
+            {
+                try
+                {
+                    var databaseLocation = Program.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
+                    var text = scText;
+                    string path = "";
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    }
+                    else
+                    {
+                        if (Debugger.IsAttached)
+                        {
+                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                        }
+                        else
+                        {
+                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                        }
+                    }
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+
+                    await File.AppendAllTextAsync(path + scMain.SmartContractUID +".trlm", text);
+                }
+                catch (Exception ex)
+                {
+
+                }
             }
         }
 

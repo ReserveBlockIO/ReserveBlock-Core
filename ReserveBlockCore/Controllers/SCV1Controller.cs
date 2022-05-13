@@ -109,7 +109,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         [HttpPost("CreateSmartContract")]
-        public string CreateSmartContract([FromBody]object jsonData)
+        public async Task<string> CreateSmartContract([FromBody]object jsonData)
         {
             var output = "";
 
@@ -117,38 +117,15 @@ namespace ReserveBlockCore.Controllers
             {
                 var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
 
-                var scFeatures = scMain.Features;
-
-                if(scMain.Features != null)
-                {
-                    scFeatures.ForEach(x => {
-                        switch (x.FeatureName)
-                        {
-                            case FeatureName.Royalty:
-                            // Some Method
-                            case FeatureName.Evolving:
-                            // Some Method
-                            case FeatureName.Ticket:
-                                // Some Method
-                                break;
-                        }
-
-                    });
-                }
-
-                scMain.SmartContractAsset.AssetId = Guid.NewGuid();
-
-                scMain.IsPublic = false;
-                scMain.Signature = $"{scMain.Address} + -Signature";
-                scMain.SmartContractUID = Guid.NewGuid();
+                var result = await SmartContractWriterService.WriteSmartContract(scMain);
 
                 SmartContractReturnData scReturnData = new SmartContractReturnData();
 
                 scReturnData.Success = true;
-                scReturnData.SmartContractCode = "Some Code Goes Here... <(*L*<)";
-                scReturnData.SmartContractMain = scMain;
+                scReturnData.SmartContractCode = result.Item1;
+                scReturnData.SmartContractMain = result.Item2;
 
-                SmartContractMain.SmartContractData.SaveSmartContract(scMain);//save smart contract to DB.
+                SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);//save smart contract to DB.
 
                 var json = JsonConvert.SerializeObject(scReturnData, Formatting.Indented);
 

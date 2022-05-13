@@ -1,0 +1,32 @@
+let RoyaltyType = "1"
+let RoyaltyAmount = "10"
+let RoyaltyPayToAddress = "RRUQ3ywBNLT7tuHv3XRmoUWeJaKjTJjr4A"
+let Name = "Some SC NAME"
+let Description = "Some Description"
+let Address = "RRUQ3ywBNLT7tuHv3XRmoUWeJaKjTJjr4A"
+let SmartContractUID = "422f5567-15d0-4e89-9857-650b9d78c655"
+let Signature = ""
+let Features = "1"
+let Extension = "jpeg"
+let FileSize = "2"
+let Location = "somelocation/somelocationmore/evenmore.jpeg"
+let FileName = "evenmore.jpeg"
+function NftMain()
+{
+send(GetNFTData(Name, Description, Address, SmartContractUID, Signature, Features ))
+send(GetNFTAssetData(FileName, Location, FileSize, Extension))
+send(GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress))
+}
+function GetNFTData(name : string, desc : string, addr : string, scUID : string, signature : string, features : string) : string
+{
+return "NftData" + "|->" + name + "|->" + desc + "|->" + addr + "|->" + scUID + "|->" + signature + "|->" + features
+}
+function GetNFTAssetData(fileName : string, loc : string, fileSize : string, ext : string) : string
+{
+return ("NftAssetData" + "|->" + fileName + "|->" + loc + "|->" + fileSize + "|->" + ext)
+}
+function GetRoyaltyData(royaltyType  : string, royaltyAmount : string, royaltyPayToAddress : string) : string
+{
+return ("NftRoyaltyData" + "|->" + royaltyType + "|->" + royaltyAmount + "|->" + royaltyPayToAddress)
+}
+NftMain()
