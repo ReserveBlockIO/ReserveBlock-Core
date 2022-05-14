@@ -86,6 +86,26 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetMintedSmartContracts")]
+        public async Task<string> GetMintedSmartContracts()
+        {
+            var output = "";
+
+            var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true).ToList();
+
+            if (scs.Count() > 0)
+            {
+                var json = JsonConvert.SerializeObject(scs);
+                output = json;
+            }
+            else
+            {
+                output = "null";
+            }
+
+            return output;
+        }
+
         [HttpGet("GetSingleSmartContract/{id}")]
         public async Task<string> GetSingleSmartContract(string id)
         {
@@ -189,6 +209,23 @@ namespace ReserveBlockCore.Controllers
             var output = "";
 
             return output;
+        }
+
+        [HttpGet("ChangeNFTPublicState/{id}")]
+        public async Task<string> ChangeNFTPublicState(string id)
+        {
+            var output = "";
+
+            Guid scUID = Guid.Parse(id);
+            //Get SmartContractMain.IsPublic and set to True.
+            var scs = SmartContractMain.SmartContractData.GetSCs();
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            sc.IsPublic = sc.IsPublic == false ? true : false;
+
+            scs.Update(sc);
+
+            return output;
+
         }
     }
 }

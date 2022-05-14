@@ -18,7 +18,8 @@ namespace ReserveBlockCore.Services
 
             scMain.SmartContractUID = scUID;
             scMain.Signature = signature;
-
+            scMain.IsMinter = true;
+            scMain.MinterAddress = scMain.Address;
 
             var appendChar = "\"|->\"";
 
