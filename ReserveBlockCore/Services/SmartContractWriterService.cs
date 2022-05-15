@@ -35,12 +35,11 @@ namespace ReserveBlockCore.Services
                 {
                     var feature = featuresList.First();
                     features = ((int)feature.FeatureName).ToString();
+                    Flist.Add(feature);
                     if (feature.FeatureName == FeatureName.Royalty)
                     {
                         var royalty = ((JObject)feature.FeatureFeatures).ToObject<RoyaltyFeature>();
                         feature.FeatureFeatures = royalty;
-
-                        Flist.Add(feature);
 
                         //create royalty code block
                         strBuild.AppendLine("let RoyaltyType = \"" + ((int)royalty.RoyaltyType).ToString() + "\"");
@@ -57,11 +56,12 @@ namespace ReserveBlockCore.Services
                         var evolve = JsonConvert.DeserializeObject<List<EvolvingFeature>>(feature.FeatureFeatures.ToString());
                         if (evolve != null)
                         {
+                            feature.FeatureFeatures = evolve;
                             var maxEvoState = evolve.Count().ToString();
                             var evolutionaryState = "\"{*0}\"";
 
                             //Evolve Constants
-                            strBuild.AppendLine("var EvolutionaryState = \"" + evolutionaryState + "\"");
+                            strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);
                             strBuild.AppendLine("let EvolutionaryMaxState = \"" + maxEvoState + "\"");
 
                             //Methods
@@ -100,7 +100,7 @@ namespace ReserveBlockCore.Services
                             strEvolveBld.AppendLine("if evoState > 0");
                             strEvolveBld.AppendLine("{");
                             strEvolveBld.AppendLine("var newEvolveState = evoState - 1");
-                            strEvolveBld.AppendLine("if(newEvolveState < 0");
+                            strEvolveBld.AppendLine("if(newEvolveState < 0)");
                             strEvolveBld.AppendLine("{");
                             strEvolveBld.AppendLine(@"return ""Failed to Devolve.""");
                             strEvolveBld.AppendLine("}");
@@ -180,7 +180,7 @@ namespace ReserveBlockCore.Services
 
                             strRoyaltyBld.AppendLine("function GetRoyaltyData(royaltyType  : string, royaltyAmount : string, royaltyPayToAddress : string) : string");
                             strRoyaltyBld.AppendLine("{");
-                            strRoyaltyBld.AppendLine("return (royaltyType + " + appendChar + " + royaltyAmount + " + appendChar + " + royaltyPayToAddress");
+                            strRoyaltyBld.AppendLine("return (royaltyType + " + appendChar + " + royaltyAmount + " + appendChar + " + royaltyPayToAddress)");
                             strRoyaltyBld.AppendLine("}");
                         }
 
@@ -189,11 +189,14 @@ namespace ReserveBlockCore.Services
                             var evolve = JsonConvert.DeserializeObject<List<EvolvingFeature>>(x.FeatureFeatures.ToString());
                             if(evolve != null)
                             {
+                                x.FeatureFeatures = evolve;
+                                Flist.Add(x);
+
                                 var maxEvoState = evolve.Count().ToString();
                                 var evolutionaryState = "\"{*0}\"";
 
                                 //Evolve Constants
-                                strBuild.AppendLine("var EvolutionaryState = \"" + evolutionaryState + "\"");
+                                strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);
                                 strBuild.AppendLine("let EvolutionaryMaxState = \"" + maxEvoState + "\"");
 
                                 //Methods
@@ -232,7 +235,7 @@ namespace ReserveBlockCore.Services
                                 strEvolveBld.AppendLine("if evoState > 0");
                                 strEvolveBld.AppendLine("{");
                                 strEvolveBld.AppendLine("var newEvolveState = evoState - 1");
-                                strEvolveBld.AppendLine("if(newEvolveState < 0");
+                                strEvolveBld.AppendLine("if(newEvolveState < 0)");
                                 strEvolveBld.AppendLine("{");
                                 strEvolveBld.AppendLine(@"return ""Failed to Devolve.""");
                                 strEvolveBld.AppendLine("}");
@@ -284,7 +287,7 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine(("let Name = \"{#NFTName}\"").Replace("{#NFTName}", scMain.Name));
             strBuild.AppendLine(("let Description = \"{#Description}\"").Replace("{#Description}", scMain.Description));
             strBuild.AppendLine(("let Address = \"{#Address}\"").Replace("{#Address}", scMain.Address));
-            strBuild.AppendLine(("let Address = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
+            strBuild.AppendLine(("let MinterAddress = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
             strBuild.AppendLine(("let SmartContractUID = \"" + scUID + "\""));
             strBuild.AppendLine(("let Signature = \"" + signature + "\""));
             strBuild.AppendLine(("let Features = \"" + features + "\""));
@@ -294,17 +297,24 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine(("let FileSize = \"" + scAsset.FileSize.ToString() + "\""));
             strBuild.AppendLine(("let Location = \"" + scAsset.Location + "\""));
             strBuild.AppendLine(("let FileName = \"" + scAsset.Name + "\""));
-            strBuild.AppendLine("function NftMain()");
+            strBuild.AppendLine("function NftMain(data : string) : string");
             strBuild.AppendLine("{");
-            strBuild.AppendLine("send(GetNFTData(Name, Description, Address))");
-            strBuild.AppendLine("send(GetNFTAssetData(FileName, Location, FileSize, Extension))");
-            if (featuresList != null)
+            strBuild.AppendLine(@"if data == ""nftdata""");
+            strBuild.AppendLine("{");
+            strBuild.AppendLine("return GetNFTData(Name, Description, Address)");
+            strBuild.AppendLine("}");
+            strBuild.AppendLine(@"else if data == ""getnftassetdata""");
+            strBuild.AppendLine("{");
+            strBuild.AppendLine("return GetNFTAssetData(FileName, Location, FileSize, Extension)");
+            strBuild.AppendLine("}");
+            if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
             {
-                if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
-                {
-                    strBuild.AppendLine("send(GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress))");
-                }
+                strBuild.AppendLine(@"else if data == ""getroyaltydata""");
+                strBuild.AppendLine("{");
+                strBuild.AppendLine("return GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress)");
+                strBuild.AppendLine("}");
             }
+            strBuild.AppendLine(@"return ""No Method Named "" + data + "" was found.""");
             strBuild.AppendLine("}");
             strBuild.AppendLine("function GetNFTData(name : string, desc : string, addr : string) : string");
             strBuild.AppendLine("{");
@@ -326,8 +336,6 @@ namespace ReserveBlockCore.Services
                     strBuild.Append(strEvolveBld);
                 }
             }
-
-            strBuild.AppendLine("NftMain()");
 
             var scText = strBuild.ToString();
 
