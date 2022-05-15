@@ -50,6 +50,14 @@ namespace ReserveBlockCore.Services
                         strRoyaltyBld.AppendLine("return (royaltyType + " + appendChar + " + royaltyAmount + " + appendChar + " + royaltyPayToAddress)");
                         strRoyaltyBld.AppendLine("}");
                     }
+                    else if(feature.FeatureName == FeatureName.Evolving)
+                    {
+
+                    }
+                    else if(feature.FeatureName == FeatureName.Ticket)
+                    {
+
+                    }
                 }
                 else
                 {

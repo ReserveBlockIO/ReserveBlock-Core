@@ -220,7 +220,7 @@ namespace ReserveBlockCore.Controllers
             //Get SmartContractMain.IsPublic and set to True.
             var scs = SmartContractMain.SmartContractData.GetSCs();
             var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-            sc.IsPublic = sc.IsPublic == false ? true : false;
+            sc.IsPublic ^= true;
 
             scs.Update(sc);
 
