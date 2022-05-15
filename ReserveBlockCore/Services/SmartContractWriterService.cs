@@ -102,6 +102,7 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine(("let Name = \"{#NFTName}\"").Replace("{#NFTName}", scMain.Name));
             strBuild.AppendLine(("let Description = \"{#Description}\"").Replace("{#Description}", scMain.Description));
             strBuild.AppendLine(("let Address = \"{#Address}\"").Replace("{#Address}", scMain.Address));
+            strBuild.AppendLine(("let Address = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
             strBuild.AppendLine(("let SmartContractUID = \"" + scUID + "\""));
             strBuild.AppendLine(("let Signature = \"" + signature + "\""));
             strBuild.AppendLine(("let Features = \"" + features + "\""));
