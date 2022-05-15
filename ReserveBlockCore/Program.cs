@@ -292,10 +292,20 @@ namespace ReserveBlockCore
             while (true)
             {
                 var command = Console.ReadLine();
-
+                
                 if (command != "" || command != null)
                 {
-                    var commandResult = BaseCommand.ProcessCommand(command);
+                    string commandResult = "";
+                    if (command.Contains(","))
+                    {
+                        var splitCommand = command.Split(',');
+                        commandResult = BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
+                    }
+                    else
+                    {
+                        commandResult = BaseCommand.ProcessCommand(command);
+                    }
+                    
 
                     if (commandResult == "_EXIT")
                     {

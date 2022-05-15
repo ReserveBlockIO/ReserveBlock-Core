@@ -7,12 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Trillium;
 
 namespace ReserveBlockCore.Commands
 {
     internal class BaseCommand
     {
-        internal static string ProcessCommand(string command)
+        internal static string ProcessCommand(string command, string? commandParameter = null)
         {
             var commandResult = string.Empty;
 
@@ -46,6 +47,19 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/optlog":
                     Program.OptionalLogging = true;
+                    break;
+                case "/trillium":
+                    //start trillium
+                    if(commandParameter == null)
+                    {
+                        Console.WriteLine("Please include a command paramter. Ex. '/trillium #reset'");
+                    }
+                    else
+                    {
+                        var repl = new TrilliumRepl();
+                        var result = repl.Run(commandParameter);
+                    }
+                    
                     break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
