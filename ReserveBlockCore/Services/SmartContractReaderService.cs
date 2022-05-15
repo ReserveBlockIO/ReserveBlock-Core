@@ -49,12 +49,23 @@ namespace ReserveBlockCore.Services
                     }
                     else if (feature.FeatureName == FeatureName.Evolving)
                     {
+                        SmartContractAsset evoAsset = new SmartContractAsset();
                         List<EvolvingFeature> evolve = new List<EvolvingFeature>();
                         var myArray = ((object[])feature.FeatureFeatures).ToList();
 
                         var count = 0;
                         myArray.ForEach(x => {
                             var evolveDict = (Dictionary<string, object>)myArray[count];
+                            if (evolveDict.ContainsKey("SmartContractAsset"))
+                            {
+                                var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
+                                evoAsset.Name = (string)assetEvo["Name"];
+                                evoAsset.FileSize = (long)assetEvo["FileSize"];
+                                evoAsset.AssetId = (Guid)assetEvo["AssetId"];
+                                evoAsset.Location = (string)assetEvo["Location"];
+                                evoAsset.Extension = (string)assetEvo["Extension"];
+                            }
+
                             EvolvingFeature evoFeature = new EvolvingFeature
                             {
                                 Name = evolveDict["Name"].ToString(),
@@ -63,7 +74,7 @@ namespace ReserveBlockCore.Services
                                 IsDynamic = (bool)evolveDict["IsDynamic"],
                                 IsCurrentState = (bool)evolveDict["IsCurrentState"],
                                 EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
-                                SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? (SmartContractAsset)evolveDict["SmartContractAsset"] : null
+                                SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                             };
                             count += 1;
                             evolve.Add(evoFeature);

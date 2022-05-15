@@ -141,7 +141,6 @@ namespace ReserveBlockCore.Controllers
                 output = ex.Message;
             }
             
-
             return output;
         }
 
