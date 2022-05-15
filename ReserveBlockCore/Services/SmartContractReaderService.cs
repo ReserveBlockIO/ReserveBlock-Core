@@ -228,8 +228,6 @@ namespace ReserveBlockCore.Services
                                     IsCurrentState = (bool)evolveDict["IsCurrentState"],
                                     EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
                                     SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
-                                    
-
                                 };
                                 count += 1;
                                 evolve.Add(evoFeature);

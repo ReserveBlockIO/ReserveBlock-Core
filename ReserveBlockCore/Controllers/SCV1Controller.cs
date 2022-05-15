@@ -110,30 +110,37 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetSingleSmartContract(string id)
         {
             var output = "";
-
-            Guid scUID = Guid.Parse(id);
-
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-
-            var result = await SmartContractReaderService.ReadSmartContract(sc);
-
-            var scMain = result.Item2;
-            var scCode = result.Item1;
-
-            var scInfo = new[]
+            try
             {
+                Guid scUID = Guid.Parse(id);
+
+                var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                var result = await SmartContractReaderService.ReadSmartContract(sc);
+
+                var scMain = result.Item2;
+                var scCode = result.Item1;
+
+                var scInfo = new[]
+                {
                 new { SmartContract = scMain, SmartContractCode = scCode}
             };
 
-            if (sc != null)
-            {
-                var json = JsonConvert.SerializeObject(scInfo);
-                output = json;
+                if (sc != null)
+                {
+                    var json = JsonConvert.SerializeObject(scInfo);
+                    output = json;
+                }
+                else
+                {
+                    output = "null";
+                }
             }
-            else
+            catch(Exception ex)
             {
-                output = "null";
+                output = ex.Message;
             }
+            
 
             return output;
         }
