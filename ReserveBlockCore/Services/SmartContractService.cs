@@ -107,6 +107,7 @@ namespace ReserveBlockCore.Services
                 return null;//Minter address is not found
             }
 
+            scMain.Address = toAddress;
             var scData = SmartContractReaderService.ReadSmartContract(scMain);
 
             var txData = "";
@@ -117,7 +118,7 @@ namespace ReserveBlockCore.Services
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64}
+                    new { Function = "Transfer(toAddress : string)", ContractUID = scMain.SmartContractUID, Data = scBase64}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);
@@ -131,7 +132,7 @@ namespace ReserveBlockCore.Services
                 Amount = 0.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(scMain.Address),
-                TransactionType = TransactionType.NFT_MINT,
+                TransactionType = TransactionType.NFT_TX,
                 Data = txData
             };
 

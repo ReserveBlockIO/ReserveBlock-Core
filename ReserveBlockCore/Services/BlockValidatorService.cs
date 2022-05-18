@@ -144,7 +144,6 @@ namespace ReserveBlockCore.Services
                                 {
                                     TransactionValidatorService.AddNewlyMintedContract(transaction);
                                 }
-                                
                                 if(transaction.TransactionType == TransactionType.NFT_TX)
                                 {
                                     //do transfer logic here! This is for person receiving the NFT

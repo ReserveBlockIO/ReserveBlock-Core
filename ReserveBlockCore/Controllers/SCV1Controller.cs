@@ -250,5 +250,85 @@ namespace ReserveBlockCore.Controllers
             return output;
 
         }
+
+        [HttpGet("TransferNFT/{id}/{toAddress}")]
+        public async Task<string> TransferNFT(string id, string toAddress)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if(sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+                    var tx = await SmartContractService.TransferSmartContract(sc, toAddress);
+
+                    var txJson = JsonConvert.SerializeObject(tx);
+                    output = txJson;
+                }
+                else
+                {
+                    output = "Smart Contract Found, but has not been minted.";
+                }
+            }
+            else
+            {
+                output = "No Smart Contract Found Locally.";
+            }
+            
+            
+            return output;
+        }
+
+        [HttpGet("Evolve/{id}")]
+        public async Task<string> Evolve(string id)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+
+                }
+            }
+
+            return output;
+        }
+
+        [HttpGet("Devolve/{id}")]
+        public async Task<string> Devolve(string id)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+
+                }
+            }
+
+            return output;
+        }
+
+        [HttpGet("EvolveSpecific/{id}/{evolveState}")]
+        public async Task<string> EvolveSpecific(string id, string evolveState)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+
+                }
+            }
+
+            return output;
+        }
     }
 }
