@@ -10,6 +10,7 @@
     { 
         Evolving, //returns a list of EvolvingFeatures
         Royalty, // returns a class of RoyaltyFeatures
+        MultiAsset,
         Tokenization,//class
         Music, //Class with a list of songs
         MultiOwner, //List of MultiOwnerFeatures
@@ -21,5 +22,4 @@
         Soulbound,//class
         Ticket//class
     }
-
 }
