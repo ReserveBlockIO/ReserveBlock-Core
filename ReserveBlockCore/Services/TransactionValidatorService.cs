@@ -1,5 +1,8 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 
@@ -114,83 +117,27 @@ namespace ReserveBlockCore.Services
 
         }
 
-        private static bool VerifyLocalTX(Transaction txRequest, Account account)
+        public static void AddNewlyMintedContract(Transaction tx)
         {
-            bool txResult = false;
-
-            //Nonce Check
-
-            //Prev Tx in Block Check
-
-            //Timestamp Check
-
-            //Hash Check
-            var newTxn = new Transaction()
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            if(scData != null)
             {
-                Timestamp = txRequest.Timestamp,
-                FromAddress = txRequest.FromAddress,
-                ToAddress = txRequest.ToAddress,
-                Amount = txRequest.Amount,
-                Fee = txRequest.Fee,
-                Nonce = txRequest.Nonce,
-                TransactionType = txRequest.TransactionType,
-                Data = txRequest.Data,
-            };
+                var function = (string?)scData["Function"];
+                var data = (string?)scData["Data"];
+                var scUID = (string?)scData["ContractUID"];
 
-            newTxn.Build();
+                scST.ContractData = data;
+                scST.MinterAddress = tx.FromAddress;
+                scST.OwnerAddress = tx.FromAddress;
+                scST.SmartContractUID = scUID;
+                scST.Nonce = 0;
 
-            if (!newTxn.Hash.Equals(txRequest.Hash))
-            {
-                return txResult;
+                //Save to state trei
+                SmartContractStateTrei.SaveSmartContract(scST);
+                SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);
             }
-
-            //If we get here that means the hash test passed above.
-            var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
-            if (isTxValid)
-            {
-                txResult = true;
-            }
-            else
-            {
-                return txResult;
-            }
-
-            if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
-            {
-                Console.WriteLine("This transaction will deactivate your masternode. Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
-                var confirmChoice = Console.ReadLine();
-                if (confirmChoice == null)
-                {
-                    return false;
-                }
-                else if (confirmChoice.ToLower() == "n")
-                {
-                    return false;
-                }
-                else
-                {
-                    var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower() && x.NodeIP == "SELF");
-                    ValidatorService.StopValidating(validator);
-                    TransactionData.AddToPool(txRequest);
-                    TransactionData.AddTxToWallet(txRequest);
-                    AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                    //StateData.UpdateAccountNonce(txRequest.FromAddress);
-                    P2PClient.SendTXMempool(txRequest);//send out to mempool
-                }
-            }
-            else
-            {
-                TransactionData.AddToPool(txRequest);
-                AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                //StateData.UpdateAccountNonce(txRequest.FromAddress);
-                P2PClient.SendTXMempool(txRequest);//send out to mempool
-            }
-
-
-
-            //Return verification result.
-            return txResult;
-
+            
         }
     }
 }

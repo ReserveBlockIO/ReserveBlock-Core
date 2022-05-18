@@ -16,5 +16,20 @@
 
             return output;
         }
+
+        public static string ToBase64(this byte[] buffer)
+        {
+            var byteToBase64 = Convert.ToBase64String(buffer);
+
+            return byteToBase64;
+        }
+
+        public static byte[] FromBase64ToByteArray(this string base64String)
+        {
+            var byteArrayFromBase64 = Convert.FromBase64String(base64String);
+
+            return byteArrayFromBase64;
+        }
+
     }
 }

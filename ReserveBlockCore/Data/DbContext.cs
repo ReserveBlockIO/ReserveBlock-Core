@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_Banlist { set; get; } //stores banned peers 
         public static LiteDatabase DB_WorldStateTrei { get; set; } //stores blockchain world state trei
         public static LiteDatabase DB_AccountStateTrei { get; set; } //stores blockchain world state trei
+        public static LiteDatabase DB_SmartContractStateTrei { set; get; }// stores blocks
         public static LiteDatabase DB_Config { get; set; }
 
         //Database names
@@ -32,6 +33,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_PEERS_NAME = @"rsrvpeersdata.db";
         public const string RSRV_DB_WSTATE_TREI = @"rsrvwstatetrei.db";
         public const string RSRV_DB_ASTATE_TREI = @"rsrvastatetrei.db";
+        public const string RSRV_DB_SCSTATE_TREI = @"rsrvscstatetrei.db";
         public const string RSRV_DB_CONFIG = @"rsrvconfig.db";
 
         //Database tables
@@ -52,6 +54,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_CONFIG = "rsrv_config";
         public const string RSRV_CONFIG_RULES = "rsrv_config_rules";
         public const string RSRV_ASSETS = "rsrv_assets";
+        public const string RSRV_SCSTATE_TREI = "rsrv_scstate_trei";
 
         public static void Initialize()
         {
@@ -83,6 +86,7 @@ namespace ReserveBlockCore.Data
             DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
             DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
+            DB_SmartContractStateTrei = new LiteDatabase(path + RSRV_DB_SCSTATE_TREI);
             DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
             DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
             DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
@@ -158,6 +162,7 @@ namespace ReserveBlockCore.Data
             DB_Banlist.Checkpoint();
             DB_Config.Checkpoint();
             DB_Assets.Checkpoint();
+            DB_SmartContractStateTrei.Checkpoint();
 
             //dispose connection to DB
             CloseDB();
@@ -181,12 +186,14 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_BANLIST_NAME);
             File.Delete(path + RSRV_DB_CONFIG);
             File.Delete(path + RSRV_DB_ASSETS);
+            File.Delete(path + RSRV_DB_SCSTATE_TREI);
 
             //recreate DBs
             DB = new LiteDatabase(path + RSRV_DB_NAME);
             DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
             DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
+            DB_SmartContractStateTrei = new LiteDatabase(path + RSRV_DB_SCSTATE_TREI);
             DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
             DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
             DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
@@ -205,6 +212,7 @@ namespace ReserveBlockCore.Data
             DB_AccountStateTrei.Dispose();
             DB_Config.Dispose();
             DB_Assets.Dispose();
+            DB_SmartContractStateTrei.Dispose();
         }
 
     }

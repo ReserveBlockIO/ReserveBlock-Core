@@ -15,6 +15,8 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PClient
     {
+
+        #region Static Variables
         public static List<Peers>? ActivePeerList { get; set; }
         public static List<string> ReportedIPs = new List<string>();
         public static long LastSentBlockHeight = -1;
@@ -24,6 +26,8 @@ namespace ReserveBlockCore.P2P
         public static long LastTaskBlockHeight = 0;
         public static bool LastTaskError = false;
         public static Dictionary<int, string>? NodeDict { get; set; }
+
+        #endregion
 
         #region HubConnection Variables
         /// <summary>

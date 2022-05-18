@@ -55,8 +55,6 @@ namespace ReserveBlockCore.Data
             var txList = block.Transactions.ToList();
             var accStTrei = GetAccountStateTrei();
 
-            
-
             txList.ForEach(x => {
                 if (block.Height == 0)
                 {

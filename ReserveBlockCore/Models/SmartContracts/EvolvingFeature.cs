@@ -8,6 +8,7 @@
         public bool IsDynamic { get; set; }
         public bool IsCurrentState { get; set; }
         public DateTime? EvolveDate { get; set; }
+        public long? EvolveBlockHeight { get; set; }
         public SmartContractAsset? SmartContractAsset { get; set; }
     }
 }

@@ -140,6 +140,15 @@ namespace ReserveBlockCore.Services
                                 AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                                 var txdata = TransactionData.GetAll();
                                 txdata.Insert(transaction);
+                                if(transaction.TransactionType == TransactionType.NFT_MINT)
+                                {
+                                    TransactionValidatorService.AddNewlyMintedContract(transaction);
+                                }
+                                
+                                if(transaction.TransactionType == TransactionType.NFT_TX)
+                                {
+                                    //do transfer logic here! This is for person receiving the NFT
+                                }
                             }
 
                             //Adds sent TX to wallet
@@ -151,6 +160,11 @@ namespace ReserveBlockCore.Services
                                 fromTx.Amount = transaction.Amount * -1M;
                                 fromTx.Fee = transaction.Fee * -1M;
                                 txData.Insert(fromTx);
+
+                                if (transaction.TransactionType == TransactionType.NFT_TX)
+                                {
+                                    //do transfer logic here! This is for person giving away or feature actions
+                                }
                             }
                         }
                     }

@@ -112,9 +112,7 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
-                Guid scUID = Guid.Parse(id);
-
-                var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
 
                 var result = await SmartContractReaderService.ReadSmartContract(sc);
 
@@ -169,7 +167,7 @@ namespace ReserveBlockCore.Controllers
                         Amount = 0.0M,
                         Fee = 0,
                         Nonce = AccountStateTrei.GetNextNonce(scMain.Address),
-                        TransactionType = TransactionType.NFT,
+                        TransactionType = TransactionType.NFT_MINT,
                         Data = scReturnData.SmartContractCode
                     };
 
@@ -214,6 +212,26 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+
+            if(sc.IsPublished == true)
+            {
+                output = "This NFT has already been published";
+            }
+            else
+            {
+                var scTx = await SmartContractService.MintSmartContractTx(sc);
+                if(scTx == null)
+                {
+                    output = "Failed to publish smart contract: " + sc.Name + ". Id: " + id;
+                }
+                else
+                {
+                    output = "Smart contract has been published to mempool";
+                }
+            }
+            
+
             return output;
         }
 
@@ -222,10 +240,9 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            Guid scUID = Guid.Parse(id);
             //Get SmartContractMain.IsPublic and set to True.
             var scs = SmartContractMain.SmartContractData.GetSCs();
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
             sc.IsPublic ^= true;
 
             scs.Update(sc);

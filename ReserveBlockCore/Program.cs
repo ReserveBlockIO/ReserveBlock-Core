@@ -1,4 +1,6 @@
-﻿using LiteDB;
+﻿global using ReserveBlockCore.Extensions;
+
+using LiteDB;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
@@ -21,7 +23,6 @@ namespace ReserveBlockCore
         
         #region Constants
 
-        private static Timer? blockTimer;//for creating a new block at max every 30 seconds
         private static Timer? heightTimer; //timer for getting height from other nodes
         private static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 

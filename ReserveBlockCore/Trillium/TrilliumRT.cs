@@ -1,5 +1,4 @@
 ﻿using Trillium.CodeAnalysis;
-using Trillium.IO;
 using Trillium.ReadConstants;
 using Trillium.Symbols;
 using Trillium.Syntax;
