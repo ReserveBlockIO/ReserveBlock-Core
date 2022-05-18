@@ -1,7 +1,10 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Trillium;
+using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ReserveBlockCore.Models.SmartContracts
 {
@@ -10,8 +13,9 @@ namespace ReserveBlockCore.Models.SmartContracts
         public string Name { get; set; } //User Defined
         public string Description { get; set; } //User Defined
         public string MinterAddress { get; set; } //User Defined
+        public string MinterName { get; set; }
         public string Address { get; set; }
-        public SmartContractAsset SmartContractAsset { get; set; } 
+        public SmartContractAsset SmartContractAsset { get; set; }
         public bool IsPublic { get; set; } //System Set
         public string SmartContractUID { get; set; }//System Set
         public string Signature { get; set; }//System Set
@@ -55,6 +59,30 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }              
             }
 
+            public static void CreateSmartContract(string scText)
+            {
+                var byteArrayFromBase64 = scText.FromBase64ToByteArray();
+                var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+                var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+                var repl = new TrilliumRepl();
+                repl.Run("#reset");
+                repl.Run(textFromByte);
+
+                var scUID = repl.Run(@"GetNFTId()").Value;
+                var features = repl.Run(@"GetNFTFeatures()").Value;
+                var mainData = repl.Run(@"NftMain(""nftdata"")").Value;
+                var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value;
+
+                //Royalty Data
+                var royaltyData = repl.Run(@"NftMain(""getroyaltydata"")").Value;
+                //Evolve Data
+                var evolveState = repl.Run(@"GetCurrentEvolveState()").Value;
+                var evolveMaxState = repl.Run(@"EvolveStates()").Value;
+                var evolveStateA = repl.Run(@"EvolveStateA()").Value;
+
+            }
+
             public static void SaveSmartContract(SmartContractMain scMain, string scText)
             {
                 var scs = GetSCs();
@@ -62,6 +90,13 @@ namespace ReserveBlockCore.Models.SmartContracts
                 scs.Insert(scMain);
 
                 SaveSCLocally(scMain, scText);
+            }
+
+            public static void DeleteSmartContract(string scUID)
+            {
+                var scs = GetSCs();
+
+                scs.DeleteMany(x => x.SmartContractUID == scUID);
             }
             public static async void SaveSCLocally(SmartContractMain scMain, string scText)
             {

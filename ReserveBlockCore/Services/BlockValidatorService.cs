@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Services
@@ -142,11 +143,11 @@ namespace ReserveBlockCore.Services
                                 txdata.Insert(transaction);
                                 if(transaction.TransactionType == TransactionType.NFT_MINT)
                                 {
-                                    TransactionValidatorService.AddNewlyMintedContract(transaction);
+                                    await TransactionValidatorService.AddNewlyMintedContract(transaction);
                                 }
                                 if(transaction.TransactionType == TransactionType.NFT_TX)
                                 {
-                                    //do transfer logic here! This is for person receiving the NFT
+                                    await TransactionValidatorService.TransferNFT(transaction);
                                 }
                             }
 
@@ -156,13 +157,14 @@ namespace ReserveBlockCore.Services
                             {
                                 var txData = TransactionData.GetAll();
                                 var fromTx = transaction;
-                                fromTx.Amount = transaction.Amount * -1M;
+                                fromTx.Amount = 0.0M;
                                 fromTx.Fee = transaction.Fee * -1M;
                                 txData.Insert(fromTx);
 
                                 if (transaction.TransactionType == TransactionType.NFT_TX)
                                 {
                                     //do transfer logic here! This is for person giving away or feature actions
+                                    await TransactionValidatorService.RemoveNFT(transaction);
                                 }
                             }
                         }

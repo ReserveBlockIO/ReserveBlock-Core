@@ -117,7 +117,7 @@ namespace ReserveBlockCore.Services
 
         }
 
-        public static void AddNewlyMintedContract(Transaction tx)
+        public static async Task AddNewlyMintedContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -138,6 +138,47 @@ namespace ReserveBlockCore.Services
                 SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);
             }
             
+        }
+
+        public static async Task TransferNFT(Transaction tx)
+        {
+            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            if( scData != null )
+            {
+                var function = (string?)scData["Function"];
+                var data = (string?)scData["Data"];
+                var scUID = (string?)scData["ContractUID"];
+
+                var scMain = SmartContractStateTrei.GetSmartContractState(scUID);
+                if(scMain != null)
+                {
+                    scMain.OwnerAddress = tx.ToAddress;
+                    scMain.ContractData = data;
+                    scMain.Nonce += 1;
+
+                    SmartContractStateTrei.UpdateSmartContract(scMain);
+                }
+
+
+            }
+        }
+
+        public static async Task RemoveNFT(Transaction tx)
+        {
+            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            if (scData != null)
+            {
+                var function = (string?)scData["Function"];
+                var data = (string?)scData["Data"];
+                var scUID = (string?)scData["ContractUID"];
+
+                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                if (scMain != null)
+                {
+                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);
+                }
+
+            }
         }
     }
 }

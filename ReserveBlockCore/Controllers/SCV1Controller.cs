@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Text;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -207,8 +208,8 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("PublishSmartContract/{id}")]
-        public async Task<string> PublishSmartContract(string id)
+        [HttpGet("MintSmartContract/{id}")]
+        public async Task<string> MintSmartContract(string id)
         {
             var output = "";
 
@@ -249,6 +250,40 @@ namespace ReserveBlockCore.Controllers
 
             return output;
 
+        }
+
+        [HttpGet("TestRemove/{id}/{toAddress}")]
+        public async Task<string> TestRemove(string id, string toAddress)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if (sc != null)
+            {
+                if (sc.IsPublished != true)
+                {
+                    var result = await SmartContractReaderService.ReadSmartContract(sc);
+
+                    var scText = result.Item1;
+                    var bytes = Encoding.Unicode.GetBytes(scText);
+                    var compressBase64 = SmartContractUtility.Compress(bytes).ToBase64();
+
+                    SmartContractMain.SmartContractData.CreateSmartContract(compressBase64);
+
+                    
+                }
+                else
+                {
+                    output = "Smart Contract Found, but has not been minted.";
+                }
+            }
+            else
+            {
+                output = "No Smart Contract Found Locally.";
+            }
+
+
+            return output;
         }
 
         [HttpGet("TransferNFT/{id}/{toAddress}")]

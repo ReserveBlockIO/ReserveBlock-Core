@@ -38,5 +38,11 @@ namespace ReserveBlockCore.Models
 
             scs.Insert(scMain);
         }
+        public static void UpdateSmartContract(SmartContractStateTrei scMain)
+        {
+            var scs = GetSCST();
+
+            scs.Update(scMain);
+        }
     }
 }

@@ -291,6 +291,7 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine(("let Description = \"{#Description}\"").Replace("{#Description}", scMain.Description));
             strBuild.AppendLine(("let Address = \"{#Address}\"").Replace("{#Address}", scMain.Address));
             strBuild.AppendLine(("let MinterAddress = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
+            strBuild.AppendLine(("let MinterName = \"{#MinterName}\"").Replace("{#MinterName}", scMain.MinterName));
             strBuild.AppendLine(("let SmartContractUID = \"" + scUID + "\""));
             strBuild.AppendLine(("let Signature = \"" + signature + "\""));
             strBuild.AppendLine(("let Features = \"" + features + "\""));
@@ -300,6 +301,7 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine(("let FileSize = \"" + scAsset.FileSize.ToString() + "\""));
             strBuild.AppendLine(("let Location = \"" + scAsset.Location + "\""));
             strBuild.AppendLine(("let FileName = \"" + scAsset.Name + "\""));
+            strBuild.AppendLine(("let AssetAuthorName = \"" + scAsset.AssetAuthorName + "\""));
 
             strBuild.AppendLine("function NftMain(data : string) : string");
             strBuild.AppendLine("{");
@@ -348,7 +350,7 @@ namespace ReserveBlockCore.Services
             //Returns NFT Signature
             strBuild.AppendLine("function GetNFTSignature() : string");
             strBuild.AppendLine("{");
-            strBuild.AppendLine("return Features");
+            strBuild.AppendLine("return Signature");
             strBuild.AppendLine("}");
 
             if (featuresList != null)

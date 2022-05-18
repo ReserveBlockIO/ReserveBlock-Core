@@ -118,7 +118,7 @@ namespace ReserveBlockCore.Services
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Transfer(toAddress : string)", ContractUID = scMain.SmartContractUID, Data = scBase64}
+                    new { Function = "Transfer(toAddress : string)", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);
@@ -165,7 +165,7 @@ namespace ReserveBlockCore.Services
                 {
                     TransactionData.AddToPool(scTx);
                     AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                    P2PClient.SendTXMempool(scTx);//send out to mempool
+                    //P2PClient.SendTXMempool(scTx);//send out to mempool
                     return scTx;
                 }
                 else
