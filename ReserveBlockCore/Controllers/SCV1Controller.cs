@@ -315,6 +315,23 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("Burn/{id}")]
+        public async Task<string> Burn(string id)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+
+                }
+            }
+
+            return output;
+        }
+
         [HttpGet("Evolve/{id}")]
         public async Task<string> Evolve(string id)
         {

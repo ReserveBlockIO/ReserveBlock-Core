@@ -428,6 +428,16 @@ namespace ReserveBlockCore.Controllers
             return result;
         }
 
+        [HttpGet("GetMempool")]
+        public async Task<string> GetMempool()
+        {
+            string output = "";
+            var txs = TransactionData.GetMempool();
+            output = JsonConvert.SerializeObject(txs);
+
+            return output;
+        }
+
         [HttpGet("GetMemBlockCluster")]
         public async Task<string> GetMemBlockCluster()
         {

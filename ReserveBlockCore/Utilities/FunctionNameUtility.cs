@@ -1,15 +1,15 @@
 ﻿namespace ReserveBlockCore.Utilities
 {
-    public static class EvolveStateUtility
+    public static class FunctionNameUtility
     {
-        public static string GetEvolveStateLetter(int count)
+        public static string GetFunctionLetter(int count)
         {
-            var output = EvolveStateLetterDict[count];
+            var output = FunctionNameLetterDict[count];
 
             return output;
         }
 
-        public static readonly Dictionary<int, string> EvolveStateLetterDict = new Dictionary<int, string> {
+        public static readonly Dictionary<int, string> FunctionNameLetterDict = new Dictionary<int, string> {
             {1, "A" },
             {2, "B"},
             {3, "C"},

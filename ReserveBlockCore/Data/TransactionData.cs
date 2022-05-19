@@ -132,6 +132,25 @@ namespace ReserveBlockCore.Data
                 Console.WriteLine("No Transactions in your mempool");
             }
         }
+        public static List<Transaction>? GetMempool()
+        {
+            var pool = GetPool();
+            if (pool.Count() != 0)
+            {
+                var txs = pool.FindAll().ToList();
+                if(txs.Count() != 0)
+                {
+                    return txs;
+                }
+            }
+            else
+            {
+                return null;
+            }
+
+            return null;
+        }
+
         public static List<Transaction> ProcessTxPool()
         {
             var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);

@@ -17,6 +17,7 @@ namespace ReserveBlockCore.Services
             var signature = "Insert Signature";
             StringBuilder strRoyaltyBld = new StringBuilder();
             StringBuilder strEvolveBld = new StringBuilder();
+            StringBuilder strMultiAssetBld = new StringBuilder();
 
             scMain.SmartContractUID = scUID;
             scMain.Signature = signature;
@@ -125,7 +126,7 @@ namespace ReserveBlockCore.Services
                             int counter = 1;
                             evolve.ForEach(x =>
                             {
-                                var evoLetter = EvolveStateUtility.GetEvolveStateLetter(x.EvolutionState);
+                                var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
                                 strEvolveBld.AppendLine("function EvolveState" + evoLetter + "() : string");
                                 strEvolveBld.AppendLine("{");
                                 strEvolveBld.AppendLine(@"var evoState = " + "\"" + x.EvolutionState.ToString() + "\"");
@@ -141,10 +142,34 @@ namespace ReserveBlockCore.Services
                             });
                         }
                     }
+                    else if (feature.FeatureName == FeatureName.MultiAsset)
+                    {
+                        var multiAsset = JsonConvert.DeserializeObject<List<MultiAssetFeature>>(feature.FeatureFeatures.ToString());
+                        if (multiAsset != null)
+                        {
+                            int counter = 1;
+                            feature.FeatureFeatures = multiAsset;
+                            multiAsset.ForEach(x => {
+                                var funcLetter = FunctionNameUtility.GetFunctionLetter(counter);
+                                strMultiAssetBld.AppendLine("function MultiAsset" + funcLetter + "() : string");
+                                strMultiAssetBld.AppendLine("{");
+                                strMultiAssetBld.AppendLine(("var extension = \"" + x.Extension + "\""));
+                                strMultiAssetBld.AppendLine(("var fileSize = \"" + x.FileSize.ToString() + "\""));
+                                strMultiAssetBld.AppendLine(("var location = \"" + x.Location + "\""));
+                                strMultiAssetBld.AppendLine(("var fileName = \"" + x.FileName + "\""));
+                                strMultiAssetBld.AppendLine(("var assetAuthorName = \"" + x.AssetAuthorName + "\""));
+                                strMultiAssetBld.AppendLine("return (fileName + " + appendChar + " + location + " + appendChar + " + fileSize + " + appendChar + " + extension + " + appendChar + " + assetAuthorName)");
+                                strMultiAssetBld.AppendLine("}");
+
+                                counter += 1;
+                            });
+                        }
+                    }
                     else if (feature.FeatureName == FeatureName.Ticket)
                     {
-
+                        
                     }
+                    
                 }
                 else
                 {
@@ -261,7 +286,7 @@ namespace ReserveBlockCore.Services
                                 int counter = 1;
                                 evolve.ForEach(x =>
                                 {
-                                    var evoLetter = EvolveStateUtility.GetEvolveStateLetter(x.EvolutionState);
+                                    var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
                                     strEvolveBld.AppendLine("function EvolveState" + evoLetter + "() : string");
                                     strEvolveBld.AppendLine("{");
                                     strEvolveBld.AppendLine(@"var evoState = " + "\"" + x.EvolutionState.ToString() + "\"");
@@ -277,6 +302,32 @@ namespace ReserveBlockCore.Services
                                 });
                             }
                             
+                        }
+
+                        if (x.FeatureName == FeatureName.MultiAsset)
+                        {
+                            var multiAsset = JsonConvert.DeserializeObject<List<MultiAssetFeature>>(x.FeatureFeatures.ToString());
+                            if (multiAsset != null)
+                            {
+                                int counter = 1;
+                                x.FeatureFeatures = multiAsset;
+                                Flist.Add(x);
+
+                                multiAsset.ForEach(m => {
+                                    var funcLetter = FunctionNameUtility.GetFunctionLetter(counter);
+                                    strMultiAssetBld.AppendLine("function MultiAsset" + funcLetter + "() : string");
+                                    strMultiAssetBld.AppendLine("{");
+                                    strMultiAssetBld.AppendLine(("var extension = \"" + m.Extension + "\""));
+                                    strMultiAssetBld.AppendLine(("var fileSize = \"" + m.FileSize.ToString() + "\""));
+                                    strMultiAssetBld.AppendLine(("var location = \"" + m.Location + "\""));
+                                    strMultiAssetBld.AppendLine(("var fileName = \"" + m.FileName + "\""));
+                                    strMultiAssetBld.AppendLine(("var assetAuthorName = \"" + m.AssetAuthorName + "\""));
+                                    strMultiAssetBld.AppendLine("return (fileName + " + appendChar + " + location + " + appendChar + " + fileSize + " + appendChar + " + extension + " + appendChar + " + assetAuthorName)");
+                                    strMultiAssetBld.AppendLine("}");
+
+                                    counter += 1;
+                                });
+                            }
                         }
 
                     });
@@ -311,7 +362,7 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine("}");
             strBuild.AppendLine(@"else if data == ""getnftassetdata""");
             strBuild.AppendLine("{");
-            strBuild.AppendLine("return GetNFTAssetData(FileName, Location, FileSize, Extension)");
+            strBuild.AppendLine("return GetNFTAssetData(FileName, Location, FileSize, Extension, AssetAuthorName)");
             strBuild.AppendLine("}");
             if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
             {
@@ -330,9 +381,9 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine("}");
 
             //Returns NFT Asset Data
-            strBuild.AppendLine("function GetNFTAssetData(fileName : string, loc : string, fileSize : string, ext : string) : string");
+            strBuild.AppendLine("function GetNFTAssetData(fileName : string, loc : string, fileSize : string, ext : string, assetAuthor : string) : string");
             strBuild.AppendLine("{");
-            strBuild.AppendLine("return (fileName + " + appendChar + " + loc + " + appendChar + " + fileSize + " + appendChar + " + ext)");
+            strBuild.AppendLine("return (fileName + " + appendChar + " + loc + " + appendChar + " + fileSize + " + appendChar + " + ext + " + appendChar + " + assetAuthor)");
             strBuild.AppendLine("}");
 
             //Returns NFT SmartContractUID
@@ -362,6 +413,10 @@ namespace ReserveBlockCore.Services
                 if(featuresList.Exists(x => x.FeatureName == FeatureName.Evolving))
                 {
                     strBuild.Append(strEvolveBld);
+                }
+                if (featuresList.Exists(x => x.FeatureName == FeatureName.MultiAsset))
+                {
+                    strBuild.Append(strMultiAssetBld);
                 }
             }
 
