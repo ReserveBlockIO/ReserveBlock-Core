@@ -364,13 +364,17 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine("{");
             strBuild.AppendLine("return GetNFTAssetData(FileName, Location, FileSize, Extension, AssetAuthorName)");
             strBuild.AppendLine("}");
-            if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+            if(featuresList != null)
             {
-                strBuild.AppendLine(@"else if data == ""getroyaltydata""");
-                strBuild.AppendLine("{");
-                strBuild.AppendLine("return GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress)");
-                strBuild.AppendLine("}");
+                if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+                {
+                    strBuild.AppendLine(@"else if data == ""getroyaltydata""");
+                    strBuild.AppendLine("{");
+                    strBuild.AppendLine("return GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress)");
+                    strBuild.AppendLine("}");
+                }
             }
+            
             strBuild.AppendLine(@"return ""No Method Named "" + data + "" was found.""");
             strBuild.AppendLine("}");
 

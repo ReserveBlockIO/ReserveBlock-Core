@@ -106,7 +106,7 @@ namespace ReserveBlockCore.Services
                                 //Get Evolve States
                                 strEvolveBld.AppendLine("function EvolveStates() : string");
                                 strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine(@"return ""Coming Soon""");
+                                strEvolveBld.AppendLine(@"return EvolutionaryMaxState");
                                 strEvolveBld.AppendLine("}");
 
                                 //Evolve
@@ -313,7 +313,7 @@ namespace ReserveBlockCore.Services
                                     //Get Evolve States
                                     strEvolveBld.AppendLine("function EvolveStates() : string");
                                     strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine(@"return ""Coming Soon""");
+                                    strEvolveBld.AppendLine(@"return EvolutionaryMaxState");
                                     strEvolveBld.AppendLine("}");
 
                                     //Evolve
@@ -456,12 +456,15 @@ namespace ReserveBlockCore.Services
                 strBuild.AppendLine("{");
                 strBuild.AppendLine("return GetNFTAssetData(FileName, Location, FileSize, Extension, AssetAuthorName)");
                 strBuild.AppendLine("}");
-                if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+                if(featuresList != null)
                 {
-                    strBuild.AppendLine(@"else if data == ""getroyaltydata""");
-                    strBuild.AppendLine("{");
-                    strBuild.AppendLine("return GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress)");
-                    strBuild.AppendLine("}");
+                    if (featuresList.Exists(x => x.FeatureName == FeatureName.Royalty))
+                    {
+                        strBuild.AppendLine(@"else if data == ""getroyaltydata""");
+                        strBuild.AppendLine("{");
+                        strBuild.AppendLine("return GetRoyaltyData(RoyaltyType, RoyaltyAmount, RoyaltyPayToAddress)");
+                        strBuild.AppendLine("}");
+                    }
                 }
                 strBuild.AppendLine(@"return ""No Method Named "" + data + "" was found.""");
                 strBuild.AppendLine("}");
