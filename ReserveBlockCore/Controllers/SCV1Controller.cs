@@ -269,7 +269,6 @@ namespace ReserveBlockCore.Controllers
                     var compressBase64 = SmartContractUtility.Compress(bytes).ToBase64();
 
                     SmartContractMain.SmartContractData.CreateSmartContract(compressBase64);
-
                     
                 }
                 else
@@ -281,7 +280,6 @@ namespace ReserveBlockCore.Controllers
             {
                 output = "No Smart Contract Found Locally.";
             }
-
 
             return output;
         }
