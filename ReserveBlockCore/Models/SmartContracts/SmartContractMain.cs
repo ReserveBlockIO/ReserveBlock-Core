@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 {
     public class SmartContractMain
     {
+        public long Id { get; set; }
         public string Name { get; set; } //User Defined
         public string Description { get; set; } //User Defined
         public string MinterAddress { get; set; } //User Defined

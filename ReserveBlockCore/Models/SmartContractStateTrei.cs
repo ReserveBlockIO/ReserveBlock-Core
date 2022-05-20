@@ -5,6 +5,7 @@ namespace ReserveBlockCore.Models
 {
     public class SmartContractStateTrei
     {
+        public long Id { get; set; }
         public string SmartContractUID { get; set; }
         public string ContractData { get; set; }
         public string MinterAddress { get; set; }

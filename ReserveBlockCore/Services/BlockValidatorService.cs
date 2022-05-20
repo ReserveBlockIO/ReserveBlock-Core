@@ -133,44 +133,48 @@ namespace ReserveBlockCore.Services
                                 AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                                 var txdata = TransactionData.GetAll();
                                 txdata.Insert(transaction);
-                                var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
-                                var scData = scDataArray[0];
-
-                                if (transaction.TransactionType == TransactionType.NFT_MINT)
+                                if(transaction.TransactionType != TransactionType.TX)
                                 {
-                                    //await TransactionValidatorService.AddNewlyMintedContract(transaction);
-                                    if (scData != null)
+                                    var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+                                    var scData = scDataArray[0];
+
+                                    if (transaction.TransactionType == TransactionType.NFT_MINT)
                                     {
-                                        var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        //await TransactionValidatorService.AddNewlyMintedContract(transaction);
+                                        if (scData != null)
                                         {
-                                            if (function == "Mint()")
+                                            var function = (string?)scData["Function"];
+                                            if (function != "")
                                             {
-                                                var scUID = (string?)scData["ContractUID"];
-                                                if (scUID != "")
+                                                if (function == "Mint()")
                                                 {
-                                                    SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
+                                                    var scUID = (string?)scData["ContractUID"];
+                                                    if (scUID != "")
+                                                    {
+                                                        SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                                if(transaction.TransactionType == TransactionType.NFT_TX)
-                                {
-                                    var data = (string?)scData["Data"];
-                                    var function = (string?)scData["Function"];
-                                    if(function != "")
+                                    if (transaction.TransactionType == TransactionType.NFT_TX)
                                     {
-                                        if(function == "Transfer()")
+                                        var data = (string?)scData["Data"];
+                                        var function = (string?)scData["Function"];
+                                        if (function != "")
                                         {
-                                            if (data != "")
+                                            if (function == "Transfer()")
                                             {
-                                                SmartContractMain.SmartContractData.CreateSmartContract(data);
+                                                if (data != "")
+                                                {
+                                                    SmartContractMain.SmartContractData.CreateSmartContract(data);
+                                                }
                                             }
                                         }
+
                                     }
-                                    
                                 }
+                                
                             }
 
                             //Adds sent TX to wallet
@@ -183,36 +187,38 @@ namespace ReserveBlockCore.Services
                                 fromTx.Fee = transaction.Fee * -1M;
                                 txData.Insert(fromTx);
 
-                                var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
-                                var scData = scDataArray[0];
-
-                                if (transaction.TransactionType == TransactionType.NFT_TX)
+                                if(transaction.TransactionType != TransactionType.TX)
                                 {
-                                    //do transfer logic here! This is for person giving away or feature actions
-                                    var scUID = (string?)scData["ContractUID"];
-                                    var function = (string?)scData["Function"];
-                                    if(function != "")
+                                    var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+                                    var scData = scDataArray[0];
+
+                                    if (transaction.TransactionType == TransactionType.NFT_TX)
                                     {
-                                        if(function == "Transfer()")
+                                        //do transfer logic here! This is for person giving away or feature actions
+                                        var scUID = (string?)scData["ContractUID"];
+                                        var function = (string?)scData["Function"];
+                                        if (function != "")
                                         {
-                                            if (scUID != "")
+                                            if (function == "Transfer()")
                                             {
-                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                if (scUID != "")
+                                                {
+                                                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                if (transaction.TransactionType == TransactionType.NFT_BURN)
-                                {
-                                    //do burn logic here! This is for person giving away or feature actions
-                                    var scUID = (string?)scData["ContractUID"];
-                                    if (scUID != "")
+                                    if (transaction.TransactionType == TransactionType.NFT_BURN)
                                     {
-                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
+                                        //do burn logic here! This is for person giving away or feature actions
+                                        var scUID = (string?)scData["ContractUID"];
+                                        if (scUID != "")
+                                        {
+                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
+                                        }
+
                                     }
-
                                 }
-
                             }
                         }
                     }
