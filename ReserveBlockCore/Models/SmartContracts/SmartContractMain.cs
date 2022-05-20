@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
@@ -58,8 +59,59 @@ namespace ReserveBlockCore.Models.SmartContracts
                     scs.Update(scMain);
                 }              
             }
+            public static void SaveSmartContract(SmartContractMain scMain, string scText)
+            {
+                var scs = GetSCs();
 
-            public static void CreateSmartContract(string scText)
+                scs.Insert(scMain);
+
+                SaveSCLocally(scMain, scText);
+            }
+
+            public static void DeleteSmartContract(string scUID)
+            {
+                var scs = GetSCs();
+
+                scs.DeleteMany(x => x.SmartContractUID == scUID);
+            }
+            public static async void SaveSCLocally(SmartContractMain scMain, string scText)
+            {
+                try
+                {
+                    var databaseLocation = Program.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
+                    var text = scText;
+                    string path = "";
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    }
+                    else
+                    {
+                        if (Debugger.IsAttached)
+                        {
+                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                        }
+                        else
+                        {
+                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                        }
+                    }
+                    if (!Directory.Exists(path))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+
+                    var scName = scMain.SmartContractUID.Split(':');
+                    await File.AppendAllTextAsync(path + scName[0].ToString() + ".trlm", text);
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+
+            public static async void CreateSmartContract(string scText)
             {
                 var byteArrayFromBase64 = scText.FromBase64ToByteArray();
                 var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
@@ -121,7 +173,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 case FeatureName.MultiAsset:
                                     var multiAssetList = new List<string>();
                                     var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
-                                    for(int i = 1; i <= multiAssetCount; i++)
+                                    for (int i = 1; i <= multiAssetCount; i++)
                                     {
                                         var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
                                         var ma = repl.Run(@"MultiAsset" + funcLetter + "()").Value.ToString();
@@ -206,81 +258,30 @@ namespace ReserveBlockCore.Models.SmartContracts
                     smartContractMain.Features = featuresList;
                 }
 
-                
-
-            }
-
-            private static SmartContractMain GetSmartContractMain(string name, string desc, string address, string minterAddress, string minterName, string smartContractUID, string signature, string features)
-            {
-                SmartContractMain scMain = new SmartContractMain();
-
-                scMain.SmartContractUID = smartContractUID;
-                scMain.Name = name;
-                scMain.Description = desc;
-                scMain.Address = address;
-                scMain.IsMinter = false;
-                scMain.IsPublic = false;
-                //scMain.Features = features;
-                scMain.IsPublished = true;
-                scMain.MinterName = minterName;
-                scMain.MinterAddress = minterAddress;
-                scMain.Signature = signature;
-
-                return scMain;
-            }
-
-            public static void SaveSmartContract(SmartContractMain scMain, string scText)
-            {
-                var scs = GetSCs();
-
-                scs.Insert(scMain);
-
-                SaveSCLocally(scMain, scText);
-            }
-
-            public static void DeleteSmartContract(string scUID)
-            {
-                var scs = GetSCs();
-
-                scs.DeleteMany(x => x.SmartContractUID == scUID);
-            }
-            public static async void SaveSCLocally(SmartContractMain scMain, string scText)
-            {
-                try
-                {
-                    var databaseLocation = Program.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
-                    var text = scText;
-                    string path = "";
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    {
-                        string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                        path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                    }
-                    else
-                    {
-                        if (Debugger.IsAttached)
-                        {
-                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                        }
-                        else
-                        {
-                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                        }
-                    }
-                    if (!Directory.Exists(path))
-                    {
-                        Directory.CreateDirectory(path);
-                    }
-
-                    var scName = scMain.SmartContractUID.Split(':');
-                    await File.AppendAllTextAsync(path + scName[0].ToString() + ".trlm", text);
-                }
-                catch (Exception ex)
-                {
-
-                }
+                var result = await SmartContractWriterService.WriteSmartContract(smartContractMain);
+                SaveSmartContract(result.Item2, result.Item1);
             }
         }
+
+        private static SmartContractMain GetSmartContractMain(string name, string desc, string address, string minterAddress, string minterName, string smartContractUID, string signature, string features)
+        {
+            SmartContractMain scMain = new SmartContractMain();
+
+            scMain.SmartContractUID = smartContractUID;
+            scMain.Name = name;
+            scMain.Description = desc;
+            scMain.Address = address;
+            scMain.IsMinter = false;
+            scMain.IsPublic = false;
+            //scMain.Features = features;
+            scMain.IsPublished = true;
+            scMain.MinterName = minterName;
+            scMain.MinterAddress = minterAddress;
+            scMain.Signature = signature;
+
+            return scMain;
+        }
+
 
     }
 }

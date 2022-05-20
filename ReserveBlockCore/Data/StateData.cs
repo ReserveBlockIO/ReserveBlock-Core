@@ -220,6 +220,7 @@ namespace ReserveBlockCore.Data
             {
                 scStateTreiRec.OwnerAddress = tx.ToAddress;
                 scStateTreiRec.Nonce += 1;
+                scStateTreiRec.ContractData = data;
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }

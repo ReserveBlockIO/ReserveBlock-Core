@@ -37,7 +37,7 @@ namespace ReserveBlockCore.Models
         }
         public string GetHash()
         {
-            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + TransactionType + Data ;
+            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + TransactionType + Data;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
         public static void Add(Transaction transaction)

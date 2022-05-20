@@ -114,7 +114,6 @@ namespace ReserveBlockCore.Services
                     {
                         if (function == "Mint()")
                         {
-                            var data = (string?)scData["Data"];
                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                             if (scStateTreiRec != null)
                             {
@@ -123,7 +122,6 @@ namespace ReserveBlockCore.Services
                         }
                         else if (function == "Transfer()")
                         {
-                            var data = (string?)scData["Data"];
                             var toAddress = (string?)scData["ToAddress"];
                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                             if(scStateTreiRec != null)
@@ -140,7 +138,6 @@ namespace ReserveBlockCore.Services
                         }
                         else if (function == "Burn()")
                         {
-                            var fromAddress = (string?)scData["FromAddress"];
                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                             if (scStateTreiRec != null)
                             {
@@ -153,7 +150,6 @@ namespace ReserveBlockCore.Services
                             {
                                 return txResult;
                             }
-
                         }
                         else
                         {

@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
@@ -112,7 +114,6 @@ namespace ReserveBlockCore.Services
                     BlockQueueService.UpdateMemBlocks();//update mem blocks
                     StateData.UpdateTreis(block);
 
-
                     var mempool = TransactionData.GetPool();
 
                     if(mempool != null)
@@ -132,13 +133,42 @@ namespace ReserveBlockCore.Services
                                 AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                                 var txdata = TransactionData.GetAll();
                                 txdata.Insert(transaction);
-                                if(transaction.TransactionType == TransactionType.NFT_MINT)
+                                var scData = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+
+                                if (transaction.TransactionType == TransactionType.NFT_MINT)
                                 {
                                     //await TransactionValidatorService.AddNewlyMintedContract(transaction);
+                                    if (scData != null)
+                                    {
+                                        var function = (string?)scData["Function"];
+                                        if (function != "")
+                                        {
+                                            if (function == "Mint()")
+                                            {
+                                                var scUID = (string?)scData["ContractUID"];
+                                                if (scUID != "")
+                                                {
+                                                    SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                                 if(transaction.TransactionType == TransactionType.NFT_TX)
                                 {
-                                    await TransactionValidatorService.TransferNFT(transaction);
+                                    var data = (string?)scData["Data"];
+                                    var function = (string?)scData["Function"];
+                                    if(function != "")
+                                    {
+                                        if(function == "Transfer()")
+                                        {
+                                            if (data != "")
+                                            {
+                                                SmartContractMain.SmartContractData.CreateSmartContract(data);
+                                            }
+                                        }
+                                    }
+                                    
                                 }
                             }
 
@@ -152,15 +182,33 @@ namespace ReserveBlockCore.Services
                                 fromTx.Fee = transaction.Fee * -1M;
                                 txData.Insert(fromTx);
 
+                                var scData = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+
                                 if (transaction.TransactionType == TransactionType.NFT_TX)
                                 {
                                     //do transfer logic here! This is for person giving away or feature actions
-                                    await TransactionValidatorService.RemoveNFT(transaction);
+                                    var scUID = (string?)scData["ContractUID"];
+                                    var function = (string?)scData["Function"];
+                                    if(function != "")
+                                    {
+                                        if(function == "Transfer()")
+                                        {
+                                            if (scUID != "")
+                                            {
+                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                            }
+                                        }
+                                    }
                                 }
                                 if (transaction.TransactionType == TransactionType.NFT_BURN)
                                 {
                                     //do burn logic here! This is for person giving away or feature actions
-                                    
+                                    var scUID = (string?)scData["ContractUID"];
+                                    if (scUID != "")
+                                    {
+                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
+                                    }
+
                                 }
 
                             }
