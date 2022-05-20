@@ -1,8 +1,8 @@
 {
   "profiles": {
     "ReserveBlockCore": {
-      "commandName": "Project",
-      "commandLineArgs": "enableapi testurl"
+        "commandName": "Project",
+        "commandLineArgs": "enableapi testurl"
     },
     "WSL": {
       "commandName": "WSL2",
