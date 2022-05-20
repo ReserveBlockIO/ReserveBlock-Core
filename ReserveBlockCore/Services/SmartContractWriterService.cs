@@ -438,7 +438,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task<(string, SmartContractMain)> WriteSmartContractFromTX(SmartContractMain scMain)
         {
-            var scUID = Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+            //var scUID = Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
             var features = "";
             var featuresList = scMain.Features;
             var signature = "Insert Signature";
@@ -446,11 +446,9 @@ namespace ReserveBlockCore.Services
             StringBuilder strEvolveBld = new StringBuilder();
             StringBuilder strMultiAssetBld = new StringBuilder();
 
-            scMain.SmartContractUID = scUID;
             scMain.Signature = signature;
-            scMain.IsMinter = true;
-            scMain.MinterAddress = scMain.Address;
-            scMain.IsPublished = false;
+            scMain.IsMinter = false;
+            scMain.IsPublished = true;
 
             var appendChar = "\"|->\"";
 
@@ -777,7 +775,7 @@ namespace ReserveBlockCore.Services
             strBuild.AppendLine(("let Address = \"{#Address}\"").Replace("{#Address}", scMain.Address));
             strBuild.AppendLine(("let MinterAddress = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
             strBuild.AppendLine(("let MinterName = \"{#MinterName}\"").Replace("{#MinterName}", scMain.MinterName));
-            strBuild.AppendLine(("let SmartContractUID = \"" + scUID + "\""));
+            strBuild.AppendLine(("let SmartContractUID = \"" + scMain.SmartContractUID + "\""));
             strBuild.AppendLine(("let Signature = \"" + signature + "\""));
             strBuild.AppendLine(("let Features = \"" + features + "\""));
 
