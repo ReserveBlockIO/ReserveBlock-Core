@@ -428,8 +428,8 @@ namespace ReserveBlockCore.Controllers
             return result;
         }
 
-        [HttpGet("ChangeValidatorName/{name}")]
-        public async Task<string> ChangeValidatorName(string name)
+        [HttpGet("ChangeValidatorName/{uname}")]
+        public async Task<string> ChangeValidatorName(string uname)
         {
             string output = "";
             
@@ -437,10 +437,10 @@ namespace ReserveBlockCore.Controllers
             {
                 var validatorTable = Validators.Validator.GetAll();
                 var validator = validatorTable.FindOne(x => x.Address == Program.ValidatorAddress);
-                validator.UniqueName = name;
+                validator.UniqueName = uname;
                 validatorTable.Update(validator);
 
-                output = "Validator Unique Name Updated"
+                output = "Validator Unique Name Updated";
             }
             return output;
         }
