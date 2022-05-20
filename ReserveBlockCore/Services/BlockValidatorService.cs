@@ -134,7 +134,7 @@ namespace ReserveBlockCore.Services
                                 txdata.Insert(transaction);
                                 if(transaction.TransactionType == TransactionType.NFT_MINT)
                                 {
-                                    await TransactionValidatorService.AddNewlyMintedContract(transaction);
+                                    //await TransactionValidatorService.AddNewlyMintedContract(transaction);
                                 }
                                 if(transaction.TransactionType == TransactionType.NFT_TX)
                                 {
