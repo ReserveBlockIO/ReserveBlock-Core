@@ -37,6 +37,7 @@ namespace ReserveBlockCore.Data
                         Hash = "", //this will be built down below. showing just to make this clear.
                         Timestamp = timeStamp,
                         Signature = "COINBASE_TX",
+                        TransactionType = TransactionType.TX,
                         Nonce = 0
                     };
 

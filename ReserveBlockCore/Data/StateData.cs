@@ -1,6 +1,8 @@
 ﻿using LiteDB;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Data
@@ -107,7 +109,39 @@ namespace ReserveBlockCore.Data
                     to.StateRoot = block.StateRoot;
 
                     accStTrei.Update(to);
-                }    
+                }
+
+                if (x.TransactionType != TransactionType.TX)
+                {
+                    if (x.TransactionType == TransactionType.NFT_TX || x.TransactionType == TransactionType.NFT_MINT
+                        || x.TransactionType == TransactionType.NFT_BURN)
+                    {
+                        var scData = JsonConvert.DeserializeObject<JArray>(x.Data);
+                        var function = (string?)scData["Function"];
+                        var scUID = (string?)scData["ContractUID"];
+
+                        if (function != "")
+                        {
+                            if (function == "Mint()")
+                            {
+                                AddNewlyMintedContract(x);
+                            }
+                            else if (function == "Transfer()")
+                            {
+                                TransferSmartContract(x);
+                            }
+                            else if (function == "Burn()")
+                            {
+                                BurnSmartContract(x);
+                            }
+                            else
+                            {
+                                //more to come
+                            }
+                        }
+
+                    }
+                }
 
             });
 
@@ -135,6 +169,78 @@ namespace ReserveBlockCore.Data
                 return account;
             }
         }
-        
+
+        public static SmartContractStateTrei GetSpecificSmartContractStateTrei(string scUID)
+        {
+            var scTrei = DbContext.DB_SmartContractStateTrei.GetCollection<SmartContractStateTrei>(DbContext.RSRV_SCSTATE_TREI);
+            var account = scTrei.FindOne(x => x.SmartContractUID == scUID);
+            if (account == null)
+            {
+                return null;
+            }
+            else
+            {
+                return account;
+            }
+        }
+
+        public static void AddNewlyMintedContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            if (scData != null)
+            {
+                var function = (string?)scData["Function"];
+                var data = (string?)scData["Data"];
+                var scUID = (string?)scData["ContractUID"];
+
+                scST.ContractData = data;
+                scST.MinterAddress = tx.FromAddress;
+                scST.OwnerAddress = tx.FromAddress;
+                scST.SmartContractUID = scUID;
+                scST.Nonce = 0;
+
+                //Save to state trei
+                SmartContractStateTrei.SaveSmartContract(scST);
+                //SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);
+            }
+
+        }
+
+        public static void TransferSmartContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var function = (string?)scData["Function"];
+            var data = (string?)scData["Data"];
+            var scUID = (string?)scData["ContractUID"];
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if(scStateTreiRec != null)
+            {
+                scStateTreiRec.OwnerAddress = tx.ToAddress;
+                scStateTreiRec.Nonce += 1;
+
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
+
+        }
+
+        public static void BurnSmartContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var function = (string?)scData["Function"];
+            var data = (string?)scData["Data"];
+            var scUID = (string?)scData["ContractUID"];
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                SmartContractStateTrei.DeleteSmartContract(scStateTreiRec);
+            }
+
+        }
+
     }
 }

@@ -101,6 +101,69 @@ namespace ReserveBlockCore.Services
                 
             }
 
+            if(txRequest.TransactionType != TransactionType.TX)
+            {
+                if(txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT 
+                    || txRequest.TransactionType == TransactionType.NFT_BURN)
+                {
+                    var scData = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                    var function = (string?)scData["Function"];
+                    var scUID = (string?)scData["ContractUID"];
+
+                    if (function != "")
+                    {
+                        if (function == "Mint()")
+                        {
+                            var data = (string?)scData["Data"];
+                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                            if (scStateTreiRec != null)
+                            {
+                                return txResult;
+                            }
+                        }
+                        else if (function == "Transfer()")
+                        {
+                            var data = (string?)scData["Data"];
+                            var toAddress = (string?)scData["ToAddress"];
+                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                            if(scStateTreiRec != null)
+                            {
+                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                {
+                                    return txResult;
+                                }
+                            }
+                            else
+                            {
+                                return txResult;
+                            }
+                        }
+                        else if (function == "Burn()")
+                        {
+                            var fromAddress = (string?)scData["FromAddress"];
+                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                            if (scStateTreiRec != null)
+                            {
+                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                {
+                                    return txResult;
+                                }
+                            }
+                            else
+                            {
+                                return txResult;
+                            }
+
+                        }
+                        else
+                        {
+                            //more to come
+                        }
+                    }
+
+                }
+            }
+
             //Signature Check - Final Check to return true.
             var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
             if (isTxValid)
@@ -117,28 +180,7 @@ namespace ReserveBlockCore.Services
 
         }
 
-        public static async Task AddNewlyMintedContract(Transaction tx)
-        {
-            SmartContractStateTrei scST = new SmartContractStateTrei();
-            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
-            if(scData != null)
-            {
-                var function = (string?)scData["Function"];
-                var data = (string?)scData["Data"];
-                var scUID = (string?)scData["ContractUID"];
-
-                scST.ContractData = data;
-                scST.MinterAddress = tx.FromAddress;
-                scST.OwnerAddress = tx.FromAddress;
-                scST.SmartContractUID = scUID;
-                scST.Nonce = 0;
-
-                //Save to state trei
-                SmartContractStateTrei.SaveSmartContract(scST);
-                SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);
-            }
-            
-        }
+        
 
         public static async Task TransferNFT(Transaction tx)
         {
@@ -157,6 +199,8 @@ namespace ReserveBlockCore.Services
                     scMain.Nonce += 1;
 
                     SmartContractStateTrei.UpdateSmartContract(scMain);
+
+                    SmartContractMain.SmartContractData.CreateSmartContract(data);
                 }
 
 

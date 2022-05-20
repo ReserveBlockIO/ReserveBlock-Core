@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Services
                 {
                     TransactionData.AddToPool(scTx);
                     AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                    P2PClient.SendTXMempool(scTx);//send out to mempool
+                    //P2PClient.SendTXMempool(scTx);//send out to mempool
                     return scTx;
                 }
                 else
@@ -118,7 +118,7 @@ namespace ReserveBlockCore.Services
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Transfer(toAddress : string)", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64}
+                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);
@@ -202,7 +202,7 @@ namespace ReserveBlockCore.Services
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Burn(scUID : string)", ContractUID = scMain.SmartContractUID, FromAddress = scMain.Address}
+                    new { Function = "Burn()", ContractUID = scMain.SmartContractUID, FromAddress = scMain.Address}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);

@@ -7,20 +7,10 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
+        //This is the valid block methods
         public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
-
-            //var badBlocks = BadBlocksUtility.GetBadBlocks();
-
-            //if (badBlocks.ContainsKey(block.Height))
-            //{
-            //    var badBlockHash = badBlocks[block.Height];
-            //    if (badBlockHash == block.Hash)
-            //    {
-            //        return result;//reject because its on our bad block list
-            //    }
-            //}
 
             if (block == null) return result; //null block submitted. reject 
 
@@ -122,6 +112,7 @@ namespace ReserveBlockCore.Services
                     BlockQueueService.UpdateMemBlocks();//update mem blocks
                     StateData.UpdateTreis(block);
 
+
                     var mempool = TransactionData.GetPool();
 
                     if(mempool != null)
@@ -166,6 +157,12 @@ namespace ReserveBlockCore.Services
                                     //do transfer logic here! This is for person giving away or feature actions
                                     await TransactionValidatorService.RemoveNFT(transaction);
                                 }
+                                if (transaction.TransactionType == TransactionType.NFT_BURN)
+                                {
+                                    //do burn logic here! This is for person giving away or feature actions
+                                    
+                                }
+
                             }
                         }
                     }
@@ -186,6 +183,7 @@ namespace ReserveBlockCore.Services
             
         }
 
+        //This method does not add block or update any treis
         public static async Task<bool> ValidateBlockForTask(Block block, bool blockDownloads = false)
         {
             bool result = false;
