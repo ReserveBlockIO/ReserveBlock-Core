@@ -116,7 +116,8 @@ namespace ReserveBlockCore.Data
                     if (x.TransactionType == TransactionType.NFT_TX || x.TransactionType == TransactionType.NFT_MINT
                         || x.TransactionType == TransactionType.NFT_BURN)
                     {
-                        var scData = JsonConvert.DeserializeObject<JArray>(x.Data);
+                        var scDataArray = JsonConvert.DeserializeObject<JArray>(x.Data);
+                        var scData = scDataArray[0];
                         var function = (string?)scData["Function"];
                         var scUID = (string?)scData["ContractUID"];
 
@@ -187,7 +188,8 @@ namespace ReserveBlockCore.Data
         public static void AddNewlyMintedContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
-            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
             if (scData != null)
             {
                 var function = (string?)scData["Function"];
@@ -210,7 +212,8 @@ namespace ReserveBlockCore.Data
         public static void TransferSmartContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
-            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
             var function = (string?)scData["Function"];
             var data = (string?)scData["Data"];
             var scUID = (string?)scData["ContractUID"];
@@ -230,7 +233,8 @@ namespace ReserveBlockCore.Data
         public static void BurnSmartContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
-            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
             var function = (string?)scData["Function"];
             var data = (string?)scData["Data"];
             var scUID = (string?)scData["ContractUID"];

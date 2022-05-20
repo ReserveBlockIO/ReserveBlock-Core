@@ -102,11 +102,14 @@ namespace ReserveBlockCore.Services
             }
 
             if(txRequest.TransactionType != TransactionType.TX)
+            
             {
                 if(txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT 
                     || txRequest.TransactionType == TransactionType.NFT_BURN)
                 {
-                    var scData = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                    var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                    var scData = scDataArray[0];
+
                     var function = (string?)scData["Function"];
                     var scUID = (string?)scData["ContractUID"];
 
@@ -180,8 +183,9 @@ namespace ReserveBlockCore.Services
 
         public static async Task TransferNFT(Transaction tx)
         {
-            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
-            if( scData != null )
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
+            if ( scData != null )
             {
                 var function = (string?)scData["Function"];
                 var data = (string?)scData["Data"];
@@ -205,7 +209,8 @@ namespace ReserveBlockCore.Services
 
         public static async Task RemoveNFT(Transaction tx)
         {
-            var scData = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
             if (scData != null)
             {
                 var function = (string?)scData["Function"];

@@ -133,7 +133,8 @@ namespace ReserveBlockCore.Services
                                 AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                                 var txdata = TransactionData.GetAll();
                                 txdata.Insert(transaction);
-                                var scData = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+                                var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+                                var scData = scDataArray[0];
 
                                 if (transaction.TransactionType == TransactionType.NFT_MINT)
                                 {
@@ -182,7 +183,8 @@ namespace ReserveBlockCore.Services
                                 fromTx.Fee = transaction.Fee * -1M;
                                 txData.Insert(fromTx);
 
-                                var scData = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+                                var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
+                                var scData = scDataArray[0];
 
                                 if (transaction.TransactionType == TransactionType.NFT_TX)
                                 {
