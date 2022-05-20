@@ -50,6 +50,11 @@ namespace ReserveBlockCore.Services
             var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
+                var mempool = TransactionData.GetPool();
+                if (mempool.Count() > 0)
+                {
+                    mempool.DeleteMany(x => x.Hash == txRequest.Hash);
+                }
                 return txResult;
             }
 
