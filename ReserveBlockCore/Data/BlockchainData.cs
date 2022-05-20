@@ -82,6 +82,7 @@ namespace ReserveBlockCore.Data
                     Fee = 0.00M,
                     Timestamp = timestamp,
                     FromAddress = "Coinbase_TrxFees",
+                    TransactionType = TransactionType.TX
                 };
 
                 var coinbase_tx2 = new Transaction
@@ -91,6 +92,7 @@ namespace ReserveBlockCore.Data
                     Fee = 0.00M,
                     Timestamp = timestamp,
                     FromAddress = "Coinbase_BlkRwd",
+                    TransactionType = TransactionType.TX
                 };
 
                 if (processedTxPool.Count() > 0)
