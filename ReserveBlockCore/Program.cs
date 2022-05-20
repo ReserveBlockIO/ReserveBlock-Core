@@ -65,7 +65,7 @@ namespace ReserveBlockCore
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
         public static int MajorVer = 1;
-        public static int MinorVer = 19;
+        public static int MinorVer = 20;
         public static int BuildVer = 0;
         public static string CLIVersion = "";
 
@@ -93,6 +93,10 @@ namespace ReserveBlockCore
             LogUtility.Log("", "Main", true);
 
             LogUtility.Log("RBX Wallet - " + CLIVersion, "Main");
+
+            StartupService.AnotherInstanceCheck();
+
+            StartupService.StartupDatabase();// initializes databases
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             var argList = args.ToList();
@@ -136,7 +140,7 @@ namespace ReserveBlockCore
                         TestURL = true;
                     }
 
-                    if(argC.Contains("privKey"))
+                    if(argC.Contains("privkey"))
                     {
                         try
                         {
@@ -160,9 +164,7 @@ namespace ReserveBlockCore
             //THis is for adjudicator start. This might need to be removed.
             P2PAdjServer.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
 
-            StartupService.AnotherInstanceCheck();
-
-            StartupService.StartupDatabase();// initializes databases
+            
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
 

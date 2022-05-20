@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Services
                 {
                     TransactionData.AddToPool(scTx);
                     AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                    //P2PClient.SendTXMempool(scTx);//send out to mempool
+                    P2PClient.SendTXMempool(scTx);//send out to mempool
                     return scTx;
                 }
                 else
@@ -165,7 +165,7 @@ namespace ReserveBlockCore.Services
                 {
                     TransactionData.AddToPool(scTx);
                     AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                    //P2PClient.SendTXMempool(scTx);//send out to mempool
+                    P2PClient.SendTXMempool(scTx);//send out to mempool
                     return scTx;
                 }
                 else
@@ -249,7 +249,7 @@ namespace ReserveBlockCore.Services
                 {
                     TransactionData.AddToPool(scTx);
                     AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                    //P2PClient.SendTXMempool(scTx);//send out to mempool
+                    P2PClient.SendTXMempool(scTx);//send out to mempool
                     return scTx;
                 }
                 else
