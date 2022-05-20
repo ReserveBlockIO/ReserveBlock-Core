@@ -259,7 +259,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     smartContractMain.Features = featuresList;
                 }
 
-                var result = await SmartContractWriterService.WriteSmartContract(smartContractMain);
+                var result = await SmartContractWriterService.WriteSmartContractFromTX(smartContractMain);
                 SaveSmartContract(result.Item2, result.Item1);
             }
         }

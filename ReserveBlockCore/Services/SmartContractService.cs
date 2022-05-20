@@ -106,6 +106,7 @@ namespace ReserveBlockCore.Services
             {
                 return null;//Minter address is not found
             }
+            var fromAddress = scMain.Address;
 
             scMain.Address = toAddress;
             var scData = SmartContractReaderService.ReadSmartContract(scMain);
@@ -127,7 +128,7 @@ namespace ReserveBlockCore.Services
             scTx = new Transaction
             {
                 Timestamp = TimeUtil.GetTime(),
-                FromAddress = scMain.Address,
+                FromAddress = account.Address,
                 ToAddress = toAddress,
                 Amount = 0.0M,
                 Fee = 0,
@@ -216,7 +217,7 @@ namespace ReserveBlockCore.Services
                 Amount = 0.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(scMain.Address),
-                TransactionType = TransactionType.NFT_TX,
+                TransactionType = TransactionType.NFT_BURN,
                 Data = txData
             };
 

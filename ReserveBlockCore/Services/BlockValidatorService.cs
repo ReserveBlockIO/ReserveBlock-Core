@@ -212,11 +212,18 @@ namespace ReserveBlockCore.Services
                                     {
                                         //do burn logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
-                                        if (scUID != "")
+                                        var function = (string?)scData["Function"];
+                                        if (function != "")
                                         {
-                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
+                                            if (function == "Burn()")
+                                            {
+                                                if (scUID != "")
+                                                {
+                                                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
+                                                }
+                                            }
                                         }
-
+            
                                     }
                                 }
                             }

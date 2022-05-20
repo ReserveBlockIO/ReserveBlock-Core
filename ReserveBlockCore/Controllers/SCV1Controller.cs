@@ -260,7 +260,7 @@ namespace ReserveBlockCore.Controllers
             var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
             if (sc != null)
             {
-                if (sc.IsPublished != true)
+                if (sc.IsPublished == true)
                 {
                     var result = await SmartContractReaderService.ReadSmartContract(sc);
 
@@ -325,7 +325,10 @@ namespace ReserveBlockCore.Controllers
             {
                 if (sc.IsPublished == true)
                 {
+                    var tx = await SmartContractService.BurnSmartContract(sc);
 
+                    var txJson = JsonConvert.SerializeObject(tx);
+                    output = txJson;
                 }
             }
 
