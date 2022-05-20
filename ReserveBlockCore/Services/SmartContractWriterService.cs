@@ -149,6 +149,8 @@ namespace ReserveBlockCore.Services
                         {
                             int counter = 1;
                             feature.FeatureFeatures = multiAsset;
+                            var multiAssetCount = multiAsset.Count().ToString();
+                            strBuild.AppendLine("let MultiAssetCount = \"" + multiAssetCount + "\"");
                             multiAsset.ForEach(x => {
                                 var funcLetter = FunctionNameUtility.GetFunctionLetter(counter);
                                 strMultiAssetBld.AppendLine("function MultiAsset" + funcLetter + "() : string");
@@ -312,6 +314,9 @@ namespace ReserveBlockCore.Services
                                 int counter = 1;
                                 x.FeatureFeatures = multiAsset;
                                 Flist.Add(x);
+
+                                var multiAssetCount = multiAsset.Count().ToString();
+                                strBuild.AppendLine("let MultiAssetCount = \"" + multiAssetCount + "\"");
 
                                 multiAsset.ForEach(m => {
                                     var funcLetter = FunctionNameUtility.GetFunctionLetter(counter);
