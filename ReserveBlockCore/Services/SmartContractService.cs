@@ -23,6 +23,13 @@ namespace ReserveBlockCore.Services
                 return null;//Minter address is not found
             }
 
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scMain.SmartContractUID);
+
+            if(scStateTrei != null)
+            {
+                return null;// record already exist
+            }
+
             var scData = SmartContractReaderService.ReadSmartContract(scMain);
 
             var txData = "";

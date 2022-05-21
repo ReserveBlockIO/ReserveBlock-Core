@@ -71,9 +71,16 @@ namespace ReserveBlockCore.Models.SmartContracts
 
             public static void DeleteSmartContract(string scUID)
             {
-                var scs = GetSCs();
+                try
+                {
+                    var scs = GetSCs();
 
-                scs.DeleteMany(x => x.SmartContractUID == scUID);
+                    scs.DeleteMany(x => x.SmartContractUID == scUID);
+                }
+                catch(Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.Message, "SmartContractMain.DeleteSmartContract()");
+                }
             }
             public static async void SaveSCLocally(SmartContractMain scMain, string scText)
             {
