@@ -184,8 +184,6 @@ namespace ReserveBlockCore.Services
 
         }
 
-        
-
         public static async Task TransferNFT(Transaction tx)
         {
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);

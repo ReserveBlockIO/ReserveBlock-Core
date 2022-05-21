@@ -329,6 +329,10 @@ namespace ReserveBlockCore.Services
                         {
                             var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
+                            if(rejectBlock)
+                            {
+                                RemoveTxFromMempool(transaction);
+                            }
                         }
                         else
                         {
@@ -349,6 +353,15 @@ namespace ReserveBlockCore.Services
                 return result;//block accepted
             
 
+        }
+
+        private static async void RemoveTxFromMempool(Transaction tx)
+        {
+            var mempool = TransactionData.GetPool();
+            if (mempool.Count() > 0)
+            {
+                mempool.DeleteMany(x => x.Hash == tx.Hash);
+            }
         }
 
     }
