@@ -183,7 +183,7 @@ namespace ReserveBlockCore.Services
                             {
                                 var txData = TransactionData.GetAll();
                                 var fromTx = transaction;
-                                fromTx.Amount = 0.0M;
+                                fromTx.Amount = transaction.Amount * -1M;
                                 fromTx.Fee = transaction.Fee * -1M;
                                 txData.Insert(fromTx);
 

@@ -333,52 +333,61 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("Evolve/{id}")]
-        public async Task<string> Evolve(string id)
+        [HttpGet("Evolve/{id}/{toAddress}")]
+        public async Task<string> Evolve(string id, string toAddress)
         {
             var output = "";
 
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            if (sc != null)
-            {
-                if (sc.IsPublished == true)
-                {
+            var tx = await SmartContractService.EvolveSmartContract(id, toAddress);
 
-                }
+            if (tx == null)
+            {
+                output = "Failed to Evolve TX";
+            }
+            else
+            {
+                var txJson = JsonConvert.SerializeObject(tx);
+                output = txJson;
             }
 
             return output;
         }
 
-        [HttpGet("Devolve/{id}")]
-        public async Task<string> Devolve(string id)
+        [HttpGet("Devolve/{id}/{toAddress}")]
+        public async Task<string> Devolve(string id, string toAddress)
         {
-            var output = "";
+            string output;
 
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            if (sc != null)
+            var tx = await SmartContractService.DevolveSmartContract(id, toAddress);
+
+            if (tx == null)
             {
-                if (sc.IsPublished == true)
-                {
-
-                }
+                output = "Failed to Evolve TX";
+            }
+            else
+            {
+                var txJson = JsonConvert.SerializeObject(tx);
+                output = txJson;
             }
 
             return output;
         }
 
-        [HttpGet("EvolveSpecific/{id}/{evolveState}")]
-        public async Task<string> EvolveSpecific(string id, string evolveState)
+        [HttpGet("EvolveSpecific/{id}/{toAddress}/{evolveState}")]
+        public async Task<string> EvolveSpecific(string id, string toAddress, int evolveState)
         {
-            var output = "";
+            string output;
 
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            if (sc != null)
+            var tx = await SmartContractService.ChangeEvolveStateSpecific(id, toAddress, evolveState);
+
+            if (tx == null)
             {
-                if (sc.IsPublished == true)
-                {
-
-                }
+                output = "Failed to Evolve TX";
+            }
+            else
+            {
+                var txJson = JsonConvert.SerializeObject(tx);
+                output = txJson;
             }
 
             return output;

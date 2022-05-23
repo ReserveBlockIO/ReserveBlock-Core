@@ -1,4 +1,8 @@
-﻿namespace ReserveBlockCore.Models.SmartContracts
+﻿using ReserveBlockCore.Trillium;
+using ReserveBlockCore.Utilities;
+using System.Text;
+
+namespace ReserveBlockCore.Models.SmartContracts
 {
     public class EvolvingFeature
     {
@@ -77,6 +81,139 @@
             });
 
             return evolveFeatures;
+        }
+
+        public static async Task<(bool, string)> GetNewEvolveState(string scText)
+        {
+            var byteArrayFromBase64 = scText.FromBase64ToByteArray();
+            var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+            var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+            var repl = new TrilliumRepl();
+            repl.Run("#reset");
+            repl.Run(textFromByte);
+
+            var features = repl.Run(@"GetNFTFeatures()");
+            if(features != null)
+            {
+                var featureList = features.Value.ToString();
+                if(featureList != "" && featureList != null)
+                {
+                    if(featureList.Contains("0"))
+                    {
+                        var evolveState = repl.Run(@"GetCurrentEvolveState()").Value.ToString();
+                        var evolveMaxState = repl.Run(@"EvolveStates()");
+
+                        try
+                        {
+                            var currentEvoState = evolveState.Replace("{*", "").Replace("}", "");
+                            var evolve = repl.Run(@"Evolve(" + currentEvoState + ")").Value.ToString();
+                            if(evolve == "Failed to Evolve.")
+                            {
+                                return (false, "Failed to Evolve NFT");
+                            }
+                            var newEvolveState = repl.Run(@"GetCurrentEvolveState()").Value.ToString();
+
+                            var newSCData = textFromByte.Replace(evolveState, newEvolveState);
+
+                            return (true, newSCData);
+                        }
+                        catch(Exception ex)
+                        {
+                            return (false, "Failed to Evolve NFT");
+                        }
+                    }
+                }
+            }
+            return (false, "Failed to Evolve NFT");
+        }
+
+        public static async Task<(bool, string)> GetNewDevolveState(string scText)
+        {
+            var byteArrayFromBase64 = scText.FromBase64ToByteArray();
+            var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+            var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+            var repl = new TrilliumRepl();
+            repl.Run("#reset");
+            repl.Run(textFromByte);
+
+            var features = repl.Run(@"GetNFTFeatures()");
+            if (features != null)
+            {
+                var featureList = features.Value.ToString();
+                if (featureList != "" && featureList != null)
+                {
+                    if (featureList.Contains("0"))
+                    {
+                        var evolveState = repl.Run(@"GetCurrentEvolveState()").Value.ToString();
+
+                        try
+                        {
+                            var currentEvoState = evolveState.Replace("{*", "").Replace("}", "");
+                            var evolve = repl.Run(@"Devolve(" + currentEvoState + ")").Value.ToString();
+                            if (evolve == "Failed to Devolve.")
+                            {
+                                return (false, "Failed to Devolve NFT");
+                            }
+                            var newEvolveState = repl.Run(@"GetCurrentEvolveState()").Value.ToString();
+
+                            var newSCData = textFromByte.Replace(evolveState, newEvolveState);
+
+                            return (true, newSCData);
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "Failed to Devolve NFT");
+                        }
+                    }
+                }
+            }
+            return (false, "Failed to Devolve NFT");
+        }
+
+        public static async Task<(bool, string)> GetNewSpecificState(string scText, int evoState)
+        {
+            var byteArrayFromBase64 = scText.FromBase64ToByteArray();
+            var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+            var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+            var repl = new TrilliumRepl();
+            repl.Run("#reset");
+            repl.Run(textFromByte);
+
+            var features = repl.Run(@"GetNFTFeatures()");
+            if (features != null)
+            {
+                var featureList = features.Value.ToString();
+                if (featureList != "" && featureList != null)
+                {
+                    if (featureList.Contains("0"))
+                    {
+                        var evolveState = repl.Run(@"GetCurrentEvolveState()").Value.ToString();
+
+                        try
+                        {
+                            var specEvoState = evoState.ToString();
+                            var evolve = repl.Run(@"ChangeEvolveStateSpecific(" + specEvoState + ")").Value.ToString();
+                            if (evolve == "Failed to Evolve.")
+                            {
+                                return (false, "Failed to Change State for NFT");
+                            }
+                            var newEvolveState = repl.Run(@"GetCurrentEvolveState()").Value.ToString();
+
+                            var newSCData = textFromByte.Replace(evolveState, newEvolveState);
+
+                            return (true, newSCData);
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "Failed to Change State for NFT");
+                        }
+                    }
+                }
+            }
+            return (false, "Failed to Change State for NFT");
         }
     }
 }
