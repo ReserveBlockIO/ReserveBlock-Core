@@ -342,7 +342,7 @@ namespace ReserveBlockCore.Controllers
 
             if (tx == null)
             {
-                output = "Failed to Evolve TX";
+                output = "Failed to Evolve - TX";
             }
             else
             {
@@ -362,7 +362,7 @@ namespace ReserveBlockCore.Controllers
 
             if (tx == null)
             {
-                output = "Failed to Evolve TX";
+                output = "Failed to Devolve - TX";
             }
             else
             {
@@ -382,7 +382,7 @@ namespace ReserveBlockCore.Controllers
 
             if (tx == null)
             {
-                output = "Failed to Evolve TX";
+                output = "Failed to Change State - TX";
             }
             else
             {
