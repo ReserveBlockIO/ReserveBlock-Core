@@ -69,6 +69,13 @@ namespace ReserveBlockCore.Models.SmartContracts
                 SaveSCLocally(scMain, scText);
             }
 
+            public static void UpdateSmartContract(SmartContractMain scMain)
+            {
+                var scs = GetSCs();
+
+                scs.Update(scMain);
+            }
+
             public static void DeleteSmartContract(string scUID)
             {
                 try

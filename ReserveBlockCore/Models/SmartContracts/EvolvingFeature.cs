@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Trillium;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
 using System.Text;
 
@@ -14,6 +16,8 @@ namespace ReserveBlockCore.Models.SmartContracts
         public DateTime? EvolveDate { get; set; }
         public long? EvolveBlockHeight { get; set; }
         public SmartContractAsset? SmartContractAsset { get; set; }
+
+        #region GetEvolveFeature
 
         public static List<EvolvingFeature> GetEvolveFeature(List<string> eList)
         {
@@ -83,6 +87,10 @@ namespace ReserveBlockCore.Models.SmartContracts
             return evolveFeatures;
         }
 
+        #endregion
+
+        #region GetNewEvolveState
+
         public static async Task<(bool, string)> GetNewEvolveState(string scText)
         {
             var byteArrayFromBase64 = scText.FromBase64ToByteArray();
@@ -128,6 +136,9 @@ namespace ReserveBlockCore.Models.SmartContracts
             return (false, "Failed to Evolve NFT");
         }
 
+        #endregion
+
+        #region GetNewDevolveState
         public static async Task<(bool, string)> GetNewDevolveState(string scText)
         {
             var byteArrayFromBase64 = scText.FromBase64ToByteArray();
@@ -172,6 +183,10 @@ namespace ReserveBlockCore.Models.SmartContracts
             return (false, "Failed to Devolve NFT");
         }
 
+        #endregion
+
+        #region GetNewSpecificState
+
         public static async Task<(bool, string)> GetNewSpecificState(string scText, int evoState)
         {
             var byteArrayFromBase64 = scText.FromBase64ToByteArray();
@@ -215,5 +230,210 @@ namespace ReserveBlockCore.Models.SmartContracts
             }
             return (false, "Failed to Change State for NFT");
         }
+
+        #endregion
+
+        #region EvolveNFT
+
+        public static async void EvolveNFT(Transaction tx)
+        {
+            if (tx.Data != "" && tx.Data != null)
+            {
+                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                if (scDataArray != null)
+                {
+                    var scData = scDataArray[0];
+                    var data = (string?)scData["Data"];
+                    var scUID = (string?)scData["ContractUID"];
+
+                    var byteArrayFromBase64 = data.FromBase64ToByteArray();
+                    var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+                    var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+                    var repl = new TrilliumRepl();
+                    repl.Run("#reset");
+                    repl.Run(textFromByte);
+
+                    var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                    if(scMain != null)
+                    {
+                        var evolveFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
+                        if (evolveFeatures != null)
+                        {
+                            try
+                            {
+                                var evolveState = repl.Run(@"GetCurrentEvolveState()");
+                                var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
+                                var evoStateNum = Convert.ToInt32(evoStateString);
+
+                                if(evoStateNum > 0)
+                                {
+                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
+                                    var specificEvolve = evolveFeatureList.Where(x => x.EvolutionState == evoStateNum).FirstOrDefault();
+                                    if (specificEvolve != null)
+                                    {
+                                        specificEvolve.IsCurrentState = true;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+                                }
+                                else
+                                {
+                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
+                                    var specificEvolve = evolveFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
+                                    if (specificEvolve != null)
+                                    {
+                                        specificEvolve.IsCurrentState = false;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region DevolveNFT
+        public static async void DevolveNFT(Transaction tx)
+        {
+            if (tx.Data != "" && tx.Data != null)
+            {
+                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                if (scDataArray != null)
+                {
+                    var scData = scDataArray[0];
+                    var data = (string?)scData["Data"];
+                    var scUID = (string?)scData["ContractUID"];
+
+                    var byteArrayFromBase64 = data.FromBase64ToByteArray();
+                    var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+                    var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+                    var repl = new TrilliumRepl();
+                    repl.Run("#reset");
+                    repl.Run(textFromByte);
+
+                    var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                    if (scMain != null)
+                    {
+                        var evolveFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
+                        if (evolveFeatures != null)
+                        {
+                            try
+                            {
+                                var evolveState = repl.Run(@"GetCurrentEvolveState()");
+                                var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
+                                var evoStateNum = Convert.ToInt32(evoStateString);
+
+                                if (evoStateNum > 0)
+                                {
+                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
+                                    var specificEvolve = evolveFeatureList.Where(x => x.EvolutionState == evoStateNum).FirstOrDefault();
+                                    if (specificEvolve != null)
+                                    {
+                                        specificEvolve.IsCurrentState = true;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+                                }
+                                else
+                                {
+                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
+                                    var specificEvolve = evolveFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
+                                    if (specificEvolve != null)
+                                    {
+                                        specificEvolve.IsCurrentState = false;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+
+                                }
+
+
+                            }
+                            catch (Exception ex)
+                            {
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region EvolveToSpecificStateNFT
+        public static async void EvolveToSpecificStateNFT(Transaction tx)
+        {
+            if (tx.Data != "" && tx.Data != null)
+            {
+                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                if (scDataArray != null)
+                {
+                    var scData = scDataArray[0];
+                    var data = (string?)scData["Data"];
+                    var scUID = (string?)scData["ContractUID"];
+
+                    var byteArrayFromBase64 = data.FromBase64ToByteArray();
+                    var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+                    var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+                    var repl = new TrilliumRepl();
+                    repl.Run("#reset");
+                    repl.Run(textFromByte);
+
+                    var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                    if (scMain != null)
+                    {
+                        var evolveFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
+                        if (evolveFeatures != null)
+                        {
+                            try
+                            {
+                                var evolveState = repl.Run(@"GetCurrentEvolveState()");
+                                var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
+                                var evoStateNum = Convert.ToInt32(evoStateString);
+
+                                if (evoStateNum > 0)
+                                {
+                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
+                                    var specificEvolve = evolveFeatureList.Where(x => x.EvolutionState == evoStateNum).FirstOrDefault();
+                                    if (specificEvolve != null)
+                                    {
+                                        specificEvolve.IsCurrentState = true;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+                                }
+                                else
+                                {
+                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
+                                    var specificEvolve = evolveFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
+                                    if (specificEvolve != null)
+                                    {
+                                        specificEvolve.IsCurrentState = false;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
+
+                                }
+
+
+                            }
+                            catch (Exception ex)
+                            {
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
+
     }
 }

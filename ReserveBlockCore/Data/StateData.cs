@@ -123,21 +123,28 @@ namespace ReserveBlockCore.Data
 
                         if (function != "")
                         {
-                            if (function == "Mint()")
+                            switch (function)
                             {
-                                AddNewlyMintedContract(x);
-                            }
-                            else if (function == "Transfer()")
-                            {
-                                TransferSmartContract(x);
-                            }
-                            else if (function == "Burn()")
-                            {
-                                BurnSmartContract(x);
-                            }
-                            else
-                            {
-                                //more to come
+                                case "Mint()":
+                                    AddNewlyMintedContract(x);
+                                    break;
+                                case "Transfer()":
+                                    TransferSmartContract(x);
+                                    break;
+                                case "Burn()":
+                                    BurnSmartContract(x);
+                                    break;
+                                case "Evolve()":
+                                    EvolveSC(x);
+                                    break;
+                                case "Devolve()":
+                                    DevolveSC(x);
+                                    break;
+                                case "ChangeEvolveStateSpecific()":
+                                    EvolveDevolveSpecific(x);
+                                    break;
+                                default:
+                                    break;
                             }
                         }
 
@@ -208,7 +215,6 @@ namespace ReserveBlockCore.Data
             }
 
         }
-
         public static void TransferSmartContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
@@ -229,7 +235,6 @@ namespace ReserveBlockCore.Data
             }
 
         }
-
         public static void BurnSmartContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
@@ -245,6 +250,63 @@ namespace ReserveBlockCore.Data
                 SmartContractStateTrei.DeleteSmartContract(scStateTreiRec);
             }
 
+        }
+
+        public static void EvolveSC(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
+
+            var data = (string?)scData["Data"];
+            var scUID = (string?)scData["ContractUID"];
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.Nonce += 1;
+                scStateTreiRec.ContractData = data;
+
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
+        }
+
+        public static void DevolveSC(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
+
+            var data = (string?)scData["Data"];
+            var scUID = (string?)scData["ContractUID"];
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.Nonce += 1;
+                scStateTreiRec.ContractData = data;
+
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
+        }
+
+        public static void EvolveDevolveSpecific(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
+
+            var data = (string?)scData["Data"];
+            var scUID = (string?)scData["ContractUID"];
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.Nonce += 1;
+                scStateTreiRec.ContractData = data;
+
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
         }
 
     }

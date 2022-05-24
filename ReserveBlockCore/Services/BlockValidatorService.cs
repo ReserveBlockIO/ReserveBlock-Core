@@ -26,6 +26,20 @@ namespace ReserveBlockCore.Services
                 result = true;
                 BlockchainData.AddBlock(block);
                 StateData.UpdateTreis(block);
+                foreach (Transaction transaction in block.Transactions)
+                {
+                    //Adds receiving TX to wallet
+                    var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
+                    if (account != null)
+                    {
+                        AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
+                        var txdata = TransactionData.GetAll();
+                        txdata.Insert(transaction);
+                    }
+
+                }
+
+
                 return result;
             }
 
@@ -116,7 +130,7 @@ namespace ReserveBlockCore.Services
 
                     var mempool = TransactionData.GetPool();
 
-                    if(mempool != null)
+                    if(block.Transactions.Count() > 0)
                     {
                         foreach (Transaction transaction in block.Transactions)
                         {
@@ -157,24 +171,45 @@ namespace ReserveBlockCore.Services
                                             }
                                         }
                                     }
+
                                     if (transaction.TransactionType == TransactionType.NFT_TX)
                                     {
                                         var data = (string?)scData["Data"];
                                         var function = (string?)scData["Function"];
                                         if (function != "")
                                         {
-                                            if (function == "Transfer()")
+                                            switch (function)
                                             {
-                                                if (data != "")
-                                                {
-                                                    SmartContractMain.SmartContractData.CreateSmartContract(data);
-                                                }
+                                                case "Transfer()":
+                                                    if (data != "")
+                                                    {
+                                                        SmartContractMain.SmartContractData.CreateSmartContract(data);
+                                                    }
+                                                    break;
+                                                case "Evolve()":
+                                                    if(data != "")
+                                                    {
+                                                        EvolvingFeature.EvolveNFT(transaction);
+                                                    }
+                                                    break;
+                                                case "Devolve()":
+                                                    if (data != "")
+                                                    {
+                                                        EvolvingFeature.DevolveNFT(transaction);
+                                                    }
+                                                    break;
+                                                case "ChangeEvolveStateSpecific()":
+                                                    if(data != "")
+                                                    {
+                                                        EvolvingFeature.EvolveToSpecificStateNFT(transaction);
+                                                    }
+                                                    break;
+                                                default:
+                                                    break;
                                             }
                                         }
-
                                     }
                                 }
-                                
                             }
 
                             //Adds sent TX to wallet
@@ -312,47 +347,45 @@ namespace ReserveBlockCore.Services
             {
                 return result;//block rejected
             }
-                var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
+            var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
 
-                //Need to check here the prev hash if it is correct!
+            //Need to check here the prev hash if it is correct!
 
-                if (blockCoinBaseResult == false)
-                    return result;//block rejected
+            if (blockCoinBaseResult == false)
+                return result;//block rejected
 
-                if (block.Transactions.Count() > 0)
+            if (block.Transactions.Count() > 0)
+            {
+                //validate transactions.
+                bool rejectBlock = false;
+                foreach (Transaction transaction in block.Transactions)
                 {
-                    //validate transactions.
-                    bool rejectBlock = false;
-                    foreach (Transaction transaction in block.Transactions)
+                    if (transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                     {
-                        if (transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
+                        var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
+                        rejectBlock = txResult == false ? rejectBlock = true : false;
+                        if(rejectBlock)
                         {
-                            var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
-                            rejectBlock = txResult == false ? rejectBlock = true : false;
-                            if(rejectBlock)
-                            {
-                                RemoveTxFromMempool(transaction);
-                            }
+                            // This can cause a loop if a bad tx is continuously submitted. 
+                            // Need to instead remove bad TX from block and reprocess block.
+                            // Might need to improve response from this method. Return more detail response as to why Validation failed other than false
+                            RemoveTxFromMempool(transaction);
                         }
-                        else
-                        {
-                            //do nothing as its the coinbase fee
-                        }
-
-                        if (rejectBlock)
-                            break;
                     }
+                    else
+                    {
+                        //do nothing as its the coinbase fee
+                    }
+
                     if (rejectBlock)
-                        return result;//block rejected due to bad transaction(s)
-
-
-                    result = true;
-
+                        break;
                 }
+                if (rejectBlock)
+                    return result;//block rejected due to bad transaction(s)
 
-                return result;//block accepted
-            
-
+                result = true;
+            }
+            return result;//block accepted
         }
 
         private static async void RemoveTxFromMempool(Transaction tx)

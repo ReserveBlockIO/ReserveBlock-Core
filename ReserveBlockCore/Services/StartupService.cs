@@ -295,6 +295,7 @@ namespace ReserveBlockCore.Services
                         Program.BlocksDownloading = true;
                         Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
                     }
+                    //This is not being reached on some devices. 
                     else
                     {
                         LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
@@ -659,9 +660,7 @@ namespace ReserveBlockCore.Services
                             }
                         }
                     }
-                    
                 }
-                
             }
             return true;
         }

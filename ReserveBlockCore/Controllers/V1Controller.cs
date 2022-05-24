@@ -312,7 +312,10 @@ namespace ReserveBlockCore.Controllers
 
             int num = Convert.ToInt32(id);
 
-            var result = await BlockRollbackUtility.RollbackBlocks(num);
+            //This needs refactor
+            //var result = await BlockRollbackUtility.RollbackBlocks(num);
+            var result = false;
+
 
             if(result == true)
             {

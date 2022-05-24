@@ -120,48 +120,109 @@ namespace ReserveBlockCore.Services
 
                     if (function != "")
                     {
-                        if (function == "Mint()")
+                        switch (function)
                         {
-                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                            if (scStateTreiRec != null)
-                            {
-                                return txResult;
-                            }
-                        }
-                        else if (function == "Transfer()")
-                        {
-                            var toAddress = (string?)scData["ToAddress"];
-                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                            if(scStateTreiRec != null)
-                            {
-                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                            case "Mint()":
                                 {
-                                    return txResult;
+                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (scStateTreiRec != null)
+                                    {
+                                        return txResult;
+                                    }
+
+                                    break;
                                 }
-                            }
-                            else
-                            {
-                                return txResult;
-                            }
-                        }
-                        else if (function == "Burn()")
-                        {
-                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                            if (scStateTreiRec != null)
-                            {
-                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+
+                            case "Transfer()":
                                 {
-                                    return txResult;
+                                    var toAddress = (string?)scData["ToAddress"];
+                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (scStateTreiRec != null)
+                                    {
+                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return txResult;
+                                    }
+
+                                    break;
                                 }
-                            }
-                            else
-                            {
-                                return txResult;
-                            }
-                        }
-                        else
-                        {
-                            //more to come
+
+                            case "Burn()":
+                                {
+                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (scStateTreiRec != null)
+                                    {
+                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return txResult;
+                                    }
+
+                                    break;
+                                }
+                            case "Evolve()":
+                                {
+                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (scStateTreiRec != null)
+                                    {
+                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                        if(txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                    }
+                                    //Run the Trillium REPL To ensure new state is valid again.
+                                    break;
+                                }
+                            case "Devolve()":
+                                {
+                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (scStateTreiRec != null)
+                                    {
+                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                    }
+                                    //Run the Trillium REPL To ensure new state is valid again.
+                                    break;
+                                }
+                            case "ChangeEvolveStateSpecific()":
+                                {
+                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if (scStateTreiRec != null)
+                                    {
+                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                        {
+                                            return txResult;
+                                        }
+                                    }
+                                    //Run the Trillium REPL To ensure new state is valid again.
+                                    break;
+                                }
+
+                            default:
+                                break;
                         }
                     }
 
@@ -184,49 +245,5 @@ namespace ReserveBlockCore.Services
 
         }
 
-        public static async Task TransferNFT(Transaction tx)
-        {
-            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-            var scData = scDataArray[0];
-            if ( scData != null )
-            {
-                var function = (string?)scData["Function"];
-                var data = (string?)scData["Data"];
-                var scUID = (string?)scData["ContractUID"];
-
-                var scMain = SmartContractStateTrei.GetSmartContractState(scUID);
-                if(scMain != null)
-                {
-                    scMain.OwnerAddress = tx.ToAddress;
-                    scMain.ContractData = data;
-                    scMain.Nonce += 1;
-
-                    SmartContractStateTrei.UpdateSmartContract(scMain);
-
-                    SmartContractMain.SmartContractData.CreateSmartContract(data);
-                }
-
-
-            }
-        }
-
-        public static async Task RemoveNFT(Transaction tx)
-        {
-            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-            var scData = scDataArray[0];
-            if (scData != null)
-            {
-                var function = (string?)scData["Function"];
-                var data = (string?)scData["Data"];
-                var scUID = (string?)scData["ContractUID"];
-
-                var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-                if (scMain != null)
-                {
-                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);
-                }
-
-            }
-        }
     }
 }
