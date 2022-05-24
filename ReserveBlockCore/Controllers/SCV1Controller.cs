@@ -257,7 +257,6 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            //Get SmartContractMain.IsPublic and set to True.
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
             if(scStateTrei != null)
             {
