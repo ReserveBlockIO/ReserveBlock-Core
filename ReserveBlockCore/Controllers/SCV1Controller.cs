@@ -252,6 +252,22 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        [HttpGet("GetSmartContractData/{id}")]
+        public async Task<string> GetSmartContractData(string id)
+        {
+            var output = "";
+
+            //Get SmartContractMain.IsPublic and set to True.
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
+            if(scStateTrei != null)
+            {
+                var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                output = JsonConvert.SerializeObject(scMain);
+            }
+
+            return output;
+        }
+
         [HttpGet("TestRemove/{id}/{toAddress}")]
         public async Task<string> TestRemove(string id, string toAddress)
         {

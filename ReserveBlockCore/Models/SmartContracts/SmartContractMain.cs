@@ -278,6 +278,156 @@ namespace ReserveBlockCore.Models.SmartContracts
             }
         }
 
+        public static SmartContractMain GenerateSmartContractInMemory(string scText)
+        {
+            var byteArrayFromBase64 = scText.FromBase64ToByteArray();
+            var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+            var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+
+            var repl = new TrilliumRepl();
+            repl.Run("#reset");
+            repl.Run(textFromByte);
+
+            var scUID = repl.Run(@"GetNFTId()").Value.ToString();
+            var features = repl.Run(@"GetNFTFeatures()").Value.ToString();
+
+            var minterName = repl.Run(@"MinterName").Value.ToString();
+            var name = repl.Run(@"Name").Value.ToString();
+            var description = repl.Run(@"Description").Value.ToString();
+            var minterAddress = repl.Run(@"MinterAddress").Value.ToString();
+            var address = repl.Run(@"Address").Value.ToString();
+            var signature = repl.Run(@"Signature").Value.ToString();
+
+            var extension = repl.Run(@"Extension").Value.ToString();
+            var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
+            var location = repl.Run(@"Location").Value.ToString();
+            var fileName = repl.Run(@"FileName").Value.ToString();
+            var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
+
+            var mainData = repl.Run(@"NftMain(""nftdata"")").Value.ToString();
+            var mainDataArray = mainData.Split(new string[] { "|->" }, StringSplitOptions.None);
+
+            var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value.ToString();
+            var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
+
+            var smartContractMain = GetSmartContractMain(name, description, address, minterAddress, minterName, scUID, signature, features);
+            var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, location, extension, fileSize);
+            smartContractMain.SmartContractAsset = smartContractAssset;
+
+
+            if ((string)features != "")
+            {
+                List<SmartContractFeatures> featuresList = new List<SmartContractFeatures>();
+                var feats = (string)features;
+                if (feats.Contains(":"))
+                {
+                    var featureList = feats.Split(':');
+                    foreach (var feature in featureList)
+                    {
+                        SmartContractFeatures scFeature = new SmartContractFeatures();
+                        var featureName = (FeatureName)Convert.ToInt32(feature);
+                        switch (featureName)
+                        {
+                            case FeatureName.Royalty:
+                                var royaltyData = repl.Run(@"NftMain(""getroyaltydata"")").Value.ToString();
+                                var royaltyArray = royaltyData.Split(new string[] { "|->" }, StringSplitOptions.None);
+                                var royaltyFeature = RoyaltyFeature.GetRoyaltyFeature(royaltyArray);
+                                scFeature.FeatureName = FeatureName.Royalty;
+                                scFeature.FeatureFeatures = royaltyFeature;
+
+                                featuresList.Add(scFeature);
+                                break;
+                            case FeatureName.MultiAsset:
+                                var multiAssetList = new List<string>();
+                                var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
+                                for (int i = 1; i <= multiAssetCount; i++)
+                                {
+                                    var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
+                                    var ma = repl.Run(@"MultiAsset" + funcLetter + "()").Value.ToString();
+                                    multiAssetList.Add(ma);
+                                }
+
+                                var multiAssetFeatureList = MultiAssetFeature.GetMultiAssetFeature(multiAssetList);
+                                scFeature.FeatureName = FeatureName.MultiAsset;
+                                scFeature.FeatureFeatures = multiAssetFeatureList;
+                                featuresList.Add(scFeature);
+                                break;
+                            case FeatureName.Evolving:
+                                var evolveList = new List<string>();
+                                var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
+                                for (int i = 1; i <= evolveCount; i++)
+                                {
+                                    var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
+                                    var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                    evolveList.Add(ma);
+                                }
+
+                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                scFeature.FeatureName = FeatureName.Evolving;
+                                scFeature.FeatureFeatures = evolveFeatureList;
+                                featuresList.Add(scFeature);
+                                break;
+                            default:
+                                break;
+                        }
+
+                    }
+                }
+                else
+                {
+                    SmartContractFeatures scFeature = new SmartContractFeatures();
+                    var featureName = (FeatureName)Convert.ToInt32(feats);
+                    switch (featureName)
+                    {
+                        case FeatureName.Royalty:
+                            var royaltyData = repl.Run(@"NftMain(""getroyaltydata"")").Value.ToString();
+                            var royaltyArray = royaltyData.Split(new string[] { "|->" }, StringSplitOptions.None);
+                            var royaltyFeature = RoyaltyFeature.GetRoyaltyFeature(royaltyArray);
+                            scFeature.FeatureName = FeatureName.Royalty;
+                            scFeature.FeatureFeatures = royaltyFeature;
+
+                            featuresList.Add(scFeature);
+                            break;
+                        case FeatureName.MultiAsset:
+                            var multiAssetList = new List<string>();
+                            var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
+                            for (int i = 1; i <= multiAssetCount; i++)
+                            {
+                                var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
+                                var ma = repl.Run(@"MultiAsset" + funcLetter + "()").Value.ToString();
+                                multiAssetList.Add(ma);
+                            }
+                            var multiAssetFeatureList = MultiAssetFeature.GetMultiAssetFeature(multiAssetList);
+                            scFeature.FeatureName = FeatureName.MultiAsset;
+                            scFeature.FeatureFeatures = multiAssetFeatureList;
+                            featuresList.Add(scFeature);
+                            break;
+                        case FeatureName.Evolving:
+                            var evolveList = new List<string>();
+                            var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
+                            for (int i = 1; i <= evolveCount; i++)
+                            {
+                                var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
+                                var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                evolveList.Add(ma);
+                            }
+
+                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                            scFeature.FeatureName = FeatureName.Evolving;
+                            scFeature.FeatureFeatures = evolveFeatureList;
+                            featuresList.Add(scFeature);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                smartContractMain.Features = featuresList;
+
+            }
+            return smartContractMain;
+        }
+
         private static SmartContractMain GetSmartContractMain(string name, string desc, string address, string minterAddress, string minterName, string smartContractUID, string signature, string features)
         {
             SmartContractMain scMain = new SmartContractMain();
