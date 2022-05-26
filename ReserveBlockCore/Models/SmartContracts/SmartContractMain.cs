@@ -469,8 +469,11 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
                                 evolveList.Add(ma);
                             }
+                            var evolveState = repl.Run(@"GetCurrentEvolveState()");
+                            var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
+                            var evoStateNum = Convert.ToInt32(evoStateString);
 
-                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
 
                             var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
