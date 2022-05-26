@@ -120,9 +120,15 @@ namespace ReserveBlockCore.Controllers
                 var scMain = result.Item2;
                 var scCode = result.Item1;
 
+                var bytes = Encoding.Unicode.GetBytes(scCode);
+                var scBase64 = bytes.ToCompress().ToBase64();
+                var scMainUpdated = SmartContractMain.GenerateSmartContractInMemory(scBase64);
+
+                scMainUpdated.Id = sc.Id;
+
                 var scInfo = new[]
                 {
-                new { SmartContract = scMain, SmartContractCode = scCode}
+                new { SmartContract = scMainUpdated, SmartContractCode = scCode}
             };
 
                 if (sc != null)
@@ -213,18 +219,18 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            var scMain = SmartContractMain.SmartContractData.GetSmartContract(id);
 
-            if(sc.IsPublished == true)
+            if(scMain.IsPublished == true)
             {
                 output = "This NFT has already been published";
             }
             else
             {
-                var scTx = await SmartContractService.MintSmartContractTx(sc);
+                var scTx = await SmartContractService.MintSmartContractTx(scMain);
                 if(scTx == null)
                 {
-                    output = "Failed to publish smart contract: " + sc.Name + ". Id: " + id;
+                    output = "Failed to publish smart contract: " + scMain.Name + ". Id: " + id;
                 }
                 else
                 {
@@ -263,6 +269,26 @@ namespace ReserveBlockCore.Controllers
                 var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
                 output = JsonConvert.SerializeObject(scMain);
             }
+
+            return output;
+        }
+
+        [HttpGet("TestDynamicNFT/{id}")]
+        public async Task<string> TestDynamicNFT(string id)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+
+            var result = await SmartContractReaderService.ReadSmartContract(sc);
+
+            var scMain = result.Item2;
+            var scCode = result.Item1;
+
+            var bytes = Encoding.Unicode.GetBytes(scCode);
+            var scBase64 = bytes.ToCompress().ToBase64();
+
+            SmartContractMain.SmartContractData.CreateSmartContract(scBase64);
 
             return output;
         }

@@ -126,11 +126,20 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }
             }
 
-            public static async void CreateSmartContract(string scText)
+            public static async void CreateSmartContract(string scText, bool alreadyDecoded = false)
             {
-                var byteArrayFromBase64 = scText.FromBase64ToByteArray();
-                var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
-                var textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+                string textFromByte = "";
+                if (alreadyDecoded == false)
+                {
+                    var byteArrayFromBase64 = scText.FromBase64ToByteArray();
+                    var decompressedByteArray = SmartContractUtility.Decompress(byteArrayFromBase64);
+                    textFromByte = Encoding.Unicode.GetString(decompressedByteArray);
+                }    
+                
+                if(alreadyDecoded)
+                {
+                    textFromByte = scText;
+                }
 
                 var repl = new TrilliumRepl();
                 repl.Run("#reset");
@@ -211,6 +220,20 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     }
 
                                     var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                    var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
+
+                                    if (isDynamic == true)
+                                    {
+                                        var blockHeight = Program.BlockHeight.ToString();
+                                        var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
+
+                                        var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
+                                        if(evolveFeature != null)
+                                        {
+                                            evolveFeature.IsCurrentState = true;
+                                        }
+                                    }
+
                                     scFeature.FeatureName = FeatureName.Evolving;
                                     scFeature.FeatureFeatures = evolveFeatureList;
                                     featuresList.Add(scFeature);
@@ -261,6 +284,21 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 }
 
                                 var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+
+                                var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
+
+                                if (isDynamic == true)
+                                {
+                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
+
+                                    var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
+                                    if (evolveFeature != null)
+                                    {
+                                        evolveFeature.IsCurrentState = true;
+                                    }
+                                }
+
                                 scFeature.FeatureName = FeatureName.Evolving;
                                 scFeature.FeatureFeatures = evolveFeatureList;
                                 featuresList.Add(scFeature);
@@ -368,6 +406,21 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 }
 
                                 var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
+
+                                var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
+
+                                if (isDynamic == true)
+                                {
+                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
+
+                                    var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();
+                                    if (evolveFeature != null)
+                                    {
+                                        evolveFeature.IsCurrentState = true;
+                                    }
+                                }
+
                                 scFeature.FeatureName = FeatureName.Evolving;
                                 scFeature.FeatureFeatures = evolveFeatureList;
                                 featuresList.Add(scFeature);
@@ -418,6 +471,21 @@ namespace ReserveBlockCore.Models.SmartContracts
                             }
 
                             var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+
+                            var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
+
+                            if (isDynamic == true)
+                            {
+                                var blockHeight = Program.BlockHeight.ToString();
+                                var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
+
+                                var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();
+                                if (evolveFeature != null)
+                                {
+                                    evolveFeature.IsCurrentState = true;
+                                }
+                            }
+
                             scFeature.FeatureName = FeatureName.Evolving;
                             scFeature.FeatureFeatures = evolveFeatureList;
                             featuresList.Add(scFeature);

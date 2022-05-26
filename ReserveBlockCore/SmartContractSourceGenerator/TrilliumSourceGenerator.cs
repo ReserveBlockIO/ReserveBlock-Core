@@ -5,7 +5,7 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
     {
         public static void Build()
         {
-
+            //This is placeholder for generic source builder info
         }
     }
 }

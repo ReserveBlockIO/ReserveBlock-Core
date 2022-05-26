@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Services
             if(scData.Result.Item1 != null)
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
-                var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
+                var scBase64 = bytes.ToCompress().ToBase64();
                 var newSCInfo = new[]
                 {
                     new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64}

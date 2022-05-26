@@ -201,6 +201,7 @@ namespace ReserveBlockCore.Services
                                         IsDynamic = (bool)evolveDict["IsDynamic"],
                                         IsCurrentState = (bool)evolveDict["IsCurrentState"],
                                         EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
+                                        EvolveBlockHeight = evolveDict.ContainsKey("EvolveBlockHeight") == true ? (long)evolveDict["EvolveBlockHeight"] : null,
                                         SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                                     };
 
@@ -211,7 +212,7 @@ namespace ReserveBlockCore.Services
                                             evoFeature.IsCurrentState = true;
                                         }
                                     }
-                                    count += 1;
+                                    counter += 1;
                                     evolve.Add(evoFeature);
                                 });
 
@@ -245,7 +246,7 @@ namespace ReserveBlockCore.Services
                                         FileSize = (long)multiAssetDict["FileSize"],
                                         AssetAuthorName = multiAssetDict["AssetAuthorName"].ToString(),
                                     };
-                                    count += 1;
+                                    counter += 1;
                                     multiAsset.Add(maFeature);
                                 });
 

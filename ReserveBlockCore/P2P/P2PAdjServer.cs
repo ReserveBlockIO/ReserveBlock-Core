@@ -236,13 +236,13 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
-                            RejectedTaskAnswerList.Add(taskResult);
+                            //RejectedTaskAnswerList.Add(taskResult);
                             return false;
                         }
                     }
                     else
                     {
-                        RejectedTaskAnswerList.Add(taskResult);
+                        //RejectedTaskAnswerList.Add(taskResult);
                         return false;
                     }
                 }

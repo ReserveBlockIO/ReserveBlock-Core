@@ -1,4 +1,6 @@
-﻿namespace ReserveBlockCore.Extensions
+﻿using System.IO.Compression;
+
+namespace ReserveBlockCore.Extensions
 {
     public static class GenericExtensions
     {
@@ -29,6 +31,18 @@
             var byteArrayFromBase64 = Convert.FromBase64String(base64String);
 
             return byteArrayFromBase64;
+        }
+
+        public static byte[] ToCompress(this byte[] bytes)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var gzipStream = new GZipStream(memoryStream, CompressionLevel.Optimal))
+                {
+                    gzipStream.Write(bytes, 0, bytes.Length);
+                }
+                return memoryStream.ToArray();
+            }
         }
 
     }

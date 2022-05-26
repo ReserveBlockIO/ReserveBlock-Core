@@ -154,7 +154,6 @@ namespace ReserveBlockCore.Services
 
                                     if (transaction.TransactionType == TransactionType.NFT_MINT)
                                     {
-                                        //await TransactionValidatorService.AddNewlyMintedContract(transaction);
                                         if (scData != null)
                                         {
                                             var function = (string?)scData["Function"];

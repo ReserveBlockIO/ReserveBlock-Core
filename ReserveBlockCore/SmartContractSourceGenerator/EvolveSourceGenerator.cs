@@ -129,7 +129,7 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                 {
                     strEvolveBld.AppendLine(@"if(evoDate != 0)");
                     strEvolveBld.AppendLine("{");
-                    strEvolveBld.AppendLine("evoDateState = DynamicEvolveDate(evoDate)");
+                    strEvolveBld.AppendLine("evoDateState = DynamicEvolveDate()");
                     strEvolveBld.AppendLine("}");
                 }
                 if(isDynamicBlock != false)
@@ -160,7 +160,7 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
 
                 if(isDynamicDate != false)
                 {
-                    strEvolveBld.AppendLine("function DynamicEvolveDate(dynamicDate : int) : int");
+                    strEvolveBld.AppendLine("function DynamicEvolveDate() : int");
                     strEvolveBld.AppendLine("{");
                     strEvolveBld.AppendLine("var stateD = 0");
                     evolve.OrderBy(x => x.EvolutionState).ToList().ForEach(x =>
@@ -168,11 +168,12 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                         if(x.EvolveDate != null)
                         {
                             var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
-                            strEvolveBld.AppendLine("var stateDate" + evoLetter + " = " + x.EvolveDate.Value.Ticks.ToString());
-                            strEvolveBld.AppendLine("if(dynamicDate >= stateDate" + evoLetter +  ")");
+                            strEvolveBld.AppendLine(@"var stateDate" + evoLetter + " = dateProc(\"" + x.EvolveDate.Value.Ticks.ToString() +"\")");
+                            strEvolveBld.AppendLine("if(stateDate" + evoLetter +  " == true)");
                             strEvolveBld.AppendLine("{");
                             strEvolveBld.AppendLine("stateD = " + x.EvolutionState.ToString());
                             strEvolveBld.AppendLine("}");
+
                         }
 
                     });
