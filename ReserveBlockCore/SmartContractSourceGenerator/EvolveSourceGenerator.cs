@@ -6,18 +6,26 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
 {
     public class EvolveSourceGenerator
     {
-        public static async Task<(StringBuilder, StringBuilder)> Build(List<EvolvingFeature> evolve, StringBuilder strBuild)
+        public static async Task<(StringBuilder, StringBuilder)> Build(List<EvolvingFeature> evolve, StringBuilder strBuild, int? activeEvoState = null)
         {
             var appendChar = "\"|->\"";
             StringBuilder strEvolveBld = new StringBuilder();
             bool isDynamic = false;
+            bool isDynamicDate = false;
+            bool isDynamicBlock = false;
 
             var maxEvoState = evolve.Count().ToString();
             var evolutionaryState = "\"{*0}\"";
+            if (activeEvoState != null)
+            {
+                var newEvoNum = activeEvoState.Value.ToString();
+                evolutionaryState = "\"{*" + activeEvoState + "}\"";
+            }
 
             //Evolve Constants
             strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);
             strBuild.AppendLine("let EvolutionaryMaxState = \"" + maxEvoState + "\"");
+            
 
             //Methods
             //Get Current Evolve State Method
@@ -77,7 +85,7 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
             strEvolveBld.AppendLine("}");
 
             int counter = 1;
-            evolve.ForEach(x =>
+            evolve.OrderBy(x => x.EvolutionState).ToList().ForEach(x =>
             {
                 var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
                 strEvolveBld.AppendLine("function EvolveState" + evoLetter + "() : string");
@@ -94,13 +102,108 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                 if (x.IsDynamic == true)
                 {
                     isDynamic = true;
+                    if(x.EvolveBlockHeight != null)
+                    {
+                        isDynamicBlock = true;
+                    }
+                    if(x.EvolveDate != null)
+                    {
+                        isDynamicDate = true;
+                    }
                 }
                 counter += 1;
             });
 
             if (isDynamic == true)
             {
+                strBuild.AppendLine("let EvolveDynamic = true");
 
+                //Creates the DynamicEvolve Method
+                //This method is responsible for comparing the block or date
+                //and determining which evolve state should be returned.
+                strEvolveBld.AppendLine("function DynamicEvolve(evoDate : int, evoBlock : int) : int");
+                strEvolveBld.AppendLine("{");
+                strEvolveBld.AppendLine("var evoDateState = 0");
+                strEvolveBld.AppendLine("var evoBlockState = 0");
+                if(isDynamicDate != false)
+                {
+                    strEvolveBld.AppendLine(@"if(evoDate != 0)");
+                    strEvolveBld.AppendLine("{");
+                    strEvolveBld.AppendLine("evoDateState = DynamicEvolveDate(evoDate)");
+                    strEvolveBld.AppendLine("}");
+                }
+                if(isDynamicBlock != false)
+                {
+                    strEvolveBld.AppendLine(@"if(evoBlock != 0)");
+                    strEvolveBld.AppendLine("{");
+                    strEvolveBld.AppendLine("evoBlockState = DynamicEvolveBlock(evoBlock)");
+                    strEvolveBld.AppendLine("}");
+                }
+                
+                strEvolveBld.AppendLine("if(evoDateState == evoBlockState)");
+                strEvolveBld.AppendLine("{");
+                strEvolveBld.AppendLine("return evoDateState");
+                strEvolveBld.AppendLine("}");
+                strEvolveBld.AppendLine("else if(evoDateState > evoBlockState)");
+                strEvolveBld.AppendLine("{");
+                strEvolveBld.AppendLine("return evoDateState");
+                strEvolveBld.AppendLine("}");
+                strEvolveBld.AppendLine("else if(evoDateState < evoBlockState)");
+                strEvolveBld.AppendLine("{");
+                strEvolveBld.AppendLine("return evoBlockState");
+                strEvolveBld.AppendLine("}");
+                strEvolveBld.AppendLine("else");
+                strEvolveBld.AppendLine("{");
+                strEvolveBld.AppendLine("return 0");
+                strEvolveBld.AppendLine("}");
+                strEvolveBld.AppendLine("}");
+
+                if(isDynamicDate != false)
+                {
+                    strEvolveBld.AppendLine("function DynamicEvolveDate(dynamicDate : int) : int");
+                    strEvolveBld.AppendLine("{");
+                    strEvolveBld.AppendLine("var stateD = 0");
+                    evolve.OrderBy(x => x.EvolutionState).ToList().ForEach(x =>
+                    {
+                        if(x.EvolveDate != null)
+                        {
+                            var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
+                            strEvolveBld.AppendLine("var stateDate" + evoLetter + " = " + x.EvolveDate.Value.Ticks.ToString());
+                            strEvolveBld.AppendLine("if(dynamicDate >= stateDate" + evoLetter +  ")");
+                            strEvolveBld.AppendLine("{");
+                            strEvolveBld.AppendLine("stateD = " + x.EvolutionState.ToString());
+                            strEvolveBld.AppendLine("}");
+                        }
+
+                    });
+                    strEvolveBld.AppendLine("return stateD");
+                    strEvolveBld.AppendLine("}");
+                }
+                if (isDynamicBlock != false)
+                {
+                    strEvolveBld.AppendLine("function DynamicEvolveBlock(dynamicBlock : int) : int");
+                    strEvolveBld.AppendLine("{");
+                    strEvolveBld.AppendLine("var stateB = 0");
+                    evolve.OrderBy(x => x.EvolutionState).ToList().ForEach(x =>
+                    {
+                        if (x.EvolveBlockHeight != null)
+                        {
+                            var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
+                            strEvolveBld.AppendLine("var stateBlock" + evoLetter + " = " + x.EvolveBlockHeight.ToString());
+                            strEvolveBld.AppendLine("if(dynamicBlock >= stateBlock" + evoLetter + ")");
+                            strEvolveBld.AppendLine("{");
+                            strEvolveBld.AppendLine("stateB = " + x.EvolutionState.ToString());
+                            strEvolveBld.AppendLine("}");
+                        }
+
+                    });
+                    strEvolveBld.AppendLine("return stateB");
+                    strEvolveBld.AppendLine("}");
+                }
+            }
+            else
+            {
+                strBuild.AppendLine("let EvolveDynamic = false");
             }
 
             return (strBuild, strEvolveBld);

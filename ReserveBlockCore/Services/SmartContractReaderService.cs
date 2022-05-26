@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.SmartContractSourceGenerator;
 using ReserveBlockCore.Utilities;
 using System.Text;
 
@@ -41,14 +42,10 @@ namespace ReserveBlockCore.Services
                             Flist.Add(feature);
 
                             //create royalty code block
-                            strBuild.AppendLine("let RoyaltyType = \"" + ((int)royalty.RoyaltyType).ToString() + "\"");
-                            strBuild.AppendLine("let RoyaltyAmount = \"" + royalty.RoyaltyAmount.ToString() + "\"");
-                            strBuild.AppendLine("let RoyaltyPayToAddress = \"" + royalty.RoyaltyPayToAddress + "\"");
+                            var royaltySource = await RoyaltySourceGenerator.Build(royalty);
+                            strBuild = royaltySource.Item1;
+                            strRoyaltyBld = royaltySource.Item2;
 
-                            strRoyaltyBld.AppendLine("function GetRoyaltyData(royaltyType  : string, royaltyAmount : string, royaltyPayToAddress : string) : string");
-                            strRoyaltyBld.AppendLine("{");
-                            strRoyaltyBld.AppendLine("return (royaltyType + " + appendChar + " + royaltyAmount + " + appendChar + " + royaltyPayToAddress)");
-                            strRoyaltyBld.AppendLine("}");
                         }
                         else if (feature.FeatureName == FeatureName.Evolving)
                         {
@@ -99,90 +96,10 @@ namespace ReserveBlockCore.Services
                                 Flist.Add(feature);
                                 var maxEvoState = evolve.Count().ToString();
                                 var evolutionaryState = "\"{*0}\"";
-                                if (activeEvoState != null)
-                                {
-                                    var newEvoNum = activeEvoState.Value.ToString();
-                                    evolutionaryState = "\"{*" + activeEvoState + "}\"";
-                                }
-                                
 
-                                //Evolve Constants
-                                strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);
-                                strBuild.AppendLine("let EvolutionaryMaxState = \"" + maxEvoState + "\"");
-
-                                //Methods
-                                //Get Current Evolve State Method
-                                strEvolveBld.AppendLine("function GetCurrentEvolveState() : string");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine("var evoState = EvolutionaryState");
-                                strEvolveBld.AppendLine("return evoState");
-                                strEvolveBld.AppendLine("}");
-
-                                //Get Evolve States
-                                strEvolveBld.AppendLine("function EvolveStates() : string");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine(@"return EvolutionaryMaxState");
-                                strEvolveBld.AppendLine("}");
-
-                                //Evolve
-                                strEvolveBld.AppendLine("function Evolve(evoState : int) : string");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine("if evoState < int(EvolutionaryMaxState)");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine("var newEvolveState = evoState + 1");
-                                strEvolveBld.AppendLine("if(newEvolveState > int(EvolutionaryMaxState))");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine(@"return ""Failed to Evolve.""");
-                                strEvolveBld.AppendLine("}");
-                                strEvolveBld.AppendLine(@"EvolutionaryState = ""{*"" + string(newEvolveState) + ""}""");
-                                strEvolveBld.AppendLine("return string(newEvolveState)");
-                                strEvolveBld.AppendLine("}");
-                                strEvolveBld.AppendLine(@"return ""Failed to Evolve.""");
-                                strEvolveBld.AppendLine("}");
-
-                                //Devolve
-                                strEvolveBld.AppendLine("function Devolve(evoState : int) : string");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine("if evoState > 0");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine("var newEvolveState = evoState - 1");
-                                strEvolveBld.AppendLine("if(newEvolveState < 0)");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine(@"return ""Failed to Devolve.""");
-                                strEvolveBld.AppendLine("}");
-                                strEvolveBld.AppendLine(@"EvolutionaryState = ""{*"" + string(newEvolveState) + ""}""");
-                                strEvolveBld.AppendLine("return string(newEvolveState)");
-                                strEvolveBld.AppendLine("}");
-                                strEvolveBld.AppendLine(@"return ""Failed to Devolve.""");
-                                strEvolveBld.AppendLine("}");
-
-                                //Evolve Specific
-                                strEvolveBld.AppendLine("function ChangeEvolveStateSpecific(evoState : int) : string");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine("if evoState <= int(EvolutionaryMaxState) && evoState >= 0");
-                                strEvolveBld.AppendLine("{");
-                                strEvolveBld.AppendLine(@"EvolutionaryState = ""{*"" + string(evoState) + ""}""");
-                                strEvolveBld.AppendLine("return string(evoState)");
-                                strEvolveBld.AppendLine("}");
-                                strEvolveBld.AppendLine(@"return ""Failed to Evolve.""");
-                                strEvolveBld.AppendLine("}");
-
-                                int counter = 1;
-                                evolve.ForEach(x =>
-                                {
-                                    var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
-                                    strEvolveBld.AppendLine("function EvolveState" + evoLetter + "() : string");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine(@"var evoState = " + "\"" + x.EvolutionState.ToString() + "\"");
-                                    strEvolveBld.AppendLine(@"var name = " + "\"" + x.Name + "\"");
-                                    strEvolveBld.AppendLine(@"var description = " + "\"" + x.Description + "\"");
-                                    strEvolveBld.AppendLine(@"var assetName = " + "\"" + (x.SmartContractAsset == null ? "" : x.SmartContractAsset.Name) + "\"");
-                                    strEvolveBld.AppendLine(@"var evolveDate = " + "\"" + (x.EvolveDate == null ? "" : x.EvolveDate.Value.Ticks.ToString()) + "\"");
-                                    strEvolveBld.AppendLine("return (evoState + " + appendChar + " + name + " + appendChar + " + description + " + appendChar + " + assetName + " + appendChar + " + evolveDate)");
-                                    strEvolveBld.AppendLine("}");
-
-                                    counter += 1;
-                                });
+                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, activeEvoState);
+                                strBuild = evolveSource.Item1;
+                                strEvolveBld = evolveSource.Item2;
                             }
                         }
                         else if (feature.FeatureName == FeatureName.MultiAsset)
@@ -212,23 +129,9 @@ namespace ReserveBlockCore.Services
                                 feature.FeatureFeatures = multiAsset;
                                 Flist.Add(feature);
 
-                                var multiAssetCount = multiAsset.Count().ToString();
-                                strBuild.AppendLine("let MultiAssetCount = \"" + multiAssetCount + "\"");
-
-                                multiAsset.ForEach(x => {
-                                    var funcLetter = FunctionNameUtility.GetFunctionLetter(counter);
-                                    strMultiAssetBld.AppendLine("function MultiAsset" + funcLetter + "() : string");
-                                    strMultiAssetBld.AppendLine("{");
-                                    strMultiAssetBld.AppendLine(("var extension = \"" + x.Extension + "\""));
-                                    strMultiAssetBld.AppendLine(("var fileSize = \"" + x.FileSize.ToString() + "\""));
-                                    strMultiAssetBld.AppendLine(("var location = \"" + x.Location + "\""));
-                                    strMultiAssetBld.AppendLine(("var fileName = \"" + x.FileName + "\""));
-                                    strMultiAssetBld.AppendLine(("var assetAuthorName = \"" + x.AssetAuthorName + "\""));
-                                    strMultiAssetBld.AppendLine("return (fileName + " + appendChar + " + location + " + appendChar + " + fileSize + " + appendChar + " + extension + " + appendChar + " + assetAuthorName)");
-                                    strMultiAssetBld.AppendLine("}");
-
-                                    counter += 1;
-                                });
+                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                strBuild = multiAssetSource.Item1;
+                                strMultiAssetBld = multiAssetSource.Item2;
                             }
                         }
                         else if (feature.FeatureName == FeatureName.Ticket)
@@ -240,7 +143,7 @@ namespace ReserveBlockCore.Services
                     {
                         int count = 1;
                         int featureCount = featuresList.Count();
-                        featuresList.ForEach(x =>
+                        foreach(var x in featuresList)
                         {
                             if (featureCount == 1)
                             {
@@ -266,14 +169,9 @@ namespace ReserveBlockCore.Services
 
                                 Flist.Add(x);
                                 //create royalty code block
-                                strBuild.AppendLine("let RoyaltyType = \"" + ((int)royalty.RoyaltyType).ToString() + "\"");
-                                strBuild.AppendLine("let RoyaltyAmount = \"" + royalty.RoyaltyAmount.ToString() + "\"");
-                                strBuild.AppendLine("let RoyaltyPayToAddress = \"" + royalty.RoyaltyPayToAddress + "\"");
-
-                                strRoyaltyBld.AppendLine("function GetRoyaltyData(royaltyType  : string, royaltyAmount : string, royaltyPayToAddress : string) : string");
-                                strRoyaltyBld.AppendLine("{");
-                                strRoyaltyBld.AppendLine("return (royaltyType + " + appendChar + " + royaltyAmount + " + appendChar + " + royaltyPayToAddress)");
-                                strRoyaltyBld.AppendLine("}");
+                                var royaltySource = await RoyaltySourceGenerator.Build(royalty);
+                                strBuild = royaltySource.Item1;
+                                strRoyaltyBld = royaltySource.Item2;
                             }
 
                             if (x.FeatureName == FeatureName.Evolving)
@@ -282,9 +180,9 @@ namespace ReserveBlockCore.Services
                                 List<EvolvingFeature> evolve = new List<EvolvingFeature>();
                                 var myArray = ((object[])x.FeatureFeatures).ToList();
 
-                                var count = 0;
+                                var counter = 0;
                                 myArray.ForEach(x => {
-                                    var evolveDict = (Dictionary<string, object>)myArray[count];
+                                    var evolveDict = (Dictionary<string, object>)myArray[counter];
                                     if (evolveDict.ContainsKey("SmartContractAsset"))
                                     {
                                         var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
@@ -323,90 +221,9 @@ namespace ReserveBlockCore.Services
                                     Flist.Add(x);
                                     var maxEvoState = evolve.Count().ToString();
                                     var evolutionaryState = "\"{*0}\"";
-
-                                    if (activeEvoState != null)
-                                    {
-                                        var newEvoNum = activeEvoState.Value.ToString();
-                                        evolutionaryState = "\"{*" + activeEvoState + "}\"";
-                                    }
-
-                                    //Evolve Constants
-                                    strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);
-                                    strBuild.AppendLine("let EvolutionaryMaxState = \"" + maxEvoState + "\"");
-
-                                    //Methods
-                                    //Get Current Evolve State Method
-                                    strEvolveBld.AppendLine("function GetCurrentEvolveState() : string");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine("var evoState = EvolutionaryState");
-                                    strEvolveBld.AppendLine("return evoState");
-                                    strEvolveBld.AppendLine("}");
-
-                                    //Get Evolve States
-                                    strEvolveBld.AppendLine("function EvolveStates() : string");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine(@"return EvolutionaryMaxState");
-                                    strEvolveBld.AppendLine("}");
-
-                                    //Evolve
-                                    strEvolveBld.AppendLine("function Evolve(evoState : int) : string");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine("if evoState < int(EvolutionaryMaxState)");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine("var newEvolveState = evoState + 1");
-                                    strEvolveBld.AppendLine("if(newEvolveState > int(EvolutionaryMaxState))");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine(@"return ""Failed to Evolve.""");
-                                    strEvolveBld.AppendLine("}");
-                                    strEvolveBld.AppendLine(@"EvolutionaryState = ""{*"" + string(newEvolveState) + ""}""");
-                                    strEvolveBld.AppendLine("return string(newEvolveState)");
-                                    strEvolveBld.AppendLine("}");
-                                    strEvolveBld.AppendLine(@"return ""Failed to Evolve.""");
-                                    strEvolveBld.AppendLine("}");
-
-                                    //Devolve
-                                    strEvolveBld.AppendLine("function Devolve(evoState : int) : string");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine("if evoState > 0");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine("var newEvolveState = evoState - 1");
-                                    strEvolveBld.AppendLine("if(newEvolveState < 0)");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine(@"return ""Failed to Devolve.""");
-                                    strEvolveBld.AppendLine("}");
-                                    strEvolveBld.AppendLine(@"EvolutionaryState = ""{*"" + string(newEvolveState) + ""}""");
-                                    strEvolveBld.AppendLine("return string(newEvolveState)");
-                                    strEvolveBld.AppendLine("}");
-                                    strEvolveBld.AppendLine(@"return ""Failed to Devolve.""");
-                                    strEvolveBld.AppendLine("}");
-
-                                    //Evolve Specific
-                                    strEvolveBld.AppendLine("function ChangeEvolveStateSpecific(evoState : int) : string");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine("if evoState <= int(EvolutionaryMaxState) && evoState >= 0");
-                                    strEvolveBld.AppendLine("{");
-                                    strEvolveBld.AppendLine(@"EvolutionaryState = ""{*"" + string(evoState) + ""}""");
-                                    strEvolveBld.AppendLine("return string(evoState)");
-                                    strEvolveBld.AppendLine("}");
-                                    strEvolveBld.AppendLine(@"return ""Failed to Evolve.""");
-                                    strEvolveBld.AppendLine("}");
-
-                                    int counter = 1;
-                                    evolve.ForEach(x =>
-                                    {
-                                        var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
-                                        strEvolveBld.AppendLine("function EvolveState" + evoLetter + "() : string");
-                                        strEvolveBld.AppendLine("{");
-                                        strEvolveBld.AppendLine(@"var evoState = " + "\"" + x.EvolutionState.ToString() + "\"");
-                                        strEvolveBld.AppendLine(@"var name = " + "\"" + x.Name + "\"");
-                                        strEvolveBld.AppendLine(@"var description = " + "\"" + x.Description + "\"");
-                                        strEvolveBld.AppendLine(@"var assetName = " + "\"" + (x.SmartContractAsset == null ? "" : x.SmartContractAsset.Name) + "\"");
-                                        strEvolveBld.AppendLine(@"var evolveDate = " + "\"" + (x.EvolveDate == null ? "" : x.EvolveDate.Value.Ticks.ToString()) + "\"");
-                                        strEvolveBld.AppendLine("return (evoState + " + appendChar + " + name + " + appendChar + " + description + " + appendChar + " + assetName + " + appendChar + " + evolveDate)");
-                                        strEvolveBld.AppendLine("}");
-
-                                        counter += 1;
-                                    });
+                                    var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, activeEvoState);
+                                    strBuild = evolveSource.Item1;
+                                    strEvolveBld = evolveSource.Item2;
                                 }
 
                             }
@@ -416,9 +233,9 @@ namespace ReserveBlockCore.Services
                                 List<MultiAssetFeature> multiAsset = new List<MultiAssetFeature>();
                                 var myArray = ((object[])x.FeatureFeatures).ToList();
 
-                                var count = 0;
+                                var counter = 0;
                                 myArray.ForEach(x => {
-                                    var multiAssetDict = (Dictionary<string, object>)myArray[count];
+                                    var multiAssetDict = (Dictionary<string, object>)myArray[counter];
 
                                     MultiAssetFeature maFeature = new MultiAssetFeature
                                     {
@@ -434,31 +251,16 @@ namespace ReserveBlockCore.Services
 
                                 if (multiAsset.Count() > 0)
                                 {
-                                    int counter = 1;
                                     x.FeatureFeatures = multiAsset;
                                     Flist.Add(x);
 
-                                    var multiAssetCount = multiAsset.Count().ToString();
-                                    strBuild.AppendLine("let MultiAssetCount = \"" + multiAssetCount + "\"");
-
-                                    multiAsset.ForEach(m => {
-                                        var funcLetter = FunctionNameUtility.GetFunctionLetter(counter);
-                                        strMultiAssetBld.AppendLine("function MultiAsset" + funcLetter + "() : string");
-                                        strMultiAssetBld.AppendLine("{");
-                                        strMultiAssetBld.AppendLine(("var extension = \"" + m.Extension + "\""));
-                                        strMultiAssetBld.AppendLine(("var fileSize = \"" + m.FileSize.ToString() + "\""));
-                                        strMultiAssetBld.AppendLine(("var location = \"" + m.Location + "\""));
-                                        strMultiAssetBld.AppendLine(("var fileName = \"" + m.FileName + "\""));
-                                        strMultiAssetBld.AppendLine(("var assetAuthorName = \"" + m.AssetAuthorName + "\""));
-                                        strMultiAssetBld.AppendLine("return (fileName + " + appendChar + " + location + " + appendChar + " + fileSize + " + appendChar + " + extension + " + appendChar + " + assetAuthorName)");
-                                        strMultiAssetBld.AppendLine("}");
-
-                                        counter += 1;
-                                    });
+                                    var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                    strBuild = multiAssetSource.Item1;
+                                    strMultiAssetBld = multiAssetSource.Item2;
                                 }
                             }
 
-                        });
+                        }
                     }
                     scMain.Features = Flist;
 
