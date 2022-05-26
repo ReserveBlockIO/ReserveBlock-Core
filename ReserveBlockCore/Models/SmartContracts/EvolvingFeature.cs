@@ -428,7 +428,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 }
                                 else
                                 {
-                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, null);
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, 0);
                                     if (newSCMain.Item2 != null)
                                     {
                                         scMain.Features = newSCMain.Item2.Features;
