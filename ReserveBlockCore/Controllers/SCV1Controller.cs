@@ -123,34 +123,37 @@ namespace ReserveBlockCore.Controllers
                 var bytes = Encoding.Unicode.GetBytes(scCode);
                 var scBase64 = bytes.ToCompress().ToBase64();
                 var scMainUpdated = SmartContractMain.GenerateSmartContractInMemory(scBase64);
-                var featuresList = scMainUpdated.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
-                int currentState = 0;
-                if (featuresList != null)
+                if(scMainUpdated.Features != null)
                 {
-                    var evoFeatureList = (List<EvolvingFeature>)featuresList.FeatureFeatures;
-                    foreach (var evoFeature in evoFeatureList)
+                    var featuresList = scMainUpdated.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
+                    int currentState = 0;
+                    if (featuresList != null)
                     {
-                        if(evoFeature.IsCurrentState == true)
+                        var evoFeatureList = (List<EvolvingFeature>)featuresList.FeatureFeatures;
+                        foreach (var evoFeature in evoFeatureList)
                         {
-                            currentState = evoFeature.EvolutionState;
+                            if (evoFeature.IsCurrentState == true)
+                            {
+                                currentState = evoFeature.EvolutionState;
+                            }
+                        }
+                    }
+
+                    var scMainFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
+
+                    if (scMainFeatures != null)
+                    {
+                        var scMainFeaturesList = (List<EvolvingFeature>)scMainFeatures.FeatureFeatures;
+                        foreach (var evoFeature in scMainFeaturesList)
+                        {
+                            if (evoFeature.EvolutionState == currentState)
+                            {
+                                evoFeature.IsCurrentState = true;
+                            }
                         }
                     }
                 }
-
-                var scMainFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).FirstOrDefault();
-
-                if (scMainFeatures != null)
-                {
-                    var scMainFeaturesList = (List<EvolvingFeature>)scMainFeatures.FeatureFeatures;
-                    foreach (var evoFeature in scMainFeaturesList)
-                    {
-                        if (evoFeature.EvolutionState == currentState)
-                        {
-                            evoFeature.IsCurrentState = true;
-                        }
-                    }
-                }
-
+                
                 scMainUpdated.Id = sc.Id;
 
                 var scInfo = new[]
