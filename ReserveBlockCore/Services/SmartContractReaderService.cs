@@ -84,6 +84,10 @@ namespace ReserveBlockCore.Services
                                     {
                                         evoFeature.IsCurrentState = true;
                                     }
+                                    else
+                                    {
+                                        evoFeature.IsCurrentState = false;
+                                    }
                                 }
 
                                 count += 1;
@@ -211,6 +215,10 @@ namespace ReserveBlockCore.Services
                                         if (evoFeature.EvolutionState == activeEvoState.Value)
                                         {
                                             evoFeature.IsCurrentState = true;
+                                        }
+                                        else
+                                        {
+                                            evoFeature.IsCurrentState = false;
                                         }
                                     }
                                     counter += 1;
