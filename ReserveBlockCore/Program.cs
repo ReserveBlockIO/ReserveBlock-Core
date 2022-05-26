@@ -20,7 +20,6 @@ namespace ReserveBlockCore
 {
     class Program
     {
-        
         #region Constants
 
         private static Timer? heightTimer; //timer for getting height from other nodes
@@ -68,7 +67,6 @@ namespace ReserveBlockCore
         public static int MinorVer = 21;
         public static int BuildVer = 0;
         public static string CLIVersion = "";
-
 
         private readonly IHubContext<P2PAdjServer> _hubContext;
 
