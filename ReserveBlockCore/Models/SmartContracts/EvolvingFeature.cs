@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
 using System.Text;
@@ -19,7 +20,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
         #region GetEvolveFeature
 
-        public static List<EvolvingFeature> GetEvolveFeature(List<string> eList)
+        public static List<EvolvingFeature> GetEvolveFeature(List<string> eList, int? currentEvoState = null)
         {
             List<EvolvingFeature> evolveFeatures = new List<EvolvingFeature>();
 
@@ -27,10 +28,17 @@ namespace ReserveBlockCore.Models.SmartContracts
                 EvolvingFeature evolveFeature = new EvolvingFeature();
 
                 var evArray = x.Split(new string[] { "|->" }, StringSplitOptions.None);
-
+                
                 evolveFeature.EvolutionState = Convert.ToInt32(evArray[0].ToString());
                 evolveFeature.Name = evArray[1].ToString();
                 evolveFeature.Description = evArray[2].ToString();
+                if (currentEvoState != null)
+                {
+                    if(evolveFeature.EvolutionState == currentEvoState)
+                    {
+                        evolveFeature.IsCurrentState = true;
+                    }
+                }
                 //evolveFeature.EvolveDate = 
                 if (evArray.Count() == 6)
                 {
@@ -268,21 +276,24 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if(evoStateNum > 0)
                                 {
-                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
-                                    var specificEvolve = evolveFeatureList.Where(x => x.EvolutionState == evoStateNum).FirstOrDefault();
-                                    if (specificEvolve != null)
+                                    SmartContractAsset evoAsset = new SmartContractAsset();
+                                    List<EvolvingFeature> evolve = new List<EvolvingFeature>();
+                                    var myArray = ((object[])evolveFeatures.FeatureFeatures).ToList();
+
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, evoStateNum);
+                                    if(newSCMain.Item2 != null)
                                     {
-                                        specificEvolve.IsCurrentState = true;
+                                        scMain.Features = newSCMain.Item2.Features;
                                         SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
                                     }
+                                    
                                 }
                                 else
                                 {
-                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
-                                    var specificEvolve = evolveFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
-                                    if (specificEvolve != null)
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, null);
+                                    if (newSCMain.Item2 != null)
                                     {
-                                        specificEvolve.IsCurrentState = false;
+                                        scMain.Features = newSCMain.Item2.Features;
                                         SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
                                     }
                                 }
@@ -333,24 +344,26 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (evoStateNum > 0)
                                 {
-                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
-                                    var specificEvolve = evolveFeatureList.Where(x => x.EvolutionState == evoStateNum).FirstOrDefault();
-                                    if (specificEvolve != null)
+                                    SmartContractAsset evoAsset = new SmartContractAsset();
+                                    List<EvolvingFeature> evolve = new List<EvolvingFeature>();
+                                    var myArray = ((object[])evolveFeatures.FeatureFeatures).ToList();
+
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, evoStateNum);
+                                    if (newSCMain.Item2 != null)
                                     {
-                                        specificEvolve.IsCurrentState = true;
-                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
-                                    }
-                                }
-                                else
-                                {
-                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
-                                    var specificEvolve = evolveFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
-                                    if (specificEvolve != null)
-                                    {
-                                        specificEvolve.IsCurrentState = false;
+                                        scMain.Features = newSCMain.Item2.Features;
                                         SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
                                     }
 
+                                }
+                                else
+                                {
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, null);
+                                    if (newSCMain.Item2 != null)
+                                    {
+                                        scMain.Features = newSCMain.Item2.Features;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
                                 }
 
 
@@ -401,24 +414,26 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (evoStateNum > 0)
                                 {
-                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
-                                    var specificEvolve = evolveFeatureList.Where(x => x.EvolutionState == evoStateNum).FirstOrDefault();
-                                    if (specificEvolve != null)
+                                    SmartContractAsset evoAsset = new SmartContractAsset();
+                                    List<EvolvingFeature> evolve = new List<EvolvingFeature>();
+                                    var myArray = ((object[])evolveFeatures.FeatureFeatures).ToList();
+
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, evoStateNum);
+                                    if (newSCMain.Item2 != null)
                                     {
-                                        specificEvolve.IsCurrentState = true;
-                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
-                                    }
-                                }
-                                else
-                                {
-                                    var evolveFeatureList = (List<EvolvingFeature>)evolveFeatures.FeatureFeatures;
-                                    var specificEvolve = evolveFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
-                                    if (specificEvolve != null)
-                                    {
-                                        specificEvolve.IsCurrentState = false;
+                                        scMain.Features = newSCMain.Item2.Features;
                                         SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
                                     }
 
+                                }
+                                else
+                                {
+                                    var newSCMain = await SmartContractReaderService.ReadSmartContract(scMain, null);
+                                    if (newSCMain.Item2 != null)
+                                    {
+                                        scMain.Features = newSCMain.Item2.Features;
+                                        SmartContractMain.SmartContractData.UpdateSmartContract(scMain);
+                                    }
                                 }
 
 

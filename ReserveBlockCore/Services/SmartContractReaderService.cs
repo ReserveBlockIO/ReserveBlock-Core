@@ -9,7 +9,7 @@ namespace ReserveBlockCore.Services
 {
     public static class SmartContractReaderService
     {
-        public static async Task<(string?, SmartContractMain)> ReadSmartContract(SmartContractMain scMain)
+        public static async Task<(string?, SmartContractMain)> ReadSmartContract(SmartContractMain scMain, int? activeEvoState = null)
         {
             try
             {
@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Services
                             SmartContractAsset evoAsset = new SmartContractAsset();
                             List<EvolvingFeature> evolve = new List<EvolvingFeature>();
                             var myArray = ((object[])feature.FeatureFeatures).ToList();
-
+                            
                             var count = 0;
                             myArray.ForEach(x => {
                                 var evolveDict = (Dictionary<string, object>)myArray[count];
@@ -79,6 +79,15 @@ namespace ReserveBlockCore.Services
                                     EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
                                     SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                                 };
+
+                                if(activeEvoState != null)
+                                {
+                                    if(evoFeature.EvolutionState == activeEvoState.Value)
+                                    {
+                                        evoFeature.IsCurrentState = true;
+                                    }
+                                }
+
                                 count += 1;
                                 evolve.Add(evoFeature);
                             });
@@ -90,6 +99,12 @@ namespace ReserveBlockCore.Services
                                 Flist.Add(feature);
                                 var maxEvoState = evolve.Count().ToString();
                                 var evolutionaryState = "\"{*0}\"";
+                                if (activeEvoState != null)
+                                {
+                                    var newEvoNum = activeEvoState.Value.ToString();
+                                    evolutionaryState = "\"{*" + activeEvoState + "}\"";
+                                }
+                                
 
                                 //Evolve Constants
                                 strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);
@@ -290,6 +305,14 @@ namespace ReserveBlockCore.Services
                                         EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
                                         SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                                     };
+
+                                    if (activeEvoState != null)
+                                    {
+                                        if (evoFeature.EvolutionState == activeEvoState.Value)
+                                        {
+                                            evoFeature.IsCurrentState = true;
+                                        }
+                                    }
                                     count += 1;
                                     evolve.Add(evoFeature);
                                 });
@@ -300,6 +323,12 @@ namespace ReserveBlockCore.Services
                                     Flist.Add(x);
                                     var maxEvoState = evolve.Count().ToString();
                                     var evolutionaryState = "\"{*0}\"";
+
+                                    if (activeEvoState != null)
+                                    {
+                                        var newEvoNum = activeEvoState.Value.ToString();
+                                        evolutionaryState = "\"{*" + activeEvoState + "}\"";
+                                    }
 
                                     //Evolve Constants
                                     strBuild.AppendLine("var EvolutionaryState = " + evolutionaryState);

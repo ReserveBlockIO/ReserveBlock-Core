@@ -355,6 +355,11 @@ namespace ReserveBlockCore.Models.SmartContracts
                             case FeatureName.Evolving:
                                 var evolveList = new List<string>();
                                 var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
+
+                                var evolveState = repl.Run(@"GetCurrentEvolveState()");
+                                var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
+                                var evoStateNum = Convert.ToInt32(evoStateString);
+
                                 for (int i = 1; i <= evolveCount; i++)
                                 {
                                     var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
@@ -362,7 +367,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     evolveList.Add(ma);
                                 }
 
-                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
                                 scFeature.FeatureName = FeatureName.Evolving;
                                 scFeature.FeatureFeatures = evolveFeatureList;
                                 featuresList.Add(scFeature);
