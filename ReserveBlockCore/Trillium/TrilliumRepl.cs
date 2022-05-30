@@ -1,4 +1,6 @@
 ﻿using ReserveBlockCore.Extensions;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Trillium.CodeAnalysis;
 using Trillium.Symbols;
 using Trillium.Syntax;
@@ -189,9 +191,38 @@ namespace ReserveBlockCore.Trillium
 
 		private static string GetSubmissionsDirectory()
 		{
-			var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-			var submissionsDirectory = Path.Combine(localAppData, "Trillium", "Submissions");
-			return submissionsDirectory;
+			var databaseLocation = Program.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
+
+			string path = "";
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			{
+				string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+				path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
+						"Submissions" + Path.DirectorySeparatorChar;
+			}
+			else
+			{
+				if (Debugger.IsAttached)
+				{
+					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
+						"Submissions" + Path.DirectorySeparatorChar;
+				}
+				else
+				{
+					path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + 
+						"RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar + 
+						"Submissions" + Path.DirectorySeparatorChar;
+				}
+			}
+			if (!Directory.Exists(path))
+			{
+				Directory.CreateDirectory(path);
+			}
+			//var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+			//var submissionsDirectory = Path.Combine(localAppData, "Trillium", "Submissions");
+			//return submissionsDirectory;
+
+			return path;
 		}
 
 		private void LoadSubmissions()
