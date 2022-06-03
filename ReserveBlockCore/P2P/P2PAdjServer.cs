@@ -206,11 +206,15 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Connected Val Count
+
         public static async Task<int> GetConnectedValCount()
         {
             var peerCount = ValConnectedCount;
             return peerCount;
         }
+
+        #endregion
 
         #region Receive Block and Task Answer
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)

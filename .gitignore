@@ -277,3 +277,4 @@ ReserveBlockCore/Databases/bakRECENT/debug.txt
 ReserveBlockCore/SmartContracts/
 ReserveBlockCore/Properties/launchSettings.json
 ReserveBlockCore/Trillium/Submissions/
+ReserveBlockCore/Databases/mostRecent/

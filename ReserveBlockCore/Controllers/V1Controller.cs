@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Globalization;
+using System.Numerics;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -448,6 +451,39 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("CreateSignature/{message}/{address}")]
+        public async Task<string> CreateSignature(string message, string address)
+        {
+            string output;
+
+            var account = AccountData.GetSingleAccount(address);
+            if(account != null)
+            {
+                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                var signature = SignatureService.CreateSignature(message, privateKey, account.PublicKey);
+                output = signature;
+            }
+            else
+            {
+                output = "ERROR - Account not associated with wallet.";
+            }
+            
+            return output;
+        }
+
+        [HttpGet("ValidateSignature/{message}/{address}/{**sigScript}")]
+        public async Task<bool> ValidateSignature(string message, string address, string sigScript)
+        {
+            bool output;
+
+            var result = SignatureService.VerifySignature(address, message, sigScript);
+            output = result;
+
+            return output;
+        }
+
         [HttpGet("GetMempool")]
         public async Task<string> GetMempool()
         {
@@ -474,8 +510,10 @@ namespace ReserveBlockCore.Controllers
             string output = "";
             var taskAnswerList = P2PAdjServer.TaskAnswerList.Select(x => new {
                 Address = x.Address,
+                Answer = x.Answer,
                 BlockHeight = x.Block != null ? x.Block.Height : 0,
                 SubmitTime = x.SubmitTime
+                
             });
             output = JsonConvert.SerializeObject(taskAnswerList);
 
