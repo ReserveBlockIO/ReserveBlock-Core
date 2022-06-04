@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace ReserveBlockCore.Data
 {
@@ -81,16 +82,30 @@ namespace ReserveBlockCore.Data
             {
                 Directory.CreateDirectory(path);
             }
+
+            var mapper = new BsonMapper();
+            mapper.RegisterType<DateTime>(
+                value => value.ToString("o", CultureInfo.InvariantCulture),
+                bson => DateTime.ParseExact(bson, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+            mapper.RegisterType<DateTimeOffset>(
+                value => value.ToString("o", CultureInfo.InvariantCulture),
+                bson => DateTimeOffset.ParseExact(bson, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+
             DB = new LiteDatabase(path + RSRV_DB_NAME);
-            DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS);
+            DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS, mapper);
             DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
             DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
             DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
-            DB_SmartContractStateTrei = new LiteDatabase(path + RSRV_DB_SCSTATE_TREI);
+            DB_SmartContractStateTrei = new LiteDatabase(path + RSRV_DB_SCSTATE_TREI, mapper);
             DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
             DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
             DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
             DB_Config = new LiteDatabase(path + RSRV_DB_CONFIG);
+
+            DB_Assets.Pragma("UTC_DATE", true);
+            DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
+
+            
         }
 
         public static void DeleteCorruptDb()
