@@ -162,7 +162,13 @@ namespace ReserveBlockCore
             //THis is for adjudicator start. This might need to be removed.
             P2PAdjServer.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
 
-            
+            //Temporary for TestNet------------------------------------
+            SeedNodeService.SeedNodes();
+            var nodeIp = await SeedNodeService.PingSeedNode();
+            await SeedNodeService.GetSeedNodePeers(nodeIp);
+            //Temporary for TestNet------------------------------------
+
+
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
 
