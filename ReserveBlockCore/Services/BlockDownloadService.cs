@@ -33,6 +33,10 @@ namespace ReserveBlockCore.Services
                                     {
 
                                     }
+                                    else
+                                    {
+                                        myBlockHeight = block.Height;
+                                    }
                                 }
                             }
 
