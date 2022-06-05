@@ -292,6 +292,7 @@ namespace ReserveBlockCore.Services
                 var badBlockHash = badBlocks[block.Height];
                 if (badBlockHash == block.Hash)
                 {
+                    ValidatorLogUtility.Log("Failed to validate block. Block has already been published", "BlockValidatorService.ValidateBlockForTask()");
                     return result;//reject because its on our bad block list
                 }
             }
@@ -305,6 +306,7 @@ namespace ReserveBlockCore.Services
                 //validates the signature of the validator that crafted the block
                 if (verifyBlockSig != true)
                 {
+                    ValidatorLogUtility.Log("Block failed with bad validator signature", "BlockValidatorService.ValidateBlockForTask()");
                     return result;//block rejected due to failed validator signature
                 }
             }
@@ -313,6 +315,7 @@ namespace ReserveBlockCore.Services
             //Validates that the block has same chain ref
             if (block.ChainRefId != BlockchainData.ChainRef)
             {
+                ValidatorLogUtility.Log("Block validated failed due to Chain Reference ID's being different", "BlockValidatorService.ValidateBlockForTask()");
                 return result;//block rejected due to chainref difference
             }
 
@@ -320,6 +323,7 @@ namespace ReserveBlockCore.Services
 
             if (block.Version != blockVersion)
             {
+                ValidatorLogUtility.Log("Block validated failed due to block versions not matching", "BlockValidatorService.ValidateBlockForTask()");
                 return result;
             }
 
@@ -339,11 +343,13 @@ namespace ReserveBlockCore.Services
             //This will also check that the prev hash matches too
             if (!newBlock.Hash.Equals(block.Hash))
             {
+                ValidatorLogUtility.Log("Block validated failed due to block hash not matching", "BlockValidatorService.ValidateBlockForTask()");
                 return result;//block rejected
             }
 
             if (!newBlock.MerkleRoot.Equals(block.MerkleRoot))
             {
+                ValidatorLogUtility.Log("Block validated failed due to merkel root not matching", "BlockValidatorService.ValidateBlockForTask()");
                 return result;//block rejected
             }
             var blockCoinBaseResult = BlockchainData.ValidateBlock(block); //this checks the coinbase tx
@@ -380,7 +386,11 @@ namespace ReserveBlockCore.Services
                         break;
                 }
                 if (rejectBlock)
+                {
+                    ValidatorLogUtility.Log("Block validated failed due to transactions not validating", "BlockValidatorService.ValidateBlockForTask()");
                     return result;//block rejected due to bad transaction(s)
+                }
+                    
 
                 result = true;
             }

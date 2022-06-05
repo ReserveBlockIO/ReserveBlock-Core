@@ -571,6 +571,7 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "status":
                                 Console.WriteLine(data);
+                                ValidatorLogUtility.Log("Connected to Validator Pool", "P2PClient.ConnectAdjudicator()", true);
                                 LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
                                 break;
                             case "tx":
@@ -588,7 +589,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                LogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
             }
         }
 
@@ -734,6 +735,7 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 LastTaskError = true;
+                                ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
                             }
                         }
                     }
@@ -741,6 +743,12 @@ namespace ReserveBlockCore.P2P
                 catch(Exception ex)
                 {
                     LastTaskError = true;
+
+                    ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+
+                    string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ? 
+                        taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                    ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                 }
             }
             else
@@ -1201,6 +1209,9 @@ namespace ReserveBlockCore.P2P
             return result;
         }
 
+        #endregion
+
+        #region HandleDisconnectedNode
         private static void HandleDisconnectedNode(int nodeNum, HubConnection? _hubConnection)
         {
             try
@@ -1220,7 +1231,7 @@ namespace ReserveBlockCore.P2P
                     NodeDict[nodeNum] = null;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 string errorMsg = string.Format("Error handling disconnected node: {0}. Error Message: {1}", nodeNum.ToString(), ex.Message);
                 ErrorLogUtility.LogError(errorMsg, "P2PClient.HandleDisconnectedNode()");

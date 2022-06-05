@@ -178,6 +178,11 @@ namespace ReserveBlockCore.Nodes
                 taskAnswer.Block = block;
                 await P2PClient.SendTaskAnswer(taskAnswer);
             }
+            else
+            {
+                ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.RandomNumberTask()");
+                P2PClient.LastTaskError = true;
+            }
 
         }
         
