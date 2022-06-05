@@ -660,8 +660,8 @@ namespace ReserveBlockCore.P2P
                                 }
                                 else
                                 {
-                                    peer.FailCount += 1;
-                                    peerDB.Update(peer);
+                                    //peer.FailCount += 1;
+                                    //peerDB.Update(peer);
                                 }
                             }
 
@@ -983,17 +983,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
-                    var nodeInfo = NodeDict[1];
-                    if (nodeInfo != null)
-                    {
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            Program.Nodes.Remove(node);
-                        }
-                        hubConnection1 = null;
-                        NodeDict[1] = null;
-                    }
+                    HandleDisconnectedNode(1, hubConnection1);
                 }
 
                 try
@@ -1035,18 +1025,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
-                    var nodeInfo = NodeDict[2];
-                    if (nodeInfo != null)
-                    {
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            Program.Nodes.Remove(node);
-                        }
-                        hubConnection2 = null;
-                        NodeDict[2] = null;
-                    }
-
+                    HandleDisconnectedNode(2, hubConnection2);
                 }
 
                 try
@@ -1088,17 +1067,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
-                    var nodeInfo = NodeDict[3];
-                    if (nodeInfo != null)
-                    {
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            Program.Nodes.Remove(node);
-                        }
-                        hubConnection3 = null;
-                        NodeDict[3] = null;
-                    }
+                    HandleDisconnectedNode(3, hubConnection3);
                 }
 
                 try
@@ -1140,17 +1109,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
-                    var nodeInfo = NodeDict[4];
-                    if (nodeInfo != null)
-                    {
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            Program.Nodes.Remove(node);
-                        }
-                        hubConnection4 = null;
-                        NodeDict[4] = null;
-                    }
+                    HandleDisconnectedNode(4, hubConnection4);
                 }
 
                 try
@@ -1192,17 +1151,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
-                    var nodeInfo = NodeDict[5];
-                    if (nodeInfo != null)
-                    {
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            Program.Nodes.Remove(node);
-                        }
-                        hubConnection5 = null;
-                        NodeDict[5] = null;
-                    }
+                    HandleDisconnectedNode(5, hubConnection5);
                 }
 
                 try
@@ -1244,22 +1193,38 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
-                    var nodeInfo = NodeDict[6];
-                    if (nodeInfo != null)
-                    {
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            Program.Nodes.Remove(node);
-                        }
-                        hubConnection6 = null;
-                        NodeDict[6] = null;
-                    }
+                    HandleDisconnectedNode(6, hubConnection6);
                 }
 
             }
 
             return result;
+        }
+
+        private static void HandleDisconnectedNode(int nodeNum, HubConnection? _hubConnection)
+        {
+            try
+            {
+                var nodes = Program.Nodes;
+                var nodeList = nodes.ToList();
+
+                var nodeInfo = NodeDict[nodeNum];
+                if (nodeInfo != null)
+                {
+                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault(); //null error happened here meaning nodeList was null
+                    if (node != null)
+                    {
+                        Program.Nodes.Remove(node);
+                    }
+                    _hubConnection = null;
+                    NodeDict[nodeNum] = null;
+                }
+            }
+            catch(Exception ex)
+            {
+                string errorMsg = string.Format("Error handling disconnected node: {0}. Error Message: {1}", nodeNum.ToString(), ex.Message);
+                ErrorLogUtility.LogError(errorMsg, "P2PClient.HandleDisconnectedNode()");
+            }
         }
 
         #endregion
