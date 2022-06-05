@@ -80,11 +80,14 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region GetConnectedPeerCount
         public static async Task<int> GetConnectedPeerCount()
         {
             var peerCount = PeerConnectedCount;
             return peerCount;
         }
+
+        #endregion
 
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)

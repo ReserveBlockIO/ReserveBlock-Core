@@ -776,7 +776,8 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                //reconnect and then send
+                //temporary connection to an adj to send transaction to get broadcasted to global pool
+                SendTXToAdj(tx);
             }
 
             var adjudicator2Connected = IsAdjConnected2;
@@ -793,10 +794,50 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                //reconnect and then send
+                //temporary connection to an adj to send transaction to get broadcasted to global pool
+                SendTXToAdj(tx);
             }
         }
         #endregion
+
+        //This method will need to eventually be modified when the adj is a multi-pool and not a singular-pool
+        private static async void SendTXToAdj(Transaction trx)
+        {
+            try
+            {
+                var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
+                if (adjudicator != null)
+                {
+                    var url = "http://" + adjudicator.NodeIP + ":" + Program.Port + "/adjudicator";
+                    var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
+                    var alive = _tempHubConnection.StartAsync().Wait(15000);
+                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { trx });
+                    if(response != true)
+                    {
+                        var errorMsg = string.Format("Failed to send TX to Adjudicator.");
+                        ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - try");
+                        try { await _tempHubConnection.StopAsync(); }
+                        finally
+                        {
+                            await _tempHubConnection.DisposeAsync();
+                        }
+                    }
+                    else
+                    {
+                        try { await _tempHubConnection.StopAsync(); }
+                        finally
+                        {
+                            await _tempHubConnection.DisposeAsync();
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                var errorMsg = string.Format("Failed to send TX to Adjudicator. Error Message : {0}", ex.Message);
+                ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - catch");
+            }
+        }
 
         #region Get Block
         public static async Task<List<Block>> GetBlock() //base example
