@@ -49,15 +49,17 @@ namespace ReserveBlockCore.Services
                         }
                         else if (feature.FeatureName == FeatureName.Evolving)
                         {
-                            SmartContractAsset evoAsset = new SmartContractAsset();
+                            
                             List<EvolvingFeature> evolve = new List<EvolvingFeature>();
                             var myArray = ((object[])feature.FeatureFeatures).ToList();
                             
                             var count = 0;
                             myArray.ForEach(x => {
                                 var evolveDict = (Dictionary<string, object>)myArray[count];
+                                SmartContractAsset evoAsset = new SmartContractAsset();
                                 if (evolveDict.ContainsKey("SmartContractAsset"))
                                 {
+                                    
                                     var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
                                     evoAsset.Name = (string)assetEvo["Name"];
                                     evoAsset.FileSize = (long)assetEvo["FileSize"];
@@ -181,12 +183,13 @@ namespace ReserveBlockCore.Services
 
                             if (x.FeatureName == FeatureName.Evolving)
                             {
-                                SmartContractAsset evoAsset = new SmartContractAsset();
+                                
                                 List<EvolvingFeature> evolve = new List<EvolvingFeature>();
                                 var myArray = ((object[])x.FeatureFeatures).ToList();
 
                                 var counter = 0;
                                 myArray.ForEach(x => {
+                                    SmartContractAsset evoAsset = new SmartContractAsset();
                                     var evolveDict = (Dictionary<string, object>)myArray[counter];
                                     if (evolveDict.ContainsKey("SmartContractAsset"))
                                     {
