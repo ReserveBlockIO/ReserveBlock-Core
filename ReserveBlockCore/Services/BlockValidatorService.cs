@@ -134,12 +134,15 @@ namespace ReserveBlockCore.Services
                     {
                         foreach (Transaction transaction in block.Transactions)
                         {
-                            var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash);
-                            if (mempoolTx.Count() > 0)
+                            if(mempool != null)
                             {
-                                mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                                var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash);
+                                if (mempoolTx.Count() > 0)
+                                {
+                                    mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                                }
                             }
-
+                            
                             //Adds receiving TX to wallet
                             var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
                             if (account != null)
@@ -400,9 +403,12 @@ namespace ReserveBlockCore.Services
         private static async void RemoveTxFromMempool(Transaction tx)
         {
             var mempool = TransactionData.GetPool();
-            if (mempool.Count() > 0)
+            if(mempool != null)
             {
-                mempool.DeleteMany(x => x.Hash == tx.Hash);
+                if (mempool.Count() > 0)
+                {
+                    mempool.DeleteMany(x => x.Hash == tx.Hash);
+                }
             }
         }
 
