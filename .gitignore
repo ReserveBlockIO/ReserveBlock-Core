@@ -269,6 +269,7 @@ __pycache__/
 /NoteMaster/Migrations/201904172302185_addcompanyid.cs
 ReserveBlockCore/Databases/debug.txt
 ReserveBlockCore/Databases/validatorlog.txt
+ReserveBlockCore/Databases/errorlog.txt
 ReserveBlockCore/Databases/waldata/Databases/Databases/debug.txt
 ReserveBlockCore/Databases/bakpre18/debug.txt
 ReserveBlockCore/Databases/main/debug.txt
