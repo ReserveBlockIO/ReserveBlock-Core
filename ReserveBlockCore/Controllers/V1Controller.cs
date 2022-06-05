@@ -611,6 +611,27 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("ReadValLog")]
+        public async Task<string> ReadValLog()
+        {
+            string output = "";
+
+            output = await ValidatorLogUtility.ReadLog();
+
+            return output;
+        }
+
+        [HttpGet("ClearValLog")]
+        public async Task<string> ClearValLog()
+        {
+            string output = "";
+
+            await ValidatorLogUtility.ClearLog();
+
+            output = "Log Cleared";
+            return output;
+        }
+
         [HttpGet("SendExit")]
         public async Task SendExit()
         {
