@@ -810,7 +810,7 @@ namespace ReserveBlockCore.P2P
                 {
                     var url = "http://" + adjudicator.NodeIP + ":" + Program.Port + "/adjudicator";
                     var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
-                    var alive = _tempHubConnection.StartAsync().Wait(15000);
+                    var alive = _tempHubConnection.StartAsync();
                     var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { trx });
                     if(response != true)
                     {
