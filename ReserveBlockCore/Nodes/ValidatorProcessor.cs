@@ -63,7 +63,7 @@ namespace ReserveBlockCore.Nodes
                                 {
                                     //Process block queue here
                                     P2PClient.LastTaskBlockHeight = nextBlock.Height;
-                                    Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                                    Console.WriteLine($"Block ({nextBlock.Height}) was added from: {nextBlock.Validator} ");
                                 }
                             }
                             if (nextHeight < currentHeight)
