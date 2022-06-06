@@ -21,13 +21,16 @@ namespace ReserveBlockCore.Services
             var account = AccountData.GetSingleAccount(scMain.MinterAddress);
             if (account == null)
             {
+                NFTLogUtility.Log($"Minter address is not found for : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;//Minter address is not found
+
             }
 
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scMain.SmartContractUID);
 
             if(scStateTrei != null)
             {
+                NFTLogUtility.Log($"This NFT has already be minted : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;// record already exist
             }
 
@@ -66,6 +69,7 @@ namespace ReserveBlockCore.Services
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
             if ((scTx.Amount + scTx.Fee) > senderBalance)
             {
+                NFTLogUtility.Log($"Balance insufficient to send NFT : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;//balance insufficient
             }
 
@@ -76,6 +80,7 @@ namespace ReserveBlockCore.Services
             var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (signature == "ERROR")
             {
+                NFTLogUtility.Log($"Signing NFT TX failed : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null; //TX sig failed
             }
 
@@ -93,6 +98,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
+                    NFTLogUtility.Log($"Transaction Failed Verify and was not Sent to Mempool : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                     var output = "Fail! Transaction Verify has failed.";
                     return null;
                 }

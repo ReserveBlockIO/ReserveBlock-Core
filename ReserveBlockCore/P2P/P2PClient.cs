@@ -1623,7 +1623,7 @@ namespace ReserveBlockCore.P2P
         #region Send Transactions to mempool 
         public static async void SendTXMempool(Transaction txSend)
         {
-            var peersConnected = await P2PClient.ArePeersConnected();
+            var peersConnected = await ArePeersConnected();
 
             if (peersConnected.Item1 == false)
             {

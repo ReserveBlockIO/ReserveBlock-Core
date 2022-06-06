@@ -75,7 +75,7 @@ namespace ReserveBlockCore.Services
                                     EvolutionState = (int)evolveDict["EvolutionState"],
                                     IsDynamic = (bool)evolveDict["IsDynamic"],
                                     IsCurrentState = (bool)evolveDict["IsCurrentState"],
-                                    EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? DateTime.Parse((string)evolveDict["EvolveDate"]).ToUniversalTime() : null,
+                                    EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
                                     EvolveBlockHeight = evolveDict.ContainsKey("EvolveBlockHeight") == true ? (long)evolveDict["EvolveBlockHeight"] : null,
                                     SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                                 };
@@ -208,7 +208,7 @@ namespace ReserveBlockCore.Services
                                         EvolutionState = (int)evolveDict["EvolutionState"],
                                         IsDynamic = (bool)evolveDict["IsDynamic"],
                                         IsCurrentState = (bool)evolveDict["IsCurrentState"],
-                                        EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? DateTime.Parse((string)evolveDict["EvolveDate"]).ToUniversalTime() : null,
+                                        EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
                                         EvolveBlockHeight = evolveDict.ContainsKey("EvolveBlockHeight") == true ? (long)evolveDict["EvolveBlockHeight"] : null,
                                         SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                                     };

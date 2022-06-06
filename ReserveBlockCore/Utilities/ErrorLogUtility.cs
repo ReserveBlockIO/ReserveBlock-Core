@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Utilities
             try
             {
                 var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-                var text = "[" + DateTime.UtcNow.ToLongTimeString() +  "]" + " : " + "[" + location + "]" + " : " + message;
+                var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
                 string path = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {

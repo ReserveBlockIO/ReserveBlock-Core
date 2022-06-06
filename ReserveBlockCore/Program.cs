@@ -92,6 +92,9 @@ namespace ReserveBlockCore
 
             LogUtility.Log("RBX Wallet - " + CLIVersion, "Main");
 
+            NFTLogUtility.Log("", "Main", true);
+            NFTLogUtility.Log("RBX NFT ver. - " + CLIVersion, "Main");
+
             StartupService.AnotherInstanceCheck();
 
             StartupService.StartupDatabase();// initializes databases

@@ -188,6 +188,14 @@ namespace ReserveBlockCore.Controllers
             {
                 SmartContractReturnData scReturnData = new SmartContractReturnData();
                 var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
+                if(scMain != null)
+                {
+                    NFTLogUtility.Log($"Creating Smart Contract: {scMain.SmartContractUID}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData)");
+                }
+                else
+                {
+                    NFTLogUtility.Log($"scMain is null", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 190");
+                }
                 try
                 {
                     var result = await SmartContractWriterService.WriteSmartContract(scMain);
@@ -222,6 +230,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 catch (Exception ex)
                 {
+                    NFTLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.Message}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 231 catch");
                     scReturnData.Success = false;
                     scReturnData.SmartContractCode = "Failure";
                     scReturnData.SmartContractMain = scMain;
@@ -237,6 +246,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
+                NFTLogUtility.Log($"Failed to create smart contract. Error Message: {ex.Message}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 247 catch");
                 output = $"Error - {ex.Message}. Please Try Again...";
             }
 
@@ -254,6 +264,7 @@ namespace ReserveBlockCore.Controllers
             if(scMain.IsPublished == true)
             {
                 output = "This NFT has already been published";
+                NFTLogUtility.Log($"This NFT has already been published", "SCV1Controller.MintSmartContract(string id)");
             }
             else
             {
@@ -261,10 +272,12 @@ namespace ReserveBlockCore.Controllers
                 if(scTx == null)
                 {
                     output = "Failed to publish smart contract: " + scMain.Name + ". Id: " + id;
+                    NFTLogUtility.Log($"Failed to publish smart contract: {scMain.SmartContractUID}", "SCV1Controller.MintSmartContract(string id)");
                 }
                 else
                 {
                     output = "Smart contract has been published to mempool";
+                    NFTLogUtility.Log($"Smart contract has been published to mempool : {scMain.SmartContractUID}", "SCV1Controller.MintSmartContract(string id)");
                 }
             }
             
