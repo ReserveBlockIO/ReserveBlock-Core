@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Services
             //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
             //testnet
-            BlockchainData.ChainRef = "t5_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
+            BlockchainData.ChainRef = "t6_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
             LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
 
             if (Program.IsTestNet)
