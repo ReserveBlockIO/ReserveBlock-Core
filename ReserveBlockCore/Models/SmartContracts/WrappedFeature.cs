@@ -8,6 +8,7 @@
         public string WrappedForeignAddress { get; set; }
         public string WrappedForeignChain { get; set; }
         public string WrappedForeignSignature { get; set; }
+        public string WrappedForeignMetaData { get; set; }
         public SmartContractAsset? WrappedForeignAsset { get; set; }
     }
 }
