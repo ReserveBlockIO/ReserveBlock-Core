@@ -18,6 +18,7 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_Assets { set; get; }// stores blocks
         public static LiteDatabase DB_Queue { set; get; }// stores blocks
         public static LiteDatabase DB_Wallet { set; get; } //stores wallet info
+        public static LiteDatabase DB_HD_Wallet { set; get; } //stores wallet info
         public static LiteDatabase DB_Peers { set; get; } //stores peer info
         public static LiteDatabase DB_Banlist { set; get; } //stores banned peers 
         public static LiteDatabase DB_WorldStateTrei { get; set; } //stores blockchain world state trei
@@ -30,6 +31,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_ASSETS = @"rsrvassetdata.db";
         public const string RSRV_DB_QUEUE_NAME = @"rsrvblkqueuedata.db";
         public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
+        public const string RSRV_DB_HD_WALLET_NAME = @"rsrvhdwaldata.db";
         public const string RSRV_DB_BANLIST_NAME = @"rsrvbanldata.db";
         public const string RSRV_DB_PEERS_NAME = @"rsrvpeersdata.db";
         public const string RSRV_DB_WSTATE_TREI = @"rsrvwstatetrei.db";
@@ -44,6 +46,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_TRANSACTION_POOL = "rsrv_transaction_pool";
         public const string RSRV_TRANSACTIONS = "rsrv_transactions";
         public const string RSRV_WALLET = "rsrv_wallet";
+        public const string RSRV_HD_WALLET = "rsrv_hd_wallet";
         public const string RSRV_ACCOUNTS = "rsrv_account";
         public const string RSRV_WALLET_SETTINGS = "rsrv_wallet_settings";
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
@@ -98,6 +101,7 @@ namespace ReserveBlockCore.Data
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_SmartContractStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SCSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Wallet = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WALLET_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_HD_Wallet = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_HD_WALLET_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Peers = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_PEERS_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Banlist = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BANLIST_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Config = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CONFIG, Connection = ConnectionType.Direct, ReadOnly = false });
@@ -183,6 +187,7 @@ namespace ReserveBlockCore.Data
             DB_WorldStateTrei.Checkpoint();
             DB_AccountStateTrei.Checkpoint();
             DB_Wallet.Checkpoint();
+            DB_HD_Wallet.Checkpoint();
             DB_Peers.Checkpoint();
             DB_Banlist.Checkpoint();
             DB_Config.Checkpoint();
@@ -207,23 +212,36 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_WSTATE_TREI);
             File.Delete(path + RSRV_DB_ASTATE_TREI);
             File.Delete(path + RSRV_DB_WALLET_NAME);
+            File.Delete(path + RSRV_DB_HD_WALLET_NAME);
             File.Delete(path + RSRV_DB_PEERS_NAME);
             File.Delete(path + RSRV_DB_BANLIST_NAME);
             File.Delete(path + RSRV_DB_CONFIG);
             File.Delete(path + RSRV_DB_ASSETS);
             File.Delete(path + RSRV_DB_SCSTATE_TREI);
 
+            var mapper = new BsonMapper();
+            mapper.RegisterType<DateTime>(
+                value => value.ToString("o", CultureInfo.InvariantCulture),
+                bson => DateTime.ParseExact(bson, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+            mapper.RegisterType<DateTimeOffset>(
+                value => value.ToString("o", CultureInfo.InvariantCulture),
+                bson => DateTimeOffset.ParseExact(bson, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+
             //recreate DBs
-            DB = new LiteDatabase(path + RSRV_DB_NAME);
-            DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
-            DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
-            DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
-            DB_SmartContractStateTrei = new LiteDatabase(path + RSRV_DB_SCSTATE_TREI);
-            DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
-            DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
-            DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
-            DB_Config = new LiteDatabase(path + RSRV_DB_CONFIG);
-            DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS);
+            DB = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_NAME, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
+            DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Queue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_QUEUE_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_SmartContractStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SCSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Wallet = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WALLET_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_HD_Wallet = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_HD_WALLET_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Peers = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_PEERS_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Banlist = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BANLIST_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Config = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CONFIG, Connection = ConnectionType.Direct, ReadOnly = false });
+
+            DB_Assets.Pragma("UTC_DATE", true);
+            DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
         }
 
         public static void CloseDB()

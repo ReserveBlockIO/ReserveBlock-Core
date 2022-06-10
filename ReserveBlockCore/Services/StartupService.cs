@@ -62,6 +62,14 @@ namespace ReserveBlockCore.Services
             DbContext.Initialize();
         }
 
+        internal static void HDWalletCheck()
+        {
+            var check = HDWallet.HDWalletData.GetHDWallet();
+            if(check != null)
+            {
+                Program.HDWallet = true;
+            }
+        }
         internal static void SetBlockchainChainRef()
         {
             //mainnet
@@ -689,7 +697,9 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("|======================================|");
             Console.WriteLine("| 1. Genesis Block (Check)             |");
             Console.WriteLine("| 2. Create Account                    |");
+            Console.WriteLine("| 2hd. Create HD Wallet                |");
             Console.WriteLine("| 3. Restore Account                   |");
+            Console.WriteLine("| 3hd. Restore HD Wallet               |");
             Console.WriteLine("| 4. Send Coins                        |");
             Console.WriteLine("| 5. Get Latest Block                  |");
             Console.WriteLine("| 6. Transaction History               |");

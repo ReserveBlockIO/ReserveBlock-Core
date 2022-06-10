@@ -33,14 +33,6 @@ For more information please read the ReserverBlock whitepaper or litepaper.
 * CLI
 * Visual Studio 2022 | https://visualstudio.microsoft.com/vs/
 
-### References ###
-
-* LiteDB - Ver. 5.0.11
-* Newtonsoft.Json - Ver. 13.0.1
-* Starkbank for ECDSA Library
-* Darren Starr for RIPEMD160 Library
-* Brian A. Danielak for Contribution Guidelines
-
 # Contributing to ReserveBlock
 We love your input! We want to make contributing to this project as easy and transparent as possible, whether it's:
 
@@ -129,3 +121,14 @@ This document was adapted from the open-source contribution guidelines for [Face
 
 ReserveBlock-CLI is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
+
+### References, Libraries, and Thank you's ###
+
+* LiteDB 
+* Newtonsoft.Json 
+* Starkbank for ECDSA Library
+* Darren Starr for RIPEMD160 Library
+* Brian A. Danielak for Contribution Guidelines
+* dotnetstandard for BIP32/39
+* Alex Williams for In Memory Variables
+* Bitcoin source

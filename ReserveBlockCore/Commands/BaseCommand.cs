@@ -66,14 +66,53 @@ namespace ReserveBlockCore.Commands
                     BlockchainData.PrintBlock(genBlock);
                     break;
                 case "2": // Create Account
-                    var account = new Account().Build();
-                    AccountData.WalletInfo(account);
+                    if(Program.HDWallet == true)
+                    {
+                        var hdAccount = HDWallet.HDWalletData.GenerateAddress();
+                        if(hdAccount != null)
+                        {
+                            Console.WriteLine("-----------------------HD Wallet Address Created------------------------");
+                            Console.WriteLine($"New Address: {hdAccount.Address}");
+                            Console.WriteLine("----------------------Type /menu to return to menu----------------------");
+                        }
+                        else
+                        {
+                            Console.WriteLine("You have not created an HD wallet. Please Use command '2hd' and press enter.");
+                        }
+                    }
+                    else
+                    {
+                        var account = new Account().Build();
+                        AccountData.WalletInfo(account);
+                    }
+                    break;
+                case "2hd": // Create HD Wallet
+                    var mnemonic = BaseCommandServices.CreateHDWallet();
+                    if(mnemonic.Contains("Unexpected"))
+                    {
+                        Console.WriteLine(mnemonic);
+                    }
+                    else
+                    {
+                        Console.WriteLine("-----------------------HD Wallet Process Completed------------------------");
+                        Console.WriteLine("Be sure to copy this seed phrase down. If lost you cannot recovery funds.");
+                        Console.WriteLine($"Mnemonic: {mnemonic}");
+                        Console.WriteLine("-----------------------Type /menu to return to menu-----------------------");
+                    }
+                    
                     break;
                 case "3": // Restore Account
                     Console.WriteLine("Please enter private key... ");
                     var privKey = Console.ReadLine();
                     var restoredAccount = new Account().Restore(privKey);
                     AccountData.WalletInfo(restoredAccount);
+                    break;
+                case "3hd": // Create HD Wallet
+                    var mnemonicRestore = BaseCommandServices.RestoreHDWallet();
+                    Console.WriteLine("-----------------------HD Wallet Process Result------------------------");
+                    Console.WriteLine($"Result: {mnemonicRestore}");
+                    Console.WriteLine("----------------------Type /menu to return to menu---------------------");
+
                     break;
                 case "4": //Send Coins
                     WalletService.StartSend();

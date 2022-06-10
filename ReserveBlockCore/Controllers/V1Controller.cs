@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using ReserveBlockCore.BIP39;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
@@ -50,13 +51,56 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        [HttpGet("GetHDWallet/{strength}")]
+        public async Task<string> GetHDWallet(int strength)
+        {
+            var output = "";
+            var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
+
+            Program.HDWallet = true;
+
+            var newHDWalletInfo = new[]
+            {
+                new { Result = mnemonic}
+            };
+
+            output = JsonConvert.SerializeObject(newHDWalletInfo);
+
+            return output;
+        }
+
+        [HttpGet("GetRestoreHDWallet/{mnemonic}")]
+        public async Task<string> GetRestoreHDWallet(string mnemonic)
+        {
+            var output = "";
+            var mnemonicRestore = HDWallet.HDWalletData.RestoreHDWallet(mnemonic);
+
+            var newHDWalletInfo = new[]
+            {
+                new { Result = mnemonicRestore}
+            };
+
+            output = JsonConvert.SerializeObject(newHDWalletInfo);
+
+            return output;
+        }
+
         [HttpGet("GetNewAddress")]
         public async Task<string> GetNewAddress()
         {
             //use Id to get specific commands
+            Account account = null; 
             var output = "Fail"; // this will only display if command not recognized.
-            var account = AccountData.CreateNewAccount();
-
+            if(Program.HDWallet == true)
+            {
+                account = HDWallet.HDWalletData.GenerateAddress();
+            }
+            else
+            {
+                account = AccountData.CreateNewAccount();
+            }
+            
             var newAddressInfo = new[]
             {
                 new { Address = account.Address, PrivateKey = account.PrivateKey}

@@ -67,6 +67,7 @@ namespace ReserveBlockCore
         public static int MinorVer = 22;
         public static int BuildVer = 0;
         public static string CLIVersion = "";
+        public static bool HDWallet = false;
 
         private readonly IHubContext<P2PAdjServer> _hubContext;
 
@@ -80,7 +81,6 @@ namespace ReserveBlockCore
         #region Main
         static async Task Main(string[] args)
         {
-
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
@@ -89,15 +89,18 @@ namespace ReserveBlockCore
 
             CLIVersion = MajorVer.ToString() + "." + MinorVer.ToString() + "." + BuildVer.ToString() + "-pre";
             LogUtility.Log("", "Main", true);
+            var logCLIVer = CLIVersion.ToString();
 
-            LogUtility.Log("RBX Wallet - " + CLIVersion, "Main");
+            LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
 
             NFTLogUtility.Log("", "Main", true);
-            NFTLogUtility.Log("RBX NFT ver. - " + CLIVersion, "Main");
+            NFTLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
 
             StartupService.AnotherInstanceCheck();
 
             StartupService.StartupDatabase();// initializes databases
+
+            StartupService.HDWalletCheck();// checks for HD wallet
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             var argList = args.ToList();

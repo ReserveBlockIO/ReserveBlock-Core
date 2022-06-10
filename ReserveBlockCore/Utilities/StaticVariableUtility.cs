@@ -37,6 +37,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResult = P2PClient.LastTaskResultTime.ToString();
             var lastTaskBlockHeight = P2PClient.LastTaskBlockHeight.ToString();
             var lastTaskError = P2PClient.LastTaskError.ToString();
+            var hdWallet = Program.HDWallet.ToString();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -63,12 +64,15 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
             var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
             var lastTaskErrorText = "*Only for Validators* Last Task Error : " + lastTaskError;
+            var hdWalletText = $"HD Wallet? : {hdWallet}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 
             StringBuilder strBld = new StringBuilder();
             strBld.AppendLine(validatorAddress);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(hdWalletText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isCorrupt);
             strBld.AppendLine("---------------------------------------------------------------------");
