@@ -111,7 +111,7 @@ namespace ReserveBlockCore.Models
                     BIP32.BIP32 bip32 = new BIP32.BIP32();
                     var derivePath = bip32.DerivePath(expectedPath, seed);
                     var key = derivePath.Key.ToStringHex();
-                    var account = AccountData.RestoreAccount(key);
+                    var account = AccountData.RestoreHDAccount(key);
 
                     IncrementNonce(hdw);
 

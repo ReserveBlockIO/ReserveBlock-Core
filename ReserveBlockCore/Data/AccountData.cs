@@ -86,6 +86,54 @@ namespace ReserveBlockCore.Data
 			return account;
 		}
 
+		public static Account RestoreHDAccount(string privKey)
+		{
+			Account account = new Account();
+			try
+			{
+				var privateKeyMod = privKey.Replace(" ", ""); //remove any accidental spaces
+				var privateKeyZeroPad = "00" + privateKeyMod;
+				BigInteger b1 = BigInteger.Parse(privateKeyZeroPad, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+				PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+				var privKeySecretHex = privateKey.secret.ToString("x");
+				var pubKey = privateKey.publicKey();
+
+				account.PrivateKey = privateKeyZeroPad;
+				account.PublicKey = "04" + ByteToHex(pubKey.toString());
+				account.Address = GetHumanAddress(account.PublicKey);
+				//Update balance from state trei
+				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
+				account.Balance = accountState != null ? accountState.Balance : 0M;
+
+				var validators = Validators.Validator.GetAll();
+				var validator = validators.FindOne(x => x.Address == account.Address);
+				var accounts = AccountData.GetAccounts();
+				var accountsValidating = accounts.FindOne(x => x.IsValidating == true);
+				if (accountsValidating == null)
+				{
+					if (validator != null)
+					{
+
+					}
+				}
+
+				var accountCheck = AccountData.GetSingleAccount(account.Address);
+				if (accountCheck == null)
+				{
+					AddToAccount(account); //only add if not already in accounts
+				}
+			}
+			catch (Exception ex)
+			{
+				//restore failed
+				Console.WriteLine("Account restore failed. Not a valid private key");
+			}
+
+			//Now need to scan to check for transactions  - feature coming soon.
+
+			return account;
+		}
+
 		public static PrivateKey GetPrivateKey(Account account)
         {
 			BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
