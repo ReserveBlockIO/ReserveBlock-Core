@@ -340,7 +340,7 @@ namespace ReserveBlockCore
         }
         private static void CommandLoop2(string url)
         {
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
         #endregion

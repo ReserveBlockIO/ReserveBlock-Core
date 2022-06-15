@@ -42,7 +42,7 @@ namespace ReserveBlockCore.Models
 
                 HDWallet hdw = new HDWallet { 
                     Nonce = 0,
-                    Path = "m/0'",
+                    Path = "m/0'/0'",
                     WalletSeed = myMnemonicSeed
                 };
 
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Models
                 HDWallet hdw = new HDWallet
                 {
                     Nonce = 0,
-                    Path = "m/0'",
+                    Path = "m/0'/0'",
                     WalletSeed = myMnemonicSeed
                 };
 

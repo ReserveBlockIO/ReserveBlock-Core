@@ -1,4 +1,6 @@
-﻿using System.Security.Cryptography;
+﻿using System.Globalization;
+using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -8,6 +10,7 @@ namespace ReserveBlockCore.BIP32
     {
         readonly string curve = "ed25519 seed";
         readonly uint hardenedOffset = 0x80000000;
+        readonly BigInteger curveN = BigInteger.Parse("00fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", NumberStyles.AllowHexSpecifier);
 
         public (byte[] Key, byte[] ChainCode) GetMasterKeyFromSeed(string seed)
         {
@@ -36,7 +39,19 @@ namespace ReserveBlockCore.BIP32
                 var il = i.Slice(0, 32);
                 var ir = i.Slice(32);
 
-                return (Key: il, ChainCode: ir);
+                var leftSide = BigInteger.Parse("00" + il.ToStringHex(), NumberStyles.AllowHexSpecifier);
+                var parent = BigInteger.Parse("00" + key.ToStringHex(), NumberStyles.AllowHexSpecifier);
+                var childPrivateKeyLength = ((leftSide + parent) % curveN).ToString("x").Length;
+                var childPrivateKeyHex = ((leftSide + parent) % curveN).ToString("x");
+                var childPrivateKey = childPrivateKeyHex.HexToByteArray();
+
+                if (childPrivateKeyLength > 64)
+                {
+                    var childPrivateKeyTrimmed = childPrivateKeyHex.Remove(0, 1);
+                    childPrivateKey = childPrivateKeyTrimmed.HexToByteArray();
+                }
+
+                return (Key: childPrivateKey, ChainCode: ir);
             }
         }
 

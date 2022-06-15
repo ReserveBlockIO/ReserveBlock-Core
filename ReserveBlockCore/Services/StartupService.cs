@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Services
                 }
                 catch (Exception)
                 {
-                    Console.WriteLine("Port closed");
+                    Console.WriteLine("Application Starting...");
                 }
             }
         }
