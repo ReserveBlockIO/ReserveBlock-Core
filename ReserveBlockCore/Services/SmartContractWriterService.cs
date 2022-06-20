@@ -35,6 +35,8 @@ namespace ReserveBlockCore.Services
             var appendChar = "\"|->\"";
 
             var scAsset = scMain.SmartContractAsset;
+
+            
             StringBuilder strBuild = new StringBuilder();
 
             try

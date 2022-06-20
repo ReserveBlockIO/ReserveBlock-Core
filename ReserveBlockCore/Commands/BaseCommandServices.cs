@@ -1,6 +1,9 @@
 ﻿using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.BIP39;
+using ReserveBlockCore.P2P;
+using Newtonsoft.Json;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Commands
 {
@@ -15,6 +18,66 @@ namespace ReserveBlockCore.Commands
                 if (reconnect == "y")
                 {
                     await StartupService.StartupPeers();
+                }
+            }
+        }
+
+        public static async void CreateBeacon()
+        {
+            Console.WriteLine("Please give your beacon a name...");
+            var name = Console.ReadLine();
+            if (name != null)
+            {
+                var ip = P2PClient.ReportedIPs.Count() != 0 ?
+                P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() :
+                "NA";
+
+                if (ip == "NA")
+                {
+                     Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
+                }
+
+                var bUID = Guid.NewGuid().ToString().Substring(0,12).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+
+                BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
+                {
+                    IPAddress = ip,
+                    Port = Program.Port,
+                    Name = name,
+                    BeaconUID = bUID
+                };
+
+                var beaconLocJson = JsonConvert.SerializeObject(beaconLoc);
+
+                BeaconInfo bInfo = new BeaconInfo();
+                bInfo.Name = name;
+                bInfo.IsBeaconActive = true;
+                bInfo.BeaconLocator = beaconLocJson.ToBase64();
+                bInfo.BeaconUID = bUID;
+
+                var result = BeaconInfo.SaveBeaconInfo(bInfo);
+
+                Console.WriteLine(result);
+            }
+        }
+
+        public static async void SwitchBeaconState()
+        {
+            var result = BeaconInfo.SetBeaconActiveState();
+
+            if (result == null)
+            {
+                Console.WriteLine("Error turning beacon on/off");
+            }
+            else
+            {
+                if(result.Value == true)
+                {
+                    Console.WriteLine("Beacon has been turned on.");
+                }
+                else
+                {
+                    Console.WriteLine("Beacon has been turned off.");
                 }
             }
         }

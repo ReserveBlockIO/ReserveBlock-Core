@@ -15,15 +15,16 @@ namespace ReserveBlockCore.Data
     internal class DbContext
     {
         public static LiteDatabase DB { set; get; }// stores blocks
-        public static LiteDatabase DB_Assets { set; get; }// stores blocks
-        public static LiteDatabase DB_Queue { set; get; }// stores blocks
+        public static LiteDatabase DB_Assets { set; get; }// stores Assetss
+        public static LiteDatabase DB_Queue { set; get; }// stores block queue
         public static LiteDatabase DB_Wallet { set; get; } //stores wallet info
-        public static LiteDatabase DB_HD_Wallet { set; get; } //stores wallet info
+        public static LiteDatabase DB_HD_Wallet { set; get; } //stores HD wallet info
         public static LiteDatabase DB_Peers { set; get; } //stores peer info
         public static LiteDatabase DB_Banlist { set; get; } //stores banned peers 
         public static LiteDatabase DB_WorldStateTrei { get; set; } //stores blockchain world state trei
         public static LiteDatabase DB_AccountStateTrei { get; set; } //stores blockchain world state trei
-        public static LiteDatabase DB_SmartContractStateTrei { set; get; }// stores blocks
+        public static LiteDatabase DB_SmartContractStateTrei { set; get; }// stores SC Data
+        public static LiteDatabase DB_Beacon { get; set; }
         public static LiteDatabase DB_Config { get; set; }
 
         //Database names
@@ -37,6 +38,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_WSTATE_TREI = @"rsrvwstatetrei.db";
         public const string RSRV_DB_ASTATE_TREI = @"rsrvastatetrei.db";
         public const string RSRV_DB_SCSTATE_TREI = @"rsrvscstatetrei.db";
+        public const string RSRV_DB_BEACON = @"rsrvbeacon.db";
         public const string RSRV_DB_CONFIG = @"rsrvconfig.db";
 
         //Database tables
@@ -59,6 +61,8 @@ namespace ReserveBlockCore.Data
         public const string RSRV_CONFIG_RULES = "rsrv_config_rules";
         public const string RSRV_ASSETS = "rsrv_assets";
         public const string RSRV_SCSTATE_TREI = "rsrv_scstate_trei";
+        public const string RSRV_BEACON_INFO = "rsrv_beacon_info";
+        public const string RSRV_BEACON_DATA = "rsrv_beacon_data";
 
         public static void Initialize()
         {
@@ -105,6 +109,7 @@ namespace ReserveBlockCore.Data
             DB_Peers = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_PEERS_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Banlist = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BANLIST_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Config = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CONFIG, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Beacon = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BEACON, Connection = ConnectionType.Direct, ReadOnly = false });
 
             //DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS, mapper);
             //DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
@@ -193,6 +198,7 @@ namespace ReserveBlockCore.Data
             DB_Config.Checkpoint();
             DB_Assets.Checkpoint();
             DB_SmartContractStateTrei.Checkpoint();
+            DB_Beacon.Checkpoint();
 
             //dispose connection to DB
             CloseDB();
@@ -218,6 +224,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_CONFIG);
             File.Delete(path + RSRV_DB_ASSETS);
             File.Delete(path + RSRV_DB_SCSTATE_TREI);
+            File.Delete(path + RSRV_DB_BEACON);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -239,6 +246,7 @@ namespace ReserveBlockCore.Data
             DB_Peers = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_PEERS_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Banlist = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BANLIST_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Config = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CONFIG, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Beacon = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BEACON, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
@@ -256,6 +264,7 @@ namespace ReserveBlockCore.Data
             DB_Config.Dispose();
             DB_Assets.Dispose();
             DB_SmartContractStateTrei.Dispose();
+            DB_Beacon.Dispose();
         }
 
     }

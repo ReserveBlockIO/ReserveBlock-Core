@@ -17,7 +17,7 @@ namespace ReserveBlockCore.Commands
         {
             var commandResult = string.Empty;
 
-            switch (command)
+            switch (command.ToLower())
             {
                 case "/help":
                     commandResult = "Help Command List Goes Here... Coming soon";
@@ -47,6 +47,12 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/optlog":
                     Program.OptionalLogging = true;
+                    break;
+                case "/beacon":
+                    BaseCommandServices.CreateBeacon();
+                    break;
+                case "/switchbeacon":
+                    BaseCommandServices.SwitchBeaconState();
                     break;
                 case "/trillium":
                     //start trillium

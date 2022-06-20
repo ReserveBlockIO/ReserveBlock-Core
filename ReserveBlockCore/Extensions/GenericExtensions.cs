@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Text;
 
 namespace ReserveBlockCore.Extensions
 {
@@ -26,6 +27,21 @@ namespace ReserveBlockCore.Extensions
             return byteToBase64;
         }
 
+        public static string ToBase64(this string source)
+        {
+            var plainTextBytes = Encoding.UTF8.GetBytes(source);
+            var stringToBase64 = Convert.ToBase64String(plainTextBytes);
+
+            return stringToBase64;
+        }
+
+        public static string ToStringFromBase64(this string source)
+        {
+            var base64EncodedString = Convert.FromBase64String(source);
+            var stringFromBase64 = Convert.ToBase64String(base64EncodedString);
+
+            return stringFromBase64;
+        }
         public static byte[] FromBase64ToByteArray(this string base64String)
         {
             var byteArrayFromBase64 = Convert.FromBase64String(base64String);

@@ -798,7 +798,7 @@ namespace ReserveBlockCore.P2P
                 SendTXToAdj(tx);
             }
         }
-        #endregion
+
 
         //This method will need to eventually be modified when the adj is a multi-pool and not a singular-pool
         private static async void SendTXToAdj(Transaction trx)
@@ -838,6 +838,8 @@ namespace ReserveBlockCore.P2P
                 ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - catch");
             }
         }
+
+        #endregion
 
         #region Get Block
         public static async Task<List<Block>> GetBlock() //base example
@@ -1431,6 +1433,105 @@ namespace ReserveBlockCore.P2P
 
             }
             return (newHeightFound, height);
+        }
+
+        #endregion
+
+        #region Get Beacon Status of Nodes
+        public static async Task<List<string>> GetBeacons()
+        {
+            List<string> BeaconList = new List<string>();
+
+            var peersConnected = await ArePeersConnected();
+
+            if (peersConnected.Item1 == false)
+            {
+                //Need peers
+                //return something
+            }
+            else
+            {
+                try
+                {
+                    if (hubConnection1 != null && IsConnected1)
+                    {
+                        string beaconInfo = await hubConnection1.InvokeAsync<string>("SendBeaconInfo");
+                        BeaconList.Add(beaconInfo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+                try
+                {
+                    if (hubConnection2 != null && IsConnected2)
+                    {
+                        string beaconInfo = await hubConnection2.InvokeAsync<string>("SendBeaconInfo");
+                        BeaconList.Add(beaconInfo);
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
+                    if (hubConnection3 != null && IsConnected3)
+                    {
+                        string beaconInfo = await hubConnection3.InvokeAsync<string>("SendBeaconInfo");
+                        BeaconList.Add(beaconInfo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
+                    if (hubConnection4 != null && IsConnected4)
+                    {
+                        string beaconInfo = await hubConnection4.InvokeAsync<string>("SendBeaconInfo");
+                        BeaconList.Add(beaconInfo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
+                    if (hubConnection5 != null && IsConnected5)
+                    {
+                        string beaconInfo = await hubConnection5.InvokeAsync<string>("SendBeaconInfo");
+                        BeaconList.Add(beaconInfo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+                try
+                {
+                    if (hubConnection6 != null && IsConnected6)
+                    {
+                        string beaconInfo = await hubConnection6.InvokeAsync<string>("SendBeaconInfo");
+                        BeaconList.Add(beaconInfo);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    //node is offline
+                }
+
+            }
+            return BeaconList;
         }
 
         #endregion

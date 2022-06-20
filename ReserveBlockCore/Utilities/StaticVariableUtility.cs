@@ -38,6 +38,8 @@ namespace ReserveBlockCore.Utilities
             var lastTaskBlockHeight = P2PClient.LastTaskBlockHeight.ToString();
             var lastTaskError = P2PClient.LastTaskError.ToString();
             var hdWallet = Program.HDWallet.ToString();
+            var reportedIPs = string.Join(",", P2PClient.ReportedIPs);
+            var mostLikelyIP = P2PClient.ReportedIPs.Count() != 0 ? P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() : "NA";
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -65,6 +67,8 @@ namespace ReserveBlockCore.Utilities
             var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
             var lastTaskErrorText = "*Only for Validators* Last Task Error : " + lastTaskError;
             var hdWalletText = $"HD Wallet? : {hdWallet}";
+            var reportedIPText = $"Reported IPs: {reportedIPs}";
+            var externalIPText = $"External IP: {mostLikelyIP}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -132,6 +136,10 @@ namespace ReserveBlockCore.Utilities
                 strBld.AppendLine("Node: " + ip + " - Last Checked: " + lastcheck + " - Height: " + height + " - Latency: " + latency);
                 strBld.AppendLine("---------------------------------------------------------------------");
             });
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(reportedIPText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(externalIPText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Block Info----------------------------");
             strBld.AppendLine(lastBlockInfo);
