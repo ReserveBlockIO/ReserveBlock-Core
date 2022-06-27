@@ -281,3 +281,5 @@ ReserveBlockCore/SmartContracts/
 ReserveBlockCore/Properties/launchSettings.json
 ReserveBlockCore/Trillium/Submissions/
 ReserveBlockCore/Databases/mostRecent/
+ReserveBlockCore/BeaconAsset/
+ReserveBlockCore/Config/config.txt
