@@ -378,10 +378,19 @@ namespace ReserveBlockCore.Controllers
             {
                 if (sc.IsPublished == true)
                 {
-                    var tx = await SmartContractService.TransferSmartContract(sc, toAddress);
+                    //Get beacons here!
+                    var beacons = await P2PClient.GetBeacons();
+                    if(beacons.Count() == 0)
+                    {
+                        output = "You are not connected to any beacons.";
+                    }
+                    else
+                    {
+                        var tx = await SmartContractService.TransferSmartContract(sc, toAddress, beacons);
 
-                    var txJson = JsonConvert.SerializeObject(tx);
-                    output = txJson;
+                        var txJson = JsonConvert.SerializeObject(tx);
+                        output = txJson;
+                    }
                 }
                 else
                 {
@@ -392,7 +401,6 @@ namespace ReserveBlockCore.Controllers
             {
                 output = "No Smart Contract Found Locally.";
             }
-            
             
             return output;
         }

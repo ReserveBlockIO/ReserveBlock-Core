@@ -231,6 +231,23 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send Beacon Locator Info
+        public async Task<string> SendBeaconInfo()
+        {
+            var result = "";
+
+            var beaconInfo = BeaconInfo.GetBeaconInfo();
+
+            if (beaconInfo == null)
+                return "NA";
+
+            result = beaconInfo.BeaconLocator;
+
+            return result;
+        }
+
+        #endregion
+
         #region Send Adjudicator
         public async Task<Adjudicators?> SendLeadAdjudicator()
         {

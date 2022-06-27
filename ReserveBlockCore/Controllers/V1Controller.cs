@@ -42,6 +42,51 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        [HttpGet("UnlockWallet/{password}")]
+        public async Task<string> UnlockWallet(string password)
+        {
+            var output = "";
+
+            if (Program.APIPassword != null)
+            {
+                if (password != null)
+                {
+                    var passCheck = Program.APIPassword.ToDecrypt(password);
+                    if (passCheck == password && passCheck != "Fail")
+                    {
+                        Program.APIUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
+                        var successResult = new[]
+                        {
+                            new { Result = "Success", Message = $"Wallet has been unlocked for {Program.WalletUnlockTime} mins."}
+                        };
+
+                        output = JsonConvert.SerializeObject(successResult);
+                    }
+                    else
+                    {
+                        var failResult = new[]
+                        {
+                            new { Result = "Fail", Message = "Incorrect Password."}
+                        };
+
+                        output = JsonConvert.SerializeObject(failResult);
+                    }
+                }
+            }
+            else
+            {
+                var failResult = new[]
+                {
+                    new { Result = "Fail", Message = "No password has been configured."}
+                };
+
+                output = JsonConvert.SerializeObject(failResult);
+            }
+
+            return output;
+        }
+
         [HttpGet("CheckStatus")]
         public async Task<string> CheckStatus()
         {
@@ -375,16 +420,6 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
-
-        [HttpGet("UnlockRemoteCraft")]
-        public async Task<string> UnlockRemoteCraft()
-        {
-            Program.RemoteCraftLock = false;
-            var output = "Completed"; 
-            
-            return output;
-        }
-
 
         [HttpGet("GetAllTransactions")]
         public async Task<string> GetAllTransactions()

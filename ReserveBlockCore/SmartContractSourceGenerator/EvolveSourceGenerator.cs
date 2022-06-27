@@ -6,13 +6,14 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
 {
     public class EvolveSourceGenerator
     {
-        public static async Task<(StringBuilder, StringBuilder)> Build(List<EvolvingFeature> evolve, StringBuilder strBuild, int? activeEvoState = null)
+        public static async Task<(StringBuilder, StringBuilder)> Build(List<EvolvingFeature> evolve, StringBuilder strBuild, string scUID, int? activeEvoState = null, bool isReading = false)
         {
             var appendChar = "\"|->\"";
             StringBuilder strEvolveBld = new StringBuilder();
             bool isDynamic = false;
             bool isDynamicDate = false;
             bool isDynamicBlock = false;
+            bool failedToSaveAsset = false;
 
             var maxEvoState = evolve.Count().ToString();
             var evolutionaryState = "\"{*0}\"";
@@ -98,6 +99,17 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                 strEvolveBld.AppendLine(@"var evolveAtBlock = " + "\"" + (x.EvolveBlockHeight == null ? "" : x.EvolveBlockHeight.Value.ToString()) + "\"");
                 strEvolveBld.AppendLine("return (evoState + " + appendChar + " + name + " + appendChar + " + description + " + appendChar + " + assetName + " + appendChar + " + evolveDate + " + appendChar + " + evolveAtBlock)");
                 strEvolveBld.AppendLine("}");
+
+
+                if(x.SmartContractAsset != null && isReading == false)
+                {
+                    var result = NFTAssetFileUtility.MoveAsset(x.SmartContractAsset.Location, x.SmartContractAsset.Name, scUID);
+                    if(result == false)
+                    {
+                        //did not copy files
+                        failedToSaveAsset = true;
+                    }
+                }
 
                 if (x.IsDynamic == true)
                 {
@@ -205,6 +217,13 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
             else
             {
                 strBuild.AppendLine("let EvolveDynamic = false");
+            }
+
+            if (failedToSaveAsset == true)
+            {
+                strBuild.Clear();
+                strBuild.Append("Failed");
+                return (strBuild, strEvolveBld);
             }
 
             return (strBuild, strEvolveBld);

@@ -36,7 +36,13 @@ namespace ReserveBlockCore.Services
 
             var scAsset = scMain.SmartContractAsset;
 
-            
+            //Save to local folder here for beacon transfer later
+            var result = NFTAssetFileUtility.MoveAsset(scAsset.Location, scAsset.Name, scMain.SmartContractUID);
+            if(result == false)
+            {
+                return ("Failed to save smart contract asset. Please try again.", scMain);
+            }
+
             StringBuilder strBuild = new StringBuilder();
 
             try
@@ -68,9 +74,13 @@ namespace ReserveBlockCore.Services
                                 var maxEvoState = evolve.Count().ToString();
                                 var evolutionaryState = "\"{*0}\"";
 
-                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild);
+                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, scUID);
                                 strBuild = evolveSource.Item1;
                                 strEvolveBld = evolveSource.Item2;
+                                if (strBuild.ToString() == "Failed")
+                                {
+                                    return ("Failed to save smart contract asset for Evolving Asset. Please try again.", scMain);
+                                }
                             }
                         }
                         else if (feature.FeatureName == FeatureName.MultiAsset)
@@ -81,9 +91,14 @@ namespace ReserveBlockCore.Services
                                 int counter = 1;
                                 feature.FeatureFeatures = multiAsset;
 
-                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scUID);
                                 strBuild = multiAssetSource.Item1;
                                 strMultiAssetBld = multiAssetSource.Item2;
+
+                                if (strBuild.ToString() == "Failed")
+                                {
+                                    return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain);
+                                }
                             }
                         }
                         else if (feature.FeatureName == FeatureName.Ticket)
@@ -138,9 +153,14 @@ namespace ReserveBlockCore.Services
                                     var maxEvoState = evolve.Count().ToString();
                                     var evolutionaryState = "\"{*0}\"";
 
-                                    var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild);
+                                    var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, scUID);
                                     strBuild = evolveSource.Item1;
                                     strEvolveBld = evolveSource.Item2;
+
+                                    if (strBuild.ToString() == "Failed")
+                                    {
+                                        return ("Failed to save smart contract asset for Evolving Asset. Please try again.", scMain);
+                                    }
                                 }
 
                             }
@@ -154,9 +174,14 @@ namespace ReserveBlockCore.Services
                                     x.FeatureFeatures = multiAsset;
                                     Flist.Add(x);
 
-                                    var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                    var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scUID);
                                     strBuild = multiAssetSource.Item1;
                                     strMultiAssetBld = multiAssetSource.Item2;
+
+                                    if (strBuild.ToString() == "Failed")
+                                    {
+                                        return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain);
+                                    }
                                 }
                             }
 
@@ -320,7 +345,7 @@ namespace ReserveBlockCore.Services
                             var maxEvoState = evolve.Count().ToString();
                             var evolutionaryState = "\"{*0}\"";
 
-                            var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild);
+                            var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, scMain.SmartContractUID);
                             strBuild = evolveSource.Item1;
                             strEvolveBld = evolveSource.Item2;
                         }
@@ -333,7 +358,7 @@ namespace ReserveBlockCore.Services
                             int counter = 1;
                             feature.FeatureFeatures = multiAsset;
 
-                            var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                            var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scMain.SmartContractUID);
                             strBuild = multiAssetSource.Item1;
                             strMultiAssetBld = multiAssetSource.Item2;
                         }
@@ -390,7 +415,7 @@ namespace ReserveBlockCore.Services
                                 var maxEvoState = evolve.Count().ToString();
                                 var evolutionaryState = "\"{*0}\"";
 
-                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild);
+                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, scMain.SmartContractUID);
                                 strBuild = evolveSource.Item1;
                                 strEvolveBld = evolveSource.Item2;
                             }
@@ -406,7 +431,7 @@ namespace ReserveBlockCore.Services
                                 x.FeatureFeatures = multiAsset;
                                 Flist.Add(x);
 
-                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scMain.SmartContractUID);
                                 strBuild = multiAssetSource.Item1;
                                 strMultiAssetBld = multiAssetSource.Item2;
                             }

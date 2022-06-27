@@ -48,9 +48,36 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+        [HttpGet("DecodeBeaconLocator/{locator}")]
+        public async Task<string> DecodeBeaconLocator(string locator)
+        {
+            var output = "";
+            try
+            {
+            var beaconString = locator.ToStringFromBase64();
+            var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+            var successResult = new[]
+                {
+                    new { Result = "Success", BeaconInfo = beaconDataJsonDes}
+                };
+            output = JsonConvert.SerializeObject(successResult);
+            }
+            catch(Exception ex)
+            {
+                var failedResult = new[]
+                {
+                    new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption."}
+                };
+
+                output = JsonConvert.SerializeObject(failedResult);
+            }
+
+            return output;
+        }
 
         [HttpGet("GetBeaconInfo")]
-        public async Task<string> GetBeaconInfo(string name)
+        public async Task<string> GetBeaconInfo()
         {
             var output = "";
 
@@ -61,18 +88,26 @@ namespace ReserveBlockCore.Controllers
                 BeaconInfo.BeaconInfoJson beaconDataJsonDes = new BeaconInfo.BeaconInfoJson();
                 try
                 {
-                    beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconInfo.BeaconLocator.ToStringFromBase64());
+                    var beaconString = beaconInfo.BeaconLocator.ToStringFromBase64();
+                    beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                    var successResult = new[]
+                    {
+                        new { Result = "Success", BeaconInfo = beaconInfo, BeaconLocatorData = beaconDataJsonDes}
+                    };
+
+                    output = JsonConvert.SerializeObject(successResult);
                 }
                 catch(Exception ex)
                 {
                     beaconDataJsonDes = null;
-                }
-                var successResult = new[]
-                {
-                    new { Result = "Success", BeaconInfo = beaconInfo, BeaconIPPort = beaconDataJsonDes}
-                };
+                    var failedResult = new[]
+                    {
+                        new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption."}
+                    };
 
-                output = JsonConvert.SerializeObject(successResult);
+                    output = JsonConvert.SerializeObject(failedResult);
+                }
+                
             }
             else
             {
@@ -88,7 +123,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         [HttpGet("SetBeaconState")]
-        public async Task<string> SetBeaconState(string name)
+        public async Task<string> SetBeaconState()
         {
             var output = "";
 

@@ -104,7 +104,7 @@ namespace ReserveBlockCore.Services
                                 var maxEvoState = evolve.Count().ToString();
                                 var evolutionaryState = "\"{*0}\"";
 
-                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, activeEvoState);
+                                var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, scUID, activeEvoState, true);
                                 strBuild = evolveSource.Item1;
                                 strEvolveBld = evolveSource.Item2;
                             }
@@ -136,7 +136,7 @@ namespace ReserveBlockCore.Services
                                 feature.FeatureFeatures = multiAsset;
                                 Flist.Add(feature);
 
-                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scUID, true);
                                 strBuild = multiAssetSource.Item1;
                                 strMultiAssetBld = multiAssetSource.Item2;
                             }
@@ -234,7 +234,7 @@ namespace ReserveBlockCore.Services
                                     Flist.Add(x);
                                     var maxEvoState = evolve.Count().ToString();
                                     var evolutionaryState = "\"{*0}\"";
-                                    var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, activeEvoState);
+                                    var evolveSource = await EvolveSourceGenerator.Build(evolve, strBuild, scUID, activeEvoState, true);
                                     strBuild = evolveSource.Item1;
                                     strEvolveBld = evolveSource.Item2;
                                 }
@@ -267,7 +267,7 @@ namespace ReserveBlockCore.Services
                                     x.FeatureFeatures = multiAsset;
                                     Flist.Add(x);
 
-                                    var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild);
+                                    var multiAssetSource = await MultiAssetSourceGenerator.Build(multiAsset, strBuild, scUID, true);
                                     strBuild = multiAssetSource.Item1;
                                     strMultiAssetBld = multiAssetSource.Item2;
                                 }

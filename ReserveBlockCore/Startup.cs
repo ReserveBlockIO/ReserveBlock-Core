@@ -37,8 +37,31 @@ namespace ReserveBlockCore
             app.Use((context, func) =>
             {
                 if (APIEnabled)
-                    return func.Invoke();
-                context.Response.StatusCode = 204;//if u want to return specific status code when not ready to accept requests
+                {
+                    if(Program.APIUnlockTime == null)
+                    {
+                        return func.Invoke();
+                    }
+                    else
+                    {
+                        var now = DateTime.UtcNow;
+                        var target = context.Request.Path.HasValue ? context.Request.Path.Value.ToLower() : "NA";
+                        if(target.Contains("/api/v1/unlockwallet/"))
+                        {
+                            return func.Invoke();
+                        }
+                        if(now < Program.APIUnlockTime)
+                        {
+                            return func.Invoke();
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = 403;//if u want to return specific status code when not ready to accept requests
+                            return Task.CompletedTask;
+                        }
+                    }
+                }
+                context.Response.StatusCode = 403;//if u want to return specific status code when not ready to accept requests
                 return Task.CompletedTask;
             });
 

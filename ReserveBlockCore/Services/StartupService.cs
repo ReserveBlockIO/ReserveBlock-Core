@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using LiteDB;
+using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
@@ -30,7 +31,6 @@ namespace ReserveBlockCore.Services
                     LogUtility.Log("CLI Already Running. Closing new instance.", "InstanceCheck");
                     Thread.Sleep(2000);
                     Environment.Exit(0);
-
                 }
                 catch (Exception)
                 {
@@ -122,6 +122,21 @@ namespace ReserveBlockCore.Services
             //RuleService.ResetValidators();
             //RuleService.ResetFailCounts();
             //RuleService.RemoveOldValidators();
+        }
+
+        internal static void StartBeacon()
+        {
+            try
+            {
+                BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), Program.Port);
+                Thread obj_thread = new Thread(server.StartServer());
+                Console.WriteLine("Beacon Started");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            
         }
 
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.

@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using Microsoft.AspNetCore.SignalR.Client;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Nodes;
@@ -15,7 +16,6 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PClient
     {
-
         #region Static Variables
         public static List<Peers>? ActivePeerList { get; set; }
         public static List<string> ReportedIPs = new List<string>();
@@ -1437,6 +1437,35 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region File Upload To Beacon Beacon
+
+        public static async Task<bool> BeaconUploadRequest()
+        {
+            var result = false;
+            //send file size, beacon will reply if it is ok to send.
+            return result;
+        }
+
+        #endregion
+
+        #region File Download from Beacon - BeaconAccessRequest
+
+        public static async Task<bool> BeaconAccessRequest(string message, string beaconLocator)
+        {
+            var result = false;
+            var beaconString = beaconLocator.ToStringFromBase64();
+            var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+            var beaconIP = beaconDataJsonDes.IPAddress;
+            var beaconPort = beaconDataJsonDes.Port;
+
+            //We need to determine if we are already connected to a beacon. If so use that connection otherwise make a new one.
+
+            //send signature request and beacon will reply if it is ok to download. Beacon will log file names and IP allowed to Download.
+            return result;
+        }
+
+        #endregion
+
         #region Get Beacon Status of Nodes
         public static async Task<List<string>> GetBeacons()
         {
@@ -1447,7 +1476,7 @@ namespace ReserveBlockCore.P2P
             if (peersConnected.Item1 == false)
             {
                 //Need peers
-                //return something
+                return BeaconList;
             }
             else
             {
@@ -1456,7 +1485,10 @@ namespace ReserveBlockCore.P2P
                     if (hubConnection1 != null && IsConnected1)
                     {
                         string beaconInfo = await hubConnection1.InvokeAsync<string>("SendBeaconInfo");
-                        BeaconList.Add(beaconInfo);
+                        if(beaconInfo != "NA")
+                        {
+                            BeaconList.Add(beaconInfo);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1468,7 +1500,10 @@ namespace ReserveBlockCore.P2P
                     if (hubConnection2 != null && IsConnected2)
                     {
                         string beaconInfo = await hubConnection2.InvokeAsync<string>("SendBeaconInfo");
-                        BeaconList.Add(beaconInfo);
+                        if (beaconInfo != "NA")
+                        {
+                            BeaconList.Add(beaconInfo);
+                        }
 
                     }
                 }
@@ -1482,7 +1517,10 @@ namespace ReserveBlockCore.P2P
                     if (hubConnection3 != null && IsConnected3)
                     {
                         string beaconInfo = await hubConnection3.InvokeAsync<string>("SendBeaconInfo");
-                        BeaconList.Add(beaconInfo);
+                        if (beaconInfo != "NA")
+                        {
+                            BeaconList.Add(beaconInfo);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1495,7 +1533,10 @@ namespace ReserveBlockCore.P2P
                     if (hubConnection4 != null && IsConnected4)
                     {
                         string beaconInfo = await hubConnection4.InvokeAsync<string>("SendBeaconInfo");
-                        BeaconList.Add(beaconInfo);
+                        if (beaconInfo != "NA")
+                        {
+                            BeaconList.Add(beaconInfo);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1508,7 +1549,10 @@ namespace ReserveBlockCore.P2P
                     if (hubConnection5 != null && IsConnected5)
                     {
                         string beaconInfo = await hubConnection5.InvokeAsync<string>("SendBeaconInfo");
-                        BeaconList.Add(beaconInfo);
+                        if (beaconInfo != "NA")
+                        {
+                            BeaconList.Add(beaconInfo);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1521,7 +1565,10 @@ namespace ReserveBlockCore.P2P
                     if (hubConnection6 != null && IsConnected6)
                     {
                         string beaconInfo = await hubConnection6.InvokeAsync<string>("SendBeaconInfo");
-                        BeaconList.Add(beaconInfo);
+                        if (beaconInfo != "NA")
+                        {
+                            BeaconList.Add(beaconInfo);
+                        }
                     }
 
                 }
@@ -1978,6 +2025,5 @@ namespace ReserveBlockCore.P2P
 
         }
         #endregion
-
     }
 }

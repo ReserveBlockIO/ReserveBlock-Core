@@ -4,6 +4,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
+using System.Text;
 
 namespace ReserveBlockCore.Services
 {
@@ -150,6 +151,36 @@ namespace ReserveBlockCore.Services
                                 AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                                 var txdata = TransactionData.GetAll();
                                 txdata.Insert(transaction);
+                                if(Program.IsChainSynced == true)
+                                {
+                                    //Call out to custom URL from config file with TX details
+                                    if(Program.APICallURL != null)
+                                    {
+                                        try
+                                        {
+                                            var url = Program.APICallURL;
+                                            HttpClient client = new HttpClient();
+                                            string json = JsonConvert.SerializeObject(transaction);
+                                            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+                                            var httpResponse = await client.PostAsync(url, httpContent);
+                                            if(Program.APICallURLLogging == true)
+                                            {
+                                                //Will only accept a string response. 
+                                                var httpResult = await httpResponse.Content.ReadAsStringAsync();
+                                                LogUtility.Log($"Transaction was sent. Here is response: {httpResult}", "BlockValidatorService.ValidateBlock()");
+                                            }
+                                            
+                                        }
+                                        catch(Exception ex)
+                                        {
+                                            if (Program.APICallURLLogging == true)
+                                            {
+                                                ErrorLogUtility.LogError($"Error Sending Transaction to URL. Error Message: {ex.Message}", "BlockValidatorService.ValidateBlock()");
+                                            }
+                                            
+                                        }
+                                    }
+                                }
                                 if(transaction.TransactionType != TransactionType.TX)
                                 {
                                     var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);

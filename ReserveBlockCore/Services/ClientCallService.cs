@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System.IO.Compression;
 
 namespace ReserveBlockCore.Services
 {
@@ -12,7 +13,8 @@ namespace ReserveBlockCore.Services
         private readonly IHostApplicationLifetime _appLifetime;
         private int executionCount = 0;
         private Timer _timer = null!;
-        private Timer _fortisPoolTimer = null;
+        private Timer _fortisPoolTimer = null!;
+        private Timer _checkpointTimer = null!;
         private static bool FirstRun = false;
 
         public ClientCallService(IHubContext<P2PAdjServer> hubContext, IHostApplicationLifetime appLifetime)
@@ -29,9 +31,44 @@ namespace ReserveBlockCore.Services
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(240),
                 TimeSpan.FromMinutes(5));
 
+            if(Program.ChainCheckPoint == true)
+            {
+                var interval = Program.ChainCheckPointInterval;
+                
+                _checkpointTimer = new Timer(DoCheckpointWork, null, TimeSpan.FromSeconds(240),
+                TimeSpan.FromHours(interval));
+            }
 
             return Task.CompletedTask;
         }
+
+        private async void DoCheckpointWork(object? state)
+        {
+            var retain = Program.ChainCheckPointRetain;
+            var path = GetPathUtility.GetDatabasePath();
+            var checkpointPath = Program.ChainCheckpointLocation;
+            var zipPath = checkpointPath + "checkpoint_" + DateTime.Now.Ticks.ToString();
+
+            try
+            {
+                var directoryCount = Directory.GetFiles(checkpointPath).Length;
+                if(directoryCount >= retain)
+                {
+                    FileSystemInfo fileInfo = new DirectoryInfo(checkpointPath).GetFileSystemInfos()
+                        .OrderBy(fi => fi.CreationTime).First();
+                    fileInfo.Delete();
+                }
+
+                ZipFile.CreateFromDirectory(path, zipPath);
+                var createDate = DateTime.Now.ToString();
+                LogUtility.Log($"Checkpoint successfully created at: {createDate}", "ClientCallService.DoCheckpointWork()");
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error creating checkpoint. Error Message: {ex.Message}", "ClientCallService.DoCheckpointWork()");
+            }
+        }
+
         private async void DoFortisPoolWork(object? state)
         {
             try
@@ -259,7 +296,8 @@ namespace ReserveBlockCore.Services
 
         public void Dispose()
         {
-            _timer?.Dispose();
+            _timer.Dispose();
+            _fortisPoolTimer.Dispose();
         }
 
         public async Task SendMessage(string message, string data)

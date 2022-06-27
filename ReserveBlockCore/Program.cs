@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
@@ -12,6 +13,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Config;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Reflection;
@@ -59,6 +61,15 @@ namespace ReserveBlockCore
         public static bool IsTestNet = false;
         public static int Port = 3338;
         public static int APIPort = 7292;
+        public static string? APIPassword = null;
+        public static DateTime? APIUnlockTime = null;
+        public static int WalletUnlockTime = 0;
+        public static string? APICallURL = null;
+        public static bool APICallURLLogging = false;
+        public static bool ChainCheckPoint = false;
+        public static int ChainCheckPointInterval = 0;
+        public static int ChainCheckPointRetain = 0;
+        public static string ChainCheckpointLocation = "";
         public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
@@ -83,6 +94,10 @@ namespace ReserveBlockCore
         {
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
+
+            Config.Config.EstablishConfigFile();
+            var config = Config.Config.ReadConfigFile();
+            Config.Config.ProcessConfig(config);
 
             var dateDiff = (int)Math.Round((currentDate - originDate).TotalDays);
             BuildVer = dateDiff;
@@ -232,6 +247,7 @@ namespace ReserveBlockCore
             
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
+            var commandLoopTask3 = Task.Run(() => CommandLoop3());
 
             //for web API using Kestrel
             var builder = Host.CreateDefaultBuilder(args)
@@ -260,6 +276,8 @@ namespace ReserveBlockCore
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
 
+            
+
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
@@ -285,7 +303,13 @@ namespace ReserveBlockCore
 
             Thread.Sleep(3000);
 
-            Task.WaitAll(commandLoopTask, commandLoopTask2);
+            var tasks = new Task[] {
+                commandLoopTask, //CLI console
+                commandLoopTask2, //awaiting parameters
+                commandLoopTask3 //Beacon client/server
+            };
+
+            Task.WaitAll(tasks);
 
             LogUtility.Log("Wallet Started and Running...", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
 
@@ -341,6 +365,11 @@ namespace ReserveBlockCore
         private static void CommandLoop2(string url)
         {
             //Console.ReadKey();
+        }
+
+        private static void CommandLoop3()
+        {
+            StartupService.StartBeacon();
         }
 
         #endregion

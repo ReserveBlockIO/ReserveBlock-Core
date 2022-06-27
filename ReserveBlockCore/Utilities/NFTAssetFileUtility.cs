@@ -5,7 +5,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class NFTAssetFileUtility 
     {
-        public static void MoveAsset(string fileLocation, string fileName, string scUID)
+        public static bool MoveAsset(string fileLocation, string fileName, string scUID)
         {
             var assetLocation = Program.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
@@ -37,11 +37,14 @@ namespace ReserveBlockCore.Utilities
 
             try
             {
-                File.Move(fileLocation, newPath);
+                File.Copy(fileLocation, newPath);
+                return true;
             }
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
+                NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
+                return false;
             }
         }
 

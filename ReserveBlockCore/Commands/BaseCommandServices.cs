@@ -4,11 +4,94 @@ using ReserveBlockCore.BIP39;
 using ReserveBlockCore.P2P;
 using Newtonsoft.Json;
 using ReserveBlockCore.Utilities;
+using System.Net;
 
 namespace ReserveBlockCore.Commands
 {
     public class BaseCommandServices
     {
+        public static async void UnlockWallet()
+        {
+            if(Program.APIPassword != null)
+            {
+                Console.WriteLine("Please type in password to unlock wallet.");
+                var password = Console.ReadLine();
+                if (password != null)
+                {
+                    var passCheck = Program.APIPassword.ToDecrypt(password);
+                    if(passCheck == password)
+                    {
+                        Program.APIUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
+                        Console.WriteLine($"Wallet has been unlocked for {Program.WalletUnlockTime} mins.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Incorrect Password.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("No password has been configured");
+            }
+            
+        }
+
+        public static async void AddPeer()
+        {
+            IPAddress ip;
+            Console.WriteLine("Please input the IP of the peer...");
+            var peer = Console.ReadLine();
+            if (peer != null)
+            {
+                try
+                {
+                    bool ValidateIP = IPAddress.TryParse(peer, out ip);
+                    if (ValidateIP)
+                    {
+                        var peers = Peers.GetAll();
+                        var peerExist = peers.Exists(x => x.PeerIP == peer);
+                        if (!peerExist)
+                        {
+                            Peers nPeer = new Peers
+                            {
+                                IsIncoming = false,
+                                IsOutgoing = true,
+                                PeerIP = peer,
+                                FailCount = 0
+                            };
+
+                            peers.Insert(nPeer);
+
+                            Console.WriteLine("Success! Peer added.");
+                            Console.WriteLine("Returning you to main menu...");
+                            Thread.Sleep(4000);
+                            StartupService.MainMenu();
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Failed to add. Peer already exist...");
+                            Console.WriteLine("Returning you to main menu...");
+                            Thread.Sleep(4000);
+                            StartupService.MainMenu();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to add. Please input a valid IP...");
+                        Console.WriteLine("Returning you to main menu...");
+                        Thread.Sleep(4000);
+                        StartupService.MainMenu();
+                    }
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine("Type /menu to return to main menu.");
+                }
+            }
+        }
         public static async void ReconnectPeers()
         {
             Console.WriteLine("Re-establish Peers? y/n");

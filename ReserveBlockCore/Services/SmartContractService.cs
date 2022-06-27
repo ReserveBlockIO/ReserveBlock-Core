@@ -114,7 +114,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region TransferSmartContract
-        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress)
+        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress, List<string> beacons)
         {
             Transaction? scTx = null;
 
@@ -130,6 +130,7 @@ namespace ReserveBlockCore.Services
 
             var txData = "";
 
+            
             if (scData.Result.Item1 != null)
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);

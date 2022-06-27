@@ -54,6 +54,12 @@ namespace ReserveBlockCore.Commands
                 case "/switchbeacon":
                     BaseCommandServices.SwitchBeaconState();
                     break;
+                case "/unlock":
+                    BaseCommandServices.UnlockWallet();
+                    break;
+                case "/addpeer":
+                    BaseCommandServices.AddPeer();
+                    break;
                 case "/trillium":
                     //start trillium
                     if(commandParameter == null)
