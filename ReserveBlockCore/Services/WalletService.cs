@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
@@ -143,6 +144,7 @@ namespace ReserveBlockCore.Services
 
             nTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
 
+
             try
             {
                 var result = VerifyTX(nTx, account);
@@ -166,6 +168,14 @@ namespace ReserveBlockCore.Services
         private static bool VerifyTX(Transaction txRequest, Account account)
         {
             bool txResult = false;
+
+            var txJsonSize = JsonConvert.SerializeObject(txRequest);
+            var size = txJsonSize.Length;
+
+            if (size > (1024 * 3))
+            {
+                return txResult;
+            }
 
             var newTxn = new Transaction()
             {
@@ -203,7 +213,9 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            if(account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
+            
+
+            if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
                 ValidatorService.StopValidating(validator);

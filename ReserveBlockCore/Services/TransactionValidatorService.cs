@@ -58,8 +58,14 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            //REMOVE THIS ON NEW UPDATE
-            
+            var txJsonSize = JsonConvert.SerializeObject(txRequest);
+            var size = txJsonSize.Length;
+
+            if (size > (1024 * 3))
+            {
+                return txResult;
+            }
+
             //Hash Check
             var newTxn = new Transaction()
             {
