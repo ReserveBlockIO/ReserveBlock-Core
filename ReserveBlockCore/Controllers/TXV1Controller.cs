@@ -105,15 +105,22 @@ namespace ReserveBlockCore.Controllers
         {
             string output;
 
-            var result = SignatureService.VerifySignature(address, message, sigScript);
+            try
+            {
+                var result = SignatureService.VerifySignature(address, message, sigScript);
 
-            if(result == true)
-            {
-                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Signature Verified." });
+                if (result == true)
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Signature Verified." });
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified." });
+                }
             }
-            else
+            catch(Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified." });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified. Unknown Error: {ex.Message}" });
             }
             
             return output;
