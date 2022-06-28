@@ -169,7 +169,6 @@ namespace ReserveBlockCore.Services
                                                 var httpResult = await httpResponse.Content.ReadAsStringAsync();
                                                 LogUtility.Log($"Transaction was sent. Here is response: {httpResult}", "BlockValidatorService.ValidateBlock()");
                                             }
-                                            
                                         }
                                         catch(Exception ex)
                                         {
@@ -177,7 +176,6 @@ namespace ReserveBlockCore.Services
                                             {
                                                 ErrorLogUtility.LogError($"Error Sending Transaction to URL. Error Message: {ex.Message}", "BlockValidatorService.ValidateBlock()");
                                             }
-                                            
                                         }
                                     }
                                 }

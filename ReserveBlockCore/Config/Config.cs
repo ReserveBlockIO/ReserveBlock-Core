@@ -20,7 +20,6 @@ namespace ReserveBlockCore.Config
         public int ChainCheckPointRetain { get; set; }
 		public string ChainCheckpointLocation { get; set; }
 
-
 		public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();

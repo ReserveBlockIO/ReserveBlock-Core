@@ -86,7 +86,7 @@ namespace ReserveBlockCore.Controllers
 
                 tx.Build();
 
-                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"TX Fee Calculated", Hash = tx.Fee });
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"TX Fee Calculated", Hash = tx.Hash });
             }
             catch (Exception ex)
             {
