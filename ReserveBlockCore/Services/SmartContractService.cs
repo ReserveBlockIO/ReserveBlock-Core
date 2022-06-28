@@ -23,7 +23,6 @@ namespace ReserveBlockCore.Services
             {
                 NFTLogUtility.Log($"Minter address is not found for : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                 return null;//Minter address is not found
-
             }
 
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scMain.SmartContractUID);
