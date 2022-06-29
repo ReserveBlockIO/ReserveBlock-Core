@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Utilities
 			BigInteger intData = 0;
 			for (int i = 0; i < s.Length; i++)
 			{
-				int digit = ALPHABET.IndexOf(s[i]); //Slow
+				int digit = ALPHABET.IndexOf(s[i]); //Slow, can be improved to be faster.
 				if (digit < 0)
 					throw new FormatException(string.Format("Invalid Base58 character `{0}` at position {1}", s[i], i));
 				intData = intData * 58 + digit;

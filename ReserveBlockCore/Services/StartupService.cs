@@ -216,6 +216,19 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static async void SetConfigValidator()
+        {
+            var address = Program.ConfigValidator;
+            var uname = Program.ConfigValidatorName;
+            var accounts = AccountData.GetAccounts();
+            var myAccount = accounts.FindOne(x => x.Address == address);
+            if (myAccount != null && myAccount.IsValidating != true)
+            {
+                var valResult = await ValidatorService.StartValidating(myAccount, uname);
+                Program.ValidatorAddress = myAccount.Address;
+            }
+        }
+
         internal static void SetSelfAdjudicator()
         {
             var leadAdj = Program.LeadAdjudicator;

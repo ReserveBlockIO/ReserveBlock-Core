@@ -15,10 +15,12 @@ namespace ReserveBlockCore.Config
         public string? APICallURL { get; set; }
 		public int WalletUnlockTime { get; set; }
         public bool ChainCheckPoint { get; set; }
-		public bool APICallURLLogging { get; set; }
 		public int ChainCheckPointInterval { get; set; }
         public int ChainCheckPointRetain { get; set; }
 		public string ChainCheckpointLocation { get; set; }
+		public bool APICallURLLogging { get; set; }
+		public string? ValidatorAddress { get; set; }
+		public string ValidatorName { get; set; }
 
 		public static Config ReadConfigFile()
         {
@@ -47,6 +49,8 @@ namespace ReserveBlockCore.Config
 				config.APIPort = dict.ContainsKey("APIPort") ? Convert.ToInt32(dict["APIPort"]) : 7292;
 				config.APIPassword = dict.ContainsKey("APIPassword") ? dict["APIPassword"] : null;
 				config.APICallURL = dict.ContainsKey("APICallURL") ? dict["APICallURL"] : null;
+				config.ValidatorAddress = dict.ContainsKey("ValidatorAddress") ? dict["ValidatorAddress"] : null;
+				config.ValidatorName = dict.ContainsKey("ValidatorName") ? dict["ValidatorName"] : Guid.NewGuid().ToString();
 				config.WalletUnlockTime = dict.ContainsKey("WalletUnlockTime") ? Convert.ToInt32(dict["WalletUnlockTime"]) : 15;
 				config.ChainCheckPoint = dict.ContainsKey("ChainCheckPoint") ? Convert.ToBoolean(dict["ChainCheckPoint"]) : false;
 				config.APICallURLLogging = dict.ContainsKey("APICallURLLogging") ? Convert.ToBoolean(dict["APICallURLLogging"]) : false;
@@ -78,6 +82,12 @@ namespace ReserveBlockCore.Config
 				Program.ChainCheckPointInterval = config.ChainCheckPointInterval;
 				Program.ChainCheckPointRetain = config.ChainCheckPointRetain;
 				Program.ChainCheckpointLocation = config.ChainCheckpointLocation;
+            }
+
+			if(config.ValidatorAddress != null)
+            {
+				Program.ConfigValidator = config.ValidatorAddress;
+				Program.ConfigValidatorName = config.ValidatorName;
             }
         }
 

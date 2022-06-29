@@ -70,6 +70,8 @@ namespace ReserveBlockCore
         public static int ChainCheckPointInterval = 0;
         public static int ChainCheckPointRetain = 0;
         public static string ChainCheckpointLocation = "";
+        public static string ConfigValidator = "";
+        public static string ConfigValidatorName = "";
         public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
@@ -215,8 +217,6 @@ namespace ReserveBlockCore
                 StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             }
 
-            
-
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
@@ -238,8 +238,6 @@ namespace ReserveBlockCore
 
             //add method to remove stale state trei records and stale validator records too
 
-            
-            
 
             string url = TestURL == false ? "http://*:" + APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:" + Port; //this is port for signalr connect and all p2p functions
@@ -293,12 +291,20 @@ namespace ReserveBlockCore
                 Console.WriteLine(ex.ToString());
             }
 
+            
+
             await StartupService.SetLeadAdjudicator();
             StartupService.SetSelfAdjudicator();
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
             await StartupService.ConnectoToAdjudicator();
-            
+
+
+            if (ConfigValidator != "")
+            {
+                StartupService.SetConfigValidator();
+            }
+
             StartupService.StartupMemBlocks();
 
             Thread.Sleep(3000);
