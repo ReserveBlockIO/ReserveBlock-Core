@@ -138,8 +138,8 @@ namespace ReserveBlockCore.Controllers
 
                 if (transaction != null)
                 {
-                    var result = await TransactionValidatorService.VerifyTX(transaction);
-                    if (result == true)
+                    var result = await TransactionValidatorService.VerifyTXDetailed(transaction);
+                    if (result.Item1 == true)
                     {
 
                         output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been verified.", Hash = transaction.Hash });
@@ -147,7 +147,7 @@ namespace ReserveBlockCore.Controllers
                     else
                     {
 
-                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction was not verified." });
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction was not verified. Error: {result.Item2}" });
                     }
                 }
                 else

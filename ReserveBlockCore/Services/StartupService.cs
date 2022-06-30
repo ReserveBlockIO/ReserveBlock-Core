@@ -26,9 +26,10 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    tcpClient.Connect("127.0.0.1", Program.Port);
-                    Console.WriteLine("Application already running on port 3338. Please verify only one instance is open.");
-                    LogUtility.Log("CLI Already Running. Closing new instance.", "InstanceCheck");
+                    var port = Program.Port;
+                    tcpClient.Connect("127.0.0.1", port);
+                    Console.WriteLine($"Application already running on port {port}. Please verify only one instance is open.");
+                    LogUtility.Log($"CLI Already Running on port {port}. Closing new instance.", "StartupService.AnotherInstanceCheck()");
                     Thread.Sleep(2000);
                     Environment.Exit(0);
                 }
@@ -48,7 +49,6 @@ namespace ReserveBlockCore.Services
             P2PClient.NodeDict.Add(4, null);
             P2PClient.NodeDict.Add(5, null);
             P2PClient.NodeDict.Add(6, null);
-
         }
 
         internal static void ClearValidatorDups()
