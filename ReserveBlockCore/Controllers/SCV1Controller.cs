@@ -221,6 +221,9 @@ namespace ReserveBlockCore.Controllers
 
                     nTx.Build();
 
+                    
+                    var checkSize = await TransactionValidatorService.VerifyTXSize(nTx);
+
                     var scInfo = new[]
                     {
                     new {Success = true, SmartContract = result.Item2, SmartContractCode = result.Item1, Transaction = nTx}

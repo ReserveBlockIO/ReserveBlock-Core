@@ -37,7 +37,11 @@ namespace ReserveBlockCore.Utilities
 
             try
             {
-                File.Copy(fileLocation, newPath);
+                var fileExist = File.Exists(newPath);
+                if(!fileExist)
+                {
+                    File.Copy(fileLocation, newPath);
+                }
                 return true;
             }
             catch(Exception ex)

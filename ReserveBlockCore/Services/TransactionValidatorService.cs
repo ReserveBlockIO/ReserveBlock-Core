@@ -58,10 +58,8 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            var txJsonSize = JsonConvert.SerializeObject(txRequest);
-            var size = txJsonSize.Length;
-
-            if (size > (1024 * 3))
+            var checkSize = await VerifyTXSize(txRequest);
+            if(checkSize == false)
             {
                 return txResult;
             }
@@ -301,12 +299,11 @@ namespace ReserveBlockCore.Services
                 return (txResult, "This transactions has already been sent.");
             }
 
-            var txJsonSize = JsonConvert.SerializeObject(txRequest);
-            var size = txJsonSize.Length;
+            var checkSize = await VerifyTXSize(txRequest);
 
-            if (size > (1024 * 3))
+            if (checkSize == false)
             {
-                return (txResult, $"This transactions is too large. Current size: {size}");
+                return (txResult, $"This transactions is too large. Max size allowed is 30 kb.");
             }
 
             //Hash Check
@@ -492,6 +489,19 @@ namespace ReserveBlockCore.Services
             //Return verification result.
             return (txResult, "Signature Verify has Failed.");
 
+        }
+
+        public static async Task<bool> VerifyTXSize(Transaction txRequest)
+        {
+            var txJsonSize = JsonConvert.SerializeObject(txRequest);
+            var size = txJsonSize.Length;
+
+            if (size > (1024 * 30))
+            {
+                return false;
+            }
+
+            return true;
         }
 
     }
