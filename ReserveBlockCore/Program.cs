@@ -279,7 +279,16 @@ namespace ReserveBlockCore
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
-            StartupService.CheckForDuplicateBlocks();//Commenting this out as duplicate blocks should not happen.
+            StartupService.CheckForDuplicateBlocks();
+
+            if (DatabaseCorruptionDetected == true)
+            {
+                while (true)
+                {
+                    Console.WriteLine("Please correct database corruption before continuing.");
+                    var read = Console.ReadLine();
+                }
+            }
 
             try
             {
@@ -290,8 +299,6 @@ namespace ReserveBlockCore
             {
                 Console.WriteLine(ex.ToString());
             }
-
-            
 
             await StartupService.SetLeadAdjudicator();
             StartupService.SetSelfAdjudicator();

@@ -382,39 +382,8 @@ namespace ReserveBlockCore.Services
             {
                 LogUtility.Log("Duplicate Blocks Found!", "StartupService: dupBlocksList.Count != 0 / meaning dup found!");
                 //Reset blocks and all balances and redownload chain. No exception here.
-                var accounts = AccountData.GetAccounts();
-                var transactions = TransactionData.GetAll();
-                var stateTrei = StateData.GetAccountStateTrei();
-                var worldTrei = WorldTrei.GetWorldTrei();
-
-                var accountList = accounts.FindAll();
-                if(accountList.Count() > 0)
-                {
-                    foreach(var account in accountList)
-                    {
-                        account.Balance = 0.0M;
-                        accounts.Update(account);//resets balances to 0.
-                    }
-                }
-
-                Program.BlockHeight = -1;
-
-                transactions.DeleteAll();//delete all local transactions
-                stateTrei.DeleteAll(); //removes all state trei data
-                worldTrei.DeleteAll();  //removes the state trei
-                blockChain.DeleteAll();//remove all blocks
-                try
-                {
-                    DbContext.DB.Checkpoint();
-                    DbContext.DB_AccountStateTrei.Checkpoint();
-                    DbContext.DB_WorldStateTrei.Checkpoint();
-                    DbContext.DB_Wallet.Checkpoint();
-
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
+                Console.WriteLine("Duplicate Blocks Found!");
+                Program.DatabaseCorruptionDetected = true;
             }
         }
 
