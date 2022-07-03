@@ -26,9 +26,9 @@ namespace ReserveBlockCore.Beacon
             while (true)
             {
                 TcpClient tc = obj_server.AcceptTcpClient();
-                SocketHandler obj_hadler = new SocketHandler(tc, SaveTo);
+                SocketHandler obj_handler = new SocketHandler(tc, SaveTo);
 
-                Thread obj_thread = new Thread(obj_hadler.ProcessSocketRequest);
+                Thread obj_thread = new Thread(obj_handler.ProcessSocketRequest);
                 obj_thread.Start();
             }
         }
@@ -51,6 +51,7 @@ namespace ReserveBlockCore.Beacon
             long current_file_pointer = 0;
             bool loop_break = false;
             string fileName = "";
+            var ip_address = ns.Socket.RemoteEndPoint != null ? ((IPEndPoint)ns.Socket.RemoteEndPoint).Address.ToString() : "NA";
             while (true)
             {
                 //byte[] readPbValue = ReadStream();
