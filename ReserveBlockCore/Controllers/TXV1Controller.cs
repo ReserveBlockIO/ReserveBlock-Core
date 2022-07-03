@@ -9,7 +9,9 @@ using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Controllers
 {
+    [ActionFilterController]
     [Route("txapi/[controller]")]
+    [Route("txapi/[controller]/{somePassword?}")]
     [ApiController]
     public class TXV1Controller : ControllerBase
     {

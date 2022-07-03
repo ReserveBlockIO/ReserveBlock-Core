@@ -11,8 +11,11 @@ namespace ReserveBlockCore.Config
     {
         public int Port { get; set; }
         public int APIPort { get; set; }
-        public string? APIPassword { get; set; }
-        public string? APICallURL { get; set; }
+		public string? WalletPassword { get; set; }
+		public bool AlwaysRequireWalletPassword { get; set; }
+		public string? APIPassword { get; set; }
+		public bool AlwaysRequireAPIPassword { get; set; }
+		public string? APICallURL { get; set; }
 		public int WalletUnlockTime { get; set; }
         public bool ChainCheckPoint { get; set; }
 		public int ChainCheckPointInterval { get; set; }
@@ -47,7 +50,10 @@ namespace ReserveBlockCore.Config
 				// Assign the values that you need:
 				config.Port = dict.ContainsKey("Port") ? Convert.ToInt32(dict["Port"]) : 3338;
 				config.APIPort = dict.ContainsKey("APIPort") ? Convert.ToInt32(dict["APIPort"]) : 7292;
+				config.WalletPassword = dict.ContainsKey("WalletPassword") ? dict["WalletPassword"] : null;
+				config.AlwaysRequireWalletPassword = dict.ContainsKey("AlwaysRequireWalletPassword") ? Convert.ToBoolean(dict["AlwaysRequireWalletPassword"]) : false;
 				config.APIPassword = dict.ContainsKey("APIPassword") ? dict["APIPassword"] : null;
+				config.AlwaysRequireAPIPassword = dict.ContainsKey("AlwaysRequireAPIPassword") ? Convert.ToBoolean(dict["AlwaysRequireAPIPassword"]) : false;
 				config.APICallURL = dict.ContainsKey("APICallURL") ? dict["APICallURL"] : null;
 				config.ValidatorAddress = dict.ContainsKey("ValidatorAddress") ? dict["ValidatorAddress"] : null;
 				config.ValidatorName = dict.ContainsKey("ValidatorName") ? dict["ValidatorName"] : Guid.NewGuid().ToString();
@@ -69,13 +75,23 @@ namespace ReserveBlockCore.Config
 			Program.APICallURL = config.APICallURL;
 			Program.APICallURLLogging = config.APICallURLLogging;
 
+			if (config.WalletPassword != null)
+			{
+				Program.WalletPassword = config.WalletPassword.ToEncrypt();
+				Program.CLIWalletUnlockTime = DateTime.UtcNow;
+				Program.WalletUnlockTime = config.WalletUnlockTime;
+				Program.AlwaysRequireWalletPassword = config.AlwaysRequireWalletPassword;
+			}
+
 			if (config.APIPassword != null)
             {
 				//create API Password method that locks password in encrypted string
 				Program.APIPassword = config.APIPassword.ToEncrypt();
 				Program.APIUnlockTime = DateTime.UtcNow;
 				Program.WalletUnlockTime = config.WalletUnlockTime;
-            }
+				Program.AlwaysRequireAPIPassword = config.AlwaysRequireAPIPassword;
+
+			}
 			if(config.ChainCheckPoint == true)
             {
 				//establish chain checkpoint parameters here.

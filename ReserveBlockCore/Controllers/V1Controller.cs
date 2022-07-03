@@ -12,7 +12,9 @@ using System.Numerics;
 
 namespace ReserveBlockCore.Controllers
 {
+    [ActionFilterController]
     [Route("api/[controller]")]
+    [Route("api/[controller]/{somePassword?}")]
     [ApiController]
     public class V1Controller : ControllerBase
     {
@@ -224,7 +226,7 @@ namespace ReserveBlockCore.Controllers
             var walletInfo = new[]
             {
                 new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Program.BlocksDownloading.ToString(), 
-                    IsResyncing = Program.IsResyncing.ToString(), IsChainSynced =  Program.IsChainSynced.ToString()}
+                    IsResyncing = Program.IsResyncing.ToString(), IsChainSynced =  Program.IsChainSynced.ToString(), ChainCorrupted = Program.DatabaseCorruptionDetected.ToString()}
             };
 
             output = JsonConvert.SerializeObject(walletInfo);

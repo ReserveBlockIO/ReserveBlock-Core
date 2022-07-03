@@ -292,7 +292,7 @@ namespace ReserveBlockCore.Data
                 {
                     //database corrupt
                     Program.DatabaseCorruptionDetected = true;
-                    //DbContext.DeleteCorruptDb();
+                    ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
                 }
             }
         }

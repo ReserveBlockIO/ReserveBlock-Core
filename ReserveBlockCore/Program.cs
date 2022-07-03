@@ -61,7 +61,11 @@ namespace ReserveBlockCore
         public static bool IsTestNet = false;
         public static int Port = 3338;
         public static int APIPort = 7292;
+        public static string? WalletPassword = null;
+        public static bool AlwaysRequireWalletPassword = false;
         public static string? APIPassword = null;
+        public static bool AlwaysRequireAPIPassword = false;
+        public static DateTime? CLIWalletUnlockTime = null;
         public static DateTime? APIUnlockTime = null;
         public static int WalletUnlockTime = 0;
         public static string? APICallURL = null;
@@ -342,38 +346,84 @@ namespace ReserveBlockCore
             while (true)
             {
                 var command = Console.ReadLine();
-                
-                if (command != "" || command != null)
+                if(WalletPassword != null)
                 {
-                    string commandResult = "";
-                    if (command.Contains(","))
+                    var now = DateTime.UtcNow;
+                    if(AlwaysRequireWalletPassword == true)
                     {
-                        var splitCommand = command.Split(',');
-                        commandResult = BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
+                        Console.WriteLine("Please enter your wallet password");
+                        var walletPass = Console.ReadLine();
+                        var passCheck = WalletPassword.ToDecrypt(walletPass);
+                        if (passCheck == walletPass && passCheck != "Fail")
+                        {
+                            //CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(WalletUnlockTime);
+                            RunCommand(command);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Incorrect password was entered.");
+                        }
+                         
+                    }
+                    else if(now > CLIWalletUnlockTime && AlwaysRequireWalletPassword == false)
+                    {
+                        Console.WriteLine("Please enter your wallet password");
+                        var walletPass = Console.ReadLine();
+                        var passCheck = WalletPassword.ToDecrypt(walletPass);
+                        if (passCheck == walletPass && passCheck != "Fail")
+                        {
+                            CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(WalletUnlockTime);
+                            RunCommand(command);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Incorrect password was entered.");
+                        }
                     }
                     else
                     {
-                        commandResult = BaseCommand.ProcessCommand(command);
+                        RunCommand(command);
                     }
-                    
-
-                    if (commandResult == "_EXIT")
-                    {
-                        StopAllTimers = true;
-                        Console.WriteLine("Closing and Exiting Wallet Application.");
-                        Thread.Sleep(2000);
-                        Environment.Exit(0);
-                    }
-
-                    Console.WriteLine(commandResult);
                 }
                 else
                 {
-                    Console.WriteLine("Please enter a command...");
+                    RunCommand(command);
                 }
 
             }
             
+        }
+
+        private static void RunCommand(string? command)
+        {
+            if (command != "" || command != null)
+            {
+                string commandResult = "";
+                if (command.Contains(","))
+                {
+                    var splitCommand = command.Split(',');
+                    commandResult = BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
+                }
+                else
+                {
+                    commandResult = BaseCommand.ProcessCommand(command);
+                }
+
+
+                if (commandResult == "_EXIT")
+                {
+                    StopAllTimers = true;
+                    Console.WriteLine("Closing and Exiting Wallet Application.");
+                    Thread.Sleep(2000);
+                    Environment.Exit(0);
+                }
+
+                Console.WriteLine(commandResult);
+            }
+            else
+            {
+                Console.WriteLine("Please enter a command...");
+            }
         }
         private static void CommandLoop2(string url)
         {

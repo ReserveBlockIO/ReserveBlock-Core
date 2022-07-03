@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
@@ -7,7 +8,9 @@ using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Controllers
 {
+    [ActionFilterController]
     [Route("bcapi/[controller]")]
+    [Route("bcapi/[controller]/{somePassword?}")]
     [ApiController]
     public class BCV1Controller : ControllerBase
     {
@@ -54,23 +57,14 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
-            var beaconString = locator.ToStringFromBase64();
-            var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                var beaconString = locator.ToStringFromBase64();
+                var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-            var successResult = new[]
-                {
-                    new { Result = "Success", BeaconInfo = beaconDataJsonDes}
-                };
-            output = JsonConvert.SerializeObject(successResult);
+                output = JsonConvert.SerializeObject(new { Result = "Success", BeaconInfo = beaconDataJsonDes });
             }
             catch(Exception ex)
             {
-                var failedResult = new[]
-                {
-                    new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption."}
-                };
-
-                output = JsonConvert.SerializeObject(failedResult);
+                output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption."});
             }
 
             return output;
@@ -81,42 +75,27 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-
             var beaconInfo = BeaconInfo.GetBeaconInfo();
             if(beaconInfo != null)
             {
-                BeaconInfo.BeaconInfoJson beaconDataJsonDes = new BeaconInfo.BeaconInfoJson();
+                BeaconInfo.BeaconInfoJson beaconInfoJsonDes = new BeaconInfo.BeaconInfoJson();
                 try
                 {
                     var beaconString = beaconInfo.BeaconLocator.ToStringFromBase64();
-                    beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
-                    var successResult = new[]
-                    {
-                        new { Result = "Success", BeaconInfo = beaconInfo, BeaconLocatorData = beaconDataJsonDes}
-                    };
+                    beaconInfoJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-                    output = JsonConvert.SerializeObject(successResult);
+                    output = JsonConvert.SerializeObject(new { Result = "Success", BeaconInfo = beaconInfo, BeaconLocatorData = beaconInfoJsonDes });
                 }
                 catch(Exception ex)
                 {
-                    beaconDataJsonDes = null;
-                    var failedResult = new[]
-                    {
-                        new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption."}
-                    };
-
-                    output = JsonConvert.SerializeObject(failedResult);
+                    beaconInfoJsonDes = null;
+                    output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption." });
                 }
                 
             }
             else
             {
-                var failedResult = new[]
-                {
-                    new { Result = "Failed", ResultMessage = "No Beacon info found."}
-                };
-
-                output = JsonConvert.SerializeObject(failedResult);
+                output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "No Beacon info found." });
             }
 
             return output;
@@ -131,21 +110,11 @@ namespace ReserveBlockCore.Controllers
 
             if(result == null)
             {
-                var failedResult = new[]
-                {
-                    new { Result = "Failed", ResultMessage = "Error turning beacon on/off"}
-                };
-
-                output = JsonConvert.SerializeObject(failedResult);
+                output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "Error turning beacon on/off" });
             }
             else
             {
-                var successResult = new[]
-                {
-                    new { Result = "Success", ResultMessage = result.Value}
-                };
-
-                output = JsonConvert.SerializeObject(successResult);
+                output = JsonConvert.SerializeObject(new { Result = "Success", ResultMessage = result.Value });
             }
 
             return output;

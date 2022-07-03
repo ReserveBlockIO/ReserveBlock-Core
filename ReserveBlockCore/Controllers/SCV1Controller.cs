@@ -10,7 +10,9 @@ using System.Text;
 
 namespace ReserveBlockCore.Controllers
 {
+    [ActionFilterController]
     [Route("scapi/[controller]")]
+    [Route("scapi/[controller]/{somePassword?}")]
     [ApiController]
     public class SCV1Controller : ControllerBase
     {

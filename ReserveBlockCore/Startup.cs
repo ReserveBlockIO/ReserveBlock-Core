@@ -38,7 +38,11 @@ namespace ReserveBlockCore
             {
                 if (APIEnabled)
                 {
-                    if(Program.APIUnlockTime == null)
+                    if (Program.AlwaysRequireAPIPassword == true)
+                    {
+                        return func.Invoke();
+                    }
+                    if (Program.APIUnlockTime == null)
                     {
                         return func.Invoke();
                     }
