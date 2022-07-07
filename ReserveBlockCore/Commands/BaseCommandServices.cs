@@ -5,6 +5,8 @@ using ReserveBlockCore.P2P;
 using Newtonsoft.Json;
 using ReserveBlockCore.Utilities;
 using System.Net;
+using ReserveBlockCore.Data;
+using System.Text.RegularExpressions;
 
 namespace ReserveBlockCore.Commands
 {
@@ -193,6 +195,127 @@ namespace ReserveBlockCore.Commands
                 }
             }
             return "Unexpected entry detected. Please try again.";
+        }
+
+        public static async Task<string> CreateDnr()
+        {
+            var output = "";
+            Console.WriteLine("Please select the wallet you'd like to create a domain name registration for...");
+            var accountList = AccountData.GetAccountsWithBalanceForAdnr();
+            var accountNumberList = new Dictionary<string, Account>();
+            if (accountList.Count() > 0)
+            {
+                int count = 1;
+                Console.WriteLine("********************************************************************");
+                Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
+                accountList.ToList().ForEach(x => {
+                    accountNumberList.Add(count.ToString(), x);
+                    Console.WriteLine("********************************************************************");
+                    Console.WriteLine("\n#" + count.ToString());
+                    Console.WriteLine("\nAddress :\n{0}", x.Address);
+                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+                    Console.WriteLine("********************************************************************");
+                    count++;
+                });
+                string walletChoice = "";
+                walletChoice = Console.ReadLine();
+
+                if(walletChoice != null && walletChoice != "")
+                {
+                    var keyCheck = accountNumberList.ContainsKey(walletChoice);
+
+                    if (keyCheck == false)
+                    {
+                        Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
+                        return output;
+                    }
+                    else
+                    {
+                        var wallet = accountNumberList[walletChoice];
+                        var address = wallet.Address;
+                        var adnr = Adnr.GetAdnr();
+                        var adnrCheck = adnr.FindOne(x => x.Address == address);
+                        if(adnrCheck != null)
+                        {
+                            Console.WriteLine($"This address already has a DNR associated with it: {adnrCheck.Name}");
+                            return output;
+                        }
+                        bool nameFound = true;
+                        while(nameFound)
+                        {
+                            Console.WriteLine($"You have selected the following wallet: {address}");
+                            Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
+                            Console.WriteLine("type exit to leave this menu.");
+                            var name = Console.ReadLine();
+                            if(name != null && name != "")
+                            {
+                                var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
+                                if(!nameCharCheck)
+                                {
+                                    Console.WriteLine("A DNR may only contain letters and numbers.");
+                                }
+                                else
+                                {
+                                    var nameCheck = adnr.FindOne(x => x.Name == name);
+                                    if (nameCheck == null)
+                                    {
+                                        nameFound = false;
+                                        Console.WriteLine("Are you sure you want to create this DNR? 'y' for yes, 'n' for no.");
+                                        var response = Console.ReadLine();
+                                        if (response != null && response != "")
+                                        {
+                                            if (response.ToLower() == "y")
+                                            {
+                                                Console.WriteLine("Sending Transaction now.");
+                                                var result = await Adnr.CreateAdnrTx(address, name);
+                                                if(result.Item1 != null)
+                                                {
+                                                    Console.WriteLine("DNR Request has been sent to mempool. Sending you back to main menu.");
+                                                    Console.WriteLine("3...");
+                                                    Thread.Sleep(1000);
+                                                    Console.WriteLine("2...");
+                                                    Thread.Sleep(1000);
+                                                    Console.WriteLine("1...");
+                                                    Thread.Sleep(1000);
+                                                    StartupService.MainMenu();
+                                                }
+                                                else
+                                                {
+                                                    Console.WriteLine("DNR Request failed to enter the mempool.");
+                                                    Console.WriteLine($"Error: {result.Item2}");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                StartupService.MainMenu();
+                                                Console.WriteLine("DNR Request has been cancelled.");
+                                            }
+                                        }
+
+                                    }
+                                }
+                                
+                            }
+                            else
+                            {
+                                StartupService.MainMenu();
+                                Console.WriteLine("DNR Request has been cancelled. Incorrect format inputted.");
+                            }
+                            
+                        }
+                        
+                    }
+                }
+                return output;
+                
+            }
+            else
+            {
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a dnr.");
+                return output;
+            }
+
+            
         }
 
         public static string RestoreHDWallet()

@@ -60,6 +60,9 @@ namespace ReserveBlockCore.Commands
                 case "/addpeer":
                     BaseCommandServices.AddPeer();
                     break;
+                case "/creatednr":
+                    BaseCommandServices.CreateDnr();
+                    break;
                 case "/trillium":
                     //start trillium
                     if(commandParameter == null)

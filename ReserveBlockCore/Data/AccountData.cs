@@ -254,6 +254,13 @@ namespace ReserveBlockCore.Data
 
 			return accountsWithBal;
 		}
+		public static IEnumerable<Account> GetAccountsWithBalanceForAdnr()
+		{
+			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			var accountsWithBal = accounts.Find(x => x.Balance >= 1.01M);
+
+			return accountsWithBal;
+		}
 		public static IEnumerable<Account> GetPossibleValidatorAccounts()
 		{
 			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);

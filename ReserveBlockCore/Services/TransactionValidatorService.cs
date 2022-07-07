@@ -231,6 +231,69 @@ namespace ReserveBlockCore.Services
                     }
 
                 }
+
+                if(txRequest.TransactionType == TransactionType.ADNR)
+                {
+                    var txData = txRequest.Data;
+                    if(txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            var address = (string)jobj["Address"];
+                            var name = (string)jobj["Name"];
+                            if (address != txRequest.FromAddress)
+                            {
+                                return txResult;
+                            }
+
+                            var function = (string)jobj["Function"];
+                            var hash = (string)jobj["Hash"];
+                            if (function == "AdnrCreate()")
+                            {
+                                var accountBalance = AccountStateTrei.GetAccountBalance(address);
+                                if(accountBalance < 1)
+                                {
+                                    return txResult;
+                                }
+
+                                var adnrList = Adnr.GetAdnr();
+                                if(adnrList != null)
+                                {
+                                    var nameCheck = adnrList.FindOne(x => x.Name == name);
+                                    if (nameCheck != null)
+                                    {
+                                        return txResult;
+                                    }
+
+                                    var addressCheck = adnrList.FindOne(x => x.Address == address);
+                                    if(addressCheck != null)
+                                    {
+                                        return txResult;
+                                    }
+                                }
+
+                                Adnr adnr = new Adnr();
+                                adnr.Address = address;
+                                adnr.Signature = (string)jobj["Signature"];
+                                adnr.Timestamp = (long)jobj["Timestamp"];
+                                adnr.Name = name;
+
+                                adnr.Build();
+
+                                if(adnr.Hash != hash)
+                                {
+                                    return txResult;
+                                }
+                            }
+                        }
+                        catch(Exception ex)
+                        {
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+                            return txResult;
+                        }
+                    }
+                }
             }
 
             //Signature Check - Final Check to return true.
@@ -472,6 +535,69 @@ namespace ReserveBlockCore.Services
                         }
                     }
 
+                }
+
+                if (txRequest.TransactionType == TransactionType.ADNR)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            var address = (string)jobj["Address"];
+                            var name = (string)jobj["Name"];
+                            if (address != txRequest.FromAddress)
+                            {
+                                return (txResult, "From address and DNR Request address do not match.");
+                            }
+
+                            var function = (string)jobj["Function"];
+                            var hash = (string)jobj["Hash"];
+                            if (function == "AdnrCreate()")
+                            {
+                                var accountBalance = AccountStateTrei.GetAccountBalance(address);
+                                if (accountBalance < 1)
+                                {
+                                    return (txResult, "Account balance is less than 1");
+                                }
+
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var nameCheck = adnrList.FindOne(x => x.Name == name);
+                                    if (nameCheck != null)
+                                    {
+                                        return (txResult, "Name has already been taken.");
+                                    }
+
+                                    var addressCheck = adnrList.FindOne(x => x.Address == address);
+                                    if (addressCheck != null)
+                                    {
+                                        return (txResult, "Address is already associated with an active DNR");
+                                    }
+                                }
+
+                                Adnr adnr = new Adnr();
+                                adnr.Address = address;
+                                adnr.Signature = (string)jobj["Signature"];
+                                adnr.Timestamp = (long)jobj["Timestamp"];
+                                adnr.Name = name;
+
+                                adnr.Build();
+
+                                if (adnr.Hash != hash)
+                                {
+                                    return (txResult, "Hashes do not match the TX data. Something has been modified.");
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+                            return (txResult, "Failed to deserialized TX Data for ADNR");
+                        }
+                    }
                 }
             }
 

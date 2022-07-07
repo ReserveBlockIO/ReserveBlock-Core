@@ -69,6 +69,14 @@ namespace ReserveBlockCore.Services
                 return result;
             }
 
+            //ensures the timestamps being produced are correct
+            var prevTimestamp = Program.LastBlock.Timestamp;
+            var currentTimestamp = TimeUtil.GetTime(60);
+            if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
+            {
+                //return result;
+            }
+
             var newBlock = new Block {
                 Height = block.Height,
                 Timestamp = block.Timestamp,
@@ -343,6 +351,13 @@ namespace ReserveBlockCore.Services
                 }
             }
 
+            //ensures the timestamps being produced are correct
+            var prevTimestamp = Program.LastBlock.Timestamp;
+            var currentTimestamp = TimeUtil.GetTime(60);
+            if(prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
+            {
+                return result;
+            }
 
             //Validates that the block has same chain ref
             if (block.ChainRefId != BlockchainData.ChainRef)

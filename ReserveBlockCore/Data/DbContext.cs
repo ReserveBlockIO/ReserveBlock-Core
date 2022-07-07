@@ -26,6 +26,7 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_SmartContractStateTrei { set; get; }// stores SC Data
         public static LiteDatabase DB_Beacon { get; set; }
         public static LiteDatabase DB_Config { get; set; }
+        public static LiteDatabase DB_DNR { get; set; }
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
@@ -40,6 +41,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_SCSTATE_TREI = @"rsrvscstatetrei.db";
         public const string RSRV_DB_BEACON = @"rsrvbeacon.db";
         public const string RSRV_DB_CONFIG = @"rsrvconfig.db";
+        public const string RSRV_DB_DNR = @"rsrvdnr.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -63,16 +65,18 @@ namespace ReserveBlockCore.Data
         public const string RSRV_SCSTATE_TREI = "rsrv_scstate_trei";
         public const string RSRV_BEACON_INFO = "rsrv_beacon_info";
         public const string RSRV_BEACON_DATA = "rsrv_beacon_data";
+        public const string RSRV_DNR = "rsrv_dnr";
 
         public static void Initialize()
         {
             var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -82,7 +86,7 @@ namespace ReserveBlockCore.Data
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))
@@ -110,6 +114,7 @@ namespace ReserveBlockCore.Data
             DB_Banlist = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BANLIST_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Config = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CONFIG, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Beacon = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BEACON, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
 
             //DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS, mapper);
             //DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
@@ -130,12 +135,13 @@ namespace ReserveBlockCore.Data
         public static void DeleteCorruptDb()
         {
             var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -145,7 +151,7 @@ namespace ReserveBlockCore.Data
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))
@@ -164,12 +170,13 @@ namespace ReserveBlockCore.Data
         public static void MigrateDbNewChainRef()
         {
             var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -179,7 +186,7 @@ namespace ReserveBlockCore.Data
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))
@@ -199,6 +206,7 @@ namespace ReserveBlockCore.Data
             DB_Assets.Checkpoint();
             DB_SmartContractStateTrei.Checkpoint();
             DB_Beacon.Checkpoint();
+            DB_DNR.Checkpoint();
 
             //dispose connection to DB
             CloseDB();
@@ -225,6 +233,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_ASSETS);
             File.Delete(path + RSRV_DB_SCSTATE_TREI);
             File.Delete(path + RSRV_DB_BEACON);
+            File.Delete(path + RSRV_DB_DNR);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -247,6 +256,7 @@ namespace ReserveBlockCore.Data
             DB_Banlist = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BANLIST_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Config = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CONFIG, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Beacon = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BEACON, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
@@ -265,6 +275,7 @@ namespace ReserveBlockCore.Data
             DB_Assets.Dispose();
             DB_SmartContractStateTrei.Dispose();
             DB_Beacon.Dispose();
+            DB_DNR.Dispose();
         }
 
     }

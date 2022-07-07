@@ -5,6 +5,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class GetPathUtility
     {
+        private static string MainFolder = Program.IsTestNet != true ? "RBX" : "RBXTest";
         public static string GetDatabasePath()
         {
             string path = "";
@@ -14,7 +15,7 @@ namespace ReserveBlockCore.Utilities
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -24,7 +25,7 @@ namespace ReserveBlockCore.Utilities
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))
@@ -44,7 +45,7 @@ namespace ReserveBlockCore.Utilities
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -54,7 +55,7 @@ namespace ReserveBlockCore.Utilities
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))
@@ -74,7 +75,7 @@ namespace ReserveBlockCore.Utilities
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -84,7 +85,7 @@ namespace ReserveBlockCore.Utilities
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))
@@ -104,7 +105,7 @@ namespace ReserveBlockCore.Utilities
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
             }
             else
             {
@@ -114,7 +115,7 @@ namespace ReserveBlockCore.Utilities
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
                 }
             }
             if (!Directory.Exists(path))

@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Text.RegularExpressions;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -225,6 +226,71 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("CreateDnr/{address}/{name}")]
+        public async Task<string> CreateDnr(string address, string name)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(address);
+                if(wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = Adnr.GetAdnr();
+                    if(adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrCheck != null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrCheck.Name}" });
+                            return output;
+                        }
+                        if (name != null && name != "")
+                        {
+                            var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
+                            if (!nameCharCheck)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "A DNR may only contain letters and numbers." });
+                                return output;
+                            }
+                            else
+                            {
+                                var nameCheck = adnr.FindOne(x => x.Name == name);
+                                if (nameCheck == null)
+                                {
+                                    var result = await Adnr.CreateAdnrTx(address, name);
+                                    if (result.Item1 != null)
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                                    }
+                                    else
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                                    }
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Name was empty." });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {address} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+            }
+
+            return output;
+        }
 
         [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}")]
         public async Task<string> SendTransaction(string faddr, string taddr, string amt)

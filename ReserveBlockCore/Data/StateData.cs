@@ -89,27 +89,31 @@ namespace ReserveBlockCore.Data
                     
                 }
 
-                var to = GetSpecificAccountStateTrei(x.ToAddress);
-
-                if(to == null)
+                if(x.ToAddress != "Adnr_Base")
                 {
-                    var acctStateTreiTo = new AccountStateTrei
+                    var to = GetSpecificAccountStateTrei(x.ToAddress);
+
+                    if (to == null)
                     {
-                        Key = x.ToAddress,
-                        Nonce = 0, 
-                        Balance = x.Amount, 
-                        StateRoot = block.StateRoot
-                    };
+                        var acctStateTreiTo = new AccountStateTrei
+                        {
+                            Key = x.ToAddress,
+                            Nonce = 0,
+                            Balance = x.Amount,
+                            StateRoot = block.StateRoot
+                        };
 
-                    accStTrei.Insert(acctStateTreiTo);
-                }
-                else
-                {
-                    to.Balance += x.Amount;
-                    to.StateRoot = block.StateRoot;
+                        accStTrei.Insert(acctStateTreiTo);
+                    }
+                    else
+                    {
+                        to.Balance += x.Amount;
+                        to.StateRoot = block.StateRoot;
 
-                    accStTrei.Update(to);
+                        accStTrei.Update(to);
+                    }
                 }
+                
 
                 if (x.TransactionType != TransactionType.TX)
                 {
@@ -148,6 +152,33 @@ namespace ReserveBlockCore.Data
                             }
                         }
 
+                    }
+
+                    if(x.TransactionType == TransactionType.ADNR)
+                    {
+                        var txData = x.Data;
+                        if (txData != null)
+                        {
+                            var jobj = JObject.Parse(txData);
+                            var function = (string)jobj["Function"];
+                            if (function != "")
+                            {
+                                switch (function)
+                                {
+                                    case "AdnrCreate()":
+                                        AddNewAdnr(x);
+                                        break;
+                                    case "AdnrTransfer()":
+                                        //AddNewAdnr(x);
+                                        break;
+                                    case "AdnrDelete()":
+                                        //AddNewAdnr(x);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -192,7 +223,35 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void AddNewlyMintedContract(Transaction tx)
+        private static void AddNewAdnr(Transaction tx)
+        {
+            try
+            {
+                var jobj = JObject.Parse(tx.Data);
+                var address = (string)jobj["Address"];
+                var name = (string)jobj["Name"];
+                Adnr adnr = new Adnr();
+
+                adnr.Address = address;
+                adnr.Signature = (string)jobj["Signature"];
+                adnr.Timestamp = (long)jobj["Timestamp"];
+                adnr.Name = name + ".rbx";
+                adnr.TxHash = tx.Hash;
+                adnr.Hash = (string)jobj["Hash"];
+
+                var adnrList = Adnr.GetAdnr();
+                if (adnrList != null)
+                {
+                    adnrList.Insert(adnr);
+                }
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+            }
+        }
+
+        private static void AddNewlyMintedContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -215,7 +274,7 @@ namespace ReserveBlockCore.Data
             }
 
         }
-        public static void TransferSmartContract(Transaction tx)
+        private static void TransferSmartContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -235,7 +294,7 @@ namespace ReserveBlockCore.Data
             }
 
         }
-        public static void BurnSmartContract(Transaction tx)
+        private static void BurnSmartContract(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -252,7 +311,7 @@ namespace ReserveBlockCore.Data
 
         }
 
-        public static void EvolveSC(Transaction tx)
+        private static void EvolveSC(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -271,7 +330,7 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void DevolveSC(Transaction tx)
+        private static void DevolveSC(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
@@ -290,7 +349,7 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void EvolveDevolveSpecific(Transaction tx)
+        private static void EvolveDevolveSpecific(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);

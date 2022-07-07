@@ -8,10 +8,10 @@ namespace ReserveBlockCore.Utilities
 {
     internal class TimeUtil
     {
-        public static long GetTime()
+        public static long GetTime(int addTime = 0)
         {
             long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.Ticks;
+            long nowTicks = DateTime.UtcNow.AddSeconds(addTime).Ticks;
             long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerSecond);
             return timeStamp;
 
