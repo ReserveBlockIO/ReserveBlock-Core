@@ -101,6 +101,19 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+            var argList = args.ToList();
+            if (args.Length != 0)
+            {
+                argList.ForEach(x => {
+                    var argC = x.ToLower();
+                    if (argC == "testnet")
+                    {
+                        //Launch testnet
+                        IsTestNet = true;
+                    }
+                });
+            }
+
             Config.Config.EstablishConfigFile();
             var config = Config.Config.ReadConfigFile();
             Config.Config.ProcessConfig(config);
@@ -124,7 +137,6 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
-            var argList = args.ToList();
             if (args.Length != 0)
             {
                 argList.ForEach(x => {
@@ -133,7 +145,7 @@ namespace ReserveBlockCore
                     {
                         Startup.APIEnabled = true; //api disabled by default
                     }
-                    if(argC == "hidecli")
+                    if (argC == "hidecli")
                     {
                         ProcessStartInfo start = new ProcessStartInfo();
                         start.FileName = Directory.GetCurrentDirectory() + @"\RBXCore\ReserveBlockCore.exe";
@@ -150,33 +162,23 @@ namespace ReserveBlockCore
                     {
                         //launch gui
                     }
-                    if (argC == "testnet")
-                    {
-                        //Launch testnet
-                        IsTestNet = true;
-                        GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
-                        Port = 13338;
-                        APIPort = 17292;
-                        AddressPrefix = 0x89; //address prefix 'x'
-                    }
                     if (argC == "testurl")
                     {
                         //Launch testnet
                         TestURL = true;
                     }
-
-                    if(argC.Contains("privkey"))
+                    if (argC.Contains("privkey"))
                     {
                         try
                         {
                             var keySplit = argC.Split(new char[] { '=' });
                             var privateKey = keySplit[1];
                             var account = AccountData.RestoreAccount(privateKey);
-                            if(account != null)
+                            if (account != null)
                             {
                                 Console.WriteLine("Account Loaded: " + account.Address);
                             }
-                            
+
                         }
                         catch (Exception ex)
                         {

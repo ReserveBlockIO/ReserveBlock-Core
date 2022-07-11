@@ -14,6 +14,11 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class BCV1Controller : ControllerBase
     {
+        /// <summary>
+        /// Creates a beacon on the local host
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         [HttpGet("CreateBeacon/{name}")]
         public async Task<string> CreateBeacon(string name)
         {

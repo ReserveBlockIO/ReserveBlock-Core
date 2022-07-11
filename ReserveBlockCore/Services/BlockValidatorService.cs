@@ -74,7 +74,7 @@ namespace ReserveBlockCore.Services
             var currentTimestamp = TimeUtil.GetTime(60);
             if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
             {
-                //return result;
+                return result;
             }
 
             var newBlock = new Block {

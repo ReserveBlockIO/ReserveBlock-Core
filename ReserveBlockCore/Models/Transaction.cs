@@ -28,7 +28,6 @@ namespace ReserveBlockCore.Models
         [StringLength(512)]
         public string Signature { get; set; }
         public long Height { get; set; }
-
         public TransactionType TransactionType { get; set; }
 
         public void Build()

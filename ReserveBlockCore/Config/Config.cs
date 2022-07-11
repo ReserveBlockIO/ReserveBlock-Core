@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Config
     {
         public int Port { get; set; }
         public int APIPort { get; set; }
+		public bool TestNet{ get; set; }
 		public string? WalletPassword { get; set; }
 		public bool AlwaysRequireWalletPassword { get; set; }
 		public string? APIPassword { get; set; }
@@ -50,6 +51,7 @@ namespace ReserveBlockCore.Config
 				// Assign the values that you need:
 				config.Port = dict.ContainsKey("Port") ? Convert.ToInt32(dict["Port"]) : 3338;
 				config.APIPort = dict.ContainsKey("APIPort") ? Convert.ToInt32(dict["APIPort"]) : 7292;
+				config.TestNet = dict.ContainsKey("TestNet") ? Convert.ToBoolean(dict["TestNet"]) : false;
 				config.WalletPassword = dict.ContainsKey("WalletPassword") ? dict["WalletPassword"] : null;
 				config.AlwaysRequireWalletPassword = dict.ContainsKey("AlwaysRequireWalletPassword") ? Convert.ToBoolean(dict["AlwaysRequireWalletPassword"]) : false;
 				config.APIPassword = dict.ContainsKey("APIPassword") ? dict["APIPassword"] : null;
@@ -74,6 +76,15 @@ namespace ReserveBlockCore.Config
 			Program.APIPort = config.APIPort;
 			Program.APICallURL = config.APICallURL;
 			Program.APICallURLLogging = config.APICallURLLogging;
+
+			if(config.TestNet == true)
+            {
+				Program.IsTestNet = true;
+				Program.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
+				Program.Port = 13338;
+				Program.APIPort = 17292;
+				Program.AddressPrefix = 0x89; //address prefix 'x'
+			}
 
 			if (config.WalletPassword != null)
 			{
@@ -113,8 +124,19 @@ namespace ReserveBlockCore.Config
 			var fileExist = File.Exists(path + "config.txt");
 			if(!fileExist)
             {
-				await File.AppendAllTextAsync(path + "config.txt", "Port=3338");
-				await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "APIPort=7292");
+				if (Program.IsTestNet == false)
+				{
+					await File.AppendAllTextAsync(path + "config.txt", "Port=3338");
+					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "APIPort=7292");
+					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "TestNet=false");
+				}
+                else
+                {
+					await File.AppendAllTextAsync(path + "config.txt", "Port=13338");
+					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "APIPort=17292");
+					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "TestNet=true");
+				}
+				
 			}
 		}
     }

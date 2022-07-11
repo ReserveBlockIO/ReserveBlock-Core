@@ -685,12 +685,29 @@ namespace ReserveBlockCore.Services
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
-            AnsiConsole.Write(
-                new FigletText("ReserveBlock Wallet")
+            if(Program.IsTestNet != true)
+            {
+                AnsiConsole.Write(
+                new FigletText("RBX Wallet")
                 .LeftAligned()
                 .Color(Color.Blue));
-
-            Console.WriteLine("ReserveBlock Main Menu");
+            }
+            else
+            {
+                AnsiConsole.Write(
+                new FigletText("RBX Wallet - TestNet")
+                .LeftAligned()
+                .Color(Color.Green));
+            }
+            
+            if(Program.IsTestNet != true)
+            {
+                Console.WriteLine("ReserveBlock Main Menu");
+            }
+            else
+            {
+                Console.WriteLine("ReserveBlock Main Menu **TestNet**");
+            }
             Console.WriteLine("|======================================|");
             Console.WriteLine("| 1. Genesis Block (Check)             |");
             Console.WriteLine("| 2. Create Account                    |");
