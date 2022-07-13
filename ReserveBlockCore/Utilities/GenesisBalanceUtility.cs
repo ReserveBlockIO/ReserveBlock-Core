@@ -11,6 +11,12 @@
 
             };
 
+            if(Program.IsTestNet == true)
+            {
+                balanceSheet = new Dictionary<string, decimal> {
+                                {"xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo", 1000000M }, }; // Address, Amount in Decimal
+            }
+
 
 
             return balanceSheet;

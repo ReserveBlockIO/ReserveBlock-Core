@@ -133,7 +133,8 @@ namespace ReserveBlockCore.Nodes
 
                                             if (broadcast == true)
                                             {
-                                                Console.WriteLine("Block was added from: " + nextBlock.Validator);
+                                                var text = ($"Block ({nextBlock.Height}) was added from: {nextBlock.Validator} ");
+                                                ConsoleWriterService.Output(text);
                                             }
                                         }
                                         if (nextHeight < currentHeight)

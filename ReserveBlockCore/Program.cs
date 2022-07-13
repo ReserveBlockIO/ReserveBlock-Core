@@ -37,6 +37,7 @@ namespace ReserveBlockCore
         public static List<Validators> InactiveValidators = new List<Validators>();
         public static List<Validators> MasternodePool = new List<Validators>();
         public static long BlockHeight = -1;
+        public static bool StopConsoleOutput = false;
         public static Block LastBlock = new Block();
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
@@ -213,16 +214,8 @@ namespace ReserveBlockCore
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 
-            if (IsTestNet == true)
-            {
-                
-            }
-            else
-            {
-                
-                StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
-            }
-
+            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
+            
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;
@@ -279,6 +272,7 @@ namespace ReserveBlockCore
 
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
+            
 
             
 
@@ -325,7 +319,7 @@ namespace ReserveBlockCore
             var tasks = new Task[] {
                 commandLoopTask, //CLI console
                 commandLoopTask2, //awaiting parameters
-                commandLoopTask3 //Beacon client/server
+                commandLoopTask3//Beacon client/server
             };
 
             Task.WaitAll(tasks);

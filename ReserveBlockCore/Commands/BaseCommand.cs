@@ -25,6 +25,10 @@ namespace ReserveBlockCore.Commands
                 case "/printvars":
                     StaticVariableUtility.PrintStaticVariables();
                     break;
+                case "/stopco":
+                    Program.StopConsoleOutput = !Program.StopConsoleOutput;
+                    Console.WriteLine($"Stop Console Output set to: {Program.StopConsoleOutput}");
+                    break;
                 case "/exit":
                     commandResult = "_EXIT";
                     break;

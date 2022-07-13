@@ -122,19 +122,20 @@ namespace ReserveBlockCore.Config
 		{
 			var path = GetPathUtility.GetConfigPath();
 			var fileExist = File.Exists(path + "config.txt");
+
 			if(!fileExist)
             {
 				if (Program.IsTestNet == false)
 				{
-					await File.AppendAllTextAsync(path + "config.txt", "Port=3338");
-					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "APIPort=7292");
-					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "TestNet=false");
+					File.AppendAllText(path + "config.txt", "Port=3338");
+					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=7292");
+					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=false");
 				}
                 else
                 {
-					await File.AppendAllTextAsync(path + "config.txt", "Port=13338");
-					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "APIPort=17292");
-					await File.AppendAllTextAsync(path + "config.txt", Environment.NewLine + "TestNet=true");
+					File.AppendAllText(path + "config.txt", "Port=13338");
+					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=17292");
+					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=true");
 				}
 				
 			}

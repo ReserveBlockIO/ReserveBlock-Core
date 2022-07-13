@@ -167,6 +167,98 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static async void CreateDecShop()
+        {
+            Console.WriteLine("Please select the wallet you'd like to use to pay for shop registration...");
+            var accountList = AccountData.GetAccountsWithBalance();
+            var accountNumberList = new Dictionary<string, Account>();
+            if (accountList.Count() > 0)
+            {
+                int count = 1;
+                Console.WriteLine("********************************************************************");
+                Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
+                accountList.ToList().ForEach(x => {
+                    accountNumberList.Add(count.ToString(), x);
+                    Console.WriteLine("********************************************************************");
+                    Console.WriteLine("\n#" + count.ToString());
+                    Console.WriteLine("\nAddress :\n{0}", x.Address);
+                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+                    Console.WriteLine("********************************************************************");
+                    count++;
+                });
+                string walletChoice = "";
+                walletChoice = Console.ReadLine();
+
+                if (walletChoice != null && walletChoice != "")
+                {
+                    var keyCheck = accountNumberList.ContainsKey(walletChoice);
+
+                    if (keyCheck == false)
+                    {
+                        Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
+                        MainMenuReturn();
+                    }
+                    else
+                    {
+                        var wallet = accountNumberList[walletChoice];
+                        var address = wallet.Address;
+                        Console.WriteLine("Please give your shop a name...");
+                        var name = Console.ReadLine();
+                        if (name != null && name != "")
+                        {
+                            Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
+                            var desc = Console.ReadLine();
+                            if (desc != null && desc != "" && desc.Length > 512)
+                            {
+                                var ip = P2PClient.ReportedIPs.Count() != 0 ?
+                                    P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() :
+                                    "NA";
+
+                                if (ip == "NA")
+                                {
+                                    Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
+                                    MainMenuReturn();
+                                }
+                                else
+                                {
+                                    var sUID = Guid.NewGuid().ToString().Substring(0, 10).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+
+                                    DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
+                                    {
+                                        IPAddress = ip,
+                                        Port = Program.Port,
+                                        Name = name,
+                                        ShopUID = sUID
+                                    };
+
+                                    var decShopLocJson = JsonConvert.SerializeObject(decShopLoc);
+
+                                    DecShop dsInfo = new DecShop();
+                                    dsInfo.Name = name;
+                                    dsInfo.Description = desc;
+                                    dsInfo.Locator = decShopLocJson.ToBase64();
+                                    dsInfo.IsOffline = false;
+                                    dsInfo.ShopUID = sUID;
+                                    dsInfo.Address = address;
+
+                                    var result = await DecShop.SaveMyDecShopInfo(dsInfo);
+                                    //publish to chain now.
+                                    Console.WriteLine(result);
+                                    MainMenuReturn();
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a shop.");
+                MainMenuReturn();
+            }
+        }
+
         public static string CreateHDWallet()
         {
             Console.WriteLine("How many words do you want? (12 or 24)");
@@ -247,7 +339,7 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
                             Console.WriteLine("type exit to leave this menu.");
                             var name = Console.ReadLine();
-                            if(name != null && name != "")
+                            if(name != null && name != "" && name != "exit")
                             {
                                 var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                                 if(!nameCharCheck)
@@ -334,6 +426,18 @@ namespace ReserveBlockCore.Commands
                 
             }
             return "Unexpected entry detected. Please try again.";
+        }
+
+        private static void MainMenuReturn()
+        {
+            Console.WriteLine("Return you to main menu in 3 seconds.");
+            Console.WriteLine("3...");
+            Thread.Sleep(1000);
+            Console.WriteLine("2...");
+            Thread.Sleep(1000);
+            Console.WriteLine("1...");
+            Thread.Sleep(1000);
+            StartupService.MainMenu();
         }
     }
 }

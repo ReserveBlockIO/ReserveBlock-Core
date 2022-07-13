@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Beacon
         {
             this.SaveTo = SaveTo;
             this.Port = Port;
-            obj_server = new TcpListener(IPAddress.Any, Port);
+            obj_server = new TcpListener(IPAddress.Any, Port); //3339 or 13339
         }
 
         /// <summary>
@@ -120,7 +120,10 @@ namespace ReserveBlockCore.Beacon
                                 byte[] data_to_send = CreateDataPacket(Encoding.UTF8.GetBytes("228"), Encoding.UTF8.GetBytes("Close"));
                                 ns.Write(data_to_send, 0, data_to_send.Length);
                                 ns.Flush();
-                                fse.Close();
+                                if(fse != null)
+                                {
+                                    fse.Close();
+                                }
                                 break;
                             }
                             string Selected_file = (@"" + SaveTo + Encoding.UTF8.GetString(recv_data));

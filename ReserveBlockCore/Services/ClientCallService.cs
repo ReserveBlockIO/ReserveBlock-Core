@@ -134,34 +134,34 @@ namespace ReserveBlockCore.Services
 
                                     if (taskAnswerList.Count() > 0)
                                     {
-                                        Console.WriteLine("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
+                                        ConsoleWriterService.Output("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
                                         bool findWinner = true;
                                         while (findWinner)
                                         {
                                             var taskWinner = await TaskWinnerUtility.TaskWinner(taskQuestion, taskAnswerList, failedTaskAnswersList);
                                             if (taskWinner != null)
                                             {
-                                                Console.WriteLine("Task Winner was Found! " + taskWinner.Address);
+                                                ConsoleWriterService.Output("Task Winner was Found! " + taskWinner.Address);
                                                 var nextBlock = taskWinner.Block;
                                                 if (nextBlock != null)
                                                 {
                                                     var result = await BlockValidatorService.ValidateBlock(nextBlock);
                                                     if (result == true)
                                                     {
-                                                        Console.WriteLine("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                        Console.WriteLine(DateTime.Now.ToString());
+                                                        ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
+                                                        ConsoleWriterService.Output(DateTime.Now.ToString());
                                                         string data = "";
                                                         data = JsonConvert.SerializeObject(nextBlock);
                                                         
                                                         await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-                                                        Console.WriteLine("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
+                                                        ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
                                                         //Update submit time to wait another 28 seconds to process.
                                                         
 
                                                         //send new puzzle and wait for next challenge completion
                                                         string taskQuestionStr = "";
                                                         var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                                        Console.WriteLine("New Task Created.");
+                                                        ConsoleWriterService.Output("New Task Created.");
                                                         P2PAdjServer.CurrentTaskQuestion = nTaskQuestion;
                                                         TaskQuestion nSTaskQuestion = new TaskQuestion();
                                                         nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
@@ -171,7 +171,7 @@ namespace ReserveBlockCore.Services
 
 
                                                         await ProcessFortisPool(taskAnswerList);
-                                                        Console.WriteLine("Fortis Pool Processed");
+                                                        ConsoleWriterService.Output("Fortis Pool Processed");
 
                                                         if(P2PAdjServer.TaskAnswerList != null)
                                                         {
@@ -183,7 +183,7 @@ namespace ReserveBlockCore.Services
                                                         Thread.Sleep(1000);
 
                                                         await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-                                                        Console.WriteLine("Task Sent.");
+                                                        ConsoleWriterService.Output("Task Sent.");
 
                                                         findWinner = false;
                                                         Program.AdjudicateLock = false;
@@ -205,13 +205,13 @@ namespace ReserveBlockCore.Services
                                             }
                                             else
                                             {
-                                                Console.WriteLine("Task Winner was Not Found!");
+                                                ConsoleWriterService.Output("Task Winner was Not Found!");
                                                 if (failedTaskAnswersList != null)
                                                 {
                                                     List<TaskAnswer> validTaskAnswerList = taskAnswerList.Except(failedTaskAnswersList).ToList();
                                                     if (validTaskAnswerList.Count() == 0)
                                                     {
-                                                        Console.WriteLine("Error in task list");
+                                                        ConsoleWriterService.Output("Error in task list");
                                                         //If this happens that means not a single task answer yielded a validatable block.
                                                         //If this happens chain must be corrupt or zero validators are online.
                                                         findWinner = false;
@@ -220,7 +220,7 @@ namespace ReserveBlockCore.Services
                                                 }
                                                 else
                                                 {
-                                                    Console.WriteLine("Task list failed to find winner");
+                                                    ConsoleWriterService.Output("Task list failed to find winner");
                                                     failedTaskAnswersList = new List<TaskAnswer>();
                                                 }
                                             }

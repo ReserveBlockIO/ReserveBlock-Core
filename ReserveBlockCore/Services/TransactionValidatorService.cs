@@ -111,7 +111,6 @@ namespace ReserveBlockCore.Services
             }
 
             if(txRequest.TransactionType != TransactionType.TX)
-
             {
                 if(txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT 
                     || txRequest.TransactionType == TransactionType.NFT_BURN)
@@ -293,6 +292,11 @@ namespace ReserveBlockCore.Services
                             return txResult;
                         }
                     }
+                }
+
+                if(txRequest.TransactionType == TransactionType.DSTR)
+                {
+                    //PERFORM DSTR HERE
                 }
             }
 

@@ -282,4 +282,7 @@ ReserveBlockCore/Properties/launchSettings.json
 ReserveBlockCore/Trillium/Submissions/
 ReserveBlockCore/Databases/mostRecent/
 ReserveBlockCore/BeaconAsset/
+ReserveBlockCore/BeaconAssetTestNet/
 ReserveBlockCore/Config/config.txt
+ReserveBlockCore/ConfigTestNet/config.txt
+ReserveBlockCore/DatabasesTestNet/

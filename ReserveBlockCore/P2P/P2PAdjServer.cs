@@ -114,7 +114,7 @@ namespace ReserveBlockCore.P2P
                                     {
                                         await SendAdjMessageSingle("status", "Connected");
                                         CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                        Console.WriteLine("Task Created");
+                                        ConsoleWriterService.Output("Task Created");
                                         var taskQuest = CurrentTaskQuestion;
                                         TaskQuestion nTaskQuestion = new TaskQuestion();
                                         nTaskQuestion.TaskType = taskQuest.TaskType;

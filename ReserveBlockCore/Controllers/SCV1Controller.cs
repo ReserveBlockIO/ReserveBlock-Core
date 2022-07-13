@@ -232,6 +232,7 @@ namespace ReserveBlockCore.Controllers
                     };
                     var json = JsonConvert.SerializeObject(scInfo, Formatting.Indented);
                     output = json;
+                    NFTLogUtility.Log($"Smart Contract Creation Success: {scMain.SmartContractUID}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData)");
                 }
                 catch (Exception ex)
                 {

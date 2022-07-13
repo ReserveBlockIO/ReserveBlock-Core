@@ -89,7 +89,7 @@ namespace ReserveBlockCore.Data
                     
                 }
 
-                if(x.ToAddress != "Adnr_Base")
+                if(x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
                 {
                     var to = GetSpecificAccountStateTrei(x.ToAddress);
 
@@ -180,6 +180,29 @@ namespace ReserveBlockCore.Data
                             }
                         }
                     }
+
+                    if(x.TransactionType == TransactionType.DSTR)
+                    {
+                        var txData = x.Data;
+                        if (txData != null)
+                        {
+                            var jobj = JObject.Parse(txData);
+                            var function = (string)jobj["Function"];
+                            if (function != "")
+                            {
+                                switch (function)
+                                {
+                                    case "DecShopCreate()":
+                                        //AddNewDecShop(x);
+                                        break;
+                                    case "DecShopDelete()":
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                    }
                 }
 
             });
@@ -239,11 +262,8 @@ namespace ReserveBlockCore.Data
                 adnr.TxHash = tx.Hash;
                 adnr.Hash = (string)jobj["Hash"];
 
-                var adnrList = Adnr.GetAdnr();
-                if (adnrList != null)
-                {
-                    adnrList.Insert(adnr);
-                }
+                Adnr.SaveAdnr(adnr);
+                
             }
             catch(Exception ex)
             {

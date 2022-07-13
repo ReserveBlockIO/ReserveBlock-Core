@@ -36,8 +36,17 @@ namespace ReserveBlockCore.Models
             public static Adjudicators? GetLeadAdjudicator()
             {
                 var adjudicators = GetAll();
-                if(adjudicators.Count() > 0)
+                if (adjudicators.Count() > 0)
                 {
+                    if (Program.IsTestNet == true)
+                    {
+                        var leaderTest = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true && x.Address.StartsWith("x"));
+                        if(leaderTest != null)
+                        {
+                            return leaderTest;
+                        }
+                    }
+                
                     var leader = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
 
                     if(leader != null)
