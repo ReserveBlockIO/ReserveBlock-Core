@@ -10,7 +10,9 @@ namespace ReserveBlockCore.Utilities
             var txList = new List<Transaction>();
             long sizeCount = 0;
 
-            foreach (var mempoolTx in mempoolTxs)
+            var mempoolSorted = mempoolTxs.OrderBy(x => x.Timestamp);
+
+            foreach (var mempoolTx in mempoolSorted)
             {
                 var result = VerifyTXSize(mempoolTx, sizeCount);
                 if(result.Item1 == false)
