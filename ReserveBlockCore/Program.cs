@@ -60,6 +60,7 @@ namespace ReserveBlockCore
         public static DateTime? RemoteCraftLockTime = null;
         public static string ValidatorAddress = "";
         public static bool IsTestNet = false;
+        public static int NFTTimeout = 0;
         public static int Port = 3338;
         public static int APIPort = 7292;
         public static string? WalletPassword = null;

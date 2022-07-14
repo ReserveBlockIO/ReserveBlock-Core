@@ -25,6 +25,7 @@ namespace ReserveBlockCore.Config
 		public bool APICallURLLogging { get; set; }
 		public string? ValidatorAddress { get; set; }
 		public string ValidatorName { get; set; }
+		public int NFTTimeout { get; set; }
 
 		public static Config ReadConfigFile()
         {
@@ -52,6 +53,7 @@ namespace ReserveBlockCore.Config
 				config.Port = dict.ContainsKey("Port") ? Convert.ToInt32(dict["Port"]) : 3338;
 				config.APIPort = dict.ContainsKey("APIPort") ? Convert.ToInt32(dict["APIPort"]) : 7292;
 				config.TestNet = dict.ContainsKey("TestNet") ? Convert.ToBoolean(dict["TestNet"]) : false;
+				config.NFTTimeout = dict.ContainsKey("NFTTimeout") ? Convert.ToInt32(dict["NFTTimeout"]) : 15;
 				config.WalletPassword = dict.ContainsKey("WalletPassword") ? dict["WalletPassword"] : null;
 				config.AlwaysRequireWalletPassword = dict.ContainsKey("AlwaysRequireWalletPassword") ? Convert.ToBoolean(dict["AlwaysRequireWalletPassword"]) : false;
 				config.APIPassword = dict.ContainsKey("APIPassword") ? dict["APIPassword"] : null;
@@ -76,6 +78,7 @@ namespace ReserveBlockCore.Config
 			Program.APIPort = config.APIPort;
 			Program.APICallURL = config.APICallURL;
 			Program.APICallURLLogging = config.APICallURLLogging;
+			Program.NFTTimeout = config.NFTTimeout;
 
 			if(config.TestNet == true)
             {
@@ -130,12 +133,14 @@ namespace ReserveBlockCore.Config
 					File.AppendAllText(path + "config.txt", "Port=3338");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=7292");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=false");
+					File.AppendAllText(path + "config.txt", Environment.NewLine + "NFTTimeout=15");
 				}
                 else
                 {
 					File.AppendAllText(path + "config.txt", "Port=13338");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=17292");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=true");
+					File.AppendAllText(path + "config.txt", Environment.NewLine + "NFTTimeout=15");
 				}
 				
 			}

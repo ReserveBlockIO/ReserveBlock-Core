@@ -207,7 +207,7 @@ namespace ReserveBlockCore.Services
                                                     if (data != "")
                                                     {
                                                         var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(15000));
+                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if(!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock() - line 213");
@@ -218,7 +218,7 @@ namespace ReserveBlockCore.Services
                                                     if(data != "")
                                                     {
                                                         var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(transaction); });
-                                                        bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(15000));
+                                                        bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for evolve in time.", "BlockValidatorService.ValidateBlock() - line 224");
@@ -229,7 +229,7 @@ namespace ReserveBlockCore.Services
                                                     if (data != "")
                                                     {
                                                         var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(transaction); });
-                                                        bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(15000));
+                                                        bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for devolve in time.", "BlockValidatorService.ValidateBlock() - line 235");
@@ -240,7 +240,7 @@ namespace ReserveBlockCore.Services
                                                     if(data != "")
                                                     {
                                                         var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(transaction); });
-                                                        bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(15000));
+                                                        bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for evo/devo specific in time.", "BlockValidatorService.ValidateBlock() - line 246");
