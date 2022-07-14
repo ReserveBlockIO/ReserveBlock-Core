@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Beacon
         {
             this.SaveTo = SaveTo;
             this.Port = Port;
-            obj_server = new TcpListener(IPAddress.Any, Port); //3339 or 13339
+            obj_server = new TcpListener(IPAddress.Any, Port);
         }
 
         /// <summary>

@@ -46,6 +46,7 @@ namespace ReserveBlockCore.P2P
                     peers.Insert(nPeer);
                 }
             }
+
             var blockHeight = Program.BlockHeight;
             PeerList.Add(Context.ConnectionId, peerIP);
             PeerConnectedCount++;
