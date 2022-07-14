@@ -15,7 +15,7 @@ namespace ReserveBlockCore.Utilities
             foreach (var mempoolTx in mempoolSorted)
             {
                 var result = VerifyTXSize(mempoolTx, sizeCount);
-                if(result.Item1 == false)
+                if(result.Item1 == true)
                 {
                     txList.Add(mempoolTx);
                     sizeCount += result.Item2;
