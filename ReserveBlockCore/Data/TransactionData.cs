@@ -157,12 +157,14 @@ namespace ReserveBlockCore.Data
             var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
 
             var memPoolTxList = collection.FindAll().ToList();
+            //Size the pool to 1mb
+            var sizedMempoolList = MempoolSizeUtility.SizeMempoolDown(memPoolTxList);
 
             var approvedMemPoolList = new List<Transaction>();
 
-            if(memPoolTxList.Count() > 0)
+            if(sizedMempoolList.Count() > 0)
             {
-                memPoolTxList.ForEach(tx => {
+                sizedMempoolList.ForEach(tx => {
                     var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
                     if(!txExist)
                     {
