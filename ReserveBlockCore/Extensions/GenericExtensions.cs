@@ -150,29 +150,29 @@ namespace ReserveBlockCore.Extensions
             var saltStringBytes = Generate256BitsOfRandomEntropy();
             var ivStringBytes = Generate256BitsOfRandomEntropy();
             var plainTextBytes = Encoding.UTF8.GetBytes(source);
+
             using (var password = new Rfc2898DeriveBytes(source, saltStringBytes, DerivationIterations))
             {
                 var keyBytes = password.GetBytes(Keysize / 8);
-                using (var symmetricKey = new RijndaelManaged())
+                using (var symmetricKey = Aes.Create())
                 {
-                    symmetricKey.BlockSize = 128;
+                    symmetricKey.BlockSize = Keysize;
                     symmetricKey.Mode = CipherMode.CBC;
-                    symmetricKey.Padding = PaddingMode.PKCS7;
-                    using (var encryptor = symmetricKey.CreateEncryptor(keyBytes, ivStringBytes))
+                    symmetricKey.Padding = PaddingMode.Zeros;
+                    using (var key = symmetricKey.CreateEncryptor(keyBytes, ivStringBytes))
                     {
                         using (var memoryStream = new MemoryStream())
                         {
-                            using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
+                            using (var cryptoStream = new CryptoStream(memoryStream, key, CryptoStreamMode.Write))
                             {
-                                cryptoStream.Write(plainTextBytes, 0, plainTextBytes.Length);
+                                cryptoStream.Write(plainTextBytes);
                                 cryptoStream.FlushFinalBlock();
-                                // Create the final bytes as a concatenation of the random salt bytes, the random iv bytes and the cipher bytes.
-                                var cipherTextBytes = saltStringBytes;
-                                cipherTextBytes = cipherTextBytes.Concat(ivStringBytes).ToArray();
-                                cipherTextBytes = cipherTextBytes.Concat(memoryStream.ToArray()).ToArray();
+                                var cryptTextBytes = saltStringBytes;
+                                cryptTextBytes = cryptTextBytes.Concat(ivStringBytes).ToArray();
+                                cryptTextBytes = cryptTextBytes.Concat(memoryStream.ToArray()).ToArray();
                                 memoryStream.Close();
                                 cryptoStream.Close();
-                                return Convert.ToBase64String(cipherTextBytes);
+                                return Convert.ToBase64String(cryptTextBytes);
                             }
                         }
                     }
@@ -197,22 +197,24 @@ namespace ReserveBlockCore.Extensions
                 using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations))
                 {
                     var keyBytes = password.GetBytes(Keysize / 8);
-                    using (var symmetricKey = new RijndaelManaged())
+                    using (var symmetricKey = Aes.Create())
                     {
-                        symmetricKey.BlockSize = 128;
+                        symmetricKey.BlockSize = Keysize;
                         symmetricKey.Mode = CipherMode.CBC;
-                        symmetricKey.Padding = PaddingMode.PKCS7;
-                        using (var decryptor = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
+                        symmetricKey.Padding = PaddingMode.Zeros;
+                        using (var key = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
                         {
                             using (var memoryStream = new MemoryStream(cipherTextBytes))
                             {
-                                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                                using (var cryptoStream = new CryptoStream(memoryStream, key, CryptoStreamMode.Read))
                                 {
                                     var plainTextBytes = new byte[cipherTextBytes.Length];
-                                    var decryptedByteCount = cryptoStream.Read(plainTextBytes, 0, plainTextBytes.Length);
+
+                                    cryptoStream.Read(plainTextBytes);
+
                                     memoryStream.Close();
                                     cryptoStream.Close();
-                                    return Encoding.UTF8.GetString(plainTextBytes, 0, decryptedByteCount);
+                                    return Encoding.UTF8.GetString(plainTextBytes).TrimEnd('\0');
                                 }
                             }
                         }
@@ -229,13 +231,12 @@ namespace ReserveBlockCore.Extensions
         private const int Keysize = 128;
 
         // This constant determines the number of iterations for the password bytes generation function.
-        private const int DerivationIterations = 10000;
+        private const int DerivationIterations = 1000;
         private static byte[] Generate256BitsOfRandomEntropy()
         {
-            var randomBytes = new byte[16]; // 32 Bytes will give us 256 bits.
-            using (var rngCsp = new RNGCryptoServiceProvider())
+            var randomBytes = new byte[Keysize / 8];
+            using (var rngCsp = RandomNumberGenerator.Create())
             {
-                // Fill the array with cryptographically secure random bytes.
                 rngCsp.GetBytes(randomBytes);
             }
             return randomBytes;

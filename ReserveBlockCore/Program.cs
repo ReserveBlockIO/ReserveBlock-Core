@@ -343,7 +343,15 @@ namespace ReserveBlockCore
             while (true)
             {
                 var command = Console.ReadLine();
-                if(WalletPassword != null)
+                if(command == "/help" || 
+                    command == "/menu" || 
+                    command == "/printvars" || 
+                    command == "/clear" || 
+                    command == "/trillium")
+                {
+                    RunCommand(command);
+                }
+                else if(WalletPassword != null)
                 {
                     var now = DateTime.UtcNow;
                     if(AlwaysRequireWalletPassword == true)

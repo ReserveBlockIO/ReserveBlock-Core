@@ -10,12 +10,14 @@ namespace ReserveBlockCore.Utilities
             try
             {
                 var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+                var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+
                 var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
                 string path = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
@@ -25,7 +27,7 @@ namespace ReserveBlockCore.Utilities
                     }
                     else
                     {
-                        path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                        path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                     }
                 }
                 if (!Directory.Exists(path))

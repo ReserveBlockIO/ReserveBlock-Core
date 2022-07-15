@@ -7,6 +7,7 @@ using ReserveBlockCore.Utilities;
 using System.Net;
 using ReserveBlockCore.Data;
 using System.Text.RegularExpressions;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Commands
 {
@@ -14,16 +15,16 @@ namespace ReserveBlockCore.Commands
     {
         public static async void UnlockWallet()
         {
-            if(Program.APIPassword != null)
+            if(Program.WalletPassword != null)
             {
                 Console.WriteLine("Please type in password to unlock wallet.");
                 var password = Console.ReadLine();
                 if (password != null)
                 {
-                    var passCheck = Program.APIPassword.ToDecrypt(password);
+                    var passCheck = Program.WalletPassword.ToDecrypt(password);
                     if(passCheck == password)
                     {
-                        Program.APIUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
+                        Program.CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
                         Console.WriteLine($"Wallet has been unlocked for {Program.WalletUnlockTime} mins.");
                     }
                     else
@@ -426,6 +427,89 @@ namespace ReserveBlockCore.Commands
                 
             }
             return "Unexpected entry detected. Please try again.";
+        }
+
+        public static void PrintBlock()
+        {
+            try
+            {
+                ConsoleWriterService.Output("Please enter the block height");
+                var blockHeightStr = Console.ReadLine();
+                if (blockHeightStr != null && blockHeightStr != "")
+                {
+                    long blockHeight = 0;
+                    long.TryParse(blockHeightStr, out blockHeight);
+
+                    var block = BlockchainData.GetBlockByHeight(blockHeight);
+
+                    if (block != null)
+                    {
+                        BlockchainData.PrintBlock(block);
+                    }
+                    else
+                    {
+                        ConsoleWriterService.Output($"Could not find block with height: {blockHeight}");
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                ConsoleWriterService.Output($"Unexpected error. Please try again. Error Message: {ex.Message}");
+            }
+            
+        }
+
+        public static void PrintHelpMenu()
+        {
+            Console.Clear();
+            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+            AnsiConsole.Write(
+            new FigletText("RBX Help")
+            .Centered()
+            .Color(Color.Green));
+
+            var table = new Table();
+
+            table.Title("[yellow]RBX Wallet Commands[/]").Centered();
+            table.AddColumn(new TableColumn(new Panel("Command")));
+            table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
+
+
+            table.AddRow("[blue]/help[/]", "[green]This will print out the RBX wallet help menu.[/]");
+            table.AddRow("[blue]/printvars[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
+            table.AddRow("[blue]/stopco[/]", "[green]This will stop the automatic printout of text in CLI.[/]");
+            table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");
+            table.AddRow("[blue]/menu[/]", "[green]This will return you to the main menu[/]");
+            table.AddRow("[blue]/clear[/]", "[green]This will clear the current console window.[/]");
+            table.AddRow("[blue]/mempool[/]", "[green]This will print out the current state of the mempool.[/]");
+            table.AddRow("[blue]/recp[/]", "[green]This will attempt to perform a reconnect to peers.[/]");
+            table.AddRow("[blue]/optlog[/]", "[green]Turns on optional logging for adjudicators.[/]");
+            table.AddRow("[blue]/beacon[/]", "[green]Starts the process for creating a beacon.[/]");
+            table.AddRow("[blue]/switchbeacon[/]", "[green]This will turn a beacon on and off.[/]");
+            table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Program.WalletUnlockTime} minutes.[/]");
+            table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
+            table.AddRow("[blue]/CreateDnr[/]", "[green]Creates an address domain name registrar.[/]");
+            table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
+            table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
+            table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
+            table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
+            table.AddRow("[blue]3[/]", "[green]This will restore an account with a provided key.[/]");
+            table.AddRow("[blue]3hd[/]", "[green]Restores an HD wallet with a provided Mnemonic (12 or 24 words).[/]");
+            table.AddRow("[blue]4[/]", "[green]This will start an RBX transactions for coins only.[/]");
+            table.AddRow("[blue]5[/]", "[green]This will print out the most recent block synced to wallet.[/]");
+            table.AddRow("[blue]6[/]", "[green]This will print out your most recent 10 transactions.[/]");
+            table.AddRow("[blue]7[/]", "[green]This will print out your wallet accounts.[/]");
+            table.AddRow("[blue]8[/]", "[green]This will start the masternode process.[/]");
+            table.AddRow("[blue]9[/]", "[green]This will print out a specific block.[/]");
+            table.AddRow("[blue]10[/]", "[green]This will turn the wallet API on and off.[/]");
+            table.AddRow("[blue]11[/]", "[green]This will stop your masternode.[/]");
+            table.AddRow("[blue]12[/]", "[green]Reserved command. Coming soon.[/]");
+            table.AddRow("[blue]13[/]", "[green]This will also exit the wallet.[/]");
+
+            table.Border(TableBorder.Rounded);
+
+            AnsiConsole.Write(table);
         }
 
         private static void MainMenuReturn()

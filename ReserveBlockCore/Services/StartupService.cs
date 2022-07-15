@@ -754,10 +754,10 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 6. Transaction History               |");
             Console.WriteLine("| 7. Account Info                      |");
             Console.WriteLine("| 8. Startup Masternode                |");
-            Console.WriteLine("| 9. Startup Datanode                  |");
+            Console.WriteLine("| 9. Search Block                      |");
             Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
             Console.WriteLine("| 11. Stop Masternode                  |");
-            Console.WriteLine("| 12. Stop Datanode                    |");
+            Console.WriteLine("| 12. Import Smart Contract            |");
             Console.WriteLine("| 13. Exit                             |");
             Console.WriteLine("|======================================|");
         }

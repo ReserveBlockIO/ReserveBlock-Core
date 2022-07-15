@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Commands
             switch (command.ToLower())
             {
                 case "/help":
-                    commandResult = "Help Command List Goes Here... Coming soon";
+                    BaseCommandServices.PrintHelpMenu();
                     break;
                 case "/printvars":
                     StaticVariableUtility.PrintStaticVariables();
@@ -157,8 +157,8 @@ namespace ReserveBlockCore.Commands
                     }
                     
                     break;
-                case "9": //Startup Datanode
-                    commandResult = "This feature is coming soon...";
+                case "9": //Print specific block
+                    BaseCommandServices.PrintBlock();
                     break;
                 case "10": //Enable API
                     Startup.APIEnabled = Startup.APIEnabled == false ? true : false;
@@ -177,7 +177,7 @@ namespace ReserveBlockCore.Commands
                     ValidatorService.DoMasterNodeStop();
                     break;
                 case "12": //Stop Datanode
-                    
+                    ConsoleWriterService.Output("Feature coming soon");
                     break;
                 case "13": //Exit
                     commandResult = "_EXIT";
