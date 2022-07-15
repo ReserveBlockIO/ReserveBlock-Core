@@ -15,12 +15,10 @@ namespace ReserveBlockCore.Models.SmartContracts
         public string Name { get; set; } //User Defined
         public string Description { get; set; } //User Defined
         public string MinterAddress { get; set; } //User Defined
-        public string MinterName { get; set; }
-        public string Address { get; set; }
+        public string MinterName { get; set; } //User Defined
         public SmartContractAsset SmartContractAsset { get; set; }
         public bool IsPublic { get; set; } //System Set
         public string SmartContractUID { get; set; }//System Set
-        public string Signature { get; set; }//System Set
         public bool IsMinter { get; set; }
         public bool IsPublished { get; set; }
         public List<SmartContractFeatures>? Features { get; set; }
@@ -153,8 +151,8 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var name = repl.Run(@"Name").Value.ToString();
                 var description = repl.Run(@"Description").Value.ToString();
                 var minterAddress = repl.Run(@"MinterAddress").Value.ToString();
-                var address = repl.Run(@"Address").Value.ToString();
-                var signature = repl.Run(@"Signature").Value.ToString();
+                //var address = repl.Run(@"Address").Value.ToString();
+                //var signature = repl.Run(@"Signature").Value.ToString();
 
                 var extension = repl.Run(@"Extension").Value.ToString();
                 var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
@@ -168,7 +166,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value.ToString();
                 var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
 
-                var smartContractMain = GetSmartContractMain(name, description, address, minterAddress, minterName, scUID, signature, features);
+                var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
                 var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, location, extension, fileSize);
                 smartContractMain.SmartContractAsset = smartContractAssset;
 
@@ -334,12 +332,12 @@ namespace ReserveBlockCore.Models.SmartContracts
             var name = repl.Run(@"Name").Value.ToString();
             var description = repl.Run(@"Description").Value.ToString();
             var minterAddress = repl.Run(@"MinterAddress").Value.ToString();
-            var address = repl.Run(@"Address").Value.ToString();
-            var signature = repl.Run(@"Signature").Value.ToString();
+            //var address = repl.Run(@"Address").Value.ToString();
+            //var signature = repl.Run(@"Signature").Value.ToString();
 
-            var extension = repl.Run(@"Extension").Value.ToString();
+            //var extension = repl.Run(@"Extension").Value.ToString();
             var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
-            var location = repl.Run(@"Location").Value.ToString();
+            //var location = repl.Run(@"Location").Value.ToString();
             var fileName = repl.Run(@"FileName").Value.ToString();
             var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
 
@@ -349,8 +347,10 @@ namespace ReserveBlockCore.Models.SmartContracts
             var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value.ToString();
             var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
 
-            var smartContractMain = GetSmartContractMain(name, description, address, minterAddress, minterName, scUID, signature, features);
-            var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, location, extension, fileSize);
+            var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
+            
+            var extension = fileName != "" && fileName != null ? Path.GetExtension(fileName) : "";
+            var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
             smartContractMain.SmartContractAsset = smartContractAssset;
 
 
@@ -505,21 +505,19 @@ namespace ReserveBlockCore.Models.SmartContracts
             return smartContractMain;
         }
 
-        private static SmartContractMain GetSmartContractMain(string name, string desc, string address, string minterAddress, string minterName, string smartContractUID, string signature, string features)
+        private static SmartContractMain GetSmartContractMain(string name, string desc, string minterAddress, string minterName, string smartContractUID, string features)
         {
             SmartContractMain scMain = new SmartContractMain();
 
             scMain.SmartContractUID = smartContractUID;
             scMain.Name = name;
             scMain.Description = desc;
-            scMain.Address = address;
             scMain.IsMinter = false;
             scMain.IsPublic = false;
             //scMain.Features = features;
             scMain.IsPublished = true;
             scMain.MinterName = minterName;
             scMain.MinterAddress = minterAddress;
-            scMain.Signature = signature;
 
             return scMain;
         }

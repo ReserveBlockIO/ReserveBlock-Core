@@ -278,6 +278,7 @@ ReserveBlockCore/Databases/nftlog.txt
 ReserveBlockCore/Databases/bakRECENT/debug.txt
 
 ReserveBlockCore/SmartContracts/
+ReserveBlockCore/SmartContractsTestNet/
 ReserveBlockCore/Properties/launchSettings.json
 ReserveBlockCore/Trillium/Submissions/
 ReserveBlockCore/Databases/mostRecent/
@@ -286,3 +287,5 @@ ReserveBlockCore/BeaconAssetTestNet/
 ReserveBlockCore/Config/config.txt
 ReserveBlockCore/ConfigTestNet/config.txt
 ReserveBlockCore/DatabasesTestNet/
+ReserveBlockCore/TrilliumTestNet/Submissions/
+ReserveBlockCore/AssetsTestNet/

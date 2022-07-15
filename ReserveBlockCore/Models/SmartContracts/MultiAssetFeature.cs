@@ -19,10 +19,10 @@
                 var mafArray = x.Split(new string[] { "|->" }, StringSplitOptions.None);
 
                 multiAssetFeature.FileName = mafArray[0].ToString();
-                multiAssetFeature.Location = mafArray[1].ToString();
-                multiAssetFeature.FileSize = Convert.ToInt32(mafArray[2].ToString());
-                multiAssetFeature.Extension = mafArray[3].ToString();
-                multiAssetFeature.AssetAuthorName = mafArray[4].ToString();
+                multiAssetFeature.Location = "Asset Folder";
+                multiAssetFeature.FileSize = Convert.ToInt32(mafArray[1].ToString());
+                multiAssetFeature.Extension = multiAssetFeature.FileName != "" && multiAssetFeature.FileName != null ? Path.GetExtension(multiAssetFeature.FileName) : ""; 
+                multiAssetFeature.AssetAuthorName = mafArray[2].ToString();
 
                 multiAssetFeatures.Add(multiAssetFeature);
 

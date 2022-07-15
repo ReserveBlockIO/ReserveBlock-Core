@@ -206,16 +206,30 @@ namespace ReserveBlockCore.Controllers
                     scReturnData.SmartContractMain = result.Item2;
                     SmartContractMain.SmartContractData.SaveSmartContract(result.Item2, result.Item1);
 
+                    var txData = "";
+
+                    if (result.Item1 != null)
+                    {
+                        var bytes = Encoding.Unicode.GetBytes(result.Item1);
+                        var scBase64 = bytes.ToCompress().ToBase64();
+                        var newSCInfo = new[]
+                        {
+                            new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64}
+                        };
+
+                        txData = JsonConvert.SerializeObject(newSCInfo);
+                    }
+
                     var nTx = new Transaction
                     {
                         Timestamp = TimeUtil.GetTime(),
-                        FromAddress = scReturnData.SmartContractMain.Address,
-                        ToAddress = scReturnData.SmartContractMain.Address,
+                        FromAddress = scReturnData.SmartContractMain.MinterAddress,
+                        ToAddress = scReturnData.SmartContractMain.MinterAddress,
                         Amount = 0.0M,
                         Fee = 0,
-                        Nonce = AccountStateTrei.GetNextNonce(scMain.Address),
+                        Nonce = AccountStateTrei.GetNextNonce(scMain.MinterAddress),
                         TransactionType = TransactionType.NFT_MINT,
-                        Data = scReturnData.SmartContractCode
+                        Data = txData
                     };
 
                     //Calculate fee for tx.

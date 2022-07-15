@@ -131,7 +131,7 @@ namespace ReserveBlockCore.Services
                 var port = Program.Port + 10000; //23338
                 if(Program.IsTestNet == true)
                 {
-                    port = port + 10000; //33339
+                    port = port + 10000; //33338
                 }
 
                 BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
