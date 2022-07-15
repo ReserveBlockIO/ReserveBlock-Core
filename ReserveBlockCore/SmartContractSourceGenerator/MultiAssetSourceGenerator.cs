@@ -20,11 +20,11 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                 strMultiAssetBld.AppendLine("function MultiAsset" + funcLetter + "() : string");
                 strMultiAssetBld.AppendLine("{");
                 //strMultiAssetBld.AppendLine(("var extension = \"" + x.Extension + "\""));
-                strMultiAssetBld.AppendLine(("var fileSize = \"" + x.FileSize.ToString() + "\""));
+                strMultiAssetBld.AppendLine(("  var fileSize = \"" + x.FileSize.ToString() + "\""));
                 //strMultiAssetBld.AppendLine(("var location = \"" + x.Location + "\""));
-                strMultiAssetBld.AppendLine(("var fileName = \"" + x.FileName + "\""));
-                strMultiAssetBld.AppendLine(("var assetAuthorName = \"" + x.AssetAuthorName + "\""));
-                strMultiAssetBld.AppendLine("return (fileName + " + appendChar + " + fileSize + " + appendChar + " + assetAuthorName)");
+                strMultiAssetBld.AppendLine(("  var fileName = \"" + x.FileName + "\""));
+                strMultiAssetBld.AppendLine(("  var assetAuthorName = \"" + x.AssetAuthorName + "\""));
+                strMultiAssetBld.AppendLine("  return (fileName + " + appendChar + " + fileSize + " + appendChar + " + assetAuthorName)");
                 strMultiAssetBld.AppendLine("}");
 
                 if(isReading == false)
