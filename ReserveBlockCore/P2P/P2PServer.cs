@@ -248,6 +248,69 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+        public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
+        {
+            bool result = false;
+            var peerIP = GetIP(Context);
+
+            try
+            {
+                if(bdd != null)
+                {
+                    var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
+                    if (scState == null)
+                    {
+                        return result; //fail
+                    }
+
+                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
+                    if (sigCheck == false)
+                    {
+                        return result; //fail
+                    }
+
+                    var beaconDatas = BeaconData.GetBeacon();
+                    var beaconData = BeaconData.GetBeaconData();
+                    foreach (var fileName in bdd.Assets)
+                    {
+                        if(beaconData != null)
+                        {
+                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
+                            if (bdCheck != null)
+                            {
+                                if(beaconDatas != null)
+                                {
+                                    bdCheck.DownloadIPAddress = peerIP;
+                                    beaconDatas.Update(bdCheck);
+                                }
+                                else
+                                {
+                                    return result;//fail
+                                }
+                            }
+                            else
+                            {
+                                return result; //fail
+                            }
+                        }
+                        else
+                        {
+                            return result; //fail
+                        }
+
+                        result = true;
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+            }
+
+            return result;
+        }
+
 
         public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
         {

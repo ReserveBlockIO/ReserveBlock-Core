@@ -477,13 +477,15 @@ namespace ReserveBlockCore.Controllers
                         }
 
                         var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress);
-                        output = JsonConvert.SerializeObject(new { Result = "Success", BeaconLocators = result });
-                        //var testjson = JsonConvert.SerializeObject(beacons);
-                        //output = testjson;
-                        //var tx = await SmartContractService.TransferSmartContract(sc, toAddress, beacons);
+                        if(result != "NA")
+                        {
+                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
+                            var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List);
 
-                        //var txJson = JsonConvert.SerializeObject(tx);
-                        //output = txJson;
+                            var txJson = JsonConvert.SerializeObject(tx);
+                            output = txJson;
+                        }
+                        
                     }
                 }
                 else

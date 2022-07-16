@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -83,6 +84,21 @@ namespace ReserveBlockCore.Beacon
                                         ns.Flush();
                                         loop_break = true;
                                         break;
+                                    }
+                                    else
+                                    {
+                                        var _beaconData = beaconData.Where(x => x.IPAdress == ip_address && x.AssetName == fileName).FirstOrDefault();
+                                        if(_beaconData != null)
+                                        {
+                                            _beaconData.AssetReceiveDate = TimeUtil.GetTime();//received today
+                                            _beaconData.AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(); //expires in 5 days
+                                            var beaconDatas = BeaconData.GetBeacon();
+                                            if (beaconDatas != null)
+                                            {
+                                                beaconDatas.Update(_beaconData);
+                                            }
+                                        }
+                                        
                                     }
                                 }
                                 

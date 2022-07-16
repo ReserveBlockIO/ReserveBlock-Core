@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Beacon
         /// <param name="TargetIP">IP Address of target beacon</param>
         /// <param name="Port">Server listening on this port</param>
         /// <returns>An object (BeaconResponse) with Status and Description</returns>
-        public static BeaconResponse Receive(string fileName, string TargetIP, int Port)
+        public static BeaconResponse Receive(string fileName, string TargetIP, int Port, string scUID)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Beacon
                 else
                 {
                     FileStream fs = null;
-                    fs = new FileStream(GetPathUtility.GetBeaconPath() + fileName, FileMode.CreateNew);
+                    fs = new FileStream(NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID), FileMode.CreateNew);
                     long current_file_pointer = 0;
                     TcpClient tc = new TcpClient(TargetIP, Port);
                     NetworkStream ns = tc.GetStream();

@@ -61,7 +61,7 @@ namespace ReserveBlockCore.Models
         NFT_SALE,//sale NFT
         ADNR, //address dnr
         DSTR, //DST shop registration
-        VOTE_TOPIC,
-        VOTE
+        VOTE_TOPIC, //voting topic for validators to vote on
+        VOTE //cast vote for topic
     }
 }

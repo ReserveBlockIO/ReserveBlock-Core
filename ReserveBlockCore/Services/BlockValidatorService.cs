@@ -206,11 +206,20 @@ namespace ReserveBlockCore.Services
                                                 case "Transfer()":
                                                     if (data != "")
                                                     {
+                                                        var locators = (string?)scData["Locators"];
+                                                        var md5List = (string?)scData["MD5List"];
+                                                        var scUID = (string?)scData["ContractUID"];
+
                                                         var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
                                                         bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if(!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock() - line 213");
+                                                        }
+                                                        else
+                                                        {
+                                                            //download files here.
+                                                            await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
                                                         }
                                                     }
                                                     break;

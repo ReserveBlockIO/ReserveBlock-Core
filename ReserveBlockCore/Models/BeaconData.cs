@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Models
         public string SmartContractUID { get; set; }
         public string AssetName { get; set; }
         public string IPAdress { get; set; }
+        public string DownloadIPAddress { get; set; }
         public long AssetReceiveDate { get; set; }
         public long AssetExpireDate { get; set; }
         public string NextAssetOwnerAddress { get; set; }
@@ -20,6 +21,13 @@ namespace ReserveBlockCore.Models
             public List<string> Assets { get; set; }
             public string Signature { get; set; }
             public string NextAssetOwnerAddress { get; set; }
+        }
+
+        public class BeaconDownloadData
+        {
+            public string SmartContractUID { get; set; }
+            public List<string> Assets { get; set; }
+            public string Signature { get; set; }
         }
 
         public static ILiteCollection<BeaconData>? GetBeacon()
