@@ -9,13 +9,18 @@ namespace ReserveBlockCore.Models
         public int Id { get; set; }
         public string SmartContractUID { get; set; }
         public string AssetName { get; set; }
-        public string AssetSize { get; set; }
+        public string IPAdress { get; set; }
         public long AssetReceiveDate { get; set; }
         public long AssetExpireDate { get; set; }
-        public string TxHash { get; set; }
-        public string SignatureMessage { get; set; }
-        public string ToAddress { get; set; }
-        public string FromAddress { get; set; }
+        public string NextAssetOwnerAddress { get; set; }
+
+        public class BeaconSendData
+        {
+            public string SmartContractUID { get; set; }
+            public List<string> Assets { get; set; }
+            public string Signature { get; set; }
+            public string NextAssetOwnerAddress { get; set; }
+        }
 
         public static ILiteCollection<BeaconData>? GetBeacon()
         {
@@ -86,7 +91,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                beacon.DeleteMany(x => x.TxHash == txHash);
+                //beacon.DeleteMany(x => x.TxHash == txHash);
             }
         }
 
