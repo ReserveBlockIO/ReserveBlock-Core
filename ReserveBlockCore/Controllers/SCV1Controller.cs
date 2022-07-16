@@ -414,14 +414,72 @@ namespace ReserveBlockCore.Controllers
                 if (sc.IsPublished == true)
                 {
                     //Get beacons here!
-                    var beacons = await P2PClient.GetBeacons();
-                    if(beacons.Count() == 0)
+                    var locators = await P2PClient.GetBeacons();
+                    if(locators.Count() == 0)
                     {
                         output = "You are not connected to any beacons.";
                     }
                     else
                     {
-                        output = "Just for testing. Remove.";
+
+                        List<string> assets = new List<string>();
+
+                        if(sc.SmartContractAsset != null)
+                        {
+                            assets.Add(sc.SmartContractAsset.Name);
+                        }
+
+                        if(sc.Features != null)
+                        {
+                            foreach(var feature in sc.Features)
+                            {
+                                if(feature.FeatureName == FeatureName.Evolving)
+                                {
+                                    var count = 0;
+                                    var myArray = ((object[])feature.FeatureFeatures).ToList();
+                                    myArray.ForEach(x => {
+                                        var evolveDict = (Dictionary<string, object>)myArray[count];
+                                        SmartContractAsset evoAsset = new SmartContractAsset();
+                                        if (evolveDict.ContainsKey("SmartContractAsset"))
+                                        {
+
+                                            var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
+                                            evoAsset.Name = (string)assetEvo["Name"];
+                                            if(!assets.Contains(evoAsset.Name))
+                                            {
+                                                assets.Add(evoAsset.Name);
+                                            }
+                                            count += 1;
+                                        }
+
+                                    });
+                                }
+                                if (feature.FeatureName == FeatureName.MultiAsset)
+                                {
+                                    var count = 0;
+                                    var myArray = ((object[])feature.FeatureFeatures).ToList();
+
+                                    myArray.ForEach(x => {
+                                        var multiAssetDict = (Dictionary<string, object>)myArray[count];
+
+                                        var fileName = multiAssetDict["FileName"].ToString();
+                                        if(!assets.Contains(fileName))
+                                        {
+                                            assets.Add(fileName);
+                                        }
+                                        
+                                        count += 1;
+                                        
+                                    });
+                                    
+                                }
+                            }
+                        }
+
+                        var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress);
+                        output = JsonConvert.SerializeObject(new { Result = "Success", BeaconLocators = result });
+                        //var testjson = JsonConvert.SerializeObject(beacons);
+                        //output = testjson;
                         //var tx = await SmartContractService.TransferSmartContract(sc, toAddress, beacons);
 
                         //var txJson = JsonConvert.SerializeObject(tx);

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using ReserveBlockCore.Models;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -73,6 +74,18 @@ namespace ReserveBlockCore.Beacon
                                     break;
                                 }
                                 fileName = Encoding.UTF8.GetString(recv_data);
+                                var beaconData = BeaconData.GetBeaconData();
+                                if(beaconData != null)
+                                {
+                                    var authCheck = beaconData.Exists(x => x.IPAdress == ip_address && x.AssetName == fileName);
+                                    if (!authCheck)
+                                    {
+                                        ns.Flush();
+                                        loop_break = true;
+                                        break;
+                                    }
+                                }
+                                
                                 fs = new FileStream(@"" + SaveTo + fileName, FileMode.CreateNew);
                                 byte[] data_to_send = CreateDataPacket(Encoding.UTF8.GetBytes("126"), Encoding.UTF8.GetBytes(Convert.ToString(current_file_pointer)));
                                 ns.Write(data_to_send, 0, data_to_send.Length);

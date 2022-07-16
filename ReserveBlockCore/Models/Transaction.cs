@@ -56,10 +56,12 @@ namespace ReserveBlockCore.Models
         TX,
         NODE,
         NFT_MINT, //mint
-        NFT_TX, //transfer or sale
+        NFT_TX, //transfer or other process (not for sale or burn)
         NFT_BURN,//burn nft
         NFT_SALE,//sale NFT
         ADNR, //address dnr
-        DSTR //DST shop registration
+        DSTR, //DST shop registration
+        VOTE_TOPIC,
+        VOTE
     }
 }

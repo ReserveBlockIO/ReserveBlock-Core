@@ -249,6 +249,76 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
+        {
+            bool result = false;
+            var peerIP = GetIP(Context);
+            try
+            {
+                if (bsd != null)
+                {
+                    var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
+                    if (scState == null)
+                    {
+                        return result;
+                    }
+
+                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
+                    if (sigCheck == false)
+                    {
+                        return result;
+                    }
+
+                    var beaconData = BeaconData.GetBeaconData();
+                    foreach (var fileName in bsd.Assets)
+                    {
+                        if (beaconData == null)
+                        {
+                            var bd = new BeaconData
+                            {
+                                AssetExpireDate = 0,
+                                AssetReceiveDate = 0,
+                                AssetName = fileName,
+                                IPAdress = peerIP,
+                                NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+                                SmartContractUID = bsd.SmartContractUID,
+                            };
+
+                            BeaconData.SaveBeaconData(bd);
+                        }
+                        else
+                        {
+                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
+                            if (bdCheck == null)
+                            {
+                                var bd = new BeaconData
+                                {
+                                    AssetExpireDate = 0,
+                                    AssetReceiveDate = 0,
+                                    AssetName = fileName,
+                                    IPAdress = peerIP,
+                                    NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+                                    SmartContractUID = bsd.SmartContractUID,
+                                };
+
+                                BeaconData.SaveBeaconData(bd);
+                            }
+                        }
+                    }
+
+                    result = true;
+
+                }
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+            }
+
+            return result;
+        }
+
+
         #region Send Adjudicator
         public async Task<Adjudicators?> SendLeadAdjudicator()
         {

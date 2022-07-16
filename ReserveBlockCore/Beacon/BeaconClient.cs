@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Utilities;
+﻿using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using System.Net.Sockets;
 using System.Text;
 
@@ -137,6 +138,7 @@ namespace ReserveBlockCore.Beacon
                                     ns.Write(data_to_send, 0, data_to_send.Length);
                                     ns.Flush();
                                     ProgressValue = (int)Math.Ceiling((double)recv_file_pointer / (double)fs.Length * 100);
+                                    ConsoleWriterService.Output($"{File_name} - Upload Progress: {ProgressValue}");
                                 }
                                 else
                                 {

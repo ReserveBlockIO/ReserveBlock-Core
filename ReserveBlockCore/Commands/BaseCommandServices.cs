@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Commands
                 BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
                 {
                     IPAddress = ip,
-                    Port = Program.Port,
+                    Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
                     Name = name,
                     BeaconUID = bUID
                 };
