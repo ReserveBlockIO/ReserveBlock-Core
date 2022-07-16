@@ -1517,7 +1517,7 @@ namespace ReserveBlockCore.P2P
                             foreach(var asset in bsd.Assets)
                             {
                                 var path = NFTAssetFileUtility.NFTAssetPath(asset, bsd.SmartContractUID);
-                                BeaconResponse rsp = BeaconClient.Send(path, beacon.IPAddress, beacon.Port);
+                                BeaconResponse rsp = BeaconClient.Send(asset, beacon.IPAddress, beacon.Port);
                                 if (rsp.Status == 1)
                                 {
                                     //success
@@ -1613,8 +1613,8 @@ namespace ReserveBlockCore.P2P
                         int failCount = 0;
                         foreach (var asset in bdd.Assets)
                         {
-                            var path = NFTAssetFileUtility.NFTAssetPath(asset, bdd.SmartContractUID);
-                            BeaconResponse rsp = BeaconClient.Receive(path, beacon.IPAddress, beacon.Port, scUID);
+                            var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
+                            BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
                             if (rsp.Status == 1)
                             {
                                 //success

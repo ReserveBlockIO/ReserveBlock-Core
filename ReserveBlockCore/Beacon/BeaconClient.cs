@@ -23,7 +23,7 @@ namespace ReserveBlockCore.Beacon
         {
             try
             {
-                bool fileExist = File.Exists(GetPathUtility.GetBeaconPath() + fileName);
+                bool fileExist = File.Exists(NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID));
                 if (fileExist)
                 {
                     //do nothing
