@@ -1591,7 +1591,7 @@ namespace ReserveBlockCore.P2P
                     var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
                     var alive = _tempHubConnection.StartAsync();
 
-                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveUploadRequest", args: new object?[] { bdd });
+                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
                     if (response != true)
                     {
                         var errorMsg = string.Format("Failed to talk to beacon.");
