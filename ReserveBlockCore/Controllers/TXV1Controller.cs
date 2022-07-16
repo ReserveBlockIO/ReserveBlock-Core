@@ -71,6 +71,7 @@ namespace ReserveBlockCore.Controllers
                     };
 
                     txData = JsonConvert.SerializeObject(newSCInfo);
+                    output = txData;
                 }
             }
             catch(Exception ex)
