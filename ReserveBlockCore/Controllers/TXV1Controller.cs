@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
@@ -71,6 +72,10 @@ namespace ReserveBlockCore.Controllers
                     };
 
                     txData = JsonConvert.SerializeObject(newSCInfo);
+                    var txJToken = JToken.Parse(txData.ToString());
+                    //Type type = typeof(string);
+                    //var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
+                    //txJToken["Data"] = dataTest;
                     output = txData;
                 }
             }
@@ -123,7 +128,11 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
-                var tx = JsonConvert.DeserializeObject<Transaction>(jsonData.ToString());
+                var txJToken = JToken.Parse(jsonData.ToString());
+                Type type = typeof(string);
+                var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
+                txJToken["Data"] = dataTest;
+                var tx = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
 
                 tx.Build();
 
@@ -175,7 +184,11 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
-                var transaction = JsonConvert.DeserializeObject<Transaction>(jsonData.ToString());
+                var txJToken = JToken.Parse(jsonData.ToString());
+                Type type = typeof(string);
+                var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
+                txJToken["Data"] = dataTest;
+                var transaction = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
 
                 if (transaction != null)
                 {
