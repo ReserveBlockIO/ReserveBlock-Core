@@ -128,15 +128,19 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                var port = Program.Port + 10000; //23338
-                if(Program.IsTestNet == true)
+                var beaconInfo = BeaconInfo.GetBeaconInfo();
+                if(beaconInfo != null)
                 {
-                    port = port + 10000; //33338
-                }
+                    var port = Program.Port + 10000; //23338
+                    if (Program.IsTestNet == true)
+                    {
+                        port = port + 10000; //33338
+                    }
 
-                BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
-                Thread obj_thread = new Thread(server.StartServer());
-                Console.WriteLine("Beacon Started");
+                    BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
+                    Thread obj_thread = new Thread(server.StartServer());
+                    Console.WriteLine("Beacon Started");
+                }
             }
             catch (Exception ex)
             {

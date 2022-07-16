@@ -619,17 +619,24 @@ namespace ReserveBlockCore.P2P
 
                 if (peers.Count() > 0)
                 {
-                    if (peers.Count() > 8) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
+                    if (peers.Count() > 6) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
                     {
                         Random rnd = new Random();
-                        var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
-                        if (peerList.Count() >= 4)
+                        var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(6).ToList();
+                        if (peerList.Count() >= 6)
                         {
                             peers = peerList;
                         }
                         else
                         {
-                            peers = peers.Where(x => x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(8).ToList();
+                            peers = peers.Where(x => x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(6).ToList();
+                            if(peers.Count() < 6)
+                            {
+                                var count = 6 - peers.Count();
+                                var peersAll = peers.Where(x => x.IsOutgoing == false).OrderBy(x => rnd.Next()).Take(count).ToList();
+                                peersAll.AddRange(peers);
+                                peers = peersAll;
+                            }
                         }
 
                     }
@@ -656,6 +663,7 @@ namespace ReserveBlockCore.P2P
                                 if (conResult != false)
                                 {
                                     successCount += 1;
+                                    peer.IsOutgoing = true;
                                     peer.FailCount = 0; //peer responded. Reset fail count
                                     peerDB.Update(peer);
                                 }

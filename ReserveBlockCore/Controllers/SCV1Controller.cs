@@ -69,6 +69,15 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetCurrentSCOwner/{scUID}")]
+        public async Task<string> GetCurrentSCOwner(string scUID)
+        {
+            var output = "";
+
+            return output;
+        }
+
+
         [HttpGet("GetAllSmartContracts")]
         public async Task<string> GetAllSmartContracts()
         {
@@ -157,10 +166,16 @@ namespace ReserveBlockCore.Controllers
                 }
                 
                 scMainUpdated.Id = sc.Id;
+                var currentOwner = "";
+                var scState = SmartContractStateTrei.GetSmartContractState(scMain.SmartContractUID);
+                if(scState != null)
+                {
+                    currentOwner = scState.OwnerAddress;
+                }
 
                 var scInfo = new[]
                 {
-                new { SmartContract = scMain, SmartContractCode = scCode}
+                new { SmartContract = scMain, SmartContractCode = scCode, CurrentOwner = currentOwner}
             };
 
                 if (sc != null)
@@ -406,10 +421,11 @@ namespace ReserveBlockCore.Controllers
                     }
                     else
                     {
-                        var tx = await SmartContractService.TransferSmartContract(sc, toAddress, beacons);
+                        output = "Just for testing. Remove.";
+                        //var tx = await SmartContractService.TransferSmartContract(sc, toAddress, beacons);
 
-                        var txJson = JsonConvert.SerializeObject(tx);
-                        output = txJson;
+                        //var txJson = JsonConvert.SerializeObject(tx);
+                        //output = txJson;
                     }
                 }
                 else

@@ -528,7 +528,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> StartValidating(string addr, string uname)
         {
             var output = false;
-            var result = "Done";
+            var result = "No Potential Validator Accounts Found.";
             var address = addr;
             var uniqueName = uname;
 
@@ -551,9 +551,11 @@ namespace ReserveBlockCore.Controllers
                     catch (Exception ex)
                     {
                         ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
+                        result = $"Unknown Error Occured: {ex.Message}";
                     }
                     output = true;
                 }
+                result = "Account provided was not found in wallet.";
             }
 
             return result;
