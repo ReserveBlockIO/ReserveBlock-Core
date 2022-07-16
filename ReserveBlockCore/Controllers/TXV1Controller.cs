@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ReserveBlockCore.Controllers
@@ -45,6 +47,40 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        //step 2b if its NFT
+        [HttpPost("GetNFTCode")]
+        public async Task<string> GetNFTCode([FromBody] object jsonData)
+        {
+            var output = "";
+
+            var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
+
+            try
+            {
+                var result = await SmartContractWriterService.WriteSmartContract(scMain);
+
+                var txData = "";
+
+                if (result.Item1 != null)
+                {
+                    var bytes = Encoding.Unicode.GetBytes(result.Item1);
+                    var scBase64 = bytes.ToCompress().ToBase64();
+                    var newSCInfo = new[]
+                    {
+                            new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64}
+                    };
+
+                    txData = JsonConvert.SerializeObject(newSCInfo);
+                }
+            }
+            catch(Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message});
+            }
+
+            return output;
+        }
+
         //Step 3.
         [HttpPost("GetRawTxFee")]
         public async Task<string> GetRawTxFee([FromBody] object jsonData)
@@ -63,6 +99,7 @@ namespace ReserveBlockCore.Controllers
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(tx.FromAddress),
                     TransactionType = tx.TransactionType,
+                    Data = tx.Data
                 };
 
                 //Calculate fee for tx.
