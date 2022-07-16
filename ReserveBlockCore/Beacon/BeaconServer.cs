@@ -157,6 +157,30 @@ namespace ReserveBlockCore.Beacon
                             }
                             string Selected_file = (@"" + SaveTo + Encoding.UTF8.GetString(recv_data));
                             string File_name = Path.GetFileName(Selected_file);
+
+                            var beaconDataDb = BeaconData.GetBeacon();
+                            if(beaconDataDb != null)
+                            {
+                                var bdd = beaconDataDb.FindOne(x => x.AssetName.ToLower() == File_name.ToLower() && x.DownloadIPAddress == ip_address);
+                                if(bdd == null)
+                                {
+                                    loop_break = true;
+                                    byte[] data_to_send = CreateDataPacket(Encoding.UTF8.GetBytes("228"), Encoding.UTF8.GetBytes("Close"));
+                                    ns.Write(data_to_send, 0, data_to_send.Length);
+                                    ns.Flush();
+                                    if (fse != null)
+                                    {
+                                        fse.Close();
+                                    }
+                                    break;
+                                }
+                                else
+                                {
+                                    bdd.AssetReceiveDate = TimeUtil.GetTime();
+                                    beaconDataDb.Update(bdd);
+                                }
+                            }
+                                
                             if (fse == null)
                             {
                                 fse = new FileStream(Selected_file, FileMode.Open);

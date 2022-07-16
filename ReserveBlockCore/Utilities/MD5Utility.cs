@@ -16,12 +16,12 @@
 
                 if(checksumList == "")
                 {
-                    var checksumAsset = assets + "," + checksum;
+                    var checksumAsset = asset + "," + checksum;
                     checksumList = checksumAsset;
                 }
                 else
                 {
-                    var checksumAsset = assets + ":" + checksum;
+                    var checksumAsset = asset + ":" + checksum;
                     checksumList = checksumList + "," + checksumAsset;
                 }
             }
