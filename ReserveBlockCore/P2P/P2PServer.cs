@@ -248,6 +248,8 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
+
+        #region  ReceiveDownloadRequest
         public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
         {
             bool result = false;
@@ -311,7 +313,9 @@ namespace ReserveBlockCore.P2P
             return result;
         }
 
+        #endregion
 
+        #region ReceiveUploadRequest
         public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
         {
             bool result = false;
@@ -344,7 +348,7 @@ namespace ReserveBlockCore.P2P
                                 AssetName = fileName,
                                 IPAdress = peerIP,
                                 NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                SmartContractUID = bsd.SmartContractUID,
+                                SmartContractUID = bsd.SmartContractUID
                             };
 
                             BeaconData.SaveBeaconData(bd);
@@ -361,7 +365,7 @@ namespace ReserveBlockCore.P2P
                                     AssetName = fileName,
                                     IPAdress = peerIP,
                                     NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                    SmartContractUID = bsd.SmartContractUID,
+                                    SmartContractUID = bsd.SmartContractUID
                                 };
 
                                 BeaconData.SaveBeaconData(bd);
@@ -375,12 +379,13 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
             }
 
             return result;
         }
 
+        #endregion
 
         #region Send Adjudicator
         public async Task<Adjudicators?> SendLeadAdjudicator()

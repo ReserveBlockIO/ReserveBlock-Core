@@ -370,7 +370,6 @@ namespace ReserveBlockCore.Controllers
                     }
                     else
                     {
-
                         output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction was not verified. Error: {result.Item2}" });
                     }
                 }

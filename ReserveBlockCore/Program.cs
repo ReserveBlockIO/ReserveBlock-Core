@@ -83,8 +83,8 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
-        public static int MajorVer = 1;
-        public static int MinorVer = 22;
+        public static int MajorVer = 2;
+        public static int MinorVer = 0;
         public static int BuildVer = 0;
         public static string CLIVersion = "";
         public static bool HDWallet = false;
