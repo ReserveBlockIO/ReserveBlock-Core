@@ -313,7 +313,7 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.OwnerAddress = tx.ToAddress;
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.ContractData = data;
-                scST.Locators = locator != null ? locator : scST.Locators;
+                scStateTreiRec.Locators = locator != null ? locator : scStateTreiRec.Locators;
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
