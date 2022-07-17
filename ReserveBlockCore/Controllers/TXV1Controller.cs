@@ -87,7 +87,7 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2c
+        //2c - Skip this if you are needing to move files and use beacons.
         [HttpGet("CreateBeaconUploadRequest/{scUID}/{toAddress}/{**signature}")]
         public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
         {
@@ -203,7 +203,7 @@ namespace ReserveBlockCore.Controllers
                                 ContractUID = sc.SmartContractUID, 
                                 ToAddress = toAddress, 
                                 Data = scBase64, 
-                                Locators = locators, 
+                                Locators = locators, //either beacons, or self kept (NA).
                                 MD5List = "NA"}
                     };
 

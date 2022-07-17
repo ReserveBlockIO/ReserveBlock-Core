@@ -219,7 +219,11 @@ namespace ReserveBlockCore.Services
                                                         else
                                                         {
                                                             //download files here.
-                                                            await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                            if(locators != "NA")
+                                                            {
+                                                                await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                            }
+                                                            
                                                         }
                                                     }
                                                     break;
