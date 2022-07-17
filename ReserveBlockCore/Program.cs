@@ -124,7 +124,7 @@ namespace ReserveBlockCore
             var dateDiff = (int)Math.Round((currentDate - originDate).TotalDays);
             BuildVer = dateDiff;
 
-            CLIVersion = MajorVer.ToString() + "." + MinorVer.ToString() + "." + BuildVer.ToString() + "-pre";
+            CLIVersion = MajorVer.ToString() + "." + MinorVer.ToString() + "." + BuildVer.ToString() + "-beta";
             LogUtility.Log("", "Main", true);
             var logCLIVer = CLIVersion.ToString();
 
@@ -211,8 +211,8 @@ namespace ReserveBlockCore
             StartupService.SetupNodeDictionary();
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
-            
 
+            StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 

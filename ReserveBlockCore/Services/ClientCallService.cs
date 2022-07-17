@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
@@ -15,6 +16,7 @@ namespace ReserveBlockCore.Services
         private Timer _timer = null!;
         private Timer _fortisPoolTimer = null!;
         private Timer _checkpointTimer = null!;
+        private Timer _blockStateSyncTimer = null;
         private static bool FirstRun = false;
 
         public ClientCallService(IHubContext<P2PAdjServer> hubContext, IHostApplicationLifetime appLifetime)
@@ -31,7 +33,10 @@ namespace ReserveBlockCore.Services
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(240),
                 TimeSpan.FromMinutes(5));
 
-            if(Program.ChainCheckPoint == true)
+            _blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(300),
+                TimeSpan.FromMinutes(15));
+
+            if (Program.ChainCheckPoint == true)
             {
                 var interval = Program.ChainCheckPointInterval;
                 
@@ -69,6 +74,11 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        private async void DoBlockStateSyncWork(object? state)
+        {
+            await StateTreiSyncService.SyncAccountStateTrei();
+
+        }
         private async void DoFortisPoolWork(object? state)
         {
             try

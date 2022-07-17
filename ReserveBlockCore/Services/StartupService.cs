@@ -118,6 +118,10 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static async void RunStateSync()
+        {
+            await StateTreiSyncService.SyncAccountStateTrei();
+        }
         internal static void RunRules()
         {
             //RuleService.ResetValidators();
