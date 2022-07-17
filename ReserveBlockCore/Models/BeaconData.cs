@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 
@@ -26,6 +27,7 @@ namespace ReserveBlockCore.Models
         public class BeaconDownloadData
         {
             public string SmartContractUID { get; set; }
+            [JsonIgnore]
             public List<string> Assets { get; set; }
             public string Signature { get; set; }
         }

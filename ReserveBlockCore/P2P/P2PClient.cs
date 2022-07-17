@@ -1451,30 +1451,38 @@ namespace ReserveBlockCore.P2P
 
         #region File Upload To Beacon Beacon
 
-        public static async Task<string> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress)
+        public static async Task<string> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string preSigned = "NA")
         {
-            var result = "";
+            var result = "Fail";
             string signature = "";
             string locatorRetString = "";
             var scState = SmartContractStateTrei.GetSmartContractState(scUID);
             if(scState == null)
             {
-                return ""; // SC does not exist
+                return "Fail"; // SC does not exist
             }
             else
             {
-                var account = AccountData.GetSingleAccount(scState.OwnerAddress);
-                if (account != null)
+                if(preSigned != "NA")
                 {
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                    signature = SignatureService.CreateSignature(scUID, privateKey, account.PublicKey);
+                    signature = preSigned;
                 }
                 else
                 {
-                    return "";
+                    var account = AccountData.GetSingleAccount(scState.OwnerAddress);
+                    if (account != null)
+                    {
+                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                        signature = SignatureService.CreateSignature(scUID, privateKey, account.PublicKey);
+                    }
+                    else
+                    {
+                        return "Fail";
+                    }
                 }
+                
             }
 
             //send file size, beacon will reply if it is ok to send.
