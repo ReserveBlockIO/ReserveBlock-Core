@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Trillium;
+using ReserveBlockCore.P2P;
 
 namespace ReserveBlockCore.Commands
 {
@@ -66,6 +67,10 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/creatednr":
                     BaseCommandServices.CreateDnr();
+                    break;
+                case "/findbeacon":
+                    var beacons = P2PClient.GetBeacons();
+                    ConsoleWriterService.Output($"Beacons found {beacons.Result.Count()}");
                     break;
                 case "/trillium":
                     //start trillium

@@ -1676,6 +1676,8 @@ namespace ReserveBlockCore.P2P
             if (peersConnected.Item1 == false)
             {
                 //Need peers
+                ErrorLogUtility.LogError("You are not connected to any nodes", "P2PClient.GetBeacons()");
+                NFTLogUtility.Log("You are not connected to any nodes", "P2PClient.GetBeacons()");
                 return BeaconList;
             }
             else
@@ -1689,6 +1691,7 @@ namespace ReserveBlockCore.P2P
                             string beaconInfo = await hubConnection1.InvokeAsync<string>("SendBeaconInfo");
                             if (beaconInfo != "NA")
                             {
+                                NFTLogUtility.Log("Beacon Found on hub 1", "P2PClient.GetBeacons()");
                                 BeaconList.Add(beaconInfo);
                                 foundBeaconCount += 1;
                             }
@@ -1706,6 +1709,7 @@ namespace ReserveBlockCore.P2P
                         string beaconInfo = await hubConnection2.InvokeAsync<string>("SendBeaconInfo");
                         if (beaconInfo != "NA")
                         {
+                            NFTLogUtility.Log("Beacon Found on hub 2", "P2PClient.GetBeacons()");
                             BeaconList.Add(beaconInfo);
                             foundBeaconCount += 1;
                         }
@@ -1724,6 +1728,7 @@ namespace ReserveBlockCore.P2P
                         string beaconInfo = await hubConnection3.InvokeAsync<string>("SendBeaconInfo");
                         if (beaconInfo != "NA")
                         {
+                            NFTLogUtility.Log("Beacon Found on hub 3", "P2PClient.GetBeacons()");
                             BeaconList.Add(beaconInfo);
                             foundBeaconCount += 1;
                         }
@@ -1741,6 +1746,7 @@ namespace ReserveBlockCore.P2P
                         string beaconInfo = await hubConnection4.InvokeAsync<string>("SendBeaconInfo");
                         if (beaconInfo != "NA")
                         {
+                            NFTLogUtility.Log("Beacon Found on hub 4", "P2PClient.GetBeacons()");
                             BeaconList.Add(beaconInfo);
                             foundBeaconCount += 1;
                         }
@@ -1758,6 +1764,7 @@ namespace ReserveBlockCore.P2P
                         string beaconInfo = await hubConnection5.InvokeAsync<string>("SendBeaconInfo");
                         if (beaconInfo != "NA")
                         {
+                            NFTLogUtility.Log("Beacon Found on hub 5", "P2PClient.GetBeacons()");
                             BeaconList.Add(beaconInfo);
                             foundBeaconCount += 1;
                         }
@@ -1775,6 +1782,7 @@ namespace ReserveBlockCore.P2P
                         string beaconInfo = await hubConnection6.InvokeAsync<string>("SendBeaconInfo");
                         if (beaconInfo != "NA")
                         {
+                            NFTLogUtility.Log("Beacon Found on hub 6", "P2PClient.GetBeacons()");
                             BeaconList.Add(beaconInfo);
                             foundBeaconCount += 1;
                         }
@@ -1788,7 +1796,9 @@ namespace ReserveBlockCore.P2P
 
                 if(foundBeaconCount == 0)
                 {
+                    NFTLogUtility.Log("Zero beacons found. Adding bootstrap.", "SCV1Controller.TransferNFT()");
                     BeaconList = Program.Locators;
+                    BeaconList.ForEach(x => { NFTLogUtility.Log($"Bootstrap Beacons {x}", "P2PClient.GetBeacons()"); });
                 }
 
             }
