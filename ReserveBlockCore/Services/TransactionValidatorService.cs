@@ -85,7 +85,7 @@ namespace ReserveBlockCore.Services
                 var amountFormat = 0M;
                 if (amountCheck)
                 {
-                    var amountStr = txRequest.Amount.ToString("#");
+                    var amountStr = txRequest.Amount.ToString("0.0");
                     amountFormat = decimal.Parse(amountStr);
                 }
 
@@ -105,7 +105,24 @@ namespace ReserveBlockCore.Services
 
                 if (!newTxnMod.Hash.Equals(txRequest.Hash))
                 {
-                    return txResult;
+                    var newTxnModZero = new Transaction()
+                    {
+                        Timestamp = txRequest.Timestamp,
+                        FromAddress = txRequest.FromAddress,
+                        ToAddress = txRequest.ToAddress,
+                        Amount = 0,
+                        Fee = txRequest.Fee,
+                        Nonce = txRequest.Nonce,
+                        TransactionType = txRequest.TransactionType,
+                        Data = txRequest.Data,
+                    };
+
+                    newTxnModZero.Build();
+
+                    if (!newTxnModZero.Hash.Equals(txRequest.Hash))
+                    {
+                        return txResult;
+                    }
                 }
                 
             }

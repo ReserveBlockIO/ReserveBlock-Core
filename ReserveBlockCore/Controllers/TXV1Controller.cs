@@ -263,7 +263,11 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
-                var tx = JsonConvert.DeserializeObject<Transaction>(jsonData.ToString());
+                var txJToken = JToken.Parse(jsonData.ToString());
+                Type type = typeof(string);
+                var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
+                txJToken["Data"] = dataTest;
+                var tx = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
 
                 var nTx = new Transaction
                 {

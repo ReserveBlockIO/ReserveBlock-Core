@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Services
 {
@@ -41,7 +42,6 @@ namespace ReserveBlockCore.Services
                             {
                                 await BlockValidatorService.ValidateBlock(block);//insert into blockchain
                                 blockQueue.DeleteMany(x => x.Height == block.Height);//delete from queue
-
                             }
                             else
                             {
@@ -50,7 +50,8 @@ namespace ReserveBlockCore.Services
                         }
                         catch (Exception ex)
                         {
-
+                            ErrorLogUtility.LogError($"Failed to process block {block.Height} in queue. Error: {ex.Message}", 
+                                "BlockQueueService.ProcessBlockQueue()");
                         }
                     }
                 }
