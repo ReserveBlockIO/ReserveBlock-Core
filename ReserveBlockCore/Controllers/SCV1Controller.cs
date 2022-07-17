@@ -438,10 +438,11 @@ namespace ReserveBlockCore.Controllers
                     if(locators.Count() == 0)
                     {
                         output = "You are not connected to any beacons.";
+                        NFTLogUtility.Log("Error - You are not connected to any beacons.", "SCV1Controller.TransferNFT()");
                     }
                     else
                     {
-
+                        NFTLogUtility.Log("Beacons Found. Getting asset names", "SCV1Controller.TransferNFT()");
                         List<string> assets = new List<string>();
 
                         if(sc.SmartContractAsset != null)
@@ -496,14 +497,25 @@ namespace ReserveBlockCore.Controllers
                             }
                         }
 
+                        var assetString = "";
+                        assets.ForEach(x => { assetString = assetString + x + " "; });
+
+                        NFTLogUtility.Log($"Sending the following assets for upload: {assetString}", "SCV1Controller.TransferNFT()");
+
                         var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress);
                         if(result != "Fail" && result != "NA")
                         {
                             var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
                             var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List);
+                            NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
+                            NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
 
                             var txJson = JsonConvert.SerializeObject(tx);
                             output = txJson;
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log($"Beacon upload failed. Result was : {result}", "SCV1Controller.TransferNFT()");
                         }
                         
                     }

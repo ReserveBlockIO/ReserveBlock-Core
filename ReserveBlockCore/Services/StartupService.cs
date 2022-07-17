@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using LiteDB;
+using Newtonsoft.Json;
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
@@ -192,6 +193,51 @@ namespace ReserveBlockCore.Services
             }
         } 
 
+        internal static void BootstrapBeacons()
+        {
+            var locators = new List<string>();
+            BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
+            {
+                IPAddress = "162.248.14.123",
+                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Name = "RBX Beacon 1",
+                BeaconUID = "Foundation Beacon 1"
+
+            };
+
+            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
+            var locator1 = beaconLocJson1.ToBase64();
+
+            BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
+            {
+                IPAddress = "192.3.3.171",
+                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Name = "RBX Beacon 2",
+                BeaconUID = "Foundation Beacon 2"
+
+            };
+
+            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);
+            var locator2 = beaconLocJson2.ToBase64();
+
+            BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
+            {
+                IPAddress = "185.199.226.121",
+                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Name = "RBX Beacon 3",
+                BeaconUID = "Foundation Beacon 3"
+
+            };
+
+            var beaconLocJson3 = JsonConvert.SerializeObject(beaconLoc3);
+            var locator3 = beaconLocJson3.ToBase64();
+
+            locators.Add(locator1);
+            locators.Add(locator2);
+            locators.Add(locator3);
+
+            Program.Locators = locators;
+        }
         internal static void ClearStaleMempool()
         {
             bool memTxDeleted = false;

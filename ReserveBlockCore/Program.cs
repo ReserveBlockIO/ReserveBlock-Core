@@ -36,6 +36,7 @@ namespace ReserveBlockCore
         public static List<NodeInfo> Nodes = new List<NodeInfo>();
         public static List<Validators> InactiveValidators = new List<Validators>();
         public static List<Validators> MasternodePool = new List<Validators>();
+        public static List<string> Locators = new List<string>();
         public static long BlockHeight = -1;
         public static bool StopConsoleOutput = false;
         public static Block LastBlock = new Block();
@@ -216,7 +217,9 @@ namespace ReserveBlockCore
             StartupService.ClearValidatorDups();
 
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
-            
+            StartupService.BootstrapBeacons();
+
+
             PeersConnecting = true;
             BlocksDownloading = true;
             StopAllTimers = true;

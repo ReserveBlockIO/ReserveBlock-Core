@@ -1515,6 +1515,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
+                        NFTLogUtility.Log($"Beacon response was not true. Failed to connect to beacon node p2p layer.", "SCV1Controller.TransferNFT()");
                         try { await _tempHubConnection.StopAsync(); }
                         finally
                         {
@@ -1529,6 +1530,10 @@ namespace ReserveBlockCore.P2P
                                 if (rsp.Status == 1)
                                 {
                                     //success
+                                }
+                                else
+                                {
+                                    NFTLogUtility.Log($"NFT Send for assets -> {asset} <- failed.", "SCV1Controller.TransferNFT()");
                                 }
                             }
                             
@@ -1779,6 +1784,11 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     //node is offline
+                }
+
+                if(foundBeaconCount == 0)
+                {
+                    BeaconList = Program.Locators;
                 }
 
             }
