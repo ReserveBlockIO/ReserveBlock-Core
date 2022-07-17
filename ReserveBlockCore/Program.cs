@@ -137,6 +137,8 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();// initializes databases
 
+            StartupService.SetBlockchainChainRef(); // sets blockchain reference id
+            StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
@@ -199,10 +201,6 @@ namespace ReserveBlockCore
             var nodeIp = await SeedNodeService.PingSeedNode();
             await SeedNodeService.GetSeedNodePeers(nodeIp);
             //Temporary for TestNet------------------------------------
-
-
-            StartupService.SetBlockchainChainRef(); // sets blockchain reference id
-            StartupService.CheckBlockRefVerToDb();
 
             StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetBlockHeight();
