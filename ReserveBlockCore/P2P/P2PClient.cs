@@ -1555,7 +1555,7 @@ namespace ReserveBlockCore.P2P
 
         #region File Download from Beacon - BeaconAccessRequest
 
-        public static async Task<bool> BeaconDownloadRequest(List<string> locators, List<string> assets, string scUID)
+        public static async Task<bool> BeaconDownloadRequest(List<string> locators, List<string> assets, string scUID, string preSigned = "NA")
         {
             var result = false;
             string signature = "";
@@ -1567,17 +1567,24 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var account = AccountData.GetSingleAccount(scState.OwnerAddress);
-                if (account != null)
+                if(preSigned != "NA")
                 {
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                    signature = SignatureService.CreateSignature(scUID, privateKey, account.PublicKey);
+                    signature = preSigned;
                 }
                 else
                 {
-                    return false;
+                    var account = AccountData.GetSingleAccount(scState.OwnerAddress);
+                    if (account != null)
+                    {
+                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                        signature = SignatureService.CreateSignature(scUID, privateKey, account.PublicKey);
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
             }
 

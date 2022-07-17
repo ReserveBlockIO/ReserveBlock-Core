@@ -281,12 +281,14 @@ namespace ReserveBlockCore.Data
                 var function = (string?)scData["Function"];
                 var data = (string?)scData["Data"];
                 var scUID = (string?)scData["ContractUID"];
+                
 
                 scST.ContractData = data;
                 scST.MinterAddress = tx.FromAddress;
                 scST.OwnerAddress = tx.FromAddress;
                 scST.SmartContractUID = scUID;
                 scST.Nonce = 0;
+
 
                 //Save to state trei
                 SmartContractStateTrei.SaveSmartContract(scST);
@@ -299,9 +301,11 @@ namespace ReserveBlockCore.Data
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
             var scData = scDataArray[0];
+
             var function = (string?)scData["Function"];
             var data = (string?)scData["Data"];
             var scUID = (string?)scData["ContractUID"];
+            var locator = (string?)scData["Locators"];
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
             if(scStateTreiRec != null)
@@ -309,6 +313,7 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.OwnerAddress = tx.ToAddress;
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.ContractData = data;
+                scST.Locators = locator != null ? locator : scST.Locators;
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }

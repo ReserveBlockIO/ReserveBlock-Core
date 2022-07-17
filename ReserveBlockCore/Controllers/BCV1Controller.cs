@@ -124,5 +124,14 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        [HttpGet("GetBeaconAssets/{scUID}/{locators}/{**signature}/")]
+        public async Task<string> GetBeaconAssets(string scUID, string locators, string signature)
+        {
+            //signature message = scUID
+            string output = "";
+            var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
+            return output;
+        }
     }
 }

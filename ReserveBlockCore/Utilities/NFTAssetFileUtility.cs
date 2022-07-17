@@ -137,86 +137,96 @@ namespace ReserveBlockCore.Utilities
             return "NA";
         }
 
-        public static async Task<string> DownloadAssetFromBeacon(string scUID, string locators, string md5List)
+        public static async Task<string> DownloadAssetFromBeacon(string scUID, string locators, string preSigned = "NA", string md5List = "NA")
         {
-            var output = "";
-
-            List<string> assets = new List<string>();
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-            if(sc == null)
+            var output = "Fail";
+            try
             {
-                return "Failed to added SC";
-            }
-
-            if (sc.SmartContractAsset != null)
-            {
-                assets.Add(sc.SmartContractAsset.Name);
-            }
-
-            if (sc.Features != null)
-            {
-                foreach (var feature in sc.Features)
+                List<string> assets = new List<string>();
+                var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                if (sc == null)
                 {
-                    if (feature.FeatureName == FeatureName.Evolving)
+                    var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if (scStateTrei == null)
                     {
-                        var count = 0;
-                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-                        myArray.ForEach(x => {
-                            var evolveDict = (Dictionary<string, object>)myArray[count];
-                            SmartContractAsset evoAsset = new SmartContractAsset();
-                            if (evolveDict.ContainsKey("SmartContractAsset"))
-                            {
+                        return "SC Does not exist.";
+                    }
+                    sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                    if (sc == null)
+                    {
+                        return "Not locally owned.";
+                    }
+                    return "Not locally owned.";
+                }
 
-                                var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                evoAsset.Name = (string)assetEvo["Name"];
-                                if (!assets.Contains(evoAsset.Name))
+                if (sc.SmartContractAsset != null)
+                {
+                    assets.Add(sc.SmartContractAsset.Name);
+                }
+
+                if (sc.Features != null)
+                {
+                    foreach (var feature in sc.Features)
+                    {
+                        if (feature.FeatureName == FeatureName.Evolving)
+                        {
+                            var count = 0;
+                            var myArray = ((object[])feature.FeatureFeatures).ToList();
+                            myArray.ForEach(x => {
+                                var evolveDict = (Dictionary<string, object>)myArray[count];
+                                SmartContractAsset evoAsset = new SmartContractAsset();
+                                if (evolveDict.ContainsKey("SmartContractAsset"))
                                 {
-                                    assets.Add(evoAsset.Name);
+
+                                    var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
+                                    evoAsset.Name = (string)assetEvo["Name"];
+                                    if (!assets.Contains(evoAsset.Name))
+                                    {
+                                        assets.Add(evoAsset.Name);
+                                    }
+                                    count += 1;
                                 }
+
+                            });
+                        }
+                        if (feature.FeatureName == FeatureName.MultiAsset)
+                        {
+                            var count = 0;
+                            var myArray = ((object[])feature.FeatureFeatures).ToList();
+
+                            myArray.ForEach(x => {
+                                var multiAssetDict = (Dictionary<string, object>)myArray[count];
+
+                                var fileName = multiAssetDict["FileName"].ToString();
+                                if (!assets.Contains(fileName))
+                                {
+                                    assets.Add(fileName);
+                                }
+
                                 count += 1;
-                            }
 
-                        });
-                    }
-                    if (feature.FeatureName == FeatureName.MultiAsset)
-                    {
-                        var count = 0;
-                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+                            });
 
-                        myArray.ForEach(x => {
-                            var multiAssetDict = (Dictionary<string, object>)myArray[count];
-
-                            var fileName = multiAssetDict["FileName"].ToString();
-                            if (!assets.Contains(fileName))
-                            {
-                                assets.Add(fileName);
-                            }
-
-                            count += 1;
-
-                        });
-
+                        }
                     }
                 }
-            }
 
-            var locatorList = locators.Split(",").ToList();
+                var locatorList = locators.Split(",").ToList();
 
-            if(locatorList.Count > 0)
-            {
-                var result = await P2PClient.BeaconDownloadRequest(locatorList, assets, sc.SmartContractUID);
-                if (result != false)
+                if (locatorList.Count > 0)
                 {
-                    //var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-                    //var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List);
-
-                    //var txJson = JsonConvert.SerializeObject(tx);
-                    //output = txJson;
+                    var result = await P2PClient.BeaconDownloadRequest(locatorList, assets, sc.SmartContractUID, preSigned);
+                    if (result != false)
+                    {
+                        output = "Success";
+                    }
                 }
             }
-
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error downloading assets from beacon. Error Msg: {ex.Message}", "NFTAssetFileUtility.DownloadAssetFromBeacon()");
+            }
             
-
             return output;
         }
 

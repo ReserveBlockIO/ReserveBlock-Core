@@ -196,6 +196,26 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetLastKnownLocators/{scUID}")]
+        public async Task<string> GetLastKnownLocators(string scUID)
+        {
+            string output = "";
+
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if(scState != null)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Locators Found.", Locators = scState.Locators });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Locators Not Found." });
+            }
+
+            return output;
+
+        }
+
         [HttpPost("CreateSmartContract")]
         public async Task<string> CreateSmartContract([FromBody] object jsonData)
         {

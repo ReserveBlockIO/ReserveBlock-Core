@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Models
         public string ContractData { get; set; }
         public string MinterAddress { get; set; }
         public string OwnerAddress { get; set; }
+        public string? Locators { get; set; }
         public long Nonce { get; set; }
 
         public static ILiteCollection<SmartContractStateTrei> GetSCST()
