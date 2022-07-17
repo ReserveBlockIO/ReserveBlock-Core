@@ -1515,7 +1515,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
-                        NFTLogUtility.Log($"Beacon response was not true. Failed to connect to beacon node p2p layer.", "SCV1Controller.TransferNFT()");
+                        NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
                         try { await _tempHubConnection.StopAsync(); }
                         finally
                         {
@@ -1525,11 +1525,15 @@ namespace ReserveBlockCore.P2P
                         {
                             foreach(var asset in bsd.Assets)
                             {
+                                NFTLogUtility.Log($"Preparing file to send. Sending {asset} for smart contract {bsd.SmartContractUID}", "P2PClient.BeaconUploadRequest()");
                                 var path = NFTAssetFileUtility.NFTAssetPath(asset, bsd.SmartContractUID);
-                                BeaconResponse rsp = BeaconClient.Send(asset, beacon.IPAddress, beacon.Port);
+                                NFTLogUtility.Log($"Path for asset {assets} : {path}", "P2PClient.BeaconUploadRequest()");
+                                NFTLogUtility.Log($"Beacon IP {beacon.IPAddress} : Beacon Port {beacon.Port}", "P2PClient.BeaconUploadRequest()");
+                                BeaconResponse rsp = BeaconClient.Send(path, beacon.IPAddress, beacon.Port);
                                 if (rsp.Status == 1)
                                 {
                                     //success
+                                    NFTLogUtility.Log($"Success sending asset: {asset}", "P2PClient.BeaconUploadRequest()");
                                 }
                                 else
                                 {
