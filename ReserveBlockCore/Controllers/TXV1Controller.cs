@@ -220,6 +220,42 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        //2e if its NFT Burn. This = Transaction.Data 
+        [HttpGet("GetNFTBurnData/{scUID}/{fromAddress}/")]
+        public async Task<string> GetNFTBurnData(string scUID, string fromAddress)
+        {
+            var output = "";
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if(scStateTrei == null)
+            {
+                output = JsonConvert.SerializeObject(new {Success = false, Message = "Smart contract does not exist." });
+                return output;
+            }
+            
+            try
+            {
+                var txData = "";
+                var newSCInfo = new[]
+                {
+                        new { Function = "Burn()", 
+                            ContractUID = scUID, 
+                            FromAddress = fromAddress}
+                };
+
+                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txJToken = JToken.Parse(txData.ToString());
+                output = JsonConvert.SerializeObject(new {Success = true, Message = txData });
+                
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message });
+            }
+
+            return output;
+        }
+
         //Step 3.
         [HttpPost("GetRawTxFee")]
         public async Task<string> GetRawTxFee([FromBody] object jsonData)
