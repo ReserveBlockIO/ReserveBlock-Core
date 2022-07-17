@@ -189,20 +189,17 @@ namespace ReserveBlockCore.Controllers
             var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
             try
             {
-                var result = await SmartContractWriterService.WriteSmartContract(sc);
-
+                //var result = await SmartContractWriterService.WriteSmartContract(sc);
                 var txData = "";
 
-                if (result.Item1 != null)
+                if (scStateTrei != null)
                 {
-                    var bytes = Encoding.Unicode.GetBytes(result.Item1);
-                    var scBase64 = bytes.ToCompress().ToBase64();
                     var newSCInfo = new[]
                     {
                             new { Function = "Transfer()", 
                                 ContractUID = sc.SmartContractUID, 
                                 ToAddress = toAddress, 
-                                Data = scBase64, 
+                                Data = scStateTrei.ContractData, 
                                 Locators = locators, //either beacons, or self kept (NA).
                                 MD5List = "NA"}
                     };
