@@ -87,9 +87,101 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2c if its NFT Transfers
-        [HttpGet("GetNFTTransferData")]
-        public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators, string md5List = "NA")
+        //2c
+        [HttpGet("CreateBeaconUploadRequest/{scUID}/{toAddress}/{**signature}")]
+        public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
+        {
+            var output = "";
+
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTrei != null)
+            {
+                var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                if (sc != null)
+                {
+                    if (sc.IsPublished == true)
+                    {
+                        //Get beacons here!
+                        var locators = await P2PClient.GetBeacons();
+                        if (locators.Count() == 0)
+                        {
+                            output = "You are not connected to any beacons.";
+                        }
+                        else
+                        {
+                            List<string> assets = new List<string>();
+
+                            if (sc.SmartContractAsset != null)
+                            {
+                                assets.Add(sc.SmartContractAsset.Name);
+                            }
+                            if (sc.Features != null)
+                            {
+                                foreach (var feature in sc.Features)
+                                {
+                                    if (feature.FeatureName == FeatureName.Evolving)
+                                    {
+                                        var count = 0;
+                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+                                        myArray.ForEach(x => {
+                                            var evolveDict = (Dictionary<string, object>)myArray[count];
+                                            SmartContractAsset evoAsset = new SmartContractAsset();
+                                            if (evolveDict.ContainsKey("SmartContractAsset"))
+                                            {
+
+                                                var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
+                                                evoAsset.Name = (string)assetEvo["Name"];
+                                                if (!assets.Contains(evoAsset.Name))
+                                                {
+                                                    assets.Add(evoAsset.Name);
+                                                }
+                                                count += 1;
+                                            }
+
+                                        });
+                                    }
+                                    if (feature.FeatureName == FeatureName.MultiAsset)
+                                    {
+                                        var count = 0;
+                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+
+                                        myArray.ForEach(x => {
+                                            var multiAssetDict = (Dictionary<string, object>)myArray[count];
+
+                                            var fileName = multiAssetDict["FileName"].ToString();
+                                            if (!assets.Contains(fileName))
+                                            {
+                                                assets.Add(fileName);
+                                            }
+
+                                            count += 1;
+
+                                        });
+
+                                    }
+                                }
+                            }
+
+                            var result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, signature);
+                            if (result != "NA" && result != "Fail")
+                            {
+                                var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
+
+                                var finalOutput = JsonConvert.SerializeObject(new { Locators = result, MD5List = md5List });
+                                output = finalOutput;
+
+                            }
+                        }
+                    }
+                }
+            }
+
+            return output;
+        }
+
+        //2d if its NFT Transfers. This = Transaction.Data 
+        [HttpGet("GetNFTTransferData/{scUID}/{toAddress}/{locators}")]
+        public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators)
         {
             var output = "";
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -112,7 +204,7 @@ namespace ReserveBlockCore.Controllers
                                 ToAddress = toAddress, 
                                 Data = scBase64, 
                                 Locators = locators, 
-                                MD5List = md5List}
+                                MD5List = "NA"}
                     };
 
                     txData = JsonConvert.SerializeObject(newSCInfo);
@@ -317,96 +409,6 @@ namespace ReserveBlockCore.Controllers
             catch (Exception ex)
             {
                 output = $"Error - {ex.Message}. Please Try Again.";
-            }
-
-            return output;
-        }
-
-        [HttpGet("CreateDnr/{scUID}/{toAddress}/{**signature}")]
-        public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
-        {
-            var output = "";
-
-            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
-            if (scStateTrei != null)
-            {
-                var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                if(sc != null)
-                {
-                    if (sc.IsPublished == true)
-                    {
-                        //Get beacons here!
-                        var locators = await P2PClient.GetBeacons();
-                        if (locators.Count() == 0)
-                        {
-                            output = "You are not connected to any beacons.";
-                        }
-                        else
-                        {
-                            List<string> assets = new List<string>();
-
-                            if (sc.SmartContractAsset != null)
-                            {
-                                assets.Add(sc.SmartContractAsset.Name);
-                            }
-                            if (sc.Features != null)
-                            {
-                                foreach (var feature in sc.Features)
-                                {
-                                    if (feature.FeatureName == FeatureName.Evolving)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-                                        myArray.ForEach(x => {
-                                            var evolveDict = (Dictionary<string, object>)myArray[count];
-                                            SmartContractAsset evoAsset = new SmartContractAsset();
-                                            if (evolveDict.ContainsKey("SmartContractAsset"))
-                                            {
-
-                                                var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                                evoAsset.Name = (string)assetEvo["Name"];
-                                                if (!assets.Contains(evoAsset.Name))
-                                                {
-                                                    assets.Add(evoAsset.Name);
-                                                }
-                                                count += 1;
-                                            }
-
-                                        });
-                                    }
-                                    if (feature.FeatureName == FeatureName.MultiAsset)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-
-                                        myArray.ForEach(x => {
-                                            var multiAssetDict = (Dictionary<string, object>)myArray[count];
-
-                                            var fileName = multiAssetDict["FileName"].ToString();
-                                            if (!assets.Contains(fileName))
-                                            {
-                                                assets.Add(fileName);
-                                            }
-
-                                            count += 1;
-
-                                        });
-
-                                    }
-                                }
-                            }
-
-                            var result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, signature);
-                            if(result != null && result != "Fail")
-                            {
-                                var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-
-                                var finalOutput = JsonConvert.SerializeObject(new { Locators = result, MD5List = md5List });
-                                
-                            }
-                        }
-                    }
-                }
             }
 
             return output;

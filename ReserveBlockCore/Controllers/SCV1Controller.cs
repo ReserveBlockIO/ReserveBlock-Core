@@ -497,7 +497,7 @@ namespace ReserveBlockCore.Controllers
                         }
 
                         var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress);
-                        if(result != "NA")
+                        if(result != "Fail" && result != "NA")
                         {
                             var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
                             var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List);
