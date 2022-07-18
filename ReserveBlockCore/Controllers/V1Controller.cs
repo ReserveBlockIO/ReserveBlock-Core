@@ -555,7 +555,10 @@ namespace ReserveBlockCore.Controllers
                     }
                     output = true;
                 }
-                result = "Account provided was not found in wallet.";
+                else
+                {
+                    result = "Account provided was not found in wallet.";
+                }
             }
 
             return result;

@@ -29,7 +29,6 @@ namespace ReserveBlockCore
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? DBCommitTimer;//checks dbs and commits log files. 
 
-
         public static List<Block> MemBlocks = new List<Block>();
         public static List<Block> QueuedBlocks = new List<Block>();
         public static List<Transaction> MempoolList = new List<Transaction>();

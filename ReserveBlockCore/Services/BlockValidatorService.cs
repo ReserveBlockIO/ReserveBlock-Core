@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Services
             if(block.Height != 0)
             {
                 var prevTimestamp = Program.LastBlock.Timestamp;
-                var currentTimestamp = TimeUtil.GetTime(60);
+                var currentTimestamp = TimeUtil.GetTime(1);
                 if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                 {
                     return result;
