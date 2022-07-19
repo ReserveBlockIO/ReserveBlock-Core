@@ -26,6 +26,7 @@ namespace ReserveBlockCore.Config
 		public string? ValidatorAddress { get; set; }
 		public string ValidatorName { get; set; }
 		public int NFTTimeout { get; set; }
+		public bool NFTIgnore { get; set; }
 
 		public static Config ReadConfigFile()
         {

@@ -214,7 +214,7 @@ namespace ReserveBlockCore.Services
 
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
-                IPAddress = "192.3.3.171",
+                IPAddress = "162.251.121.150",
                 Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
                 Name = "RBX Beacon 2",
                 BeaconUID = "Foundation Beacon 2"
@@ -416,6 +416,7 @@ namespace ReserveBlockCore.Services
                     var result = await P2PClient.GetCurrentHeight();
                     if (result.Item1 == true)
                     {
+                        ConsoleWriterService.Output("Block downloads started.");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
                         Program.BlocksDownloading = true;
                         Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
@@ -423,6 +424,7 @@ namespace ReserveBlockCore.Services
                     //This is not being reached on some devices. 
                     else
                     {
+                        ConsoleWriterService.Output("Block downloads finished.");
                         LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
                         Program.BlocksDownloading = false;
                         download = false; //exit the while.

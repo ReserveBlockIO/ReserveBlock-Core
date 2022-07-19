@@ -24,7 +24,6 @@ namespace ReserveBlockCore.Models
                 ErrorLogUtility.LogError(ex.Message, "BeaconInfo.GetBeacon()");
                 return null;
             }
-
         }
 
         public static BeaconInfo? GetBeaconInfo()

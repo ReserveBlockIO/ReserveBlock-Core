@@ -576,7 +576,7 @@ namespace ReserveBlockCore.Controllers
                 validator.UniqueName = uname;
                 validatorTable.Update(validator);
 
-                output = "Validator Unique Name Updated";
+                output = "Validator Unique Name Updated. Please restart wallet.";
             }
             return output;
         }

@@ -278,7 +278,17 @@ namespace ReserveBlockCore.P2P
         {
             List<string> ipList = new List<string>();
 
+            if(ReportedIPs.Count() > 12)
+            {
+                var reportedIPs = ReportedIPs.Take(6);
+                ReportedIPs.Clear();
+                ReportedIPs.TrimExcess();
+                ReportedIPs = new List<string>();
+                ReportedIPs.AddRange(reportedIPs);
+            }
+
             ipList = ReportedIPs;
+
             if (HubNum == 1)
             {
                 try

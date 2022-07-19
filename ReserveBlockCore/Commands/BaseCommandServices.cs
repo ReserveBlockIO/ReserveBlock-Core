@@ -74,7 +74,12 @@ namespace ReserveBlockCore.Commands
                         }
                         else
                         {
-                            Console.WriteLine("Failed to add. Peer already exist...");
+                            var peerRec = peers.FindOne(x => x.PeerIP == peer);
+                            peerRec.IsOutgoing = !peerRec.IsOutgoing;
+                            peers.Update(peerRec);
+
+                            Console.WriteLine("Peer already exist...");
+                            Console.WriteLine($"Peer Outgoing has been set to {peerRec.IsOutgoing}");
                             Console.WriteLine("Returning you to main menu...");
                             Thread.Sleep(4000);
                             StartupService.MainMenu();

@@ -35,6 +35,7 @@ namespace ReserveBlockCore.Services
                                     }
                                     else
                                     {
+                                        Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");
                                         myBlockHeight = block.Height;
                                     }
                                 }

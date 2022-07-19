@@ -17,13 +17,13 @@ namespace ReserveBlockCore.Models
         public bool IsIncoming { get; set; }
         public bool IsOutgoing { get; set; }
         public int FailCount { get; set; }
-        public static List<Peers> PeerList()
+        public bool IsBanned { get; set; }
+        public static List<Peers> PeerList(bool isBanned = false)
         {
             
             var peerList = GetAll();
             if(peerList.Count() == 0)
             {
-                
                 return peerList.FindAll().ToList();
             }
             else

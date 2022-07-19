@@ -6,7 +6,9 @@
         {
             
             Dictionary<string, decimal> balanceSheet = new Dictionary<string, decimal> {
-                                {"Input Address", 1M }, // Address, Amount in Decimal
+                                {"Insert Address", 1.0M },
+
+                                // Address, Amount in Decimal
                                 
 
             };
