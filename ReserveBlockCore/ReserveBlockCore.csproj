@@ -4,8 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>Assets\Images\rbx.ico</ApplicationIcon>
-    <PackageIcon>rbx.ico</PackageIcon>
+    <ApplicationIcon>Assets\Images\rbxnew.ico</ApplicationIcon>
+    <PackageIcon>rbxnew.ico</PackageIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\Images\rbx.ico" />
+    <Content Include="Assets\Images\rbxnew.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,6 +47,10 @@
 
   <ItemGroup>
     <None Update="Assets\Images\rbx.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="Assets\Images\rbxnew.ico">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
