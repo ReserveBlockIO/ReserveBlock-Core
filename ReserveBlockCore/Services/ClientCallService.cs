@@ -296,9 +296,6 @@ namespace ReserveBlockCore.Services
             }
 
         }
-
-
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
@@ -308,6 +305,8 @@ namespace ReserveBlockCore.Services
         {
             _timer.Dispose();
             _fortisPoolTimer.Dispose();
+            _blockStateSyncTimer.Dispose();
+            _checkpointTimer.Dispose();
         }
 
         public async Task SendMessage(string message, string data)
