@@ -450,8 +450,8 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("CreateDnr/{address}/{name}")]
-        public async Task<string> CreateDnr(string address, string name)
+        [HttpGet("CreateADnr/{address}/{name}")]
+        public async Task<string> CreateADnr(string address, string name)
         {
             string output = "";
 
