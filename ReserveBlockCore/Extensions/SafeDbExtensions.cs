@@ -12,8 +12,8 @@ namespace ReserveBlockCore.Extensions
         {
             if (!DbSemaphores.TryGetValue(col.Name, out SemaphoreSlim DbSemaphore))
             {
-                var NewSlim = new SemaphoreSlim(1, 1);
-                if (!DbSemaphores.TryAdd(col.Name, NewSlim))
+                DbSemaphore = new SemaphoreSlim(1, 1);
+                if (!DbSemaphores.TryAdd(col.Name, DbSemaphore))
                     DbSemaphores.TryGetValue(col.Name, out DbSemaphore);
             }
 
