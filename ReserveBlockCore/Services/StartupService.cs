@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using LiteDB;
+using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
@@ -367,9 +367,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
-
-            Program.MemBlocks = blocks.Take(200).ToList();
+            Program.MemBlocks = blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300).ToList();            
         }
 
         public static async Task ConnectoToAdjudicator()
@@ -639,7 +637,7 @@ namespace ReserveBlockCore.Services
 
                     blocks.DeleteMany(x => x.Height >= blockFixHeight);
                     DbContext.DB.Checkpoint();
-                    var blocksFromGenesis = blocks.Find(Query.All(Query.Ascending));
+                    var blocksFromGenesis = blocks.Find(LiteDB.Query.All(LiteDB.Query.Ascending));
 
                     foreach (var blk in blocksFromGenesis)
                     {

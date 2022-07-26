@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Models;
-using LiteDB;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
 
@@ -63,11 +63,8 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
         {
             var result = false;
-
-            var blockchain = BlockchainData.GetBlocks();
-            var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
-
-            var transactions = blocks.SelectMany(x => x.Transactions).ToList();
+  
+            var transactions = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
             if (transactions.Count() > 0)
             {
                 var txExist = transactions.Exists(x => x.Hash == tx.Hash);
@@ -101,7 +98,7 @@ namespace ReserveBlockCore.Data
             TransactionPool.Insert(transaction);
         }
 
-        public static ILiteCollection<Transaction> GetPool()
+        public static LiteDB.ILiteCollection<Transaction> GetPool()
         {
             try
             {
@@ -224,11 +221,9 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> DoubleSpendCheck(Transaction tx)
         {
             bool result = false;
-            var blockchain = BlockchainData.GetBlocks();
-            var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
 
-            var transactions = blocks.SelectMany(x => x.Transactions).ToList();
-            if(transactions.Count() > 0)
+            var transactions = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
+            if (transactions.Count() > 0)
             {
                 var txExist = transactions.Exists(x => x.Hash == tx.Hash);
                 if (txExist == true)
@@ -263,7 +258,7 @@ namespace ReserveBlockCore.Data
             return result;
         }
 
-        public static ILiteCollection<Transaction> GetAll()
+        public static LiteDB.ILiteCollection<Transaction> GetAll()
         {
             var collection = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             return collection;

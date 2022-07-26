@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Services
             Program.MemBlocks = null;
 
             var blockChain = BlockchainData.GetBlocks();
-            Program.MemBlocks = blockChain.Find(Query.All(Query.Descending)).Take(300).ToList();
+            Program.MemBlocks = blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300).ToList();
         }
 
         public static async Task ProcessBlockQueue()

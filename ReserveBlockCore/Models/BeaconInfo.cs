@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 
@@ -12,7 +12,7 @@ namespace ReserveBlockCore.Models
         public bool IsBeaconActive { get; set; }
         public string BeaconUID { get; set; }
 
-        public static ILiteCollection<BeaconInfo>? GetBeacon()
+        public static LiteDB.ILiteCollection<BeaconInfo>? GetBeacon()
         {
             try
             {

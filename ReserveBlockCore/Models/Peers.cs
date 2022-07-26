@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static ILiteCollection<Peers> GetAll()
+        public static LiteDB.ILiteCollection<Peers> GetAll()
         {
             try
             {

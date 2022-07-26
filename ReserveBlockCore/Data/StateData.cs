@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
@@ -211,7 +211,7 @@ namespace ReserveBlockCore.Data
 
         }
 
-        public static ILiteCollection<AccountStateTrei> GetAccountStateTrei()
+        public static LiteDB.ILiteCollection<AccountStateTrei> GetAccountStateTrei()
         {
             var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
             return aTrei;

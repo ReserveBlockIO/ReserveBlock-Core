@@ -1,5 +1,4 @@
-﻿using LiteDB;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.P2P;
@@ -12,6 +11,7 @@ using ReserveBlockCore.Services;
 using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
+using ReserveBlockCore.Extensions;
 
 namespace ReserveBlockCore.Data
 {
@@ -183,7 +183,7 @@ namespace ReserveBlockCore.Data
             return trxs;
         }
 
-        public static ILiteCollection<Block> GetBlocks()
+        public static LiteDB.ILiteCollection<Block> GetBlocks()
         {
             try
             {
@@ -198,7 +198,7 @@ namespace ReserveBlockCore.Data
             }
             
         }
-        public static ILiteCollection<Block> GetBlockQueue()
+        public static LiteDB.ILiteCollection<Block> GetBlockQueue()
         {
             var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
             blocks.EnsureIndex(x => x.Height);
@@ -227,7 +227,7 @@ namespace ReserveBlockCore.Data
         public static Block GetLastBlock()
         {
             var blockchain = GetBlocks();
-            var block = blockchain.FindOne(Query.All(Query.Descending));
+            var block = blockchain.FindOne(LiteDB.Query.All(LiteDB.Query.Descending));
             return block;
         }
         public static long GetHeight()
@@ -286,7 +286,7 @@ namespace ReserveBlockCore.Data
             }
             else
             {
-                var blockList = blocks.Find(Query.All(Query.Descending)).ToList();
+                var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
                 var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
                 if (eBlock == null)
                 {
