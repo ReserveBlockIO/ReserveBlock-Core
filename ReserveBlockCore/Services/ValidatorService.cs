@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Services
                 }
                 else if(confirmChoice.ToLower() == "n")
                 {
-                    Console.WriteLine("Returning you to main menu...");
+                    Console.WriteLine("Returning you to main menu in 3 seconds...");
                     Thread.Sleep(3000);
                     StartupService.MainMenu();
                 }
