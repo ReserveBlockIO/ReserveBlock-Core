@@ -21,7 +21,7 @@ namespace ReserveBlockCore.Services
             {
                 if (block.ChainRefId != BlockchainData.ChainRef)
                 {
-                    return result;//block rejected due to chainref difference
+                    return result; //block rejected due to chainref difference
                 }
                 //Genesis Block
                 result = true;
@@ -334,7 +334,6 @@ namespace ReserveBlockCore.Services
                 return result;
             }
 
-            
         }
 
         //This method does not add block or update any treis
