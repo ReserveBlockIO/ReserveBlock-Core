@@ -66,7 +66,7 @@ namespace ReserveBlockCore.Data
 
             var blockchain = BlockchainData.GetBlocks();
             var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
-
+            
             var transactions = blocks.SelectMany(x => x.Transactions).ToList();
             if (transactions.Count() > 0)
             {
