@@ -357,8 +357,15 @@ namespace ReserveBlockCore.P2P
 
         private static string GetIP(HubCallerContext context)
         {
+            var peerIP = "NA";
             var feature = context.Features.Get<IHttpConnectionFeature>();
-            var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
+            if(feature != null)
+            {
+                if(feature.RemoteIpAddress != null)
+                {
+                    peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
+                }
+            }
 
             return peerIP;
         }

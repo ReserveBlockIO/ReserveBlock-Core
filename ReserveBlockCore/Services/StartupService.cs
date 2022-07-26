@@ -256,7 +256,7 @@ namespace ReserveBlockCore.Services
                     var timeDiff = currentTime - time;
                     var minuteDiff = timeDiff / 60M;
 
-                    if(minuteDiff > 180.0M)
+                    if(minuteDiff > 120.0M)
                     {
                         pool.DeleteMany(x => x.Hash == tx.Hash);
                         memTxDeleted = true;

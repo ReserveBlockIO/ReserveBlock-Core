@@ -183,7 +183,6 @@ namespace ReserveBlockCore.Services
 
                         await StartupService.ConnectoToAdjudicator();
                     }
-
                 }
             }
 

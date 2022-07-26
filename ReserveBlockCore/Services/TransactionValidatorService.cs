@@ -39,7 +39,7 @@ namespace ReserveBlockCore.Services
                 var timeDiff = currentTime - txRequest.Timestamp;
                 var minuteDiff = timeDiff / 60M;
 
-                if (minuteDiff > 180.0M)
+                if (minuteDiff > 120.0M)
                 {
                     return txResult;
                 }
@@ -362,7 +362,7 @@ namespace ReserveBlockCore.Services
                 var timeDiff = currentTime - txRequest.Timestamp;
                 var minuteDiff = timeDiff / 60M;
 
-                if (minuteDiff > 180.0M)
+                if (minuteDiff > 120.0M)
                 {
                     return (txResult, "The timestamp of this transactions is too old to be sent now.");
                 }

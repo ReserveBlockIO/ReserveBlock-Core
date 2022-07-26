@@ -11,7 +11,7 @@ namespace ReserveBlockCore.Config
     {
         public int Port { get; set; }
         public int APIPort { get; set; }
-		public bool TestNet{ get; set; }
+		public bool TestNet { get; set; }
 		public string? WalletPassword { get; set; }
 		public bool AlwaysRequireWalletPassword { get; set; }
 		public string? APIPassword { get; set; }

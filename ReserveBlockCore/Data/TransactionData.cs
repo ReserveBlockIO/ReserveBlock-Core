@@ -87,7 +87,7 @@ namespace ReserveBlockCore.Data
             var timeDiff = currentTime - tx.Timestamp;
             var minuteDiff = timeDiff / 60M;
 
-            if (minuteDiff > 180.0M)
+            if (minuteDiff > 120.0M)
             {
                 result = true;
             }
