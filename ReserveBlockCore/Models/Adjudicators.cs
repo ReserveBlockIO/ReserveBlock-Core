@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 
@@ -18,7 +18,7 @@ namespace ReserveBlockCore.Models
 
         public class AdjudicatorData
         {
-            public static ILiteCollection<Adjudicators> GetAll()
+            public static LiteDB.ILiteCollection<Adjudicators> GetAll()
             {
                 try
                 {

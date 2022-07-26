@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using ReserveBlockCore.Beacon;

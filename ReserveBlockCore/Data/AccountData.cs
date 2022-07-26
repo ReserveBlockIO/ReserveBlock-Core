@@ -8,8 +8,8 @@ using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
-using LiteDB;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Extensions;
 
 namespace ReserveBlockCore.Data
 {
@@ -231,7 +231,7 @@ namespace ReserveBlockCore.Data
 
 			accountList.Update(localAccount);
 		}
-		public static ILiteCollection<Account> GetAccounts()
+		public static LiteDB.ILiteCollection<Account> GetAccounts()
 		{
             try
             {

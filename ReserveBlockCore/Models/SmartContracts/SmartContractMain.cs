@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Trillium;
@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
         public class SmartContractData
         {
-            public static ILiteCollection<SmartContractMain> GetSCs()
+            public static LiteDB.ILiteCollection<SmartContractMain> GetSCs()
             {
                 var scs = DbContext.DB_Assets.GetCollection<SmartContractMain>(DbContext.RSRV_ASSETS);
                 return scs;

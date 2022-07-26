@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Models
         public string TxHash { get; set; }
         public long Timestamp { get; set; }
 
-        public static ILiteCollection<Adnr>? GetAdnr()
+        public static LiteDB.ILiteCollection<Adnr>? GetAdnr()
         {
             try
             {

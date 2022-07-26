@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.BIP39;
 using ReserveBlockCore.BIP32;
@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Models
 
         public class HDWalletData
         {
-            public static ILiteCollection<HDWallet> GetHDWalletData()
+            public static LiteDB.ILiteCollection<HDWallet> GetHDWalletData()
             {
                 var hdwallet = DbContext.DB_HD_Wallet.GetCollection<HDWallet>(DbContext.RSRV_HD_WALLET);
                 return hdwallet;

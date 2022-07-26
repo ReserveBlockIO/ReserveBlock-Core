@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
@@ -21,7 +21,7 @@ namespace ReserveBlockCore.Models
         public bool IsOffline { get; set; }
         public string Signature { get; set; }
 
-        public static ILiteCollection<DecShop>? DecShops()
+        public static LiteDB.ILiteCollection<DecShop>? DecShops()
         {
             try
             {
@@ -36,7 +36,7 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static ILiteCollection<DecShop>? MyDecShop()
+        public static LiteDB.ILiteCollection<DecShop>? MyDecShop()
         {
             try
             {
