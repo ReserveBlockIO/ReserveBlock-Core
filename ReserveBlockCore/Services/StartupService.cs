@@ -369,7 +369,7 @@ namespace ReserveBlockCore.Services
             var blockChain = BlockchainData.GetBlocks();
             var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
 
-            Program.MemBlocks = blocks.Take(200).ToList();
+            Program.MemBlocks = blocks.Take(300).ToList();
         }
 
         public static async Task ConnectoToAdjudicator()
