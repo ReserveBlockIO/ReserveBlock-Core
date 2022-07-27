@@ -26,7 +26,7 @@ namespace ReserveBlockCore.Utilities
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
                 else
                 {
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Utilities
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
                 else
                 {
@@ -104,7 +104,7 @@ namespace ReserveBlockCore.Utilities
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
                 else
                 {

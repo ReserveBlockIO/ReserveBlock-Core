@@ -1,4 +1,5 @@
 ﻿
+using ReserveBlockCore.Models;
 using System.Security.Cryptography;
 
 namespace ReserveBlockCore.Utilities
@@ -8,8 +9,22 @@ namespace ReserveBlockCore.Utilities
         public static bool ValidateAddress(string addr)
         {
             var result = false;
-			result = ValidateRBXAddress(addr);
 
+			if(addr.EndsWith(".rbx"))
+            {
+				var adnr = Adnr.GetAdnr();
+				var adnrExist = adnr.FindOne(x => x.Name == addr);
+				if(adnrExist != null)
+                {
+					addr = adnrExist.Address;
+					result = ValidateRBXAddress(addr);
+				}
+            }
+            else
+            {
+				result = ValidateRBXAddress(addr);
+			}
+			
 			return result;
         }
 
