@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Models
                 var existingBeaconInfo = beacon.FindAll().FirstOrDefault();
                 if (existingBeaconInfo == null)
                 {
-                    beacon.Insert(beaconInfo); //inserts new record
+                    beacon.InsertSafe(beaconInfo); //inserts new record
                     return "Inserted";
                 }
                 else
@@ -66,7 +66,7 @@ namespace ReserveBlockCore.Models
                     existingBeaconInfo.BeaconLocator = beaconInfo.BeaconLocator;
                     existingBeaconInfo.IsBeaconActive = beaconInfo.IsBeaconActive;
                     existingBeaconInfo.Name = beaconInfo.Name;
-                    beacon.Update(existingBeaconInfo); //update existing record
+                    beacon.UpdateSafe(existingBeaconInfo); //update existing record
                     return "Updated";
                 }
             }
@@ -92,7 +92,7 @@ namespace ReserveBlockCore.Models
                 else
                 {
                     beaconInfo.IsBeaconActive = !beaconInfo.IsBeaconActive;
-                    beacon.Update(beaconInfo);
+                    beacon.UpdateSafe(beaconInfo);
                 }
 
                 return beaconInfo.IsBeaconActive;

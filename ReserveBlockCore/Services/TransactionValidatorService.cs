@@ -53,7 +53,7 @@ namespace ReserveBlockCore.Services
                 var mempool = TransactionData.GetPool();
                 if (mempool.Count() > 0)
                 {
-                    mempool.DeleteMany(x => x.Hash == txRequest.Hash);
+                    mempool.DeleteManySafe(x => x.Hash == txRequest.Hash);
                 }
                 return txResult;
             }
@@ -376,7 +376,7 @@ namespace ReserveBlockCore.Services
                 var mempool = TransactionData.GetPool();
                 if (mempool.Count() > 0)
                 {
-                    mempool.DeleteMany(x => x.Hash == txRequest.Hash);
+                    mempool.DeleteManySafe(x => x.Hash == txRequest.Hash);
                 }
                 return (txResult, "This transactions has already been sent.");
             }

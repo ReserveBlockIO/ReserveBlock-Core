@@ -13,7 +13,7 @@ namespace ReserveBlockCore.Utilities
             var newHeight = height - (long)numBlocksRollback;
 
             var blocks = Block.GetBlocks();
-            blocks.DeleteMany(x => x.Height > newHeight);
+            blocks.DeleteManySafe(x => x.Height > newHeight);
             DbContext.DB.Checkpoint();
 
             var result = await ResetTreis();
@@ -34,9 +34,9 @@ namespace ReserveBlockCore.Utilities
             var stateTrei = StateData.GetAccountStateTrei();
             var worldTrei = WorldTrei.GetWorldTrei();
 
-            transactions.DeleteAll();//delete all local transactions
-            stateTrei.DeleteAll(); //removes all state trei data
-            worldTrei.DeleteAll();  //removes the state trei
+            transactions.DeleteAllSafe();//delete all local transactions
+            stateTrei.DeleteAllSafe(); //removes all state trei data
+            worldTrei.DeleteAllSafe();  //removes the state trei
 
             DbContext.DB.Checkpoint();
             DbContext.DB_AccountStateTrei.Checkpoint();
@@ -49,7 +49,7 @@ namespace ReserveBlockCore.Utilities
                 foreach (var account in accountList)
                 {
                     account.Balance = 0M;
-                    accounts.Update(account);//updating local record with synced state trei
+                    accounts.UpdateSafe(account);//updating local record with synced state trei
                 }
             }
 
@@ -67,7 +67,7 @@ namespace ReserveBlockCore.Utilities
                         var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
                         if (mempoolTx != null)
                         {
-                            mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                            mempool.DeleteManySafe(x => x.Hash == transaction.Hash);
                         }
 
                         var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
@@ -75,7 +75,7 @@ namespace ReserveBlockCore.Utilities
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                             var txdata = TransactionData.GetAll();
-                            txdata.Insert(transaction);
+                            txdata.InsertSafe(transaction);
                         }
 
                         //Adds sent TX to wallet
@@ -86,7 +86,7 @@ namespace ReserveBlockCore.Utilities
                             var fromTx = transaction;
                             fromTx.Amount = transaction.Amount * -1M;
                             fromTx.Fee = transaction.Fee * -1M;
-                            txData.Insert(fromTx);
+                            txData.InsertSafe(fromTx);
                             AccountData.UpdateLocalBalance(fromAccount.Address, (transaction.Amount + transaction.Fee));
                         }
                     }

@@ -171,11 +171,11 @@ namespace ReserveBlockCore.Services
                         validator.WalletVersion = Program.CLIVersion;
                         validator.LastChecked = DateTime.UtcNow;
 
-                        validatorTable.Insert(validator);
+                        validatorTable.InsertSafe(validator);
 
                         account.IsValidating = true;
                         var accountTable = AccountData.GetAccounts();
-                        accountTable.Update(account);
+                        accountTable.UpdateSafe(account);
 
                         Program.ValidatorAddress = validator.Address;
 
@@ -283,13 +283,13 @@ namespace ReserveBlockCore.Services
 
         public static void StopValidating(Validators validator)
         {           
-            //Validators.Validator.GetAll().Delete(validator.Id);
+            //Validators.Validator.GetAll().DeleteSafe(validator.Id);
 
             var accounts = AccountData.GetAccounts();
             var myAccount = accounts.FindOne(x => x.Address == validator.Address);
 
             myAccount.IsValidating = false;
-            accounts.Update(myAccount);
+            accounts.UpdateSafe(myAccount);
             //broadcast out to other nodes
 
         }
@@ -319,7 +319,7 @@ namespace ReserveBlockCore.Services
                             if (dupList.Exists(z => z.IsActive == true))
                             {
                                 var dupsDel = dupList.Where(z => z.IsActive == false).ToList();
-                                validators.DeleteMany(z => z.Address == x.Address && z.IsActive == false);
+                                validators.DeleteManySafe(z => z.Address == x.Address && z.IsActive == false);
                             }
                             else
                             {
@@ -327,7 +327,7 @@ namespace ReserveBlockCore.Services
                                 var dupsDel = dupList.Take(countRem);
                                 dupsDel.ToList().ForEach(d =>
                                 {
-                                    validators.DeleteMany(p => p.Id == d.Id);
+                                    validators.DeleteManySafe(p => p.Id == d.Id);
                                 });
                             }
                         });

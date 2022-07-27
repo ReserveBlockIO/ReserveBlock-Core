@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
-                    adnr.Insert(adnrData);
+                    adnr.InsertSafe(adnrData);
                 }
             }
 
@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                adnr.DeleteMany(x => x.Name == name);
+                adnr.DeleteManySafe(x => x.Name == name);
             }
         }
 

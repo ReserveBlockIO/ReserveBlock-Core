@@ -43,7 +43,7 @@ namespace ReserveBlockCore.P2P
                         PeerIP = peerIP
                     };
 
-                    peers.Insert(nPeer);
+                    peers.InsertSafe(nPeer);
                 }
             }
 
@@ -205,7 +205,7 @@ namespace ReserveBlockCore.P2P
                     PeerIP = peerIP
                 };
 
-                peerDB.Insert(nPeer);
+                peerDB.InsertSafe(nPeer);
             }
             return "HelloPeer";
         }
@@ -283,7 +283,7 @@ namespace ReserveBlockCore.P2P
                                 if (beaconDatas != null)
                                 {
                                     bdCheck.DownloadIPAddress = peerIP;
-                                    beaconDatas.Update(bdCheck);
+                                    beaconDatas.UpdateSafe(bdCheck);
                                 }
                                 else
                                 {
@@ -444,7 +444,7 @@ namespace ReserveBlockCore.P2P
                         {
                             try
                             {
-                                mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                             }
                             catch (Exception ex)
                             {
@@ -457,7 +457,7 @@ namespace ReserveBlockCore.P2P
 
                         if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
                         {
-                            mempool.Insert(txReceived);
+                            mempool.InsertSafe(txReceived);
                             await P2PClient.SendTXToAdjudicator(txReceived);
                             return "ATMP";//added to mempool
                         }
@@ -465,7 +465,7 @@ namespace ReserveBlockCore.P2P
                         {
                             try
                             {
-                                mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                             }
                             catch (Exception ex)
                             {
@@ -491,7 +491,7 @@ namespace ReserveBlockCore.P2P
                         {
                             try
                             {
-                                mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                             }
                             catch (Exception ex)
                             {
@@ -505,7 +505,7 @@ namespace ReserveBlockCore.P2P
                     {
                         try
                         {
-                            mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                            mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                         }
                         catch (Exception ex)
                         {
@@ -525,7 +525,7 @@ namespace ReserveBlockCore.P2P
                     {
                         try
                         {
-                            mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                            mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                         }
                         catch (Exception ex)
                         {
@@ -537,7 +537,7 @@ namespace ReserveBlockCore.P2P
                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
                     if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
                     {
-                        mempool.Insert(txReceived);
+                        mempool.InsertSafe(txReceived);
                         await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
                         return "ATMP";//added to mempool
                     }
@@ -545,7 +545,7 @@ namespace ReserveBlockCore.P2P
                     {
                         try
                         {
-                            mempool.DeleteMany(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                            mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                         }
                         catch (Exception ex)
                         {
@@ -621,7 +621,7 @@ namespace ReserveBlockCore.P2P
                         {
                             validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
                         }
-                        validatorList.Insert(validator);
+                        validatorList.InsertSafe(validator);
 
                         data = JsonConvert.SerializeObject(validator);
 
@@ -657,7 +657,7 @@ namespace ReserveBlockCore.P2P
                         valFound.LastChecked = validator.LastChecked;
                         valFound.WalletVersion = validator.WalletVersion;
 
-                        validatorList.Update(valFound);
+                        validatorList.UpdateSafe(valFound);
 
                         data = JsonConvert.SerializeObject(valFound);
                         await SendMessageAllPeers("val", data);
@@ -670,7 +670,7 @@ namespace ReserveBlockCore.P2P
                 var result = ValidatorService.ValidateTheValidator(validator);
                 if (result == true)
                 {
-                    validatorList.Insert(validator);
+                    validatorList.InsertSafe(validator);
                     Validators.Validator.Initialize();
                     return "VATN";//added to validator list
                 }

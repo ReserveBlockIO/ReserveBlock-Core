@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Models
                 var validators = GetAll();
 
                 // insert into database
-                validators.Insert(validator);
+                validators.InsertSafe(validator);
             }
 
             public static LiteDB.ILiteCollection<Validators> GetAll()

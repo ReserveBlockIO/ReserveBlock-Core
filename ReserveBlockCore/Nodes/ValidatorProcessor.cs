@@ -115,7 +115,7 @@ namespace ReserveBlockCore.Nodes
 
                                             if (dblspndChk == false && isCraftedIntoBlock == false)
                                             {
-                                                mempool.Insert(transaction);
+                                                mempool.InsertSafe(transaction);
                                             }
                                         }
 
@@ -132,7 +132,7 @@ namespace ReserveBlockCore.Nodes
                                         {
                                             try
                                             {
-                                                mempool.DeleteMany(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                                mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
                                             }
                                             catch (Exception ex)
                                             {
@@ -152,7 +152,7 @@ namespace ReserveBlockCore.Nodes
 
                                         if (dblspndChk == false && isCraftedIntoBlock == false)
                                         {
-                                            mempool.Insert(transaction);
+                                            mempool.InsertSafe(transaction);
                                         }
                                     }
                                 }

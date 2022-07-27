@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Data
             if (GenesisTransactionsCreated != true)
             {
                 var trxPool = TransactionData.GetPool();
-                trxPool.DeleteAll();
+                trxPool.DeleteAllSafe();
                 var timeStamp = TimeUtil.GetTime();
 
                 var balanceSheet = GenesisBalanceUtility.GenesisBalances();
@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Data
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
             if(txCheck== null)
             {
-                txs.Insert(transaction);
+                txs.InsertSafe(transaction);
             }
         }
 
@@ -95,7 +95,7 @@ namespace ReserveBlockCore.Data
         public static void AddToPool(Transaction transaction)
         {
             var TransactionPool = GetPool();
-            TransactionPool.Insert(transaction);
+            TransactionPool.InsertSafe(transaction);
         }
 
         public static LiteDB.ILiteCollection<Transaction> GetPool()
@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Data
             try
             {
                 var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
-                collection.EnsureIndex(x => x.Hash);
+                collection.EnsureIndexSafe(x => x.Hash);
                 return collection;
             }
             catch(Exception ex)
@@ -185,7 +185,7 @@ namespace ReserveBlockCore.Data
                                 {
                                     try
                                     {
-                                        collection.DeleteMany(x => x.Hash == txToDelete.Hash);
+                                        collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
                                     }
                                     catch (Exception ex)
                                     {
@@ -201,7 +201,7 @@ namespace ReserveBlockCore.Data
                             {
                                 try
                                 {
-                                    collection.DeleteMany(x => x.Hash == txToDelete.Hash);
+                                    collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
                                 }
                                 catch (Exception ex)
                                 {
@@ -268,7 +268,7 @@ namespace ReserveBlockCore.Data
         public static Transaction GetTxByAddress(string address)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.Timestamp);
+            transactions.EnsureIndexSafe(x => x.Timestamp);
             var tx = transactions.FindOne(x => x.FromAddress == address || x.ToAddress == address);
             return tx;
         }
@@ -276,8 +276,8 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.FromAddress);
-            transactions.EnsureIndex(x => x.ToAddress);
+            transactions.EnsureIndexSafe(x => x.FromAddress);
+            transactions.EnsureIndexSafe(x => x.ToAddress);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
                 .Where(x => x.FromAddress == address || x.ToAddress == address)
@@ -288,7 +288,7 @@ namespace ReserveBlockCore.Data
         public static Transaction GetTxByHash(string hash)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.Timestamp);
+            transactions.EnsureIndexSafe(x => x.Timestamp);
             var tx = transactions.FindOne(x => x.Hash == hash);
             return tx;
         }
@@ -296,7 +296,7 @@ namespace ReserveBlockCore.Data
         //public static IEnumerable<Transaction> GetTxnsByHeight(long height, int limit = 50)
         //{
         //    var transactions = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    transactions.EnsureIndex(x => x.Timestamp);
+        //    transactions.EnsureIndexSafe(x => x.Timestamp);
         //    var query = transactions.Query()
         //        .OrderByDescending(x => x.Timestamp)
         //        .Where(x => x.Height == height)
@@ -308,7 +308,7 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.Timestamp);
+            transactions.EnsureIndexSafe(x => x.Timestamp);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
                 .Offset((pageNumber - 1) * resultPerPage)

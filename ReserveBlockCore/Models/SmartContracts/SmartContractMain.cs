@@ -55,14 +55,14 @@ namespace ReserveBlockCore.Models.SmartContracts
                 {
                     scMain.IsPublished = true;
                     NFTLogUtility.Log($"Smart Contract Has Been Minted to Network : {scMain.SmartContractUID}", "SmartContractMain.SetSmartContractIsPublished(string scUID)");
-                    scs.Update(scMain);
+                    scs.UpdateSafe(scMain);
                 }              
             }
             public static void SaveSmartContract(SmartContractMain scMain, string scText)
             {
                 var scs = GetSCs();
 
-                scs.Insert(scMain);
+                scs.InsertSafe(scMain);
 
                 SaveSCLocally(scMain, scText);
             }
@@ -71,7 +71,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             {
                 var scs = GetSCs();
 
-                scs.Update(scMain);
+                scs.UpdateSafe(scMain);
             }
 
             public static void DeleteSmartContract(string scUID)
@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 {
                     var scs = GetSCs();
 
-                    scs.DeleteMany(x => x.SmartContractUID == scUID);
+                    scs.DeleteManySafe(x => x.SmartContractUID == scUID);
                 }
                 catch(Exception ex)
                 {

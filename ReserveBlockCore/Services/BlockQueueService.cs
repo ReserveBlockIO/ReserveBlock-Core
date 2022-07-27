@@ -14,6 +14,7 @@ namespace ReserveBlockCore.Services
 
         public static void UpdateMemBlocks()
         {
+            Program.MemBlocks.First().GetBlockHash();
             Program.MemBlocks.Clear();
             Program.MemBlocks.TrimExcess();
             Program.MemBlocks = null;
@@ -41,11 +42,11 @@ namespace ReserveBlockCore.Services
                             if (findBlock == null)
                             {
                                 await BlockValidatorService.ValidateBlock(block);//insert into blockchain
-                                blockQueue.DeleteMany(x => x.Height == block.Height);//delete from queue
+                                blockQueue.DeleteManySafe(x => x.Height == block.Height);//delete from queue
                             }
                             else
                             {
-                                blockQueue.DeleteMany(x => x.Height == block.Height); //delete from queue
+                                blockQueue.DeleteManySafe(x => x.Height == block.Height); //delete from queue
                             }
                         }
                         catch (Exception ex)
@@ -73,7 +74,7 @@ namespace ReserveBlockCore.Services
                 if(blockQueueBlock == null)
                 {
                     BroadcastBlock = true;
-                    blockQueue.Insert(block);
+                    blockQueue.InsertSafe(block);
                     try
                     {
                         //REVIEW THIS. POTENTIAL LOOP BROADCAST
