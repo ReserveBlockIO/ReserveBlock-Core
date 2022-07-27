@@ -362,8 +362,6 @@ namespace ReserveBlockCore.Services
             }
             
         }
-
-
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
@@ -400,8 +398,6 @@ namespace ReserveBlockCore.Services
 
             }
         }
-
-
 
         internal static async Task DownloadBlocksOnStart()
         {
