@@ -692,29 +692,47 @@ namespace ReserveBlockCore.Services
             //add seed nodes
             SeedNodeService.SeedNodes();
             bool result = false;
-            try
+            bool peersConnected = false;
+            int failCount = 0;
+            while (!peersConnected)
             {
-                result = await P2PClient.ConnectToPeers();
-
-                if(result == true)
+                try
                 {
-                    var accounts = AccountData.GetAccounts();
-                    var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
-                    if(myAccount != null)
+                    if(failCount > 0)
                     {
-                        Program.ValidatorAddress = myAccount.Address;
-                        LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
+                        Thread.Sleep(new TimeSpan(0, failCount, 0));
+                    }
+
+                    Console.WriteLine("Attempting to connect to peers...");
+                    result = await P2PClient.ConnectToPeers();
+
+                    if (result == true)
+                    {
+                        peersConnected = true;
+                        var accounts = AccountData.GetAccounts();
+                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+                        if (myAccount != null)
+                        {
+                            Program.ValidatorAddress = myAccount.Address;
+                            LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
+                        }
+                        else
+                        {
+                            //No validator account on start up
+                        }
                     }
                     else
                     {
-                        //No validator account on start up
+                        failCount += 1;
+                        Console.WriteLine($"Failed to connect to any peers. trying again in {failCount} minutes.");
                     }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            
             
 
             if(result == true)
