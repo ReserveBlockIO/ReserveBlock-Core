@@ -303,6 +303,7 @@ namespace ReserveBlockCore
 
             await StartupService.SetLeadAdjudicator();
             StartupService.SetSelfAdjudicator();
+            StartupService.StartupMemBlocks();
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
             await StartupService.ConnectoToAdjudicator();
@@ -313,7 +314,7 @@ namespace ReserveBlockCore
                 StartupService.SetConfigValidator();
             }
 
-            StartupService.StartupMemBlocks();
+            
 
             Thread.Sleep(3000);
 
