@@ -14,7 +14,10 @@ namespace ReserveBlockCore.Services
 
         public static void UpdateMemBlocks()
         {
-            Program.MemBlocks.First().GetBlockHash();
+            //if(Program.MemBlocks.Count != 0)
+            //{
+            //    Program.MemBlocks.First().GetBlockHash();
+            //}
             Program.MemBlocks.Clear();
             Program.MemBlocks.TrimExcess();
             Program.MemBlocks = null;

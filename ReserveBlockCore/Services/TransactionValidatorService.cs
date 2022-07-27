@@ -275,6 +275,11 @@ namespace ReserveBlockCore.Services
                                     {
                                         return txResult;
                                     }
+
+                                    if(txRequest.ToAddress != "Adnr_Base")
+                                    {
+                                        return txResult;
+                                    }
                                 }
                             }
                         }
