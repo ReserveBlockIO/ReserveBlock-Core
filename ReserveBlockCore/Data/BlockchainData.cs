@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Data
                 StateData.CreateGenesisWorldTrei(block);
 
                 // clear mempool
-                trxPool.DeleteAll();
+                trxPool.DeleteAllSafe();
             }
         }
         //Method needing validator functions still.
@@ -114,7 +114,7 @@ namespace ReserveBlockCore.Data
                         var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
                         if (txRec != null)
                         {
-                            //txPool.DeleteMany(x => x.Hash == tx.Hash);
+                            //txPool.DeleteManySafe(x => x.Hash == tx.Hash);
                         }
                     }
                 }
@@ -188,7 +188,7 @@ namespace ReserveBlockCore.Data
             try
             {
                 var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-                blocks.EnsureIndex(x => x.Height);
+                blocks.EnsureIndexSafe(x => x.Height);
                 return blocks;
             }
             catch(Exception ex)
@@ -201,7 +201,7 @@ namespace ReserveBlockCore.Data
         public static LiteDB.ILiteCollection<Block> GetBlockQueue()
         {
             var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
-            blocks.EnsureIndex(x => x.Height);
+            blocks.EnsureIndexSafe(x => x.Height);
             return blocks;
         }
         public static Block GetGenesisBlock()
@@ -212,7 +212,7 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHeight(long height)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height); 
+            blocks.EnsureIndexSafe(x => x.Height); 
             var block = blocks.FindOne(x => x.Height == height);
             return block;
         }
@@ -220,7 +220,7 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHash(string hash)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height); 
+            blocks.EnsureIndexSafe(x => x.Height); 
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -273,12 +273,12 @@ namespace ReserveBlockCore.Data
         public static void AddBlock(Block block)
         {
             var blocks = GetBlocks();
-            blocks.EnsureIndex(x => x.Height);
+            blocks.EnsureIndexSafe(x => x.Height);
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
             {
-                blocks.Insert(block);
+                blocks.InsertSafe(block);
 
                 //Update in memory fields.
                 Program.LastBlock = block;
@@ -306,7 +306,7 @@ namespace ReserveBlockCore.Data
         {
 
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Validator);
+            blocks.EnsureIndexSafe(x => x.Validator);
             var query = blocks.Query()
                 .OrderByDescending(x => x.Height)
                 .Where(x => x.Validator == address)

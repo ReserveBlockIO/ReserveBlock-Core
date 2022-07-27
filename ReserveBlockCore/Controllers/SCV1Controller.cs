@@ -350,7 +350,7 @@ namespace ReserveBlockCore.Controllers
             var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
             sc.IsPublic ^= true;
 
-            scs.Update(sc);
+            scs.UpdateSafe(sc);
 
             return output;
 

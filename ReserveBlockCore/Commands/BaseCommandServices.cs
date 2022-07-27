@@ -64,7 +64,7 @@ namespace ReserveBlockCore.Commands
                                 FailCount = 0
                             };
 
-                            peers.Insert(nPeer);
+                            peers.InsertSafe(nPeer);
 
                             Console.WriteLine("Success! Peer added.");
                             Console.WriteLine("Returning you to main menu...");
@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Commands
                         {
                             var peerRec = peers.FindOne(x => x.PeerIP == peer);
                             peerRec.IsOutgoing = !peerRec.IsOutgoing;
-                            peers.Update(peerRec);
+                            peers.UpdateSafe(peerRec);
 
                             Console.WriteLine("Peer already exist...");
                             Console.WriteLine($"Peer Outgoing has been set to {peerRec.IsOutgoing}");

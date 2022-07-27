@@ -296,7 +296,7 @@ namespace ReserveBlockCore.Controllers
                     if (account != null)
                     {
                         account.IsValidating = true;
-                        accounts.Update(account);
+                        accounts.UpdateSafe(account);
                         Program.ValidatorAddress = account.Address;
                         output = "Success! The requested account has been turned on: " + account.Address;
                     }
@@ -325,7 +325,7 @@ namespace ReserveBlockCore.Controllers
             if (presentValidator != null)
             {
                 presentValidator.IsValidating = false;
-                accounts.Update(presentValidator);
+                accounts.UpdateSafe(presentValidator);
                 Program.ValidatorAddress = ""; 
                 output = "The validator has been turned off: " + presentValidator.Address;
             }
@@ -574,7 +574,7 @@ namespace ReserveBlockCore.Controllers
                 var validatorTable = Validators.Validator.GetAll();
                 var validator = validatorTable.FindOne(x => x.Address == Program.ValidatorAddress);
                 validator.UniqueName = uname;
-                validatorTable.Update(validator);
+                validatorTable.UpdateSafe(validator);
 
                 output = "Validator Unique Name Updated. Please restart wallet.";
             }

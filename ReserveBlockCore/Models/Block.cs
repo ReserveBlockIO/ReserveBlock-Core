@@ -1,5 +1,4 @@
-﻿using ReserveBlockCore.Extensions;
-using ReserveBlockCore.Data;
+﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
@@ -68,7 +67,7 @@ namespace ReserveBlockCore.Models
 		public static LiteDB.ILiteCollection<Block> GetBlocks()
 		{
 			var block = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-			block.EnsureIndex(x => x.Height);
+			block.EnsureIndexSafe(x => x.Height);
 			return block;
 		}
 		private decimal GetTotalAmount()

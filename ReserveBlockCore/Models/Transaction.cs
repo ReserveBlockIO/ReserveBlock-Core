@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Models
         public static void Add(Transaction transaction)
         {
             var transactions = GetAll();
-            transactions.Insert(transaction);
+            transactions.InsertSafe(transaction);
         }
         public static LiteDB.ILiteCollection<Transaction> GetAll()
         {

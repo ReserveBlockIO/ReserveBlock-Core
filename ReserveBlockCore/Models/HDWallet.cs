@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Models
                     WalletSeed = myMnemonicSeed
                 };
 
-                hd.Insert(hdw);
+                hd.InsertSafe(hdw);
 
                 return myMnemonic;
             }
@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Models
                     WalletSeed = myMnemonicSeed
                 };
 
-                hd.Insert(hdw);
+                hd.InsertSafe(hdw);
 
                 Program.HDWallet = true;
 
@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Models
             {
                 var hd = GetHDWalletData();
                 hdw.Nonce += 1;
-                hd.Update(hdw);
+                hd.UpdateSafe(hdw);
             }
         }
 

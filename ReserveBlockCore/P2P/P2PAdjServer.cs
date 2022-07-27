@@ -286,7 +286,7 @@ namespace ReserveBlockCore.P2P
 
                                         if (dblspndChk == false && isCraftedIntoBlock == false)
                                         {
-                                            mempool.Insert(transaction);
+                                            mempool.InsertSafe(transaction);
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction);
                                             await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
@@ -314,7 +314,7 @@ namespace ReserveBlockCore.P2P
                                     {
                                         try
                                         {
-                                            mempool.DeleteMany(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                            mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
                                         }
                                         catch (Exception ex)
                                         {
@@ -334,7 +334,7 @@ namespace ReserveBlockCore.P2P
 
                                     if (dblspndChk == false && isCraftedIntoBlock == false)
                                     {
-                                        mempool.Insert(transaction);
+                                        mempool.InsertSafe(transaction);
                                         var txOutput = "";
                                         txOutput = JsonConvert.SerializeObject(transaction);
                                         await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool

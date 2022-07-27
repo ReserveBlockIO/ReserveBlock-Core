@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Models
             if(peer != null)
             {
                 //peer.LastReach = DateTime.UtcNow;
-                peers.Update(peer);
+                peers.UpdateSafe(peer);
             }
             else
             {
@@ -65,7 +65,7 @@ namespace ReserveBlockCore.Models
                     PeerIP = incPeer.PeerIP,
                 };
 
-                peers.Insert(nPeer);
+                peers.InsertSafe(nPeer);
             }
         }
     }

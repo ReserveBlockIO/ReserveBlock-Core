@@ -24,12 +24,12 @@ namespace ReserveBlockCore.Models
                 {
                     StateRoot = block.StateRoot,
                 };
-                wTrei.Insert(worldTrei);
+                wTrei.InsertSafe(worldTrei);
             }
             else
             {
                 record.StateRoot = block.StateRoot;
-                wTrei.Update(record);
+                wTrei.UpdateSafe(record);
             }
         }
 

@@ -88,7 +88,7 @@ namespace ReserveBlockCore.Services
                             if (stateTreiRec.Balance != bb.Balance)
                             {
                                 stateTreiRec.Balance = bb.Balance;
-                                stateTrei.Update(stateTreiRec);
+                                stateTrei.UpdateSafe(stateTreiRec);
                             }
 
                         }
@@ -105,7 +105,7 @@ namespace ReserveBlockCore.Services
 
                                 };
 
-                                stateTrei.Insert(nAcctST);
+                                stateTrei.InsertSafe(nAcctST);
                             }
 
                         }

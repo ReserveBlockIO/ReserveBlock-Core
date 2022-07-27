@@ -84,7 +84,7 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
-                    beacon.Insert(beaconData);
+                    beacon.InsertSafe(beaconData);
                 }
             }
 
@@ -101,7 +101,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                //beacon.DeleteMany(x => x.TxHash == txHash);
+                //beacon.DeleteManySafe(x => x.TxHash == txHash);
             }
         }
 

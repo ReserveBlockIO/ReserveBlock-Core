@@ -33,9 +33,9 @@ namespace ReserveBlockCore.Data
             };
 
             var wTrei = DbContext.DB_WorldStateTrei.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
-            wTrei.Insert(worldTrei);
+            wTrei.InsertSafe(worldTrei);
             var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
-            aTrei.InsertBulk(accStTrei);
+            aTrei.InsertBulkSafe(accStTrei);
         }
 
         public static void UpdateAccountNonce(string address, long ?nonce = null)
@@ -50,7 +50,7 @@ namespace ReserveBlockCore.Data
                 account.Nonce = nonce.Value;
             }
             var accountTrei = GetAccountStateTrei();
-            accountTrei.Update(account);
+            accountTrei.UpdateSafe(account);
         }
         public static void UpdateTreis(Block block)
         {
@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Data
                         StateRoot = block.StateRoot
                     };
 
-                    accStTrei.Insert(acctStateTreiFrom);
+                    accStTrei.InsertSafe(acctStateTreiFrom);
                 }
                 else
                 {
@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Data
                         from.StateRoot = block.StateRoot;
                         from.Balance -= (x.Amount + x.Fee);
 
-                        accStTrei.Update(from);
+                        accStTrei.UpdateSafe(from);
                     }
                     else
                     {
@@ -103,14 +103,14 @@ namespace ReserveBlockCore.Data
                             StateRoot = block.StateRoot
                         };
 
-                        accStTrei.Insert(acctStateTreiTo);
+                        accStTrei.InsertSafe(acctStateTreiTo);
                     }
                     else
                     {
                         to.Balance += x.Amount;
                         to.StateRoot = block.StateRoot;
 
-                        accStTrei.Update(to);
+                        accStTrei.UpdateSafe(to);
                     }
                 }
                 

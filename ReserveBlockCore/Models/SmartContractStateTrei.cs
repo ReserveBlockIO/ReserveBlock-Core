@@ -38,20 +38,20 @@ namespace ReserveBlockCore.Models
         {
             var scs = GetSCST();
 
-            scs.Insert(scMain);
+            scs.InsertSafe(scMain);
         }
         public static void UpdateSmartContract(SmartContractStateTrei scMain)
         {
             var scs = GetSCST();
 
-            scs.Update(scMain);
+            scs.UpdateSafe(scMain);
         }
 
         public static void DeleteSmartContract(SmartContractStateTrei scMain)
         {
             var scs = GetSCST();
 
-            scs.DeleteMany(x => x.SmartContractUID == scMain.SmartContractUID);
+            scs.DeleteManySafe(x => x.SmartContractUID == scMain.SmartContractUID);
         }
     }
 }
