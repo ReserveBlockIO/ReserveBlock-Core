@@ -63,11 +63,11 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
         {
             var result = false;
-  
-            var transactions = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
+
+            var transactions = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
-                var txExist = transactions.Exists(x => x.Hash == tx.Hash);
+                var txExist = transactions.Any(x => x.Hash == tx.Hash);
                 if (txExist == true)
                 {
                     result = true;//douple spend has occured
@@ -222,10 +222,10 @@ namespace ReserveBlockCore.Data
         {
             bool result = false;
 
-            var transactions = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
+            var transactions = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
-                var txExist = transactions.Exists(x => x.Hash == tx.Hash);
+                var txExist = transactions.Any(x => x.Hash == tx.Hash);
                 if (txExist == true)
                 {
                     result = true;//douple spend has occured

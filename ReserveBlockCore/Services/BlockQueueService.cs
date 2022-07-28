@@ -12,15 +12,10 @@ namespace ReserveBlockCore.Services
         public static bool QueueProcessing = false;
         public static long LastHeightBroadcasted = -1;
 
-        public static void UpdateMemBlocks()
+        public static void UpdateMemBlocks(Block block)
         {
-            Program.MemBlocks.First().GetBlockHash();
-            Program.MemBlocks.Clear();
-            Program.MemBlocks.TrimExcess();
-            Program.MemBlocks = null;
-
-            var blockChain = BlockchainData.GetBlocks();
-            Program.MemBlocks = blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300).ToList();
+            Program.MemBlocks.TryDequeue(out Block test);
+            Program.MemBlocks.Enqueue(block);
         }
 
         public static async Task ProcessBlockQueue()

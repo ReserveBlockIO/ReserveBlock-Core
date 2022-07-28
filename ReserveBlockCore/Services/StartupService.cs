@@ -15,6 +15,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.Services
 {
@@ -367,7 +368,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Program.MemBlocks = blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300).ToList();            
+            Program.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
         public static async Task ConnectoToAdjudicator()

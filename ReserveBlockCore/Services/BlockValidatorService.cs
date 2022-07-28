@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Services
                 
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
-                    BlockQueueService.UpdateMemBlocks();//update mem blocks
+                    BlockQueueService.UpdateMemBlocks(block);//update mem blocks
                     StateData.UpdateTreis(block);
 
                     var mempool = TransactionData.GetPool();
