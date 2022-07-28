@@ -251,16 +251,13 @@ namespace ReserveBlockCore.Data
             try
             {
                 var jobj = JObject.Parse(tx.Data);
-                var address = (string)jobj["Address"];
                 var name = (string)jobj["Name"];
                 Adnr adnr = new Adnr();
 
-                adnr.Address = address;
-                adnr.Signature = (string)jobj["Signature"];
-                adnr.Timestamp = (long)jobj["Timestamp"];
+                adnr.Address = tx.FromAddress;
+                adnr.Timestamp = tx.Timestamp;
                 adnr.Name = name + ".rbx";
                 adnr.TxHash = tx.Hash;
-                adnr.Hash = (string)jobj["Hash"];
 
                 Adnr.SaveAdnr(adnr);
                 

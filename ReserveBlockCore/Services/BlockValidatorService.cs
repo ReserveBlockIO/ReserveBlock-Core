@@ -40,7 +40,7 @@ namespace ReserveBlockCore.Services
 
                 }
 
-
+                BlockQueueService.UpdateMemBlocks();//update mem blocks
                 return result;
             }
 

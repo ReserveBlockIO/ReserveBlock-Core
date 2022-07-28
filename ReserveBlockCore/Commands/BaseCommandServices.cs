@@ -350,7 +350,7 @@ namespace ReserveBlockCore.Commands
                                 var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                                 if(!nameCharCheck)
                                 {
-                                    Console.WriteLine("A DNR may only contain letters and numbers.");
+                                    Console.WriteLine("-->ERROR! A DNR may only contain letters and numbers. ERROR!<--");
                                 }
                                 else
                                 {

@@ -161,15 +161,19 @@ namespace ReserveBlockCore.Data
 				Console.WriteLine("|======================================|");
 				Console.WriteLine("| 1. Genesis Block (Check)             |");
 				Console.WriteLine("| 2. Create Account                    |");
+				Console.WriteLine("| 2hd. Create HD Wallet                |");
 				Console.WriteLine("| 3. Restore Account                   |");
+				Console.WriteLine("| 3hd. Restore HD Wallet               |");
 				Console.WriteLine("| 4. Send Coins                        |");
 				Console.WriteLine("| 5. Get Latest Block                  |");
 				Console.WriteLine("| 6. Transaction History               |");
 				Console.WriteLine("| 7. Account Info                      |");
 				Console.WriteLine("| 8. Startup Masternode                |");
-				Console.WriteLine("| 9. Startup Datanode                  |");
+				Console.WriteLine("| 9. Search Block                      |");
 				Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-				Console.WriteLine("| 11. Exit                             |");
+				Console.WriteLine("| 11. Stop Masternode                  |");
+				Console.WriteLine("| 12. Import Smart Contract            |");
+				Console.WriteLine("| 13. Exit                             |");
 				Console.WriteLine("|======================================|");
 
 				Console.WriteLine("********************************************************************");

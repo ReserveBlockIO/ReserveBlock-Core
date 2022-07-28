@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     {
                         if (Debugger.IsAttached)
                         {
-                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                         }
                         else
                         {

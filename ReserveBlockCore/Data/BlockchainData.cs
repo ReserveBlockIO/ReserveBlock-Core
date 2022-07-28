@@ -246,6 +246,19 @@ namespace ReserveBlockCore.Data
 
             var txList = block.Transactions.ToList();
 
+            var blkRwdCnt = txList.Where(x => x.FromAddress == "Coinbase_BlkRwd").Count();
+            var feeRemovalCheck = txList.Exists(x => x.FromAddress == "Coinbase_TrxFees");
+
+            if(feeRemovalCheck)
+            {
+                return result;
+            }
+
+            if(blkRwdCnt > 1)
+            {
+                return result;
+            }
+
             foreach(var tx in txList)
             {
                 if (tx.FromAddress == "Coinbase_TrxFees")
@@ -261,6 +274,9 @@ namespace ReserveBlockCore.Data
                 {
                     //validating block reward to ensure block is not malformed.
                     result = tx.Amount == GetBlockReward() ? true : false;
+                    //ensures the reward person is the validator themselves.
+                    result = result != true ? false : tx.ToAddress == block.Validator ? true : false;
+
                     if (result == false)
                     {
                         break;

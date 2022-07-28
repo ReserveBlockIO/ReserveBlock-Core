@@ -204,7 +204,7 @@ namespace ReserveBlockCore.Trillium
 			{
 				if (Debugger.IsAttached)
 				{
-					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
+					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
 						"Submissions" + Path.DirectorySeparatorChar;
 				}
 				else

@@ -43,6 +43,10 @@ namespace ReserveBlockCore.Services
 
 
                         }
+                        else
+                        {
+                            break;
+                        }
                     }
                     BlockQueueService.QueueProcessing = false;
                 }
