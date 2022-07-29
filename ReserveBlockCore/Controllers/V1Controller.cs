@@ -213,9 +213,9 @@ namespace ReserveBlockCore.Controllers
             var blockHeight = Program.BlockHeight.ToString();
 
             var peersConnected = await P2PClient.ArePeersConnected();
-            if (peersConnected.Item1 == true)
+            if (peersConnected)
             {
-                peerCount = peersConnected.Item2.ToString();
+                peerCount = Program.Nodes.Count.ToString();
             }
             else
             {
@@ -708,7 +708,14 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            var nodeInfoList = Program.Nodes;
+            var nodeInfoList = Program.Nodes.Select(x => new
+            {
+                x.Value.NodeIP,
+                x.Value.NodeLatency,
+                x.Value.NodeHeight,
+                x.Value.NodeLastChecked
+            })
+            .ToArray();
 
             output = JsonConvert.SerializeObject(nodeInfoList);
 
