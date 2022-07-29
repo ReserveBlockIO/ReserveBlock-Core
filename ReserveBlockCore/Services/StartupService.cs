@@ -700,6 +700,11 @@ namespace ReserveBlockCore.Services
                         Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
                         Thread.Sleep(new TimeSpan(0, 0, 60));
                     }
+                    else if(failCount >120)
+                    {
+                        Console.WriteLine($"Failed to connect to any peers. trying again in 120 seconds.");
+                        Thread.Sleep(new TimeSpan(0, 0, 120));
+                    }
 
                     Console.WriteLine("Attempting to connect to peers...");
                     result = await P2PClient.ConnectToPeers();

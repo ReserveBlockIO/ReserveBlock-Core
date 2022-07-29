@@ -33,62 +33,37 @@ namespace ReserveBlockCore.P2P
         #region Broadcast methods
         public override async Task OnConnectedAsync()
         {
-            var peerIP = GetIP(Context);
-            string connectionId = Context.ConnectionId;
-            var httpContext = Context.GetHttpContext();
-            if(httpContext != null)
+            try
             {
-                var address = httpContext.Request.Headers["address"].ToString();
-                var uName = httpContext.Request.Headers["uName"].ToString();
-                var signature = httpContext.Request.Headers["signature"].ToString();
-                var walletVersion = httpContext.Request.Headers["walver"].ToString();
-
-                var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
-
-                var fortisPool = FortisPool.ToList();
-
-                if (address != "" && uName != "" && signature != "" && walletVersionVerify == true)
+                var peerIP = GetIP(Context);
+                string connectionId = Context.ConnectionId;
+                var httpContext = Context.GetHttpContext();
+                if (httpContext != null)
                 {
-                    try
+                    var address = httpContext.Request.Headers["address"].ToString();
+                    var uName = httpContext.Request.Headers["uName"].ToString();
+                    var signature = httpContext.Request.Headers["signature"].ToString();
+                    var walletVersion = httpContext.Request.Headers["walver"].ToString();
+
+                    var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
+
+                    var fortisPool = FortisPool.ToList();
+
+                    if (address != "" && uName != "" && signature != "" && walletVersionVerify == true)
                     {
-                        var stateAddress = StateData.GetSpecificAccountStateTrei(address);
-                        if (address != null)
+                        try
                         {
-                            if (stateAddress.Balance >= 1000)
+                            var stateAddress = StateData.GetSpecificAccountStateTrei(address);
+                            if (address != null)
                             {
-                                var verifySig = SignatureService.VerifySignature(address, address, signature);
-                                if (verifySig != false)
+                                if (stateAddress.Balance >= 1000)
                                 {
-
-                                    var valExist = fortisPool.Where(x => x.Address == address).FirstOrDefault();
-                                    if (valExist == null)
+                                    var verifySig = SignatureService.VerifySignature(address, address, signature);
+                                    if (verifySig != false)
                                     {
-                                        FortisPool fortisPools = new FortisPool();
-                                        fortisPools.IpAddress = peerIP;
-                                        fortisPools.UniqueName = uName;
-                                        fortisPools.ConnectDate = DateTime.UtcNow;
-                                        fortisPools.Address = address;
-                                        fortisPools.ConnectionId = connectionId;
-                                        fortisPools.WalletVersion = walletVersion;
 
-                                        FortisPool.Add(fortisPools);
-                                        ValConnectedCount++;
-                                        //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
-                                    }
-                                    else
-                                    {
-                                        var validator = FortisPool.Where(x => x.Address == address).FirstOrDefault();
-                                        if (validator != null)
-                                        {
-                                            validator.ConnectDate = DateTime.UtcNow;
-                                            validator.Address = address;
-                                            validator.ConnectionId = connectionId;
-                                            validator.UniqueName = uName;
-                                            validator.IpAddress = peerIP;
-                                            validator.WalletVersion = walletVersion;
-                                            //Console.WriteLine("User Updated! RBX Addr: " + address + " Unique Name: " + uName);
-                                        }
-                                        else
+                                        var valExist = fortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
+                                        if (valExist == null)
                                         {
                                             FortisPool fortisPools = new FortisPool();
                                             fortisPools.IpAddress = peerIP;
@@ -100,84 +75,119 @@ namespace ReserveBlockCore.P2P
 
                                             FortisPool.Add(fortisPools);
                                             ValConnectedCount++;
+                                            //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
                                         }
-                                    }
+                                        else
+                                        {
+                                            var validator = FortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
+                                            if (validator != null)
+                                            {
+                                                validator.ConnectDate = DateTime.UtcNow;
+                                                validator.Address = address;
+                                                validator.ConnectionId = connectionId;
+                                                validator.UniqueName = uName;
+                                                validator.IpAddress = peerIP;
+                                                validator.WalletVersion = walletVersion;
+                                                ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
+                                            }
+                                            else
+                                            {
+                                                FortisPool fortisPools = new FortisPool();
+                                                fortisPools.IpAddress = peerIP;
+                                                fortisPools.UniqueName = uName;
+                                                fortisPools.ConnectDate = DateTime.UtcNow;
+                                                fortisPools.Address = address;
+                                                fortisPools.ConnectionId = connectionId;
+                                                fortisPools.WalletVersion = walletVersion;
 
-                                    var fortisPoolStr = "";
+                                                FortisPool.Add(fortisPools);
+                                                ValConnectedCount++;
+                                            }
+                                        }
 
-                                    //Pausing this temporarily. 
-                                    //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
-                                    //await SendAdjMessageAll("fortisPool", fortisPoolStr);
-                                    //RKY4KEZrYc1Uj7vcKnmuSkqCkCPwFxPono
-                                    //Console.WriteLine("Fortis Pool Sent");
-                                    if (CurrentTaskQuestion == null)
-                                    {
-                                        await SendAdjMessageSingle("status", "Connected");
-                                        CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                        ConsoleWriterService.Output("Task Created");
-                                        var taskQuest = CurrentTaskQuestion;
-                                        TaskQuestion nTaskQuestion = new TaskQuestion();
-                                        nTaskQuestion.TaskType = taskQuest.TaskType;
-                                        nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
-                                        string taskQuestionStr = "";
-                                        taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                                        await SendAdjMessageAll("task", taskQuestionStr);
-                                        //Console.WriteLine("Task Sent All");
+                                        var fortisPoolStr = "";
+
+                                        if (CurrentTaskQuestion == null)
+                                        {
+                                            await SendAdjMessageSingle("status", "Connected");
+                                            CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                                            ConsoleWriterService.Output("Task Created");
+                                            var taskQuest = CurrentTaskQuestion;
+                                            TaskQuestion nTaskQuestion = new TaskQuestion();
+                                            nTaskQuestion.TaskType = taskQuest.TaskType;
+                                            nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
+                                            string taskQuestionStr = "";
+                                            taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                                            await SendAdjMessageAll("task", taskQuestionStr);
+                                            //Console.WriteLine("Task Sent All");
+                                        }
+                                        else
+                                        {
+                                            await SendAdjMessageSingle("status", "Connected");
+                                            var taskQuest = CurrentTaskQuestion;
+                                            TaskQuestion nTaskQuestion = new TaskQuestion();
+                                            nTaskQuestion.TaskType = taskQuest.TaskType;
+                                            nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
+                                            string taskQuestionStr = "";
+                                            taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                                            await SendAdjMessageSingle("task", taskQuestionStr);
+                                            //Console.WriteLine("Task Sent Single");
+                                        }
+
+
                                     }
-                                    else
+                                }
+                                else
+                                {
+                                    await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify. You are being disconnected.");
+                                    Context.Abort();
+                                    if (Program.OptionalLogging == true)
                                     {
-                                        await SendAdjMessageSingle("status", "Connected");
-                                        var taskQuest = CurrentTaskQuestion;
-                                        TaskQuestion nTaskQuestion = new TaskQuestion();
-                                        nTaskQuestion.TaskType = taskQuest.TaskType;
-                                        nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
-                                        string taskQuestionStr = "";
-                                        taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                                        await SendAdjMessageSingle("task", taskQuestionStr);
-                                        //Console.WriteLine("Task Sent Single");
+                                        LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
                                     }
-                                    
 
                                 }
                             }
                             else
                             {
-                                await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify.");
-                                if(Program.OptionalLogging == true)
+                                await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.");
+                                Context.Abort();
+                                if (Program.OptionalLogging == true)
                                 {
-                                    LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
+                                    LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
                                 }
-                                
+
                             }
+
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX.");
-                            if(Program.OptionalLogging == true)
-                            {
-                                LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
-                            }
-                            
+                            //Console.WriteLine("Error: " + ex.Message.ToString());
+                            //Console.WriteLine("Error: " + (ex.StackTrace != null ? ex.StackTrace.ToString() : "No Stack Trace"));
                         }
-                    
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        //Console.WriteLine("Error: " + ex.Message.ToString());
-                        //Console.WriteLine("Error: " + (ex.StackTrace != null ? ex.StackTrace.ToString() : "No Stack Trace"));
+                        await SendAdjMessageSingle("status", "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.");
+                        Context.Abort();
+                        if (Program.OptionalLogging == true)
+                        {
+                            LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
+                        }
                     }
-                }
-                else
-                {
-                    await SendAdjMessageSingle("status", "Connected, but missing field(s). Address, Unique name, and Signature required.");
-                    if (Program.OptionalLogging == true)
-                    {
-                        LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
-                    }
+
                 }
 
             }
-
+            catch (Exception ex)
+            {
+                //Connection attempt failed with unhandled error.
+                if (Program.OptionalLogging == true)
+                {
+                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.Message}", "Adj Connection");
+                }
+            }
+            
             
             await base.OnConnectedAsync();
         }

@@ -610,6 +610,31 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Disconnect Adjudicator
+        public static async Task DisconnectAdjudicator()
+        {
+            try
+            {
+                Program.ValidatorAddress = "";
+                if (hubAdjConnection1 != null)
+                {
+                    if(IsAdjConnected1)
+                    {
+                        await hubAdjConnection1.DisposeAsync();
+                        ConsoleWriterService.Output($"Success! Disconnected from Adjudicator on: {DateTime.Now}");
+                        ValidatorLogUtility.Log($"Success! Disconnected from Adjudicator on: {DateTime.Now}", "DisconnectAdjudicator()");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.Message, "DisconnectAdjudicator()");
+            }
+        }
+
+
+        #endregion
+
         #region Connect to Peers
         public static async Task<bool> ConnectToPeers()
         {
