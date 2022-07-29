@@ -1,6 +1,6 @@
 ﻿global using ReserveBlockCore.Extensions;
 
-using LiteDB;
+using ReserveBlockCore.Extensions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
@@ -17,6 +17,7 @@ using ReserveBlockCore.Config;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore
 {
@@ -29,7 +30,7 @@ namespace ReserveBlockCore
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? DBCommitTimer;//checks dbs and commits log files. 
 
-        public static List<Block> MemBlocks = new List<Block>();
+        public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static List<Block> QueuedBlocks = new List<Block>();
         public static List<Transaction> MempoolList = new List<Transaction>();
         public static List<NodeInfo> Nodes = new List<NodeInfo>();
@@ -303,6 +304,7 @@ namespace ReserveBlockCore
 
             await StartupService.SetLeadAdjudicator();
             StartupService.SetSelfAdjudicator();
+            StartupService.StartupMemBlocks();
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
             await StartupService.ConnectoToAdjudicator();
@@ -313,7 +315,7 @@ namespace ReserveBlockCore
                 StartupService.SetConfigValidator();
             }
 
-            StartupService.StartupMemBlocks();
+            
 
             Thread.Sleep(3000);
 
@@ -399,7 +401,7 @@ namespace ReserveBlockCore
             
         }
 
-        private static void RunCommand(string? command)
+        private static async void RunCommand(string? command)
         {
             if (command != "" || command != null)
             {
@@ -407,11 +409,11 @@ namespace ReserveBlockCore
                 if (command.Contains(","))
                 {
                     var splitCommand = command.Split(',');
-                    commandResult = BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
+                    commandResult = await BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
                 }
                 else
                 {
-                    commandResult = BaseCommand.ProcessCommand(command);
+                    commandResult = await BaseCommand.ProcessCommand(command);
                 }
 
 

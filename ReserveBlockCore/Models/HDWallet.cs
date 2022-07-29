@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.BIP39;
 using ReserveBlockCore.BIP32;
@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Models
 
         public class HDWalletData
         {
-            public static ILiteCollection<HDWallet> GetHDWalletData()
+            public static LiteDB.ILiteCollection<HDWallet> GetHDWalletData()
             {
                 var hdwallet = DbContext.DB_HD_Wallet.GetCollection<HDWallet>(DbContext.RSRV_HD_WALLET);
                 return hdwallet;
@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Models
                     WalletSeed = myMnemonicSeed
                 };
 
-                hd.Insert(hdw);
+                hd.InsertSafe(hdw);
 
                 return myMnemonic;
             }
@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Models
                     WalletSeed = myMnemonicSeed
                 };
 
-                hd.Insert(hdw);
+                hd.InsertSafe(hdw);
 
                 Program.HDWallet = true;
 
@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Models
             {
                 var hd = GetHDWalletData();
                 hdw.Nonce += 1;
-                hd.Update(hdw);
+                hd.UpdateSafe(hdw);
             }
         }
 

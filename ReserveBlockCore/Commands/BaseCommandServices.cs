@@ -64,7 +64,7 @@ namespace ReserveBlockCore.Commands
                                 FailCount = 0
                             };
 
-                            peers.Insert(nPeer);
+                            peers.InsertSafe(nPeer);
 
                             Console.WriteLine("Success! Peer added.");
                             Console.WriteLine("Returning you to main menu...");
@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Commands
                         {
                             var peerRec = peers.FindOne(x => x.PeerIP == peer);
                             peerRec.IsOutgoing = !peerRec.IsOutgoing;
-                            peers.Update(peerRec);
+                            peers.UpdateSafe(peerRec);
 
                             Console.WriteLine("Peer already exist...");
                             Console.WriteLine($"Peer Outgoing has been set to {peerRec.IsOutgoing}");
@@ -294,6 +294,29 @@ namespace ReserveBlockCore.Commands
             }
             return "Unexpected entry detected. Please try again.";
         }
+        public static async Task ValidatorInfo()
+        {
+            var account = AccountData.GetLocalValidator();
+            if(account != null)
+            {
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
+                if(validator != null)
+                {
+                    Console.WriteLine($"Validator Name: {validator.UniqueName}");
+                    Console.WriteLine($"Validator Address: {validator.Address}");
+                    Console.WriteLine($"Validator Amount: {account.Balance}");
+                    Console.WriteLine($"Validating? {account.IsValidating}");
+                }
+                else
+                {
+                    Console.WriteLine("Account found, but validator not registered locally.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No accounts detected as validators.");
+            }
+        }
 
         public static async Task<string> CreateDnr()
         {
@@ -350,7 +373,7 @@ namespace ReserveBlockCore.Commands
                                 var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                                 if(!nameCharCheck)
                                 {
-                                    Console.WriteLine("A DNR may only contain letters and numbers.");
+                                    Console.WriteLine("-->ERROR! A DNR may only contain letters and numbers. ERROR!<--");
                                 }
                                 else
                                 {

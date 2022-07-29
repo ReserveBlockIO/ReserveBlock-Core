@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 
 namespace ReserveBlockCore.Models
@@ -13,7 +13,7 @@ namespace ReserveBlockCore.Models
         public string? Locators { get; set; }
         public long Nonce { get; set; }
 
-        public static ILiteCollection<SmartContractStateTrei> GetSCST()
+        public static LiteDB.ILiteCollection<SmartContractStateTrei> GetSCST()
         {
             var scs = DbContext.DB_SmartContractStateTrei.GetCollection<SmartContractStateTrei>(DbContext.RSRV_SCSTATE_TREI);
             return scs;
@@ -38,20 +38,20 @@ namespace ReserveBlockCore.Models
         {
             var scs = GetSCST();
 
-            scs.Insert(scMain);
+            scs.InsertSafe(scMain);
         }
         public static void UpdateSmartContract(SmartContractStateTrei scMain)
         {
             var scs = GetSCST();
 
-            scs.Update(scMain);
+            scs.UpdateSafe(scMain);
         }
 
         public static void DeleteSmartContract(SmartContractStateTrei scMain)
         {
             var scs = GetSCST();
 
-            scs.DeleteMany(x => x.SmartContractUID == scMain.SmartContractUID);
+            scs.DeleteManySafe(x => x.SmartContractUID == scMain.SmartContractUID);
         }
     }
 }

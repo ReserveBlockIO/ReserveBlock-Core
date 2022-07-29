@@ -35,12 +35,12 @@ namespace ReserveBlockCore.Services
                     {
                         AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                         var txdata = TransactionData.GetAll();
-                        txdata.Insert(transaction);
+                        txdata.InsertSafe(transaction);
                     }
 
                 }
 
-
+                BlockQueueService.UpdateMemBlocks(block);//update mem blocks
                 return result;
             }
 
@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Services
                 
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
-                    BlockQueueService.UpdateMemBlocks();//update mem blocks
+                    BlockQueueService.UpdateMemBlocks(block);//update mem blocks
                     StateData.UpdateTreis(block);
 
                     var mempool = TransactionData.GetPool();
@@ -152,7 +152,7 @@ namespace ReserveBlockCore.Services
                                 var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash);
                                 if (mempoolTx.Count() > 0)
                                 {
-                                    mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                                    mempool.DeleteManySafe(x => x.Hash == transaction.Hash);
                                 }
                             }
                             
@@ -162,7 +162,7 @@ namespace ReserveBlockCore.Services
                             {
                                 AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                                 var txdata = TransactionData.GetAll();
-                                txdata.Insert(transaction);
+                                txdata.InsertSafe(transaction);
                                 if(Program.IsChainSynced == true)
                                 {
                                     //Call out to custom URL from config file with TX details
@@ -276,7 +276,7 @@ namespace ReserveBlockCore.Services
                                 var fromTx = transaction;
                                 fromTx.Amount = transaction.Amount * -1M;
                                 fromTx.Fee = transaction.Fee * -1M;
-                                txData.Insert(fromTx);
+                                txData.InsertSafe(fromTx);
 
                                 if(transaction.TransactionType != TransactionType.TX)
                                 {
@@ -470,7 +470,7 @@ namespace ReserveBlockCore.Services
             {
                 if (mempool.Count() > 0)
                 {
-                    mempool.DeleteMany(x => x.Hash == tx.Hash);
+                    mempool.DeleteManySafe(x => x.Hash == tx.Hash);
                 }
             }
         }

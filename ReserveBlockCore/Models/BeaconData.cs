@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Models
             public string Signature { get; set; }
         }
 
-        public static ILiteCollection<BeaconData>? GetBeacon()
+        public static LiteDB.ILiteCollection<BeaconData>? GetBeacon()
         {
             try
             {
@@ -84,7 +84,7 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
-                    beacon.Insert(beaconData);
+                    beacon.InsertSafe(beaconData);
                 }
             }
 
@@ -101,7 +101,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                //beacon.DeleteMany(x => x.TxHash == txHash);
+                //beacon.DeleteManySafe(x => x.TxHash == txHash);
             }
         }
 

@@ -97,7 +97,7 @@ namespace ReserveBlockCore.Beacon
                                                 var beaconDatas = BeaconData.GetBeacon();
                                                 if (beaconDatas != null)
                                                 {
-                                                    beaconDatas.Update(_beaconData);
+                                                    beaconDatas.UpdateSafe(_beaconData);
                                                 }
                                             }
 
@@ -179,7 +179,7 @@ namespace ReserveBlockCore.Beacon
                                     else
                                     {
                                         bdd.AssetReceiveDate = TimeUtil.GetTime();
-                                        beaconDataDb.Update(bdd);
+                                        beaconDataDb.UpdateSafe(bdd);
                                     }
                                 }
 

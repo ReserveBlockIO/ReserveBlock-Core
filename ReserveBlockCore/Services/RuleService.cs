@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Services
                 {
                     accountValidators.ForEach(x => { 
                         x.IsValidating = false;
-                        accounts.Update(x);
+                        accounts.UpdateSafe(x);
                     });
                 }
                 ConfigRules cRule = new ConfigRules
@@ -28,13 +28,13 @@ namespace ReserveBlockCore.Services
                     IsRuleApplied = true,
                 };
 
-                rules.Insert(cRule);
+                rules.InsertSafe(cRule);
 
                 var validators = Validators.Validator.GetAll();
                 var valList = validators.FindAll().ToList();
                 if (valList.Count > 0)
                 {
-                    validators.DeleteAll();
+                    validators.DeleteAllSafe();
                     try
                     {
                         DbContext.DB_Peers.Checkpoint();
@@ -53,7 +53,7 @@ namespace ReserveBlockCore.Services
                     {
                         accountValidators.ForEach(x => {
                             x.IsValidating = false;
-                            accounts.Update(x);
+                            accounts.UpdateSafe(x);
                         });
                     }
 
@@ -61,7 +61,7 @@ namespace ReserveBlockCore.Services
                     var valList = validators.FindAll().ToList();
                     if (valList.Count > 0)
                     {
-                        validators.DeleteAll();
+                        validators.DeleteAllSafe();
                         try
                         {
                             DbContext.DB_Peers.Checkpoint();
@@ -87,7 +87,7 @@ namespace ReserveBlockCore.Services
                     IsRuleApplied = true,
                 };
 
-                rules.Insert(cRule);
+                rules.InsertSafe(cRule);
 
                 var validators = Validators.Validator.GetAll();
                 var valList = validators.FindAll().ToList();
@@ -96,7 +96,7 @@ namespace ReserveBlockCore.Services
                     foreach (var val in valList)
                     {
                         val.FailCount = 0;
-                        validators.Update(val);
+                        validators.UpdateSafe(val);
                     }
                 }
             }
@@ -111,7 +111,7 @@ namespace ReserveBlockCore.Services
                         foreach (var val in valList)
                         {
                             val.FailCount = 0;
-                            validators.Update(val);
+                            validators.UpdateSafe(val);
                         }
                     }
                 }
@@ -125,7 +125,7 @@ namespace ReserveBlockCore.Services
 
             if(validatorList.Count > 0)
             {
-                validators.DeleteMany(x => x.WalletVersion == null);
+                validators.DeleteManySafe(x => x.WalletVersion == null);
             }
         }
     }

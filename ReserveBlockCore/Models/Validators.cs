@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.P2P;
@@ -34,10 +34,10 @@ namespace ReserveBlockCore.Models
                 var validators = GetAll();
 
                 // insert into database
-                validators.Insert(validator);
+                validators.InsertSafe(validator);
             }
 
-            public static ILiteCollection<Validators> GetAll()
+            public static LiteDB.ILiteCollection<Validators> GetAll()
             {
                 try
                 {

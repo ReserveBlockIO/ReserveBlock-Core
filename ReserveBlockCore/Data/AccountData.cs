@@ -8,8 +8,8 @@ using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
-using LiteDB;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Extensions;
 
 namespace ReserveBlockCore.Data
 {
@@ -161,15 +161,19 @@ namespace ReserveBlockCore.Data
 				Console.WriteLine("|======================================|");
 				Console.WriteLine("| 1. Genesis Block (Check)             |");
 				Console.WriteLine("| 2. Create Account                    |");
+				Console.WriteLine("| 2hd. Create HD Wallet                |");
 				Console.WriteLine("| 3. Restore Account                   |");
+				Console.WriteLine("| 3hd. Restore HD Wallet               |");
 				Console.WriteLine("| 4. Send Coins                        |");
 				Console.WriteLine("| 5. Get Latest Block                  |");
 				Console.WriteLine("| 6. Transaction History               |");
 				Console.WriteLine("| 7. Account Info                      |");
 				Console.WriteLine("| 8. Startup Masternode                |");
-				Console.WriteLine("| 9. Startup Datanode                  |");
+				Console.WriteLine("| 9. Search Block                      |");
 				Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-				Console.WriteLine("| 11. Exit                             |");
+				Console.WriteLine("| 11. Stop Masternode                  |");
+				Console.WriteLine("| 12. Import Smart Contract            |");
+				Console.WriteLine("| 13. Exit                             |");
 				Console.WriteLine("|======================================|");
 
 				Console.WriteLine("********************************************************************");
@@ -199,7 +203,7 @@ namespace ReserveBlockCore.Data
 			//This is checking in the event the user is restoring an account, and not creating a brand new one.
 			if(accountCheck == null)
             {
-				accountList.Insert(account);
+				accountList.InsertSafe(account);
 			}
             else
             {
@@ -212,7 +216,7 @@ namespace ReserveBlockCore.Data
 			var localAccount = accountList.FindOne(x => x.Address == address);
 			localAccount.Balance -= amount;
 
-			accountList.Update(localAccount);
+			accountList.UpdateSafe(localAccount);
 		}
 		public static void UpdateLocalBalanceSub(string address, decimal amount)
 		{
@@ -220,7 +224,8 @@ namespace ReserveBlockCore.Data
 			var localAccount = accountList.FindOne(x => x.Address == address);
 			localAccount.Balance += amount;
 
-			accountList.Update(localAccount);
+			accountList.UpdateSafe(localAccount);
+			accountList.UpdateSafe(localAccount);
 		}
 
 		public static void UpdateLocalBalanceAdd(string address, decimal amount)
@@ -229,22 +234,21 @@ namespace ReserveBlockCore.Data
 			var localAccount = accountList.FindOne(x => x.Address == address);
 			localAccount.Balance += amount;
 
-			accountList.Update(localAccount);
+			accountList.UpdateSafe(localAccount);
 		}
-		public static ILiteCollection<Account> GetAccounts()
+		public static LiteDB.ILiteCollection<Account> GetAccounts()
 		{
             try
             {
 				var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-				//accounts.EnsureIndex(x => x.id);
+				//accounts.EnsureIndexSafe(x => x.id);
 				return accounts;
 			}
 			catch(Exception ex)
             {
 				ErrorLogUtility.LogError(ex.Message, "AccountData.GetAccounts()");
 				return null;
-			}
-			
+			}			
 		}
 
 		public static IEnumerable<Account> GetAccountsWithBalance()

@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static ILiteCollection<Peers> GetAll()
+        public static LiteDB.ILiteCollection<Peers> GetAll()
         {
             try
             {
@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Models
             if(peer != null)
             {
                 //peer.LastReach = DateTime.UtcNow;
-                peers.Update(peer);
+                peers.UpdateSafe(peer);
             }
             else
             {
@@ -65,7 +65,7 @@ namespace ReserveBlockCore.Models
                     PeerIP = incPeer.PeerIP,
                 };
 
-                peers.Insert(nPeer);
+                peers.InsertSafe(nPeer);
             }
         }
     }

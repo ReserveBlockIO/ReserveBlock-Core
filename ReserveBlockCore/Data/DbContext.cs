@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using System;
 using System.Collections.Generic;
@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Globalization;
+using LiteDB;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Data
 {
@@ -87,7 +89,7 @@ namespace ReserveBlockCore.Data
             {
                 if(Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
@@ -153,7 +155,7 @@ namespace ReserveBlockCore.Data
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
@@ -188,7 +190,7 @@ namespace ReserveBlockCore.Data
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
@@ -217,15 +219,24 @@ namespace ReserveBlockCore.Data
 
             //dispose connection to DB
             CloseDB();
-            if (File.Exists(path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak")))
+
+            try
             {
-                File.Delete(path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
-                File.Move(path + RSRV_DB_WALLET_NAME, path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+                if (File.Exists(path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak")))
+                {
+                    File.Delete(path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+                    File.Move(path + RSRV_DB_WALLET_NAME, path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+                }
+                else
+                {
+                    File.Move(path + RSRV_DB_WALLET_NAME, path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+                }
             }
-            else
+            catch(Exception ex)
             {
-                File.Move(path + RSRV_DB_WALLET_NAME, path + RSRV_DB_WALLET_NAME.Replace("rsrvwaldata", "rsrvwaldata_bak"));
+                ErrorLogUtility.LogError("Error making backup!", "DbContext.MigrateDbNewChainRef()");
             }
+            
             
 
             File.Delete(path + RSRV_DB_NAME);

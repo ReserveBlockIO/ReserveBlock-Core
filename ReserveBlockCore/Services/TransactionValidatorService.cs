@@ -46,14 +46,14 @@ namespace ReserveBlockCore.Services
             }
 
             //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
-            var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
+            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
                 var mempool = TransactionData.GetPool();
                 if (mempool.Count() > 0)
                 {
-                    mempool.DeleteMany(x => x.Hash == txRequest.Hash);
+                    mempool.DeleteManySafe(x => x.Hash == txRequest.Hash);
                 }
                 return txResult;
             }
@@ -256,23 +256,11 @@ namespace ReserveBlockCore.Services
                         try
                         {
                             var jobj = JObject.Parse(txData);
-                            var address = (string)jobj["Address"];
-                            var name = (string)jobj["Name"];
-                            if (address != txRequest.FromAddress)
-                            {
-                                return txResult;
-                            }
 
                             var function = (string)jobj["Function"];
-                            var hash = (string)jobj["Hash"];
                             if (function == "AdnrCreate()")
                             {
-                                var accountBalance = AccountStateTrei.GetAccountBalance(address);
-                                if(accountBalance < 1)
-                                {
-                                    return txResult;
-                                }
-
+                                var name = (string)jobj["Name"];
                                 var adnrList = Adnr.GetAdnr();
                                 if(adnrList != null)
                                 {
@@ -282,24 +270,16 @@ namespace ReserveBlockCore.Services
                                         return txResult;
                                     }
 
-                                    var addressCheck = adnrList.FindOne(x => x.Address == address);
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
                                     if(addressCheck != null)
                                     {
                                         return txResult;
                                     }
-                                }
 
-                                Adnr adnr = new Adnr();
-                                adnr.Address = address;
-                                adnr.Signature = (string)jobj["Signature"];
-                                adnr.Timestamp = (long)jobj["Timestamp"];
-                                adnr.Name = name;
-
-                                adnr.Build();
-
-                                if(adnr.Hash != hash)
-                                {
-                                    return txResult;
+                                    if(txRequest.ToAddress != "Adnr_Base")
+                                    {
+                                        return txResult;
+                                    }
                                 }
                             }
                         }
@@ -369,14 +349,14 @@ namespace ReserveBlockCore.Services
             }
 
             //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
-            var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
+            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
                 var mempool = TransactionData.GetPool();
                 if (mempool.Count() > 0)
                 {
-                    mempool.DeleteMany(x => x.Hash == txRequest.Hash);
+                    mempool.DeleteManySafe(x => x.Hash == txRequest.Hash);
                 }
                 return (txResult, "This transactions has already been sent.");
             }
@@ -570,22 +550,11 @@ namespace ReserveBlockCore.Services
                         try
                         {
                             var jobj = JObject.Parse(txData);
-                            var address = (string)jobj["Address"];
-                            var name = (string)jobj["Name"];
-                            if (address != txRequest.FromAddress)
-                            {
-                                return (txResult, "From address and DNR Request address do not match.");
-                            }
-
                             var function = (string)jobj["Function"];
-                            var hash = (string)jobj["Hash"];
+
                             if (function == "AdnrCreate()")
                             {
-                                var accountBalance = AccountStateTrei.GetAccountBalance(address);
-                                if (accountBalance < 1)
-                                {
-                                    return (txResult, "Account balance is less than 1");
-                                }
+                                var name = (string)jobj["Name"];
 
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
@@ -596,25 +565,13 @@ namespace ReserveBlockCore.Services
                                         return (txResult, "Name has already been taken.");
                                     }
 
-                                    var addressCheck = adnrList.FindOne(x => x.Address == address);
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
                                     if (addressCheck != null)
                                     {
                                         return (txResult, "Address is already associated with an active DNR");
                                     }
                                 }
 
-                                Adnr adnr = new Adnr();
-                                adnr.Address = address;
-                                adnr.Signature = (string)jobj["Signature"];
-                                adnr.Timestamp = (long)jobj["Timestamp"];
-                                adnr.Name = name;
-
-                                adnr.Build();
-
-                                if (adnr.Hash != hash)
-                                {
-                                    return (txResult, "Hashes do not match the TX data. Something has been modified.");
-                                }
                             }
                         }
                         catch (Exception ex)

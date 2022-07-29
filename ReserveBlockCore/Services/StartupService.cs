@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using LiteDB;
+using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
@@ -15,6 +15,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.Services
 {
@@ -172,7 +173,7 @@ namespace ReserveBlockCore.Services
                     WalletVersion = Program.CLIVersion  
                 };
 
-                adjudicators.Insert(adj1);
+                adjudicators.InsertSafe(adj1);
             }
 
             if(Program.IsTestNet == true)
@@ -192,7 +193,7 @@ namespace ReserveBlockCore.Services
                         WalletVersion = Program.CLIVersion
                     };
 
-                    adjudicators.Insert(adjTest);
+                    adjudicators.InsertSafe(adjTest);
                 }
             }
         } 
@@ -258,7 +259,7 @@ namespace ReserveBlockCore.Services
 
                     if(minuteDiff > 120.0M)
                     {
-                        pool.DeleteMany(x => x.Hash == tx.Hash);
+                        pool.DeleteManySafe(x => x.Hash == tx.Hash);
                         memTxDeleted = true;
                     }
                 }
@@ -278,7 +279,7 @@ namespace ReserveBlockCore.Services
                         if(stateTrei != null)
                         {
                             account.Balance = stateTrei.Balance;
-                            accounts.Update(account);
+                            accounts.UpdateSafe(account);
                         }
                     }
                 }
@@ -362,14 +363,10 @@ namespace ReserveBlockCore.Services
             }
             
         }
-
-
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            var blocks = blockChain.Find(Query.All(Query.Descending)).ToList();
-
-            Program.MemBlocks = blocks.Take(300).ToList();
+            Program.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
         public static async Task ConnectoToAdjudicator()
@@ -402,8 +399,6 @@ namespace ReserveBlockCore.Services
 
             }
         }
-
-
 
         internal static async Task DownloadBlocksOnStart()
         {
@@ -440,7 +435,7 @@ namespace ReserveBlockCore.Services
                                 if (stateRec != null)
                                 {
                                     account.Balance = stateRec.Balance;
-                                    accounts.Update(account);//updating local record with synced state trei
+                                    accounts.UpdateSafe(account);//updating local record with synced state trei
                                 }
                             }
                         }
@@ -506,15 +501,15 @@ namespace ReserveBlockCore.Services
                         {
                             account.Balance = 0.0M;
                             account.IsValidating = false;
-                            accounts.Update(account);//resets balances to 0.
+                            accounts.UpdateSafe(account);//resets balances to 0.
                         }
                     }
-                    peers.DeleteAll();
-                    validators.DeleteAll();
-                    transactions.DeleteAll();//delete all local transactions
-                    stateTrei.DeleteAll(); //removes all state trei data
-                    worldTrei.DeleteAll();  //removes the state trei
-                    blockChain.DeleteAll();//remove all blocks
+                    peers.DeleteAllSafe();
+                    validators.DeleteAllSafe();
+                    transactions.DeleteAllSafe();//delete all local transactions
+                    stateTrei.DeleteAllSafe(); //removes all state trei data
+                    worldTrei.DeleteAllSafe();  //removes the state trei
+                    blockChain.DeleteAllSafe();//remove all blocks
 
                     try
                     {
@@ -547,9 +542,9 @@ namespace ReserveBlockCore.Services
             var stateTrei = StateData.GetAccountStateTrei();
             var worldTrei = WorldTrei.GetWorldTrei();
 
-            transactions.DeleteAll();//delete all local transactions
-            stateTrei.DeleteAll(); //removes all state trei data
-            worldTrei.DeleteAll();  //removes the state trei
+            transactions.DeleteAllSafe();//delete all local transactions
+            stateTrei.DeleteAllSafe(); //removes all state trei data
+            worldTrei.DeleteAllSafe();  //removes the state trei
 
             DbContext.DB.Checkpoint();
             DbContext.DB_AccountStateTrei.Checkpoint();
@@ -562,7 +557,7 @@ namespace ReserveBlockCore.Services
                 foreach (var account in accountList)
                 {
                     account.Balance = 0M;
-                    accounts.Update(account);//updating local record with synced state trei
+                    accounts.UpdateSafe(account);//updating local record with synced state trei
                 }
             }
 
@@ -580,7 +575,7 @@ namespace ReserveBlockCore.Services
                         var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash).FirstOrDefault();
                         if (mempoolTx != null)
                         {
-                            mempool.DeleteMany(x => x.Hash == transaction.Hash);
+                            mempool.DeleteManySafe(x => x.Hash == transaction.Hash);
                         }
 
                         var account = AccountData.GetAccounts().FindAll().Where(x => x.Address == transaction.ToAddress).FirstOrDefault();
@@ -588,7 +583,7 @@ namespace ReserveBlockCore.Services
                         {
                             AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
                             var txdata = TransactionData.GetAll();
-                            txdata.Insert(transaction);
+                            txdata.InsertSafe(transaction);
                         }
 
                         //Adds sent TX to wallet
@@ -599,7 +594,7 @@ namespace ReserveBlockCore.Services
                             var fromTx = transaction;
                             fromTx.Amount = transaction.Amount * -1M;
                             fromTx.Fee = transaction.Fee * -1M;
-                            txData.Insert(fromTx);
+                            txData.InsertSafe(fromTx);
                             AccountData.UpdateLocalBalance(fromAccount.Address, (transaction.Amount + transaction.Fee));
                         }
                     }
@@ -634,12 +629,12 @@ namespace ReserveBlockCore.Services
                 {
                     var stateTrei = StateData.GetAccountStateTrei();
 
-                    stateTrei.DeleteAll();
+                    stateTrei.DeleteAllSafe();
                     DbContext.DB_AccountStateTrei.Checkpoint();
 
-                    blocks.DeleteMany(x => x.Height >= blockFixHeight);
+                    blocks.DeleteManySafe(x => x.Height >= blockFixHeight);
                     DbContext.DB.Checkpoint();
-                    var blocksFromGenesis = blocks.Find(Query.All(Query.Ascending));
+                    var blocksFromGenesis = blocks.Find(LiteDB.Query.All(LiteDB.Query.Ascending));
 
                     foreach (var blk in blocksFromGenesis)
                     {
@@ -679,9 +674,9 @@ namespace ReserveBlockCore.Services
                 if(account != null)
                 {
                     account.IsValidating = false;
-                    accounts.Update(account);
+                    accounts.UpdateSafe(account);
                 }
-                var isDeleted = validators.Delete(validator.Id);
+                var isDeleted = validators.DeleteSafe(validator.Id);
                 if(isDeleted)
                 {
                     DbContext.DB_Peers.Checkpoint();//commits from log file
@@ -694,29 +689,49 @@ namespace ReserveBlockCore.Services
             //add seed nodes
             SeedNodeService.SeedNodes();
             bool result = false;
-            try
+            bool peersConnected = false;
+            int failCount = 0;
+            while (!peersConnected)
             {
-                result = await P2PClient.ConnectToPeers();
-
-                if(result == true)
+                try
                 {
-                    var accounts = AccountData.GetAccounts();
-                    var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
-                    if(myAccount != null)
+                    if(failCount > 60)
                     {
-                        Program.ValidatorAddress = myAccount.Address;
-                        LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
+                        Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
+                        Thread.Sleep(new TimeSpan(0, 0, 60));
+                    }
+
+                    Console.WriteLine("Attempting to connect to peers...");
+                    result = await P2PClient.ConnectToPeers();
+
+                    if (result == true)
+                    {
+                        peersConnected = true;
+                        var accounts = AccountData.GetAccounts();
+                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+                        if (myAccount != null)
+                        {
+                            Program.ValidatorAddress = myAccount.Address;
+                            LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
+                        }
+                        else
+                        {
+                            //No validator account on start up
+                        }
+                        failCount = 0;
                     }
                     else
                     {
-                        //No validator account on start up
+                        failCount += 1;
+                        Console.WriteLine($"Failed to connect to any peers. trying again.");
                     }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            
             
 
             if(result == true)

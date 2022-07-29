@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LiteDB;
+using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
@@ -43,9 +43,9 @@ namespace ReserveBlockCore.Models
         public static void Add(Transaction transaction)
         {
             var transactions = GetAll();
-            transactions.Insert(transaction);
+            transactions.InsertSafe(transaction);
         }
-        public static ILiteCollection<Transaction> GetAll()
+        public static LiteDB.ILiteCollection<Transaction> GetAll()
         {
             var trans = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             return trans;

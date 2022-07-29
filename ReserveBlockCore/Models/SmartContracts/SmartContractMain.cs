@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Trillium;
@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
         public class SmartContractData
         {
-            public static ILiteCollection<SmartContractMain> GetSCs()
+            public static LiteDB.ILiteCollection<SmartContractMain> GetSCs()
             {
                 var scs = DbContext.DB_Assets.GetCollection<SmartContractMain>(DbContext.RSRV_ASSETS);
                 return scs;
@@ -55,14 +55,14 @@ namespace ReserveBlockCore.Models.SmartContracts
                 {
                     scMain.IsPublished = true;
                     NFTLogUtility.Log($"Smart Contract Has Been Minted to Network : {scMain.SmartContractUID}", "SmartContractMain.SetSmartContractIsPublished(string scUID)");
-                    scs.Update(scMain);
+                    scs.UpdateSafe(scMain);
                 }              
             }
             public static void SaveSmartContract(SmartContractMain scMain, string scText)
             {
                 var scs = GetSCs();
 
-                scs.Insert(scMain);
+                scs.InsertSafe(scMain);
 
                 SaveSCLocally(scMain, scText);
             }
@@ -71,7 +71,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             {
                 var scs = GetSCs();
 
-                scs.Update(scMain);
+                scs.UpdateSafe(scMain);
             }
 
             public static void DeleteSmartContract(string scUID)
@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 {
                     var scs = GetSCs();
 
-                    scs.DeleteMany(x => x.SmartContractUID == scUID);
+                    scs.DeleteManySafe(x => x.SmartContractUID == scUID);
                 }
                 catch(Exception ex)
                 {
@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     {
                         if (Debugger.IsAttached)
                         {
-                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                            path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                         }
                         else
                         {

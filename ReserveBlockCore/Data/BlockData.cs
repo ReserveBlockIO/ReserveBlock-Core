@@ -1,5 +1,4 @@
-﻿using LiteDB;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
@@ -10,15 +9,16 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using ReserveBlockCore.Extensions;
 
 namespace ReserveBlockCore.Data
 {
     internal class BlockData
     {
-        public static ILiteCollection<Models.Block> GetBlocks()
+        public static LiteDB.ILiteCollection<Models.Block> GetBlocks()
         {
             var coll = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            coll.EnsureIndex(x => x.Height);
+            coll.EnsureIndexSafe(x => x.Height);
             return coll;
         }
 

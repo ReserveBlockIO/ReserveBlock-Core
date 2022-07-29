@@ -84,12 +84,12 @@ namespace ReserveBlockCore.Services
                                     var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
                                     if (peerExist == null)
                                     {
-                                        dbPeers.Insert(nPeer);
+                                        dbPeers.InsertSafe(nPeer);
                                     }
                                     else
                                     {
                                         peerExist.FailCount = 0;
-                                        dbPeers.Update(peerExist);
+                                        dbPeers.UpdateSafe(peerExist);
                                     }
                                 }
                                 

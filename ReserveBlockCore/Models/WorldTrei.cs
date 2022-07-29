@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Data;
 
 namespace ReserveBlockCore.Models
@@ -24,16 +24,16 @@ namespace ReserveBlockCore.Models
                 {
                     StateRoot = block.StateRoot,
                 };
-                wTrei.Insert(worldTrei);
+                wTrei.InsertSafe(worldTrei);
             }
             else
             {
                 record.StateRoot = block.StateRoot;
-                wTrei.Update(record);
+                wTrei.UpdateSafe(record);
             }
         }
 
-        public static ILiteCollection<WorldTrei> GetWorldTrei()
+        public static LiteDB.ILiteCollection<WorldTrei> GetWorldTrei()
         {
             var wTrei = DbContext.DB_WorldStateTrei.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
             return wTrei;

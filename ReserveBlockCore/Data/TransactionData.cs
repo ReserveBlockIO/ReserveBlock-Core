@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Models;
-using LiteDB;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
 
@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Data
             if (GenesisTransactionsCreated != true)
             {
                 var trxPool = TransactionData.GetPool();
-                trxPool.DeleteAll();
+                trxPool.DeleteAllSafe();
                 var timeStamp = TimeUtil.GetTime();
 
                 var balanceSheet = GenesisBalanceUtility.GenesisBalances();
@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Data
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
             if(txCheck== null)
             {
-                txs.Insert(transaction);
+                txs.InsertSafe(transaction);
             }
         }
 
@@ -64,13 +64,10 @@ namespace ReserveBlockCore.Data
         {
             var result = false;
 
-            var blockchain = BlockchainData.GetBlocks();
-            var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
-            
-            var transactions = blocks.SelectMany(x => x.Transactions).ToList();
+            var transactions = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
-                var txExist = transactions.Exists(x => x.Hash == tx.Hash);
+                var txExist = transactions.Any(x => x.Hash == tx.Hash);
                 if (txExist == true)
                 {
                     result = true;//douple spend has occured
@@ -98,15 +95,15 @@ namespace ReserveBlockCore.Data
         public static void AddToPool(Transaction transaction)
         {
             var TransactionPool = GetPool();
-            TransactionPool.Insert(transaction);
+            TransactionPool.InsertSafe(transaction);
         }
 
-        public static ILiteCollection<Transaction> GetPool()
+        public static LiteDB.ILiteCollection<Transaction> GetPool()
         {
             try
             {
                 var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
-                collection.EnsureIndex(x => x.Hash);
+                collection.EnsureIndexSafe(x => x.Hash);
                 return collection;
             }
             catch(Exception ex)
@@ -188,7 +185,7 @@ namespace ReserveBlockCore.Data
                                 {
                                     try
                                     {
-                                        collection.DeleteMany(x => x.Hash == txToDelete.Hash);
+                                        collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
                                     }
                                     catch (Exception ex)
                                     {
@@ -204,7 +201,7 @@ namespace ReserveBlockCore.Data
                             {
                                 try
                                 {
-                                    collection.DeleteMany(x => x.Hash == txToDelete.Hash);
+                                    collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
                                 }
                                 catch (Exception ex)
                                 {
@@ -224,13 +221,11 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> DoubleSpendCheck(Transaction tx)
         {
             bool result = false;
-            var blockchain = BlockchainData.GetBlocks();
-            var blocks = blockchain.Find(Query.All(Query.Descending)).Where(x => x.Timestamp >= tx.Timestamp).ToList();
 
-            var transactions = blocks.SelectMany(x => x.Transactions).ToList();
-            if(transactions.Count() > 0)
+            var transactions = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            if (transactions.Count() > 0)
             {
-                var txExist = transactions.Exists(x => x.Hash == tx.Hash);
+                var txExist = transactions.Any(x => x.Hash == tx.Hash);
                 if (txExist == true)
                 {
                     result = true;//douple spend has occured
@@ -263,7 +258,7 @@ namespace ReserveBlockCore.Data
             return result;
         }
 
-        public static ILiteCollection<Transaction> GetAll()
+        public static LiteDB.ILiteCollection<Transaction> GetAll()
         {
             var collection = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             return collection;
@@ -273,7 +268,7 @@ namespace ReserveBlockCore.Data
         public static Transaction GetTxByAddress(string address)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.Timestamp);
+            transactions.EnsureIndexSafe(x => x.Timestamp);
             var tx = transactions.FindOne(x => x.FromAddress == address || x.ToAddress == address);
             return tx;
         }
@@ -281,8 +276,8 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.FromAddress);
-            transactions.EnsureIndex(x => x.ToAddress);
+            transactions.EnsureIndexSafe(x => x.FromAddress);
+            transactions.EnsureIndexSafe(x => x.ToAddress);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
                 .Where(x => x.FromAddress == address || x.ToAddress == address)
@@ -293,7 +288,7 @@ namespace ReserveBlockCore.Data
         public static Transaction GetTxByHash(string hash)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.Timestamp);
+            transactions.EnsureIndexSafe(x => x.Timestamp);
             var tx = transactions.FindOne(x => x.Hash == hash);
             return tx;
         }
@@ -301,7 +296,7 @@ namespace ReserveBlockCore.Data
         //public static IEnumerable<Transaction> GetTxnsByHeight(long height, int limit = 50)
         //{
         //    var transactions = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    transactions.EnsureIndex(x => x.Timestamp);
+        //    transactions.EnsureIndexSafe(x => x.Timestamp);
         //    var query = transactions.Query()
         //        .OrderByDescending(x => x.Timestamp)
         //        .Where(x => x.Height == height)
@@ -313,7 +308,7 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndex(x => x.Timestamp);
+            transactions.EnsureIndexSafe(x => x.Timestamp);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
                 .Offset((pageNumber - 1) * resultPerPage)

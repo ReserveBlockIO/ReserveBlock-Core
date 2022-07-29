@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using ReserveBlockCore.Beacon;
@@ -679,12 +679,12 @@ namespace ReserveBlockCore.P2P
                                     successCount += 1;
                                     peer.IsOutgoing = true;
                                     peer.FailCount = 0; //peer responded. Reset fail count
-                                    peerDB.Update(peer);
+                                    peerDB.UpdateSafe(peer);
                                 }
                                 else
                                 {
                                     //peer.FailCount += 1;
-                                    //peerDB.Update(peer);
+                                    //peerDB.UpdateSafe(peer);
                                 }
                             }
 
@@ -1856,7 +1856,7 @@ namespace ReserveBlockCore.P2P
                                 var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
                                 if(lAdj == null)
                                 {
-                                    adjudicators.Insert(leadAdjudictor);
+                                    adjudicators.InsertSafe(leadAdjudictor);
                                     LeadAdj = leadAdjudictor;
                                 }
                             }
@@ -1882,7 +1882,7 @@ namespace ReserveBlockCore.P2P
                                 var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
                                 if (lAdj == null)
                                 {
-                                    adjudicators.Insert(leadAdjudictor);
+                                    adjudicators.InsertSafe(leadAdjudictor);
                                     LeadAdj = leadAdjudictor;
                                 }
                             }
@@ -1909,7 +1909,7 @@ namespace ReserveBlockCore.P2P
                                 var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
                                 if (lAdj == null)
                                 {
-                                    adjudicators.Insert(leadAdjudictor);
+                                    adjudicators.InsertSafe(leadAdjudictor);
                                     LeadAdj = leadAdjudictor;
                                 }
                             }
@@ -1935,7 +1935,7 @@ namespace ReserveBlockCore.P2P
                                 var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
                                 if (lAdj == null)
                                 {
-                                    adjudicators.Insert(leadAdjudictor);
+                                    adjudicators.InsertSafe(leadAdjudictor);
                                     LeadAdj = leadAdjudictor;
                                 }
                             }
@@ -1961,7 +1961,7 @@ namespace ReserveBlockCore.P2P
                                 var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
                                 if (lAdj == null)
                                 {
-                                    adjudicators.Insert(leadAdjudictor);
+                                    adjudicators.InsertSafe(leadAdjudictor);
                                     LeadAdj = leadAdjudictor;
                                 }
                             }
@@ -1987,7 +1987,7 @@ namespace ReserveBlockCore.P2P
                                 var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
                                 if (lAdj == null)
                                 {
-                                    adjudicators.Insert(leadAdjudictor);
+                                    adjudicators.InsertSafe(leadAdjudictor);
                                     LeadAdj = leadAdjudictor;
                                 }
                             }

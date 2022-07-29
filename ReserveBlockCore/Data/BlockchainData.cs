@@ -1,5 +1,4 @@
-﻿using LiteDB;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.P2P;
@@ -12,6 +11,7 @@ using ReserveBlockCore.Services;
 using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
+using ReserveBlockCore.Extensions;
 
 namespace ReserveBlockCore.Data
 {
@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Data
                 StateData.CreateGenesisWorldTrei(block);
 
                 // clear mempool
-                trxPool.DeleteAll();
+                trxPool.DeleteAllSafe();
             }
         }
         //Method needing validator functions still.
@@ -114,7 +114,7 @@ namespace ReserveBlockCore.Data
                         var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
                         if (txRec != null)
                         {
-                            //txPool.DeleteMany(x => x.Hash == tx.Hash);
+                            //txPool.DeleteManySafe(x => x.Hash == tx.Hash);
                         }
                     }
                 }
@@ -183,12 +183,12 @@ namespace ReserveBlockCore.Data
             return trxs;
         }
 
-        public static ILiteCollection<Block> GetBlocks()
+        public static LiteDB.ILiteCollection<Block> GetBlocks()
         {
             try
             {
                 var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-                blocks.EnsureIndex(x => x.Height);
+                blocks.EnsureIndexSafe(x => x.Height);
                 return blocks;
             }
             catch(Exception ex)
@@ -198,10 +198,10 @@ namespace ReserveBlockCore.Data
             }
             
         }
-        public static ILiteCollection<Block> GetBlockQueue()
+        public static LiteDB.ILiteCollection<Block> GetBlockQueue()
         {
             var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
-            blocks.EnsureIndex(x => x.Height);
+            blocks.EnsureIndexSafe(x => x.Height);
             return blocks;
         }
         public static Block GetGenesisBlock()
@@ -212,7 +212,7 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHeight(long height)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height); 
+            blocks.EnsureIndexSafe(x => x.Height); 
             var block = blocks.FindOne(x => x.Height == height);
             return block;
         }
@@ -220,14 +220,14 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHash(string hash)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Height); 
+            blocks.EnsureIndexSafe(x => x.Height); 
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
         public static Block GetLastBlock()
         {
             var blockchain = GetBlocks();
-            var block = blockchain.FindOne(Query.All(Query.Descending));
+            var block = blockchain.FindOne(LiteDB.Query.All(LiteDB.Query.Descending));
             return block;
         }
         public static long GetHeight()
@@ -246,6 +246,19 @@ namespace ReserveBlockCore.Data
 
             var txList = block.Transactions.ToList();
 
+            var blkRwdCnt = txList.Where(x => x.FromAddress == "Coinbase_BlkRwd").Count();
+            var feeRemovalCheck = txList.Exists(x => x.FromAddress == "Coinbase_TrxFees");
+
+            if(feeRemovalCheck)
+            {
+                return result;
+            }
+
+            if(blkRwdCnt > 1)
+            {
+                return result;
+            }
+
             foreach(var tx in txList)
             {
                 if (tx.FromAddress == "Coinbase_TrxFees")
@@ -261,6 +274,9 @@ namespace ReserveBlockCore.Data
                 {
                     //validating block reward to ensure block is not malformed.
                     result = tx.Amount == GetBlockReward() ? true : false;
+                    //ensures the reward person is the validator themselves.
+                    result = result != true ? false : tx.ToAddress == block.Validator ? true : false;
+
                     if (result == false)
                     {
                         break;
@@ -273,12 +289,12 @@ namespace ReserveBlockCore.Data
         public static void AddBlock(Block block)
         {
             var blocks = GetBlocks();
-            blocks.EnsureIndex(x => x.Height);
+            blocks.EnsureIndexSafe(x => x.Height);
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
             {
-                blocks.Insert(block);
+                blocks.InsertSafe(block);
 
                 //Update in memory fields.
                 Program.LastBlock = block;
@@ -286,7 +302,7 @@ namespace ReserveBlockCore.Data
             }
             else
             {
-                var blockList = blocks.Find(Query.All(Query.Descending)).ToList();
+                var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
                 var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
                 if (eBlock == null)
                 {
@@ -306,7 +322,7 @@ namespace ReserveBlockCore.Data
         {
 
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndex(x => x.Validator);
+            blocks.EnsureIndexSafe(x => x.Validator);
             var query = blocks.Query()
                 .OrderByDescending(x => x.Height)
                 .Where(x => x.Validator == address)

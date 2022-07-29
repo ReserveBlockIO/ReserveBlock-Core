@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
@@ -21,7 +21,7 @@ namespace ReserveBlockCore.Models
         public bool IsOffline { get; set; }
         public string Signature { get; set; }
 
-        public static ILiteCollection<DecShop>? DecShops()
+        public static LiteDB.ILiteCollection<DecShop>? DecShops()
         {
             try
             {
@@ -36,7 +36,7 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static ILiteCollection<DecShop>? MyDecShop()
+        public static LiteDB.ILiteCollection<DecShop>? MyDecShop()
         {
             try
             {
@@ -89,7 +89,7 @@ namespace ReserveBlockCore.Models
                 var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
                 if (existingDecShopInfo == null)
                 {
-                    decshops.Insert(decshop); //inserts new record
+                    decshops.InsertSafe(decshop); //inserts new record
                     return $"Decentralized Sales Shop has been created with name {decshop.Name}";
                 }
                 else
@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Models
                 var existingDecShopInfo = decshops.FindAll().Where(x => x.Locator == decshop.Locator);
                 if (existingDecShopInfo == null)
                 {
-                    decshops.Insert(decshop); //inserts new record
+                    decshops.InsertSafe(decshop); //inserts new record
                 }
                 else
                 {
@@ -134,7 +134,7 @@ namespace ReserveBlockCore.Models
                 if(decshop != null)
                 {
                     myDecShop.IsOffline = !myDecShop.IsOffline;
-                    decshop.Update(myDecShop);
+                    decshop.UpdateSafe(myDecShop);
                     return myDecShop.IsOffline;
                 }
             }

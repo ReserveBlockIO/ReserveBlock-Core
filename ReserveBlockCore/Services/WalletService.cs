@@ -62,6 +62,7 @@ namespace ReserveBlockCore.Services
 
                 var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
 
+
                 if (addrCheck == false)
                 {
                     Console.WriteLine("\nError! You have entered an invalid RBX Address!");
@@ -104,6 +105,18 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
+            if(ToAddress.EndsWith(".rbx"))
+            {
+                var result = Adnr.GetAddress(ToAddress);
+                if(result.Item1 == true)
+                {
+                    ToAddress = result.Item2;
+                }
+                else
+                {
+                    return "Address not recognized or is not stored in the ADNR state trei.";
+                }
+            }
 
             var nTx = new Transaction
             {
@@ -195,8 +208,8 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            var memBlocksTxs = Program.MemBlocks.SelectMany(x => x.Transactions).ToList();
-            var txExist = memBlocksTxs.Exists(x => x.Hash == txRequest.Hash);
+            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
                 return txResult;

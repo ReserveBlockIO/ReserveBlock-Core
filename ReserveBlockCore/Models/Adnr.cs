@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
@@ -14,13 +14,11 @@ namespace ReserveBlockCore.Models
     {
         public int Id { get; set; }
         public string Address { get; set; }
-        public string Signature { get; set; }
         public string Name { get; set; }
-        public string Hash { get; set; }
         public string TxHash { get; set; }
         public long Timestamp { get; set; }
 
-        public static ILiteCollection<Adnr>? GetAdnr()
+        public static LiteDB.ILiteCollection<Adnr>? GetAdnr()
         {
             try
             {
@@ -35,6 +33,22 @@ namespace ReserveBlockCore.Models
 
         }
 
+        public static (bool, string) GetAddress(string addr)
+        {
+            bool result = false;
+            string strResult = "";
+
+            var adnr = GetAdnr();
+            var adnrExist = adnr.FindOne(x => x.Name == addr);
+            if (adnrExist != null)
+            {
+                strResult = adnrExist.Address;
+                result = true;
+            }
+
+            return (result, strResult);
+        }
+
         public static string SaveAdnr(Adnr adnrData)
         {
             var adnr = GetAdnr();
@@ -44,14 +58,14 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                var beaconDataRec = adnr.FindOne(x => x.Name == adnrData.Name || x.Address == adnrData.Address);
-                if (beaconDataRec != null)
+                var adnrRecData = adnr.FindOne(x => x.Name == adnrData.Name || x.Address == adnrData.Address);
+                if (adnrRecData != null)
                 {
                     return "Record Already Exist or Address is already associated with adnr.";
                 }
                 else
                 {
-                    adnr.Insert(adnrData);
+                    adnr.InsertSafe(adnrData);
                 }
             }
 
@@ -68,7 +82,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                adnr.DeleteMany(x => x.Name == name);
+                adnr.DeleteManySafe(x => x.Name == name);
             }
         }
 
@@ -88,17 +102,15 @@ namespace ReserveBlockCore.Models
 
             BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-            var signature = SignatureService.CreateSignature(name, privateKey, account.PublicKey);
-            var hash = GetHash(address, name, signature, timestamp);
 
-            txData = JsonConvert.SerializeObject(new { Function = "AdnrCreate()", Address = address, Name = name, Timestamp = timestamp, Hash = hash, Signature = signature });
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrCreate()", Name = name });
 
             adnrTx = new Transaction
             {
-                Timestamp = TimeUtil.GetTime(),
+                Timestamp = timestamp,
                 FromAddress = address,
                 ToAddress = "Adnr_Base",
-                Amount = 0.0M,
+                Amount = 1.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.ADNR,
@@ -143,17 +155,14 @@ namespace ReserveBlockCore.Models
             return (null, "Error. Please see message above.");
         }
 
-        public void Build()
-        {
-            var data = Address + Name + Signature + Timestamp;
-            Hash = HashingService.GenerateHash(HashingService.GenerateHash(data));
-        }
+        //public static async Task<(Transaction?, string)> TransferAdnrTx(string address, string name)
+        //{
+        //}
 
-        private static string GetHash(string address, string name, string signature, long timestamp)
-        {
-            var data = address + name + signature + timestamp;
-            return HashingService.GenerateHash(HashingService.GenerateHash(data));
-        }
+        //public static async Task<(Transaction?, string)> DeleteAdnrTx(string address, string name)
+        //{
+        //}
+
     }
     
 }

@@ -1,4 +1,4 @@
-﻿using LiteDB;
+﻿using ReserveBlockCore.Extensions;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
@@ -12,14 +12,10 @@ namespace ReserveBlockCore.Services
         public static bool QueueProcessing = false;
         public static long LastHeightBroadcasted = -1;
 
-        public static void UpdateMemBlocks()
+        public static void UpdateMemBlocks(Block block)
         {
-            Program.MemBlocks.Clear();
-            Program.MemBlocks.TrimExcess();
-            Program.MemBlocks = null;
-
-            var blockChain = BlockchainData.GetBlocks();
-            Program.MemBlocks = blockChain.Find(Query.All(Query.Descending)).Take(300).ToList();
+            Program.MemBlocks.TryDequeue(out Block test);
+            Program.MemBlocks.Enqueue(block);
         }
 
         public static async Task ProcessBlockQueue()
@@ -41,11 +37,11 @@ namespace ReserveBlockCore.Services
                             if (findBlock == null)
                             {
                                 await BlockValidatorService.ValidateBlock(block);//insert into blockchain
-                                blockQueue.DeleteMany(x => x.Height == block.Height);//delete from queue
+                                blockQueue.DeleteManySafe(x => x.Height == block.Height);//delete from queue
                             }
                             else
                             {
-                                blockQueue.DeleteMany(x => x.Height == block.Height); //delete from queue
+                                blockQueue.DeleteManySafe(x => x.Height == block.Height); //delete from queue
                             }
                         }
                         catch (Exception ex)
@@ -73,7 +69,7 @@ namespace ReserveBlockCore.Services
                 if(blockQueueBlock == null)
                 {
                     BroadcastBlock = true;
-                    blockQueue.Insert(block);
+                    blockQueue.InsertSafe(block);
                     try
                     {
                         //REVIEW THIS. POTENTIAL LOOP BROADCAST
