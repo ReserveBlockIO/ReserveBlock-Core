@@ -695,9 +695,10 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    if(failCount > 0)
+                    if(failCount > 60)
                     {
-                        Thread.Sleep(new TimeSpan(0, failCount, 0));
+                        Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
+                        Thread.Sleep(new TimeSpan(0, 0, 60));
                     }
 
                     Console.WriteLine("Attempting to connect to peers...");
@@ -717,11 +718,12 @@ namespace ReserveBlockCore.Services
                         {
                             //No validator account on start up
                         }
+                        failCount = 0;
                     }
                     else
                     {
                         failCount += 1;
-                        Console.WriteLine($"Failed to connect to any peers. trying again in {failCount} minutes.");
+                        Console.WriteLine($"Failed to connect to any peers. trying again.");
                     }
                 }
                 catch (Exception ex)

@@ -294,6 +294,29 @@ namespace ReserveBlockCore.Commands
             }
             return "Unexpected entry detected. Please try again.";
         }
+        public static async Task ValidatorInfo()
+        {
+            var account = AccountData.GetLocalValidator();
+            if(account != null)
+            {
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
+                if(validator != null)
+                {
+                    Console.WriteLine($"Validator Name: {validator.UniqueName}");
+                    Console.WriteLine($"Validator Address: {validator.Address}");
+                    Console.WriteLine($"Validator Amount: {account.Balance}");
+                    Console.WriteLine($"Validating? {account.IsValidating}");
+                }
+                else
+                {
+                    Console.WriteLine("Account found, but validator not registered locally.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No accounts detected as validators.");
+            }
+        }
 
         public static async Task<string> CreateDnr()
         {
