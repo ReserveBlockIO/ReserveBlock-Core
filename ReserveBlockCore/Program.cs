@@ -314,7 +314,7 @@ namespace ReserveBlockCore
 
             
 
-            Thread.Sleep(3000);
+            Thread.Sleep(2000);
 
             var tasks = new Task[] {
                 commandLoopTask, //CLI console
@@ -398,7 +398,7 @@ namespace ReserveBlockCore
             
         }
 
-        private static void RunCommand(string? command)
+        private static async void RunCommand(string? command)
         {
             if (command != "" || command != null)
             {
@@ -406,11 +406,11 @@ namespace ReserveBlockCore
                 if (command.Contains(","))
                 {
                     var splitCommand = command.Split(',');
-                    commandResult = BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
+                    commandResult = await BaseCommand.ProcessCommand(splitCommand[0], splitCommand[1]);
                 }
                 else
                 {
-                    commandResult = BaseCommand.ProcessCommand(command);
+                    commandResult = await BaseCommand.ProcessCommand(command);
                 }
 
 

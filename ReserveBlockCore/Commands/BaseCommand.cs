@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Commands
 {
     internal class BaseCommand
     {
-        internal static string ProcessCommand(string command, string? commandParameter = null)
+        internal static async Task<string> ProcessCommand(string command, string? commandParameter = null)
         {
             var commandResult = string.Empty;
 
@@ -66,7 +66,10 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.AddPeer();
                     break;
                 case "/creatednr":
-                    BaseCommandServices.CreateDnr();
+                    await BaseCommandServices.CreateDnr();
+                    break;
+                case "/val":
+                    await BaseCommandServices.ValidatorInfo();
                     break;
                 case "/findbeacon":
                     var beacons = P2PClient.GetBeacons();

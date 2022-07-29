@@ -290,6 +290,29 @@ namespace ReserveBlockCore.Commands
             }
             return "Unexpected entry detected. Please try again.";
         }
+        public static async Task ValidatorInfo()
+        {
+            var account = AccountData.GetLocalValidator();
+            if(account != null)
+            {
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
+                if(validator != null)
+                {
+                    Console.WriteLine($"Validator Name: {validator.UniqueName}");
+                    Console.WriteLine($"Validator Address: {validator.Address}");
+                    Console.WriteLine($"Validator Amount: {account.Balance}");
+                    Console.WriteLine($"Validating? {account.IsValidating}");
+                }
+                else
+                {
+                    Console.WriteLine("Account found, but validator not registered locally.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No accounts detected as validators.");
+            }
+        }
 
         public static async Task<string> CreateDnr()
         {
@@ -492,6 +515,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
             table.AddRow("[blue]/CreateDnr[/]", "[green]Creates an address domain name registrar.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
+            table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");

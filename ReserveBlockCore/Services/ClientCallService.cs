@@ -146,72 +146,90 @@ namespace ReserveBlockCore.Services
                                     {
                                         ConsoleWriterService.Output("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
                                         bool findWinner = true;
+                                        int taskFindCount = 0;
                                         while (findWinner)
                                         {
+                                            taskFindCount += 1;
+                                            ConsoleWriterService.Output($"Current Task Find Count: {taskFindCount}");
                                             var taskWinner = await TaskWinnerUtility.TaskWinner(taskQuestion, taskAnswerList, failedTaskAnswersList);
                                             if (taskWinner != null)
                                             {
-                                                ConsoleWriterService.Output("Task Winner was Found! " + taskWinner.Address);
-                                                var nextBlock = taskWinner.Block;
-                                                if (nextBlock != null)
+                                                var taskWinnerAddr = taskWinner.Address;
+                                                var acctStateTreiBalance = AccountStateTrei.GetAccountBalance(taskWinnerAddr);
+
+                                                if (acctStateTreiBalance < 1000)
                                                 {
-                                                    var result = await BlockValidatorService.ValidateBlock(nextBlock);
-                                                    if (result == true)
+                                                    ConsoleWriterService.Output("Address failed validation. Balance is too low.");
+                                                    if (failedTaskAnswersList == null)
                                                     {
-                                                        ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                        ConsoleWriterService.Output(DateTime.Now.ToString());
-                                                        string data = "";
-                                                        data = JsonConvert.SerializeObject(nextBlock);
-                                                        
-                                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-                                                        ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
-                                                        //Update submit time to wait another 28 seconds to process.
-                                                        
-
-                                                        //send new puzzle and wait for next challenge completion
-                                                        string taskQuestionStr = "";
-                                                        var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                                        ConsoleWriterService.Output("New Task Created.");
-                                                        P2PAdjServer.CurrentTaskQuestion = nTaskQuestion;
-                                                        TaskQuestion nSTaskQuestion = new TaskQuestion();
-                                                        nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
-                                                        nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
-                                                        
-                                                        taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-
-
-                                                        await ProcessFortisPool(taskAnswerList);
-                                                        ConsoleWriterService.Output("Fortis Pool Processed");
-
-                                                        if(P2PAdjServer.TaskAnswerList != null)
-                                                        {
-                                                            //P2PAdjServer.TaskAnswerList.Clear();
-                                                            //P2PAdjServer.TaskAnswerList.TrimExcess();
-                                                            P2PAdjServer.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                        }
-
-                                                        Thread.Sleep(1000);
-
-                                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-                                                        ConsoleWriterService.Output("Task Sent.");
-
-                                                        findWinner = false;
-                                                        Program.AdjudicateLock = false;
-                                                        Program.LastAdjudicateTime = TimeUtil.GetTime();
-
-                                                        P2PAdjServer.BroadcastedTrxList = new List<Transaction>();
+                                                        failedTaskAnswersList = new List<TaskAnswer>();
                                                     }
-                                                    else
+                                                    failedTaskAnswersList.Add(taskWinner);
+                                                }
+                                                else
+                                                {
+                                                    ConsoleWriterService.Output("Task Winner was Found! " + taskWinner.Address);
+                                                    var nextBlock = taskWinner.Block;
+                                                    if (nextBlock != null)
                                                     {
-                                                        Console.WriteLine("Block failed validation");
-                                                        if (failedTaskAnswersList == null)
+                                                        var result = await BlockValidatorService.ValidateBlock(nextBlock);
+                                                        if (result == true)
                                                         {
-                                                            failedTaskAnswersList = new List<TaskAnswer>();
+                                                            ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
+                                                            ConsoleWriterService.Output(DateTime.Now.ToString());
+                                                            string data = "";
+                                                            data = JsonConvert.SerializeObject(nextBlock);
+
+                                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
+                                                            ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
+                                                            //Update submit time to wait another 28 seconds to process.
+
+
+                                                            //send new puzzle and wait for next challenge completion
+                                                            string taskQuestionStr = "";
+                                                            var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                                                            ConsoleWriterService.Output("New Task Created.");
+                                                            P2PAdjServer.CurrentTaskQuestion = nTaskQuestion;
+                                                            TaskQuestion nSTaskQuestion = new TaskQuestion();
+                                                            nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
+                                                            nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
+
+                                                            taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
+
+
+                                                            await ProcessFortisPool(taskAnswerList);
+                                                            ConsoleWriterService.Output("Fortis Pool Processed");
+
+                                                            if (P2PAdjServer.TaskAnswerList != null)
+                                                            {
+                                                                //P2PAdjServer.TaskAnswerList.Clear();
+                                                                //P2PAdjServer.TaskAnswerList.TrimExcess();
+                                                                P2PAdjServer.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                            }
+
+                                                            Thread.Sleep(1000);
+
+                                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
+                                                            ConsoleWriterService.Output("Task Sent.");
+
+                                                            findWinner = false;
+                                                            taskFindCount = 0;
+                                                            Program.AdjudicateLock = false;
+                                                            Program.LastAdjudicateTime = TimeUtil.GetTime();
+
+                                                            P2PAdjServer.BroadcastedTrxList = new List<Transaction>();
                                                         }
-                                                        failedTaskAnswersList.Add(taskWinner);
+                                                        else
+                                                        {
+                                                            Console.WriteLine("Block failed validation");
+                                                            if (failedTaskAnswersList == null)
+                                                            {
+                                                                failedTaskAnswersList = new List<TaskAnswer>();
+                                                            }
+                                                            failedTaskAnswersList.Add(taskWinner);
+                                                        }
                                                     }
                                                 }
-
                                             }
                                             else
                                             {
