@@ -519,6 +519,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
             table.AddRow("[blue]/CreateDnr[/]", "[green]Creates an address domain name registrar.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
+            table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");

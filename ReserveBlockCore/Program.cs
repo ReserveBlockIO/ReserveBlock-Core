@@ -317,7 +317,7 @@ namespace ReserveBlockCore
 
             
 
-            Thread.Sleep(3000);
+            Thread.Sleep(2000);
 
             var tasks = new Task[] {
                 commandLoopTask, //CLI console
