@@ -119,9 +119,7 @@ namespace ReserveBlockCore.Commands
             var name = Console.ReadLine();
             if (name != null)
             {
-                var ip = P2PClient.ReportedIPs.Count() != 0 ?
-                P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() :
-                "NA";
+                var ip = P2PClient.MostLikelyIP();
 
                 if (ip == "NA")
                 {
@@ -216,9 +214,7 @@ namespace ReserveBlockCore.Commands
                             var desc = Console.ReadLine();
                             if (desc != null && desc != "" && desc.Length > 512)
                             {
-                                var ip = P2PClient.ReportedIPs.Count() != 0 ?
-                                    P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() :
-                                    "NA";
+                                var ip = P2PClient.MostLikelyIP();
 
                                 if (ip == "NA")
                                 {

@@ -42,17 +42,6 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static void SetupNodeDictionary()
-        {
-            P2PClient.NodeDict = new Dictionary<int, string>();
-            P2PClient.NodeDict.Add(1, null);
-            P2PClient.NodeDict.Add(2, null);
-            P2PClient.NodeDict.Add(3, null);
-            P2PClient.NodeDict.Add(4, null);
-            P2PClient.NodeDict.Add(5, null);
-            P2PClient.NodeDict.Add(6, null);
-        }
-
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
@@ -748,7 +737,7 @@ namespace ReserveBlockCore.Services
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1)
+            if (peersConnected)
             {
                 if(Program.BlockHeight == -1)
                 {
