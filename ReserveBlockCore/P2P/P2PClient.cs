@@ -22,7 +22,7 @@ namespace ReserveBlockCore.P2P
     public class P2PClient : IAsyncDisposable, IDisposable
     {
         #region Static Variables
-        public const int MaxPeers = 6;
+        public const int MaxPeers = 8;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static long LastSentBlockHeight = -1;
         public static DateTime? AdjudicatorConnectDate = null;
