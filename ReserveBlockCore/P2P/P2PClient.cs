@@ -155,7 +155,7 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return false;
 
-                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
+                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "").Replace(":3338", "");
 
                 var startTimer = DateTime.UtcNow;
                 long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
@@ -304,6 +304,8 @@ namespace ReserveBlockCore.P2P
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
+            if (Program.Nodes.Count == MaxPeers)
+                return true;
             var CurrentPeersIPs = new HashSet<string>(Program.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")));
 
             Random rnd = new Random();
