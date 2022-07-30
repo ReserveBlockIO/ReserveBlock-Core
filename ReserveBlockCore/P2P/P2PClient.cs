@@ -53,7 +53,7 @@ namespace ReserveBlockCore.P2P
         }
         private static async Task RemoveNode(NodeInfo node)
         {            
-            Program.Nodes.TryRemove(node.Connection.ConnectionId, out NodeInfo test);
+            Program.Nodes.TryRemove(node.NodeIP, out NodeInfo test);
             await node.Connection.DisposeAsync();            
         }
 
@@ -162,7 +162,7 @@ namespace ReserveBlockCore.P2P
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
-                Program.Nodes.TryAdd(hubConnection.ConnectionId, new NodeInfo
+                var result = Program.Nodes.TryAdd(IPAddress, new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
@@ -170,6 +170,16 @@ namespace ReserveBlockCore.P2P
                     NodeLastChecked = startTimer,
                     NodeLatency = totalMS
                 });
+
+                if(!result)
+                {
+                    var node = Program.Nodes[IPAddress];
+                    node.NodeLatency = totalMS;
+                    node.NodeLastChecked = startTimer;
+                    node.NodeHeight = remoteNodeHeight;
+                    node.NodeIP = IPAddress;
+                    node.Connection = hubConnection;
+                }
 
                 return true;
             }
@@ -294,7 +304,7 @@ namespace ReserveBlockCore.P2P
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var CurrentPeersIPs = new HashSet<string>(Program.Nodes.Values.Select(x => x.NodeIP));
+            var CurrentPeersIPs = new HashSet<string>(Program.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")));
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()

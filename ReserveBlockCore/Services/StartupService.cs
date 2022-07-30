@@ -701,6 +701,7 @@ namespace ReserveBlockCore.Services
                     if (result == true)
                     {
                         peersConnected = true;
+                        Console.WriteLine("Connected to Peers...");
                         var accounts = AccountData.GetAccounts();
                         var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
                         if (myAccount != null)

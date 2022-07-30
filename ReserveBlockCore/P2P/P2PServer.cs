@@ -49,7 +49,7 @@ namespace ReserveBlockCore.P2P
             }
 
             var blockHeight = Program.BlockHeight;
-            PeerList[Context.ConnectionId] = peerIP;
+            PeerList.AddOrUpdate(peerIP, Context.ConnectionId, (key, oldValue) => Context.ConnectionId);
 
             await SendMessage("IP", peerIP);
             await base.OnConnectedAsync();
@@ -57,8 +57,9 @@ namespace ReserveBlockCore.P2P
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
-            PeerList.TryRemove(Context.ConnectionId, out string test);
-            Program.Nodes.TryRemove(Context.ConnectionId, out NodeInfo test2);    
+            var peerIP = GetIP(Context);
+            PeerList.TryRemove(peerIP, out string test);
+            //Program.Nodes.TryRemove(peerIP, out NodeInfo test2);    
         }
 
         public async Task SendMessage(string message, string data)
