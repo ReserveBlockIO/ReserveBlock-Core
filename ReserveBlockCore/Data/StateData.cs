@@ -169,10 +169,10 @@ namespace ReserveBlockCore.Data
                                         AddNewAdnr(x);
                                         break;
                                     case "AdnrTransfer()":
-                                        //AddNewAdnr(x);
+                                        //TransferAdnr(x);
                                         break;
                                     case "AdnrDelete()":
-                                        //AddNewAdnr(x);
+                                        DeleteAdnr(x);
                                         break;
                                     default:
                                         break;
@@ -263,6 +263,18 @@ namespace ReserveBlockCore.Data
                 
             }
             catch(Exception ex)
+            {
+                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+            }
+        }
+
+        private static void DeleteAdnr(Transaction tx)
+        {
+            try
+            {
+                Adnr.DeleteAdnr(tx.FromAddress);
+            }
+            catch (Exception ex)
             {
                 ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
             }

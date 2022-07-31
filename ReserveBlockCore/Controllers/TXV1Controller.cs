@@ -516,6 +516,52 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("DeleteADnr/{address}")]
+        public async Task<string> DeleteADnr(string address)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(address);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = Adnr.GetAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrCheck == null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrCheck.Name}" });
+                            return output;
+                        }
+
+                        var result = await Adnr.DeleteAdnrTx(address);
+                        if (result.Item1 != null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {address} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+            }
+
+            return output;
+        }
+
         [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}")]
         public async Task<string> SendTransaction(string faddr, string taddr, string amt)
         {
