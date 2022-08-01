@@ -516,6 +516,75 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("TransferAdnr/{fromAddress}/{toAddress}")]
+        public async Task<string> TransferAdnr(string fromAddress, string toAddress)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(fromAddress);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = Adnr.GetAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrCheck == null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address does not have a DNR associated with it." });
+                            return output;
+                        }
+                        if (toAddress != null && toAddress != "")
+                        {
+                            var addrVerify = AddressValidateUtility.ValidateAddress(toAddress);
+                            if (addrVerify == true)
+                            {
+                                var toAddrAdnr = adnr.FindOne(x => x.Address == toAddress);
+                                if(toAddrAdnr == null)
+                                {
+                                    var result = await Adnr.TransferAdnrTx(fromAddress, toAddress);
+                                    if (result.Item1 != null)
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                                    }
+                                    else
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                                    }
+                                }
+                                else
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address already has adnr associated to it." });
+                                }
+                            }
+                            else
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address is not a valid RBX address." });
+                            }
+
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Name was empty." });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {fromAddress} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+            }
+
+            return output;
+        }
+
         [HttpGet("DeleteADnr/{address}")]
         public async Task<string> DeleteADnr(string address)
         {

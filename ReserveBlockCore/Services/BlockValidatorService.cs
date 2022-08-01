@@ -160,9 +160,12 @@ namespace ReserveBlockCore.Services
                             var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
                             if (account != null)
                             {
-                                AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
-                                var txdata = TransactionData.GetAll();
-                                txdata.InsertSafe(transaction);
+                                if(transaction.TransactionType == TransactionType.TX)
+                                {
+                                    AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
+                                    var txdata = TransactionData.GetAll();
+                                    txdata.InsertSafe(transaction);
+                                }
                                 if(Program.IsChainSynced == true)
                                 {
                                     //Call out to custom URL from config file with TX details
@@ -265,6 +268,21 @@ namespace ReserveBlockCore.Services
                                             }
                                         }
                                     }
+
+                                    if(transaction.TransactionType == TransactionType.ADNR)
+                                    {
+                                        if(scData != null)
+                                        {
+                                            var function = (string?)scData["Function"];
+                                            if (function != "" && function != null)
+                                            {
+                                                if (function == "AdnrTransfer()")
+                                                {
+                                                    await Account.TransferAdnrToAccount(transaction.FromAddress);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -315,6 +333,30 @@ namespace ReserveBlockCore.Services
                                             }
                                         }
             
+                                    }
+
+                                    if(transaction.TransactionType == TransactionType.ADNR)
+                                    {
+                                        var function = (string?)scData["Function"];
+                                        var name = (string?)scData["Name"];
+                                        if (function != "" && function != null)
+                                        {
+                                            if (function == "AdnrCreate()")
+                                            {
+                                                if(name != "" && name != null)
+                                                {
+                                                    await Account.AddAdnrToAccount(transaction.FromAddress, name);
+                                                }
+                                            }
+                                            if (function == "AdnrDelete()")
+                                            {
+                                                await Account.DeleteAdnrFromAccount(transaction.FromAddress);
+                                            }
+                                            if (function == "AdnrTransfer()")
+                                            {
+                                                await Account.DeleteAdnrFromAccount(transaction.FromAddress);
+                                            }
+                                        }
                                     }
                                 }
                             }

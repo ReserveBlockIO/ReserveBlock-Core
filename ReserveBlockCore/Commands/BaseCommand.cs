@@ -71,6 +71,9 @@ namespace ReserveBlockCore.Commands
                 case "/deletednr":
                     await BaseCommandServices.DeleteDnr();
                     break;
+                case "/transferdnr":
+                    await BaseCommandServices.TransferDnr();
+                    break;
                 case "/val":
                     await BaseCommandServices.ValidatorInfo();
                     break;

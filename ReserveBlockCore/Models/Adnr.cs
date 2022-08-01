@@ -171,9 +171,75 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region TransferAdnrTx(string fromAddress, string toAddress)
-        //public static async Task<(Transaction?, string)> TransferAdnrTx(string address, string name)
-        //{
-        //}
+        public static async Task<(Transaction?, string)> TransferAdnrTx(string fromAddress, string toAddress)
+        {
+            Transaction? adnrTx = null;
+
+            var account = AccountData.GetSingleAccount(fromAddress);
+            if (account == null)
+            {
+                ErrorLogUtility.LogError($"Address is not found for : {fromAddress}", "Adnr.CreateAdnrTx(string address, string name)");
+                return (null, $"Address is not found for : {fromAddress}");
+            }
+
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+
+            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()" });
+
+            adnrTx = new Transaction
+            {
+                Timestamp = timestamp,
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Amount = 1.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(fromAddress),
+                TransactionType = TransactionType.ADNR,
+                Data = txData
+            };
+
+            adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
+
+            adnrTx.Build();
+
+            var txHash = adnrTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for ADNR Request on address {fromAddress}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                return (null, $"Signing TX failed for ADNR Request on address {fromAddress}");
+            }
+
+            adnrTx.Signature = sig;
+
+            try
+            {
+                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                if (result.Item1 == true)
+                {
+                    TransactionData.AddToPool(adnrTx);
+                    AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                    P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    return (adnrTx, "Success");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.Message);
+                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.Message}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+            }
+
+            return (null, "Error. Please see message above.");
+        }
         #endregion
 
         #region DeleteAdnrTx(string address)

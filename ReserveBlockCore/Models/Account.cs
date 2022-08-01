@@ -16,6 +16,7 @@ namespace ReserveBlockCore.Models
         public string PrivateKey { set; get; }
         public string PublicKey { set; get; }
         public string Address { get; set; }
+        public string? ADNR { get; set; }
         public decimal Balance { get; set; }
         public bool IsValidating { get; set; }
         public bool IsEncrypted { get; set; }
@@ -31,6 +32,49 @@ namespace ReserveBlockCore.Models
         {
             Account account = AccountData.RestoreAccount(privKey);
             return account;
+        }
+
+        public static async Task AddAdnrToAccount(string address, string name)
+        {
+            var accounts = AccountData.GetAccounts();
+            var account = accounts.FindOne(x => x.Address == address);
+
+            if(account != null)
+            {
+                account.ADNR = name;
+                accounts.UpdateSafe(account);
+            }
+        }
+        public static async Task DeleteAdnrFromAccount(string address)
+        {
+            var accounts = AccountData.GetAccounts();
+            var account = accounts.FindOne(x => x.Address == address);
+
+            if (account != null)
+            {
+                account.ADNR = null;
+                accounts.UpdateSafe(account);
+            }
+        }
+        public static async Task TransferAdnrToAccount(string address)
+        {
+            var adnrs = Adnr.GetAdnr();
+            if(adnrs != null)
+            {
+                var adnr = adnrs.FindOne(x => x.Address == address);
+                if (adnr != null)
+                {
+                    var accounts = AccountData.GetAccounts();
+                    var account = accounts.FindOne(x => x.Address == address);
+
+                    if (account != null)
+                    {
+                        account.ADNR = adnr.Name;
+                    }
+
+                }
+            }
+            
         }
     }
 

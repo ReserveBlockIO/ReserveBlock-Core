@@ -295,6 +295,25 @@ namespace ReserveBlockCore.Services
                                     }
                                 }
                             }
+
+                            if (function == "AdnrTransfer()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return txResult;
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
+                                    if (addressCheck != null)
+                                    {
+                                        return txResult;
+                                    }
+                                }
+                            }
                         }
                         catch(Exception ex)
                         {
@@ -595,6 +614,25 @@ namespace ReserveBlockCore.Services
                                     if (addressCheck == null)
                                     {
                                         return (txResult, "Address is not associated with a DNR.");
+                                    }
+                                }
+                            }
+
+                            if (function == "AdnrTransfer()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with a DNR.");
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
+                                    if (addressCheck != null)
+                                    {
+                                        return (txResult, "To Address is already associated with a DNR.");
                                     }
                                 }
                             }

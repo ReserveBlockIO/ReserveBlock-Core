@@ -92,28 +92,31 @@ namespace ReserveBlockCore.Data
                 if(x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
                 {
                     var to = GetSpecificAccountStateTrei(x.ToAddress);
-
-                    if (to == null)
+                    if(x.TransactionType == TransactionType.TX)
                     {
-                        var acctStateTreiTo = new AccountStateTrei
+                        if (to == null)
                         {
-                            Key = x.ToAddress,
-                            Nonce = 0,
-                            Balance = x.Amount,
-                            StateRoot = block.StateRoot
-                        };
+                            var acctStateTreiTo = new AccountStateTrei
+                            {
+                                Key = x.ToAddress,
+                                Nonce = 0,
+                                Balance = x.Amount,
+                                StateRoot = block.StateRoot
+                            };
 
-                        accStTrei.InsertSafe(acctStateTreiTo);
-                    }
-                    else
-                    {
-                        to.Balance += x.Amount;
-                        to.StateRoot = block.StateRoot;
+                            accStTrei.InsertSafe(acctStateTreiTo);
+                        }
+                        else
+                        {
+                            to.Balance += x.Amount;
+                            to.StateRoot = block.StateRoot;
 
-                        accStTrei.UpdateSafe(to);
+                            accStTrei.UpdateSafe(to);
+                        }
+
                     }
+                    
                 }
-                
 
                 if (x.TransactionType != TransactionType.TX)
                 {
@@ -169,7 +172,7 @@ namespace ReserveBlockCore.Data
                                         AddNewAdnr(x);
                                         break;
                                     case "AdnrTransfer()":
-                                        //TransferAdnr(x);
+                                        TransferAdnr(x);
                                         break;
                                     case "AdnrDelete()":
                                         DeleteAdnr(x);
@@ -266,6 +269,25 @@ namespace ReserveBlockCore.Data
             {
                 ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
             }
+        }
+        private static void TransferAdnr(Transaction tx)
+        {
+            bool complete = false;
+            while(!complete)
+            {
+                var adnrs = Adnr.GetAdnr();
+                if (adnrs != null)
+                {
+                    var adnr = adnrs.FindOne(x => x.Address == tx.FromAddress);
+                    if (adnr != null)
+                    {
+                        adnr.Address = tx.ToAddress;
+                        adnrs.UpdateSafe(adnr);
+                        complete = true;
+                    }
+                }
+            }
+            
         }
 
         private static void DeleteAdnr(Transaction tx)
