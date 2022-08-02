@@ -34,6 +34,16 @@ namespace ReserveBlockCore.Models
             return account;
         }
 
+        public static void EncryptPrivateKey(string privKey)
+        {
+
+        }
+
+        public static void DecryptPrivateKey(string privKey, string key)
+        {
+
+        }
+
         public static async Task AddAdnrToAccount(string address, string name)
         {
             var accounts = AccountData.GetAccounts();
