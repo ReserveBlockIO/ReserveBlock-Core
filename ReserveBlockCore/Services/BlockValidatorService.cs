@@ -285,7 +285,7 @@ namespace ReserveBlockCore.Services
                                             {
                                                 if (function == "AdnrTransfer()")
                                                 {
-                                                    await Account.TransferAdnrToAccount(localTransaction.FromAddress);
+                                                    await Account.TransferAdnrToAccount(localTransaction.FromAddress, localTransaction.ToAddress);
                                                 }
                                             }
                                         }

@@ -66,16 +66,16 @@ namespace ReserveBlockCore.Models
                 accounts.UpdateSafe(account);
             }
         }
-        public static async Task TransferAdnrToAccount(string address)
+        public static async Task TransferAdnrToAccount(string fromAddress, string toAddress)
         {
             var adnrs = Adnr.GetAdnr();
             if(adnrs != null)
             {
-                var adnr = adnrs.FindOne(x => x.Address == address);
+                var adnr = adnrs.FindOne(x => x.Address == fromAddress);
                 if (adnr != null)
                 {
                     var accounts = AccountData.GetAccounts();
-                    var account = accounts.FindOne(x => x.Address == address);
+                    var account = accounts.FindOne(x => x.Address == toAddress);
 
                     if (account != null)
                     {

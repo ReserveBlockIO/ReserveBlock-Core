@@ -630,7 +630,7 @@ namespace ReserveBlockCore.Services
                                     }
 
                                     var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
-                                    if (addressCheck != null)
+                                    if (toAddressCheck != null)
                                     {
                                         return (txResult, "To Address is already associated with a DNR.");
                                     }
