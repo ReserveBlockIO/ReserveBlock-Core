@@ -308,7 +308,7 @@ namespace ReserveBlockCore.Services
                                     }
 
                                     var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
-                                    if (addressCheck != null)
+                                    if (toAddressCheck != null)
                                     {
                                         return txResult;
                                     }
