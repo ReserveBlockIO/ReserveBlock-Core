@@ -71,7 +71,7 @@ namespace ReserveBlockCore.Models
             var adnrs = Adnr.GetAdnr();
             if(adnrs != null)
             {
-                var adnr = adnrs.FindOne(x => x.Address == fromAddress);
+                var adnr = adnrs.FindOne(x => x.Address == toAddress); //state trei has alrea
                 if (adnr != null)
                 {
                     var accounts = AccountData.GetAccounts();
