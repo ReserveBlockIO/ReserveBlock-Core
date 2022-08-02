@@ -16,7 +16,6 @@ namespace ReserveBlockCore.Utilities
             
             Console.WriteLine("End.");
         }
-
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();

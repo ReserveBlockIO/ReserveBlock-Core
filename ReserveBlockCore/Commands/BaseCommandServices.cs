@@ -39,6 +39,43 @@ namespace ReserveBlockCore.Commands
             }
             
         }
+        public static async void PrintKeys()
+        {
+            var accounts = AccountData.GetAccounts();
+
+            var accountList = accounts.FindAll().ToList();
+
+            if (accountList.Count() > 0)
+            {
+                Console.Clear();
+                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+                AnsiConsole.Write(
+                new FigletText("RBX Private Keys")
+                .Centered()
+                .Color(Color.Green));
+
+                var table = new Table();
+
+                table.Title("[yellow]RBX Wallet Commands[/]").Centered();
+                table.AddColumn(new TableColumn(new Panel("Address")));
+                table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
+
+                accountList.ForEach(x => {
+                    table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.PrivateKey}[/]");
+                });
+
+                table.Border(TableBorder.Rounded);
+
+                AnsiConsole.Write(table);
+            }
+            else
+            {
+
+            }
+        }
+
+
 
         public static async void AddPeer()
         {
@@ -736,7 +773,10 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/switchbeacon[/]", "[green]This will turn a beacon on and off.[/]");
             table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Program.WalletUnlockTime} minutes.[/]");
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
-            table.AddRow("[blue]/CreateDnr[/]", "[green]Creates an address domain name registrar.[/]");
+            table.AddRow("[blue]/creatednr[/]", "[green]Creates an address domain name registrar.[/]");
+            table.AddRow("[blue]/deletednr[/]", "[green]Deletes a domain name registrar.[/]");
+            table.AddRow("[blue]/transferdnr[/]", "[green]transfers a domain name registrar.[/]");
+            table.AddRow("[blue]/printkeys[/]", "[green]Prints all private keys associated to a wallet.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");

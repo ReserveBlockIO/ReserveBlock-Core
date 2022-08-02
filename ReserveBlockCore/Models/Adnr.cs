@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Models
             string strResult = "";
 
             var adnr = GetAdnr();
-            var adnrExist = adnr.FindOne(x => x.Name == addr);
+            var adnrExist = adnr.FindOne(x => x.Name == addr.ToLower());
             if (adnrExist != null)
             {
                 strResult = adnrExist.Address;
@@ -74,6 +74,7 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
+                    adnrData.Name = adnrData.Name.ToLower();//save as a lower so when we query later
                     adnr.InsertSafe(adnrData);
                 }
             }

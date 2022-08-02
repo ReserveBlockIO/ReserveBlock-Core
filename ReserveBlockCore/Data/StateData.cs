@@ -282,6 +282,7 @@ namespace ReserveBlockCore.Data
                     if (adnr != null)
                     {
                         adnr.Address = tx.ToAddress;
+                        adnr.TxHash = tx.Hash;
                         adnrs.UpdateSafe(adnr);
                         complete = true;
                     }
