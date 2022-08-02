@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Nodes
             bool alreadyCalled = false;
 
             List<Peers> peers = new List<Peers>();
-            peers = Peers.GetAll().FindAll().ToList();
+            peers = Peers.GetAll().Find(x => true, 0, 9).ToList();
 
             if(peers.Count == 0)
             {

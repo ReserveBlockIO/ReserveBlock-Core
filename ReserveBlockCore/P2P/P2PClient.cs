@@ -15,49 +15,24 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.P2P
 {
-    public class P2PClient
+    public class P2PClient : IAsyncDisposable, IDisposable
     {
         #region Static Variables
-        public static List<Peers>? ActivePeerList { get; set; }
-        public static List<string> ReportedIPs = new List<string>();
+        public const int MaxPeers = 8;
+        public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static long LastSentBlockHeight = -1;
         public static DateTime? AdjudicatorConnectDate = null;
         public static DateTime? LastTaskSentTime = null;
         public static DateTime? LastTaskResultTime = null;
         public static long LastTaskBlockHeight = 0;
         public static bool LastTaskError = false;
-        public static Dictionary<int, string>? NodeDict { get; set; }
-
         #endregion
 
-        #region HubConnection Variables
-        /// <summary>
-        /// Below are reserved for peers to download blocks and share mempool tx's.
-        /// </summary>
-        /// 
-        private static Dictionary<string, bool> HubList = new Dictionary<string, bool>();
-
-        private static HubConnection? hubConnection1;
-        public static bool IsConnected1 => hubConnection1?.State == HubConnectionState.Connected;
-
-        private static HubConnection? hubConnection2;
-        public static bool IsConnected2 => hubConnection2?.State == HubConnectionState.Connected;
-
-        private static HubConnection? hubConnection3;
-        public static bool IsConnected3 => hubConnection3?.State == HubConnectionState.Connected;
-
-        private static HubConnection? hubConnection4;
-        public static bool IsConnected4 => hubConnection4?.State == HubConnectionState.Connected;
-
-        private static HubConnection? hubConnection5;
-        public static bool IsConnected5 => hubConnection5?.State == HubConnectionState.Connected;
-
-        private static HubConnection? hubConnection6;
-        public static bool IsConnected6 => hubConnection6?.State == HubConnectionState.Connected;
-
+        #region HubConnection Variables        
         /// <summary>
         /// Below are reserved for adjudicators to open up communications fortis pool participation and block solving.
         /// </summary>
@@ -71,459 +46,146 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Available HubConnections for Peers
-        private static async Task<int> GetAvailablePeerHubs()
-        {
-            if (hubConnection1 == null || !IsConnected1)
-            {
-                hubConnection1 = null;
-                return (1);
-            }
-            if (hubConnection2 == null || !IsConnected2)
-            {
-                hubConnection2 = null;
-                return (2);
-            }
-            if (hubConnection3 == null || !IsConnected3)
-            {
-                hubConnection3 = null;
-                return (3);
-            }
-            if (hubConnection4 == null || !IsConnected4)
-            {
-                hubConnection4 = null;
-                return (4);
-            }
-            if (hubConnection5 == null || !IsConnected5)
-            {
-                hubConnection5 = null;
-                return (5);
-            }
-            if (hubConnection6 == null || !IsConnected6)
-            {
-                hubConnection6 = null;
-                return (6);
-            }
 
-            return (0);
+        public static bool IsConnected(NodeInfo node)
+        {            
+            return node.Connection.State == HubConnectionState.Connected;            
+        }
+        private static async Task RemoveNode(NodeInfo node)
+        {            
+            Program.Nodes.TryRemove(node.NodeIP, out NodeInfo test);
+            await node.Connection.DisposeAsync();            
         }
 
         #endregion
 
         #region Check which HubConnections are actively connected
-        public static async Task<(bool, int)> ArePeersConnected()
+
+        public static async Task<bool> ArePeersConnected()
         {
-            var nodes = Program.Nodes;
-            var nodeList = nodes.ToList();
-            var result = false;
-            var resultCount = 0;
-            if (hubConnection1 != null && IsConnected1)
+            await DropDisconnectedPeers();
+            return Program.Nodes.Any();
+        }
+        public static async Task DropDisconnectedPeers()
+        {
+            foreach (var node in Program.Nodes.Values)
             {
-                result = true;
-                resultCount += 1;
+                if(!IsConnected(node))                
+                    await RemoveNode(node);
             }
-            else
-            {
-                hubConnection1 = null;
-                var nodeInfo = NodeDict[1];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    NodeDict[1] = null;
-                }
-            }
-            if (hubConnection2 != null && IsConnected2)
-            {
-                result = true;
-                resultCount += 1;
-            }
-            else
-            {
-                hubConnection2 = null;
-                var nodeInfo = NodeDict[2];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    NodeDict[2] = null;
-                }
-            }
-            if (hubConnection3 != null && IsConnected3)
-            {
-                result = true;
-                resultCount += 1;
-            }
-            else
-            {
-                hubConnection3 = null;
-                var nodeInfo = NodeDict[3];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    NodeDict[3] = null;
-                }
-            }
-            if (hubConnection4 != null && IsConnected4)
-            {
-                result = true;
-                resultCount += 1;
-            }
-            else
-            {
-                hubConnection4 = null;
-                var nodeInfo = NodeDict[4];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    NodeDict[4] = null;
-                }
-            }
-            if (hubConnection5 != null && IsConnected5)
-            {
-                result = true;
-                resultCount += 1;
-            }
-            else
-            {
-                hubConnection5 = null;
-                var nodeInfo = NodeDict[5];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    NodeDict[5] = null;
-                }
-            }
-            if (hubConnection6 != null && IsConnected6)
-            {
-                result = true;
-                resultCount += 1;
-            }
-            else
-            {
-                hubConnection6 = null;
-                var nodeInfo = NodeDict[6];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    NodeDict[6] = null;
-                }
-            }
+        }
 
-            //if(result == false)
-            //{
-            //    //attempt to reconnect to peers.
-            //    await StartupService.StartupPeers();
-            //}
-
-            return (result, resultCount);
+        public static string MostLikelyIP()
+        {
+            return ReportedIPs.Count != 0 ? 
+                ReportedIPs.OrderByDescending(y => y.Value).Select(y => y.Key).First() : "NA";
         }
 
         #endregion
 
         #region Hub Dispose
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
         public async ValueTask DisposeAsync()
         {
-            if (hubConnection1 != null)
+            await DisposeAsyncCore().ConfigureAwait(false);
+
+            Dispose(disposing: false);
+            #pragma warning disable CA1816
+            GC.SuppressFinalize(this);
+            #pragma warning restore CA1816
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
             {
-                await hubConnection1.DisposeAsync();
+                foreach(var node in Program.Nodes.Values)
+                    node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();                
             }
-            if (hubConnection2 != null)
-            {
-                await hubConnection2.DisposeAsync();
-            }
-            if (hubConnection3 != null)
-            {
-                await hubConnection3.DisposeAsync();
-            }
-            if (hubConnection4 != null)
-            {
-                await hubConnection4.DisposeAsync();
-            }
-            if (hubConnection5 != null)
-            {
-                await hubConnection5.DisposeAsync();
-            }
-            if (hubConnection6 != null)
-            {
-                await hubConnection6.DisposeAsync();
-            }
+        }
+
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            foreach (var node in Program.Nodes.Values)
+                await node.Connection.DisposeAsync();
         }
 
         #endregion
 
         #region Hubconnection Connect Methods 1-6
-        private static async Task<bool> Connect(int HubNum, string url)
+        private static async Task<bool> Connect(string url)
         {
-            List<string> ipList = new List<string>();
-
-            if(ReportedIPs.Count() > 12)
+            try
             {
-                var reportedIPs = ReportedIPs.Take(6);
-                ReportedIPs.Clear();
-                ReportedIPs.TrimExcess();
-                ReportedIPs = new List<string>();
-                ReportedIPs.AddRange(reportedIPs);
-            }
+                var hubConnection = new HubConnectionBuilder()
+                       .WithUrl(url, options =>
+                       {
 
-            ipList = ReportedIPs;
+                       })
+                       .WithAutomaticReconnect()
+                       .Build();
 
-            if (HubNum == 1)
-            {
-                try
+                hubConnection.On<string, string>("GetMessage", async (message, data) =>
                 {
-                    hubConnection1 = new HubConnectionBuilder()
-                    .WithUrl(url, options => {
-   
-                    })
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                    hubConnection1.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
+                    var bob = url;
+                    if (message == "tx" || message == "blk" || message == "val" || message == "IP")
+                    {
+                        if (message != "IP")
                         {
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data);
-                            }
-                            else
-                            {
-                                ipList.Add(data.ToString());
-                                ReportedIPs = ipList;
-                            }
+                            await NodeDataProcessor.ProcessData(message, data);
                         }
-
-                    });
-
-
-                    hubConnection1.StartAsync().Wait();
-
-
-                    NodeDict[1] = url.Replace("http://", "").Replace("/blockchain", "");
-
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    return false;
-                }
-            }
-            else if (HubNum == 2)
-            {
-                try
-                {
-                    hubConnection2 = new HubConnectionBuilder()
-                    .WithUrl(url, options => {
-
-                    })
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                    hubConnection2.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
+                        else
                         {
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data);
-                            }
+                            var IP = data.ToString();
+                            if (ReportedIPs.TryGetValue(IP, out int Occurrences))
+                                ReportedIPs[IP]++;
                             else
-                            {
-                                ipList.Add(data.ToString());
-                                ReportedIPs = ipList;
-                            }
+                                ReportedIPs[IP] = 1;                                                        
                         }
-                    });
+                    }
 
-                    hubConnection2.StartAsync().Wait();
+                });
 
-                    NodeDict[2] = url.Replace("http://", "").Replace("/blockchain", "");
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    var capExcept = ex;
+                await hubConnection.StartAsync();
+                if (hubConnection.ConnectionId == null)
                     return false;
+
+                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "").Replace(":3338", "");
+
+                var startTimer = DateTime.UtcNow;
+                long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
+                var endTimer = DateTime.UtcNow;
+                var totalMS = (endTimer - startTimer).Milliseconds;
+
+                var result = Program.Nodes.TryAdd(IPAddress, new NodeInfo
+                {
+                    Connection = hubConnection,
+                    NodeIP = IPAddress,
+                    NodeHeight = remoteNodeHeight,
+                    NodeLastChecked = startTimer,
+                    NodeLatency = totalMS
+                });
+
+                if(!result)
+                {
+                    var node = Program.Nodes[IPAddress];
+                    node.NodeLatency = totalMS;
+                    node.NodeLastChecked = startTimer;
+                    node.NodeHeight = remoteNodeHeight;
+                    node.NodeIP = IPAddress;
+                    node.Connection = hubConnection;
                 }
 
+                return true;
             }
-            else if (HubNum == 3)
-            {
-                try
-                {
-                    hubConnection3 = new HubConnectionBuilder()
-                    .WithUrl(url, options => {
-
-                    })
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                    hubConnection3.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
-                        {
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data);
-                            }
-                            else
-                            {
-                                ipList.Add(data.ToString());
-                                ReportedIPs = ipList;
-                            }
-                        }
-                    });
-
-
-                    hubConnection3.StartAsync().Wait();
-
-                    NodeDict[3] = url.Replace("http://", "").Replace("/blockchain", "");
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    return false;
-                }
-            }
-            else if (HubNum == 4)
-            {
-                try
-                {
-                    hubConnection4 = new HubConnectionBuilder()
-                    .WithUrl(url, options => {
-
-                    })
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                    hubConnection4.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
-                        {
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data);
-                            }
-                            else
-                            {
-                                ipList.Add(data.ToString());
-                                ReportedIPs = ipList;
-                            }
-                        }
-                    });
-
-
-                    hubConnection4.StartAsync().Wait();
-
-                    NodeDict[4] = url.Replace("http://", "").Replace("/blockchain", "");
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    return false;
-                }
-            }
-            else if (HubNum == 5)
-            {
-                try
-                {
-                    hubConnection5 = new HubConnectionBuilder()
-                    .WithUrl(url, options => {
-
-                    })
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                    hubConnection5.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
-                        {
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data);
-                            }
-                            else
-                            {
-                                ipList.Add(data.ToString());
-                                ReportedIPs = ipList;
-                            }
-                        }
-                    });
-
-
-                    hubConnection5.StartAsync().Wait();
-
-                    NodeDict[5] = url.Replace("http://", "").Replace("/blockchain", "");
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    return false;
-                }
-            }
-            else if (HubNum == 6)
-            {
-                try
-                {
-                    hubConnection6 = new HubConnectionBuilder()
-                    .WithUrl(url, options => {
-
-                    })
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                    hubConnection6.On<string, string>("GetMessage", async (message, data) => {
-                        if (message == "tx" || message == "blk" || message == "val" || message == "IP")
-                        {
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data);
-                            }
-                            else
-                            {
-                                ipList.Add(data.ToString());
-                                ReportedIPs = ipList;
-                            }
-                        }
-                    });
-
-
-                    hubConnection6.StartAsync().Wait();
-
-                    NodeDict[6] = url.Replace("http://", "").Replace("/blockchain", "");
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    return false;
-                }
-            }
+            catch { }
 
             return false;
-
         }
 
         #endregion
@@ -598,7 +260,7 @@ namespace ReserveBlockCore.P2P
                     }
                 });
 
-                hubAdjConnection1.StartAsync().Wait();
+                await hubAdjConnection1.StartAsync();
 
             }
             catch (Exception ex)
@@ -610,101 +272,76 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Disconnect Adjudicator
+        public static async Task DisconnectAdjudicator()
+        {
+            try
+            {
+                Program.ValidatorAddress = "";
+                if (hubAdjConnection1 != null)
+                {
+                    if(IsAdjConnected1)
+                    {
+                        await hubAdjConnection1.DisposeAsync();
+                        ConsoleWriterService.Output($"Success! Disconnected from Adjudicator on: {DateTime.Now}");
+                        ValidatorLogUtility.Log($"Success! Disconnected from Adjudicator on: {DateTime.Now}", "DisconnectAdjudicator()");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.Message, "DisconnectAdjudicator()");
+            }
+        }
+
+
+        #endregion
+
         #region Connect to Peers
         public static async Task<bool> ConnectToPeers()
         {
-            //List<Peers> peers = new List<Peers>();
-            var nodes = Program.Nodes.ToList();
-            //peers = Peers.PeerList();
-
-            int successCount = 0;
-
+            await NodeConnector.StartNodeConnecting();
             var peerDB = Peers.GetAll();
-            if(peerDB != null)
+
+            await DropDisconnectedPeers();
+            if (Program.Nodes.Count == MaxPeers)
+                return true;
+            var CurrentPeersIPs = new HashSet<string>(Program.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")));
+
+            Random rnd = new Random();
+            var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
+                .Where(x => !CurrentPeersIPs.Contains(x.PeerIP))
+                .ToArray()
+                .OrderBy(x => rnd.Next())                
+                .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
+                .Where(x => !CurrentPeersIPs.Contains(x.PeerIP))
+                .ToArray()
+                .OrderBy(x => rnd.Next()))                
+                .ToArray();
+
+            var NodeCount = Program.Nodes.Count;
+            foreach(var peer in newPeers)
             {
-                var peers = peerDB.FindAll();
+                if (NodeCount == MaxPeers)
+                    break;
 
-                if (peers.Count() == 0)
+                var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
+                var conResult = await Connect(url);
+                if (conResult != false)
                 {
-                    await NodeConnector.StartNodeConnecting();
-                    peerDB = Peers.GetAll();
-                    peers = peerDB.FindAll();
+                    NodeCount++;
+                    peer.IsOutgoing = true;
+                    peer.FailCount = 0; //peer responded. Reset fail count
+                    peerDB.UpdateSafe(peer);
                 }
-
-                if (peers.Count() > 0)
+                else
                 {
-                    if (peers.Count() > 6) //if peer db larger than 8 records get only 8 and use those records. we only start with low fail count.
-                    {
-                        Random rnd = new Random();
-                        var peerList = peers.Where(x => x.FailCount <= 1 && x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(6).ToList();
-                        if (peerList.Count() >= 6)
-                        {
-                            peers = peerList;
-                        }
-                        else
-                        {
-                            peers = peers.Where(x => x.IsOutgoing == true).OrderBy(x => rnd.Next()).Take(6).ToList();
-                            if(peers.Count() < 6)
-                            {
-                                var count = 6 - peers.Count();
-                                var peersAll = peers.Where(x => x.IsOutgoing == false).OrderBy(x => rnd.Next()).Take(count).ToList();
-                                peersAll.AddRange(peers);
-                                peers = peersAll;
-                            }
-                        }
-
-                    }
-                    else
-                    {
-
-                    }
-                    foreach (var peer in peers)
-                    {
-
-                        var hubCon = await GetAvailablePeerHubs();
-                        if (hubCon == 0)
-                            return false;
-                        try
-                        {
-                            var urlCheck = peer.PeerIP + ":" + Program.Port;
-                            var nodeExist = nodes.Exists(x => x.NodeIP == urlCheck);
-
-                            if (!nodeExist)
-                            {
-                                //Console.Write("Peer found, attempting to connect to: " + peer.PeerIP);
-                                var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
-                                var conResult = await Connect(hubCon, url);
-                                if (conResult != false)
-                                {
-                                    successCount += 1;
-                                    peer.IsOutgoing = true;
-                                    peer.FailCount = 0; //peer responded. Reset fail count
-                                    peerDB.UpdateSafe(peer);
-                                }
-                                else
-                                {
-                                    //peer.FailCount += 1;
-                                    //peerDB.UpdateSafe(peer);
-                                }
-                            }
-
-
-                        }
-                        catch (Exception ex)
-                        {
-                            //peer did not response correctly or at all
-                            //Need to track peers that fail, but in memory.
-                        }
-
-                    }
-                    if (successCount > 0)
-
-                        return true;
+                    //peer.FailCount += 1;
+                    //peerDB.UpdateSafe(peer);
                 }
             }
-            
-
-            return false;
+                                 
+            return NodeCount != 0;
         }
 
         public static async Task<bool> PingBackPeer(string peerIP)
@@ -714,7 +351,7 @@ namespace ReserveBlockCore.P2P
                 var url = "http://" + peerIP + ":" + Program.Port + "/blockchain";
                 var connection = new HubConnectionBuilder().WithUrl(url).Build();
                 string response = "";
-                connection.StartAsync().Wait();
+                await connection.StartAsync();
                 response = await connection.InvokeAsync<string>("PingBackPeer");
 
                 if (response == "HelloBackPeer")
@@ -871,128 +508,28 @@ namespace ReserveBlockCore.P2P
             List<Block> blocks = new List<Block>();
             var peersConnected = await ArePeersConnected();
 
-            if (peersConnected.Item1 == false)
+            if (!peersConnected)
             {
                 //Need peers
                 return blocks;
             }
             else
             {
-                try
+                foreach(var node in Program.Nodes.Values)
                 {
-                    if (hubConnection1 != null && IsConnected1)
+                    try
                     {
-                        nBlock = await hubConnection1.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
+                        nBlock = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
+                        if (nBlock != null && !blocks.Exists(x => x.Height == nBlock.Height))
                         {
                             blocks.Add(nBlock);
-                            currentBlock += 1;
+                            currentBlock++;
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2)
+                    catch (Exception ex)
                     {
-                        nBlock = await hubConnection2.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height))
-                            {
-                                blocks.Add(nBlock);
-                                currentBlock += 1;
-                            }
-                        }
-
+                        //possible dead connection, or node is offline
                     }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
-                    {
-                        nBlock = await hubConnection3.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height))
-                            {
-                                blocks.Add(nBlock);
-                                currentBlock += 1;
-                            }
-
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
-                    {
-                        nBlock = await hubConnection4.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height))
-                            {
-                                blocks.Add(nBlock);
-                                currentBlock += 1;
-                            }
-
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
-                    {
-                        nBlock = await hubConnection5.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height))
-                            {
-                                blocks.Add(nBlock);
-                                currentBlock += 1;
-                            }
-
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                }
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
-                    {
-                        nBlock = await hubConnection6.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { currentBlock });
-                        if (nBlock != null)
-                        {
-                            if (!blocks.Exists(x => x.Height == nBlock.Height))
-                            {
-                                blocks.Add(nBlock);
-                                currentBlock += 1;
-                            }
-
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
                 }
 
                 return blocks;
@@ -1004,303 +541,25 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Height of Nodes for Timed Events
-        public static async Task<bool> GetNodeHeight()
-        {
-            Dictionary<string, long> nodeHeightDict = new Dictionary<string, long>();
-            var nodes = Program.Nodes;
-            var nodeList = nodes.ToList();
-            var peersConnected = await P2PClient.ArePeersConnected();
-            bool result = false;
-            if (peersConnected.Item1 == false)
-            {
-                //Need peers
-                return result;
-            }
-            else
-            {
-                try
-                {
-                    if (hubConnection1 != null && IsConnected1)
-                    {
-                        var startTimer = DateTime.UtcNow;
-                        long remoteNodeHeight = await hubConnection1.InvokeAsync<long>("SendBlockHeight");
-                        var endTimer = DateTime.UtcNow;
-                        var totalMS = (endTimer - startTimer).Milliseconds;
 
-                        var nodeInfo = NodeDict[1];
-
-                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
-
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            node.NodeLastChecked = DateTime.UtcNow;
-                            node.NodeLatency = totalMS;
-                            node.NodeHeight = remoteNodeHeight;
-                        }
-                        else
-                        {
-                            NodeInfo nNodeInfo = new NodeInfo {
-                                NodeHeight = remoteNodeHeight,
-                                NodeLatency = totalMS,
-                                NodeIP = nodeInfo,
-                                NodeLastChecked = DateTime.UtcNow
-                            };
-
-                            Program.Nodes.Add(nNodeInfo);
-                        }
-
-                        result = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                    HandleDisconnectedNode(1, hubConnection1);
-                }
-
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2)
-                    {
-                        var startTimer = DateTime.UtcNow;
-                        long remoteNodeHeight = await hubConnection2.InvokeAsync<long>("SendBlockHeight");
-                        var endTimer = DateTime.UtcNow;
-                        var totalMS = (endTimer - startTimer).Milliseconds;
-
-                        var nodeInfo = NodeDict[2];
-
-                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
-
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            node.NodeLastChecked = DateTime.UtcNow;
-                            node.NodeLatency = totalMS;
-                            node.NodeHeight = remoteNodeHeight;
-                        }
-                        else
-                        {
-                            NodeInfo nNodeInfo = new NodeInfo
-                            {
-                                NodeHeight = remoteNodeHeight,
-                                NodeLatency = totalMS,
-                                NodeIP = nodeInfo,
-                                NodeLastChecked = DateTime.UtcNow
-                            };
-
-                            Program.Nodes.Add(nNodeInfo);
-                        }
-
-                        result = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                    HandleDisconnectedNode(2, hubConnection2);
-                }
-
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
-                    {
-                        var startTimer = DateTime.UtcNow;
-                        long remoteNodeHeight = await hubConnection3.InvokeAsync<long>("SendBlockHeight");
-                        var endTimer = DateTime.UtcNow;
-                        var totalMS = (endTimer - startTimer).Milliseconds;
-
-                        var nodeInfo = NodeDict[3];
-
-                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
-
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            node.NodeLastChecked = DateTime.UtcNow;
-                            node.NodeLatency = totalMS;
-                            node.NodeHeight = remoteNodeHeight;
-                        }
-                        else
-                        {
-                            NodeInfo nNodeInfo = new NodeInfo
-                            {
-                                NodeHeight = remoteNodeHeight,
-                                NodeLatency = totalMS,
-                                NodeIP = nodeInfo,
-                                NodeLastChecked = DateTime.UtcNow
-                            };
-
-                            Program.Nodes.Add(nNodeInfo);
-                        }
-
-                        result = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                    HandleDisconnectedNode(3, hubConnection3);
-                }
-
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
-                    {
-                        var startTimer = DateTime.UtcNow;
-                        long remoteNodeHeight = await hubConnection4.InvokeAsync<long>("SendBlockHeight");
-                        var endTimer = DateTime.UtcNow;
-                        var totalMS = (endTimer - startTimer).Milliseconds;
-
-                        var nodeInfo = NodeDict[4];
-
-                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
-
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            node.NodeLastChecked = DateTime.UtcNow;
-                            node.NodeLatency = totalMS;
-                            node.NodeHeight = remoteNodeHeight;
-                        }
-                        else
-                        {
-                            NodeInfo nNodeInfo = new NodeInfo
-                            {
-                                NodeHeight = remoteNodeHeight,
-                                NodeLatency = totalMS,
-                                NodeIP = nodeInfo,
-                                NodeLastChecked = DateTime.UtcNow
-                            };
-
-                            Program.Nodes.Add(nNodeInfo);
-                        }
-
-                        result = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                    HandleDisconnectedNode(4, hubConnection4);
-                }
-
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
-                    {
-                        var startTimer = DateTime.UtcNow;
-                        long remoteNodeHeight = await hubConnection5.InvokeAsync<long>("SendBlockHeight");
-                        var endTimer = DateTime.UtcNow;
-                        var totalMS = (endTimer - startTimer).Milliseconds;
-
-                        var nodeInfo = NodeDict[5];
-
-                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
-
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            node.NodeLastChecked = DateTime.UtcNow;
-                            node.NodeLatency = totalMS;
-                            node.NodeHeight = remoteNodeHeight;
-                        }
-                        else
-                        {
-                            NodeInfo nNodeInfo = new NodeInfo
-                            {
-                                NodeHeight = remoteNodeHeight,
-                                NodeLatency = totalMS,
-                                NodeIP = nodeInfo,
-                                NodeLastChecked = DateTime.UtcNow
-                            };
-
-                            Program.Nodes.Add(nNodeInfo);
-                        }
-
-                        result = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                    HandleDisconnectedNode(5, hubConnection5);
-                }
-
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
-                    {
-                        var startTimer = DateTime.UtcNow;
-                        long remoteNodeHeight = await hubConnection6.InvokeAsync<long>("SendBlockHeight");
-                        var endTimer = DateTime.UtcNow;
-                        var totalMS = (endTimer - startTimer).Milliseconds;
-
-                        var nodeInfo = NodeDict[6];
-
-                        nodeHeightDict.Add(nodeInfo, remoteNodeHeight);
-
-                        var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault();
-                        if (node != null)
-                        {
-                            node.NodeLastChecked = DateTime.UtcNow;
-                            node.NodeLatency = totalMS;
-                            node.NodeHeight = remoteNodeHeight;
-                        }
-                        else
-                        {
-                            NodeInfo nNodeInfo = new NodeInfo
-                            {
-                                NodeHeight = remoteNodeHeight,
-                                NodeLatency = totalMS,
-                                NodeIP = nodeInfo,
-                                NodeLastChecked = DateTime.UtcNow
-                            };
-
-                            Program.Nodes.Add(nNodeInfo);
-                        }
-
-                        result = true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                    HandleDisconnectedNode(6, hubConnection6);
-                }
-
-            }
-
-            return result;
-        }
-
-        #endregion
-
-        #region HandleDisconnectedNode
-        private static void HandleDisconnectedNode(int nodeNum, HubConnection? _hubConnection)
+        public static async Task<(long, DateTime, int)> GetNodeHeight(NodeInfo node)
         {
             try
             {
-                var nodes = Program.Nodes;
-                var nodeList = nodes.ToList();
+                var startTimer = DateTime.UtcNow;
+                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
+                var endTimer = DateTime.UtcNow;
+                var totalMS = (endTimer - startTimer).Milliseconds;
 
-                var nodeInfo = NodeDict[nodeNum];
-                if (nodeInfo != null)
-                {
-                    var node = nodeList.Where(x => x.NodeIP == nodeInfo).FirstOrDefault(); //null error happened here meaning nodeList was null
-                    if (node != null)
-                    {
-                        Program.Nodes.Remove(node);
-                    }
-                    _hubConnection = null;
-                    NodeDict[nodeNum] = null;
-                }
+                return (remoteNodeHeight, startTimer, totalMS); ;
             }
-            catch (Exception ex)
-            {
-                string errorMsg = string.Format("Error handling disconnected node: {0}. Error Message: {1}", nodeNum.ToString(), ex.Message);
-                ErrorLogUtility.LogError(errorMsg, "P2PClient.HandleDisconnectedNode()");
-            }
+            catch { }
+            return default;
+        }
+        public static async Task UpdateNodeHeights()
+        {
+            foreach (var node in Program.Nodes.Values)                
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);           
         }
 
         #endregion
@@ -1313,9 +572,8 @@ namespace ReserveBlockCore.P2P
 
             var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1 == false)
-            {
-                //Need peers
+            if (!peersConnected)
+            {                
                 return (newHeightFound, height);
             }
             else
@@ -1327,132 +585,20 @@ namespace ReserveBlockCore.P2P
 
                 long myHeight = Program.BlockHeight;
 
-                try
+                await UpdateNodeHeights();
+
+                foreach (var node in Program.Nodes.Values)
                 {
-                    if (hubConnection1 != null && IsConnected1)
+                    var remoteNodeHeight = node.NodeHeight;
+                    if (myHeight < remoteNodeHeight)
                     {
-                        long remoteNodeHeight = await hubConnection1.InvokeAsync<long>("SendBlockHeight");
-
-                        if (myHeight < remoteNodeHeight)
+                        newHeightFound = true;
+                        if (remoteNodeHeight > height)
                         {
-                            newHeightFound = true;
-                            height = remoteNodeHeight;
-                        }
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2)
-                    {
-                        long remoteNodeHeight = await hubConnection2.InvokeAsync<long>("SendBlockHeight");
-
-                        if (myHeight < remoteNodeHeight)
-                        {
-                            newHeightFound = true;
-                            if (remoteNodeHeight > height)
-                            {
-                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                            }
-
-                        }
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
-                    {
-                        long remoteNodeHeight = await hubConnection3.InvokeAsync<long>("SendBlockHeight");
-
-                        if (myHeight < remoteNodeHeight)
-                        {
-                            newHeightFound = true;
-                            if (remoteNodeHeight > height)
-                            {
-                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                            }
+                            height = remoteNodeHeight > height ? remoteNodeHeight : height;
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
-                    {
-                        long remoteNodeHeight = await hubConnection4.InvokeAsync<long>("SendBlockHeight");
-
-                        if (myHeight < remoteNodeHeight)
-                        {
-                            newHeightFound = true;
-                            if (remoteNodeHeight > height)
-                            {
-                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
-                    {
-                        long remoteNodeHeight = await hubConnection5.InvokeAsync<long>("SendBlockHeight");
-
-                        if (myHeight < remoteNodeHeight)
-                        {
-                            newHeightFound = true;
-                            if (remoteNodeHeight > height)
-                            {
-                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
-                    {
-                        long remoteNodeHeight = await hubConnection6.InvokeAsync<long>("SendBlockHeight");
-
-                        if (myHeight < remoteNodeHeight)
-                        {
-                            newHeightFound = true;
-                            if (remoteNodeHeight > height)
-                            {
-                                height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                            }
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
             }
             return (newHeightFound, height);
         }
@@ -1687,7 +833,7 @@ namespace ReserveBlockCore.P2P
 
             int foundBeaconCount = 0;
 
-            if (peersConnected.Item1 == false)
+            if (!peersConnected)
             {
                 //Need peers
                 ErrorLogUtility.LogError("You are not connected to any nodes", "P2PClient.GetBeacons()");
@@ -1696,116 +842,15 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                try
+                foreach(var node in Program.Nodes.Values)
                 {
-                    if(foundBeaconCount < 2)
+                    string beaconInfo = await node.Connection.InvokeAsync<string>("SendBeaconInfo");
+                    if (beaconInfo != "NA")
                     {
-                        if (hubConnection1 != null && IsConnected1)
-                        {
-                            string beaconInfo = await hubConnection1.InvokeAsync<string>("SendBeaconInfo");
-                            if (beaconInfo != "NA")
-                            {
-                                NFTLogUtility.Log("Beacon Found on hub 1", "P2PClient.GetBeacons()");
-                                BeaconList.Add(beaconInfo);
-                                foundBeaconCount += 1;
-                            }
-                        }
+                        NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
+                        BeaconList.Add(beaconInfo);
+                        foundBeaconCount++;
                     }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2 && foundBeaconCount < 2)
-                    {
-                        string beaconInfo = await hubConnection2.InvokeAsync<string>("SendBeaconInfo");
-                        if (beaconInfo != "NA")
-                        {
-                            NFTLogUtility.Log("Beacon Found on hub 2", "P2PClient.GetBeacons()");
-                            BeaconList.Add(beaconInfo);
-                            foundBeaconCount += 1;
-                        }
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3 && foundBeaconCount < 2)
-                    {
-                        string beaconInfo = await hubConnection3.InvokeAsync<string>("SendBeaconInfo");
-                        if (beaconInfo != "NA")
-                        {
-                            NFTLogUtility.Log("Beacon Found on hub 3", "P2PClient.GetBeacons()");
-                            BeaconList.Add(beaconInfo);
-                            foundBeaconCount += 1;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4 && foundBeaconCount < 2)
-                    {
-                        string beaconInfo = await hubConnection4.InvokeAsync<string>("SendBeaconInfo");
-                        if (beaconInfo != "NA")
-                        {
-                            NFTLogUtility.Log("Beacon Found on hub 4", "P2PClient.GetBeacons()");
-                            BeaconList.Add(beaconInfo);
-                            foundBeaconCount += 1;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5 && foundBeaconCount < 2)
-                    {
-                        string beaconInfo = await hubConnection5.InvokeAsync<string>("SendBeaconInfo");
-                        if (beaconInfo != "NA")
-                        {
-                            NFTLogUtility.Log("Beacon Found on hub 5", "P2PClient.GetBeacons()");
-                            BeaconList.Add(beaconInfo);
-                            foundBeaconCount += 1;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6 && foundBeaconCount < 2)
-                    {
-                        string beaconInfo = await hubConnection6.InvokeAsync<string>("SendBeaconInfo");
-                        if (beaconInfo != "NA")
-                        {
-                            NFTLogUtility.Log("Beacon Found on hub 6", "P2PClient.GetBeacons()");
-                            BeaconList.Add(beaconInfo);
-                            foundBeaconCount += 1;
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
                 }
 
                 if(foundBeaconCount == 0)
@@ -1828,7 +873,7 @@ namespace ReserveBlockCore.P2P
 
             var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1 == false)
+            if (!peersConnected)
             {
                 //Need peers
                 return null;
@@ -1842,37 +887,11 @@ namespace ReserveBlockCore.P2P
 
                 long myHeight = Program.BlockHeight;
 
-                try
+                foreach(var node in Program.Nodes.Values)
                 {
-                    if (hubConnection1 != null && IsConnected1)
+                    try
                     {
-                        var leadAdjudictor = await hubConnection1.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
-
-                        if (leadAdjudictor != null)
-                        {
-                            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
-                            if(adjudicators != null)
-                            {
-                                var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
-                                if(lAdj == null)
-                                {
-                                    adjudicators.InsertSafe(leadAdjudictor);
-                                    LeadAdj = leadAdjudictor;
-                                }
-                            }
-                        }
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2)
-                    {
-                        var leadAdjudictor = await hubConnection2.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
+                        var leadAdjudictor = await node.Connection.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
 
                         if (leadAdjudictor != null)
                         {
@@ -1886,120 +905,13 @@ namespace ReserveBlockCore.P2P
                                     LeadAdj = leadAdjudictor;
                                 }
                             }
-                        }
-
+                        }                        
                     }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
+                    catch (Exception ex)
                     {
-                        var leadAdjudictor = await hubConnection3.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
-
-                        if (leadAdjudictor != null)
-                        {
-                            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
-                            if (adjudicators != null)
-                            {
-                                var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
-                                if (lAdj == null)
-                                {
-                                    adjudicators.InsertSafe(leadAdjudictor);
-                                    LeadAdj = leadAdjudictor;
-                                }
-                            }
-                        }
+                        //node is offline
                     }
                 }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
-                    {
-                        var leadAdjudictor = await hubConnection4.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
-
-                        if (leadAdjudictor != null)
-                        {
-                            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
-                            if (adjudicators != null)
-                            {
-                                var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
-                                if (lAdj == null)
-                                {
-                                    adjudicators.InsertSafe(leadAdjudictor);
-                                    LeadAdj = leadAdjudictor;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
-                    {
-                        var leadAdjudictor = await hubConnection5.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
-
-                        if (leadAdjudictor != null)
-                        {
-                            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
-                            if (adjudicators != null)
-                            {
-                                var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
-                                if (lAdj == null)
-                                {
-                                    adjudicators.InsertSafe(leadAdjudictor);
-                                    LeadAdj = leadAdjudictor;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
-                    {
-                        var leadAdjudictor = await hubConnection6.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
-
-                        if (leadAdjudictor != null)
-                        {
-                            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
-                            if (adjudicators != null)
-                            {
-                                var lAdj = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
-                                if (lAdj == null)
-                                {
-                                    adjudicators.InsertSafe(leadAdjudictor);
-                                    LeadAdj = leadAdjudictor;
-                                }
-                            }
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    //node is offline
-                }
-
             }
             return LeadAdj;
         }
@@ -2011,7 +923,7 @@ namespace ReserveBlockCore.P2P
         {
             var peersConnected = await ArePeersConnected();
 
-            if (peersConnected.Item1 == false)
+            if (!peersConnected)
             {
                 //Need peers
                 Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
@@ -2019,11 +931,11 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                try
+                foreach (var node in Program.Nodes.Values)
                 {
-                    if (hubConnection1 != null && IsConnected1)
+                    try
                     {
-                        string message = await hubConnection1.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+                        string message = await node.Connection.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
                         if (message == "ATMP")
                         {
@@ -2038,141 +950,12 @@ namespace ReserveBlockCore.P2P
                             //already in mempool
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
-                try
-                {
-                    if (hubConnection2 != null && IsConnected2)
+                    catch (Exception ex)
                     {
-                        string message = await hubConnection2.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
                     }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
-                    {
-                        string message = await hubConnection3.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
-                    {
-                        string message = await hubConnection4.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
-                    {
-                        string message = await hubConnection5.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
-                    {
-                        string message = await hubConnection6.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
-
-                        if (message == "ATMP")
-                        {
-                            //success
-                        }
-                        else if (message == "TFVP")
-                        {
-                            Console.WriteLine("Transaction Failed Verification Process on remote node");
-                        }
-                        else
-                        {
-                            //already in mempool
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
+                }                
             }
-
-
-
         }
 
         #endregion
@@ -2182,85 +965,27 @@ namespace ReserveBlockCore.P2P
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1 == false)
+            if (!peersConnected)
             {
                 //Need peers
                 Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
             }
             else
             {
-                try
+                foreach(var node in Program.Nodes.Values)
                 {
-                    if (hubConnection1 != null && IsConnected1)
+                    try
+                    {                        
+                        await node.Connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                        
+                    }
+                    catch (Exception ex)
                     {
-                        await hubConnection1.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                        //possible dead connection, or node is offline
+                        Console.WriteLine("Error Sending Transaction. Please try again!");
                     }
                 }
-                catch (Exception ex)
-                {
-                    //possible dead connection, or node is offline
-                    Console.WriteLine("Error Sending Transaction. Please try again!");
-                }
-                try
-                {
-
-                    if (hubConnection2 != null && IsConnected2)
-                    {
-                        await hubConnection2.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
-                try
-                {
-                    if (hubConnection3 != null && IsConnected3)
-                    {
-                        await hubConnection3.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-                try
-                {
-                    if (hubConnection4 != null && IsConnected4)
-                    {
-                        await hubConnection4.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-                try
-                {
-                    if (hubConnection5 != null && IsConnected5)
-                    {
-                        await hubConnection5.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-                try
-                {
-                    if (hubConnection6 != null && IsConnected6)
-                    {
-                        await hubConnection6.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-
             }
-
         }
         #endregion
     }

@@ -213,9 +213,9 @@ namespace ReserveBlockCore.Controllers
             var blockHeight = Program.BlockHeight.ToString();
 
             var peersConnected = await P2PClient.ArePeersConnected();
-            if (peersConnected.Item1 == true)
+            if (peersConnected)
             {
-                peerCount = peersConnected.Item2.ToString();
+                peerCount = Program.Nodes.Count.ToString();
             }
             else
             {
@@ -295,10 +295,19 @@ namespace ReserveBlockCore.Controllers
                     var account = AccountData.GetSingleAccount(id);
                     if (account != null)
                     {
-                        account.IsValidating = true;
-                        accounts.UpdateSafe(account);
-                        Program.ValidatorAddress = account.Address;
-                        output = "Success! The requested account has been turned on: " + account.Address;
+                        var stateTreiBalance = AccountStateTrei.GetAccountBalance(account.Address);
+                        if(stateTreiBalance < 1000)
+                        {
+                            output = "The balance for this account is under 1000.";
+                        }
+                        else
+                        {
+                            account.IsValidating = true;
+                            accounts.UpdateSafe(account);
+                            Program.ValidatorAddress = account.Address;
+                            await StartupService.ConnectoToAdjudicator();
+                            output = "Success! The requested account has been turned on: " + account.Address;
+                        }
                     }
                     else
                     {
@@ -326,7 +335,12 @@ namespace ReserveBlockCore.Controllers
             {
                 presentValidator.IsValidating = false;
                 accounts.UpdateSafe(presentValidator);
-                Program.ValidatorAddress = ""; 
+                Program.ValidatorAddress = "";
+                var adjConnection = P2PClient.IsAdjConnected1;
+                if(adjConnection)
+                {
+                    await P2PClient.DisconnectAdjudicator();
+                }
                 output = "The validator has been turned off: " + presentValidator.Address;
             }
             else
@@ -694,7 +708,14 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            var nodeInfoList = Program.Nodes;
+            var nodeInfoList = Program.Nodes.Select(x => new
+            {
+                x.Value.NodeIP,
+                x.Value.NodeLatency,
+                x.Value.NodeHeight,
+                x.Value.NodeLastChecked
+            })
+            .ToArray();
 
             output = JsonConvert.SerializeObject(nodeInfoList);
 

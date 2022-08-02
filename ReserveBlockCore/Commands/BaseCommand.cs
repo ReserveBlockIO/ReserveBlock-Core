@@ -26,6 +26,9 @@ namespace ReserveBlockCore.Commands
                 case "/printvars":
                     StaticVariableUtility.PrintStaticVariables();
                     break;
+                case "/printkeys":
+                    BaseCommandServices.PrintKeys();
+                    break;
                 case "/stopco":
                     Program.StopConsoleOutput = !Program.StopConsoleOutput;
                     Console.WriteLine($"Stop Console Output set to: {Program.StopConsoleOutput}");
@@ -67,6 +70,12 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/creatednr":
                     await BaseCommandServices.CreateDnr();
+                    break;
+                case "/deletednr":
+                    await BaseCommandServices.DeleteDnr();
+                    break;
+                case "/transferdnr":
+                    await BaseCommandServices.TransferDnr();
                     break;
                 case "/val":
                     await BaseCommandServices.ValidatorInfo();

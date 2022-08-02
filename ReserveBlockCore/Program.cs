@@ -30,10 +30,8 @@ namespace ReserveBlockCore
         private static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         private static Timer? DBCommitTimer;//checks dbs and commits log files. 
 
-        public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
-        public static List<Block> QueuedBlocks = new List<Block>();
-        public static List<Transaction> MempoolList = new List<Transaction>();
-        public static List<NodeInfo> Nodes = new List<NodeInfo>();
+        public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();        
+        public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>();
         public static List<Validators> InactiveValidators = new List<Validators>();
         public static List<Validators> MasternodePool = new List<Validators>();
         public static List<string> Locators = new List<string>();
@@ -205,8 +203,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
-
-            StartupService.SetupNodeDictionary();
+            
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
 
@@ -454,18 +451,13 @@ namespace ReserveBlockCore
                 {
                     if(HeightCheckLock == false)
                     {
-                        HeightCheckLock = true;
-                        var nodeHeightDict = await P2PClient.GetNodeHeight();
-                        if(nodeHeightDict == false)
-                        {
-                            //do some reconnect logic possibly here.
-                        }
-                        else
+                        HeightCheckLock = true;                        
+                        await P2PClient.UpdateNodeHeights();
+                        if(Program.Nodes.Any())                        
                         {
                             if (ValidatorAddress == "")
-                            {
-                                var nodes = Nodes.ToList();
-                                var maxHeightNode = nodes.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
+                            {                                
+                                var maxHeightNode = Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
                                 if (maxHeightNode != null)
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
@@ -519,7 +511,7 @@ namespace ReserveBlockCore
                 {
                     var peersConnected = await P2PClient.ArePeersConnected();
 
-                    if (peersConnected.Item1 != true)
+                    if (!peersConnected)
                     {
                         Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
                         LogUtility.Log("Connection to Peers Lost", "peerCheckTimer_Elapsed()");
@@ -528,7 +520,7 @@ namespace ReserveBlockCore
                     }
                     else
                     {
-                        if (peersConnected.Item2 != 6)
+                        if (Program.Nodes.Count != P2PClient.MaxPeers)
                         {
                             bool result = false;
                             //Get more nodes!
@@ -556,7 +548,7 @@ namespace ReserveBlockCore
 
                 var peersConnected = await P2PClient.ArePeersConnected();
 
-                if (peersConnected.Item1 != true)
+                if (!peersConnected)
                 {
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
                     LogUtility.Log("Connection to Peers Lost", "validatorListCheckTimer_Elapsed()");

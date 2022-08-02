@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -19,9 +20,9 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PServer : Hub
     {
-        private static Dictionary<string, string> PeerList = new Dictionary<string, string>();
-        public static Dictionary<string, int> TxRebroadcastDict = new Dictionary<string, int>();
-        public static int PeerConnectedCount = 0;
+        private static ConcurrentDictionary<string, string> PeerList = new ConcurrentDictionary<string, string>();
+        public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();
+        //public static int PeerConnectedCount = 0;
 
         #region Broadcast methods
         public override async Task OnConnectedAsync()
@@ -48,8 +49,7 @@ namespace ReserveBlockCore.P2P
             }
 
             var blockHeight = Program.BlockHeight;
-            PeerList.Add(Context.ConnectionId, peerIP);
-            PeerConnectedCount++;
+            PeerList.AddOrUpdate(peerIP, Context.ConnectionId, (key, oldValue) => Context.ConnectionId);
 
             await SendMessage("IP", peerIP);
             await base.OnConnectedAsync();
@@ -57,16 +57,9 @@ namespace ReserveBlockCore.P2P
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
-            string connectionId = Context.ConnectionId;
-            var check = PeerList.ContainsKey(connectionId);
-            PeerConnectedCount--;
-            if (check == true)
-            {
-                var peer = PeerList.FirstOrDefault(x => x.Key == connectionId);
-                var ip = peer.Value;
-                //await SendMessageAllPeers(ip);
-                //do some logic
-            }
+            var peerIP = GetIP(Context);
+            PeerList.TryRemove(peerIP, out string test);
+            //Program.Nodes.TryRemove(peerIP, out NodeInfo test2);    
         }
 
         public async Task SendMessage(string message, string data)
@@ -82,10 +75,9 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region GetConnectedPeerCount
-        public static async Task<int> GetConnectedPeerCount()
+        public static int GetConnectedPeerCount()
         {
-            var peerCount = PeerConnectedCount;
-            return peerCount;
+            return P2PServer.PeerList.Count;
         }
 
         #endregion
@@ -749,7 +741,7 @@ namespace ReserveBlockCore.P2P
 
         private static string GetIP(HubCallerContext context)
         {
-            var feature = context.Features.Get<IHttpConnectionFeature>();
+            var feature = context.Features.Get<IHttpConnectionFeature>();            
             var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
 
             return peerIP;
