@@ -80,6 +80,7 @@ namespace ReserveBlockCore.Models
                     if (account != null)
                     {
                         account.ADNR = adnr.Name;
+                        accounts.UpdateSafe(account);
                     }
 
                 }
