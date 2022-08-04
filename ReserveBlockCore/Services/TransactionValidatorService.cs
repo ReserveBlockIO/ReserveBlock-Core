@@ -282,6 +282,38 @@ namespace ReserveBlockCore.Services
                                     }
                                 }
                             }
+
+                            if (function == "AdnrDelete()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return txResult;
+                                    }
+                                }
+                            }
+
+                            if (function == "AdnrTransfer()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return txResult;
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
+                                    if (toAddressCheck != null)
+                                    {
+                                        return txResult;
+                                    }
+                                }
+                            }
                         }
                         catch(Exception ex)
                         {
@@ -571,8 +603,40 @@ namespace ReserveBlockCore.Services
                                         return (txResult, "Address is already associated with an active DNR");
                                     }
                                 }
-
                             }
+
+                            if (function == "AdnrDelete()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with a DNR.");
+                                    }
+                                }
+                            }
+
+                            if (function == "AdnrTransfer()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with a DNR.");
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
+                                    if (toAddressCheck != null)
+                                    {
+                                        return (txResult, "To Address is already associated with a DNR.");
+                                    }
+                                }
+                            }
+
                         }
                         catch (Exception ex)
                         {

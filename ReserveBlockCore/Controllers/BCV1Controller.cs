@@ -24,9 +24,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var ip = P2PClient.ReportedIPs.Count() != 0 ? 
-                P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() : 
-                "NA";
+            var ip = P2PClient.MostLikelyIP();
 
             if(ip == "NA")
             {

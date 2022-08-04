@@ -117,11 +117,11 @@ namespace ReserveBlockCore.Services
                 {
                     //validate transactions.
                     bool rejectBlock = false;
-                    foreach (Transaction transaction in block.Transactions)
+                    foreach (Transaction blkTransaction in block.Transactions)
                     {
-                        if(transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
+                        if(blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
+                            var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
                             rejectBlock = txResult == false ? rejectBlock = true : false;
                         }
                         else
@@ -145,39 +145,44 @@ namespace ReserveBlockCore.Services
 
                     if(block.Transactions.Count() > 0)
                     {
-                        foreach (Transaction transaction in block.Transactions)
+                        foreach (var localTransaction in block.Transactions)
                         {
                             if(mempool != null)
                             {
-                                var mempoolTx = mempool.FindAll().Where(x => x.Hash == transaction.Hash);
+                                var mempoolTx = mempool.FindAll().Where(x => x.Hash == localTransaction.Hash);
                                 if (mempoolTx.Count() > 0)
                                 {
-                                    mempool.DeleteManySafe(x => x.Hash == transaction.Hash);
+                                    mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
                                 }
                             }
                             
                             //Adds receiving TX to wallet
-                            var account = AccountData.GetAccounts().FindOne(x => x.Address == transaction.ToAddress);
+                            var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
                             if (account != null)
                             {
-                                AccountData.UpdateLocalBalanceAdd(transaction.ToAddress, transaction.Amount);
-                                var txdata = TransactionData.GetAll();
-                                txdata.InsertSafe(transaction);
+                                if(localTransaction.TransactionType == TransactionType.TX)
+                                {
+                                    AccountData.UpdateLocalBalanceAdd(localTransaction.ToAddress, localTransaction.Amount);
+                                    var txdata = TransactionData.GetAll();
+                                    txdata.InsertSafe(localTransaction);
+                                }
                                 if(Program.IsChainSynced == true)
                                 {
                                     //Call out to custom URL from config file with TX details
                                     if(Program.APICallURL != null)
                                     {
-                                        APICallURLService.CallURL(transaction);
+                                        APICallURLService.CallURL(localTransaction);
                                     }
                                 }
-                                if(transaction.TransactionType != TransactionType.TX)
+                                if(localTransaction.TransactionType != TransactionType.TX)
                                 {
-                                    var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
-                                    var scData = scDataArray[0];
+                                    
 
-                                    if (transaction.TransactionType == TransactionType.NFT_MINT)
+                                    if (localTransaction.TransactionType == TransactionType.NFT_MINT)
                                     {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
+                                        var scData = scDataArray[0];
+
                                         if (scData != null)
                                         {
                                             var function = (string?)scData["Function"];
@@ -195,8 +200,11 @@ namespace ReserveBlockCore.Services
                                         }
                                     }
 
-                                    if (transaction.TransactionType == TransactionType.NFT_TX)
+                                    if (localTransaction.TransactionType == TransactionType.NFT_TX)
                                     {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
+                                        var scData = scDataArray[0];
+
                                         var data = (string?)scData["Data"];
                                         var function = (string?)scData["Function"];
                                         if (function != "")
@@ -230,7 +238,7 @@ namespace ReserveBlockCore.Services
                                                 case "Evolve()":
                                                     if(data != "")
                                                     {
-                                                        var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(transaction); });
+                                                        var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(localTransaction); });
                                                         bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
@@ -241,7 +249,7 @@ namespace ReserveBlockCore.Services
                                                 case "Devolve()":
                                                     if (data != "")
                                                     {
-                                                        var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(transaction); });
+                                                        var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(localTransaction); });
                                                         bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
@@ -252,7 +260,7 @@ namespace ReserveBlockCore.Services
                                                 case "ChangeEvolveStateSpecific()":
                                                     if(data != "")
                                                     {
-                                                        var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(transaction); });
+                                                        var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(localTransaction); });
                                                         bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
@@ -265,26 +273,43 @@ namespace ReserveBlockCore.Services
                                             }
                                         }
                                     }
+
+                                    if(localTransaction.TransactionType == TransactionType.ADNR)
+                                    {
+                                        var scData = JObject.Parse(localTransaction.Data);
+
+                                        if (scData != null)
+                                        {
+                                            var function = (string?)scData["Function"];
+                                            if (function != "" && function != null)
+                                            {
+                                                if (function == "AdnrTransfer()")
+                                                {
+                                                    await Account.TransferAdnrToAccount(localTransaction.FromAddress, localTransaction.ToAddress);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
                             //Adds sent TX to wallet
-                            var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == transaction.FromAddress);
+                            var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.FromAddress);
                             if (fromAccount != null)
                             {
                                 var txData = TransactionData.GetAll();
-                                var fromTx = transaction;
-                                fromTx.Amount = transaction.Amount * -1M;
-                                fromTx.Fee = transaction.Fee * -1M;
+                                var fromTx = localTransaction;
+                                fromTx.Amount = localTransaction.Amount * -1M;
+                                fromTx.Fee = localTransaction.Fee * -1M;
                                 txData.InsertSafe(fromTx);
 
-                                if(transaction.TransactionType != TransactionType.TX)
+                                if(localTransaction.TransactionType != TransactionType.TX)
                                 {
-                                    var scDataArray = JsonConvert.DeserializeObject<JArray>(transaction.Data);
-                                    var scData = scDataArray[0];
-
-                                    if (transaction.TransactionType == TransactionType.NFT_TX)
+                                    if (localTransaction.TransactionType == TransactionType.NFT_TX)
                                     {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
+                                        var scData = scDataArray[0];
+
                                         //do transfer logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
                                         var function = (string?)scData["Function"];
@@ -299,8 +324,10 @@ namespace ReserveBlockCore.Services
                                             }
                                         }
                                     }
-                                    if (transaction.TransactionType == TransactionType.NFT_BURN)
+                                    if (localTransaction.TransactionType == TransactionType.NFT_BURN)
                                     {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
+                                        var scData = scDataArray[0];
                                         //do burn logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
                                         var function = (string?)scData["Function"];
@@ -315,6 +342,32 @@ namespace ReserveBlockCore.Services
                                             }
                                         }
             
+                                    }
+
+                                    if(localTransaction.TransactionType == TransactionType.ADNR)
+                                    {
+                                        var scData = JObject.Parse(localTransaction.Data);
+
+                                        var function = (string?)scData["Function"];
+                                        var name = (string?)scData["Name"];
+                                        if (function != "" && function != null)
+                                        {
+                                            if (function == "AdnrCreate()")
+                                            {
+                                                if(name != "" && name != null)
+                                                {
+                                                    await Account.AddAdnrToAccount(localTransaction.FromAddress, name);
+                                                }
+                                            }
+                                            if (function == "AdnrDelete()")
+                                            {
+                                                await Account.DeleteAdnrFromAccount(localTransaction.FromAddress);
+                                            }
+                                            if (function == "AdnrTransfer()")
+                                            {
+                                                await Account.DeleteAdnrFromAccount(localTransaction.FromAddress);
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -16,7 +16,6 @@ namespace ReserveBlockCore.Utilities
             
             Console.WriteLine("End.");
         }
-
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();
@@ -24,22 +23,22 @@ namespace ReserveBlockCore.Utilities
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
-            var nodes = Program.Nodes;
-            var nodeList = nodes.ToList();
+            var nodes = Program.Nodes;            
             var lastBlock = Program.LastBlock;
             var adjudicator = Program.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
             var fortisPoolCount = P2PAdjServer.FortisPool.Count().ToString();
             var isChainSynced = Program.IsChainSynced.ToString();
-            var peerCount = await P2PServer.GetConnectedPeerCount();
+            var peerCount = P2PServer.GetConnectedPeerCount();
             var valCount = await P2PAdjServer.GetConnectedValCount();
             var lastTaskSent = P2PClient.LastTaskSentTime.ToString();
             var lastTaskResult = P2PClient.LastTaskResultTime.ToString();
             var lastTaskBlockHeight = P2PClient.LastTaskBlockHeight.ToString();
             var lastTaskError = P2PClient.LastTaskError.ToString();
             var hdWallet = Program.HDWallet.ToString();
-            var reportedIPs = string.Join(",", P2PClient.ReportedIPs);
-            var mostLikelyIP = P2PClient.ReportedIPs.Count() != 0 ? P2PClient.ReportedIPs.GroupBy(x => x).OrderByDescending(y => y.Count()).Select(y => y.Key).First().ToString() : "NA";
+            var reportedIPs = string.Join(",", P2PClient.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
+                .SelectMany(x => x));
+            var mostLikelyIP = P2PClient.MostLikelyIP();
 
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
             var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
@@ -49,8 +48,8 @@ namespace ReserveBlockCore.Utilities
             var isPeersConnecting = "Peers Connecting Startup: " + Program.PeersConnecting.ToString();
             var isStopAllTimers = "Stop all timers: " + Program.StopAllTimers.ToString();
             var isQueueProcessing = "Queue Processing: " + BlockQueueService.QueueProcessing;
-            var isPeerConnected = "Peers connected: " + peersConnected.Item1.ToString();
-            var peerConnectedCount = "Peers connected Count: " + peersConnected.Item2.ToString();
+            var isPeerConnected = "Peers connected: " + peersConnected.ToString();
+            var peerConnectedCount = "Peers connected Count: " + P2PServer.GetConnectedPeerCount().ToString();
             var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
@@ -127,7 +126,7 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastTaskErrorText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
-            nodeList.ForEach(x => {
+            nodes.Values.ToList().ForEach(x => {
                 var ip = x.NodeIP;
                 var lastcheck = x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime().ToLongTimeString() : "NA";
                 var height = x.NodeHeight.ToString();

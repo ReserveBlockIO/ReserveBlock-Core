@@ -42,17 +42,6 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static void SetupNodeDictionary()
-        {
-            P2PClient.NodeDict = new Dictionary<int, string>();
-            P2PClient.NodeDict.Add(1, null);
-            P2PClient.NodeDict.Add(2, null);
-            P2PClient.NodeDict.Add(3, null);
-            P2PClient.NodeDict.Add(4, null);
-            P2PClient.NodeDict.Add(5, null);
-            P2PClient.NodeDict.Add(6, null);
-        }
-
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
@@ -700,6 +689,11 @@ namespace ReserveBlockCore.Services
                         Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
                         Thread.Sleep(new TimeSpan(0, 0, 60));
                     }
+                    else if(failCount >120)
+                    {
+                        Console.WriteLine($"Failed to connect to any peers. trying again in 120 seconds.");
+                        Thread.Sleep(new TimeSpan(0, 0, 120));
+                    }
 
                     Console.WriteLine("Attempting to connect to peers...");
                     result = await P2PClient.ConnectToPeers();
@@ -707,6 +701,7 @@ namespace ReserveBlockCore.Services
                     if (result == true)
                     {
                         peersConnected = true;
+                        Console.WriteLine("Connected to Peers...");
                         var accounts = AccountData.GetAccounts();
                         var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
                         if (myAccount != null)
@@ -750,7 +745,7 @@ namespace ReserveBlockCore.Services
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1)
+            if (peersConnected)
             {
                 if(Program.BlockHeight == -1)
                 {

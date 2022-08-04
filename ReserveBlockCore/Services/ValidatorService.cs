@@ -281,7 +281,7 @@ namespace ReserveBlockCore.Services
             return result;
         }
 
-        public static void StopValidating(Validators validator)
+        public static async void StopValidating(Validators validator)
         {           
             //Validators.Validator.GetAll().DeleteSafe(validator.Id);
 
@@ -290,7 +290,13 @@ namespace ReserveBlockCore.Services
 
             myAccount.IsValidating = false;
             accounts.UpdateSafe(myAccount);
-            //broadcast out to other nodes
+
+            var validators = Validators.Validator.GetAll();
+            validators.Delete(validator.Id);
+
+            await P2PClient.DisconnectAdjudicator();
+
+            ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
         }
 
