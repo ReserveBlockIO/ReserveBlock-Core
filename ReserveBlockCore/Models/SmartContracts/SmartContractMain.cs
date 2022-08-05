@@ -224,7 +224,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                     if (isDynamic == true)
                                     {
-                                        var blockHeight = Program.BlockHeight.ToString();
+                                        var blockHeight = Program.LastBlock.Height.ToString();
                                         var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                         var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
@@ -289,7 +289,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (isDynamic == true)
                                 {
-                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var blockHeight = Program.LastBlock.Height.ToString();
                                     var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                     var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
@@ -413,7 +413,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (isDynamic == true)
                                 {
-                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var blockHeight = Program.LastBlock.Height.ToString();
                                     var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                     var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();
@@ -481,7 +481,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                             if (isDynamic == true)
                             {
-                                var blockHeight = Program.BlockHeight.ToString();
+                                var blockHeight = Program.LastBlock.Height.ToString();
                                 var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                 var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();

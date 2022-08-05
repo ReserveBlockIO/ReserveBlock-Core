@@ -14,6 +14,11 @@ namespace ReserveBlockCore.Models
         public long NodeHeight { get; set; }
         public int NodeLatency { get; set; }
         public DateTime? NodeLastChecked { get; set; }
+
+        public int IsSendingBlock;
         
+        public long SendingBlockTime;
+        
+        public long TotalDataSent;
     }
 }
