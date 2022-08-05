@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Nodes
             }
             else
             {
-                if (Program.StopAllTimers == false && Program.BlockCrafting == false  && Program.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
+                if (Program.StopAllTimers == false && Program.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
                 {
                     if (message == "tx")
                     {

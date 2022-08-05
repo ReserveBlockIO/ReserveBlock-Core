@@ -40,9 +40,8 @@ namespace ReserveBlockCore.Utilities
                 .SelectMany(x => x));
             var mostLikelyIP = P2PClient.MostLikelyIP();
 
-            var validatorAddress = "Validator Address: " + Program.ValidatorAddress;
-            var isBlockCrafting = "Block Craft: " + Program.BlockCrafting.ToString();
-            var isBlocksDownloading = "Blocks Downloading: " + Program.BlocksDownloading.ToString();
+            var validatorAddress = "Validator Address: " + Program.ValidatorAddress;            
+            var isBlocksDownloading = "Blocks Downloading: " + (Program.BlocksDownloading == 1).ToString();
             var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;
             var isCrafting = "Is Crafting: " + Program.IsCrafting.ToString();
             var isPeersConnecting = "Peers Connecting Startup: " + (!Program.Nodes.Any()).ToString();
@@ -78,9 +77,7 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(hdWalletText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isCorrupt);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(isBlockCrafting);
-            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine("---------------------------------------------------------------------");            
             strBld.AppendLine(isBlocksDownloading);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isChainSyncing);

@@ -294,12 +294,10 @@ namespace ReserveBlockCore.Data
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
-            {
-                blocks.InsertSafe(block);
-
+            {               
                 //Update in memory fields.
-                Program.LastBlock = block;
-                Program.LastBlock.Height = block.Height;
+                Program.LastBlock = block;                
+                blocks.InsertSafe(block);
             }
             else
             {

@@ -49,8 +49,7 @@ namespace ReserveBlockCore
         public static bool IsResyncing = false;
         public static bool TestURL = false;
         public static bool StopAllTimers = false;        
-        public static bool DatabaseCorruptionDetected = false;
-        public static bool BlockCrafting = false;
+        public static bool DatabaseCorruptionDetected = false;        
         public static bool RemoteCraftLock = false;
         public static bool IsChainSynced = false;
         public static bool OptionalLogging = false;
