@@ -1,69 +1,119 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.Services
 {
     public class BlockDownloadService
     {
-        public static async Task<bool> GetAllBlocks(long nHeight)
-        {
-            if(Program.PeersConnecting == false)
+        public static ConcurrentDictionary<long, (Block block, string IPAddress)> BlockDict = 
+            new ConcurrentDictionary<long, (Block, string)>();
+
+        public const int MaxDownloadBuffer = 52428800;
+
+        public static async Task<bool> GetAllBlocks()
+        {                        
+            if (Interlocked.Exchange(ref Program.BlocksDownloading, 1) != 0)
             {
-                BlockQueueService.QueueProcessing = true;
+                await Task.Delay(1000);
+                return false;
+            }
 
-                var myBlockHeight = Program.BlockHeight;
-                var difference = nHeight - myBlockHeight;
-                try
-                {
-                    for (int i = 1; i <= difference; i++)
+            try
+            {
+                var (_, MaxHeight) = await P2PClient.GetCurrentHeight();
+                while (Program.LastBlock.Height < MaxHeight)
+                {                                                   
+                    var coolDownTime = DateTime.Now;
+                    var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
+                    var heightToDownload = Program.LastBlock.Height + 1;
+
+                    foreach (var node in Program.Nodes.Values)
                     {
-                        //call out to nodes and get blocks.
-                        var nextBlockHeight = myBlockHeight + i;
-                        var newBlocks = await P2PClient.GetBlock();
+                        if (heightToDownload > MaxHeight)
+                            break;
+                        taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, node), node.NodeIP);
+                        heightToDownload++;
+                    }
 
-                        if (newBlocks.Count() > 0)
+                    while (taskDict.Any())
+                    {
+                        var completedTask = await Task.WhenAny(taskDict.Values.Select(x => x.task));
+                        var result = await completedTask;
+                        if (result == null)
                         {
-                            foreach (var block in newBlocks)
-                            {
-                                if (block != null)
-                                {
-                                    var blockResult = await BlockValidatorService.ValidateBlock(block, true);
-                                    if (blockResult == false)
-                                    {
+                            var badTasks = taskDict.Where(x => x.Value.task.Id == completedTask.Id &&
+                                x.Value.task.IsCompleted).ToArray();
 
-                                    }
-                                    else
-                                    {
-                                        Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");
-                                        myBlockHeight = block.Height;
-                                    }
-                                }
-                            }
+                            foreach (var badTask in badTasks)
+                                while (!taskDict.TryRemove(badTask.Key, out var test)) ;
 
-
+                            heightToDownload = Math.Min(heightToDownload, badTasks.Min(x => x.Key));
                         }
                         else
                         {
-                            break;
+                            var resultHeight = result.Height;
+                            var (_, ipAddress) = taskDict[resultHeight];
+                            BlockDict[resultHeight] = (result, ipAddress);
+                            while (!taskDict.TryRemove(resultHeight, out var test2)) ;
+                            _ = BlockValidatorService.ValidateBlocks();
+                        }
+
+                        _ = P2PClient.DropLowBandwidthPeers();
+                        var AvailableNode = Program.Nodes.Where(x => x.Value.IsSendingBlock == 0).FirstOrDefault().Value;
+                        if (AvailableNode != null)
+                        {
+                            var DownloadBuffer = BlockDict.AsParallel().Sum(x => x.Value.block.Size);
+                            if (DownloadBuffer > MaxDownloadBuffer)
+                            {
+                                if ((DateTime.Now - coolDownTime).Seconds > 30 && taskDict.Keys.Any())
+                                {
+                                    var staleHeight = taskDict.Keys.Min();
+                                    var staleTask = taskDict[staleHeight];
+                                    if (Program.Nodes.ContainsKey(staleTask.ipAddress))
+                                    {
+                                        while(!Program.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
+                                            _ = staleNode.Connection.DisposeAsync();
+                                    }
+                                    while (!taskDict.TryRemove(staleHeight, out var test4)) ;
+                                    staleTask.task.Dispose();
+                                    heightToDownload = Math.Min(heightToDownload, staleHeight);                                                                        
+                                    coolDownTime = DateTime.Now;
+                                }
+                            }
+                            else
+                            {
+                                var nextHeightToValidate = Program.LastBlock.Height + 1;
+                                if (!BlockDict.ContainsKey(nextHeightToValidate) && !taskDict.ContainsKey(nextHeightToValidate))
+                                    heightToDownload = nextHeightToValidate;
+                                while (taskDict.ContainsKey(heightToDownload))
+                                    heightToDownload++;                                
+                                if (heightToDownload > MaxHeight)
+                                    continue;
+                                taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, AvailableNode),
+                                    AvailableNode.NodeIP);
+                            }
                         }
                     }
-                    BlockQueueService.QueueProcessing = false;
-                }
-                catch (Exception ex)
-                {
-                    //Error
-                    if (Program.PrintConsoleErrors == true)
-                    {
-                        Console.WriteLine("Failure in GetAllBlocks Method");
-                        Console.WriteLine(ex.Message);
-                    }
-                    
-                    BlockQueueService.QueueProcessing = false;
-                }
 
-                return false; //we return false once complete to alert wallet it is done downloading bulk blocks
+                    (_, MaxHeight) = await P2PClient.GetCurrentHeight();
+                }
             }
+            catch (Exception ex)
+            {
+                //Error
+                if (Program.PrintConsoleErrors == true)
+                {
+                    Console.WriteLine("Failure in GetAllBlocks Method");
+                    Console.WriteLine(ex.Message);
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref Program.BlocksDownloading, 0);
+            }
+
             return false;
         }
 

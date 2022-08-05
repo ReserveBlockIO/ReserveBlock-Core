@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Utilities
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();
-            var blockHeight = Program.BlockHeight;
+            var blockHeight = Program.LastBlock.Height;
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
@@ -45,9 +45,9 @@ namespace ReserveBlockCore.Utilities
             var isBlocksDownloading = "Blocks Downloading: " + Program.BlocksDownloading.ToString();
             var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;
             var isCrafting = "Is Crafting: " + Program.IsCrafting.ToString();
-            var isPeersConnecting = "Peers Connecting Startup: " + Program.PeersConnecting.ToString();
+            var isPeersConnecting = "Peers Connecting Startup: " + (!Program.Nodes.Any()).ToString();
             var isStopAllTimers = "Stop all timers: " + Program.StopAllTimers.ToString();
-            var isQueueProcessing = "Queue Processing: " + BlockQueueService.QueueProcessing;
+            var isQueueProcessing = "Queue Processing: " + (Program.BlocksDownloading == 1);
             var isPeerConnected = "Peers connected: " + peersConnected.ToString();
             var peerConnectedCount = "Peers connected Count: " + P2PServer.GetConnectedPeerCount().ToString();
             var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();

@@ -164,7 +164,7 @@ namespace ReserveBlockCore.Commands
                     AccountData.PrintWalletAccounts();
                     break;
                 case "8": //Startup Masternode
-                    if(Program.StopAllTimers == false && Program.BlocksDownloading == false)
+                    if(Program.StopAllTimers == false && Program.BlocksDownloading == 0)
                     {
                         ValidatorService.DoValidate();
                     }

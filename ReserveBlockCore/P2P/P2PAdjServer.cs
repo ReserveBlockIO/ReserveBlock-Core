@@ -229,7 +229,7 @@ namespace ReserveBlockCore.P2P
         #region Receive Block and Task Answer
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
         {
-            if (Program.BlocksDownloading == false)
+            if (Program.BlocksDownloading == 0)
             {
                 if (Program.Adjudicate)
                 {
@@ -237,7 +237,7 @@ namespace ReserveBlockCore.P2P
                     var fortisPool = FortisPool.ToList();
                     if(fortisPool.Exists(x => x.Address == taskResult.Address))
                     {
-                        if(taskResult.Block.Height == Program.BlockHeight + 1)
+                        if(taskResult.Block.Height == Program.LastBlock.Height + 1)
                         {
                             var taskAnswerList = TaskAnswerList.ToList();
                             var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
@@ -272,7 +272,7 @@ namespace ReserveBlockCore.P2P
         public async Task<bool> ReceiveTX(Transaction transaction)
         {
             bool output = false;
-            if (Program.BlocksDownloading == false)
+            if (Program.BlocksDownloading == 0)
             {
                 if (Program.Adjudicate)
                 {

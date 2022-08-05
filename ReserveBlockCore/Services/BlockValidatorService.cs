@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System.Text;
 
@@ -10,7 +11,66 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
-        //This is the valid block methods
+        public static int IsValidatingBlocks = 0;
+
+        public static void UpdateMemBlocks(Block block)
+        {
+            Program.MemBlocks.TryDequeue(out Block test);
+            Program.MemBlocks.Enqueue(block);
+        }
+
+        public static async Task ValidationDelay()
+        {
+            while (IsValidatingBlocks == 1)
+                await Task.Delay(4);
+        }
+        public static async Task ValidateBlocks()
+        {
+            if (Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 1) != 0)            
+                return;
+
+            try
+            {
+                while (BlockDownloadService.BlockDict.Any())
+                {
+                    var heights = BlockDownloadService.BlockDict.Keys.OrderBy(x => x).ToArray();
+                    var heightOffset = heights[0];
+                    if (heightOffset != Program.LastBlock.Height + 1)
+                        break;
+                    heights = heights.Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
+                        .Select(x => x.height).ToArray();
+                    foreach (var height in heights)
+                    {                        
+                        var (block, ipAddress) = BlockDownloadService.BlockDict[height];
+                        Console.WriteLine("Found Block: " + height.ToString());
+                        var result = await ValidateBlock(block, true);
+                        if (!result)
+                        {
+                            P2PClient.BannedIPs[ipAddress] = true;
+                            ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
+                            if (Program.Nodes.ContainsKey(ipAddress))
+                            {
+                                while(!Program.Nodes.TryRemove(ipAddress, out var node))
+                                    await node.Connection.DisposeAsync();
+                            }
+                            Console.WriteLine("Block was rejected from: " + block.Validator);
+                        }
+                        else
+                        {
+                            if(Program.IsChainSynced)
+                                ConsoleWriterService.Output(($"Block ({block.Height}) was added from: {block.Validator} "));
+                            else
+                                Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
+                        }
+                        while (!BlockDownloadService.BlockDict.TryRemove(height, out var test)) ;
+                    }
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 0);
+            }
+        }
         public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
@@ -40,7 +100,7 @@ namespace ReserveBlockCore.Services
 
                 }
 
-                BlockQueueService.UpdateMemBlocks(block);//update mem blocks
+                UpdateMemBlocks(block);//update mem blocks
                 return result;
             }
 
@@ -138,7 +198,7 @@ namespace ReserveBlockCore.Services
                 
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
-                    BlockQueueService.UpdateMemBlocks(block);//update mem blocks
+                    UpdateMemBlocks(block);//update mem blocks
                     StateData.UpdateTreis(block);
 
                     var mempool = TransactionData.GetPool();
@@ -386,25 +446,12 @@ namespace ReserveBlockCore.Services
                 StateData.UpdateTreis(block);
                 return result;
             }
-
         }
 
         //This method does not add block or update any treis
         public static async Task<bool> ValidateBlockForTask(Block block, bool blockDownloads = false)
         {
             bool result = false;
-
-            var badBlocks = BadBlocksUtility.GetBadBlocks();
-
-            if (badBlocks.ContainsKey(block.Height))
-            {
-                var badBlockHash = badBlocks[block.Height];
-                if (badBlockHash == block.Hash)
-                {
-                    ValidatorLogUtility.Log("Failed to validate block. Block has already been published", "BlockValidatorService.ValidateBlockForTask()");
-                    return result;//reject because its on our bad block list
-                }
-            }
 
             if (block == null) return result; //null block submitted. reject 
 

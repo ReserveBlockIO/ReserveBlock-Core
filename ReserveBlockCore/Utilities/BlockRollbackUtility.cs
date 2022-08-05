@@ -9,7 +9,7 @@ namespace ReserveBlockCore.Utilities
         {
             Program.IsResyncing = true;
             Program.StopAllTimers = true;
-            var height = Program.BlockHeight;
+            var height = Program.LastBlock.Height;
             var newHeight = height - (long)numBlocksRollback;
 
             var blocks = Block.GetBlocks();
