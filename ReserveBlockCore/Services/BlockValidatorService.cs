@@ -33,9 +33,20 @@ namespace ReserveBlockCore.Services
             {
                 while (BlockDownloadService.BlockDict.Any())
                 {
+                    var nextHeight = Program.LastBlock.Height + 1;
                     var heights = BlockDownloadService.BlockDict.Keys.OrderBy(x => x).ToArray();
-                    var heightOffset = heights[0];
-                    if (heightOffset != Program.LastBlock.Height + 1)
+                    var offsetIndex = 0;
+                    var heightOffset = 0L;
+                    for (; offsetIndex < heights.Length; offsetIndex++)
+                    {
+                        heightOffset = heights[offsetIndex];
+                        if (heightOffset < nextHeight)
+                            BlockDownloadService.BlockDict.TryRemove(heightOffset, out var test);
+                        else
+                            break;
+                    }
+
+                    if (heightOffset != nextHeight)
                         break;
                     heights = heights.Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
                         .Select(x => x.height).ToArray();
@@ -43,16 +54,13 @@ namespace ReserveBlockCore.Services
                     {                        
                         var (block, ipAddress) = BlockDownloadService.BlockDict[height];
                         Console.WriteLine("Found Block: " + height.ToString());
-                        var result = await ValidateBlock(block, true);
+                        var result = await ValidateBlock(block, true);                        
                         if (!result)
                         {
                             P2PClient.BannedIPs[ipAddress] = true;
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
-                            if (Program.Nodes.ContainsKey(ipAddress))
-                            {
-                                while(!Program.Nodes.TryRemove(ipAddress, out var node))
-                                    await node.Connection.DisposeAsync();
-                            }
+                            if(Program.Nodes.TryRemove(ipAddress, out var node))
+                                await node.Connection.DisposeAsync();                            
                             Console.WriteLine("Block was rejected from: " + block.Validator);
                         }
                         else
@@ -61,8 +69,7 @@ namespace ReserveBlockCore.Services
                                 ConsoleWriterService.Output(($"Block ({block.Height}) was added from: {block.Validator} "));
                             else
                                 Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
-                        }
-                        while (!BlockDownloadService.BlockDict.TryRemove(height, out var test)) ;
+                        }                        
                     }
                 }
             }

@@ -54,11 +54,7 @@ namespace ReserveBlockCore.P2P
         }
         private static async Task RemoveNode(NodeInfo node)
         {
-            if (Program.Nodes.ContainsKey(node.NodeIP))
-            {
-                while (!Program.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
-                    await Task.Delay(1);
-            }
+            Program.Nodes.TryRemove(node.NodeIP, out NodeInfo test);            
             await node.Connection.DisposeAsync();            
         }
 
@@ -108,11 +104,8 @@ namespace ReserveBlockCore.P2P
 
             foreach (var peer in PeersWithSamples.Where(x => x.BandWidth < .5 * MedianBandWidth))
             {
-                if (Program.Nodes.ContainsKey(peer.IPAddress))
-                {
-                    while(!Program.Nodes.TryRemove(peer.IPAddress, out var node))
-                        await node.Connection.DisposeAsync();
-                }
+                if(Program.Nodes.TryRemove(peer.IPAddress, out var node))
+                    await node.Connection.DisposeAsync();                
             }            
         }
 

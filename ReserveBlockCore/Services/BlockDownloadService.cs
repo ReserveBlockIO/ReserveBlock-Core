@@ -21,14 +21,14 @@ namespace ReserveBlockCore.Services
             }
 
             try
-            {
+            {                
                 var (_, MaxHeight) = await P2PClient.GetCurrentHeight();
                 while (Program.LastBlock.Height < MaxHeight)
                 {                                                   
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Program.LastBlock.Height + 1;
-
+                    
                     foreach (var node in Program.Nodes.Values)
                     {
                         if (heightToDownload > MaxHeight)
@@ -36,54 +36,52 @@ namespace ReserveBlockCore.Services
                         taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, node), node.NodeIP);
                         heightToDownload++;
                     }
-
+                    
                     while (taskDict.Any())
-                    {
+                    {                        
                         var completedTask = await Task.WhenAny(taskDict.Values.Select(x => x.task));
                         var result = await completedTask;
+                        
                         if (result == null)
-                        {
+                        {                            
                             var badTasks = taskDict.Where(x => x.Value.task.Id == completedTask.Id &&
                                 x.Value.task.IsCompleted).ToArray();
 
                             foreach (var badTask in badTasks)
-                                while (!taskDict.TryRemove(badTask.Key, out var test)) ;
+                                taskDict.TryRemove(badTask.Key, out var test);
 
-                            heightToDownload = Math.Min(heightToDownload, badTasks.Min(x => x.Key));
+                            heightToDownload = Math.Min(heightToDownload, badTasks.Min(x => x.Key));                            
                         }
                         else
-                        {
+                        {                            
                             var resultHeight = result.Height;
                             var (_, ipAddress) = taskDict[resultHeight];
                             BlockDict[resultHeight] = (result, ipAddress);
-                            while (!taskDict.TryRemove(resultHeight, out var test2)) ;
-                            _ = BlockValidatorService.ValidateBlocks();
+                            taskDict.TryRemove(resultHeight, out var test2);
+                            _ = BlockValidatorService.ValidateBlocks();                            
                         }
 
                         _ = P2PClient.DropLowBandwidthPeers();
                         var AvailableNode = Program.Nodes.Where(x => x.Value.IsSendingBlock == 0).FirstOrDefault().Value;
                         if (AvailableNode != null)
-                        {
+                        {                            
                             var DownloadBuffer = BlockDict.AsParallel().Sum(x => x.Value.block.Size);
                             if (DownloadBuffer > MaxDownloadBuffer)
-                            {
+                            {                                
                                 if ((DateTime.Now - coolDownTime).Seconds > 30 && taskDict.Keys.Any())
                                 {
                                     var staleHeight = taskDict.Keys.Min();
                                     var staleTask = taskDict[staleHeight];
-                                    if (Program.Nodes.ContainsKey(staleTask.ipAddress))
-                                    {
-                                        while(!Program.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
-                                            _ = staleNode.Connection.DisposeAsync();
-                                    }
-                                    while (!taskDict.TryRemove(staleHeight, out var test4)) ;
+                                    if(Program.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
+                                        _ = staleNode.Connection.DisposeAsync();
+                                    taskDict.TryRemove(staleHeight, out var test4);
                                     staleTask.task.Dispose();
                                     heightToDownload = Math.Min(heightToDownload, staleHeight);                                                                        
-                                    coolDownTime = DateTime.Now;
+                                    coolDownTime = DateTime.Now;                                    
                                 }
                             }
                             else
-                            {
+                            {                                
                                 var nextHeightToValidate = Program.LastBlock.Height + 1;
                                 if (!BlockDict.ContainsKey(nextHeightToValidate) && !taskDict.ContainsKey(nextHeightToValidate))
                                     heightToDownload = nextHeightToValidate;
@@ -92,7 +90,7 @@ namespace ReserveBlockCore.Services
                                 if (heightToDownload > MaxHeight)
                                     continue;
                                 taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, AvailableNode),
-                                    AvailableNode.NodeIP);
+                                    AvailableNode.NodeIP);                                
                             }
                         }
                     }
