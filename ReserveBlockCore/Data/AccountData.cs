@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Extensions;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Data
 {
@@ -144,14 +145,33 @@ namespace ReserveBlockCore.Data
 		public static void PrintWalletAccounts()
         {
 			Console.Clear();
-			var accountList = GetAccounts();
-			if(accountList.Count() > 0)
+			var accounts = GetAccounts();
+
+			var accountList = accounts.FindAll().ToList();
+
+			if (accountList.Count() > 0)
             {
-				accountList.FindAll().ToList().ForEach(x => {
-					Console.WriteLine("********************************************************************");
-					Console.WriteLine("\nAddress :\n{0}", x.Address);
-					Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+				Console.Clear();
+				Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+				AnsiConsole.Write(
+				new FigletText("RBX Accounts")
+				.Centered()
+				.Color(Color.Green));
+
+				var table = new Table();
+
+				table.Title("[yellow]RBX Wallet Accounts[/]").Centered();
+				table.AddColumn(new TableColumn(new Panel("Address")));
+				table.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
+
+				accountList.ForEach(x => {
+					table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
 				});
+
+				table.Border(TableBorder.Rounded);
+
+				AnsiConsole.Write(table);
 			}
 			else
             {
