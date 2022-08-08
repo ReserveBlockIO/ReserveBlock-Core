@@ -53,7 +53,6 @@ namespace ReserveBlockCore.Services
                     foreach (var height in heights)
                     {                        
                         var (block, ipAddress) = BlockDownloadService.BlockDict[height];
-                        Console.WriteLine("Found Block: " + height.ToString());
                         var result = await ValidateBlock(block, true);                        
                         if (!result)
                         {

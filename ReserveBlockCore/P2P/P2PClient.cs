@@ -31,6 +31,7 @@ namespace ReserveBlockCore.P2P
         public static DateTime? LastTaskResultTime = null;
         public static long LastTaskBlockHeight = 0;
         public static bool LastTaskError = false;
+        public static CancellationTokenSource source = new CancellationTokenSource(10000);
         #endregion
 
         #region HubConnection Variables        
@@ -179,7 +180,7 @@ namespace ReserveBlockCore.P2P
 
                 });
 
-                await hubConnection.StartAsync();
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,10));
                 if (hubConnection.ConnectionId == null)
                     return false;
 
@@ -414,7 +415,8 @@ namespace ReserveBlockCore.P2P
                             else
                             {
                                 LastTaskError = true;
-                                ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
+                                //If response takes a while then it won't load.
+                                //ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
                             }
                         }
                     }
