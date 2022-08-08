@@ -22,7 +22,7 @@ namespace ReserveBlockCore.Utilities
                 }
                 
                 taskQuestion.TaskType = type;
-                taskQuestion.BlockHeight = Program.BlockHeight + 1;
+                taskQuestion.BlockHeight = Program.LastBlock.Height + 1;
             }
 
             return taskQuestion;

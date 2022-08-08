@@ -26,6 +26,7 @@ namespace ReserveBlockCore.Models
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
         public string? Data { get; set; }
+        
         [StringLength(512)]
         public string Signature { get; set; }
         public long Height { get; set; }
