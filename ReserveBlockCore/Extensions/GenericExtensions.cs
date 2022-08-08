@@ -1,4 +1,6 @@
 ﻿using System.IO.Compression;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -23,6 +25,30 @@ namespace ReserveBlockCore.Extensions
                     var hash = md5.ComputeHash(stream);
                     return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
                 }
+            }
+        }
+        
+        public static SecureString ToSecureString(this string source)
+        {
+            var secureStr = new SecureString();
+            if (source.Length > 0)
+            {
+                foreach (var c in source.ToCharArray()) secureStr.AppendChar(c);
+            }
+            return secureStr;
+        }
+
+        public static string ToUnsecureString(this SecureString source)
+        {
+            IntPtr unmanagedString = IntPtr.Zero;
+            try
+            {
+                unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(source);
+                return Marshal.PtrToStringUni(unmanagedString);
+            }
+            finally
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
             }
         }
 

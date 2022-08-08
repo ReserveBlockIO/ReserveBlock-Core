@@ -8,7 +8,7 @@ namespace ReserveBlockCore.Services
 {
     public class ValidatorService
     {
-        public static void DoValidate()
+        public static async void DoValidate()
         {
             Console.Clear();
             var accountList = AccountData.GetPossibleValidatorAccounts();
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Services
                             nodeNameCheck = UniqueNameCheck(nodeName);
                         }
 
-                        var result = StartValidating(account,nodeName);
+                        var result = await StartValidating(account,nodeName);
                         Console.WriteLine(result);
                         Console.WriteLine("Returning you to main menu in 10 seconds...");
                         Thread.Sleep(10000);
