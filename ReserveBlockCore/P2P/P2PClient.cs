@@ -351,6 +351,7 @@ namespace ReserveBlockCore.P2P
                 if (conResult != false)
                 {
                     NodeCount++;
+                    ConsoleWriterService.Output($"Connected to {NodeCount}/8");
                     peer.IsOutgoing = true;
                     peer.FailCount = 0; //peer responded. Reset fail count
                     peerDB.UpdateSafe(peer);
