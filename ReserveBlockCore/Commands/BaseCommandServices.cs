@@ -74,9 +74,54 @@ namespace ReserveBlockCore.Commands
 
             }
         }
+        public static async Task EncryptWallet()
+        {
+            Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
+            Console.WriteLine("Are you sure you want to do this? ('y' for yes and 'n' for no.");
+            var confirmation = Console.ReadLine();
+            if(!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "y")
+            {
+                Console.WriteLine("Please choose a password to encrypt wallet with.");
+                var password = Console.ReadLine();
+                if(!string.IsNullOrWhiteSpace(password))
+                {
+                    Console.WriteLine("Please confirm password");
+                    var passwordConfirmed = Console.ReadLine();
+                    if(!string.IsNullOrWhiteSpace(passwordConfirmed))
+                    {
+                        if(passwordConfirmed == password)
+                        {
+                            //encrypt private keys here.
+                            var accounts = AccountData.GetAccounts();
+                            var accountList = accounts.FindAll().ToList();
+                            if(accountList.Count > 0)
+                            {
 
+                            }
+                            else
+                            {
+                                //Generate 1000 addresses
 
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Encrypting wallet failed. Passwords did not match. Please try again.");
+                            MainMenuReturn();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MainMenuReturn();
+            }
+        }
 
+        public static async void ResetValidator()
+        {
+            await ValidatorService.DoMasterNodeStop();
+        }
         public static async void AddPeer()
         {
             IPAddress ip;
@@ -424,14 +469,8 @@ namespace ReserveBlockCore.Commands
                                                 var result = await Adnr.CreateAdnrTx(address, name);
                                                 if(result.Item1 != null)
                                                 {
-                                                    Console.WriteLine("DNR Request has been sent to mempool. Sending you back to main menu.");
-                                                    Console.WriteLine("3...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("2...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("1...");
-                                                    Thread.Sleep(1000);
-                                                    StartupService.MainMenu();
+                                                    Console.WriteLine("DNR Request has been sent to mempool.");
+                                                    MainMenuReturn();
                                                 }
                                                 else
                                                 {
@@ -534,14 +573,8 @@ namespace ReserveBlockCore.Commands
                                     if(toAddrAdnr != null)
                                     {
                                         nameFound = false;
-                                        Console.WriteLine("This address already has an ADNR associated with it. Returning to main menu");
-                                        Console.WriteLine("3...");
-                                        Thread.Sleep(1000);
-                                        Console.WriteLine("2...");
-                                        Thread.Sleep(1000);
-                                        Console.WriteLine("1...");
-                                        Thread.Sleep(1000);
-                                        StartupService.MainMenu();
+                                        Console.WriteLine("This address already has an ADNR associated with it");
+                                        MainMenuReturn();
                                     }
                                     else
                                     {
@@ -556,14 +589,8 @@ namespace ReserveBlockCore.Commands
                                                 var result = await Adnr.TransferAdnrTx(address, toAddr);
                                                 if (result.Item1 != null)
                                                 {
-                                                    Console.WriteLine("DNR Transfer Request has been sent to mempool. Sending you back to main menu.");
-                                                    Console.WriteLine("3...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("2...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("1...");
-                                                    Thread.Sleep(1000);
-                                                    StartupService.MainMenu();
+                                                    Console.WriteLine("DNR Transfer Request has been sent to mempool.");
+                                                    MainMenuReturn();
                                                 }
                                                 else
                                                 {
@@ -661,14 +688,8 @@ namespace ReserveBlockCore.Commands
                                 var result = await Adnr.DeleteAdnrTx(address);
                                 if (result.Item1 != null)
                                 {
-                                    Console.WriteLine("DNR Delete Request has been sent to mempool. Sending you back to main menu.");
-                                    Console.WriteLine("3...");
-                                    Thread.Sleep(1000);
-                                    Console.WriteLine("2...");
-                                    Thread.Sleep(1000);
-                                    Console.WriteLine("1...");
-                                    Thread.Sleep(1000);
-                                    StartupService.MainMenu();
+                                    Console.WriteLine("DNR Delete Request has been sent to mempool.");
+                                    MainMenuReturn();
                                 }
                                 else
                                 {
@@ -802,7 +823,7 @@ namespace ReserveBlockCore.Commands
 
         private static void MainMenuReturn()
         {
-            Console.WriteLine("Return you to main menu in 3 seconds.");
+            Console.WriteLine("Returning you to main menu in 3 seconds.");
             Console.WriteLine("3...");
             Thread.Sleep(1000);
             Console.WriteLine("2...");

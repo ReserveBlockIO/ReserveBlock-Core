@@ -189,68 +189,34 @@ namespace ReserveBlockCore.Services
             return output;
         }
 
-        public static void DoMasterNodeStop()
+        public static async Task DoMasterNodeStop()
         {
-            Console.Clear();
-            //var validatortList = Validators.Validator.GetLocalValidator();
-            //var accountNumberList = new Dictionary<string, Account>();
+            try
+            {
+                var accounts = AccountData.GetAccounts();
+                var myAccounts = accounts.FindAll().ToList();
 
-            //if (validatortList.Count() == 0)
-            //{
-            //    Console.WriteLine("********************************************************************");
-            //    Console.WriteLine("No active validator accounts found.");
-            //    Console.WriteLine("Please note that if there was ever a time your account went below 1000 RBX you would have been automatically removed from the validator network.");
-            //    Console.WriteLine("Returning you to main menu...");
-            //    Thread.Sleep(5000);
-            //    StartupService.MainMenu();
-            //}
-            //else
-            //{
-            //    int count = 1;
-            //    validatortList.ToList().ForEach(x => {
-            //        accountNumberList.Add(count.ToString(), x);
-            //        Console.WriteLine("********************************************************************");
-            //        Console.WriteLine("Please choose an address below to stop being a validator by typing its # and pressing enter.");
+                if (myAccounts.Count() > 0)
+                {
+                    myAccounts.ForEach(x => {
+                        x.IsValidating = false;
+                    });
 
-            //        Console.WriteLine("\n #" + count.ToString());
-            //        Console.WriteLine("\nAddress :\n{0}", x.Address);
-            //        count++;
-            //    });
+                    accounts.UpdateSafe(myAccounts);
+                }
 
-            //    var walletChoice = Console.ReadLine();
-            //    var validator = accountNumberList[walletChoice];
-            //    Console.WriteLine("********************************************************************");
-            //    Console.WriteLine("The chosen validator address is:");
-            //    string validatorAddress = validator.Address;
-            //    Console.WriteLine(validatorAddress);
-            //    Console.WriteLine("Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
-            //    var confirmChoice = Console.ReadLine();
+                var validators = Validators.Validator.GetAll();
+                validators.DeleteAllSafe();
 
-            //    if (confirmChoice == null)
-            //    {
-            //        Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
-            //        Console.WriteLine("Returning you to main menu...");
-            //        Thread.Sleep(5000);
-            //        StartupService.MainMenu();
-            //    }
-            //    else if (confirmChoice.ToLower() == "n")
-            //    {
-            //        Console.WriteLine("Returning you to main menu...");
-            //        Thread.Sleep(3000);
-            //        StartupService.MainMenu();
-            //    }
-            //    else
-            //    {
-            //        Console.Clear();
-            //        //StopValidating(validator);
+                Program.ValidatorAddress = "";
 
-            //        Console.WriteLine("The chosen addresses is no longer a validator...");
-            //        Console.WriteLine("Returning you to main menu in 5 seconds...");
-            //        Thread.Sleep(5000);
-            //        StartupService.MainMenu();
-            //    }
-            //}
-            
+                await P2PClient.DisconnectAdjudicator();
+                Console.WriteLine("Validator database records have been reset.");
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.Message}", "ValidatorService.DoMasterNodeStop()");
+            }
         }
 
         public static bool ValidateTheValidator(Validators validator)

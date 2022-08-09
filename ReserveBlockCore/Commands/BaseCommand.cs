@@ -42,8 +42,17 @@ namespace ReserveBlockCore.Commands
                 case "/clear":
                     Console.Clear();
                     break;
+                case "/val":
+                    await BaseCommandServices.ValidatorInfo();
+                    break;
+                case "/resetval":
+                    BaseCommandServices.ResetValidator();
+                    break;
+                case "/encrypt":
+                    await BaseCommandServices.EncryptWallet();
+                    break;
                 case "/backupwallet":
-                    BackupUtil.BackupWalletData("Not Yet Added.");
+                    //BackupUtil.BackupWalletData("Not Yet Added.");
                     Console.WriteLine("Reserve Block Wallet has been backed up.");
                     break;
                 case "/mempool":
@@ -76,9 +85,6 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/transferdnr":
                     await BaseCommandServices.TransferDnr();
-                    break;
-                case "/val":
-                    await BaseCommandServices.ValidatorInfo();
                     break;
                 case "/findbeacon":
                     var beacons = P2PClient.GetBeacons();
