@@ -19,8 +19,10 @@ rm packages-microsoft-prod.deb
 4. run 'dotnet --version'. You should see a version number of 6.0.xxx
 5. 'mkdir rbx' - Makes a direction for RBX 
 6. cd rbx
-7. a) Clone the repo with git. 'git clone https://github.com/ReserveBlockIO/ReserveBlock-Core.git'
-   b) Download the already packaged release https://github.com/ReserveBlockIO/ReserveBlock-Core/releases/. If   	you do this please navigate to folder you downloaded binaries from and skip to step 12.
+7.  a) Clone the repo with git. 'git clone https://github.com/ReserveBlockIO/ReserveBlock-Core.git'
+
+
+    b) Download the already packaged release https://github.com/ReserveBlockIO/ReserveBlock-Core/releases/. If   	you do this please navigate to folder you downloaded binaries from and skip to step 12.
 8. cd ReserveBlock-Core
 9. dotnet build - There should be 0 (zero) errors.
 10. dotnet publish -c Release -r linux-x64 --output ./rbxpublished **please note the 'linux-x64' can be changed if you are on a different architecture
