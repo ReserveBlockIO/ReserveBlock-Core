@@ -570,55 +570,7 @@ namespace ReserveBlockCore
         {
             if (StopAllTimers == false)
             {
-                //if blocks are currently downloading this will stop it from running again.
-                try
-                {
-                    DbContext.DB.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_AccountStateTrei.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_Banlist.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_Peers.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_Wallet.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_WorldStateTrei.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
+                await DbContext.CheckPoint();
             }
             
         }

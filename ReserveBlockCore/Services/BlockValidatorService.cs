@@ -56,7 +56,6 @@ namespace ReserveBlockCore.Services
                         if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
                             continue;
                         var (block, ipAddress) = blockInfo;
-                        Console.WriteLine("Found Block: " + height.ToString());
                         var result = await ValidateBlock(block, true);                        
                         if (!result)
                         {

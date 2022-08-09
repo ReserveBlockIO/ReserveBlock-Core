@@ -57,7 +57,7 @@ namespace ReserveBlockCore.Commands
 
                 var table = new Table();
 
-                table.Title("[yellow]RBX Wallet Commands[/]").Centered();
+                table.Title("[yellow]RBX Private Keys[/]").Centered();
                 table.AddColumn(new TableColumn(new Panel("Address")));
                 table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
 
