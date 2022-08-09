@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 if (evArray.Count() == 6)
                 {
                     var blockHeight = evArray[5].ToString();
-                    if (blockHeight != "")
+                    if (!string.IsNullOrWhiteSpace(blockHeight))
                     {
                         evolveFeature.EvolveBlockHeight = Convert.ToInt64(evArray[5].ToString());
                     }
@@ -60,7 +60,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                 //Custom vars
                 var assetName = evArray[3].ToString();
-                if(assetName != "")
+                if(!string.IsNullOrWhiteSpace(assetName))
                 {
                     SmartContractAsset scAsset = new SmartContractAsset { 
                         AssetAuthorName = "",
@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     evolveFeature.SmartContractAsset = null;
                 }    
                 var evolveDateTicks = evArray[4].ToString();
-                if(evolveDateTicks != "")
+                if(!string.IsNullOrWhiteSpace(evolveDateTicks))
                 {
                     DateTime myDate = new DateTime(Convert.ToInt64(evolveDateTicks));
                     evolveFeature.EvolveDate = myDate;
@@ -113,7 +113,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             if(features != null)
             {
                 var featureList = features.Value.ToString();
-                if(featureList != "" && featureList != null)
+                if(!string.IsNullOrWhiteSpace(featureList))
                 {
                     if(featureList.Contains("0"))
                     {
@@ -161,7 +161,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             if (features != null)
             {
                 var featureList = features.Value.ToString();
-                if (featureList != "" && featureList != null)
+                if (!string.IsNullOrWhiteSpace(featureList))
                 {
                     if (featureList.Contains("0"))
                     {
@@ -209,7 +209,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             if (features != null)
             {
                 var featureList = features.Value.ToString();
-                if (featureList != "" && featureList != null)
+                if (!string.IsNullOrWhiteSpace(featureList))
                 {
                     if (featureList.Contains("0"))
                     {
@@ -245,7 +245,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
         public static async void EvolveNFT(Transaction tx)
         {
-            if (tx.Data != "" && tx.Data != null)
+            if (!string.IsNullOrWhiteSpace(tx.Data))
             {
                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                 if (scDataArray != null)
@@ -313,7 +313,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         #region DevolveNFT
         public static async void DevolveNFT(Transaction tx)
         {
-            if (tx.Data != "" && tx.Data != null)
+            if (!string.IsNullOrWhiteSpace(tx.Data))
             {
                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                 if (scDataArray != null)
@@ -383,7 +383,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         #region EvolveToSpecificStateNFT
         public static async void EvolveToSpecificStateNFT(Transaction tx)
         {
-            if (tx.Data != "" && tx.Data != null)
+            if (!string.IsNullOrWhiteSpace(tx.Data))
             {
                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                 if (scDataArray != null)

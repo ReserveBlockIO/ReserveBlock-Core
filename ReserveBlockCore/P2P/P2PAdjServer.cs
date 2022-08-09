@@ -49,12 +49,12 @@ namespace ReserveBlockCore.P2P
 
                     var fortisPool = FortisPool.ToList();
 
-                    if (address != "" && uName != "" && signature != "" && walletVersionVerify == true)
+                    if (!string.IsNullOrWhiteSpace(address) && !string.IsNullOrWhiteSpace(uName) && !string.IsNullOrWhiteSpace(signature) && walletVersionVerify)
                     {
                         try
                         {
                             var stateAddress = StateData.GetSpecificAccountStateTrei(address);
-                            if (address != null)
+                            if (!string.IsNullOrWhiteSpace(address))
                             {
                                 if (stateAddress.Balance >= 1000)
                                 {

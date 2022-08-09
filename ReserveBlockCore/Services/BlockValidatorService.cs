@@ -21,7 +21,8 @@ namespace ReserveBlockCore.Services
 
         public static async Task ValidationDelay()
         {
-            while (IsValidatingBlocks == 1)
+            await ValidateBlocks();
+            while (IsValidatingBlocks == 1 || Program.BlocksDownloading == 1)
                 await Task.Delay(4);
         }
         public static async Task ValidateBlocks()
@@ -42,17 +43,19 @@ namespace ReserveBlockCore.Services
                         heightOffset = heights[offsetIndex];
                         if (heightOffset < nextHeight)
                             BlockDownloadService.BlockDict.TryRemove(heightOffset, out var test);
-                        else
+                        else                        
                             break;
                     }
 
                     if (heightOffset != nextHeight)
                         break;
-                    heights = heights.Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
+                    heights = heights.Where(x => x >= nextHeight).Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
                         .Select(x => x.height).ToArray();
                     foreach (var height in heights)
-                    {                        
-                        var (block, ipAddress) = BlockDownloadService.BlockDict[height];
+                    {
+                        if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
+                            continue;
+                        var (block, ipAddress) = blockInfo;
                         var result = await ValidateBlock(block, true);                        
                         if (!result)
                         {
@@ -235,7 +238,7 @@ namespace ReserveBlockCore.Services
                                 if(Program.IsChainSynced == true)
                                 {
                                     //Call out to custom URL from config file with TX details
-                                    if(Program.APICallURL != null)
+                                    if(!string.IsNullOrWhiteSpace(Program.APICallURL))
                                     {
                                         APICallURLService.CallURL(localTransaction);
                                     }
@@ -252,12 +255,12 @@ namespace ReserveBlockCore.Services
                                         if (scData != null)
                                         {
                                             var function = (string?)scData["Function"];
-                                            if (function != "")
+                                            if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 if (function == "Mint()")
                                                 {
                                                     var scUID = (string?)scData["ContractUID"];
-                                                    if (scUID != "")
+                                                    if (!string.IsNullOrWhiteSpace(scUID))
                                                     {
                                                         SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
                                                     }
@@ -273,12 +276,12 @@ namespace ReserveBlockCore.Services
 
                                         var data = (string?)scData["Data"];
                                         var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             switch (function)
                                             {
                                                 case "Transfer()":
-                                                    if (data != "")
+                                                    if (!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var locators = (string?)scData["Locators"];
                                                         var md5List = (string?)scData["MD5List"];
@@ -302,7 +305,7 @@ namespace ReserveBlockCore.Services
                                                     }
                                                     break;
                                                 case "Evolve()":
-                                                    if(data != "")
+                                                    if(!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(localTransaction); });
                                                         bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
@@ -313,7 +316,7 @@ namespace ReserveBlockCore.Services
                                                     }
                                                     break;
                                                 case "Devolve()":
-                                                    if (data != "")
+                                                    if (!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(localTransaction); });
                                                         bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
@@ -324,7 +327,7 @@ namespace ReserveBlockCore.Services
                                                     }
                                                     break;
                                                 case "ChangeEvolveStateSpecific()":
-                                                    if(data != "")
+                                                    if(!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(localTransaction); });
                                                         bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
@@ -347,7 +350,7 @@ namespace ReserveBlockCore.Services
                                         if (scData != null)
                                         {
                                             var function = (string?)scData["Function"];
-                                            if (function != "" && function != null)
+                                            if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 if (function == "AdnrTransfer()")
                                                 {
@@ -379,11 +382,11 @@ namespace ReserveBlockCore.Services
                                         //do transfer logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
                                         var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             if (function == "Transfer()")
                                             {
-                                                if (scUID != "")
+                                                if (!string.IsNullOrWhiteSpace(scUID))
                                                 {
                                                     SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                 }
@@ -397,11 +400,11 @@ namespace ReserveBlockCore.Services
                                         //do burn logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
                                         var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             if (function == "Burn()")
                                             {
-                                                if (scUID != "")
+                                                if (!string.IsNullOrWhiteSpace(scUID))
                                                 {
                                                     SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
                                                 }
@@ -416,11 +419,11 @@ namespace ReserveBlockCore.Services
 
                                         var function = (string?)scData["Function"];
                                         var name = (string?)scData["Name"];
-                                        if (function != "" && function != null)
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             if (function == "AdnrCreate()")
                                             {
-                                                if(name != "" && name != null)
+                                                if(!string.IsNullOrWhiteSpace(name))
                                                 {
                                                     await Account.AddAdnrToAccount(localTransaction.FromAddress, name);
                                                 }

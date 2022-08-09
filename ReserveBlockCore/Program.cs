@@ -300,7 +300,7 @@ namespace ReserveBlockCore
             await StartupService.ConnectoToAdjudicator();
 
 
-            if (ConfigValidator != "")
+            if (!string.IsNullOrWhiteSpace(ConfigValidator))
             {
                 StartupService.SetConfigValidator();
             }
@@ -343,7 +343,7 @@ namespace ReserveBlockCore
                 {
                     RunCommand(command);
                 }
-                else if(WalletPassword != null)
+                else if(!string.IsNullOrWhiteSpace(WalletPassword))
                 {
                     var now = DateTime.UtcNow;
                     if(AlwaysRequireWalletPassword == true)
@@ -393,7 +393,7 @@ namespace ReserveBlockCore
 
         private static async void RunCommand(string? command)
         {
-            if (command != "" || command != null)
+            if (!string.IsNullOrWhiteSpace(command))
             {
                 string commandResult = "";
                 if (command.Contains(","))
@@ -545,7 +545,7 @@ namespace ReserveBlockCore
                 }
                 else
                 {
-                    if(Program.ValidatorAddress != "")
+                    if(!string.IsNullOrWhiteSpace(Program.ValidatorAddress))
                     {
                         //Check connection to head val and update.
                         var connection = P2PClient.IsAdjConnected1;

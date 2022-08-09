@@ -21,7 +21,7 @@
                 multiAssetFeature.FileName = mafArray[0].ToString();
                 multiAssetFeature.Location = "Asset Folder";
                 multiAssetFeature.FileSize = Convert.ToInt32(mafArray[1].ToString());
-                multiAssetFeature.Extension = multiAssetFeature.FileName != "" && multiAssetFeature.FileName != null ? Path.GetExtension(multiAssetFeature.FileName) : ""; 
+                multiAssetFeature.Extension = !string.IsNullOrWhiteSpace(multiAssetFeature.FileName) ? Path.GetExtension(multiAssetFeature.FileName) : ""; 
                 multiAssetFeature.AssetAuthorName = mafArray[2].ToString();
 
                 multiAssetFeatures.Add(multiAssetFeature);

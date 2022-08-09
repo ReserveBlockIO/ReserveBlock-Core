@@ -90,7 +90,7 @@ namespace ReserveBlockCore.Config
 				Program.AddressPrefix = 0x89; //address prefix 'x'
 			}
 
-			if (config.WalletPassword != null)
+			if (!string.IsNullOrWhiteSpace(config.WalletPassword))
 			{
 				Program.WalletPassword = config.WalletPassword.ToEncrypt();
 				Program.CLIWalletUnlockTime = DateTime.UtcNow;
@@ -98,7 +98,7 @@ namespace ReserveBlockCore.Config
 				Program.AlwaysRequireWalletPassword = config.AlwaysRequireWalletPassword;
 			}
 
-			if (config.APIPassword != null)
+			if (!string.IsNullOrWhiteSpace(config.APIPassword))
             {
 				//create API Password method that locks password in encrypted string
 				Program.APIPassword = config.APIPassword.ToEncrypt();
@@ -115,7 +115,7 @@ namespace ReserveBlockCore.Config
 				Program.ChainCheckpointLocation = config.ChainCheckpointLocation;
             }
 
-			if(config.ValidatorAddress != null)
+			if(!string.IsNullOrWhiteSpace(config.ValidatorAddress))
             {
 				Program.ConfigValidator = config.ValidatorAddress;
 				Program.ConfigValidatorName = config.ValidatorName;

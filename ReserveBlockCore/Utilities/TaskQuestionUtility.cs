@@ -8,7 +8,7 @@ namespace ReserveBlockCore.Utilities
         {
             TaskQuestion taskQuestion = new TaskQuestion();
 
-            if(type != null)
+            if(!string.IsNullOrWhiteSpace(type))
             {
                 switch (type)
                 {

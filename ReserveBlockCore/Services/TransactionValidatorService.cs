@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Services
                     var function = (string?)scData["Function"];
                     var scUID = (string?)scData["ContractUID"];
 
-                    if (function != "")
+                    if (!string.IsNullOrWhiteSpace(function))
                     {
                         switch (function)
                         {
@@ -464,7 +464,7 @@ namespace ReserveBlockCore.Services
                     var function = (string?)scData["Function"];
                     var scUID = (string?)scData["ContractUID"];
 
-                    if (function != "")
+                    if (!string.IsNullOrWhiteSpace(function))
                     {
                         switch (function)
                         {
