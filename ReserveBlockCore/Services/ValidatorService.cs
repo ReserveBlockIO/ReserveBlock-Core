@@ -61,7 +61,7 @@ namespace ReserveBlockCore.Services
                     Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
                     var nodeName = Console.ReadLine();
                     
-                    if(nodeName != null || nodeName != "")
+                    if(!string.IsNullOrWhiteSpace(nodeName))
                     {
                         var nodeNameCheck = UniqueNameCheck(nodeName);
 
@@ -118,7 +118,7 @@ namespace ReserveBlockCore.Services
                     output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                     return output;
                 }
-                if(uName != "" && UniqueNameCheck(uName) == false)
+                if(!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
                 {
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
@@ -268,7 +268,7 @@ namespace ReserveBlockCore.Services
                 //output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                 return result;
             }
-            if (validator.UniqueName != "" && UniqueNameCheck(validator.UniqueName) == false)
+            if (!string.IsNullOrWhiteSpace(validator.UniqueName) && UniqueNameCheck(validator.UniqueName) == false)
             {
                 //output = "Unique name has already been taken. Please choose another.";
                 return result;

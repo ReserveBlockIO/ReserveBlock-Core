@@ -58,8 +58,7 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            if (PeerList.ContainsKey(peerIP))
-                while (!PeerList.TryRemove(peerIP, out string test));               
+            PeerList.TryRemove(peerIP, out var test);
         }
 
         public async Task SendMessage(string message, string data)

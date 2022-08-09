@@ -37,7 +37,7 @@ namespace ReserveBlockCore.Services
 
             var txData = "";
 
-            if(scData.Result.Item1 != null)
+            if(!string.IsNullOrWhiteSpace(scData.Result.Item1))
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
                 var scBase64 = bytes.ToCompress().ToBase64();
@@ -136,7 +136,7 @@ namespace ReserveBlockCore.Services
             var txData = "";
 
             
-            if (scData.Result.Item1 != null)
+            if (!string.IsNullOrWhiteSpace(scData.Result.Item1))
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
@@ -230,7 +230,7 @@ namespace ReserveBlockCore.Services
 
             var txData = "";
 
-            if (scData.Result.Item1 != null)
+            if (!string.IsNullOrWhiteSpace(scData.Result.Item1))
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();

@@ -470,7 +470,7 @@ namespace ReserveBlockCore.Controllers
                             output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrCheck.Name}" });
                             return output;
                         }
-                        if (name != null && name != "")
+                        if (!string.IsNullOrWhiteSpace(name))
                         {
                             var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                             if (!nameCharCheck)
@@ -536,7 +536,7 @@ namespace ReserveBlockCore.Controllers
                             output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address does not have a DNR associated with it." });
                             return output;
                         }
-                        if (toAddress != null && toAddress != "")
+                        if (!string.IsNullOrWhiteSpace(toAddress))
                         {
                             var addrVerify = AddressValidateUtility.ValidateAddress(toAddress);
                             if (addrVerify == true)

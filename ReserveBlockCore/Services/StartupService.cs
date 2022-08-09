@@ -360,7 +360,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectoToAdjudicator()
         {
-            if(Program.ValidatorAddress != null && Program.ValidatorAddress != "")
+            if(!string.IsNullOrWhiteSpace(Program.ValidatorAddress))
             {
                 var account = AccountData.GetLocalValidator();
                 var validators = Validators.Validator.GetAll();

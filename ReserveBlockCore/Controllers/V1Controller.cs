@@ -50,7 +50,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            if (Program.APIPassword != null)
+            if (!string.IsNullOrWhiteSpace(Program.APIPassword))
             {
                 if (password != null)
                 {
@@ -94,7 +94,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            if (Program.APIPassword != null)
+            if (!string.IsNullOrWhiteSpace(Program.APIPassword))
             {
                 if (password != null)
                 {
@@ -583,7 +583,7 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             
-            if(Program.ValidatorAddress != "")
+            if(!string.IsNullOrWhiteSpace(Program.ValidatorAddress))
             {
                 var validatorTable = Validators.Validator.GetAll();
                 var validator = validatorTable.FindOne(x => x.Address == Program.ValidatorAddress);

@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Data
                         var function = (string?)scData["Function"];
                         var scUID = (string?)scData["ContractUID"];
 
-                        if (function != "")
+                        if (!string.IsNullOrWhiteSpace(function))
                         {
                             switch (function)
                             {
@@ -160,11 +160,11 @@ namespace ReserveBlockCore.Data
                     if(x.TransactionType == TransactionType.ADNR)
                     {
                         var txData = x.Data;
-                        if (txData != null)
+                        if (!string.IsNullOrWhiteSpace(txData))
                         {
                             var jobj = JObject.Parse(txData);
                             var function = (string)jobj["Function"];
-                            if (function != "")
+                            if (!string.IsNullOrWhiteSpace(function))
                             {
                                 switch (function)
                                 {
@@ -187,11 +187,11 @@ namespace ReserveBlockCore.Data
                     if(x.TransactionType == TransactionType.DSTR)
                     {
                         var txData = x.Data;
-                        if (txData != null)
+                        if (!string.IsNullOrWhiteSpace(txData))
                         {
                             var jobj = JObject.Parse(txData);
                             var function = (string)jobj["Function"];
-                            if (function != "")
+                            if (!string.IsNullOrWhiteSpace(function))
                             {
                                 switch (function)
                                 {
@@ -345,7 +345,7 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.OwnerAddress = tx.ToAddress;
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.ContractData = data;
-                scStateTreiRec.Locators = locator != null ? locator : scStateTreiRec.Locators;
+                scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }

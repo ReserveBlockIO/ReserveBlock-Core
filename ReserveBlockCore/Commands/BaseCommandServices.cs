@@ -15,11 +15,11 @@ namespace ReserveBlockCore.Commands
     {
         public static async void UnlockWallet()
         {
-            if(Program.WalletPassword != null)
+            if(!string.IsNullOrWhiteSpace(Program.WalletPassword))
             {
                 Console.WriteLine("Please type in password to unlock wallet.");
                 var password = Console.ReadLine();
-                if (password != null)
+                if (!string.IsNullOrWhiteSpace(password))
                 {
                     var passCheck = Program.WalletPassword.ToDecrypt(password);
                     if(passCheck == password)
@@ -82,7 +82,7 @@ namespace ReserveBlockCore.Commands
             IPAddress ip;
             Console.WriteLine("Please input the IP of the peer...");
             var peer = Console.ReadLine();
-            if (peer != null)
+            if (!string.IsNullOrWhiteSpace(peer))
             {
                 try
                 {
@@ -141,7 +141,7 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("Re-establish Peers? y/n");
             var reconnect = Console.ReadLine();
-            if (reconnect != null)
+            if (!string.IsNullOrWhiteSpace(reconnect))
             {
                 if (reconnect == "y")
                 {
@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("Please give your beacon a name...");
             var name = Console.ReadLine();
-            if (name != null)
+            if (!string.IsNullOrWhiteSpace(name))
             {
                 var ip = P2PClient.MostLikelyIP();
 
@@ -230,7 +230,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if (walletChoice != null && walletChoice != "")
+                if (!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -245,11 +245,11 @@ namespace ReserveBlockCore.Commands
                         var address = wallet.Address;
                         Console.WriteLine("Please give your shop a name...");
                         var name = Console.ReadLine();
-                        if (name != null && name != "")
+                        if (!string.IsNullOrWhiteSpace(name))
                         {
                             Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
                             var desc = Console.ReadLine();
-                            if (desc != null && desc != "" && desc.Length > 512)
+                            if (!string.IsNullOrWhiteSpace(desc) && desc.Length > 512)
                             {
                                 var ip = P2PClient.MostLikelyIP();
 
@@ -302,7 +302,7 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("How many words do you want? (12 or 24)");
             var strengthStr = Console.ReadLine();
-            if (strengthStr != null)
+            if (!string.IsNullOrWhiteSpace(strengthStr))
             {
                 if (strengthStr == "12")
                 {
@@ -374,7 +374,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if(walletChoice != null && walletChoice != "")
+                if(!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -401,7 +401,7 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
                             Console.WriteLine("type exit to leave this menu.");
                             var name = Console.ReadLine();
-                            if(name != null && name != "" && name != "exit")
+                            if(!string.IsNullOrWhiteSpace(name) && name != "exit")
                             {
                                 var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                                 if(!nameCharCheck)
@@ -416,7 +416,7 @@ namespace ReserveBlockCore.Commands
                                         nameFound = false;
                                         Console.WriteLine("Are you sure you want to create this DNR? 'y' for yes, 'n' for no.");
                                         var response = Console.ReadLine();
-                                        if (response != null && response != "")
+                                        if (!string.IsNullOrWhiteSpace(response))
                                         {
                                             if (response.ToLower() == "y")
                                             {
@@ -497,7 +497,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if (walletChoice != null && walletChoice != "")
+                if (!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -524,7 +524,7 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter the address you'd like to transfer too. BE SURE YOU WANT TO DO THIS! Once a transfer is processed it cannot be reversed.");
                             Console.WriteLine("type exit to leave this menu.");
                             var toAddr = Console.ReadLine();
-                            if (toAddr != null && toAddr != "" && toAddr != "exit")
+                            if (!string.IsNullOrWhiteSpace(toAddr) && toAddr != "exit")
                             {
 
                                 var addrVerify = AddressValidateUtility.ValidateAddress(toAddr);
@@ -548,7 +548,7 @@ namespace ReserveBlockCore.Commands
                                         nameFound = false;
                                         Console.WriteLine("Are you sure you want to transfer this DNR? 'y' for yes, 'n' for no.");
                                         var response = Console.ReadLine();
-                                        if (response != null && response != "")
+                                        if (!string.IsNullOrWhiteSpace(response))
                                         {
                                             if (response.ToLower() == "y")
                                             {
@@ -629,7 +629,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if (walletChoice != null && walletChoice != "")
+                if (!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -653,7 +653,7 @@ namespace ReserveBlockCore.Commands
                         Console.WriteLine($"You have selected the following wallet: {address}");
                         Console.WriteLine("Are you sure you want to create this DNR? 'y' for yes, 'n' for no.");
                         var response = Console.ReadLine();
-                        if (response != null && response != "")
+                        if (!string.IsNullOrWhiteSpace(response))
                         {
                             if (response.ToLower() == "y")
                             {
@@ -699,7 +699,7 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("Please paste your Mnemonic Below...");
             var mnemonicStr = Console.ReadLine();
-            if (mnemonicStr != null)
+            if (!string.IsNullOrWhiteSpace(mnemonicStr))
             {
                 var mnemonicResult = HDWallet.HDWalletData.RestoreHDWallet(mnemonicStr);
                 if(mnemonicResult.Contains("Restored"))
@@ -719,7 +719,7 @@ namespace ReserveBlockCore.Commands
             {
                 ConsoleWriterService.Output("Please enter the block height");
                 var blockHeightStr = Console.ReadLine();
-                if (blockHeightStr != null && blockHeightStr != "")
+                if (!string.IsNullOrWhiteSpace(blockHeightStr))
                 {
                     long blockHeight = 0;
                     long.TryParse(blockHeightStr, out blockHeight);
