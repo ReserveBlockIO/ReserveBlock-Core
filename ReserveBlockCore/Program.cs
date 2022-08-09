@@ -34,25 +34,22 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>();
         public static List<Validators> InactiveValidators = new List<Validators>();
         public static List<Validators> MasternodePool = new List<Validators>();
-        public static List<string> Locators = new List<string>();
-        public static long BlockHeight = -1;
+        public static List<string> Locators = new List<string>();        
         public static bool StopConsoleOutput = false;
-        public static Block LastBlock = new Block();
+        public static Block LastBlock = new Block { Height = -1};
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
         public static bool Adjudicate = false;
         public static bool AdjudicateLock = false;
         public static long LastAdjudicateTime = 0;
-        public static bool BlocksDownloading = false;
+        public static int BlocksDownloading = 0;
         public static bool HeightCheckLock = false;
         public static bool InactiveNodeSendLock = false;
         public static bool IsCrafting = false;
         public static bool IsResyncing = false;
         public static bool TestURL = false;
-        public static bool StopAllTimers = false;
-        public static bool PeersConnecting = false;
-        public static bool DatabaseCorruptionDetected = false;
-        public static bool BlockCrafting = false;
+        public static bool StopAllTimers = false;        
+        public static bool DatabaseCorruptionDetected = false;        
         public static bool RemoteCraftLock = false;
         public static bool IsChainSynced = false;
         public static bool OptionalLogging = false;
@@ -213,10 +210,7 @@ namespace ReserveBlockCore
 
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
-
-
-            PeersConnecting = true;
-            BlocksDownloading = true;
+                   
             StopAllTimers = true;
 
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
@@ -291,8 +285,7 @@ namespace ReserveBlockCore
 
             try
             {
-                await StartupService.StartupPeers();
-                PeersConnecting = false;
+                await StartupService.StartupPeers();                
             }
             catch (Exception ex)
             {
@@ -322,7 +315,7 @@ namespace ReserveBlockCore
                 commandLoopTask3//Beacon client/server
             };
 
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
 
             LogUtility.Log("Wallet Started and Running...", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
 
@@ -447,7 +440,7 @@ namespace ReserveBlockCore
             if (StopAllTimers == false)
             {
                 //if blocks are currently downloading this will stop it from running again.
-                if (BlocksDownloading != true)
+                if (BlocksDownloading != 1)
                 {
                     if(HeightCheckLock == false)
                     {
@@ -462,14 +455,9 @@ namespace ReserveBlockCore
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
 
-                                    if (maxHeight > BlockHeight)
+                                    if (maxHeight > LastBlock.Height)
                                     {
-                                        if (BlocksDownloading == false)
-                                        {
-                                            BlocksDownloading = true;
-                                            var setDownload = await BlockDownloadService.GetAllBlocks(maxHeight);
-                                            BlocksDownloading = setDownload;
-                                        }
+                                        await BlockDownloadService.GetAllBlocks();
                                     }
                                 }
                             }
@@ -582,55 +570,7 @@ namespace ReserveBlockCore
         {
             if (StopAllTimers == false)
             {
-                //if blocks are currently downloading this will stop it from running again.
-                try
-                {
-                    DbContext.DB.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_AccountStateTrei.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_Banlist.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_Peers.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_Wallet.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
-                try
-                {
-                    DbContext.DB_WorldStateTrei.Checkpoint();
-                }
-                catch (Exception ex)
-                {
-                    //error saving from db cache
-                }
+                await DbContext.CheckPoint();
             }
             
         }

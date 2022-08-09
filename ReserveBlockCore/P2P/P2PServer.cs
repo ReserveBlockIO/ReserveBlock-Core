@@ -48,8 +48,8 @@ namespace ReserveBlockCore.P2P
                 }
             }
 
-            var blockHeight = Program.BlockHeight;
-            PeerList.AddOrUpdate(peerIP, Context.ConnectionId, (key, oldValue) => Context.ConnectionId);
+            var blockHeight = Program.LastBlock.Height;
+            PeerList[peerIP] = Context.ConnectionId;
 
             await SendMessage("IP", peerIP);
             await base.OnConnectedAsync();
@@ -58,8 +58,8 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            PeerList.TryRemove(peerIP, out string test);
-            //Program.Nodes.TryRemove(peerIP, out NodeInfo test2);    
+            if (PeerList.ContainsKey(peerIP))
+                while (!PeerList.TryRemove(peerIP, out string test));               
         }
 
         public async Task SendMessage(string message, string data)
@@ -84,37 +84,33 @@ namespace ReserveBlockCore.P2P
 
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)
-        {
-            if (Program.BlocksDownloading == false)
+        {                        
+            if (Program.BlocksDownloading == 0)
             {
                 if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                 {
-                    await BlockQueueService.ProcessBlockQueue();
-
-                    var nextHeight = Program.BlockHeight + 1;
+                    var IP = GetIP(Context);                 
+                    var nextHeight = Program.LastBlock.Height + 1;
                     var currentHeight = nextBlock.Height;
 
-                    if (nextHeight == currentHeight)
-                    {
-                        var broadcast = await BlockQueueService.AddBlock(nextBlock);
+                    var isNewBlock = currentHeight >= nextHeight && !BlockDownloadService.BlockDict.ContainsKey(currentHeight);
 
-                        if (broadcast == true)
-                        {
-                            string data = "";
-                            data = JsonConvert.SerializeObject(nextBlock);
-                            await SendMessageAllPeers("blk", data);
-                        }
+                    if (isNewBlock)
+                    {
+                        BlockDownloadService.BlockDict[currentHeight] = (nextBlock, IP);
+                        await BlockValidatorService.ValidateBlocks();
                     }
 
-                    if (nextHeight < currentHeight)
-                    {
-                        // means we need to download some blocks
-                        Program.BlocksDownloading = true;
-                        var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
-                        Program.BlocksDownloading = setDownload;
+                    if (nextHeight == currentHeight && isNewBlock)
+                    {                        
+                        string data = "";
+                        data = JsonConvert.SerializeObject(nextBlock);
+                        await SendMessageAllPeers("blk", data);                        
                     }
+
+                    if (nextHeight < currentHeight && isNewBlock)                    
+                        await BlockDownloadService.GetAllBlocks();                                        
                 }
-                //Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
             }
         }
 
@@ -212,14 +208,7 @@ namespace ReserveBlockCore.P2P
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
-            if (Program.BlockHeight != -1)
-            {
-                var blockHeight = Program.BlockHeight;
-
-                return blockHeight;
-            }
-            return -1;
-
+            return Program.LastBlock.Height;
         }
 
         #endregion

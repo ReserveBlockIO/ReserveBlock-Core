@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Controllers
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
             var peerCount = "";
-            var blockHeight = Program.BlockHeight.ToString();
+            var blockHeight = Program.LastBlock.Height.ToString();
 
             var peersConnected = await P2PClient.ArePeersConnected();
             if (peersConnected)

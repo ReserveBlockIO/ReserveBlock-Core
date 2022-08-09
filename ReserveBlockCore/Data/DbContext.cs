@@ -299,5 +299,74 @@ namespace ReserveBlockCore.Data
             DB_DecShopStateTrei.Dispose();
         }
 
+        public static async Task CheckPoint()
+        {
+            try
+            {
+                DB.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_AccountStateTrei.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Banlist.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Peers.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Wallet.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_WorldStateTrei.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Queue.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Config.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Assets.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_SmartContractStateTrei.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Beacon.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_DNR.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_DecShopStateTrei.Checkpoint();
+            }
+            catch { }
+        }
+
     }
 }

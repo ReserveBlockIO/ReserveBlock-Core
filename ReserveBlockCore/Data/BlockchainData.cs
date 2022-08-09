@@ -54,7 +54,7 @@ namespace ReserveBlockCore.Data
         {
             try
             {
-                await BlockQueueService.ProcessBlockQueue();
+                await BlockValidatorService.ValidationDelay();
 
                 var startCraftTimer = DateTime.UtcNow;
                 var validatorAccount = AccountData.GetSingleAccount(validator);
@@ -217,10 +217,11 @@ namespace ReserveBlockCore.Data
             return block;
         }
 
+
         public static Block GetBlockByHash(string hash)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Height); 
+            blocks.EnsureIndexSafe(x => x.Hash); 
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -293,12 +294,10 @@ namespace ReserveBlockCore.Data
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
-            {
-                blocks.InsertSafe(block);
-
+            {               
                 //Update in memory fields.
-                Program.LastBlock = block;
-                Program.BlockHeight = block.Height;
+                Program.LastBlock = block;                
+                blocks.InsertSafe(block);
             }
             else
             {

@@ -96,13 +96,13 @@ namespace ReserveBlockCore.Services
 
         internal static void SetBlockHeight()
         {
-            Program.BlockHeight = BlockchainData.GetHeight();
-            LogUtility.Log("RBX Height - " + Program.BlockHeight.ToString(), "Main");
+            Program.LastBlock.Height = BlockchainData.GetHeight();
+            LogUtility.Log("RBX Height - " + Program.LastBlock.Height.ToString(), "Main");
         }
 
         internal static void SetLastBlock()
         {
-            if(Program.BlockHeight != -1)
+            if(Program.LastBlock.Height != -1)
             {
                 Program.LastBlock = BlockchainData.GetLastBlock();
             }
@@ -402,15 +402,13 @@ namespace ReserveBlockCore.Services
                     {
                         ConsoleWriterService.Output("Block downloads started.");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
-                        Program.BlocksDownloading = true;
-                        Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                        await BlockDownloadService.GetAllBlocks();
                     }
                     //This is not being reached on some devices. 
                     else
                     {
                         ConsoleWriterService.Output("Block downloads finished.");
-                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
-                        Program.BlocksDownloading = false;
+                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");                        
                         download = false; //exit the while.
                         Program.StopAllTimers = false;
                         var accounts = AccountData.GetAccounts();
@@ -438,7 +436,7 @@ namespace ReserveBlockCore.Services
             }
             if(Program.IsResyncing == false)
             {
-                Program.BlocksDownloading = false;
+                Program.BlocksDownloading = 0;
                 Program.StopAllTimers = false;
                 Program.IsChainSynced = true;
             }
@@ -747,29 +745,16 @@ namespace ReserveBlockCore.Services
 
             if (peersConnected)
             {
-                if(Program.BlockHeight == -1)
+                if(Program.LastBlock.Height == -1)
                 {
                     //This just gets first few blocks to start chain off.
                     Console.WriteLine("Downloading Blocks First.");
-                    var blockCol = await P2PClient.GetBlock();
-
-                    if(blockCol.Count() > 0)
-                    {
-                        foreach(var block in blockCol)
-                        {
-                            Console.WriteLine("Found Block: " + block.Height.ToString());
-                            var result = await BlockValidatorService.ValidateBlock(block);
-                            if (result == false)
-                            {
-                                Console.WriteLine("Block was rejected from: " + block.Validator);
-                                //Add rejection notice for validator
-                            }
-                        }
-                    }
+                    await BlockDownloadService.GetAllBlocks();         
                 }
             }
             return true;
         }
+
         internal static void StartupMenu()
         {
             Console.WriteLine("Starting up Reserve Block Wallet...");
