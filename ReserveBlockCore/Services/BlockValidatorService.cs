@@ -21,7 +21,8 @@ namespace ReserveBlockCore.Services
 
         public static async Task ValidationDelay()
         {
-            while (IsValidatingBlocks == 1)
+            await ValidateBlocks();
+            while (IsValidatingBlocks == 1 || Program.BlocksDownloading == 1)
                 await Task.Delay(4);
         }
         public static async Task ValidateBlocks()
@@ -42,17 +43,19 @@ namespace ReserveBlockCore.Services
                         heightOffset = heights[offsetIndex];
                         if (heightOffset < nextHeight)
                             BlockDownloadService.BlockDict.TryRemove(heightOffset, out var test);
-                        else
+                        else                        
                             break;
                     }
 
                     if (heightOffset != nextHeight)
                         break;
-                    heights = heights.Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
+                    heights = heights.Where(x => x >= nextHeight).Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
                         .Select(x => x.height).ToArray();
                     foreach (var height in heights)
-                    {                        
-                        var (block, ipAddress) = BlockDownloadService.BlockDict[height];
+                    {
+                        if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
+                            continue;
+                        var (block, ipAddress) = blockInfo;
                         Console.WriteLine("Found Block: " + height.ToString());
                         var result = await ValidateBlock(block, true);                        
                         if (!result)

@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Data
 
             var blocks = BlockData.GetBlocks();
             
-            if (blocks.Count() < 1)
+            if (blocks.FindOne(x => true) == null)
             {
                 var genesisTime = DateTime.UtcNow;
                 TransactionData.CreateGenesisTransction();
