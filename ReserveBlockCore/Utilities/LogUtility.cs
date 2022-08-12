@@ -10,8 +10,8 @@ namespace ReserveBlockCore.Utilities
         {
             try
             {
-                var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-                var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+                var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+                var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
                 var text = "[" + DateTime.Now.ToString() +  "]" + " : " + "[" + location + "]" + " : " + message;
                 string path = "";
@@ -52,8 +52,8 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task ClearLog()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
 
@@ -83,8 +83,8 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task<string> ReadLog()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
 

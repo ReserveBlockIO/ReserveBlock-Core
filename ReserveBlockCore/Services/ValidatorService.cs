@@ -96,7 +96,7 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if(Program.StopAllTimers == true || Program.BlocksDownloading == 1)
+            if(Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
             {
                 output = "Wallet is still starting. Please wait";
                 return output;
@@ -168,7 +168,7 @@ namespace ReserveBlockCore.Services
                         validator.FailCount = 0;
                         validator.Position = validatorTable.FindAll().Count() + 1;
                         validator.NodeReferenceId = BlockchainData.ChainRef;
-                        validator.WalletVersion = Program.CLIVersion;
+                        validator.WalletVersion = Globals.CLIVersion;
                         validator.LastChecked = DateTime.UtcNow;
 
                         validatorTable.InsertSafe(validator);
@@ -177,7 +177,7 @@ namespace ReserveBlockCore.Services
                         var accountTable = AccountData.GetAccounts();
                         accountTable.UpdateSafe(account);
 
-                        Program.ValidatorAddress = validator.Address;
+                        Globals.ValidatorAddress = validator.Address;
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
@@ -208,7 +208,7 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                Program.ValidatorAddress = "";
+                Globals.ValidatorAddress = "";
 
                 await P2PClient.DisconnectAdjudicator();
                 Console.WriteLine("Validator database records have been reset.");

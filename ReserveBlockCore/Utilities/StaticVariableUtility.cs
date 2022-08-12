@@ -19,43 +19,43 @@ namespace ReserveBlockCore.Utilities
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();
-            var blockHeight = Program.LastBlock.Height;
+            var blockHeight = Globals.LastBlock.Height;
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
             var validator = localValidator != null ? localValidator.Address : "No Validator";
-            var nodes = Program.Nodes;            
-            var lastBlock = Program.LastBlock;
-            var adjudicator = Program.Adjudicate.ToString();
+            var nodes = Globals.Nodes;            
+            var lastBlock = Globals.LastBlock;
+            var adjudicator = Globals.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
-            var fortisPoolCount = P2PAdjServer.FortisPool.Count().ToString();
-            var isChainSynced = Program.IsChainSynced.ToString();
+            var fortisPoolCount = Globals.FortisPool.Count().ToString();
+            var isChainSynced = Globals.IsChainSynced.ToString();
             var peerCount = P2PServer.GetConnectedPeerCount();
             var valCount = await P2PAdjServer.GetConnectedValCount();
-            var lastTaskSent = P2PClient.LastTaskSentTime.ToString();
-            var lastTaskResult = P2PClient.LastTaskResultTime.ToString();
-            var lastTaskBlockHeight = P2PClient.LastTaskBlockHeight.ToString();
-            var lastTaskError = P2PClient.LastTaskError.ToString();
-            var hdWallet = Program.HDWallet.ToString();
-            var reportedIPs = string.Join(",", P2PClient.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
+            var lastTaskSent = Globals.LastTaskSentTime.ToString();
+            var lastTaskResult = Globals.LastTaskResultTime.ToString();
+            var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
+            var lastTaskError = Globals.LastTaskError.ToString();
+            var hdWallet = Globals.HDWallet.ToString();
+            var reportedIPs = string.Join(",", Globals.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
                 .SelectMany(x => x));
             var mostLikelyIP = P2PClient.MostLikelyIP();
 
-            var validatorAddress = "Validator Address: " + Program.ValidatorAddress;            
-            var isBlocksDownloading = "Blocks Downloading: " + (Program.BlocksDownloading == 1).ToString();
+            var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
+            var isBlocksDownloading = "Blocks Downloading: " + (Globals.BlocksDownloading == 1).ToString();
             var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;
-            var isCrafting = "Is Crafting: " + Program.IsCrafting.ToString();
-            var isPeersConnecting = "Peers Connecting Startup: " + (!Program.Nodes.Any()).ToString();
-            var isStopAllTimers = "Stop all timers: " + Program.StopAllTimers.ToString();
-            var isQueueProcessing = "Queue Processing: " + (Program.BlocksDownloading == 1);
+            var isCrafting = "Is Crafting: " + Globals.IsCrafting.ToString();
+            var isPeersConnecting = "Peers Connecting Startup: " + (!Globals.Nodes.Any()).ToString();
+            var isStopAllTimers = "Stop all timers: " + Globals.StopAllTimers.ToString();
+            var isQueueProcessing = "Queue Processing: " + (Globals.BlocksDownloading == 1);
             var isPeerConnected = "Peers connected: " + peersConnected.ToString();
             var peerConnectedCount = "Peers connected Count: " + P2PServer.GetConnectedPeerCount().ToString();
             var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
-            var remoteLock = "Remote Lock: " + Program.RemoteCraftLock.ToString();
-            var remoteLockTime = "Remote Lock Time: " + (Program.RemoteCraftLockTime == null ?  "NA" : Program.RemoteCraftLockTime.Value.ToShortTimeString());
-            var isResyncing = "Chain Resyncing? : " + Program.IsResyncing.ToString();
-            var isCorrupt = "Database Corruption Detected? : " + Program.DatabaseCorruptionDetected.ToString();
+            var remoteLock = "Remote Lock: " + Globals.RemoteCraftLock.ToString();
+            var remoteLockTime = "Remote Lock Time: " + (Globals.RemoteCraftLockTime == null ?  "NA" : Globals.RemoteCraftLockTime.Value.ToShortTimeString());
+            var isResyncing = "Chain Resyncing? : " + Globals.IsResyncing.ToString();
+            var isCorrupt = "Database Corruption Detected? : " + Globals.DatabaseCorruptionDetected.ToString();
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();

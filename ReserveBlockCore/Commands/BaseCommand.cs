@@ -30,8 +30,8 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.PrintKeys();
                     break;
                 case "/stopco":
-                    Program.StopConsoleOutput = !Program.StopConsoleOutput;
-                    Console.WriteLine($"Stop Console Output set to: {Program.StopConsoleOutput}");
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    Console.WriteLine($"Stop Console Output set to: {Globals.StopConsoleOutput}");
                     break;
                 case "/exit":
                     commandResult = "_EXIT";
@@ -63,7 +63,7 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.ReconnectPeers();
                     break;
                 case "/optlog":
-                    Program.OptionalLogging = true;
+                    Globals.OptionalLogging = true;
                     break;
                 case "/beacon":
                     BaseCommandServices.CreateBeacon();
@@ -108,7 +108,7 @@ namespace ReserveBlockCore.Commands
                     BlockchainData.PrintBlock(genBlock);
                     break;
                 case "2": // Create Account
-                    if(Program.HDWallet == true)
+                    if(Globals.HDWallet == true)
                     {
                         var hdAccount = HDWallet.HDWalletData.GenerateAddress();
                         if(hdAccount != null)
@@ -170,7 +170,7 @@ namespace ReserveBlockCore.Commands
                     AccountData.PrintWalletAccounts();
                     break;
                 case "8": //Startup Masternode
-                    if(Program.StopAllTimers == false && Program.BlocksDownloading == 0)
+                    if(Globals.StopAllTimers == false && Globals.BlocksDownloading == 0)
                     {
                         ValidatorService.DoValidate();
                     }

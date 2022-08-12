@@ -79,7 +79,7 @@ namespace ReserveBlockCore.Models
                 }
             }
 
-            return "Error Saving Beacon Data";
+            return "Error Saving ADNR";
 
         }
         #endregion

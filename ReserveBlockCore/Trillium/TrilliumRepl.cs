@@ -191,7 +191,7 @@ namespace ReserveBlockCore.Trillium
 
 		private static string GetSubmissionsDirectory()
 		{
-			var databaseLocation = Program.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
+			var databaseLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
 
 			string path = "";
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

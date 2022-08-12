@@ -36,9 +36,9 @@ namespace ReserveBlockCore.Services
             _blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(300),
                 TimeSpan.FromMinutes(15));
 
-            if (Program.ChainCheckPoint == true)
+            if (Globals.ChainCheckPoint == true)
             {
-                var interval = Program.ChainCheckPointInterval;
+                var interval = Globals.ChainCheckPointInterval;
                 
                 _checkpointTimer = new Timer(DoCheckpointWork, null, TimeSpan.FromSeconds(240),
                 TimeSpan.FromHours(interval));
@@ -49,9 +49,9 @@ namespace ReserveBlockCore.Services
 
         private async void DoCheckpointWork(object? state)
         {
-            var retain = Program.ChainCheckPointRetain;
+            var retain = Globals.ChainCheckPointRetain;
             var path = GetPathUtility.GetDatabasePath();
-            var checkpointPath = Program.ChainCheckpointLocation;
+            var checkpointPath = Globals.ChainCheckpointLocation;
             var zipPath = checkpointPath + "checkpoint_" + DateTime.Now.Ticks.ToString();
 
             try
@@ -83,12 +83,12 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                if (Program.StopAllTimers == false)
+                if (Globals.StopAllTimers == false)
                 {
-                    if (Program.Adjudicate)
+                    if (Globals.Adjudicate)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = P2PAdjServer.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
+                        var fortisPool = Globals.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
 
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
@@ -112,11 +112,11 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                if (Program.StopAllTimers == false)
+                if (Globals.StopAllTimers == false)
                 {
-                    if (Program.Adjudicate)
+                    if (Globals.Adjudicate)
                     {
-                        var fortisPool = P2PAdjServer.FortisPool;
+                        var fortisPool = Globals.FortisPool;
 
                         if (fortisPool.Count() > 0)
                         {
@@ -127,19 +127,19 @@ namespace ReserveBlockCore.Services
                                 Console.WriteLine("Doing the work");
                             }
                             //get last block timestamp and current timestamp if they are more than 1 mins apart start new task
-                            var lastBlockSubmitUnixTime = Program.LastAdjudicateTime;
+                            var lastBlockSubmitUnixTime = Globals.LastAdjudicateTime;
                             var currentUnixTime = TimeUtil.GetTime();
                             var timeDiff = (currentUnixTime - lastBlockSubmitUnixTime);
 
                             if (timeDiff > 28)
                             {
-                                if (Program.AdjudicateLock == false)
+                                if (Globals.AdjudicateLock == false)
                                 {
-                                    Program.AdjudicateLock = true;
+                                    Globals.AdjudicateLock = true;
 
                                     //once greater commit block winner
-                                    var taskAnswerList = P2PAdjServer.TaskAnswerList;
-                                    var taskQuestion = P2PAdjServer.CurrentTaskQuestion;
+                                    var taskAnswerList = Globals.TaskAnswerList;
+                                    var taskQuestion = Globals.CurrentTaskQuestion;
                                     List<TaskAnswer>? failedTaskAnswersList = null;
 
                                     if (taskAnswerList.Count() > 0)
@@ -189,7 +189,7 @@ namespace ReserveBlockCore.Services
                                                             string taskQuestionStr = "";
                                                             var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
                                                             ConsoleWriterService.Output("New Task Created.");
-                                                            P2PAdjServer.CurrentTaskQuestion = nTaskQuestion;
+                                                            Globals.CurrentTaskQuestion = nTaskQuestion;
                                                             TaskQuestion nSTaskQuestion = new TaskQuestion();
                                                             nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
                                                             nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
@@ -200,11 +200,11 @@ namespace ReserveBlockCore.Services
                                                             await ProcessFortisPool(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
 
-                                                            if (P2PAdjServer.TaskAnswerList != null)
+                                                            if (Globals.TaskAnswerList != null)
                                                             {
                                                                 //P2PAdjServer.TaskAnswerList.Clear();
                                                                 //P2PAdjServer.TaskAnswerList.TrimExcess();
-                                                                P2PAdjServer.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                                Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
                                                             }
 
                                                             Thread.Sleep(1000);
@@ -214,10 +214,10 @@ namespace ReserveBlockCore.Services
 
                                                             findWinner = false;
                                                             taskFindCount = 0;
-                                                            Program.AdjudicateLock = false;
-                                                            Program.LastAdjudicateTime = TimeUtil.GetTime();
+                                                            Globals.AdjudicateLock = false;
+                                                            Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                            P2PAdjServer.BroadcastedTrxList = new List<Transaction>();
+                                                            Globals.BroadcastedTrxList = new List<Transaction>();
                                                         }
                                                         else
                                                         {
@@ -243,7 +243,7 @@ namespace ReserveBlockCore.Services
                                                         //If this happens that means not a single task answer yielded a validatable block.
                                                         //If this happens chain must be corrupt or zero validators are online.
                                                         findWinner = false;
-                                                        Program.AdjudicateLock = false;
+                                                        Globals.AdjudicateLock = false;
                                                     }
                                                 }
                                                 else
@@ -257,7 +257,7 @@ namespace ReserveBlockCore.Services
                                     else
                                     {
 
-                                        Program.AdjudicateLock = false;
+                                        Globals.AdjudicateLock = false;
                                     }
                                 }
                             }
@@ -273,7 +273,7 @@ namespace ReserveBlockCore.Services
             {
                 Console.WriteLine("Error: " + ex.Message);
                 Console.WriteLine("Client Call Service");
-                Program.AdjudicateLock = false;
+                Globals.AdjudicateLock = false;
             }
             
         }
@@ -282,7 +282,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                var pool = P2PAdjServer.FortisPool;
+                var pool = Globals.FortisPool;
                 var result = pool.GroupBy(x => x.Address).Where(x => x.Count() > 1).Select(y => y.OrderByDescending(z => z.ConnectDate).ToList()).ToList();
 
                 if (result.Count() > 0)
@@ -290,7 +290,7 @@ namespace ReserveBlockCore.Services
                     result.ForEach(x =>
                     {
                         var recKeep = x.First();
-                        P2PAdjServer.FortisPool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                        Globals.FortisPool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
                     });
                 }
 
@@ -298,7 +298,7 @@ namespace ReserveBlockCore.Services
                 {
                     foreach (TaskAnswer taskAnswer in taskAnswerList)
                     {
-                        var validator = P2PAdjServer.FortisPool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
+                        var validator = Globals.FortisPool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
                         {
                             if (validator != null)
                             {

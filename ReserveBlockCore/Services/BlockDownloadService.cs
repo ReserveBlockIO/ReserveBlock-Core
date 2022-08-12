@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task<bool> GetAllBlocks()
         {                        
-            if (Interlocked.Exchange(ref Program.BlocksDownloading, 1) != 0)
+            if (Interlocked.Exchange(ref Globals.BlocksDownloading, 1) != 0)
             {
                 await Task.Delay(1000);
                 return false;
@@ -23,13 +23,13 @@ namespace ReserveBlockCore.Services
             try
             {                
                 var (_, MaxHeight) = await P2PClient.GetCurrentHeight();
-                while (Program.LastBlock.Height < MaxHeight)
+                while (Globals.LastBlock.Height < MaxHeight)
                 {                                                   
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
-                    var heightToDownload = Program.LastBlock.Height + 1;
+                    var heightToDownload = Globals.LastBlock.Height + 1;
                     
-                    foreach (var node in Program.Nodes.Values)
+                    foreach (var node in Globals.Nodes.Values)
                     {
                         if (heightToDownload > MaxHeight)
                             break;
@@ -62,7 +62,7 @@ namespace ReserveBlockCore.Services
                         }
 
                         _ = P2PClient.DropLowBandwidthPeers();
-                        var AvailableNode = Program.Nodes.Where(x => x.Value.IsSendingBlock == 0).FirstOrDefault().Value;
+                        var AvailableNode = Globals.Nodes.Where(x => x.Value.IsSendingBlock == 0).FirstOrDefault().Value;
                         if (AvailableNode != null)
                         {                            
                             var DownloadBuffer = BlockDict.AsParallel().Sum(x => x.Value.block.Size);
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     var staleHeight = taskDict.Keys.Min();
                                     var staleTask = taskDict[staleHeight];
-                                    if(Program.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
+                                    if(Globals.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
                                         _ = staleNode.Connection.DisposeAsync();
                                     taskDict.TryRemove(staleHeight, out var test4);
                                     staleTask.task.Dispose();
@@ -82,7 +82,7 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {                                
-                                var nextHeightToValidate = Program.LastBlock.Height + 1;
+                                var nextHeightToValidate = Globals.LastBlock.Height + 1;
                                 if (!BlockDict.ContainsKey(nextHeightToValidate) && !taskDict.ContainsKey(nextHeightToValidate))
                                     heightToDownload = nextHeightToValidate;
                                 while (taskDict.ContainsKey(heightToDownload))
@@ -101,7 +101,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 //Error
-                if (Program.PrintConsoleErrors == true)
+                if (Globals.PrintConsoleErrors == true)
                 {
                     Console.WriteLine("Failure in GetAllBlocks Method");
                     Console.WriteLine(ex.Message);
@@ -109,7 +109,7 @@ namespace ReserveBlockCore.Services
             }
             finally
             {
-                Interlocked.Exchange(ref Program.BlocksDownloading, 0);
+                Interlocked.Exchange(ref Globals.BlocksDownloading, 0);
             }
 
             return false;

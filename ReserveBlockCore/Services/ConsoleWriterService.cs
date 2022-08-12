@@ -4,7 +4,7 @@
     {
         public static void Output(string text)
         {
-            if(Program.StopConsoleOutput != true)
+            if(Globals.StopConsoleOutput != true)
             {
                 Console.WriteLine(text);
             }

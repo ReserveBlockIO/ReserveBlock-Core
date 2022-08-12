@@ -15,17 +15,17 @@ namespace ReserveBlockCore.Commands
     {
         public static async void UnlockWallet()
         {
-            if(!string.IsNullOrWhiteSpace(Program.WalletPassword))
+            if(!string.IsNullOrWhiteSpace(Globals.WalletPassword))
             {
                 Console.WriteLine("Please type in password to unlock wallet.");
                 var password = Console.ReadLine();
                 if (!string.IsNullOrWhiteSpace(password))
                 {
-                    var passCheck = Program.WalletPassword.ToDecrypt(password);
+                    var passCheck = Globals.WalletPassword.ToDecrypt(password);
                     if(passCheck == password)
                     {
-                        Program.CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
-                        Console.WriteLine($"Wallet has been unlocked for {Program.WalletUnlockTime} mins.");
+                        Globals.CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(Globals.WalletUnlockTime);
+                        Console.WriteLine($"Wallet has been unlocked for {Globals.WalletUnlockTime} mins.");
                     }
                     else
                     {
@@ -96,12 +96,13 @@ namespace ReserveBlockCore.Commands
                             var accountList = accounts.FindAll().ToList();
                             if(accountList.Count > 0)
                             {
-
+                                //Generate 1000 addresses less what they already have
+                                //check if wallet is HD - if it is encrypt seed phrase also
                             }
                             else
                             {
                                 //Generate 1000 addresses
-
+                                //check if wallet is HD - if it is encrypt seed phrase also
                             }
                         }
                         else
@@ -213,7 +214,7 @@ namespace ReserveBlockCore.Commands
                 BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
                 {
                     IPAddress = ip,
-                    Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                    Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                     Name = name,
                     BeaconUID = bUID
                 };
@@ -310,7 +311,7 @@ namespace ReserveBlockCore.Commands
                                     DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
                                     {
                                         IPAddress = ip,
-                                        Port = Program.Port,
+                                        Port = Globals.Port,
                                         Name = name,
                                         ShopUID = sUID
                                     };
@@ -353,7 +354,7 @@ namespace ReserveBlockCore.Commands
                 {
                     var strength = Convert.ToInt32(strengthStr);
                     var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-                    Program.HDWallet = true;
+                    Globals.HDWallet = true;
 
                     return mnemonic;
                 }
@@ -361,7 +362,7 @@ namespace ReserveBlockCore.Commands
                 {
                     var strength = Convert.ToInt32(strengthStr);
                     var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-                    Program.HDWallet = true;
+                    Globals.HDWallet = true;
 
                     return mnemonic;
                 }
@@ -725,7 +726,7 @@ namespace ReserveBlockCore.Commands
                 var mnemonicResult = HDWallet.HDWalletData.RestoreHDWallet(mnemonicStr);
                 if(mnemonicResult.Contains("Restored"))
                 {
-                    Program.HDWallet = true;
+                    Globals.HDWallet = true;
                 }
                 
                 return mnemonicResult;
@@ -792,14 +793,16 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/optlog[/]", "[green]Turns on optional logging for adjudicators.[/]");
             table.AddRow("[blue]/beacon[/]", "[green]Starts the process for creating a beacon.[/]");
             table.AddRow("[blue]/switchbeacon[/]", "[green]This will turn a beacon on and off.[/]");
-            table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Program.WalletUnlockTime} minutes.[/]");
+            table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Globals.WalletUnlockTime} minutes.[/]");
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
             table.AddRow("[blue]/creatednr[/]", "[green]Creates an address domain name registrar.[/]");
             table.AddRow("[blue]/deletednr[/]", "[green]Deletes a domain name registrar.[/]");
             table.AddRow("[blue]/transferdnr[/]", "[green]transfers a domain name registrar.[/]");
             table.AddRow("[blue]/printkeys[/]", "[green]Prints all private keys associated to a wallet.[/]");
+            table.AddRow("[blue]/encrypt[/]", "[green]Encrypts the wallets private keys.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
+            table.AddRow("[blue]/resetval[/]", "[green]Resets all validator information in databases.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");

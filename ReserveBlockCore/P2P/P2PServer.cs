@@ -20,10 +20,6 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PServer : Hub
     {
-        private static ConcurrentDictionary<string, string> PeerList = new ConcurrentDictionary<string, string>();
-        public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();
-        //public static int PeerConnectedCount = 0;
-
         #region Broadcast methods
         public override async Task OnConnectedAsync()
         {
@@ -48,27 +44,17 @@ namespace ReserveBlockCore.P2P
                 }
             }
 
-            var blockHeight = Program.LastBlock.Height;
-            PeerList[peerIP] = Context.ConnectionId;
+            var blockHeight = Globals.LastBlock.Height;
+            Globals.PeerList[peerIP] = Context.ConnectionId;
 
-            await SendMessage("IP", peerIP);
+            await Clients.Caller.SendAsync("GetMessage", "IP", peerIP);
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            PeerList.TryRemove(peerIP, out var test);
-        }
-
-        public async Task SendMessage(string message, string data)
-        {
-            await Clients.Caller.SendAsync("GetMessage", message, data);
-        }
-
-        public async Task SendMessageAllPeers(string message, string data)
-        {
-            await Clients.All.SendAsync("GetMessage", message, data);
+            Globals.PeerList.TryRemove(peerIP, out var test);
         }
 
         #endregion
@@ -76,7 +62,7 @@ namespace ReserveBlockCore.P2P
         #region GetConnectedPeerCount
         public static int GetConnectedPeerCount()
         {
-            return P2PServer.PeerList.Count;
+            return Globals.PeerList.Count;
         }
 
         #endregion
@@ -84,12 +70,12 @@ namespace ReserveBlockCore.P2P
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)
         {                        
-            if (Program.BlocksDownloading == 0)
+            if (Globals.BlocksDownloading == 0)
             {
                 if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                 {
                     var IP = GetIP(Context);                 
-                    var nextHeight = Program.LastBlock.Height + 1;
+                    var nextHeight = Globals.LastBlock.Height + 1;
                     var currentHeight = nextBlock.Height;
 
                     var isNewBlock = currentHeight >= nextHeight && !BlockDownloadService.BlockDict.ContainsKey(currentHeight);
@@ -104,7 +90,7 @@ namespace ReserveBlockCore.P2P
                     {                        
                         string data = "";
                         data = JsonConvert.SerializeObject(nextBlock);
-                        await SendMessageAllPeers("blk", data);                        
+                        await Clients.All.SendAsync("GetMessage", "blk", data);                        
                     }
 
                     if (nextHeight < currentHeight && isNewBlock)                    
@@ -207,7 +193,7 @@ namespace ReserveBlockCore.P2P
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
-            return Program.LastBlock.Height;
+            return Globals.LastBlock.Height;
         }
 
         #endregion
@@ -370,7 +356,7 @@ namespace ReserveBlockCore.P2P
         #region Send Adjudicator
         public async Task<Adjudicators?> SendLeadAdjudicator()
         {
-            var leadAdj = Program.LeadAdjudicator;
+            var leadAdj = Globals.LeadAdjudicator;
             if (leadAdj == null)
             {
                 leadAdj = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
@@ -579,7 +565,7 @@ namespace ReserveBlockCore.P2P
                 return "FTAV";
             }
 
-            //if(validator.WalletVersion != Program.CLIVersion)
+            //if(validator.WalletVersion != Globals.CLIVersion)
             //{
             //    return "FTAV";
             //}
@@ -605,7 +591,7 @@ namespace ReserveBlockCore.P2P
 
                         data = JsonConvert.SerializeObject(validator);
 
-                        await SendMessageAllPeers("val", data);
+                        await Clients.All.SendAsync("GetMessage", "val", data);
                         return "VATN";//added to validator list
                     }
                     else
@@ -640,7 +626,7 @@ namespace ReserveBlockCore.P2P
                         validatorList.UpdateSafe(valFound);
 
                         data = JsonConvert.SerializeObject(valFound);
-                        await SendMessageAllPeers("val", data);
+                        await Clients.All.SendAsync("GetMessage", "val", data);
                     }
                     return "AIVL"; //already in validator list
                 }

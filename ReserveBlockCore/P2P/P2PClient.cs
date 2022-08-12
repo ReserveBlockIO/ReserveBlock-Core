@@ -21,19 +21,6 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PClient : IAsyncDisposable, IDisposable
     {
-        #region Static Variables
-        public const int MaxPeers = 8;
-        public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, bool> BannedIPs = new ConcurrentDictionary<string, bool>();
-        public static long LastSentBlockHeight = -1;
-        public static DateTime? AdjudicatorConnectDate = null;
-        public static DateTime? LastTaskSentTime = null;
-        public static DateTime? LastTaskResultTime = null;
-        public static long LastTaskBlockHeight = 0;
-        public static bool LastTaskError = false;
-        public static CancellationTokenSource source = new CancellationTokenSource(10000);
-        #endregion
-
         #region HubConnection Variables        
         /// <summary>
         /// Below are reserved for adjudicators to open up communications fortis pool participation and block solving.
@@ -55,7 +42,7 @@ namespace ReserveBlockCore.P2P
         }
         private static async Task RemoveNode(NodeInfo node)
         {
-            Program.Nodes.TryRemove(node.NodeIP, out NodeInfo test);            
+            Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test);            
             await node.Connection.DisposeAsync();            
         }
 
@@ -66,11 +53,11 @@ namespace ReserveBlockCore.P2P
         public static async Task<bool> ArePeersConnected()
         {
             await DropDisconnectedPeers();
-            return Program.Nodes.Any();
+            return Globals.Nodes.Any();
         }
         public static async Task DropDisconnectedPeers()
         {
-            foreach (var node in Program.Nodes.Values)
+            foreach (var node in Globals.Nodes.Values)
             {
                 if(!IsConnected(node))                
                     await RemoveNode(node);
@@ -79,15 +66,15 @@ namespace ReserveBlockCore.P2P
 
         public static string MostLikelyIP()
         {
-            return ReportedIPs.Count != 0 ? 
-                ReportedIPs.OrderByDescending(y => y.Value).Select(y => y.Key).First() : "NA";
+            return Globals.ReportedIPs.Count != 0 ?
+                Globals.ReportedIPs.OrderByDescending(y => y.Value).Select(y => y.Key).First() : "NA";
         }
 
         public static async Task DropLowBandwidthPeers()
         {
             await DropDisconnectedPeers();
 
-            var PeersWithSamples = Program.Nodes.Where(x => x.Value.SendingBlockTime > 60000)
+            var PeersWithSamples = Globals.Nodes.Where(x => x.Value.SendingBlockTime > 60000)
                 .Select(x => new
                 {
                     IPAddress = x.Key,
@@ -105,7 +92,7 @@ namespace ReserveBlockCore.P2P
 
             foreach (var peer in PeersWithSamples.Where(x => x.BandWidth < .5 * MedianBandWidth))
             {
-                if(Program.Nodes.TryRemove(peer.IPAddress, out var node))
+                if(Globals.Nodes.TryRemove(peer.IPAddress, out var node))
                     await node.Connection.DisposeAsync();                
             }            
         }
@@ -133,14 +120,14 @@ namespace ReserveBlockCore.P2P
         {
             if (disposing)
             {
-                foreach(var node in Program.Nodes.Values)
+                foreach(var node in Globals.Nodes.Values)
                     node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();                
             }
         }
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
-            foreach (var node in Program.Nodes.Values)
+            foreach (var node in Globals.Nodes.Values)
                 await node.Connection.DisposeAsync();
         }
 
@@ -171,10 +158,10 @@ namespace ReserveBlockCore.P2P
                         else
                         {
                             var IP = data.ToString();
-                            if (ReportedIPs.TryGetValue(IP, out int Occurrences))
-                                ReportedIPs[IP]++;
+                            if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
+                                Globals.ReportedIPs[IP]++;
                             else
-                                ReportedIPs[IP] = 1;                                                        
+                                Globals.ReportedIPs[IP] = 1;                                                        
                         }
                     }
 
@@ -190,7 +177,7 @@ namespace ReserveBlockCore.P2P
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
-                Program.Nodes[IPAddress] = new NodeInfo
+                Globals.Nodes[IPAddress] = new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
@@ -221,7 +208,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("address", address);
                     options.Headers.Add("uName", uName);
                     options.Headers.Add("signature", signature);
-                    options.Headers.Add("walver", Program.CLIVersion);
+                    options.Headers.Add("walver", Globals.CLIVersion);
 
                 })
                 .WithAutomaticReconnect()
@@ -251,7 +238,7 @@ namespace ReserveBlockCore.P2P
                     return Task.CompletedTask;
                 };
 
-                AdjudicatorConnectDate = DateTime.UtcNow;
+                Globals.AdjudicatorConnectDate = DateTime.UtcNow;
 
                 hubAdjConnection1.On<string, string>("GetAdjMessage", async (message, data) => {
                     if (message == "task" || message == "taskResult" || message == "fortisPool" || message == "status" || message == "tx" || message == "badBlock")
@@ -299,7 +286,7 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                Program.ValidatorAddress = "";
+                Globals.ValidatorAddress = "";
                 if (hubAdjConnection1 != null)
                 {
                     if(IsAdjConnected1)
@@ -326,8 +313,8 @@ namespace ReserveBlockCore.P2P
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var SkipIPs = new HashSet<string>(Program.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
-                .Union(BannedIPs.Keys);
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
+                .Union(Globals.BannedIPs.Keys);
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
@@ -340,13 +327,13 @@ namespace ReserveBlockCore.P2P
                 .OrderBy(x => rnd.Next()))                
                 .ToArray();
 
-            var NodeCount = Program.Nodes.Count;
+            var NodeCount = Globals.Nodes.Count;
             foreach(var peer in newPeers)
             {
-                if (NodeCount == MaxPeers)
+                if (NodeCount == Globals.MaxPeers)
                     break;
 
-                var url = "http://" + peer.PeerIP + ":" + Program.Port + "/blockchain";
+                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
                 var conResult = await Connect(url);
                 if (conResult != false)
                 {
@@ -370,7 +357,7 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                var url = "http://" + peerIP + ":" + Program.Port + "/blockchain";
+                var url = "http://" + peerIP + ":" + Globals.Port + "/blockchain";
                 var connection = new HubConnectionBuilder().WithUrl(url).Build();
                 string response = "";
                 await connection.StartAsync();
@@ -402,20 +389,20 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    if(taskAnswer.Block.Height == Program.LastBlock.Height + 1)
+                    if(taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
                     {
                         if (hubAdjConnection1 != null)
                         {
                             var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
                             if (result)
                             {
-                                LastTaskError = false;
-                                LastTaskSentTime = DateTime.Now;
-                                LastSentBlockHeight = taskAnswer.Block.Height;
+                                Globals.LastTaskError = false;
+                                Globals.LastTaskSentTime = DateTime.Now;
+                                Globals.LastSentBlockHeight = taskAnswer.Block.Height;
                             }
                             else
                             {
-                                LastTaskError = true;
+                                Globals.LastTaskError = true;
                                 //If response takes a while then it won't load.
                                 //ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
                             }
@@ -424,7 +411,7 @@ namespace ReserveBlockCore.P2P
                 }
                 catch(Exception ex)
                 {
-                    LastTaskError = true;
+                    Globals.LastTaskError = true;
 
                     ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
@@ -490,7 +477,7 @@ namespace ReserveBlockCore.P2P
                 var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
                 if (adjudicator != null)
                 {
-                    var url = "http://" + adjudicator.NodeIP + ":" + Program.Port + "/adjudicator";
+                    var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
                     var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
                     var alive = _tempHubConnection.StartAsync();
                     var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { trx });
@@ -577,7 +564,7 @@ namespace ReserveBlockCore.P2P
         }
         public static async Task UpdateNodeHeights()
         {
-            foreach (var node in Program.Nodes.Values)                
+            foreach (var node in Globals.Nodes.Values)                
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);           
         }
 
@@ -597,10 +584,10 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var myHeight = Program.LastBlock.Height;
+                var myHeight = Globals.LastBlock.Height;
                 await UpdateNodeHeights();
 
-                foreach (var node in Program.Nodes.Values)
+                foreach (var node in Globals.Nodes.Values)
                 {
                     var remoteNodeHeight = node.NodeHeight;
                     if (myHeight < remoteNodeHeight)
@@ -668,7 +655,7 @@ namespace ReserveBlockCore.P2P
                     var beaconString = locator.ToStringFromBase64();
                     var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-                    var url = "http://" + beacon.IPAddress + ":" + Program.Port + "/blockchain";
+                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/blockchain";
                     var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
                     var alive = _tempHubConnection.StartAsync();
                     var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveUploadRequest", args: new object?[] { bsd });
@@ -780,7 +767,7 @@ namespace ReserveBlockCore.P2P
                     var beaconString = locator.ToStringFromBase64();
                     var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-                    var url = "http://" + beacon.IPAddress + ":" + Program.Port + "/blockchain";
+                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/blockchain";
                     var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
                     var alive = _tempHubConnection.StartAsync();
 
@@ -855,7 +842,7 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                foreach(var node in Program.Nodes.Values)
+                foreach(var node in Globals.Nodes.Values)
                 {
                     string beaconInfo = await node.Connection.InvokeAsync<string>("SendBeaconInfo");
                     if (beaconInfo != "NA")
@@ -869,7 +856,7 @@ namespace ReserveBlockCore.P2P
                 if(foundBeaconCount == 0)
                 {
                     NFTLogUtility.Log("Zero beacons found. Adding bootstrap.", "SCV1Controller.TransferNFT()");
-                    BeaconList = Program.Locators;
+                    BeaconList = Globals.Locators;
                     BeaconList.ForEach(x => { NFTLogUtility.Log($"Bootstrap Beacons {x}", "P2PClient.GetBeacons()"); });
                 }
 
@@ -893,9 +880,9 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var myHeight = Program.LastBlock.Height;
+                var myHeight = Globals.LastBlock.Height;
 
-                foreach(var node in Program.Nodes.Values)
+                foreach(var node in Globals.Nodes.Values)
                 {
                     try
                     {
@@ -939,7 +926,7 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                foreach (var node in Program.Nodes.Values)
+                foreach (var node in Globals.Nodes.Values)
                 {
                     try
                     {
@@ -980,7 +967,7 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                foreach(var node in Program.Nodes.Values)
+                foreach(var node in Globals.Nodes.Values)
                 {
                     try
                     {                        

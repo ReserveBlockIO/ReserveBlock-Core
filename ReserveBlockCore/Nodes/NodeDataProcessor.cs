@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Nodes
             }
             else
             {
-                if (Program.StopAllTimers == false && Program.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
+                if (Globals.StopAllTimers == false && Globals.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
                 {
                     if (message == "tx")
                     {
@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Nodes
                         {
                             if(nextBlock.ChainRefId != BlockchainData.ChainRef)
                             {                                    
-                                var nextHeight = Program.LastBlock.Height + 1;
+                                var nextHeight = Globals.LastBlock.Height + 1;
                                 var currentHeight = nextBlock.Height;
 
                                 if (currentHeight < nextHeight)
@@ -124,7 +124,7 @@ namespace ReserveBlockCore.Nodes
                                 }
                                 else
                                 {
-                                    if (Program.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
+                                    if (Globals.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
                                     {
                                         BlockDownloadService.BlockDict[currentHeight] = (nextBlock, ipAddress);
                                         if (nextHeight == currentHeight)

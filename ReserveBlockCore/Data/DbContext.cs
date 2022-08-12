@@ -56,6 +56,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_WALLET = "rsrv_wallet";
         public const string RSRV_HD_WALLET = "rsrv_hd_wallet";
         public const string RSRV_ACCOUNTS = "rsrv_account";
+        public const string RSRV_ACCOUNT_KEYSTORE = "rsrv_account_keystore";
         public const string RSRV_WALLET_SETTINGS = "rsrv_wallet_settings";
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
         public const string RSRV_PEERS = "rsrv_peers";
@@ -76,8 +77,8 @@ namespace ReserveBlockCore.Data
 
         public static void Initialize()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -142,8 +143,8 @@ namespace ReserveBlockCore.Data
 
         public static void DeleteCorruptDb()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -177,8 +178,8 @@ namespace ReserveBlockCore.Data
 
         public static void MigrateDbNewChainRef()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

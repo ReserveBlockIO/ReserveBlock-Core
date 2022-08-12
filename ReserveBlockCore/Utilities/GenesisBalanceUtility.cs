@@ -10,7 +10,7 @@
                                 
             };
 
-            if(Program.IsTestNet == true)
+            if(Globals.IsTestNet == true)
             {
                 balanceSheet = new Dictionary<string, decimal> {
                                 {"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC", 1000000M }, }; // Address, Amount in Decimal
