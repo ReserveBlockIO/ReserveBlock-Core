@@ -138,6 +138,11 @@ namespace ReserveBlockCore.Services
                 return result;
             }
 
+            if(block.Version > 1)
+            {
+                //run new block rules.
+            }
+
             //ensures the timestamps being produced are correct
             if(block.Height != 0)
             {

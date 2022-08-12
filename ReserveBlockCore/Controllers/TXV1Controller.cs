@@ -19,7 +19,6 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class TXV1Controller : ControllerBase
     {
-
         //Step 1.
         [HttpGet("GetTimestamp")]
         public async Task<string> GetTimestamp()

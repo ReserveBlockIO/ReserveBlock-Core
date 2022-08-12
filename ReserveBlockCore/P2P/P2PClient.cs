@@ -387,38 +387,47 @@ namespace ReserveBlockCore.P2P
             var adjudicatorConnected = IsAdjConnected1;
             if(adjudicatorConnected)
             {
-                try
+                for(var i = 1; i < 4; i++)
                 {
-                    if(taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
+                    if(i != 1)
                     {
-                        if (hubAdjConnection1 != null)
+                        await Task.Delay(1000);
+                    }
+                    try
+                    {
+                        if (taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
                         {
-                            var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
-                            if (result)
+                            if (hubAdjConnection1 != null)
                             {
-                                Globals.LastTaskError = false;
-                                Globals.LastTaskSentTime = DateTime.Now;
-                                Globals.LastSentBlockHeight = taskAnswer.Block.Height;
-                            }
-                            else
-                            {
-                                Globals.LastTaskError = true;
-                                //If response takes a while then it won't load.
-                                //ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
+                                var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                if (result)
+                                {
+                                    Globals.LastTaskError = false;
+                                    Globals.LastTaskSentTime = DateTime.Now;
+                                    Globals.LastSentBlockHeight = taskAnswer.Block.Height;
+                                    break;
+                                }
+                                else
+                                {
+                                    Globals.LastTaskError = true;
+                                    //If response takes a while then it won't load.
+                                    //ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
+                                }
                             }
                         }
                     }
-                }
-                catch(Exception ex)
-                {
-                    Globals.LastTaskError = true;
+                    catch (Exception ex)
+                    {
+                        Globals.LastTaskError = true;
 
-                    ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+                        ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
-                    string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ? 
-                        taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
-                    ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                        string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
+                            taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                        ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                    }
                 }
+                
             }
             else
             {
