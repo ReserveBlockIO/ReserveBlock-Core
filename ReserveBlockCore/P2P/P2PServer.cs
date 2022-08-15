@@ -26,31 +26,29 @@ namespace ReserveBlockCore.P2P
 
         #region Broadcast methods
         public override async Task OnConnectedAsync()
-        {
+        {            
             var peerIP = GetIP(Context);
+            if(PeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+                context.Abort();
+
+            PeerList[peerIP] = Context;
+
             //Save Peer here
             var peers = Peers.GetAll();
-            var peerList = peers.FindAll();
-            if (peerList.Count() > 0)
+            var peerExist = peers.Find(x => x.PeerIP == peerIP).FirstOrDefault();
+            if (peerExist == null)
             {
-                var peerExist = peerList.Where(x => x.PeerIP == peerIP).FirstOrDefault();
-                if (peerExist == null)
+                Peers nPeer = new Peers
                 {
-                    Peers nPeer = new Peers
-                    {
-                        FailCount = 0,
-                        IsIncoming = true,
-                        IsOutgoing = false,
-                        PeerIP = peerIP
-                    };
+                    FailCount = 0,
+                    IsIncoming = true,
+                    IsOutgoing = false,
+                    PeerIP = peerIP
+                };
 
-                    peers.InsertSafe(nPeer);
-                }
+                peers.InsertSafe(nPeer);
             }
-
-            var blockHeight = Program.LastBlock.Height;
-            PeerList[peerIP] = Context.ConnectionId;
-
+                                    
             await SendMessage("IP", peerIP);
             await base.OnConnectedAsync();
         }
@@ -145,28 +143,6 @@ namespace ReserveBlockCore.P2P
                 return null;
 
             return (long)validatorList.Count();
-        }
-
-        #endregion
-
-        #region Connect Peers
-        //Send hello status to connecting peers from p2p server
-        public async Task ConnectPeers(string node, string message, string time)
-        {
-            long ticks = Convert.ToInt64(time);
-            DateTime timeTicks = new DateTime(ticks);
-
-            var feature = Context.Features.Get<IHttpConnectionFeature>();
-            var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
-
-            if (message == "Hello")
-            {
-                var oNode = "Origin Node";
-                var oMessage = "Connected to IP: " + peerIP;
-                var endTime = DateTime.UtcNow;
-                var totalTime = (endTime - timeTicks).TotalMilliseconds;
-                await Clients.Caller.SendAsync("PeerConnected", oNode, oMessage, totalTime.ToString("0"), BlockchainData.ChainRef);
-            }
         }
 
         #endregion
@@ -557,109 +533,6 @@ namespace ReserveBlockCore.P2P
 
                 return validatorList.FindAll().ToList();
             }
-        }
-
-        #endregion
-
-        #region Send Validator - Receives the new validator
-        public async Task<string> SendValidator(Validators validator)
-        {
-            var peerIP = GetIP(Context);
-            validator.NodeIP = peerIP;
-
-            string data = "";
-
-            if (validator.NodeReferenceId == null)
-            {
-                return "FTAV";
-            }
-
-            if (validator.NodeReferenceId != BlockchainData.ChainRef)
-            {
-                return "FTAV";
-            }
-
-            //if(validator.WalletVersion != Program.CLIVersion)
-            //{
-            //    return "FTAV";
-            //}
-
-            //var updateMasternodes = await P2PClient.GetMasternodes();
-
-            var validatorList = Validators.Validator.GetAll();
-
-            if (validatorList.Count() != 0)
-            {
-                var valFound = validatorList.FindOne(x => x.Address == validator.Address); // basically if a validator stays offline the address because blacklisted
-                if (valFound == null)
-                {
-                    var result = ValidatorService.ValidateTheValidator(validator);
-                    if (result == true)
-                    {
-                        var valPosFound = validatorList.FindOne(x => x.Position == validator.Position);
-                        if (valPosFound != null)
-                        {
-                            validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
-                        }
-                        validatorList.InsertSafe(validator);
-
-                        data = JsonConvert.SerializeObject(validator);
-
-                        await SendMessageAllPeers("val", data);
-                        return "VATN";//added to validator list
-                    }
-                    else
-                    {
-                        return "FTAV"; //validator failed verification process
-                    }
-                }
-                else
-                {
-                    //Update found record with new information
-                    var result = ValidatorService.ValidateTheValidator(validator);
-                    if (result == true)
-                    {
-                        var valPosFound = validatorList.FindOne(x => x.Position == validator.Position);
-                        if (valPosFound != null)
-                        {
-                            validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
-                        }
-
-                        valFound.Amount = validator.Amount;
-                        valFound.Signature = validator.Signature;
-                        valFound.Address = validator.Address;
-                        valFound.IsActive = validator.IsActive;
-                        valFound.EligibleBlockStart = validator.EligibleBlockStart;
-                        valFound.UniqueName = validator.UniqueName;
-                        valFound.FailCount = validator.FailCount;
-                        valFound.Position = validator.Position;
-                        valFound.NodeReferenceId = validator.NodeReferenceId;
-                        valFound.LastChecked = validator.LastChecked;
-                        valFound.WalletVersion = validator.WalletVersion;
-
-                        validatorList.UpdateSafe(valFound);
-
-                        data = JsonConvert.SerializeObject(valFound);
-                        await SendMessageAllPeers("val", data);
-                    }
-                    return "AIVL"; //already in validator list
-                }
-            }
-            else
-            {
-                var result = ValidatorService.ValidateTheValidator(validator);
-                if (result == true)
-                {
-                    validatorList.InsertSafe(validator);
-                    Validators.Validator.Initialize();
-                    return "VATN";//added to validator list
-                }
-                else
-                {
-                    return "FTAV"; //validator failed verification process
-                }
-            }
-
         }
 
         #endregion

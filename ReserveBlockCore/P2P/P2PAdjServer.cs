@@ -36,6 +36,11 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var peerIP = GetIP(Context);
+                if (PeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+                    context.Abort();
+
+                PeerList[peerIP] = Context;
+
                 string connectionId = Context.ConnectionId;
                 var httpContext = Context.GetHttpContext();
                 if (httpContext != null)

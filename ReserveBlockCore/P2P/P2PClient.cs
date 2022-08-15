@@ -545,11 +545,11 @@ namespace ReserveBlockCore.P2P
             catch { }
             finally
             {
+                Interlocked.Exchange(ref node.IsSendingBlock, 0);
                 if (node != null)
                 {
                     node.TotalDataSent += blockSize;
-                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
-                    Interlocked.Exchange(ref node.IsSendingBlock, 0);
+                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;                    
                 }
             }
 

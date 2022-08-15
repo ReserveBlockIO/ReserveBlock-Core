@@ -28,8 +28,10 @@ namespace ReserveBlockCore
             services.AddSignalR(options => {
                 options.KeepAliveInterval = TimeSpan.FromSeconds(15); //check connections everyone 15 seconds
                 options.ClientTimeoutInterval = TimeSpan.FromSeconds(60); //close connection after 45 seconds
-                options.MaximumReceiveMessageSize = 1 * 1024 * 1024;
-                options.StreamBufferCapacity = 10;
+                options.MaximumReceiveMessageSize = 1179648;
+                options.StreamBufferCapacity = 1179648;                
+                options.EnableDetailedErrors = true;
+                options.MaximumParallelInvocationsPerClient = int.MaxValue;
             });
             services.AddHostedService<ClientCallService>();
         }
@@ -51,14 +53,13 @@ namespace ReserveBlockCore
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<P2PServer>("/blockchain", options => {
-                    options.ApplicationMaxBufferSize = 1 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 1 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
-
+                endpoints.MapHub<P2PServer>("/blockchain", options => {                    
+                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large                    
                 });
-                endpoints.MapHub<P2PAdjServer>("/adjudicator", options => {
-                    options.ApplicationMaxBufferSize = 1 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 1 * 1024 * 1024; // values might need tweaking if mem consumption gets too large
+                endpoints.MapHub<P2PAdjServer>("/adjudicator", options => {                    
+                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
                 });
 
             });

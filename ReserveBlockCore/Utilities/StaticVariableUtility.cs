@@ -39,11 +39,10 @@ namespace ReserveBlockCore.Utilities
             var reportedIPs = string.Join(",", P2PClient.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
                 .SelectMany(x => x));
             var mostLikelyIP = P2PClient.MostLikelyIP();
-
+            var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Program.ValidatorAddress;            
             var isBlocksDownloading = "Blocks Downloading: " + (Program.BlocksDownloading == 1).ToString();
-            var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;
-            var isCrafting = "Is Crafting: " + Program.IsCrafting.ToString();
+            var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;            
             var isPeersConnecting = "Peers Connecting Startup: " + (!Program.Nodes.Any()).ToString();
             var isStopAllTimers = "Stop all timers: " + Program.StopAllTimers.ToString();
             var isQueueProcessing = "Queue Processing: " + (Program.BlocksDownloading == 1);
@@ -82,7 +81,7 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isChainSyncing);
             strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(isCrafting);
+            strBld.AppendLine(balance);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isPeersConnecting);
             strBld.AppendLine("---------------------------------------------------------------------");
@@ -139,6 +138,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Block Info----------------------------");
             strBld.AppendLine(lastBlockInfo);
+            strBld.AppendLine("---------------------------------------------------------------------");
+               
             return strBld.ToString();
         }
     }
