@@ -148,9 +148,26 @@ namespace ReserveBlockCore.P2P
                 
                 var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
                 hubConnection.On<string, string>("GetMessage", async (message, data) =>
-                {                                        
-                    if (message == "tx" || message == "blk" || message == "val" || message == "IP")
+                {                    
+                    if (message == "blk" || message == "IP")
                     {
+                        if (data?.Length > 1179648)
+                            return;
+
+                        if(Globals.Nodes.TryGetValue(IPAddress, out var node))
+                        {
+                            var now = TimeUtil.GetMillisecondTime();
+                            var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
+                            if (now - prevPrevTime < 15000)
+                            {
+                                Globals.BannedIPs[IPAddress] = true;
+                                await RemoveNode(node);
+                                return;
+                            }
+                            Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
+                        }
+                        // if someone calls in more often than 2 times in 15 seconds ban them
+
                         if (message != "IP")
                         {
                             await NodeDataProcessor.ProcessData(message, data, IPAddress);
@@ -161,10 +178,9 @@ namespace ReserveBlockCore.P2P
                             if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
                                 Globals.ReportedIPs[IP]++;
                             else
-                                Globals.ReportedIPs[IP] = 1;                                                        
+                                Globals.ReportedIPs[IP] = 1;
                         }
-                    }
-
+                    }                    
                 });
 
                 await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,10));

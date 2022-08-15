@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Models;
+﻿using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
@@ -90,7 +91,9 @@ namespace ReserveBlockCore
 
         #region P2P Server Variables
 
-        public static ConcurrentDictionary<string, string> PeerList = new ConcurrentDictionary<string, string>();
+        public static ConcurrentDictionary<string, HubCallerContext> P2PPeerList = new ConcurrentDictionary<string, HubCallerContext>();        
+        public static ConcurrentDictionary<string, HubCallerContext> AdjPeerList = new ConcurrentDictionary<string, HubCallerContext>();
+        public static ConcurrentDictionary<string, MessageLock> MessageLocks = new ConcurrentDictionary<string, MessageLock>();
         public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();
 
         #endregion
@@ -103,9 +106,7 @@ namespace ReserveBlockCore
 
         public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
         public static List<TaskAnswer> RejectedTaskAnswerList = new List<TaskAnswer>();
-        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();
-
-        public static int ValConnectedCount = 0;
+        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();        
 
         #endregion
 

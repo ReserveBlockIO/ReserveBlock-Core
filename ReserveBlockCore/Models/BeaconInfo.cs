@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Models
             {
                 var beacon = GetBeacon();
 
-                var beaconInfo = beacon.FindAll().FirstOrDefault();
+                var beaconInfo = beacon.FindOne(x => true);
                 if (beaconInfo == null)
                 {
                     return null;
