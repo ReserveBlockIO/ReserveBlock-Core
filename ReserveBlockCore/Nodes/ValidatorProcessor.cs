@@ -15,7 +15,7 @@ namespace ReserveBlockCore.Nodes
             {
                 return;
             }
-            if (Program.StopAllTimers == false && Program.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
+            if (Globals.StopAllTimers == false && Globals.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
             {
                 if(message == "task")
                 {
@@ -30,9 +30,9 @@ namespace ReserveBlockCore.Nodes
                 if(message == "taskResult")
                 {
                     await BlockValidatorService.ValidationDelay();
-                    P2PClient.LastTaskResultTime = DateTime.Now;
+                    Globals.LastTaskResultTime = DateTime.Now;
                     var nextBlock = JsonConvert.DeserializeObject<Block>(data);
-                    var nextHeight = Program.LastBlock.Height + 1;
+                    var nextHeight = Globals.LastBlock.Height + 1;
                     var currentHeight = nextBlock.Height;
 
                     if (currentHeight < nextHeight)
@@ -53,7 +53,7 @@ namespace ReserveBlockCore.Nodes
                     }
                     else
                     {
-                        if (Program.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
+                        if (Globals.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
                         {
                             BlockDownloadService.BlockDict[currentHeight] = (nextBlock, ipAddress);
                             if (nextHeight == currentHeight)
@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Nodes
                     var fortisPool = JsonConvert.DeserializeObject<List<FortisPool>>(data);
                     if(fortisPool != null)
                     {
-                        P2PAdjServer.FortisPool = fortisPool;
+                        Globals.FortisPool = fortisPool;
                     }
                 }
 
@@ -150,10 +150,10 @@ namespace ReserveBlockCore.Nodes
         {
             var taskAnswer = new TaskAnswer();
             var num = TaskQuestionUtility.GenerateRandomNumber();
-            var fortisPool = P2PAdjServer.FortisPool.ToList();
-            taskAnswer.Address = Program.ValidatorAddress;
+            var fortisPool = Globals.FortisPool.ToList();
+            taskAnswer.Address = Globals.ValidatorAddress;
             taskAnswer.Answer = num.ToString();
-            var block = await BlockchainData.CraftNewBlock(Program.ValidatorAddress, fortisPool.Count(), num.ToString());
+            var block = await BlockchainData.CraftNewBlock(Globals.ValidatorAddress, fortisPool.Count(), num.ToString());
             if(block != null)
             {
                 taskAnswer.Block = block;
@@ -162,7 +162,7 @@ namespace ReserveBlockCore.Nodes
             else
             {
                 ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.RandomNumberTask()");
-                P2PClient.LastTaskError = true;
+                Globals.LastTaskError = true;
             }
 
         }

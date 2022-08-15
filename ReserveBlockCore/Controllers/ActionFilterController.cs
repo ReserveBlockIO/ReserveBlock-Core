@@ -7,13 +7,13 @@ namespace ReserveBlockCore.Controllers
     {
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            if(Program.AlwaysRequireAPIPassword == true)
+            if(Globals.AlwaysRequireAPIPassword == true)
             {
                 var somepass = filterContext.RouteData.Values.ContainsKey("somePassword");
                 if (somepass)
                 {
                     var pass = filterContext.RouteData.Values["somePassword"].ToString();
-                    var passCheck = Program.APIPassword.ToDecrypt(pass);
+                    var passCheck = Globals.APIPassword.ToDecrypt(pass);
                     if (passCheck == pass && passCheck != "Fail")
                     {
                         //Allow command to process

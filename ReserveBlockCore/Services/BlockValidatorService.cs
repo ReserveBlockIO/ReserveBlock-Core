@@ -15,14 +15,14 @@ namespace ReserveBlockCore.Services
 
         public static void UpdateMemBlocks(Block block)
         {
-            Program.MemBlocks.TryDequeue(out Block test);
-            Program.MemBlocks.Enqueue(block);
+            Globals.MemBlocks.TryDequeue(out Block test);
+            Globals.MemBlocks.Enqueue(block);
         }
 
         public static async Task ValidationDelay()
         {
             await ValidateBlocks();
-            while (IsValidatingBlocks == 1 || Program.BlocksDownloading == 1)
+            while (IsValidatingBlocks == 1 || Globals.BlocksDownloading == 1)
                 await Task.Delay(4);
         }
         public static async Task ValidateBlocks()
@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Services
             {
                 while (BlockDownloadService.BlockDict.Any())
                 {
-                    var nextHeight = Program.LastBlock.Height + 1;
+                    var nextHeight = Globals.LastBlock.Height + 1;
                     var heights = BlockDownloadService.BlockDict.Keys.OrderBy(x => x).ToArray();
                     var offsetIndex = 0;
                     var heightOffset = 0L;
@@ -59,15 +59,15 @@ namespace ReserveBlockCore.Services
                         var result = await ValidateBlock(block, true);                        
                         if (!result)
                         {
-                            P2PClient.BannedIPs[ipAddress] = true;
+                            Globals.BannedIPs[ipAddress] = true;
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
-                            if(Program.Nodes.TryRemove(ipAddress, out var node))
+                            if(Globals.Nodes.TryRemove(ipAddress, out var node))
                                 await node.Connection.DisposeAsync();                            
                             Console.WriteLine("Block was rejected from: " + block.Validator);
                         }
                         else
                         {
-                            if(Program.IsChainSynced)
+                            if(Globals.IsChainSynced)
                                 ConsoleWriterService.Output(($"Block ({block.Height}) was added from: {block.Validator} "));
                             else
                                 Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
@@ -138,10 +138,15 @@ namespace ReserveBlockCore.Services
                 return result;
             }
 
+            if(block.Version > 1)
+            {
+                //run new block rules.
+            }
+
             //ensures the timestamps being produced are correct
             if(block.Height != 0)
             {
-                var prevTimestamp = Program.LastBlock.Timestamp;
+                var prevTimestamp = Globals.LastBlock.Timestamp;
                 var currentTimestamp = TimeUtil.GetTime(1);
                 if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                 {
@@ -235,10 +240,10 @@ namespace ReserveBlockCore.Services
                                     var txdata = TransactionData.GetAll();
                                     txdata.InsertSafe(localTransaction);
                                 }
-                                if(Program.IsChainSynced == true)
+                                if(Globals.IsChainSynced == true)
                                 {
                                     //Call out to custom URL from config file with TX details
-                                    if(!string.IsNullOrWhiteSpace(Program.APICallURL))
+                                    if(!string.IsNullOrWhiteSpace(Globals.APICallURL))
                                     {
                                         APICallURLService.CallURL(localTransaction);
                                     }
@@ -288,7 +293,7 @@ namespace ReserveBlockCore.Services
                                                         var scUID = (string?)scData["ContractUID"];
 
                                                         var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if(!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock() - line 213");
@@ -308,7 +313,7 @@ namespace ReserveBlockCore.Services
                                                     if(!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(localTransaction); });
-                                                        bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for evolve in time.", "BlockValidatorService.ValidateBlock() - line 224");
@@ -319,7 +324,7 @@ namespace ReserveBlockCore.Services
                                                     if (!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(localTransaction); });
-                                                        bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for devolve in time.", "BlockValidatorService.ValidateBlock() - line 235");
@@ -330,7 +335,7 @@ namespace ReserveBlockCore.Services
                                                     if(!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(localTransaction); });
-                                                        bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for evo/devo specific in time.", "BlockValidatorService.ValidateBlock() - line 246");
@@ -479,7 +484,7 @@ namespace ReserveBlockCore.Services
             if(block.Height != 0)
             {
                 //ensures the timestamps being produced are correct
-                var prevTimestamp = Program.LastBlock.Timestamp;
+                var prevTimestamp = Globals.LastBlock.Timestamp;
                 var currentTimestamp = TimeUtil.GetTime(60);
                 if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                 {

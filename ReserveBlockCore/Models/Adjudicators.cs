@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Models
                 var adjudicators = GetAll();
                 if (adjudicators.Count() > 0)
                 {
-                    if (Program.IsTestNet == true)
+                    if (Globals.IsTestNet == true)
                     {
                         var leaderTest = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true && x.Address.StartsWith("x"));
                         if(leaderTest != null)

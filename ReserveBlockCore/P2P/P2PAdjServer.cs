@@ -20,16 +20,6 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PAdjServer : Hub
     {
-        public static List<FortisPool> FortisPool = new List<FortisPool>();
-
-        public static TaskQuestion? CurrentTaskQuestion = null;
-
-        public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
-        public static List<TaskAnswer> RejectedTaskAnswerList = new List<TaskAnswer>();
-        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();
-
-        public static int ValConnectedCount = 0;
-
         #region Broadcast methods
         public override async Task OnConnectedAsync()
         {
@@ -52,7 +42,7 @@ namespace ReserveBlockCore.P2P
 
                     var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
-                    var fortisPool = FortisPool.ToList();
+                    var fortisPool = Globals.FortisPool.ToList();
 
                     if (!string.IsNullOrWhiteSpace(address) && !string.IsNullOrWhiteSpace(uName) && !string.IsNullOrWhiteSpace(signature) && walletVersionVerify)
                     {
@@ -78,13 +68,13 @@ namespace ReserveBlockCore.P2P
                                             fortisPools.ConnectionId = connectionId;
                                             fortisPools.WalletVersion = walletVersion;
 
-                                            FortisPool.Add(fortisPools);
-                                            ValConnectedCount++;
+                                            Globals.FortisPool.Add(fortisPools);
+                                            Globals.ValConnectedCount++;
                                             //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
                                         }
                                         else
                                         {
-                                            var validator = FortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
+                                            var validator = Globals.FortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
                                             if (validator != null)
                                             {
                                                 validator.ConnectDate = DateTime.UtcNow;
@@ -105,19 +95,19 @@ namespace ReserveBlockCore.P2P
                                                 fortisPools.ConnectionId = connectionId;
                                                 fortisPools.WalletVersion = walletVersion;
 
-                                                FortisPool.Add(fortisPools);
-                                                ValConnectedCount++;
+                                                Globals.FortisPool.Add(fortisPools);
+                                                Globals.ValConnectedCount++;
                                             }
                                         }
 
                                         var fortisPoolStr = "";
 
-                                        if (CurrentTaskQuestion == null)
+                                        if (Globals.CurrentTaskQuestion == null)
                                         {
                                             await SendAdjMessageSingle("status", "Connected");
-                                            CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                                            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
                                             ConsoleWriterService.Output("Task Created");
-                                            var taskQuest = CurrentTaskQuestion;
+                                            var taskQuest = Globals.CurrentTaskQuestion;
                                             TaskQuestion nTaskQuestion = new TaskQuestion();
                                             nTaskQuestion.TaskType = taskQuest.TaskType;
                                             nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
@@ -129,7 +119,7 @@ namespace ReserveBlockCore.P2P
                                         else
                                         {
                                             await SendAdjMessageSingle("status", "Connected");
-                                            var taskQuest = CurrentTaskQuestion;
+                                            var taskQuest = Globals.CurrentTaskQuestion;
                                             TaskQuestion nTaskQuestion = new TaskQuestion();
                                             nTaskQuestion.TaskType = taskQuest.TaskType;
                                             nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
@@ -146,7 +136,7 @@ namespace ReserveBlockCore.P2P
                                 {
                                     await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify. You are being disconnected.");
                                     Context.Abort();
-                                    if (Program.OptionalLogging == true)
+                                    if (Globals.OptionalLogging == true)
                                     {
                                         LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
                                     }
@@ -157,7 +147,7 @@ namespace ReserveBlockCore.P2P
                             {
                                 await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.");
                                 Context.Abort();
-                                if (Program.OptionalLogging == true)
+                                if (Globals.OptionalLogging == true)
                                 {
                                     LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
                                 }
@@ -175,7 +165,7 @@ namespace ReserveBlockCore.P2P
                     {
                         await SendAdjMessageSingle("status", "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.");
                         Context.Abort();
-                        if (Program.OptionalLogging == true)
+                        if (Globals.OptionalLogging == true)
                         {
                             LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
                         }
@@ -187,7 +177,7 @@ namespace ReserveBlockCore.P2P
             catch (Exception ex)
             {
                 //Connection attempt failed with unhandled error.
-                if (Program.OptionalLogging == true)
+                if (Globals.OptionalLogging == true)
                 {
                     ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.Message}", "Adj Connection");
                 }
@@ -201,7 +191,7 @@ namespace ReserveBlockCore.P2P
         {
             string connectionId = Context.ConnectionId;
             //FortisPool.RemoveAll(x => x.ConnectionId == connectionId);
-            ValConnectedCount--;
+            Globals.ValConnectedCount--;
             var fortisPoolStr = "";
             //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
             //await SendAdjMessageAll("fortisPool", fortisPoolStr);
@@ -225,7 +215,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task<int> GetConnectedValCount()
         {
-            var peerCount = ValConnectedCount;
+            var peerCount = Globals.ValConnectedCount;
             return peerCount;
         }
 
@@ -234,22 +224,22 @@ namespace ReserveBlockCore.P2P
         #region Receive Block and Task Answer
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
         {
-            if (Program.BlocksDownloading == 0)
+            if (Globals.BlocksDownloading == 0)
             {
-                if (Program.Adjudicate)
+                if (Globals.Adjudicate)
                 {
                     //This will result in users not getting their answers chosen if they are not in list.
-                    var fortisPool = FortisPool.ToList();
+                    var fortisPool = Globals.FortisPool.ToList();
                     if(fortisPool.Exists(x => x.Address == taskResult.Address))
                     {
-                        if(taskResult.Block.Height == Program.LastBlock.Height + 1)
+                        if(taskResult.Block.Height == Globals.LastBlock.Height + 1)
                         {
-                            var taskAnswerList = TaskAnswerList.ToList();
+                            var taskAnswerList = Globals.TaskAnswerList.ToList();
                             var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
                             if (!answerExist)
                             {
                                 taskResult.SubmitTime = DateTime.UtcNow;
-                                TaskAnswerList.Add(taskResult);
+                                Globals.TaskAnswerList.Add(taskResult);
                                 return true;
                             }
                         }
@@ -277,9 +267,9 @@ namespace ReserveBlockCore.P2P
         public async Task<bool> ReceiveTX(Transaction transaction)
         {
             bool output = false;
-            if (Program.BlocksDownloading == 0)
+            if (Globals.BlocksDownloading == 0)
             {
-                if (Program.Adjudicate)
+                if (Globals.Adjudicate)
                 {
                     if (transaction != null)
                     {
@@ -305,7 +295,7 @@ namespace ReserveBlockCore.P2P
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction);
                                             await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
-                                            BroadcastedTrxList.Add(transaction);
+                                            Globals.BroadcastedTrxList.Add(transaction);
                                             output = true;
                                         }
                                     }
@@ -317,12 +307,12 @@ namespace ReserveBlockCore.P2P
                                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
                                     if (!isCraftedIntoBlock)
                                     {
-                                        if(!BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
+                                        if(!Globals.BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
                                         {
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction);
                                             await SendAdjMessageAll("tx", txOutput);
-                                            BroadcastedTrxList.Add(transaction);
+                                            Globals.BroadcastedTrxList.Add(transaction);
                                         }
                                     }
                                     else

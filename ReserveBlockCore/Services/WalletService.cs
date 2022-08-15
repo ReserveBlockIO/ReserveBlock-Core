@@ -208,7 +208,7 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {

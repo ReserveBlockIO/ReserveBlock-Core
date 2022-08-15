@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
@@ -381,7 +381,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {

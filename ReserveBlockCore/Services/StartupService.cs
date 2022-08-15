@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    var port = Program.Port;
+                    var port = Globals.Port;
                     tcpClient.Connect("127.0.0.1", port);
                     Console.WriteLine($"Application already running on port {port}. Please verify only one instance is open.");
                     LogUtility.Log($"CLI Already Running on port {port}. Closing new instance.", "StartupService.AnotherInstanceCheck()");
@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Services
             var check = HDWallet.HDWalletData.GetHDWallet();
             if(check != null)
             {
-                Program.HDWallet = true;
+                Globals.HDWallet = true;
             }
         }
         internal static void SetBlockchainChainRef()
@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Services
             BlockchainData.ChainRef = "m1_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
             LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
 
-            if (Program.IsTestNet)
+            if (Globals.IsTestNet)
             {
                 BlockchainData.ChainRef = "t_testnet1";
             }
@@ -96,15 +96,15 @@ namespace ReserveBlockCore.Services
 
         internal static void SetBlockHeight()
         {
-            Program.LastBlock.Height = BlockchainData.GetHeight();
-            LogUtility.Log("RBX Height - " + Program.LastBlock.Height.ToString(), "Main");
+            Globals.LastBlock.Height = BlockchainData.GetHeight();
+            LogUtility.Log("RBX Height - " + Globals.LastBlock.Height.ToString(), "Main");
         }
 
         internal static void SetLastBlock()
         {
-            if(Program.LastBlock.Height != -1)
+            if(Globals.LastBlock.Height != -1)
             {
-                Program.LastBlock = BlockchainData.GetLastBlock();
+                Globals.LastBlock = BlockchainData.GetLastBlock();
             }
         }
 
@@ -126,8 +126,8 @@ namespace ReserveBlockCore.Services
                 var beaconInfo = BeaconInfo.GetBeaconInfo();
                 if(beaconInfo != null)
                 {
-                    var port = Program.Port + 10000; //23338
-                    if (Program.IsTestNet == true)
+                    var port = Globals.Port + 10000; //23338
+                    if (Globals.IsTestNet == true)
                     {
                         port = port + 10000; //33338
                     }
@@ -159,13 +159,13 @@ namespace ReserveBlockCore.Services
                     NodeIP = "173.254.253.106",
                     Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
                     UniqueName = "Trillium Adjudicator 1",
-                    WalletVersion = Program.CLIVersion  
+                    WalletVersion = Globals.CLIVersion  
                 };
 
                 adjudicators.InsertSafe(adj1);
             }
 
-            if(Program.IsTestNet == true)
+            if(Globals.IsTestNet == true)
             {
                 var test_adjudicator = adjudicators.FindOne(x => x.Address == "xAZG6Q52Ap4QxiUZVsNUaSYd3ECtoAdvvj");
                 if (test_adjudicator == null)
@@ -179,7 +179,7 @@ namespace ReserveBlockCore.Services
                         NodeIP = "173.254.253.106",
                         Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
                         UniqueName = "Trillium Adjudicator TestNet",
-                        WalletVersion = Program.CLIVersion
+                        WalletVersion = Globals.CLIVersion
                     };
 
                     adjudicators.InsertSafe(adjTest);
@@ -193,7 +193,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.248.14.123",
-                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 1",
                 BeaconUID = "Foundation Beacon 1"
 
@@ -205,7 +205,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.251.121.150",
-                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 2",
                 BeaconUID = "Foundation Beacon 2"
 
@@ -217,7 +217,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "185.199.226.121",
-                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 3",
                 BeaconUID = "Foundation Beacon 3"
 
@@ -230,7 +230,7 @@ namespace ReserveBlockCore.Services
             locators.Add(locator2);
             locators.Add(locator3);
 
-            Program.Locators = locators;
+            Globals.Locators = locators;
         }
         internal static void ClearStaleMempool()
         {
@@ -280,41 +280,41 @@ namespace ReserveBlockCore.Services
         internal static void SetValidator()
         {
             var accounts = AccountData.GetAccounts();
-            if(Program.IsTestNet == true)
+            if(Globals.IsTestNet == true)
             {
                 var myAccountTest = accounts.FindOne(x => x.IsValidating == true);
                 if (myAccountTest != null)
                 {
-                    Program.ValidatorAddress = myAccountTest.Address;
+                    Globals.ValidatorAddress = myAccountTest.Address;
                 }
             }
-            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
             if (myAccount != null)
             {
-                Program.ValidatorAddress = myAccount.Address;
+                Globals.ValidatorAddress = myAccount.Address;
             }
         }
 
         internal static async void SetConfigValidator()
         {
-            var address = Program.ConfigValidator;
-            var uname = Program.ConfigValidatorName;
+            var address = Globals.ConfigValidator;
+            var uname = Globals.ConfigValidatorName;
             var accounts = AccountData.GetAccounts();
             var myAccount = accounts.FindOne(x => x.Address == address);
             if (myAccount != null && myAccount.IsValidating != true)
             {
                 var valResult = await ValidatorService.StartValidating(myAccount, uname);
-                Program.ValidatorAddress = myAccount.Address;
+                Globals.ValidatorAddress = myAccount.Address;
             }
         }
 
         internal static void SetSelfAdjudicator()
         {
-            var leadAdj = Program.LeadAdjudicator;
+            var leadAdj = Globals.LeadAdjudicator;
             var account = AccountData.GetSingleAccount(leadAdj.Address);
             if(account != null)
             {
-                Program.Adjudicate = true;
+                Globals.Adjudicate = true;
             }
         }
 
@@ -323,11 +323,11 @@ namespace ReserveBlockCore.Services
             var adjudicatorLead = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
             if(adjudicatorLead != null)
             {
-                Program.LeadAdjudicator = adjudicatorLead;
+                Globals.LeadAdjudicator = adjudicatorLead;
             }
             else
             {
-                Program.LeadAdjudicator = await P2PClient.GetLeadAdjudicator();
+                Globals.LeadAdjudicator = await P2PClient.GetLeadAdjudicator();
             }
         }
 
@@ -355,12 +355,12 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Program.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
+            Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
         public static async Task ConnectoToAdjudicator()
         {
-            if(!string.IsNullOrWhiteSpace(Program.ValidatorAddress))
+            if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
             {
                 var account = AccountData.GetLocalValidator();
                 var validators = Validators.Validator.GetAll();
@@ -376,7 +376,7 @@ namespace ReserveBlockCore.Services
                     var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
                     if(adjudicator != null)
                     {
-                        var url = "http://" + adjudicator.NodeIP + ":" + Program.Port + "/adjudicator";
+                        var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
                         await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
                     }
                     else
@@ -391,11 +391,11 @@ namespace ReserveBlockCore.Services
 
         internal static async Task DownloadBlocksOnStart()
         {
-            Program.StopAllTimers = true;
+            Globals.StopAllTimers = true;
             var download = true;
             while(download) //this will loop forever till download happens
             {
-                if(Program.IsResyncing == false)
+                if(Globals.IsResyncing == false)
                 {
                     var result = await P2PClient.GetCurrentHeight();
                     if (result.Item1 == true)
@@ -410,7 +410,7 @@ namespace ReserveBlockCore.Services
                         ConsoleWriterService.Output("Block downloads finished.");
                         LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");                        
                         download = false; //exit the while.
-                        Program.StopAllTimers = false;
+                        Globals.StopAllTimers = false;
                         var accounts = AccountData.GetAccounts();
                         var accountList = accounts.FindAll().ToList();
                         if (accountList.Count() > 0)
@@ -434,11 +434,11 @@ namespace ReserveBlockCore.Services
                 }
                 
             }
-            if(Program.IsResyncing == false)
+            if(Globals.IsResyncing == false)
             {
-                Program.BlocksDownloading = 0;
-                Program.StopAllTimers = false;
-                Program.IsChainSynced = true;
+                Globals.BlocksDownloading = 0;
+                Globals.StopAllTimers = false;
+                Globals.IsChainSynced = true;
             }
             download = false; //exit the while. 
         }
@@ -456,7 +456,7 @@ namespace ReserveBlockCore.Services
                 LogUtility.Log("Duplicate Blocks Found!", "StartupService: dupBlocksList.Count != 0 / meaning dup found!");
                 //Reset blocks and all balances and redownload chain. No exception here.
                 Console.WriteLine("Duplicate Blocks Found!");
-                Program.DatabaseCorruptionDetected = true;
+                Globals.DatabaseCorruptionDetected = true;
             }
         }
 
@@ -701,11 +701,11 @@ namespace ReserveBlockCore.Services
                         peersConnected = true;
                         Console.WriteLine("Connected to Peers...");
                         var accounts = AccountData.GetAccounts();
-                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
                         if (myAccount != null)
                         {
-                            Program.ValidatorAddress = myAccount.Address;
-                            LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
+                            Globals.ValidatorAddress = myAccount.Address;
+                            LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
                         }
                         else
                         {
@@ -745,7 +745,7 @@ namespace ReserveBlockCore.Services
 
             if (peersConnected)
             {
-                if(Program.LastBlock.Height == -1)
+                if(Globals.LastBlock.Height == -1)
                 {
                     //This just gets first few blocks to start chain off.
                     Console.WriteLine("Downloading Blocks First.");
@@ -771,7 +771,7 @@ namespace ReserveBlockCore.Services
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
-            if(Program.IsTestNet != true)
+            if(Globals.IsTestNet != true)
             {
                 AnsiConsole.Write(
                 new FigletText("RBX Wallet")
@@ -786,7 +786,7 @@ namespace ReserveBlockCore.Services
                 .Color(Color.Green));
             }
             
-            if(Program.IsTestNet != true)
+            if(Globals.IsTestNet != true)
             {
                 Console.WriteLine("ReserveBlock Main Menu");
             }

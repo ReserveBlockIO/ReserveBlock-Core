@@ -9,8 +9,8 @@ namespace ReserveBlockCore.Utilities
         {
             try
             {
-                var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-                var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+                var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+                var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
                 var text = await StaticVariableUtility.GetStaticVars();
                 string path = "";

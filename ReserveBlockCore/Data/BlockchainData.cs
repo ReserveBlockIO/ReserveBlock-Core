@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Data
                 var processedTxPool = TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
-                var lastBlock = Program.LastBlock;
+                var lastBlock = Globals.LastBlock;
                 var height = lastBlock.Height + 1;
 
                 //Need to get master node validator.
@@ -296,7 +296,7 @@ namespace ReserveBlockCore.Data
             if (blockCheck == null)
             {               
                 //Update in memory fields.
-                Program.LastBlock = block;                
+                Globals.LastBlock = block;                
                 blocks.InsertSafe(block);
             }
             else
@@ -306,7 +306,7 @@ namespace ReserveBlockCore.Data
                 if (eBlock == null)
                 {
                     //database corrupt
-                    Program.DatabaseCorruptionDetected = true;
+                    Globals.DatabaseCorruptionDetected = true;
                     ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
                 }
             }

@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Models
 
                 hd.InsertSafe(hdw);
 
-                Program.HDWallet = true;
+                Globals.HDWallet = true;
 
                 return "Mnemonic Restored...";
             }

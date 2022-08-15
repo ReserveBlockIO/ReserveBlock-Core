@@ -38,9 +38,9 @@ namespace ReserveBlockCore.Models
 			Version = BlockVersionUtility.GetBlockVersion(Height); //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
 			NumOfTx = Transactions.Count;
 			TotalAmount = GetTotalAmount();
-			TotalReward = Program.LastBlock.Height != -1 ? GetTotalFees() : 0M;
+			TotalReward = Globals.LastBlock.Height != -1 ? GetTotalFees() : 0M;
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = Program.LastBlock.Height != -1 ? Program.LastBlock.Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
+			PrevHash = Globals.LastBlock.Height != -1 ? Globals.LastBlock.Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Models
 			TotalAmount = GetTotalAmount();
 			TotalReward = GetTotalFees();
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = Program.LastBlock.Hash;
+			PrevHash = Globals.LastBlock.Hash;
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}

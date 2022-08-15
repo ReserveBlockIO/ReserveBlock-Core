@@ -64,7 +64,7 @@ namespace ReserveBlockCore.Data
         {
             var result = false;
 
-            var transactions = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var transactions = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
                 var txExist = transactions.Any(x => x.Hash == tx.Hash);
@@ -222,7 +222,7 @@ namespace ReserveBlockCore.Data
         {
             bool result = false;
 
-            var transactions = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var transactions = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
                 var txExist = transactions.Any(x => x.Hash == tx.Hash);

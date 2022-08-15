@@ -75,50 +75,50 @@ namespace ReserveBlockCore.Config
 
 		public static void ProcessConfig(Config config)
         {
-			Program.Port = config.Port;
-			Program.APIPort = config.APIPort;
-			Program.APICallURL = config.APICallURL;
-			Program.APICallURLLogging = config.APICallURLLogging;
-			Program.NFTTimeout = config.NFTTimeout;
+			Globals.Port = config.Port;
+			Globals.APIPort = config.APIPort;
+			Globals.APICallURL = config.APICallURL;
+			Globals.APICallURLLogging = config.APICallURLLogging;
+			Globals.NFTTimeout = config.NFTTimeout;
 
 			if(config.TestNet == true)
             {
-				Program.IsTestNet = true;
-				Program.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
-				Program.Port = 13338;
-				Program.APIPort = 17292;
-				Program.AddressPrefix = 0x89; //address prefix 'x'
+				Globals.IsTestNet = true;
+				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
+				Globals.Port = 13338;
+				Globals.APIPort = 17292;
+				Globals.AddressPrefix = 0x89; //address prefix 'x'
 			}
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))
 			{
-				Program.WalletPassword = config.WalletPassword.ToEncrypt();
-				Program.CLIWalletUnlockTime = DateTime.UtcNow;
-				Program.WalletUnlockTime = config.WalletUnlockTime;
-				Program.AlwaysRequireWalletPassword = config.AlwaysRequireWalletPassword;
+				Globals.WalletPassword = config.WalletPassword.ToEncrypt();
+				Globals.CLIWalletUnlockTime = DateTime.UtcNow;
+				Globals.WalletUnlockTime = config.WalletUnlockTime;
+				Globals.AlwaysRequireWalletPassword = config.AlwaysRequireWalletPassword;
 			}
 
 			if (!string.IsNullOrWhiteSpace(config.APIPassword))
             {
 				//create API Password method that locks password in encrypted string
-				Program.APIPassword = config.APIPassword.ToEncrypt();
-				Program.APIUnlockTime = DateTime.UtcNow;
-				Program.WalletUnlockTime = config.WalletUnlockTime;
-				Program.AlwaysRequireAPIPassword = config.AlwaysRequireAPIPassword;
+				Globals.APIPassword = config.APIPassword.ToEncrypt();
+				Globals.APIUnlockTime = DateTime.UtcNow;
+				Globals.WalletUnlockTime = config.WalletUnlockTime;
+				Globals.AlwaysRequireAPIPassword = config.AlwaysRequireAPIPassword;
 
 			}
 			if(config.ChainCheckPoint == true)
             {
 				//establish chain checkpoint parameters here.
-				Program.ChainCheckPointInterval = config.ChainCheckPointInterval;
-				Program.ChainCheckPointRetain = config.ChainCheckPointRetain;
-				Program.ChainCheckpointLocation = config.ChainCheckpointLocation;
+				Globals.ChainCheckPointInterval = config.ChainCheckPointInterval;
+				Globals.ChainCheckPointRetain = config.ChainCheckPointRetain;
+				Globals.ChainCheckpointLocation = config.ChainCheckpointLocation;
             }
 
 			if(!string.IsNullOrWhiteSpace(config.ValidatorAddress))
             {
-				Program.ConfigValidator = config.ValidatorAddress;
-				Program.ConfigValidatorName = config.ValidatorName;
+				Globals.ConfigValidator = config.ValidatorAddress;
+				Globals.ConfigValidatorName = config.ValidatorName;
             }
         }
 
@@ -129,7 +129,7 @@ namespace ReserveBlockCore.Config
 
 			if(!fileExist)
             {
-				if (Program.IsTestNet == false)
+				if (Globals.IsTestNet == false)
 				{
 					File.AppendAllText(path + "config.txt", "Port=3338");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=7292");

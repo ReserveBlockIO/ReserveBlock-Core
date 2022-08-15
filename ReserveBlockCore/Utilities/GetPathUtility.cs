@@ -5,12 +5,12 @@ namespace ReserveBlockCore.Utilities
 {
     public class GetPathUtility
     {
-        private static string MainFolder = Program.IsTestNet != true ? "RBX" : "RBXTest";
+        private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
         public static string GetDatabasePath()
         {
             string path = "";
 
-            var assetLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -40,7 +40,7 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Program.IsTestNet != true ? "Checkpoint" : "CheckpointTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "Checkpoint" : "CheckpointTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Program.IsTestNet != true ? "BeaconAsset" : "BeaconAssetTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "BeaconAsset" : "BeaconAssetTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -100,7 +100,7 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Program.IsTestNet != true ? "Config" : "ConfigTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "Config" : "ConfigTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
