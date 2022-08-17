@@ -15,17 +15,17 @@ namespace ReserveBlockCore.Commands
     {
         public static async void UnlockWallet()
         {
-            if(Program.WalletPassword != null)
+            if(!string.IsNullOrWhiteSpace(Globals.WalletPassword))
             {
                 Console.WriteLine("Please type in password to unlock wallet.");
                 var password = Console.ReadLine();
-                if (password != null)
+                if (!string.IsNullOrWhiteSpace(password))
                 {
-                    var passCheck = Program.WalletPassword.ToDecrypt(password);
+                    var passCheck = Globals.WalletPassword.ToDecrypt(password);
                     if(passCheck == password)
                     {
-                        Program.CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
-                        Console.WriteLine($"Wallet has been unlocked for {Program.WalletUnlockTime} mins.");
+                        Globals.CLIWalletUnlockTime = DateTime.UtcNow.AddMinutes(Globals.WalletUnlockTime);
+                        Console.WriteLine($"Wallet has been unlocked for {Globals.WalletUnlockTime} mins.");
                     }
                     else
                     {
@@ -57,7 +57,7 @@ namespace ReserveBlockCore.Commands
 
                 var table = new Table();
 
-                table.Title("[yellow]RBX Wallet Commands[/]").Centered();
+                table.Title("[yellow]RBX Private Keys[/]").Centered();
                 table.AddColumn(new TableColumn(new Panel("Address")));
                 table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
 
@@ -74,15 +74,61 @@ namespace ReserveBlockCore.Commands
 
             }
         }
+        public static async Task EncryptWallet()
+        {
+            Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
+            Console.WriteLine("Are you sure you want to do this? ('y' for yes and 'n' for no.");
+            var confirmation = Console.ReadLine();
+            if(!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "y")
+            {
+                Console.WriteLine("Please choose a password to encrypt wallet with.");
+                var password = Console.ReadLine();
+                if(!string.IsNullOrWhiteSpace(password))
+                {
+                    Console.WriteLine("Please confirm password");
+                    var passwordConfirmed = Console.ReadLine();
+                    if(!string.IsNullOrWhiteSpace(passwordConfirmed))
+                    {
+                        if(passwordConfirmed == password)
+                        {
+                            //encrypt private keys here.
+                            var accounts = AccountData.GetAccounts();
+                            var accountList = accounts.FindAll().ToList();
+                            if(accountList.Count > 0)
+                            {
+                                //Generate 1000 addresses less what they already have
+                                //check if wallet is HD - if it is encrypt seed phrase also
+                            }
+                            else
+                            {
+                                //Generate 1000 addresses
+                                //check if wallet is HD - if it is encrypt seed phrase also
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Encrypting wallet failed. Passwords did not match. Please try again.");
+                            MainMenuReturn();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MainMenuReturn();
+            }
+        }
 
-
-
+        public static async void ResetValidator()
+        {
+            await ValidatorService.DoMasterNodeStop();
+        }
         public static async void AddPeer()
         {
             IPAddress ip;
             Console.WriteLine("Please input the IP of the peer...");
             var peer = Console.ReadLine();
-            if (peer != null)
+            if (!string.IsNullOrWhiteSpace(peer))
             {
                 try
                 {
@@ -141,7 +187,7 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("Re-establish Peers? y/n");
             var reconnect = Console.ReadLine();
-            if (reconnect != null)
+            if (!string.IsNullOrWhiteSpace(reconnect))
             {
                 if (reconnect == "y")
                 {
@@ -154,7 +200,7 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("Please give your beacon a name...");
             var name = Console.ReadLine();
-            if (name != null)
+            if (!string.IsNullOrWhiteSpace(name))
             {
                 var ip = P2PClient.MostLikelyIP();
 
@@ -168,7 +214,7 @@ namespace ReserveBlockCore.Commands
                 BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
                 {
                     IPAddress = ip,
-                    Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                    Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                     Name = name,
                     BeaconUID = bUID
                 };
@@ -230,7 +276,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if (walletChoice != null && walletChoice != "")
+                if (!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -245,11 +291,11 @@ namespace ReserveBlockCore.Commands
                         var address = wallet.Address;
                         Console.WriteLine("Please give your shop a name...");
                         var name = Console.ReadLine();
-                        if (name != null && name != "")
+                        if (!string.IsNullOrWhiteSpace(name))
                         {
                             Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
                             var desc = Console.ReadLine();
-                            if (desc != null && desc != "" && desc.Length > 512)
+                            if (!string.IsNullOrWhiteSpace(desc) && desc.Length > 512)
                             {
                                 var ip = P2PClient.MostLikelyIP();
 
@@ -265,7 +311,7 @@ namespace ReserveBlockCore.Commands
                                     DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
                                     {
                                         IPAddress = ip,
-                                        Port = Program.Port,
+                                        Port = Globals.Port,
                                         Name = name,
                                         ShopUID = sUID
                                     };
@@ -302,13 +348,13 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("How many words do you want? (12 or 24)");
             var strengthStr = Console.ReadLine();
-            if (strengthStr != null)
+            if (!string.IsNullOrWhiteSpace(strengthStr))
             {
                 if (strengthStr == "12")
                 {
                     var strength = Convert.ToInt32(strengthStr);
                     var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-                    Program.HDWallet = true;
+                    Globals.HDWallet = true;
 
                     return mnemonic;
                 }
@@ -316,7 +362,7 @@ namespace ReserveBlockCore.Commands
                 {
                     var strength = Convert.ToInt32(strengthStr);
                     var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-                    Program.HDWallet = true;
+                    Globals.HDWallet = true;
 
                     return mnemonic;
                 }
@@ -374,7 +420,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if(walletChoice != null && walletChoice != "")
+                if(!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -401,7 +447,7 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter the name you'd like for this wallet. Ex: (cryptoinvestor1) Please note '.rbx' will automatically be added. DO NOT INCLUDE IT.");
                             Console.WriteLine("type exit to leave this menu.");
                             var name = Console.ReadLine();
-                            if(name != null && name != "" && name != "exit")
+                            if(!string.IsNullOrWhiteSpace(name) && name != "exit")
                             {
                                 var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                                 if(!nameCharCheck)
@@ -416,7 +462,7 @@ namespace ReserveBlockCore.Commands
                                         nameFound = false;
                                         Console.WriteLine("Are you sure you want to create this DNR? 'y' for yes, 'n' for no.");
                                         var response = Console.ReadLine();
-                                        if (response != null && response != "")
+                                        if (!string.IsNullOrWhiteSpace(response))
                                         {
                                             if (response.ToLower() == "y")
                                             {
@@ -424,14 +470,8 @@ namespace ReserveBlockCore.Commands
                                                 var result = await Adnr.CreateAdnrTx(address, name);
                                                 if(result.Item1 != null)
                                                 {
-                                                    Console.WriteLine("DNR Request has been sent to mempool. Sending you back to main menu.");
-                                                    Console.WriteLine("3...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("2...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("1...");
-                                                    Thread.Sleep(1000);
-                                                    StartupService.MainMenu();
+                                                    Console.WriteLine("DNR Request has been sent to mempool.");
+                                                    MainMenuReturn();
                                                 }
                                                 else
                                                 {
@@ -497,7 +537,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if (walletChoice != null && walletChoice != "")
+                if (!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -524,7 +564,7 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter the address you'd like to transfer too. BE SURE YOU WANT TO DO THIS! Once a transfer is processed it cannot be reversed.");
                             Console.WriteLine("type exit to leave this menu.");
                             var toAddr = Console.ReadLine();
-                            if (toAddr != null && toAddr != "" && toAddr != "exit")
+                            if (!string.IsNullOrWhiteSpace(toAddr) && toAddr != "exit")
                             {
 
                                 var addrVerify = AddressValidateUtility.ValidateAddress(toAddr);
@@ -534,21 +574,15 @@ namespace ReserveBlockCore.Commands
                                     if(toAddrAdnr != null)
                                     {
                                         nameFound = false;
-                                        Console.WriteLine("This address already has an ADNR associated with it. Returning to main menu");
-                                        Console.WriteLine("3...");
-                                        Thread.Sleep(1000);
-                                        Console.WriteLine("2...");
-                                        Thread.Sleep(1000);
-                                        Console.WriteLine("1...");
-                                        Thread.Sleep(1000);
-                                        StartupService.MainMenu();
+                                        Console.WriteLine("This address already has an ADNR associated with it");
+                                        MainMenuReturn();
                                     }
                                     else
                                     {
                                         nameFound = false;
                                         Console.WriteLine("Are you sure you want to transfer this DNR? 'y' for yes, 'n' for no.");
                                         var response = Console.ReadLine();
-                                        if (response != null && response != "")
+                                        if (!string.IsNullOrWhiteSpace(response))
                                         {
                                             if (response.ToLower() == "y")
                                             {
@@ -556,14 +590,8 @@ namespace ReserveBlockCore.Commands
                                                 var result = await Adnr.TransferAdnrTx(address, toAddr);
                                                 if (result.Item1 != null)
                                                 {
-                                                    Console.WriteLine("DNR Transfer Request has been sent to mempool. Sending you back to main menu.");
-                                                    Console.WriteLine("3...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("2...");
-                                                    Thread.Sleep(1000);
-                                                    Console.WriteLine("1...");
-                                                    Thread.Sleep(1000);
-                                                    StartupService.MainMenu();
+                                                    Console.WriteLine("DNR Transfer Request has been sent to mempool.");
+                                                    MainMenuReturn();
                                                 }
                                                 else
                                                 {
@@ -629,7 +657,7 @@ namespace ReserveBlockCore.Commands
                 string walletChoice = "";
                 walletChoice = Console.ReadLine();
 
-                if (walletChoice != null && walletChoice != "")
+                if (!string.IsNullOrWhiteSpace(walletChoice))
                 {
                     var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
@@ -653,7 +681,7 @@ namespace ReserveBlockCore.Commands
                         Console.WriteLine($"You have selected the following wallet: {address}");
                         Console.WriteLine("Are you sure you want to create this DNR? 'y' for yes, 'n' for no.");
                         var response = Console.ReadLine();
-                        if (response != null && response != "")
+                        if (!string.IsNullOrWhiteSpace(response))
                         {
                             if (response.ToLower() == "y")
                             {
@@ -661,14 +689,8 @@ namespace ReserveBlockCore.Commands
                                 var result = await Adnr.DeleteAdnrTx(address);
                                 if (result.Item1 != null)
                                 {
-                                    Console.WriteLine("DNR Delete Request has been sent to mempool. Sending you back to main menu.");
-                                    Console.WriteLine("3...");
-                                    Thread.Sleep(1000);
-                                    Console.WriteLine("2...");
-                                    Thread.Sleep(1000);
-                                    Console.WriteLine("1...");
-                                    Thread.Sleep(1000);
-                                    StartupService.MainMenu();
+                                    Console.WriteLine("DNR Delete Request has been sent to mempool.");
+                                    MainMenuReturn();
                                 }
                                 else
                                 {
@@ -699,12 +721,12 @@ namespace ReserveBlockCore.Commands
         {
             Console.WriteLine("Please paste your Mnemonic Below...");
             var mnemonicStr = Console.ReadLine();
-            if (mnemonicStr != null)
+            if (!string.IsNullOrWhiteSpace(mnemonicStr))
             {
                 var mnemonicResult = HDWallet.HDWalletData.RestoreHDWallet(mnemonicStr);
                 if(mnemonicResult.Contains("Restored"))
                 {
-                    Program.HDWallet = true;
+                    Globals.HDWallet = true;
                 }
                 
                 return mnemonicResult;
@@ -719,7 +741,7 @@ namespace ReserveBlockCore.Commands
             {
                 ConsoleWriterService.Output("Please enter the block height");
                 var blockHeightStr = Console.ReadLine();
-                if (blockHeightStr != null && blockHeightStr != "")
+                if (!string.IsNullOrWhiteSpace(blockHeightStr))
                 {
                     long blockHeight = 0;
                     long.TryParse(blockHeightStr, out blockHeight);
@@ -771,14 +793,16 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/optlog[/]", "[green]Turns on optional logging for adjudicators.[/]");
             table.AddRow("[blue]/beacon[/]", "[green]Starts the process for creating a beacon.[/]");
             table.AddRow("[blue]/switchbeacon[/]", "[green]This will turn a beacon on and off.[/]");
-            table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Program.WalletUnlockTime} minutes.[/]");
+            table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Globals.WalletUnlockTime} minutes.[/]");
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
             table.AddRow("[blue]/creatednr[/]", "[green]Creates an address domain name registrar.[/]");
             table.AddRow("[blue]/deletednr[/]", "[green]Deletes a domain name registrar.[/]");
             table.AddRow("[blue]/transferdnr[/]", "[green]transfers a domain name registrar.[/]");
             table.AddRow("[blue]/printkeys[/]", "[green]Prints all private keys associated to a wallet.[/]");
+            table.AddRow("[blue]/encrypt[/]", "[green]Encrypts the wallets private keys.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
+            table.AddRow("[blue]/resetval[/]", "[green]Resets all validator information in databases.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
@@ -802,7 +826,7 @@ namespace ReserveBlockCore.Commands
 
         private static void MainMenuReturn()
         {
-            Console.WriteLine("Return you to main menu in 3 seconds.");
+            Console.WriteLine("Returning you to main menu in 3 seconds.");
             Console.WriteLine("3...");
             Thread.Sleep(1000);
             Console.WriteLine("2...");

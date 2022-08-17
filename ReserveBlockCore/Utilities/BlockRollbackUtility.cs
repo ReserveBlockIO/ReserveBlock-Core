@@ -7,9 +7,9 @@ namespace ReserveBlockCore.Utilities
     {
         public static async Task<bool> RollbackBlocks(int numBlocksRollback)
         {
-            Program.IsResyncing = true;
-            Program.StopAllTimers = true;
-            var height = Program.BlockHeight;
+            Globals.IsResyncing = true;
+            Globals.StopAllTimers = true;
+            var height = Globals.LastBlock.Height;
             var newHeight = height - (long)numBlocksRollback;
 
             var blocks = Block.GetBlocks();
@@ -18,8 +18,8 @@ namespace ReserveBlockCore.Utilities
 
             var result = await ResetTreis();
 
-            Program.IsResyncing = false;
-            Program.StopAllTimers = false;
+            Globals.IsResyncing = false;
+            Globals.StopAllTimers = false;
 
             return result;
         }

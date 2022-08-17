@@ -1,4 +1,6 @@
 ﻿using System.IO.Compression;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -23,6 +25,30 @@ namespace ReserveBlockCore.Extensions
                     var hash = md5.ComputeHash(stream);
                     return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
                 }
+            }
+        }
+        
+        public static SecureString ToSecureString(this string source)
+        {
+            var secureStr = new SecureString();
+            if (source.Length > 0)
+            {
+                foreach (var c in source.ToCharArray()) secureStr.AppendChar(c);
+            }
+            return secureStr;
+        }
+
+        public static string ToUnsecureString(this SecureString source)
+        {
+            IntPtr unmanagedString = IntPtr.Zero;
+            try
+            {
+                unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(source);
+                return Marshal.PtrToStringUni(unmanagedString);
+            }
+            finally
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(unmanagedString);
             }
         }
 
@@ -142,104 +168,73 @@ namespace ReserveBlockCore.Extensions
         {
             return decimal.Round((value / (decimal)Math.Pow(1024, (long)unit)), 2);
         }
-
         public static string ToEncrypt(this string source)
         {
-            // Salt and IV is randomly generated each time, but is preprended to encrypted cipher text
-            // so that the same Salt and IV values can be used when decrypting.  
-            var saltStringBytes = Generate256BitsOfRandomEntropy();
-            var ivStringBytes = Generate256BitsOfRandomEntropy();
-            var plainTextBytes = Encoding.UTF8.GetBytes(source);
+            byte[] key = GetKey(source);
+            byte[] iv = new byte[16];
+            byte[] array;
 
-            using (var password = new Rfc2898DeriveBytes(source, saltStringBytes, DerivationIterations))
+            using (Aes aes = Aes.Create())
             {
-                var keyBytes = password.GetBytes(Keysize / 8);
-                using (var symmetricKey = Aes.Create())
+                aes.Key = key;
+                aes.IV = iv;
+
+                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+                using (MemoryStream memoryStream = new MemoryStream())
                 {
-                    symmetricKey.BlockSize = Keysize;
-                    symmetricKey.Mode = CipherMode.CBC;
-                    symmetricKey.Padding = PaddingMode.Zeros;
-                    using (var key = symmetricKey.CreateEncryptor(keyBytes, ivStringBytes))
+                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write))
                     {
-                        using (var memoryStream = new MemoryStream())
+                        using (StreamWriter streamWriter = new StreamWriter((Stream)cryptoStream))
                         {
-                            using (var cryptoStream = new CryptoStream(memoryStream, key, CryptoStreamMode.Write))
-                            {
-                                cryptoStream.Write(plainTextBytes);
-                                cryptoStream.FlushFinalBlock();
-                                var cryptTextBytes = saltStringBytes;
-                                cryptTextBytes = cryptTextBytes.Concat(ivStringBytes).ToArray();
-                                cryptTextBytes = cryptTextBytes.Concat(memoryStream.ToArray()).ToArray();
-                                memoryStream.Close();
-                                cryptoStream.Close();
-                                return Convert.ToBase64String(cryptTextBytes);
-                            }
+                            streamWriter.Write(source);
                         }
+
+                        array = memoryStream.ToArray();
                     }
                 }
             }
-        }
 
+            return Convert.ToBase64String(array);
+        }
         public static string ToDecrypt(this string cipherText, string passPhrase)
         {
             try
             {
-                // Get the complete stream of bytes that represent:
-                // [32 bytes of Salt] + [32 bytes of IV] + [n bytes of CipherText]
-                var cipherTextBytesWithSaltAndIv = Convert.FromBase64String(cipherText);
-                // Get the saltbytes by extracting the first 32 bytes from the supplied cipherText bytes.
-                var saltStringBytes = cipherTextBytesWithSaltAndIv.Take(Keysize / 8).ToArray();
-                // Get the IV bytes by extracting the next 32 bytes from the supplied cipherText bytes.
-                var ivStringBytes = cipherTextBytesWithSaltAndIv.Skip(Keysize / 8).Take(Keysize / 8).ToArray();
-                // Get the actual cipher text bytes by removing the first 64 bytes from the cipherText string.
-                var cipherTextBytes = cipherTextBytesWithSaltAndIv.Skip((Keysize / 8) * 2).Take(cipherTextBytesWithSaltAndIv.Length - ((Keysize / 8) * 2)).ToArray();
+                byte[] key = GetKey(passPhrase);
+                byte[] iv = new byte[16];
+                byte[] buffer = Convert.FromBase64String(cipherText);
 
-                using (var password = new Rfc2898DeriveBytes(passPhrase, saltStringBytes, DerivationIterations))
+                using (Aes aes = Aes.Create())
                 {
-                    var keyBytes = password.GetBytes(Keysize / 8);
-                    using (var symmetricKey = Aes.Create())
+                    aes.Key = key;
+                    aes.IV = iv;
+                    ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                    using (MemoryStream memoryStream = new MemoryStream(buffer))
                     {
-                        symmetricKey.BlockSize = Keysize;
-                        symmetricKey.Mode = CipherMode.CBC;
-                        symmetricKey.Padding = PaddingMode.Zeros;
-                        using (var key = symmetricKey.CreateDecryptor(keyBytes, ivStringBytes))
+                        using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
                         {
-                            using (var memoryStream = new MemoryStream(cipherTextBytes))
+                            using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
                             {
-                                using (var cryptoStream = new CryptoStream(memoryStream, key, CryptoStreamMode.Read))
-                                {
-                                    var plainTextBytes = new byte[cipherTextBytes.Length];
-
-                                    cryptoStream.Read(plainTextBytes);
-
-                                    memoryStream.Close();
-                                    cryptoStream.Close();
-                                    return Encoding.UTF8.GetString(plainTextBytes).TrimEnd('\0');
-                                }
+                                return streamReader.ReadToEnd();
                             }
                         }
                     }
                 }
             }
-            catch
+            catch(Exception ex)
             {
                 return "Fail";
             }
-            
         }
-
-        private const int Keysize = 128;
-
-        // This constant determines the number of iterations for the password bytes generation function.
-        private const int DerivationIterations = 1000;
-        private static byte[] Generate256BitsOfRandomEntropy()
+        private static byte[] GetKey(string password)
         {
-            var randomBytes = new byte[Keysize / 8];
-            using (var rngCsp = RandomNumberGenerator.Create())
+            var keyBytes = Encoding.UTF8.GetBytes(password);
+            using (var md5 = MD5.Create())
             {
-                rngCsp.GetBytes(randomBytes);
+                return md5.ComputeHash(keyBytes);
             }
-            return randomBytes;
         }
     }
 }

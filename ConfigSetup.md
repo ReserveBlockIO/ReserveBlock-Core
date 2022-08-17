@@ -1,19 +1,19 @@
 Summary:
 The point of this paper is to outline the config file setup and features it has.
-1. Port (default is 3338). 
-	+ a. Type int. 
+1.	Port (default is 3338)
+	+ a. Type int
 	+ b. Ex: Port=3338.
 	+ c. This is the port for all p2p functions. This should remain as 3338.
   
-2. APIPort (default is 7292)
-	+ a.	Type int.
+2.	APIPort (default is 7292)
+	+ a.	Type int
 	+ b.	Ex: APIPort=7292
 	+ c.	This is the port to call the API. This may be changed to whatever you want.
 
 3.	WalletPassword (default is null)
 	+ a.	Type string
 	+ b.	Ex: WalletPassword=SomePassword1234!
-	+ c.	This is a password that will lock all functions in wallet and require you input a password to unlock wallet functions
+	+ c.	This is a password that will lock all functions in wallet and require you input a password to unlock wallet functions.
 
 4.	AlwaysRequireWalletPassword (default is false)
 	+ a.	Type boolean
@@ -22,23 +22,23 @@ The point of this paper is to outline the config file setup and features it has.
 
 5.	APIPassword (default is null)
 	+ a.	Type string
-	+ b.	Ex: WalletPassword=SomePassword1234!
-	+ c.	This is a password set to lock down control of the API. This password must be inputted to call any API function
+	+ b.	Ex: APIPassword=SomePassword1234!
+	+ c.	This is a password set to lock down control of the API. This password must be inputted to call any API function.
 
 6.	AlwaysRequireAPIPassword (default is false)
 	+ a.	Type boolean
 	+ b.	Ex: AlwaysRequireAPIPassword=true
-	+ c.	If set to true then you must include the password in all API request
+	+ c.	If set to true then you must include the password in all API request.
 
 7.	APICallURL (default is null)
 	+ a.	Type string
 	+ b.	Ex: APICallURL=https://mycallbackurl.com
-	+ c.	This URL is used to send incoming transactions to an outside URL. This is something used for like incoming deposits or other notification services.
+	+ c.	This URL is used to send incoming transactions to an outside URL. This is something used for like incoming deposits or other notification. services.
 
 8.	WalletUnlockTime (default is 15)
 	+ a.	Type int
 	+ b.	Ex: WalletUnlockTime=5
-	+ c.	This is the amount of time once a password has been entered the wallet will remain unlocked and not need password again. If any of the RequirePasswords above are set to true then it will override this setting and require the password everytime. 
+	+ c.	This is the amount of time once a password has been entered the wallet will remain unlocked and not need password again. If any of the RequirePasswords above are set to true, then it will override this setting and require the password everytime. 
 
 9.	ChainCheckPoint (default is false)
 	+ a.	Type Boolean
@@ -67,7 +67,7 @@ The point of this paper is to outline the config file setup and features it has.
 
 14.	ValidatorAddress (default is null)
 	+ a.	Type string
-	+ b.	Ex: ValidatorAddress= RBcHyS2AF4Z4jgzTLZNBVLvtxQ6MtB2vUN
+	+ b.	Ex: ValidatorAddress=RBcHyS2AF4Z4jgzTLZNBVLvtxQ6MtB2vUN
 	+ c.	You can input a default validator address to instantly start validating. Please note you must also import the wallet address through the launch commands. Ex: ReserveBlockCore.exe privKey=MyPrivateKey.
 
 15.	ValidatorName (default is new guid)

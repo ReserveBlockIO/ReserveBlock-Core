@@ -8,11 +8,11 @@ namespace ReserveBlockCore.Utilities
 {
     public class NFTAssetFileUtility 
     {
-        private static string MainFolder = Program.IsTestNet != true ? "RBX" : "RBXTest";
+        private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
         public static bool MoveAsset(string fileLocation, string fileName, string scUID)
         {
-            var assetLocation = Program.IsTestNet != true ? "Assets" : "AssetsTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
             scUID = scUID.Replace(":", ""); //remove the ':' because some folder structures won't allow it.
 
@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Utilities
         }
         public static string CreateNFTAssetPath(string fileName, string scUID)
         {
-            var assetLocation = Program.IsTestNet != true ? "Assets" : "AssetsTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
             scUID = scUID.Replace(":", ""); //remove the ':' because some folder structures won't allow it.
 
@@ -90,7 +90,7 @@ namespace ReserveBlockCore.Utilities
         }
         public static string NFTAssetPath(string fileName, string scUID)
         {
-            var assetLocation = Program.IsTestNet != true ? "Assets" : "AssetsTestNet";
+            var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
             scUID = scUID.Replace(":", ""); //remove the ':' because some folder structures won't allow it.
 

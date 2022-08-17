@@ -17,11 +17,11 @@
                     var major = Convert.ToInt32(walletVerSplit[0]);
                     var minor = Convert.ToInt32(walletVerSplit[1]);
 
-                    if (major < Program.MajorVer)
+                    if (major < Globals.MajorVer)
                     {
                         return output;
                     }
-                    if(minor < Program.MinorVer)
+                    if(minor < Globals.MinorVer)
                     {
                         return output;
                     }

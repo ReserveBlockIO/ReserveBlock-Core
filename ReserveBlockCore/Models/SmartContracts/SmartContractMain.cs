@@ -91,7 +91,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             {
                 try
                 {
-                    var databaseLocation = Program.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
+                    var databaseLocation = Globals.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
                     var text = scText;
                     string path = "";
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -166,13 +166,13 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value.ToString();
                 var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
 
-                var extension = fileName != "" && fileName != null ? Path.GetExtension(fileName) : "";
+                var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
                 var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
                 var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
                 smartContractMain.SmartContractAsset = smartContractAssset;
 
 
-                if ((string)features != "")
+                if (!string.IsNullOrWhiteSpace((string)features))
                 {
                     List<SmartContractFeatures> featuresList = new List<SmartContractFeatures>();
                     var feats = (string)features;
@@ -224,7 +224,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                     if (isDynamic == true)
                                     {
-                                        var blockHeight = Program.BlockHeight.ToString();
+                                        var blockHeight = Globals.LastBlock.Height.ToString();
                                         var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                         var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
@@ -289,7 +289,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (isDynamic == true)
                                 {
-                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var blockHeight = Globals.LastBlock.Height.ToString();
                                     var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                     var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
@@ -350,12 +350,12 @@ namespace ReserveBlockCore.Models.SmartContracts
 
             var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
             
-            var extension = fileName != "" && fileName != null ? Path.GetExtension(fileName) : "";
+            var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
             var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
             smartContractMain.SmartContractAsset = smartContractAssset;
 
 
-            if ((string)features != "")
+            if (!string.IsNullOrWhiteSpace((string)features))
             {
                 List<SmartContractFeatures> featuresList = new List<SmartContractFeatures>();
                 var feats = (string)features;
@@ -413,7 +413,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (isDynamic == true)
                                 {
-                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var blockHeight = Globals.LastBlock.Height.ToString();
                                     var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                     var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();
@@ -481,7 +481,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                             if (isDynamic == true)
                             {
-                                var blockHeight = Program.BlockHeight.ToString();
+                                var blockHeight = Globals.LastBlock.Height.ToString();
                                 var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                 var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();

@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Models
         {
             public static List<Validators> ValidatorList { get; set; }
 
-            public static string backupValidator = Program.GenesisAddress;
+            public static string backupValidator = Globals.GenesisAddress;
 
             public static int FailCountLimit = 10;
 

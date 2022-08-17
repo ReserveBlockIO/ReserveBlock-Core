@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Data
 
             var blocks = BlockData.GetBlocks();
             
-            if (blocks.Count() < 1)
+            if (blocks.FindOne(x => true) == null)
             {
                 var genesisTime = DateTime.UtcNow;
                 TransactionData.CreateGenesisTransction();
@@ -54,7 +54,7 @@ namespace ReserveBlockCore.Data
         {
             try
             {
-                await BlockQueueService.ProcessBlockQueue();
+                await BlockValidatorService.ValidationDelay();
 
                 var startCraftTimer = DateTime.UtcNow;
                 var validatorAccount = AccountData.GetSingleAccount(validator);
@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Data
                 var processedTxPool = TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
-                var lastBlock = Program.LastBlock;
+                var lastBlock = Globals.LastBlock;
                 var height = lastBlock.Height + 1;
 
                 //Need to get master node validator.
@@ -217,10 +217,11 @@ namespace ReserveBlockCore.Data
             return block;
         }
 
+
         public static Block GetBlockByHash(string hash)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Height); 
+            blocks.EnsureIndexSafe(x => x.Hash); 
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -293,12 +294,10 @@ namespace ReserveBlockCore.Data
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
-            {
-                blocks.InsertSafe(block);
-
+            {               
                 //Update in memory fields.
-                Program.LastBlock = block;
-                Program.BlockHeight = block.Height;
+                Globals.LastBlock = block;                
+                blocks.InsertSafe(block);
             }
             else
             {
@@ -307,7 +306,7 @@ namespace ReserveBlockCore.Data
                 if (eBlock == null)
                 {
                     //database corrupt
-                    Program.DatabaseCorruptionDetected = true;
+                    Globals.DatabaseCorruptionDetected = true;
                     ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
                 }
             }

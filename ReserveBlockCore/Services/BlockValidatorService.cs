@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System.Text;
 
@@ -10,7 +11,75 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
-        //This is the valid block methods
+        public static int IsValidatingBlocks = 0;
+
+        public static void UpdateMemBlocks(Block block)
+        {
+            Globals.MemBlocks.TryDequeue(out Block test);
+            Globals.MemBlocks.Enqueue(block);
+        }
+
+        public static async Task ValidationDelay()
+        {
+            await ValidateBlocks();
+            while (IsValidatingBlocks == 1 || Globals.BlocksDownloading == 1)
+                await Task.Delay(4);
+        }
+        public static async Task ValidateBlocks()
+        {
+            if (Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 1) != 0)            
+                return;
+
+            try
+            {
+                while (BlockDownloadService.BlockDict.Any())
+                {
+                    var nextHeight = Globals.LastBlock.Height + 1;
+                    var heights = BlockDownloadService.BlockDict.Keys.OrderBy(x => x).ToArray();
+                    var offsetIndex = 0;
+                    var heightOffset = 0L;
+                    for (; offsetIndex < heights.Length; offsetIndex++)
+                    {
+                        heightOffset = heights[offsetIndex];
+                        if (heightOffset < nextHeight)
+                            BlockDownloadService.BlockDict.TryRemove(heightOffset, out var test);
+                        else                        
+                            break;
+                    }
+
+                    if (heightOffset != nextHeight)
+                        break;
+                    heights = heights.Where(x => x >= nextHeight).Select((x, i) => (height: x, index: i)).TakeWhile(x => x.height == x.index + heightOffset)
+                        .Select(x => x.height).ToArray();
+                    foreach (var height in heights)
+                    {
+                        if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
+                            continue;
+                        var (block, ipAddress) = blockInfo;
+                        var result = await ValidateBlock(block, true);                        
+                        if (!result)
+                        {
+                            Globals.BannedIPs[ipAddress] = true;
+                            ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
+                            if(Globals.Nodes.TryRemove(ipAddress, out var node))
+                                await node.Connection.DisposeAsync();                            
+                            Console.WriteLine("Block was rejected from: " + block.Validator);
+                        }
+                        else
+                        {
+                            if(Globals.IsChainSynced)
+                                ConsoleWriterService.Output(($"Block ({block.Height}) was added from: {block.Validator} "));
+                            else
+                                Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
+                        }                        
+                    }
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 0);
+            }
+        }
         public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
         {
             bool result = false;
@@ -40,7 +109,7 @@ namespace ReserveBlockCore.Services
 
                 }
 
-                BlockQueueService.UpdateMemBlocks(block);//update mem blocks
+                UpdateMemBlocks(block);//update mem blocks
                 return result;
             }
 
@@ -69,10 +138,15 @@ namespace ReserveBlockCore.Services
                 return result;
             }
 
+            if(block.Version > 1)
+            {
+                //run new block rules.
+            }
+
             //ensures the timestamps being produced are correct
             if(block.Height != 0)
             {
-                var prevTimestamp = Program.LastBlock.Timestamp;
+                var prevTimestamp = Globals.LastBlock.Timestamp;
                 var currentTimestamp = TimeUtil.GetTime(1);
                 if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                 {
@@ -138,7 +212,7 @@ namespace ReserveBlockCore.Services
                 
                     result = true;
                     BlockchainData.AddBlock(block);//add block to chain.
-                    BlockQueueService.UpdateMemBlocks(block);//update mem blocks
+                    UpdateMemBlocks(block);//update mem blocks
                     StateData.UpdateTreis(block);
 
                     var mempool = TransactionData.GetPool();
@@ -166,10 +240,10 @@ namespace ReserveBlockCore.Services
                                     var txdata = TransactionData.GetAll();
                                     txdata.InsertSafe(localTransaction);
                                 }
-                                if(Program.IsChainSynced == true)
+                                if(Globals.IsChainSynced == true)
                                 {
                                     //Call out to custom URL from config file with TX details
-                                    if(Program.APICallURL != null)
+                                    if(!string.IsNullOrWhiteSpace(Globals.APICallURL))
                                     {
                                         APICallURLService.CallURL(localTransaction);
                                     }
@@ -186,12 +260,12 @@ namespace ReserveBlockCore.Services
                                         if (scData != null)
                                         {
                                             var function = (string?)scData["Function"];
-                                            if (function != "")
+                                            if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 if (function == "Mint()")
                                                 {
                                                     var scUID = (string?)scData["ContractUID"];
-                                                    if (scUID != "")
+                                                    if (!string.IsNullOrWhiteSpace(scUID))
                                                     {
                                                         SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
                                                     }
@@ -207,19 +281,19 @@ namespace ReserveBlockCore.Services
 
                                         var data = (string?)scData["Data"];
                                         var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             switch (function)
                                             {
                                                 case "Transfer()":
-                                                    if (data != "")
+                                                    if (!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var locators = (string?)scData["Locators"];
                                                         var md5List = (string?)scData["MD5List"];
                                                         var scUID = (string?)scData["ContractUID"];
 
                                                         var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if(!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock() - line 213");
@@ -236,10 +310,10 @@ namespace ReserveBlockCore.Services
                                                     }
                                                     break;
                                                 case "Evolve()":
-                                                    if(data != "")
+                                                    if(!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(localTransaction); });
-                                                        bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for evolve in time.", "BlockValidatorService.ValidateBlock() - line 224");
@@ -247,10 +321,10 @@ namespace ReserveBlockCore.Services
                                                     }
                                                     break;
                                                 case "Devolve()":
-                                                    if (data != "")
+                                                    if (!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(localTransaction); });
-                                                        bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for devolve in time.", "BlockValidatorService.ValidateBlock() - line 235");
@@ -258,10 +332,10 @@ namespace ReserveBlockCore.Services
                                                     }
                                                     break;
                                                 case "ChangeEvolveStateSpecific()":
-                                                    if(data != "")
+                                                    if(!string.IsNullOrWhiteSpace(data))
                                                     {
                                                         var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(localTransaction); });
-                                                        bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Program.NFTTimeout * 1000));
+                                                        bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                                         if (!isCompletedSuccessfully)
                                                         {
                                                             NFTLogUtility.Log("Failed to decompile smart contract for evo/devo specific in time.", "BlockValidatorService.ValidateBlock() - line 246");
@@ -281,7 +355,7 @@ namespace ReserveBlockCore.Services
                                         if (scData != null)
                                         {
                                             var function = (string?)scData["Function"];
-                                            if (function != "" && function != null)
+                                            if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 if (function == "AdnrTransfer()")
                                                 {
@@ -313,11 +387,11 @@ namespace ReserveBlockCore.Services
                                         //do transfer logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
                                         var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             if (function == "Transfer()")
                                             {
-                                                if (scUID != "")
+                                                if (!string.IsNullOrWhiteSpace(scUID))
                                                 {
                                                     SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                 }
@@ -331,11 +405,11 @@ namespace ReserveBlockCore.Services
                                         //do burn logic here! This is for person giving away or feature actions
                                         var scUID = (string?)scData["ContractUID"];
                                         var function = (string?)scData["Function"];
-                                        if (function != "")
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             if (function == "Burn()")
                                             {
-                                                if (scUID != "")
+                                                if (!string.IsNullOrWhiteSpace(scUID))
                                                 {
                                                     SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
                                                 }
@@ -350,11 +424,11 @@ namespace ReserveBlockCore.Services
 
                                         var function = (string?)scData["Function"];
                                         var name = (string?)scData["Name"];
-                                        if (function != "" && function != null)
+                                        if (!string.IsNullOrWhiteSpace(function))
                                         {
                                             if (function == "AdnrCreate()")
                                             {
-                                                if(name != "" && name != null)
+                                                if(!string.IsNullOrWhiteSpace(name))
                                                 {
                                                     await Account.AddAdnrToAccount(localTransaction.FromAddress, name);
                                                 }
@@ -386,25 +460,12 @@ namespace ReserveBlockCore.Services
                 StateData.UpdateTreis(block);
                 return result;
             }
-
         }
 
         //This method does not add block or update any treis
         public static async Task<bool> ValidateBlockForTask(Block block, bool blockDownloads = false)
         {
             bool result = false;
-
-            var badBlocks = BadBlocksUtility.GetBadBlocks();
-
-            if (badBlocks.ContainsKey(block.Height))
-            {
-                var badBlockHash = badBlocks[block.Height];
-                if (badBlockHash == block.Hash)
-                {
-                    ValidatorLogUtility.Log("Failed to validate block. Block has already been published", "BlockValidatorService.ValidateBlockForTask()");
-                    return result;//reject because its on our bad block list
-                }
-            }
 
             if (block == null) return result; //null block submitted. reject 
 
@@ -423,7 +484,7 @@ namespace ReserveBlockCore.Services
             if(block.Height != 0)
             {
                 //ensures the timestamps being produced are correct
-                var prevTimestamp = Program.LastBlock.Timestamp;
+                var prevTimestamp = Globals.LastBlock.Timestamp;
                 var currentTimestamp = TimeUtil.GetTime(60);
                 if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                 {

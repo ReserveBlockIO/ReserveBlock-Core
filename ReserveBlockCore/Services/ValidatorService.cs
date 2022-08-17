@@ -8,7 +8,7 @@ namespace ReserveBlockCore.Services
 {
     public class ValidatorService
     {
-        public static void DoValidate()
+        public static async void DoValidate()
         {
             Console.Clear();
             var accountList = AccountData.GetPossibleValidatorAccounts();
@@ -61,7 +61,7 @@ namespace ReserveBlockCore.Services
                     Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
                     var nodeName = Console.ReadLine();
                     
-                    if(nodeName != null || nodeName != "")
+                    if(!string.IsNullOrWhiteSpace(nodeName))
                     {
                         var nodeNameCheck = UniqueNameCheck(nodeName);
 
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Services
                             nodeNameCheck = UniqueNameCheck(nodeName);
                         }
 
-                        var result = StartValidating(account,nodeName);
+                        var result = await StartValidating(account,nodeName);
                         Console.WriteLine(result);
                         Console.WriteLine("Returning you to main menu in 10 seconds...");
                         Thread.Sleep(10000);
@@ -96,7 +96,7 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if(Program.StopAllTimers == true || Program.BlocksDownloading == true)
+            if(Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
             {
                 output = "Wallet is still starting. Please wait";
                 return output;
@@ -118,7 +118,7 @@ namespace ReserveBlockCore.Services
                     output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                     return output;
                 }
-                if(uName != "" && UniqueNameCheck(uName) == false)
+                if(!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
                 {
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
@@ -168,7 +168,7 @@ namespace ReserveBlockCore.Services
                         validator.FailCount = 0;
                         validator.Position = validatorTable.FindAll().Count() + 1;
                         validator.NodeReferenceId = BlockchainData.ChainRef;
-                        validator.WalletVersion = Program.CLIVersion;
+                        validator.WalletVersion = Globals.CLIVersion;
                         validator.LastChecked = DateTime.UtcNow;
 
                         validatorTable.InsertSafe(validator);
@@ -177,7 +177,7 @@ namespace ReserveBlockCore.Services
                         var accountTable = AccountData.GetAccounts();
                         accountTable.UpdateSafe(account);
 
-                        Program.ValidatorAddress = validator.Address;
+                        Globals.ValidatorAddress = validator.Address;
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
@@ -189,68 +189,34 @@ namespace ReserveBlockCore.Services
             return output;
         }
 
-        public static void DoMasterNodeStop()
+        public static async Task DoMasterNodeStop()
         {
-            Console.Clear();
-            //var validatortList = Validators.Validator.GetLocalValidator();
-            //var accountNumberList = new Dictionary<string, Account>();
+            try
+            {
+                var accounts = AccountData.GetAccounts();
+                var myAccounts = accounts.FindAll().ToList();
 
-            //if (validatortList.Count() == 0)
-            //{
-            //    Console.WriteLine("********************************************************************");
-            //    Console.WriteLine("No active validator accounts found.");
-            //    Console.WriteLine("Please note that if there was ever a time your account went below 1000 RBX you would have been automatically removed from the validator network.");
-            //    Console.WriteLine("Returning you to main menu...");
-            //    Thread.Sleep(5000);
-            //    StartupService.MainMenu();
-            //}
-            //else
-            //{
-            //    int count = 1;
-            //    validatortList.ToList().ForEach(x => {
-            //        accountNumberList.Add(count.ToString(), x);
-            //        Console.WriteLine("********************************************************************");
-            //        Console.WriteLine("Please choose an address below to stop being a validator by typing its # and pressing enter.");
+                if (myAccounts.Count() > 0)
+                {
+                    myAccounts.ForEach(x => {
+                        x.IsValidating = false;
+                    });
 
-            //        Console.WriteLine("\n #" + count.ToString());
-            //        Console.WriteLine("\nAddress :\n{0}", x.Address);
-            //        count++;
-            //    });
+                    accounts.UpdateSafe(myAccounts);
+                }
 
-            //    var walletChoice = Console.ReadLine();
-            //    var validator = accountNumberList[walletChoice];
-            //    Console.WriteLine("********************************************************************");
-            //    Console.WriteLine("The chosen validator address is:");
-            //    string validatorAddress = validator.Address;
-            //    Console.WriteLine(validatorAddress);
-            //    Console.WriteLine("Are you sure you want to deactivate this address as a validator? (Type 'y' for yes and 'n' for no.)");
-            //    var confirmChoice = Console.ReadLine();
+                var validators = Validators.Validator.GetAll();
+                validators.DeleteAllSafe();
 
-            //    if (confirmChoice == null)
-            //    {
-            //        Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
-            //        Console.WriteLine("Returning you to main menu...");
-            //        Thread.Sleep(5000);
-            //        StartupService.MainMenu();
-            //    }
-            //    else if (confirmChoice.ToLower() == "n")
-            //    {
-            //        Console.WriteLine("Returning you to main menu...");
-            //        Thread.Sleep(3000);
-            //        StartupService.MainMenu();
-            //    }
-            //    else
-            //    {
-            //        Console.Clear();
-            //        //StopValidating(validator);
+                Globals.ValidatorAddress = "";
 
-            //        Console.WriteLine("The chosen addresses is no longer a validator...");
-            //        Console.WriteLine("Returning you to main menu in 5 seconds...");
-            //        Thread.Sleep(5000);
-            //        StartupService.MainMenu();
-            //    }
-            //}
-            
+                await P2PClient.DisconnectAdjudicator();
+                Console.WriteLine("Validator database records have been reset.");
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.Message}", "ValidatorService.DoMasterNodeStop()");
+            }
         }
 
         public static bool ValidateTheValidator(Validators validator)
@@ -268,7 +234,7 @@ namespace ReserveBlockCore.Services
                 //output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                 return result;
             }
-            if (validator.UniqueName != "" && UniqueNameCheck(validator.UniqueName) == false)
+            if (!string.IsNullOrWhiteSpace(validator.UniqueName) && UniqueNameCheck(validator.UniqueName) == false)
             {
                 //output = "Unique name has already been taken. Please choose another.";
                 return result;
