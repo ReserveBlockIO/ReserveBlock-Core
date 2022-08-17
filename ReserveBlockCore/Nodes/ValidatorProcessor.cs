@@ -118,6 +118,7 @@ namespace ReserveBlockCore.Nodes
                                         }
                                         catch (Exception ex)
                                         {
+                                            DbContext.Rollback();
                                             //delete failed
                                         }
                                     }

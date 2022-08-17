@@ -46,6 +46,7 @@ namespace ReserveBlockCore.Models
                 }
                 catch (Exception ex)
                 {
+                    DbContext.Rollback();
                     ErrorLogUtility.LogError(ex.Message, "Validators.GetAll()");
                     return null;
                 }

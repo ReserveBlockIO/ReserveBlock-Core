@@ -154,6 +154,7 @@ namespace ReserveBlockCore.P2P
                         }
                         catch (Exception ex)
                         {
+                            DbContext.Rollback();
                             //Console.WriteLine("Error: " + ex.Message.ToString());
                             //Console.WriteLine("Error: " + (ex.StackTrace != null ? ex.StackTrace.ToString() : "No Stack Trace"));
                         }
@@ -182,6 +183,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 //Connection attempt failed with unhandled error.
                 if (Globals.OptionalLogging == true)
                 {
@@ -337,6 +339,7 @@ namespace ReserveBlockCore.P2P
                                             }
                                             catch (Exception ex)
                                             {
+                                                DbContext.Rollback();
                                                 //delete failed
                                             }
                                         }

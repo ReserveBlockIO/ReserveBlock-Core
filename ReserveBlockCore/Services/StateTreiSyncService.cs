@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                DbContext.BeginTrans();
                 if (IsRunning == false)
                 {
                     IsRunning = true;
@@ -118,9 +119,11 @@ namespace ReserveBlockCore.Services
                 }
 
                 IsRunning = false;
+                DbContext.Commit();
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.Message}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }
