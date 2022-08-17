@@ -8,7 +8,7 @@ namespace ReserveBlockCore.Utilities
         {
             int blockVersion = 1;
 
-            if(height > 80000)
+            if(height > 1000000)
             {
                 blockVersion = 2;
             }
