@@ -68,8 +68,7 @@ namespace ReserveBlockCore.Data
                     return null;
                 }
 
-                //Get tx's from Mempool
-                DbContext.BeginTrans();
+                //Get tx's from Mempool                
                 var processedTxPool = TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
@@ -167,8 +166,7 @@ namespace ReserveBlockCore.Data
                 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time

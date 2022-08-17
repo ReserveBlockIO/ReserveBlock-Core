@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using LiteDB;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.Data
 {
@@ -135,10 +136,13 @@ namespace ReserveBlockCore.Data
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
 
             
-        }
-
+        }        
         public static void BeginTrans()
         {
+            if (Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) && hasTransaction)
+                return;
+            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = true;
+            
             DB.BeginTrans();
             DB_Assets.BeginTrans();
             DB_Wallet.BeginTrans();
@@ -155,44 +159,44 @@ namespace ReserveBlockCore.Data
         }
         public static void Commit()
         {
-            try
-            {
-                DB.Commit();
-                DB_Assets.Commit();
-                DB_Wallet.Commit();
-                DB_HD_Wallet.Commit();
-                DB_Peers.Commit();
-                DB_Banlist.Commit();
-                DB_WorldStateTrei.Commit();
-                DB_AccountStateTrei.Commit();
-                DB_SmartContractStateTrei.Commit();
-                DB_DecShopStateTrei.Commit();
-                DB_Beacon.Commit();
-                DB_Config.Commit();
-                DB_DNR.Commit();
-            }
-            catch { }
+            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
+                return;
+            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+
+            DB.Commit();
+            DB_Assets.Commit();
+            DB_Wallet.Commit();
+            DB_HD_Wallet.Commit();
+            DB_Peers.Commit();
+            DB_Banlist.Commit();
+            DB_WorldStateTrei.Commit();
+            DB_AccountStateTrei.Commit();
+            DB_SmartContractStateTrei.Commit();
+            DB_DecShopStateTrei.Commit();
+            DB_Beacon.Commit();
+            DB_Config.Commit();
+            DB_DNR.Commit();
         }
 
         public static void Rollback()
         {
-            try
-            {
-                DB.Rollback();
-                DB_Assets.Rollback();
-                DB_Wallet.Rollback();
-                DB_HD_Wallet.Rollback();
-                DB_Peers.Rollback();
-                DB_Banlist.Rollback();
-                DB_WorldStateTrei.Rollback();
-                DB_AccountStateTrei.Rollback();
-                DB_SmartContractStateTrei.Rollback();
-                DB_DecShopStateTrei.Rollback();
-                DB_Beacon.Rollback();
-                DB_Config.Rollback();
-                DB_DNR.Rollback();
-            }
-            catch { }
+            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
+                return;
+            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+
+            DB.Rollback();
+            DB_Assets.Rollback();
+            DB_Wallet.Rollback();
+            DB_HD_Wallet.Rollback();
+            DB_Peers.Rollback();
+            DB_Banlist.Rollback();
+            DB_WorldStateTrei.Rollback();
+            DB_AccountStateTrei.Rollback();
+            DB_SmartContractStateTrei.Rollback();
+            DB_DecShopStateTrei.Rollback();
+            DB_Beacon.Rollback();
+            DB_Config.Rollback();
+            DB_DNR.Rollback();
         }
 
         public static void DeleteCorruptDb()

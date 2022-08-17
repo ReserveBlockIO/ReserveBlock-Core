@@ -110,6 +110,10 @@ namespace ReserveBlockCore
 
         #endregion
 
+        #region DbContext Variables
+        public static ConcurrentDictionary<int, bool> HasTransactionDict = new ConcurrentDictionary<int, bool>();
+        #endregion
+
 
     }
 }
