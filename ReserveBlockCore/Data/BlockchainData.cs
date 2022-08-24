@@ -31,6 +31,8 @@ namespace ReserveBlockCore.Data
             if (blocks.FindOne(x => true) == null)
             {
                 var genesisTime = DateTime.UtcNow;
+
+                DbContext.BeginTrans();
                 TransactionData.CreateGenesisTransction();
 
                 //Get all transaction in pool. This can be used to create multiple accounts to receive funds at start of chain
@@ -47,6 +49,8 @@ namespace ReserveBlockCore.Data
 
                 // clear mempool
                 trxPool.DeleteAllSafe();
+
+                DbContext.Commit();
             }
         }
         //Method needing validator functions still.
@@ -64,7 +68,7 @@ namespace ReserveBlockCore.Data
                     return null;
                 }
 
-                //Get tx's from Mempool
+                //Get tx's from Mempool                
                 var processedTxPool = TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
@@ -162,7 +166,7 @@ namespace ReserveBlockCore.Data
                 
             }
             catch (Exception ex)
-            {
+            {                
                 ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
@@ -193,20 +197,15 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
                 return null;
             }
             
         }
-        public static LiteDB.ILiteCollection<Block> GetBlockQueue()
-        {
-            var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
-            blocks.EnsureIndexSafe(x => x.Height);
-            return blocks;
-        }
         public static Block GetGenesisBlock()
         {
-            var block = GetBlocks().FindAll().FirstOrDefault();
+            var block = GetBlocks().FindOne(x => true);
             return block;
         }
         public static Block GetBlockByHeight(long height)

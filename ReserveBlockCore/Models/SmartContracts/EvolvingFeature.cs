@@ -135,7 +135,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                             return (true, newSCData);
                         }
                         catch(Exception ex)
-                        {
+                        {                            
                             return (false, "Failed to Evolve NFT");
                         }
                     }

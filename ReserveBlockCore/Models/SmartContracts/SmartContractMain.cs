@@ -84,6 +84,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }
                 catch(Exception ex)
                 {
+                    DbContext.Rollback();
                     ErrorLogUtility.LogError(ex.Message, "SmartContractMain.DeleteSmartContract()");
                 }
             }

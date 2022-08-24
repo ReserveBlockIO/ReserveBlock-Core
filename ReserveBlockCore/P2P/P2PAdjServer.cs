@@ -25,7 +25,9 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
+                var keepValConnected = false;
                 var peerIP = GetIP(Context);
+
                 string connectionId = Context.ConnectionId;
                 var httpContext = Context.GetHttpContext();
                 if (httpContext != null)
@@ -64,7 +66,7 @@ namespace ReserveBlockCore.P2P
                                             fortisPools.WalletVersion = walletVersion;
 
                                             Globals.FortisPool.Add(fortisPools);
-                                            Globals.ValConnectedCount++;
+                                            keepValConnected = true;                                            
                                             //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
                                         }
                                         else
@@ -90,8 +92,8 @@ namespace ReserveBlockCore.P2P
                                                 fortisPools.ConnectionId = connectionId;
                                                 fortisPools.WalletVersion = walletVersion;
 
-                                                Globals.FortisPool.Add(fortisPools);
-                                                Globals.ValConnectedCount++;
+                                                Globals.FortisPool.Add(fortisPools);                                                
+                                                keepValConnected = true;
                                             }
                                         }
 
@@ -152,6 +154,7 @@ namespace ReserveBlockCore.P2P
                         }
                         catch (Exception ex)
                         {
+                            DbContext.Rollback();
                             //Console.WriteLine("Error: " + ex.Message.ToString());
                             //Console.WriteLine("Error: " + (ex.StackTrace != null ? ex.StackTrace.ToString() : "No Stack Trace"));
                         }
@@ -165,12 +168,22 @@ namespace ReserveBlockCore.P2P
                             LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
                         }
                     }
-
                 }
+
+                if (keepValConnected)
+                {
+                    if (Globals.AdjPeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+                        context.Abort();
+
+                    Globals.AdjPeerList[peerIP] = Context;
+                }
+                else
+                    Context.Abort();
 
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 //Connection attempt failed with unhandled error.
                 if (Globals.OptionalLogging == true)
                 {
@@ -184,21 +197,23 @@ namespace ReserveBlockCore.P2P
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
+            var peerIP = GetIP(Context);
+            Globals.P2PPeerList.TryRemove(peerIP, out var test);
+
             string connectionId = Context.ConnectionId;
-            //FortisPool.RemoveAll(x => x.ConnectionId == connectionId);
-            Globals.ValConnectedCount--;
+            //FortisPool.RemoveAll(x => x.ConnectionId == connectionId);            
             var fortisPoolStr = "";
             //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
             //await SendAdjMessageAll("fortisPool", fortisPoolStr);
             await base.OnDisconnectedAsync(ex);
         }
 
-        public async Task SendAdjMessageSingle(string message, string data)
+        private async Task SendAdjMessageSingle(string message, string data)
         {
             await Clients.Caller.SendAsync("GetAdjMessage", message, data);
         }
 
-        public async Task SendAdjMessageAll(string message, string data)
+        private async Task SendAdjMessageAll(string message, string data)
         {
             await Clients.All.SendAsync("GetAdjMessage", message, data);
         }
@@ -210,7 +225,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task<int> GetConnectedValCount()
         {
-            var peerCount = Globals.ValConnectedCount;
+            var peerCount = Globals.AdjPeerList.Count;
             return peerCount;
         }
 
@@ -219,23 +234,33 @@ namespace ReserveBlockCore.P2P
         #region Receive Block and Task Answer
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
         {
-            if (Globals.BlocksDownloading == 0)
+            if (taskResult.Block.Size > 1048576)
+                return false;
+            return await P2PServer.SignalRQueue(Context, (int)taskResult.Block.Size, async () =>
             {
-                if (Globals.Adjudicate)
+                if (Globals.BlocksDownloading == 0)
                 {
-                    //This will result in users not getting their answers chosen if they are not in list.
-                    var fortisPool = Globals.FortisPool.ToList();
-                    if(fortisPool.Exists(x => x.Address == taskResult.Address))
+                    if (Globals.Adjudicate)
                     {
-                        if(taskResult.Block.Height == Globals.LastBlock.Height + 1)
+                        //This will result in users not getting their answers chosen if they are not in list.
+                        var fortisPool = Globals.FortisPool.ToList();
+                        if (fortisPool.Exists(x => x.Address == taskResult.Address))
                         {
-                            var taskAnswerList = Globals.TaskAnswerList.ToList();
-                            var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
-                            if (!answerExist)
+                            if (taskResult.Block.Height == Globals.LastBlock.Height + 1)
                             {
-                                taskResult.SubmitTime = DateTime.UtcNow;
-                                Globals.TaskAnswerList.Add(taskResult);
-                                return true;
+                                var taskAnswerList = Globals.TaskAnswerList.ToList();
+                                var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
+                                if (!answerExist)
+                                {
+                                    taskResult.SubmitTime = DateTime.UtcNow;
+                                    Globals.TaskAnswerList.Add(taskResult);                                    
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                //RejectedTaskAnswerList.Add(taskResult);
+                                return false;
                             }
                         }
                         else
@@ -244,15 +269,9 @@ namespace ReserveBlockCore.P2P
                             return false;
                         }
                     }
-                    else
-                    {
-                        //RejectedTaskAnswerList.Add(taskResult);
-                        return false;
-                    }
                 }
-            }
-            return false;
-            
+                return false;
+            });
         }
 
         #endregion
@@ -260,22 +279,73 @@ namespace ReserveBlockCore.P2P
         #region Receive TX to relay
 
         public async Task<bool> ReceiveTX(Transaction transaction)
-        {
-            bool output = false;
-            if (Globals.BlocksDownloading == 0)
+        {            
+            return await P2PServer.SignalRQueue(Context, (transaction.Data?.Length ?? 0) + 1028, async () =>
             {
-                if (Globals.Adjudicate)
+                bool output = false;
+                if (Globals.BlocksDownloading == 0)
                 {
-                    if (transaction != null)
+                    if (Globals.Adjudicate)
                     {
-                        var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
-                        if (!isTxStale)
+                        if (transaction != null)
                         {
-                            var mempool = TransactionData.GetPool();
-                            if (mempool.Count() != 0)
+                            var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
+                            if (!isTxStale)
                             {
-                                var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
-                                if (txFound == null)
+                                var mempool = TransactionData.GetPool();
+                                if (mempool.Count() != 0)
+                                {
+                                    var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
+                                    if (txFound == null)
+                                    {
+
+                                        var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                        if (txResult == true)
+                                        {
+                                            var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+
+                                            if (dblspndChk == false && isCraftedIntoBlock == false)
+                                            {
+                                                mempool.InsertSafe(transaction);
+                                                var txOutput = "";
+                                                txOutput = JsonConvert.SerializeObject(transaction);
+                                                await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                                Globals.BroadcastedTrxList.Add(transaction);
+                                                output = true;
+                                            }
+                                        }
+
+                                    }
+                                    else
+                                    {
+
+                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                        if (!isCraftedIntoBlock)
+                                        {
+                                            if (!Globals.BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
+                                            {
+                                                var txOutput = "";
+                                                txOutput = JsonConvert.SerializeObject(transaction);
+                                                await SendAdjMessageAll("tx", txOutput);
+                                                Globals.BroadcastedTrxList.Add(transaction);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            try
+                                            {
+                                                mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                DbContext.Rollback();
+                                                //delete failed
+                                            }
+                                        }
+                                    }
+                                }
+                                else
                                 {
 
                                     var txResult = await TransactionValidatorService.VerifyTX(transaction);
@@ -290,65 +360,18 @@ namespace ReserveBlockCore.P2P
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction);
                                             await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
-                                            Globals.BroadcastedTrxList.Add(transaction);
                                             output = true;
                                         }
                                     }
-
-                                }
-                                else
-                                {
-
-                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-                                    if (!isCraftedIntoBlock)
-                                    {
-                                        if(!Globals.BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
-                                        {
-                                            var txOutput = "";
-                                            txOutput = JsonConvert.SerializeObject(transaction);
-                                            await SendAdjMessageAll("tx", txOutput);
-                                            Globals.BroadcastedTrxList.Add(transaction);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        try
-                                        {
-                                            mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            //delete failed
-                                        }
-                                    }
                                 }
                             }
-                            else
-                            {
 
-                                var txResult = await TransactionValidatorService.VerifyTX(transaction);
-                                if (txResult == true)
-                                {
-                                    var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
-                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-
-                                    if (dblspndChk == false && isCraftedIntoBlock == false)
-                                    {
-                                        mempool.InsertSafe(transaction);
-                                        var txOutput = "";
-                                        txOutput = JsonConvert.SerializeObject(transaction);
-                                        await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
-                                        output = true;
-                                    }
-                                }
-                            }
                         }
-
                     }
                 }
-            }
 
-            return output;
+                return output;
+            });
         }
 
         #endregion

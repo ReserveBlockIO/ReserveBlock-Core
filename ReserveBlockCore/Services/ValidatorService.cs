@@ -215,6 +215,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.Message}", "ValidatorService.DoMasterNodeStop()");
             }
         }
@@ -309,7 +310,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-
+                DbContext.Rollback();
             }
         }
 

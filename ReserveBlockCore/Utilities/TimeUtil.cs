@@ -16,6 +16,14 @@ namespace ReserveBlockCore.Utilities
             return timeStamp;//returns time in ticks from Epoch Time
         }
 
+        public static long GetMillisecondTime(int addTime = 0)
+        {
+            long epochTicks = new DateTime(1970, 1, 1).Ticks;
+            long nowTicks = DateTime.UtcNow.AddSeconds(addTime).Ticks;
+            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerMillisecond);
+            return timeStamp;//returns time in ticks from Epoch Time
+        }
+
         public static long GetTimeForBeaconRelease()
         {
             long epochTicks = new DateTime(1970, 1, 1).Ticks;

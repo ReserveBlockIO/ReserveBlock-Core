@@ -317,6 +317,7 @@ namespace ReserveBlockCore.Services
                         }
                         catch(Exception ex)
                         {
+                            DbContext.Rollback();
                             ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
                             return txResult;
                         }
@@ -640,6 +641,7 @@ namespace ReserveBlockCore.Services
                         }
                         catch (Exception ex)
                         {
+                            DbContext.Rollback();
                             ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
                             return (txResult, "Failed to deserialized TX Data for ADNR");
                         }

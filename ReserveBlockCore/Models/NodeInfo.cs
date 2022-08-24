@@ -20,5 +20,9 @@ namespace ReserveBlockCore.Models
         public long SendingBlockTime;
         
         public long TotalDataSent;
+
+        public long PreviousReceiveTime;
+
+        public long SecondPreviousReceiveTime;
     }
 }
