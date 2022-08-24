@@ -8,6 +8,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Globalization;
+using System.Net;
 using System.Numerics;
 
 namespace ReserveBlockCore.Controllers
@@ -138,7 +139,7 @@ namespace ReserveBlockCore.Controllers
         {
             //use Id to get specific commands
             var output = "Online"; // this will only display if command not recognized.
-            
+
 
             return output;
         }
@@ -181,9 +182,9 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetNewAddress()
         {
             //use Id to get specific commands
-            Account account = null; 
+            Account account = null;
             var output = "Fail"; // this will only display if command not recognized.
-            if(Globals.HDWallet == true)
+            if (Globals.HDWallet == true)
             {
                 account = HDWallet.HDWalletData.GenerateAddress();
             }
@@ -191,7 +192,7 @@ namespace ReserveBlockCore.Controllers
             {
                 account = AccountData.CreateNewAccount();
             }
-            
+
             var newAddressInfo = new[]
             {
                 new { Address = account.Address, PrivateKey = account.PrivateKey}
@@ -225,7 +226,7 @@ namespace ReserveBlockCore.Controllers
 
             var walletInfo = new[]
             {
-                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Globals.BlocksDownloading.ToString(), 
+                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Globals.BlocksDownloading.ToString(),
                     IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString()}
             };
 

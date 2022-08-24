@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Utilities
             var isStopAllTimers = "Stop all timers: " + Globals.StopAllTimers.ToString();
             var isQueueProcessing = "Queue Processing: " + (Globals.BlocksDownloading == 1);
             var isPeerConnected = "Peers connected: " + peersConnected.ToString();
-            var peerConnectedCount = "Peers connected Count: " + P2PServer.GetConnectedPeerCount().ToString();
+            var peerConnectedCount = "Peers connected Count: " + Globals.Nodes.Count().ToString();
             var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
