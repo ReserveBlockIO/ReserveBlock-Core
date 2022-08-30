@@ -9,7 +9,7 @@ In the last step for *dotnet ReserveBlockCore(.dll or .exe or blank)* if that do
 ## Linux
 Linux Install For Ubuntu 22.04:
 
-1. wget https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+1. wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
 rm packages-microsoft-prod.deb
 2. sudo apt-get update && \
