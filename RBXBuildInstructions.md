@@ -23,11 +23,11 @@ rm packages-microsoft-prod.deb
 
 
     b) Download the already packaged release https://github.com/ReserveBlockIO/ReserveBlock-Core/releases/. If   	you do this please navigate to folder you downloaded binaries from and skip to step 12.
-8. cd ReserveBlock-Core
-9. dotnet build - There should be 0 (zero) errors.
-10. dotnet publish -c Release -r linux-x64 --output ./rbxpublished **please note the 'linux-x64' can be changed if you are on a different architecture
-11. cd rbxpublished
-12. dotnet ReserveBlockCore.dll
+8. 'cd ReserveBlock-Core'
+9. 'dotnet build' - There should be 0 (zero) errors.
+10. 'dotnet publish -c Release -r linux-x64 --output' ./rbxpublished **please note the 'linux-x64' can be changed if you are on a different architecture
+11. 'cd rbxpublished'
+12. 'dotnet ReserveBlockCore.dll'
 
 You are done! You should now see a wallet running! Some common errors are usually related to file permissions. Please ensure you have given proper permission to the newly created RBX folder
 
