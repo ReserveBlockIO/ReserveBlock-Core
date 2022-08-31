@@ -7,6 +7,13 @@ namespace ReserveBlockCore
 {
     public static class Globals
     {
+        static Globals()
+        {
+            var peerDb = Peers.GetAll();
+            BannedIPs = new ConcurrentDictionary<string, bool>(
+                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+        }
+
         #region Timers
 
         public static Timer? heightTimer; //timer for getting height from other nodes
@@ -78,7 +85,7 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 8;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, bool> BannedIPs = new ConcurrentDictionary<string, bool>();
+        public static ConcurrentDictionary<string, bool> BannedIPs;
         public static long LastSentBlockHeight = -1;
         public static DateTime? AdjudicatorConnectDate = null;
         public static DateTime? LastTaskSentTime = null;

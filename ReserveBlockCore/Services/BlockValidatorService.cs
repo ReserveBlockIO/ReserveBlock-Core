@@ -58,8 +58,8 @@ namespace ReserveBlockCore.Services
                         var (block, ipAddress) = blockInfo;
                         var result = await ValidateBlock(block, true);                        
                         if (!result)
-                        {
-                            Globals.BannedIPs[ipAddress] = true;
+                        {                            
+                            Peers.BanPeer(ipAddress);
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
                             if(Globals.Nodes.TryRemove(ipAddress, out var node))
                                 await node.Connection.DisposeAsync();                            

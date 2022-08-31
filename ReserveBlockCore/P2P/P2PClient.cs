@@ -160,7 +160,7 @@ namespace ReserveBlockCore.P2P
                             var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
                             if (now - prevPrevTime < 15000)
                             {
-                                Globals.BannedIPs[IPAddress] = true;
+                                Peers.BanPeer(IPAddress);
                                 await RemoveNode(node);
                                 return;
                             }

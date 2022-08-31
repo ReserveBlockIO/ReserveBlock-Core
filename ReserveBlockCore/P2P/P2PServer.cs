@@ -76,7 +76,7 @@ namespace ReserveBlockCore.P2P
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               
                 if (Lock.ConnectionCount > 20)
                 {
-                    Globals.BannedIPs[ipAddress] = true;
+                    Peers.BanPeer(ipAddress);                    
                     context.Abort();
                 }
                 if (Lock.BufferCost + sizeCost > 5000000)

@@ -49,6 +49,15 @@ namespace ReserveBlockCore.Models
             
         }
 
+        public static void BanPeer(string ipAddress)
+        {
+            Globals.BannedIPs[ipAddress] = true;
+            var peerDb = Peers.GetAll();
+            var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
+            peer.IsBanned = true;
+            peerDb.Update(peer);
+        }
+
         public static void UpdatePeerLastReach(Peers incPeer)
         {
             var peers = GetAll();

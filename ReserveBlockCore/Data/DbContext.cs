@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DECSHOP = "rsrv_decshop";
         public const string RSRV_DECSHOPSTATE_TREI = "rsrv_decshopstate_trei";
        
-        public static void Initialize()
+        static DbContext()
         {
             var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
             var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
