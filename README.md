@@ -131,5 +131,5 @@ information or see https://opensource.org/licenses/MIT.
 * Darren Starr for RIPEMD160 Library
 * Brian A. Danielak for Contribution Guidelines
 * dotnetstandard for BIP32/39
-* Alex Williams for In Memory Variables
+* Alex Williams for In Memory Variables and network wide audit
 * Bitcoin source
