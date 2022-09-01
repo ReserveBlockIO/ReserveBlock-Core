@@ -56,6 +56,16 @@ namespace ReserveBlockCore.Models
             var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
             peer.IsBanned = true;
             peerDb.Update(peer);
+
+            if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
+                context.Abort();
+
+
+            if (Globals.AdjPeerList.TryRemove(ipAddress, out var context2))
+                context2.Abort();
+
+            if (Globals.Nodes.TryRemove(ipAddress, out NodeInfo node))
+                node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public static void UpdatePeerLastReach(Peers incPeer)

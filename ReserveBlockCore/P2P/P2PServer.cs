@@ -74,11 +74,9 @@ namespace ReserveBlockCore.P2P
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
             {                               
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               
-                if (Lock.ConnectionCount > 20)
-                {
-                    Peers.BanPeer(ipAddress);                    
-                    context.Abort();
-                }
+                if (Lock.ConnectionCount > 20)                
+                    Peers.BanPeer(ipAddress);                                        
+                
                 if (Lock.BufferCost + sizeCost > 5000000)
                 {
                     throw new HubException("Too much buffer usage.  Message was dropped.");

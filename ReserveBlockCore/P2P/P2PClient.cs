@@ -42,8 +42,8 @@ namespace ReserveBlockCore.P2P
         }
         private static async Task RemoveNode(NodeInfo node)
         {
-            Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test);            
-            await node.Connection.DisposeAsync();            
+            if(Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
+                await node.Connection.DisposeAsync();            
         }
 
         #endregion
@@ -160,8 +160,7 @@ namespace ReserveBlockCore.P2P
                             var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
                             if (now - prevPrevTime < 15000)
                             {
-                                Peers.BanPeer(IPAddress);
-                                await RemoveNode(node);
+                                Peers.BanPeer(IPAddress);                                
                                 return;
                             }
                             Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
