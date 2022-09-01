@@ -24,6 +24,7 @@ The point of this paper is to outline the config file setup and features it has.
 	+ a.	Type string
 	+ b.	Ex: APIPassword=SomePassword1234!
 	+ c.	This is a password set to lock down control of the API. This password must be inputted to call any API function.
+	+ d.    You will need to call UnlockWallet to unlock the API with this password.
 
 6.	AlwaysRequireAPIPassword (default is false)
 	+ a.	Type boolean
