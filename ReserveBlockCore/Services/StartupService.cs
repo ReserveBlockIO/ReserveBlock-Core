@@ -49,8 +49,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
-            Console.WriteLine("Initializing Reserve Block Database...");
-            DbContext.Initialize();
+            Console.WriteLine("Initializing Reserve Block Database...");            
         }
 
         internal static void HDWalletCheck()
