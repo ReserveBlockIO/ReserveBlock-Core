@@ -54,8 +54,13 @@ namespace ReserveBlockCore.Models
             Globals.BannedIPs[ipAddress] = true;
             var peerDb = Peers.GetAll();
             var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
-            peer.IsBanned = true;
-            peerDb.Update(peer);
+            if (peer != null)
+            {
+                peer.IsBanned = true;
+                peerDb.Update(peer);
+            }
+            else
+                peerDb.Insert(new Peers { PeerIP = ipAddress, IsBanned = true });
 
             if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
                 context.Abort();
