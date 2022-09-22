@@ -146,65 +146,8 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            var accPrivateKey = account.PrivateKey;
-            if(Globals.IsWalletEncrypted == true)
-            {
-                //decrypt private key for send
-                if(Globals.EncryptPassword.Length == 0)
-                {
-                    return "You must decrypt wallet first before you can send a transaction!";
-                }
-                else
-                {
-                    try
-                    {
-                        var keystores = Keystore.GetKeystore();
-                        if (keystores != null)
-                        {
-                            var keystore = keystores.FindOne(x => x.Address == account.Address);
-                            if (keystore != null)
-                            {
-                                var password = Globals.EncryptPassword.ToUnsecureString();
-                                var newPasswordArray = Encoding.ASCII.GetBytes(password);
-                                var passwordKey = new byte[32 - newPasswordArray.Length].Concat(newPasswordArray).ToArray();
-
-                                var key = Convert.FromBase64String(keystore.Key);
-                                var encryptedPrivKey = Convert.FromBase64String(account.PrivateKey);
-
-                                var keyDecrypted = WalletEncryptionService.DecryptKey(key, passwordKey);
-                                var privKeyDecrypted = WalletEncryptionService.DecryptKey(encryptedPrivKey, Convert.FromBase64String(keyDecrypted));
-
-                                accPrivateKey = privKeyDecrypted;
-
-                                //clearing values
-                                password = "0";
-                                newPasswordArray = new byte[0];
-                                passwordKey = new byte[0];
-
-                                key = new byte[0];
-                                encryptedPrivKey = new byte[0];
-
-                                keyDecrypted = "0";
-                                privKeyDecrypted = "0";
-
-                            }
-                            else
-                            {
-                                return "Could not find the provided address in the keystore.";
-                            }
-                        }
-                        else
-                        {
-                            return "Keystore is null.";
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-                        return $"Unknown Error decrypting keys. Error: {ex.Message}";
-                    }
-                }
-            }
-
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address).Result;
+            
             BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 

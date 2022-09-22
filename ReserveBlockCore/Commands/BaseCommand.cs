@@ -136,10 +136,28 @@ namespace ReserveBlockCore.Commands
                     
                     break;
                 case "3": // Restore Account
-                    Console.WriteLine("Please enter private key... ");
-                    var privKey = Console.ReadLine();
-                    var restoredAccount = new Account().Restore(privKey);
-                    AccountData.WalletInfo(restoredAccount);
+                    if(Globals.IsWalletEncrypted == true)
+                    {
+                        if(Globals.EncryptPassword.Length > 0)
+                        {
+                            Console.WriteLine("Please enter private key... ");
+                            var privKey = Console.ReadLine();
+                            var restoredAccount = new Account().Restore(privKey);
+                            AccountData.WalletInfo(restoredAccount);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Please enter your wallet encryption password before importing a private key.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please enter private key... ");
+                        var privKey = Console.ReadLine();
+                        var restoredAccount = new Account().Restore(privKey);
+                        AccountData.WalletInfo(restoredAccount);
+                    }
+                    
                     break;
                 case "3hd": // Create HD Wallet
                     var mnemonicRestore = BaseCommandServices.RestoreHDWallet();

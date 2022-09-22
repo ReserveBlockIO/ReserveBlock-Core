@@ -665,10 +665,7 @@ namespace ReserveBlockCore.Controllers
 
             var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
 
-            if (result.Contains("Success"))
-            {
-                output = result;
-            }
+            output = result;
 
             return output;
         }

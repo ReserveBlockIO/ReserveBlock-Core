@@ -90,9 +90,8 @@ namespace ReserveBlockCore.Commands
                 Console.WriteLine("Validators are required to sign their task and cannot have their keys encrypted");
                 Console.WriteLine("This may be addressed at a later time.");
             }
-            else
+            else if(Globals.IsWalletEncrypted == false)
             {
-
                 AnsiConsole.MarkupLine("[red]******************************************WARNING******************************************[/]");
                 AnsiConsole.MarkupLine("[yellow]****************************************PLEASE READ****************************************[/]");
                 Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
@@ -197,6 +196,11 @@ namespace ReserveBlockCore.Commands
                     MainMenuReturn();
                     Console.WriteLine("Unexpected response. Please try again...");
                 }
+            }
+            else
+            {
+                MainMenuReturn();
+                Console.WriteLine("Wallet is already encrypted.");
             }
         }
 

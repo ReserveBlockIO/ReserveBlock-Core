@@ -12,6 +12,7 @@ using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using ReserveBlockCore.Extensions;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Data
 {
@@ -139,8 +140,9 @@ namespace ReserveBlockCore.Data
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
+                var accPrivateKey = await GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
 
-                BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 //Add validator signature

@@ -10,6 +10,7 @@ using ReserveBlockCore.Utilities;
 using System.Globalization;
 using System.Net;
 using System.Numerics;
+using System.Security;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -178,6 +179,49 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        //its recommended that you verify password before submitting to this endpoint.
+        [HttpGet("GetEncryptWallet/{password}")]
+        public async Task<string> GetEncryptWallet(string password)
+        {
+            var output = "";
+            if (Globals.IsWalletEncrypted != true)
+            {
+                try
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    await Keystore.GenerateKeystoreAddresses();
+                    Globals.IsWalletEncrypted = true;
+
+                    password = "0";
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet Encrypted." });
+                }
+                catch (Exception ex)
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"There was an error encrypting your wallet. Error: {ex.Message}" });
+                }
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Wallet is already encrypted." });
+            }
+            
+            return output;
+        }
+
+        [HttpGet("GetDecryptWallet/{password}")]
+        public async Task<string> GetDecryptWallet(string password)
+        {
+            var output = "";
+
+            Globals.EncryptPassword = password.ToSecureString();
+            password = "0";
+
+            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
+
+            return output;
+        }
+
+
         [HttpGet("GetNewAddress")]
         public async Task<string> GetNewAddress()
         {
@@ -318,7 +362,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                output = "STV";
+                output = "No Validator account has been found. Please create one.";
             }
             
 
@@ -334,14 +378,9 @@ namespace ReserveBlockCore.Controllers
             var presentValidator = accounts.FindOne(x => x.IsValidating == true);
             if (presentValidator != null)
             {
-                presentValidator.IsValidating = false;
-                accounts.UpdateSafe(presentValidator);
-                Globals.ValidatorAddress = "";
-                var adjConnection = P2PClient.IsAdjConnected1;
-                if(adjConnection)
-                {
-                    await P2PClient.DisconnectAdjudicator();
-                }
+                
+                await ValidatorService.DoMasterNodeStop();
+                
                 output = "The validator has been turned off: " + presentValidator.Address;
             }
             else
@@ -396,20 +435,48 @@ namespace ReserveBlockCore.Controllers
         {
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
-            var account = AccountData.RestoreAccount(id);
+            if(Globals.IsWalletEncrypted == true)
+            {
+                if(Globals.EncryptPassword.Length > 0)
+                {
+                    var account = AccountData.RestoreAccount(id);
 
-            if (account == null)
-            {
-                output = "NAC";
-            }
-            else if(account.Address == null || account.Address == "")
-            {
-                output = "NAC";
+                    if (account == null)
+                    {
+                        output = "NAC";
+                    }
+                    else if (account.Address == null || account.Address == "")
+                    {
+                        output = "NAC";
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(account);
+                    }
+                }
+                else
+                {
+                    output = "Please type in wallet encryption password.";
+                }
             }
             else
             {
-                output = JsonConvert.SerializeObject(account);
+                var account = AccountData.RestoreAccount(id);
+
+                if (account == null)
+                {
+                    output = "NAC";
+                }
+                else if (account.Address == null || account.Address == "")
+                {
+                    output = "NAC";
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(account);
+                }
             }
+            
 
             return output;
         }
@@ -530,12 +597,9 @@ namespace ReserveBlockCore.Controllers
             }
 
             var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
-
-            if(result.Contains("Success"))
-            {
-                output = result;
-            }
-
+            
+            output = result;
+            
             return output;
         }
 
@@ -546,34 +610,40 @@ namespace ReserveBlockCore.Controllers
             var result = "No Potential Validator Accounts Found.";
             var address = addr;
             var uniqueName = uname;
-
-            var valAccount = AccountData.GetPossibleValidatorAccounts();
-            if (valAccount.Count() > 0)
+            if(Globals.IsWalletEncrypted == false)
             {
-                var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
-                if(accountCheck != null)
+                var valAccount = AccountData.GetPossibleValidatorAccounts();
+                if (valAccount.Count() > 0)
                 {
-                    if(accountCheck.IsValidating)
+                    var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
+                    if (accountCheck != null)
                     {
-                        result = "Node is already flagged as validator.";
-                        return result;
+                        if (accountCheck.IsValidating)
+                        {
+                            result = "Node is already flagged as validator.";
+                            return result;
+                        }
+                        try
+                        {
+                            var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
+                            result = valResult;
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
+                            result = $"Unknown Error Occured: {ex.Message}";
+                        }
+                        output = true;
                     }
-                    try
+                    else
                     {
-                        var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
-                        result = valResult;
+                        result = "Account provided was not found in wallet.";
                     }
-                    catch (Exception ex)
-                    {
-                        ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
-                        result = $"Unknown Error Occured: {ex.Message}";
-                    }
-                    output = true;
                 }
-                else
-                {
-                    result = "Account provided was not found in wallet.";
-                }
+            }
+            else
+            {
+                result = "Cannot start validating on an encrypted wallet.";
             }
 
             return result;
@@ -604,7 +674,9 @@ namespace ReserveBlockCore.Controllers
             var account = AccountData.GetSingleAccount(address);
             if(account != null)
             {
-                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                var accPrivateKey = await GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 var signature = SignatureService.CreateSignature(message, privateKey, account.PublicKey);

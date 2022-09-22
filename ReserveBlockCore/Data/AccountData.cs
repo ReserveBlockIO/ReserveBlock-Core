@@ -88,6 +88,10 @@ namespace ReserveBlockCore.Data
                     {
 						//rescan for all tx's sent out and all tx's received.
                     }
+					if(Globals.IsWalletEncrypted == true)
+					{
+						WalletEncryptionService.EncryptWallet(account, true);
+					}
 				}
 			}
 			catch (Exception ex)
@@ -153,8 +157,10 @@ namespace ReserveBlockCore.Data
 
 		public static PrivateKey GetPrivateKey(Account account)
         {
-			BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-			PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address).Result;
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
 			return privateKey;
 		}
