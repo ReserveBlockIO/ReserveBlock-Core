@@ -463,12 +463,13 @@ namespace ReserveBlockCore.Controllers
                     var adnr = Adnr.GetAdnr();
                     if(adnr != null)
                     {
-                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
-                        if (adnrCheck != null)
+                        var adnrAddressCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrAddressCheck != null)
                         {
-                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrCheck.Name}" });
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrAddressCheck.Name}" });
                             return output;
                         }
+
                         if (!string.IsNullOrWhiteSpace(name))
                         {
                             var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
@@ -491,6 +492,11 @@ namespace ReserveBlockCore.Controllers
                                     {
                                         output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
                                     }
+                                }
+                                else
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This name already has a DNR associated with it: {nameCheck.Name}" });
+                                    return output;
                                 }
                             }
 

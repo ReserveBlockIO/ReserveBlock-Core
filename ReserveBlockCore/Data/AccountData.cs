@@ -16,26 +16,39 @@ namespace ReserveBlockCore.Data
 {
     internal static class AccountData
     {
-        public static Account CreateNewAccount()
+		public static Account CreateNewAccount(bool skipSave = false)
         {
-            Account account = new Account();
-            PrivateKey privateKey = new PrivateKey();
-            var privKeySecretHex = privateKey.secret.ToString("x");
-            var pubKey = privateKey.publicKey();
+			Account account = new Account();
+			var accountMade = false;
+			while(accountMade == false)
+            {
+				try
+				{
+					PrivateKey privateKey = new PrivateKey();
+					var privKeySecretHex = privateKey.secret.ToString("x");
+					var pubKey = privateKey.publicKey();
 
-            account.PrivateKey = privKeySecretHex;
-            account.PublicKey = "04" + ByteToHex(pubKey.toString());
-            account.Balance = 0.00M;
-			account.Address = GetHumanAddress(account.PublicKey);
+					account.PrivateKey = privKeySecretHex;
+					account.PublicKey = "04" + ByteToHex(pubKey.toString());
+					account.Balance = 0.00M;
+					account.Address = GetHumanAddress(account.PublicKey);
 
-			//var test = HexToByte(account.PublicKey.Remove(0,2));
+					var sig = Ecdsa.sign("test", privateKey);
+					var verify = Ecdsa.verify("test", sig, privateKey.publicKey());
 
-			//var pubKeyTest = PublicKey.fromString(test);
-
-			AddToAccount(account);
+                    if (verify == true)
+                    {
+						if (!skipSave)
+							AddToAccount(account);
+						accountMade = true;
+					}
+				}
+				catch { }
+			}
+			
 
 			return account;
-        }
+		}
 		public static Account RestoreAccount(string privKey, bool rescanForTx = false)
         {
 			Account account = new Account();

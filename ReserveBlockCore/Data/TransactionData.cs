@@ -245,10 +245,11 @@ namespace ReserveBlockCore.Data
             if(txs.Count() > 0)
             {
                 var amount = txs.Sum(x => x.Amount);
+                var feeAmount = txs.Sum(x => x.Fee);
                 var stateTreiAcct = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
                 if(stateTreiAcct != null)
                 {
-                    var amountTotal = amount + tx.Amount;
+                    var amountTotal = amount + feeAmount;
                     if(amountTotal > stateTreiAcct.Balance)
                     {
                         result = true; //douple spend has occured

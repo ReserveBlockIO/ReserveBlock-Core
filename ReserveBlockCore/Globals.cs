@@ -2,6 +2,7 @@
 using ReserveBlockCore.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security;
 
 namespace ReserveBlockCore
 {
@@ -71,6 +72,9 @@ namespace ReserveBlockCore
         public static int BuildVer = 0;
         public static string CLIVersion = "";
         public static bool HDWallet = false;
+        public static bool IsWalletEncrypted = false;
+        public static SecureString EncryptPassword = new SecureString();
+        public static int PasswordClearTime = 10;
 
         #endregion
 
@@ -113,7 +117,6 @@ namespace ReserveBlockCore
         #region DbContext Variables
         public static ConcurrentDictionary<int, bool> HasTransactionDict = new ConcurrentDictionary<int, bool>();
         #endregion
-
 
     }
 }

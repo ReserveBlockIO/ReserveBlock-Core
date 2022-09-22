@@ -8,6 +8,8 @@ using System.Net;
 using ReserveBlockCore.Data;
 using System.Text.RegularExpressions;
 using Spectre.Console;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace ReserveBlockCore.Commands
 {
@@ -85,37 +87,49 @@ namespace ReserveBlockCore.Commands
                 var password = Console.ReadLine();
                 if(!string.IsNullOrWhiteSpace(password))
                 {
-                    Console.WriteLine("Please confirm password");
-                    var passwordConfirmed = Console.ReadLine();
-                    if(!string.IsNullOrWhiteSpace(passwordConfirmed))
+                    if(password.Length > 32)
                     {
-                        if(passwordConfirmed == password)
+                        MainMenuReturn();
+                        Console.WriteLine("Passwords cannot be larger than 32 characters.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please confirm password");
+                        var passwordConfirmed = Console.ReadLine();
+                        if (!string.IsNullOrWhiteSpace(passwordConfirmed))
                         {
-                            //encrypt private keys here.
-                            var accounts = AccountData.GetAccounts();
-                            var accountList = accounts.FindAll().ToList();
-                            if(accountList.Count > 0)
+                            if (passwordConfirmed == password)
                             {
-                                //Generate 1000 addresses less what they already have
-                                //check if wallet is HD - if it is encrypt seed phrase also
+                                Globals.EncryptPassword = passwordConfirmed.ToSecureString();
+                                passwordConfirmed = "0"; //clear password
+                                password = "0"; //clear password
+
+                                await Keystore.GenerateKeystoreAddresses();
+                                Globals.IsWalletEncrypted = true;
                             }
                             else
                             {
-                                //Generate 1000 addresses
-                                //check if wallet is HD - if it is encrypt seed phrase also
+                                Console.WriteLine("Encrypting wallet failed. Passwords did not match. Please try again.");
+                                MainMenuReturn();
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Encrypting wallet failed. Passwords did not match. Please try again.");
                             MainMenuReturn();
+                            Console.WriteLine("Passwords cannot be blank.");
                         }
                     }
+                }
+                else
+                {
+                    MainMenuReturn();
+                    Console.WriteLine("Passwords cannot be blank.");
                 }
             }
             else
             {
                 MainMenuReturn();
+                Console.WriteLine("Unexpected response. Please try again...");
             }
         }
 
@@ -487,6 +501,11 @@ namespace ReserveBlockCore.Commands
                                         }
 
                                     }
+                                    else
+                                    {
+                                        StartupService.MainMenu();
+                                        Console.WriteLine("DNR Request has been cancelled. Name already belongs to another address.");
+                                    }
                                 }
                                 
                             }
@@ -764,7 +783,67 @@ namespace ReserveBlockCore.Commands
             }
             
         }
+        public static void PrintInfo()
+        {
+            var network = Globals.IsTestNet == true ? "TestNet" : "MainNet";
+            var mostLikelyIP = P2PClient.MostLikelyIP();
 
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+
+            var osDesc = RuntimeInformation.OSDescription;
+            var processArch = RuntimeInformation.ProcessArchitecture;
+            var netFramework = RuntimeInformation.FrameworkDescription;
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+            }
+
+            Console.Clear();
+            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+            AnsiConsole.Write(
+            new FigletText("RBX Info")
+            .Centered()
+            .Color(Color.Green));
+
+            var table = new Table();
+
+            table.Title("[yellow]RBX Info[/]").Centered();
+            table.AddColumn(new TableColumn(new Panel("Title")));
+            table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
+
+            table.AddRow("[blue]CLI Version[/]", $"[green]{Globals.CLIVersion}[/]");
+            table.AddRow("[blue]Network[/]", $"[green]{network}[/]");
+            table.AddRow("[blue]Port[/]", $"[green]{Globals.Port}[/]");
+            table.AddRow("[blue]OS[/]", $"[green]{osDesc}[/]");
+            table.AddRow("[blue]Processor Architecture[/]", $"[green]{processArch}[/]");
+            table.AddRow("[blue].Net Core[/]", $"[green]{netFramework}[/]");
+            table.AddRow("[blue]External IP[/]", $"[green]{mostLikelyIP}[/]");
+            table.AddRow("[blue]HD Wallet?[/]", $"[green]{Globals.HDWallet}[/]");
+            table.AddRow("[blue]Folder Path[/]", $"[green]{path}[/]");
+            table.AddRow("[blue]System Time[/]", $"[green]{DateTime.Now}[/]");
+            table.AddRow("[blue]Timestamp[/]", $"[green]{TimeUtil.GetTime()}[/]");
+
+            table.Border(TableBorder.Rounded);
+
+            AnsiConsole.Write(table);
+
+        }
         public static void PrintHelpMenu()
         {
             Console.Clear();
@@ -783,6 +862,7 @@ namespace ReserveBlockCore.Commands
 
 
             table.AddRow("[blue]/help[/]", "[green]This will print out the RBX wallet help menu.[/]");
+            table.AddRow("[blue]/info[/]", "[green]This will print out the RBX wallet client information.[/]");
             table.AddRow("[blue]/printvars[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
             table.AddRow("[blue]/stopco[/]", "[green]This will stop the automatic printout of text in CLI.[/]");
             table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");

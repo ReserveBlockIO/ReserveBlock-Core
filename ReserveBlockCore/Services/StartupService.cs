@@ -46,6 +46,11 @@ namespace ReserveBlockCore.Services
         {
             ValidatorService.ClearDuplicates();
         }
+
+        internal static void ClearOldValidatorDups()
+        {
+            ValidatorService.ClearOldValidator();
+        }
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db

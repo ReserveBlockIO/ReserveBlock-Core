@@ -36,8 +36,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
             var lastTaskError = Globals.LastTaskError.ToString();
             var hdWallet = Globals.HDWallet.ToString();
-            var reportedIPs = string.Join(",", Globals.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
-                .SelectMany(x => x));
+            var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            

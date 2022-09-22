@@ -342,7 +342,7 @@ namespace ReserveBlockCore.Data
             Console.WriteLine(" * Chain Validator : {0}", block.Validator);
 
             Console.WriteLine(" * Number Of Tx(s) : {0}", block.NumOfTx);
-            Console.WriteLine(" * Amout...........: {0}", block.TotalAmount);
+            Console.WriteLine(" * Amount...........: {0}", block.TotalAmount);
             Console.WriteLine(" * Reward          : {0}", block.TotalReward);
             Console.WriteLine(" * Size............: {0}", block.Size);
             Console.WriteLine(" * Craft Time      : {0}", block.BCraftTime);

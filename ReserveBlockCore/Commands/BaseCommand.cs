@@ -23,6 +23,9 @@ namespace ReserveBlockCore.Commands
                 case "/help":
                     BaseCommandServices.PrintHelpMenu();
                     break;
+                case "/info":
+                    BaseCommandServices.PrintInfo();
+                    break;
                 case "/printvars":
                     StaticVariableUtility.PrintStaticVariables();
                     break;
@@ -197,7 +200,7 @@ namespace ReserveBlockCore.Commands
                     }
                     break;
                 case "11": //Stop Masternode
-                    ValidatorService.DoMasterNodeStop();
+                    await ValidatorService.DoMasterNodeStop();
                     break;
                 case "12": //Stop Datanode
                     ConsoleWriterService.Output("Feature coming soon");

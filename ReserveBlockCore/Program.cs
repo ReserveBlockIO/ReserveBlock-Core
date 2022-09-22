@@ -141,6 +141,9 @@ namespace ReserveBlockCore
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
 
+            //Removes validator record from DB_Peers as its now within the wallet.
+            StartupService.ClearOldValidatorDups();
+
             Globals.StopAllTimers = true;
 
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000

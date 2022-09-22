@@ -268,7 +268,8 @@ namespace ReserveBlockCore.P2P
                                 await ValidatorProcessor.ProcessData(message, data, ipAddress);
                                 break;
                             case "fortisPool":
-                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                if(Globals.Adjudicate == false)
+                                    await ValidatorProcessor.ProcessData(message, data, ipAddress);
                                 break;
                             case "status":
                                 Console.WriteLine(data);
@@ -401,33 +402,42 @@ namespace ReserveBlockCore.P2P
         public static async Task SendTaskAnswer(TaskAnswer taskAnswer)
         {
             var adjudicatorConnected = IsAdjConnected1;
+            Random rand = new Random();
+            int randNum = (rand.Next(1, 5) * 1000);
+
             if(adjudicatorConnected)
             {
                 for(var i = 1; i < 4; i++)
                 {
                     if(i != 1)
                     {
-                        await Task.Delay(1000);
+                        await Task.Delay(1000); // if failed on first attempt waits 1 seconds then tries again.
+                    }
+                    else
+                    {
+                        await Task.Delay(randNum);//wait random amount between 1-5 to not overload network all at once.
                     }
                     try
                     {
-                        if (taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
+                        if(taskAnswer != null)
                         {
-                            if (hubAdjConnection1 != null)
+                            if (taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
                             {
-                                var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
-                                if (result)
+                                if (hubAdjConnection1 != null)
                                 {
-                                    Globals.LastTaskError = false;
-                                    Globals.LastTaskSentTime = DateTime.Now;
-                                    Globals.LastSentBlockHeight = taskAnswer.Block.Height;
-                                    break;
-                                }
-                                else
-                                {
-                                    Globals.LastTaskError = true;
-                                    //If response takes a while then it won't load.
-                                    //ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
+                                    
+                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                    if (result)
+                                    {
+                                        Globals.LastTaskError = false;
+                                        Globals.LastTaskSentTime = DateTime.Now;
+                                        Globals.LastSentBlockHeight = taskAnswer.Block.Height;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Globals.LastTaskError = true;
+                                    }
                                 }
                             }
                         }
@@ -443,11 +453,12 @@ namespace ReserveBlockCore.P2P
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                     }
                 }
-                
-            }
-            else
-            {
-                //reconnect and then send
+
+                if(Globals.LastTaskError == true)
+                {
+                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+                }
+
             }
         }
 

@@ -27,6 +27,7 @@ namespace ReserveBlockCore.Config
 		public string ValidatorName { get; set; }
 		public int NFTTimeout { get; set; }
 		public bool NFTIgnore { get; set; }
+		public int PasswordClearTime { get; set; }
 
 		public static Config ReadConfigFile()
         {
@@ -68,6 +69,7 @@ namespace ReserveBlockCore.Config
 				config.ChainCheckPointInterval = dict.ContainsKey("ChainCheckPointInternal") ? Convert.ToInt32(dict["ChainCheckPointInternal"]) : 12;
 				config.ChainCheckPointRetain = dict.ContainsKey("ChainCheckPointRetain") ? Convert.ToInt32(dict["ChainCheckPointRetain"]) : 2;
 				config.ChainCheckpointLocation = dict.ContainsKey("ChainCheckpointLocation") ? dict["ChainCheckpointLocation"] : GetPathUtility.GetCheckpointPath();
+				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
 			}
 
 			return config;
@@ -80,6 +82,7 @@ namespace ReserveBlockCore.Config
 			Globals.APICallURL = config.APICallURL;
 			Globals.APICallURLLogging = config.APICallURLLogging;
 			Globals.NFTTimeout = config.NFTTimeout;
+			Globals.PasswordClearTime = config.PasswordClearTime;
 
 			if(config.TestNet == true)
             {
