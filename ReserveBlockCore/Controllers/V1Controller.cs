@@ -135,6 +135,31 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        public static async Task<string> GetCheckEncryptionStatus()
+        {
+            string output = "";
+            if (Globals.IsWalletEncrypted == true)
+            {
+                if (Globals.EncryptPassword.Length != 0)
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is has decryption password." });
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Wallet does not have decryption password." });
+                }
+
+                return output;
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet does not need decryption password." });
+            }
+
+            return output;
+
+        }
+
         [HttpGet("CheckStatus")]
         public async Task<string> CheckStatus()
         {
@@ -596,9 +621,24 @@ namespace ReserveBlockCore.Controllers
                 return output;
             }
 
-            var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
-            
-            output = result;
+            if (Globals.IsWalletEncrypted == true)
+            {
+                if(Globals.EncryptPassword.Length > 0 )
+                {
+                    var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
+
+                    output = result;
+                }
+                else
+                {
+                    output = "FAIL. Please type in wallet encryption password first.";
+                }
+            }
+            else
+            {
+                var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
+                output = result;
+            }
             
             return output;
         }
@@ -674,7 +714,7 @@ namespace ReserveBlockCore.Controllers
             var account = AccountData.GetSingleAccount(address);
             if(account != null)
             {
-                var accPrivateKey = await GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
 
                 BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);

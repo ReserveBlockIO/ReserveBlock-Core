@@ -15,7 +15,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-
 namespace ReserveBlockCore.P2P
 {
     public class P2PAdjServer : Hub

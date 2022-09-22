@@ -168,7 +168,22 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "4": //Send Coins
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
-                    WalletService.StartSend();
+                    if (Globals.IsWalletEncrypted == true)
+                    {
+                        if (Globals.EncryptPassword.Length > 0)
+                        {
+                            await WalletService.StartSend();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Please input wallet encryption password");
+                        }
+                    }
+                    else
+                    {
+                        await WalletService.StartSend();
+                    }
+                    
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "5": //Get Latest Block

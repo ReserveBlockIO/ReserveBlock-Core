@@ -663,9 +663,24 @@ namespace ReserveBlockCore.Controllers
                 return output;
             }
 
-            var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
+            if (Globals.IsWalletEncrypted == true)
+            {
+                if (Globals.EncryptPassword.Length > 0)
+                {
+                    var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
 
-            output = result;
+                    output = result;
+                }
+                else
+                {
+                    output = "FAIL. Please type in wallet encryption password first.";
+                }
+            }
+            else
+            {
+                var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
+                output = result;
+            }
 
             return output;
         }

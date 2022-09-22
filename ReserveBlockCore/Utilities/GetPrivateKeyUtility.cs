@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class GetPrivateKeyUtility
     {
-        public static async Task<string> GetPrivateKey(string privkey, string address)
+        public static string GetPrivateKey(string privkey, string address)
         {
             if (Globals.IsWalletEncrypted == true)
             {

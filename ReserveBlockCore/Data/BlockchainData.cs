@@ -140,7 +140,7 @@ namespace ReserveBlockCore.Data
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
-                var accPrivateKey = await GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
 
                 BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);

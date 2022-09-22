@@ -12,7 +12,7 @@ namespace ReserveBlockCore.Services
 {
     public static class WalletService
     {
-        public static void StartSend()
+        public static async Task StartSend()
         {
             Console.Clear();
             var accountList = AccountData.GetAccountsWithBalance();
@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 //RWCjeJ1pcwEqRS9ksgQs3987x78WVYsaFT
-                var result = SendTXOut(fromAddress, toAddress, amount);
+                var result = await SendTXOut(fromAddress, toAddress, amount);
                 Console.WriteLine(result);
             }
 
@@ -96,7 +96,7 @@ namespace ReserveBlockCore.Services
                 StartupService.MainMenu();
             }
         }
-        public static string SendTXOut(string FromAddress, string ToAddress, decimal Amount, TransactionType tranType = TransactionType.TX)
+        public static async Task<string> SendTXOut(string FromAddress, string ToAddress, decimal Amount, TransactionType tranType = TransactionType.TX)
         {
             string output = "Bad TX Format... Please Try Again";
             var account = AccountData.GetSingleAccount(FromAddress);
@@ -146,7 +146,7 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address).Result;
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
             
             BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
