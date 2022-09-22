@@ -38,6 +38,8 @@ namespace ReserveBlockCore.Utilities
             var hdWallet = Globals.HDWallet.ToString();
             var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
+            var isWalletEncrypted = Globals.IsWalletEncrypted;
+
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
             var isBlocksDownloading = "Blocks Downloading: " + (Globals.BlocksDownloading == 1).ToString();
@@ -65,6 +67,7 @@ namespace ReserveBlockCore.Utilities
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
+            var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -73,6 +76,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(validatorAddress);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(hdWalletText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isWalletEncryptedText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isCorrupt);
             strBld.AppendLine("---------------------------------------------------------------------");            

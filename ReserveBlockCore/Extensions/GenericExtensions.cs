@@ -38,6 +38,49 @@ namespace ReserveBlockCore.Extensions
             return secureStr;
         }
 
+        public static bool SecureStringCompare(this SecureString s1, SecureString s2)
+        {
+            if (s1 == null)
+            {
+                return false;
+            }
+            if (s2 == null)
+            {
+                return false;
+            }
+
+            if (s1.Length != s2.Length)
+            {
+                return false;
+            }
+
+            IntPtr ss_bstr1_ptr = IntPtr.Zero;
+            IntPtr ss_bstr2_ptr = IntPtr.Zero;
+
+            try
+            {
+                ss_bstr1_ptr = Marshal.SecureStringToBSTR(s1);
+                ss_bstr2_ptr = Marshal.SecureStringToBSTR(s2);
+
+                String str1 = Marshal.PtrToStringBSTR(ss_bstr1_ptr);
+                String str2 = Marshal.PtrToStringBSTR(ss_bstr2_ptr);
+
+                return str1.Equals(str2);
+            }
+            finally
+            {
+                if (ss_bstr1_ptr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeBSTR(ss_bstr1_ptr);
+                }
+
+                if (ss_bstr2_ptr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeBSTR(ss_bstr2_ptr);
+                }
+            }
+        }
+
         public static string ToUnsecureString(this SecureString source)
         {
             IntPtr unmanagedString = IntPtr.Zero;

@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Extensions;
 using Spectre.Console;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Data
 {
@@ -230,7 +231,7 @@ namespace ReserveBlockCore.Data
 			Console.WriteLine("*** Be sure to save private key!                   ***");
 			Console.WriteLine("*** Use your private key to restore account!       ***");
 		}
-		public static void AddToAccount(Account account)
+		public static async void AddToAccount(Account account)
 		{
 			var accountList = GetAccounts();
 			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.PrivateKey);
@@ -239,7 +240,11 @@ namespace ReserveBlockCore.Data
 			if(accountCheck == null)
             {
 				accountList.InsertSafe(account);
-			}
+     //           if (Globals.IsWalletEncrypted == true)
+     //           {
+					//var result = await WalletEncryptionService.EncryptWallet(account, true);
+     //           }
+            }
             else
             {
 				//do nothing as account is already in table. They are attempting to restore a key that already exist.

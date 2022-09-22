@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using Spectre.Console;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Security;
+using Microsoft.AspNetCore.Mvc.Formatters.Xml;
 
 namespace ReserveBlockCore.Commands
 {
@@ -78,58 +80,160 @@ namespace ReserveBlockCore.Commands
         }
         public static async Task EncryptWallet()
         {
-            Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
-            Console.WriteLine("Are you sure you want to do this? ('y' for yes and 'n' for no.");
-            var confirmation = Console.ReadLine();
-            if(!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "y")
+            if(Globals.HDWallet == true)
             {
-                Console.WriteLine("Please choose a password to encrypt wallet with.");
-                var password = Console.ReadLine();
-                if(!string.IsNullOrWhiteSpace(password))
-                {
-                    if(password.Length > 32)
-                    {
-                        MainMenuReturn();
-                        Console.WriteLine("Passwords cannot be larger than 32 characters.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Please confirm password");
-                        var passwordConfirmed = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(passwordConfirmed))
-                        {
-                            if (passwordConfirmed == password)
-                            {
-                                Globals.EncryptPassword = passwordConfirmed.ToSecureString();
-                                passwordConfirmed = "0"; //clear password
-                                password = "0"; //clear password
+                Console.WriteLine("Wallet Encryption is not currently compatible with HD wallets.");
+                Console.WriteLine("This will be released in a future wallet update.");
+            }
+            else if(Globals.ValidatorAddress != "")
+            {
+                Console.WriteLine("Validators are required to sign their task and cannot have their keys encrypted");
+                Console.WriteLine("This may be addressed at a later time.");
+            }
+            else
+            {
 
-                                await Keystore.GenerateKeystoreAddresses();
-                                Globals.IsWalletEncrypted = true;
-                            }
-                            else
+                AnsiConsole.MarkupLine("[red]******************************************WARNING******************************************[/]");
+                AnsiConsole.MarkupLine("[yellow]****************************************PLEASE READ****************************************[/]");
+                Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
+                Console.WriteLine("If you forget this password there is no way to recover your keys. Please use this feature fully understanding this.");
+                Console.WriteLine("This is a new wallet feature. It is recommended a non-encrypted version or private keys be backed up before starting this process.");
+                AnsiConsole.MarkupLine("Are you sure you want to do this? ('[bold green]y[/]' for yes and '[bold red]n[/]' for no).");
+                var confirmation = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "y")
+                {
+                    Console.WriteLine("Please type a password to encrypt wallet with. Please note for security you will not see this password in the CLI.");
+                    var password = new SecureString();
+                    while (true)
+                    {
+                        ConsoleKeyInfo i = Console.ReadKey(true);
+                        if (i.Key == ConsoleKey.Enter)
+                        {
+                            break;
+                        }
+                        else if (i.Key == ConsoleKey.Backspace)
+                        {
+                            if (password.Length > 0)
                             {
-                                Console.WriteLine("Encrypting wallet failed. Passwords did not match. Please try again.");
-                                MainMenuReturn();
+                                password.RemoveAt(password.Length - 1);
+                                Console.Write("\b \b");
                             }
+                        }
+                        else if (i.KeyChar != '\u0000') // KeyChar == '\u0000' if the key pressed does not correspond to a printable character, e.g. F1, Pause-Break, etc
+                        {
+                            password.AppendChar(i.KeyChar);
+                            Console.Write("");
+                        }
+                    }
+                    if (password.Length != 0)
+                    {
+                        if (password.Length > 32)
+                        {
+                            MainMenuReturn();
+                            Console.WriteLine("Passwords cannot be larger than 32 characters.");
                         }
                         else
                         {
-                            MainMenuReturn();
-                            Console.WriteLine("Passwords cannot be blank.");
+                            Console.WriteLine("------------------------------------------------");
+                            Console.WriteLine("Please confirm password");
+                            var passwordConfirmed = new SecureString();
+                            while (true)
+                            {
+                                ConsoleKeyInfo i = Console.ReadKey(true);
+                                if (i.Key == ConsoleKey.Enter)
+                                {
+                                    break;
+                                }
+                                else if (i.Key == ConsoleKey.Backspace)
+                                {
+                                    if (passwordConfirmed.Length > 0)
+                                    {
+                                        passwordConfirmed.RemoveAt(passwordConfirmed.Length - 1);
+                                        Console.Write("\b \b");
+                                    }
+                                }
+                                else if (i.KeyChar != '\u0000') // KeyChar == '\u0000' if the key pressed does not correspond to a printable character, e.g. F1, Pause-Break, etc
+                                {
+                                    passwordConfirmed.AppendChar(i.KeyChar);
+                                    Console.Write("");
+                                }
+                            }
+                            if (passwordConfirmed.Length != 0)
+                            {
+                                if (password.SecureStringCompare(passwordConfirmed))
+                                {
+                                    Globals.EncryptPassword = passwordConfirmed;
+                                    passwordConfirmed = new SecureString(); //clear password
+                                    password = new SecureString(); //clear password
+
+                                    Console.WriteLine("Encrypting Wallet. Please do not close wallet as this may take a few moments.");
+                                    await Keystore.GenerateKeystoreAddresses();
+                                    Globals.IsWalletEncrypted = true;
+
+                                    Console.WriteLine("Encrypting Wallet has completed...");
+                                    MainMenuReturn();
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Encrypting wallet failed. Passwords did not match. Please try again.");
+                                    MainMenuReturn();
+                                }
+                            }
+                            else
+                            {
+                                MainMenuReturn();
+                                Console.WriteLine("Passwords cannot be blank.");
+                            }
                         }
+                    }
+                    else
+                    {
+                        MainMenuReturn();
+                        Console.WriteLine("Passwords cannot be blank.");
                     }
                 }
                 else
                 {
                     MainMenuReturn();
-                    Console.WriteLine("Passwords cannot be blank.");
+                    Console.WriteLine("Unexpected response. Please try again...");
                 }
+            }
+        }
+
+        public static async Task DecryptWallet()
+        {
+            if(Globals.EncryptPassword.Length == 0)
+            {
+                Console.WriteLine($"Please enter your encryption password to decrypt wallet for {Globals.PasswordClearTime} minutes.");
+                var pwd = new SecureString();
+                while (true)
+                {
+                    ConsoleKeyInfo i = Console.ReadKey(true);
+                    if (i.Key == ConsoleKey.Enter)
+                    {
+                        Globals.EncryptPassword = pwd;
+                        break;
+                    }
+                    else if (i.Key == ConsoleKey.Backspace)
+                    {
+                        if (pwd.Length > 0)
+                        {
+                            pwd.RemoveAt(pwd.Length - 1);
+                            Console.Write("\b \b");
+                        }
+                    }
+                    else if (i.KeyChar != '\u0000') // KeyChar == '\u0000' if the key pressed does not correspond to a printable character, e.g. F1, Pause-Break, etc
+                    {
+                        pwd.AppendChar(i.KeyChar);
+                        Console.Write("");
+                    }
+                }
+
+                Console.WriteLine("Password has been entered.");
             }
             else
             {
-                MainMenuReturn();
-                Console.WriteLine("Unexpected response. Please try again...");
+                Console.WriteLine("Wallet already has password for decryption.");
             }
         }
 
@@ -653,6 +757,94 @@ namespace ReserveBlockCore.Commands
 
         }
 
+        public static async Task CreateAddress()
+        {
+            if (Globals.HDWallet == true)
+            {
+                var hdAccount = HDWallet.HDWalletData.GenerateAddress();
+                if (hdAccount != null)
+                {
+                    Console.WriteLine("-----------------------HD Wallet Address Created------------------------");
+                    Console.WriteLine($"New Address: {hdAccount.Address}");
+                    Console.WriteLine("----------------------Type /menu to return to menu----------------------");
+                }
+                else
+                {
+                    Console.WriteLine("You have not created an HD wallet. Please Use command '2hd' and press enter.");
+                }
+            }
+            else
+            {
+                if (Globals.IsWalletEncrypted == true)
+                {
+                    var keysAvail = await Keystore.KeystoreCheck();
+                    if (keysAvail > 0)
+                    {
+                        var account = await Keystore.GetNextKeystore();
+                        if (account != null)
+                        {
+                            AccountData.WalletInfo(account);
+                        }
+                        else
+                        {
+                            Console.WriteLine("There was an issue creating a new address. Please try again...");
+                        }
+                    }
+                    else
+                    {
+                        if(Globals.EncryptPassword.Length == 0)
+                        {
+                            Console.WriteLine("Please input your encryption password to create a new address");
+                            var password = Console.ReadLine();
+                            if (!string.IsNullOrEmpty(password))
+                            {
+                                Globals.EncryptPassword = password.ToSecureString();
+                                Console.WriteLine("Creating new addresses. Please wait...");
+                                await Keystore.GenerateKeystoreAddresses(false);
+                                var account = await Keystore.GetNextKeystore();
+                                if (account != null)
+                                {
+                                    AccountData.WalletInfo(account);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("There was an issue creating a new address. Please try again...");
+                                }
+                                password = "0";
+                            }
+                            else
+                            {
+                                Console.WriteLine("Password cannot be blank. Returning you to main menu.");
+                                MainMenuReturn();
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Creating new addresses. Please wait...");
+                            await Keystore.GenerateKeystoreAddresses(false);
+                            var account = await Keystore.GetNextKeystore();
+                            if (account != null)
+                            {
+                                AccountData.WalletInfo(account);
+                            }
+                            else
+                            {
+                                Console.WriteLine("There was an issue creating a new address. Please try again...");
+                            }
+                        }
+                        
+                        
+                    }
+                }
+                else
+                {
+                    var account = new Account().Build();
+                    AccountData.WalletInfo(account);
+                }
+
+            }
+        }
+
         public static async Task<string> DeleteDnr()
         {
             var output = "";
@@ -863,7 +1055,7 @@ namespace ReserveBlockCore.Commands
 
             table.AddRow("[blue]/help[/]", "[green]This will print out the RBX wallet help menu.[/]");
             table.AddRow("[blue]/info[/]", "[green]This will print out the RBX wallet client information.[/]");
-            table.AddRow("[blue]/printvars[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
+            table.AddRow("[blue]/debug[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
             table.AddRow("[blue]/stopco[/]", "[green]This will stop the automatic printout of text in CLI.[/]");
             table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");
             table.AddRow("[blue]/menu[/]", "[green]This will return you to the main menu[/]");

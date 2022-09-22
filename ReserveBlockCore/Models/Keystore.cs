@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Models
 {
@@ -11,6 +12,7 @@ namespace ReserveBlockCore.Models
         public string PublicKey { set; get; }
         public string Address { get; set; }
         public string Key { get; set; }
+        public bool IsUsed { get; set; }
 
         #region GetKeystore()
         public static LiteDB.ILiteCollection<Keystore>? GetKeystore()
@@ -28,7 +30,51 @@ namespace ReserveBlockCore.Models
             }
 
         }
+        #endregion
 
+        #region Keystore Count Check
+        public static async Task<int> KeystoreCheck()
+        {
+            var keystores = GetKeystore();
+            var availKeys = keystores.Find(x => x.IsUsed == false).ToList().Count();
+
+            return availKeys;
+        }
+        #endregion
+
+        #region Get Unused Keystore
+        public static async Task<Account>? GetNextKeystore()
+        {
+            var keystores = GetKeystore();
+            if(keystores != null)
+            {
+                var keystore = keystores.FindOne(x => x.IsUsed == false);
+                var accounts = AccountData.GetAccounts();
+                if(accounts != null)
+                {
+                    var check = accounts.FindOne(x => x.Address == keystore.Address);
+                    if(check == null)
+                    {
+                        Account account = new Account {
+                            Address = keystore.Address,
+                            Balance = 0.00M,
+                            PrivateKey = keystore.PrivateKey,
+                            PublicKey = keystore.PublicKey
+                        };
+
+                        accounts.InsertSafe(account);
+                        keystore.IsUsed = true;
+                        keystores.UpdateSafe(keystore);
+
+                        return account;
+                    }
+                }
+            }
+
+            return null;
+            
+        }
+       
         #endregion
 
         #region SaveKeystore(Keystore keystoreData)
@@ -88,38 +134,61 @@ namespace ReserveBlockCore.Models
         }
         #endregion
 
-        public static async Task GenerateKeystoreAddresses()
+        #region Generate Keystore Addresses
+
+        public static async Task GenerateKeystoreAddresses(bool convertCurrentAddr = true)
         {
             List<Keystore> keystoreList = new List<Keystore>();
 
             var accounts = AccountData.GetAccounts();
             var accountList = accounts.FindAll().ToList();
-            var amount = 1000 - accountList.Count;
-            if(amount > 0)
-            {
-                //Create 1000 less current account keystore addresses
-                for(var i = 0; i < amount; i++)
+            var amount = 1000;
+            var progress = 0.00M;
+            //Create 1000 keystore addresses
+            await AnsiConsole.Progress()
+                .StartAsync(async ctx =>
                 {
-                    //generating addresses, then encrypt private key and save to account db
-                    var account = AccountData.CreateNewAccount(true);
-                    var keystore = await WalletEncryptionService.EncryptWallet(account);
-                    if(keystore != null)
+                    var task1 = ctx.AddTask("[green]Generating Encrypted Keystore[/]");
+                    var task2 = ctx.AddTask("[green]Encrypting Current Keys[/]");
+                       
+                    while (!ctx.IsFinished)
                     {
-                        keystoreList.Add(keystore);
-                    }
-                    
-                }
-            }
+                        for (var i = 0; i < amount; i++)
+                        {
+                            //generating addresses, then encrypt private key and save to account db
+                            var account = AccountData.CreateNewAccount(true);
+                            var keystore = await WalletEncryptionService.EncryptWallet(account);
+                            if (keystore != null)
+                            {
+                                keystoreList.Add(keystore);
+                                progress += 0.1M;
+                                task1.Increment(0.1);
+                            }
+                        }
+                        task1.Increment(100);
 
-            //Update current accounts to have private keys encrypted.
-            foreach(var account in accountList)
-            {
-                var keystore = await WalletEncryptionService.EncryptWallet(account, true);
-                if (keystore != null)
-                {
-                    keystoreList.Add(keystore);
-                }
-            }
+                        if (convertCurrentAddr)
+                        {
+                            var accountListCount = accountList.Count();
+                            double incr = 100 / accountListCount;
+                            //Update current accounts to have private keys encrypted.
+                            foreach (var account in accountList)
+                            {
+                                var keystore = await WalletEncryptionService.EncryptWallet(account, true);
+                                if (keystore != null)
+                                {
+                                    keystoreList.Add(keystore);
+                                    task2.Increment(incr);
+                                }
+                            }
+                            task2.Increment(100);
+                        }
+                        else
+                        {
+                            task2.Increment(100);
+                        }
+                    }
+                });
 
             var keystores = GetKeystore();
             if(keystores != null)
@@ -127,5 +196,7 @@ namespace ReserveBlockCore.Models
                 keystores.InsertBulkSafe(keystoreList);
             }
         }
+
+        #endregion
     }
 }

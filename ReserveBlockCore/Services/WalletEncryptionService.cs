@@ -37,13 +37,20 @@ namespace ReserveBlockCore.Services
 				PrivateKey = Convert.ToBase64String(encrypted), 
 				PublicKey = account.PublicKey,
 				Key = Convert.ToBase64String(keyEncrypted),
+				IsUsed = false
 			};
 
 			if(updateAccount == true)
             {
 				account.PrivateKey = Convert.ToBase64String(encrypted);
 				accounts.UpdateSafe(account);
-			}
+				keystore.IsUsed = true;
+
+            }
+
+			password = "0";
+			newPasswordArray = new byte[0];
+			passwordKey = new byte[0];
 
 			return keystore;
 		}
@@ -98,7 +105,7 @@ namespace ReserveBlockCore.Services
 
 		}
 
-		static string DecryptKey(byte[] cipherTextCombined, byte[] Key)
+		public static string DecryptKey(byte[] cipherTextCombined, byte[] Key)
 		{
 
 			// Declare the string used to hold 

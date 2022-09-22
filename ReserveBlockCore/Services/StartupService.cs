@@ -65,6 +65,16 @@ namespace ReserveBlockCore.Services
                 Globals.HDWallet = true;
             }
         }
+
+        internal static void EncryptedWalletCheck()
+        {
+            var keystore = Keystore.GetKeystore();
+            if (keystore != null)
+            {
+                if(keystore.FindAll().Count() > 0)
+                    Globals.IsWalletEncrypted = true;
+            }
+        }
         internal static void SetBlockchainChainRef()
         {
             //mainnet
