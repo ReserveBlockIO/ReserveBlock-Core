@@ -31,6 +31,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError(ex.Message, "Adnr.GetAdnr()");
                 return null;
             }
@@ -114,7 +115,9 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrCreate()", Name = name });
@@ -163,6 +166,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 Console.WriteLine("Error: {0}", ex.Message);
             }
 
@@ -186,7 +190,9 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()" });
@@ -235,6 +241,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 Console.WriteLine("Error: {0}", ex.Message);
                 ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.Message}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
             }
@@ -258,7 +265,9 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()" });
@@ -301,6 +310,7 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
+                    DbContext.Rollback();
                     ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.DeleteAdnrTx(string address)");
                     return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
                 }

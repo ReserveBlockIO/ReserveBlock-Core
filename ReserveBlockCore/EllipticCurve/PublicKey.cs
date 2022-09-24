@@ -154,7 +154,6 @@
             }
             //if (!curveObject.contains(p))
             //{
-            //    //FIX THIS
             //    throw new ArgumentException(
             //        "Point (" +
             //        p.x.ToString() + "," +

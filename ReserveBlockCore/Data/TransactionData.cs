@@ -108,6 +108,7 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 return null;
             }
             
@@ -189,7 +190,7 @@ namespace ReserveBlockCore.Data
                                     }
                                     catch (Exception ex)
                                     {
-
+                                        DbContext.Rollback();
                                     }
                                 }
                             }
@@ -205,7 +206,7 @@ namespace ReserveBlockCore.Data
                                 }
                                 catch (Exception ex)
                                 {
-
+                                    DbContext.Rollback();
                                 }
                             }
                         }
@@ -239,15 +240,16 @@ namespace ReserveBlockCore.Data
             }
 
             var mempool = TransactionData.GetPool();
-            var txs = mempool.FindAll().Where(x => x.FromAddress == tx.FromAddress).ToList();
+            var txs = mempool.Find(x => x.FromAddress == tx.FromAddress).ToList();
 
             if(txs.Count() > 0)
             {
                 var amount = txs.Sum(x => x.Amount);
+                var feeAmount = txs.Sum(x => x.Fee);
                 var stateTreiAcct = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
                 if(stateTreiAcct != null)
                 {
-                    var amountTotal = amount + tx.Amount;
+                    var amountTotal = amount + feeAmount;
                     if(amountTotal > stateTreiAcct.Balance)
                     {
                         result = true; //douple spend has occured

@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System.IO.Compression;
+using System.Security;
 
 namespace ReserveBlockCore.Services
 {
@@ -17,6 +18,7 @@ namespace ReserveBlockCore.Services
         private Timer _fortisPoolTimer = null!;
         private Timer _checkpointTimer = null!;
         private Timer _blockStateSyncTimer = null;
+        private Timer _encryptedPasswordTimer = null;
         private static bool FirstRun = false;
 
         public ClientCallService(IHubContext<P2PAdjServer> hubContext, IHostApplicationLifetime appLifetime)
@@ -43,6 +45,9 @@ namespace ReserveBlockCore.Services
                 _checkpointTimer = new Timer(DoCheckpointWork, null, TimeSpan.FromSeconds(240),
                 TimeSpan.FromHours(interval));
             }
+
+            _encryptedPasswordTimer = new Timer(DoPasswordClearWork, null, TimeSpan.FromSeconds(5),
+                TimeSpan.FromMinutes(Globals.PasswordClearTime));
 
             return Task.CompletedTask;
         }
@@ -71,6 +76,15 @@ namespace ReserveBlockCore.Services
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError($"Error creating checkpoint. Error Message: {ex.Message}", "ClientCallService.DoCheckpointWork()");
+            }
+        }
+
+        private async void DoPasswordClearWork(object? state)
+        {
+            if(Globals.IsWalletEncrypted == true)
+            {
+                Globals.EncryptPassword.Dispose();
+                Globals.EncryptPassword = new SecureString();
             }
         }
 

@@ -36,19 +36,19 @@ namespace ReserveBlockCore.Utilities
             var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
             var lastTaskError = Globals.LastTaskError.ToString();
             var hdWallet = Globals.HDWallet.ToString();
-            var reportedIPs = string.Join(",", Globals.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
-                .SelectMany(x => x));
+            var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
+            var isWalletEncrypted = Globals.IsWalletEncrypted;
 
+            var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
             var isBlocksDownloading = "Blocks Downloading: " + (Globals.BlocksDownloading == 1).ToString();
-            var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;
-            var isCrafting = "Is Crafting: " + Globals.IsCrafting.ToString();
+            var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;            
             var isPeersConnecting = "Peers Connecting Startup: " + (!Globals.Nodes.Any()).ToString();
             var isStopAllTimers = "Stop all timers: " + Globals.StopAllTimers.ToString();
             var isQueueProcessing = "Queue Processing: " + (Globals.BlocksDownloading == 1);
             var isPeerConnected = "Peers connected: " + peersConnected.ToString();
-            var peerConnectedCount = "Peers connected Count: " + P2PServer.GetConnectedPeerCount().ToString();
+            var peerConnectedCount = "Peers connected Count: " + Globals.Nodes.Count().ToString();
             var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();
             var blockHeightStr = "Block Height: " + blockHeight.ToString();
             var validatorStr = "Validator Address From DB: " + validator;
@@ -67,6 +67,7 @@ namespace ReserveBlockCore.Utilities
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
+            var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -76,13 +77,15 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(hdWalletText);
             strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isWalletEncryptedText);
+            strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isCorrupt);
             strBld.AppendLine("---------------------------------------------------------------------");            
             strBld.AppendLine(isBlocksDownloading);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isChainSyncing);
             strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(isCrafting);
+            strBld.AppendLine(balance);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isPeersConnecting);
             strBld.AppendLine("---------------------------------------------------------------------");
@@ -139,6 +142,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Block Info----------------------------");
             strBld.AppendLine(lastBlockInfo);
+            strBld.AppendLine("---------------------------------------------------------------------");
+               
             return strBld.ToString();
         }
     }

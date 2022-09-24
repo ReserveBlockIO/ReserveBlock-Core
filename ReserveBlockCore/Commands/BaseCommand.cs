@@ -23,7 +23,10 @@ namespace ReserveBlockCore.Commands
                 case "/help":
                     BaseCommandServices.PrintHelpMenu();
                     break;
-                case "/printvars":
+                case "/info":
+                    BaseCommandServices.PrintInfo();
+                    break;
+                case "/debug":
                     StaticVariableUtility.PrintStaticVariables();
                     break;
                 case "/printkeys":
@@ -49,7 +52,14 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.ResetValidator();
                     break;
                 case "/encrypt":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.EncryptWallet();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
+                case "/decrypt":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    await BaseCommandServices.DecryptWallet();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/backupwallet":
                     //BackupUtil.BackupWalletData("Not Yet Added.");
@@ -108,25 +118,7 @@ namespace ReserveBlockCore.Commands
                     BlockchainData.PrintBlock(genBlock);
                     break;
                 case "2": // Create Account
-                    if(Globals.HDWallet == true)
-                    {
-                        var hdAccount = HDWallet.HDWalletData.GenerateAddress();
-                        if(hdAccount != null)
-                        {
-                            Console.WriteLine("-----------------------HD Wallet Address Created------------------------");
-                            Console.WriteLine($"New Address: {hdAccount.Address}");
-                            Console.WriteLine("----------------------Type /menu to return to menu----------------------");
-                        }
-                        else
-                        {
-                            Console.WriteLine("You have not created an HD wallet. Please Use command '2hd' and press enter.");
-                        }
-                    }
-                    else
-                    {
-                        var account = new Account().Build();
-                        AccountData.WalletInfo(account);
-                    }
+                    await BaseCommandServices.CreateAddress();
                     break;
                 case "2hd": // Create HD Wallet
                     var mnemonic = BaseCommandServices.CreateHDWallet();
@@ -144,10 +136,28 @@ namespace ReserveBlockCore.Commands
                     
                     break;
                 case "3": // Restore Account
-                    Console.WriteLine("Please enter private key... ");
-                    var privKey = Console.ReadLine();
-                    var restoredAccount = new Account().Restore(privKey);
-                    AccountData.WalletInfo(restoredAccount);
+                    if(Globals.IsWalletEncrypted == true)
+                    {
+                        if(Globals.EncryptPassword.Length > 0)
+                        {
+                            Console.WriteLine("Please enter private key... ");
+                            var privKey = Console.ReadLine();
+                            var restoredAccount = new Account().Restore(privKey);
+                            AccountData.WalletInfo(restoredAccount);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Please enter your wallet encryption password before importing a private key.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please enter private key... ");
+                        var privKey = Console.ReadLine();
+                        var restoredAccount = new Account().Restore(privKey);
+                        AccountData.WalletInfo(restoredAccount);
+                    }
+                    
                     break;
                 case "3hd": // Create HD Wallet
                     var mnemonicRestore = BaseCommandServices.RestoreHDWallet();
@@ -157,14 +167,31 @@ namespace ReserveBlockCore.Commands
 
                     break;
                 case "4": //Send Coins
-                    WalletService.StartSend();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    if (Globals.IsWalletEncrypted == true)
+                    {
+                        if (Globals.EncryptPassword.Length > 0)
+                        {
+                            await WalletService.StartSend();
+                        }
+                        else
+                        {
+                            Console.WriteLine("Please input wallet encryption password");
+                        }
+                    }
+                    else
+                    {
+                        await WalletService.StartSend();
+                    }
+                    
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "5": //Get Latest Block
                     var currentBlock = BlockchainData.GetLastBlock();
                     BlockchainData.PrintBlock(currentBlock);
                     break;
                 case "6": //Transaction History
-                    //Insert Method
+                    BaseCommandServices.GetLatestTx();
                     break;
                 case "7": //Account Info
                     AccountData.PrintWalletAccounts();
@@ -172,7 +199,15 @@ namespace ReserveBlockCore.Commands
                 case "8": //Startup Masternode
                     if(Globals.StopAllTimers == false && Globals.BlocksDownloading == 0)
                     {
-                        ValidatorService.DoValidate();
+                        if(Globals.IsWalletEncrypted == true)
+                        {
+                            ValidatorService.DoValidate();
+                        }
+                        else
+                        {
+                            Console.WriteLine("This is an encrypted wallet and cannot have validating turned on at this moment.");
+                        }
+                        
                     }
                     else
                     {
@@ -197,7 +232,7 @@ namespace ReserveBlockCore.Commands
                     }
                     break;
                 case "11": //Stop Masternode
-                    ValidatorService.DoMasterNodeStop();
+                    await ValidatorService.DoMasterNodeStop();
                     break;
                 case "12": //Stop Datanode
                     ConsoleWriterService.Output("Feature coming soon");

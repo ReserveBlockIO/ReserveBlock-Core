@@ -42,8 +42,8 @@ namespace ReserveBlockCore.P2P
         }
         private static async Task RemoveNode(NodeInfo node)
         {
-            Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test);            
-            await node.Connection.DisposeAsync();            
+            if(Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
+                await node.Connection.DisposeAsync();            
         }
 
         #endregion
@@ -148,9 +148,25 @@ namespace ReserveBlockCore.P2P
                 
                 var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
                 hubConnection.On<string, string>("GetMessage", async (message, data) =>
-                {                                        
-                    if (message == "tx" || message == "blk" || message == "val" || message == "IP")
+                {                    
+                    if (message == "blk" || message == "IP")
                     {
+                        if (data?.Length > 1179648)
+                            return;
+
+                        if(Globals.Nodes.TryGetValue(IPAddress, out var node))
+                        {
+                            var now = TimeUtil.GetMillisecondTime();
+                            var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
+                            if (now - prevPrevTime < 15000)
+                            {
+                                Peers.BanPeer(IPAddress);                                
+                                return;
+                            }
+                            Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
+                        }
+                        // if someone calls in more often than 2 times in 15 seconds ban them
+
                         if (message != "IP")
                         {
                             await NodeDataProcessor.ProcessData(message, data, IPAddress);
@@ -161,10 +177,9 @@ namespace ReserveBlockCore.P2P
                             if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
                                 Globals.ReportedIPs[IP]++;
                             else
-                                Globals.ReportedIPs[IP] = 1;                                                        
+                                Globals.ReportedIPs[IP] = 1;
                         }
-                    }
-
+                    }                    
                 });
 
                 await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,10));
@@ -252,7 +267,8 @@ namespace ReserveBlockCore.P2P
                                 await ValidatorProcessor.ProcessData(message, data, ipAddress);
                                 break;
                             case "fortisPool":
-                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                if(Globals.Adjudicate == false)
+                                    await ValidatorProcessor.ProcessData(message, data, ipAddress);
                                 break;
                             case "status":
                                 Console.WriteLine(data);
@@ -385,33 +401,42 @@ namespace ReserveBlockCore.P2P
         public static async Task SendTaskAnswer(TaskAnswer taskAnswer)
         {
             var adjudicatorConnected = IsAdjConnected1;
+            Random rand = new Random();
+            int randNum = (rand.Next(1, 7) * 1000);
+
             if(adjudicatorConnected)
             {
                 for(var i = 1; i < 4; i++)
                 {
                     if(i != 1)
                     {
-                        await Task.Delay(1000);
+                        await Task.Delay(1000); // if failed on first attempt waits 1 seconds then tries again.
+                    }
+                    else
+                    {
+                        await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
                     }
                     try
                     {
-                        if (taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
+                        if(taskAnswer != null)
                         {
-                            if (hubAdjConnection1 != null)
+                            if (taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
                             {
-                                var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
-                                if (result)
+                                if (hubAdjConnection1 != null)
                                 {
-                                    Globals.LastTaskError = false;
-                                    Globals.LastTaskSentTime = DateTime.Now;
-                                    Globals.LastSentBlockHeight = taskAnswer.Block.Height;
-                                    break;
-                                }
-                                else
-                                {
-                                    Globals.LastTaskError = true;
-                                    //If response takes a while then it won't load.
-                                    //ValidatorLogUtility.Log("Block passed validation, but received a false result from adjudicator and failed.", "P2PClient.SendTaskAnswer()");
+                                    
+                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                    if (result)
+                                    {
+                                        Globals.LastTaskError = false;
+                                        Globals.LastTaskSentTime = DateTime.Now;
+                                        Globals.LastSentBlockHeight = taskAnswer.Block.Height;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Globals.LastTaskError = true;
+                                    }
                                 }
                             }
                         }
@@ -427,11 +452,12 @@ namespace ReserveBlockCore.P2P
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                     }
                 }
-                
-            }
-            else
-            {
-                //reconnect and then send
+
+                if(Globals.LastTaskError == true)
+                {
+                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+                }
+
             }
         }
 
@@ -542,11 +568,11 @@ namespace ReserveBlockCore.P2P
             catch { }
             finally
             {
+                Interlocked.Exchange(ref node.IsSendingBlock, 0);
                 if (node != null)
                 {
                     node.TotalDataSent += blockSize;
-                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
-                    Interlocked.Exchange(ref node.IsSendingBlock, 0);
+                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;                    
                 }
             }
 
@@ -637,7 +663,9 @@ namespace ReserveBlockCore.P2P
                     var account = AccountData.GetSingleAccount(scState.OwnerAddress);
                     if (account != null)
                     {
-                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                        BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                         PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                         signature = SignatureService.CreateSignature(scUID, privateKey, account.PublicKey);
@@ -750,7 +778,9 @@ namespace ReserveBlockCore.P2P
                     var account = AccountData.GetSingleAccount(scState.OwnerAddress);
                     if (account != null)
                     {
-                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                        BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                         PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                         signature = SignatureService.CreateSignature(scUID, privateKey, account.PublicKey);

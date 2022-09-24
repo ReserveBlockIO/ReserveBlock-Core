@@ -46,11 +46,15 @@ namespace ReserveBlockCore.Services
         {
             ValidatorService.ClearDuplicates();
         }
+
+        internal static void ClearOldValidatorDups()
+        {
+            ValidatorService.ClearOldValidator();
+        }
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
-            Console.WriteLine("Initializing Reserve Block Database...");
-            DbContext.Initialize();
+            Console.WriteLine("Initializing Reserve Block Database...");            
         }
 
         internal static void HDWalletCheck()
@@ -59,6 +63,16 @@ namespace ReserveBlockCore.Services
             if(check != null)
             {
                 Globals.HDWallet = true;
+            }
+        }
+
+        internal static void EncryptedWalletCheck()
+        {
+            var keystore = Keystore.GetKeystore();
+            if (keystore != null)
+            {
+                if(keystore.FindAll().Count() > 0)
+                    Globals.IsWalletEncrypted = true;
             }
         }
         internal static void SetBlockchainChainRef()
@@ -368,7 +382,9 @@ namespace ReserveBlockCore.Services
                 if(validator != null)
                 {
 
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                     var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);

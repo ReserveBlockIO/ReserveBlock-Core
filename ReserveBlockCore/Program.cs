@@ -65,6 +65,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
+            StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -141,6 +142,9 @@ namespace ReserveBlockCore
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
 
+            //Removes validator record from DB_Peers as its now within the wallet.
+            StartupService.ClearOldValidatorDups();
+
             Globals.StopAllTimers = true;
 
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
@@ -195,9 +199,6 @@ namespace ReserveBlockCore
 
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
-            
-
-            
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
@@ -266,8 +267,19 @@ namespace ReserveBlockCore
             {
                 var command = Console.ReadLine();
                 if(command == "/help" || 
-                    command == "/menu" || 
-                    command == "/printvars" || 
+                    command == "/menu" ||
+                    command == "/info" ||
+                    command == "/stopco" ||
+                    command == "/unlock" ||
+                    command == "/addpeer" ||
+                    command == "/val" ||
+                    command == "/mempool" ||
+                    command == "/debug" ||
+                    command == "1" ||
+                    command == "5" ||
+                    command == "6" ||
+                    command == "7" ||
+                    command == "/exit" ||
                     command == "/clear" || 
                     command == "/trillium")
                 {

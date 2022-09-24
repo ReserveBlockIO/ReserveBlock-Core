@@ -11,30 +11,30 @@ using System.Diagnostics;
 using System.Globalization;
 using LiteDB;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.Data
 {
-    internal class DbContext
+    internal static class DbContext
     {
         public static LiteDatabase DB { set; get; }// stores blocks
-        public static LiteDatabase DB_Assets { set; get; }// stores Assets
-        public static LiteDatabase DB_Queue { set; get; }// stores block queue
+        public static LiteDatabase DB_Assets { set; get; }// stores Assets        
         public static LiteDatabase DB_Wallet { set; get; } //stores wallet info
         public static LiteDatabase DB_HD_Wallet { set; get; } //stores HD wallet info
         public static LiteDatabase DB_Peers { set; get; } //stores peer info
         public static LiteDatabase DB_Banlist { set; get; } //stores banned peers 
         public static LiteDatabase DB_WorldStateTrei { get; set; } //stores blockchain world state trei
-        public static LiteDatabase DB_AccountStateTrei { get; set; } //stores blockchain world state trei
+        public static LiteDatabase DB_AccountStateTrei { get; set; } //stores blockchain account state trei
         public static LiteDatabase DB_SmartContractStateTrei { set; get; }// stores SC Data
         public static LiteDatabase DB_DecShopStateTrei { set; get; }// stores decentralized shop data
         public static LiteDatabase DB_Beacon { get; set; }
         public static LiteDatabase DB_Config { get; set; }
         public static LiteDatabase DB_DNR { get; set; }
+        public static LiteDatabase DB_Keystore { get; set; }
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
-        public const string RSRV_DB_ASSETS = @"rsrvassetdata.db";
-        public const string RSRV_DB_QUEUE_NAME = @"rsrvblkqueuedata.db";
+        public const string RSRV_DB_ASSETS = @"rsrvassetdata.db";        
         public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
         public const string RSRV_DB_HD_WALLET_NAME = @"rsrvhdwaldata.db";
         public const string RSRV_DB_BANLIST_NAME = @"rsrvbanldata.db";
@@ -46,6 +46,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_BEACON = @"rsrvbeacon.db";
         public const string RSRV_DB_CONFIG = @"rsrvconfig.db";
         public const string RSRV_DB_DNR = @"rsrvdnr.db";
+        public const string RSRV_DB_KEYSTORE = @"rsrvkeystore.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -73,9 +74,9 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DNR = "rsrv_dnr";
         public const string RSRV_DECSHOP = "rsrv_decshop";
         public const string RSRV_DECSHOPSTATE_TREI = "rsrv_decshopstate_trei";
+        public const string RSRV_KEYSTORE = "rsrv_keystore";
 
-
-        public static void Initialize()
+        static DbContext()
         {
             var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
             var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
@@ -111,8 +112,7 @@ namespace ReserveBlockCore.Data
                 bson => DateTimeOffset.ParseExact(bson, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
 
             DB = new LiteDatabase(new ConnectionString{Filename = path + RSRV_DB_NAME,Connection = ConnectionType.Direct,ReadOnly = false}, mapper);
-            DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
-            DB_Queue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_QUEUE_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });          
             DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_SmartContractStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SCSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
@@ -124,6 +124,7 @@ namespace ReserveBlockCore.Data
             DB_Beacon = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BEACON, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
 
             //DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS, mapper);
             //DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
@@ -139,6 +140,70 @@ namespace ReserveBlockCore.Data
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
 
             
+        }        
+        public static void BeginTrans()
+        {
+            if (Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) && hasTransaction)
+                return;
+            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = true;
+            
+            DB.BeginTrans();
+            DB_Assets.BeginTrans();
+            DB_Wallet.BeginTrans();
+            DB_HD_Wallet.BeginTrans();
+            DB_Peers.BeginTrans();
+            DB_Banlist.BeginTrans();
+            DB_WorldStateTrei.BeginTrans();
+            DB_AccountStateTrei.BeginTrans();
+            DB_SmartContractStateTrei.BeginTrans();
+            DB_DecShopStateTrei.BeginTrans();
+            DB_Beacon.BeginTrans();
+            DB_Config.BeginTrans();
+            DB_DNR.BeginTrans();
+            DB_Keystore.BeginTrans();
+        }
+        public static void Commit()
+        {
+            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
+                return;
+            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+
+            DB.Commit();
+            DB_Assets.Commit();
+            DB_Wallet.Commit();
+            DB_HD_Wallet.Commit();
+            DB_Peers.Commit();
+            DB_Banlist.Commit();
+            DB_WorldStateTrei.Commit();
+            DB_AccountStateTrei.Commit();
+            DB_SmartContractStateTrei.Commit();
+            DB_DecShopStateTrei.Commit();
+            DB_Beacon.Commit();
+            DB_Config.Commit();
+            DB_DNR.Commit();
+            DB_Keystore.Commit();
+        }
+
+        public static void Rollback()
+        {
+            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
+                return;
+            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+
+            DB.Rollback();
+            DB_Assets.Rollback();
+            DB_Wallet.Rollback();
+            DB_HD_Wallet.Rollback();
+            DB_Peers.Rollback();
+            DB_Banlist.Rollback();
+            DB_WorldStateTrei.Rollback();
+            DB_AccountStateTrei.Rollback();
+            DB_SmartContractStateTrei.Rollback();
+            DB_DecShopStateTrei.Rollback();
+            DB_Beacon.Rollback();
+            DB_Config.Rollback();
+            DB_DNR.Rollback();
+            DB_Keystore.Rollback();
         }
 
         public static void DeleteCorruptDb()
@@ -203,8 +268,7 @@ namespace ReserveBlockCore.Data
                 Directory.CreateDirectory(path);
             }
 
-            DB.Checkpoint();
-            DB_Queue.Checkpoint();
+            DB.Checkpoint();            
             DB_WorldStateTrei.Checkpoint();
             DB_AccountStateTrei.Checkpoint();
             DB_Wallet.Checkpoint();
@@ -217,6 +281,7 @@ namespace ReserveBlockCore.Data
             DB_Beacon.Checkpoint();
             DB_DNR.Checkpoint();
             DB_DecShopStateTrei.Checkpoint();
+            DB_Keystore.Checkpoint();
 
             //dispose connection to DB
             CloseDB();
@@ -240,8 +305,7 @@ namespace ReserveBlockCore.Data
             
             
 
-            File.Delete(path + RSRV_DB_NAME);
-            File.Delete(path + RSRV_DB_QUEUE_NAME);
+            File.Delete(path + RSRV_DB_NAME);            
             File.Delete(path + RSRV_DB_WSTATE_TREI);
             File.Delete(path + RSRV_DB_ASTATE_TREI);
             File.Delete(path + RSRV_DB_WALLET_NAME);
@@ -254,6 +318,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_BEACON);
             File.Delete(path + RSRV_DB_DNR);
             File.Delete(path + RSRV_DB_DECSHOPSTATE_TREI);
+            File.Delete(path + RSRV_DB_KEYSTORE);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -265,8 +330,7 @@ namespace ReserveBlockCore.Data
 
             //recreate DBs
             DB = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_NAME, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
-            DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
-            DB_Queue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_QUEUE_NAME, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });            
             DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_SmartContractStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SCSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
@@ -278,6 +342,7 @@ namespace ReserveBlockCore.Data
             DB_Beacon = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_BEACON, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
@@ -285,8 +350,7 @@ namespace ReserveBlockCore.Data
 
         public static void CloseDB()
         {
-            DB.Dispose();
-            DB_Queue.Dispose();
+            DB.Dispose();            
             DB_Wallet.Dispose();
             DB_Peers.Dispose();
             DB_Banlist.Dispose();
@@ -298,6 +362,7 @@ namespace ReserveBlockCore.Data
             DB_Beacon.Dispose();
             DB_DNR.Dispose();
             DB_DecShopStateTrei.Dispose();
+            DB_Keystore.Dispose();
         }
 
         public static async Task CheckPoint()
@@ -334,11 +399,6 @@ namespace ReserveBlockCore.Data
             catch { }
             try
             {
-                DB_Queue.Checkpoint();
-            }
-            catch { }
-            try
-            {
                 DB_Config.Checkpoint();
             }
             catch { }
@@ -365,6 +425,11 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB_DecShopStateTrei.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Keystore.Checkpoint();
             }
             catch { }
         }

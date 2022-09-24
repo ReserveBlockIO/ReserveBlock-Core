@@ -10,14 +10,14 @@ namespace ReserveBlockCore.Models
         public static WorldTrei GetWorldTreiRecord()
         {
             var wTrei = DbContext.DB_WorldStateTrei.GetCollection<WorldTrei>(DbContext.RSRV_WSTATE_TREI);
-            var worldState = wTrei.FindAll().FirstOrDefault();
+            var worldState = wTrei.FindOne(x => true);
             return worldState;
         }
 
         public static void UpdateWorldTrei(Block block)
         {
             var wTrei = GetWorldTrei();
-            var record = wTrei.FindAll().FirstOrDefault();
+            var record = wTrei.FindOne(x => true);
             if (record == null)
             {
                 var worldTrei = new WorldTrei

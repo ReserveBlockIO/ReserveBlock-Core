@@ -1,11 +1,20 @@
-﻿using ReserveBlockCore.Models;
+﻿using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security;
 
 namespace ReserveBlockCore
 {
     public static class Globals
     {
+        static Globals()
+        {
+            var peerDb = Peers.GetAll();
+            BannedIPs = new ConcurrentDictionary<string, bool>(
+                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+        }
+
         #region Timers
 
         public static Timer? heightTimer; //timer for getting height from other nodes
@@ -70,6 +79,9 @@ namespace ReserveBlockCore
         public static int BuildVer = 0;
         public static string CLIVersion = "";
         public static bool HDWallet = false;
+        public static bool IsWalletEncrypted = false;
+        public static SecureString EncryptPassword = new SecureString();
+        public static int PasswordClearTime = 10;
 
         #endregion
 
@@ -77,7 +89,7 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 8;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, bool> BannedIPs = new ConcurrentDictionary<string, bool>();
+        public static ConcurrentDictionary<string, bool> BannedIPs;
         public static long LastSentBlockHeight = -1;
         public static DateTime? AdjudicatorConnectDate = null;
         public static DateTime? LastTaskSentTime = null;
@@ -90,7 +102,9 @@ namespace ReserveBlockCore
 
         #region P2P Server Variables
 
-        public static ConcurrentDictionary<string, string> PeerList = new ConcurrentDictionary<string, string>();
+        public static ConcurrentDictionary<string, HubCallerContext> P2PPeerList = new ConcurrentDictionary<string, HubCallerContext>();        
+        public static ConcurrentDictionary<string, HubCallerContext> AdjPeerList = new ConcurrentDictionary<string, HubCallerContext>();
+        public static ConcurrentDictionary<string, MessageLock> MessageLocks = new ConcurrentDictionary<string, MessageLock>();
         public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();
 
         #endregion
@@ -103,12 +117,13 @@ namespace ReserveBlockCore
 
         public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
         public static List<TaskAnswer> RejectedTaskAnswerList = new List<TaskAnswer>();
-        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();
-
-        public static int ValConnectedCount = 0;
+        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();        
 
         #endregion
 
+        #region DbContext Variables
+        public static ConcurrentDictionary<int, bool> HasTransactionDict = new ConcurrentDictionary<int, bool>();
+        #endregion
 
     }
 }

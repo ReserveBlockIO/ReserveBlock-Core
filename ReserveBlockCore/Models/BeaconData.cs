@@ -41,6 +41,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError(ex.Message, "BeaconData.GetBeacon()");
                 return null;
             }
@@ -62,6 +63,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError(ex.Message, "BeaconData.GetBeaconData()");
                 return null;
             }

@@ -12,6 +12,7 @@ using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using ReserveBlockCore.Extensions;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Data
 {
@@ -31,6 +32,8 @@ namespace ReserveBlockCore.Data
             if (blocks.FindOne(x => true) == null)
             {
                 var genesisTime = DateTime.UtcNow;
+
+                DbContext.BeginTrans();
                 TransactionData.CreateGenesisTransction();
 
                 //Get all transaction in pool. This can be used to create multiple accounts to receive funds at start of chain
@@ -47,6 +50,8 @@ namespace ReserveBlockCore.Data
 
                 // clear mempool
                 trxPool.DeleteAllSafe();
+
+                DbContext.Commit();
             }
         }
         //Method needing validator functions still.
@@ -64,7 +69,7 @@ namespace ReserveBlockCore.Data
                     return null;
                 }
 
-                //Get tx's from Mempool
+                //Get tx's from Mempool                
                 var processedTxPool = TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
@@ -135,8 +140,9 @@ namespace ReserveBlockCore.Data
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
 
-                BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 //Add validator signature
@@ -162,7 +168,7 @@ namespace ReserveBlockCore.Data
                 
             }
             catch (Exception ex)
-            {
+            {                
                 ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
@@ -193,20 +199,15 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
                 return null;
             }
             
         }
-        public static LiteDB.ILiteCollection<Block> GetBlockQueue()
-        {
-            var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
-            blocks.EnsureIndexSafe(x => x.Height);
-            return blocks;
-        }
         public static Block GetGenesisBlock()
         {
-            var block = GetBlocks().FindAll().FirstOrDefault();
+            var block = GetBlocks().FindOne(x => true);
             return block;
         }
         public static Block GetBlockByHeight(long height)
@@ -343,7 +344,7 @@ namespace ReserveBlockCore.Data
             Console.WriteLine(" * Chain Validator : {0}", block.Validator);
 
             Console.WriteLine(" * Number Of Tx(s) : {0}", block.NumOfTx);
-            Console.WriteLine(" * Amout...........: {0}", block.TotalAmount);
+            Console.WriteLine(" * Amount...........: {0}", block.TotalAmount);
             Console.WriteLine(" * Reward          : {0}", block.TotalReward);
             Console.WriteLine(" * Size............: {0}", block.Size);
             Console.WriteLine(" * Craft Time      : {0}", block.BCraftTime);

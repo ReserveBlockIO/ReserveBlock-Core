@@ -215,6 +215,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.Message}", "ValidatorService.DoMasterNodeStop()");
             }
         }
@@ -266,6 +267,41 @@ namespace ReserveBlockCore.Services
 
         }
 
+        public static async void ClearOldValidator()
+        {
+            try
+            {
+                var validators = Validators.Validator.GetOldAll();
+                var validatorList = validators.FindAll().ToList();
+
+                if (validatorList.Count() > 0)
+                {
+                    var accounts = AccountData.GetAccounts();
+                    var myAccounts = accounts.FindAll().ToList();
+
+                    if (myAccounts.Count() > 0)
+                    {
+                        myAccounts.ForEach(x => {
+                            x.IsValidating = false;
+                        });
+
+                        accounts.UpdateSafe(myAccounts);
+                    }
+
+                    validators.DeleteAllSafe();
+
+                    Globals.ValidatorAddress = "";
+
+                    await P2PClient.DisconnectAdjudicator();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                DbContext.Rollback();
+            }
+        }
+
         public static async void ClearDuplicates()
         {
             try
@@ -309,7 +345,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-
+                DbContext.Rollback();
             }
         }
 

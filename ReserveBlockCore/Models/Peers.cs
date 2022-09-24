@@ -42,10 +42,35 @@ namespace ReserveBlockCore.Models
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError(ex.Message, "Peers.GetAll()");
                 return null;
             }
             
+        }
+
+        public static void BanPeer(string ipAddress)
+        {
+            Globals.BannedIPs[ipAddress] = true;
+            var peerDb = Peers.GetAll();
+            var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
+            if (peer != null)
+            {
+                peer.IsBanned = true;
+                peerDb.Update(peer);
+            }
+            else
+                peerDb.Insert(new Peers { PeerIP = ipAddress, IsBanned = true });
+
+            if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
+                context.Abort();
+
+
+            if (Globals.AdjPeerList.TryRemove(ipAddress, out var context2))
+                context2.Abort();
+
+            if (Globals.Nodes.TryRemove(ipAddress, out NodeInfo node))
+                node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public static void UpdatePeerLastReach(Peers incPeer)
