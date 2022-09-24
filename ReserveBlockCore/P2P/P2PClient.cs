@@ -402,7 +402,7 @@ namespace ReserveBlockCore.P2P
         {
             var adjudicatorConnected = IsAdjConnected1;
             Random rand = new Random();
-            int randNum = (rand.Next(1, 5) * 1000);
+            int randNum = (rand.Next(1, 7) * 1000);
 
             if(adjudicatorConnected)
             {
@@ -414,7 +414,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
-                        await Task.Delay(randNum);//wait random amount between 1-5 to not overload network all at once.
+                        await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
                     }
                     try
                     {

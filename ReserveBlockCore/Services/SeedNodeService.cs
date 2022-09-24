@@ -119,11 +119,28 @@ namespace ReserveBlockCore.Services
             {
                 NodeUrl = "https://seed1.rbx.network"
             });
-
             seedNodes.Add(new SeedNode
             {
                 NodeUrl = "https://seed2.rbx.network"
             });
+
+            //
+            //seedNodes.Add(new SeedNode
+            //{
+            //    NodeUrl = "https://marigold.rbx.network"
+            //});
+            //seedNodes.Add(new SeedNode
+            //{
+            //    NodeUrl = "https://daisy.rbx.network"
+            //});
+            //seedNodes.Add(new SeedNode
+            //{
+            //    NodeUrl = "https://tulip.rbx.network"
+            //});
+            //seedNodes.Add(new SeedNode
+            //{
+            //    NodeUrl = "https://peony.rbx.network"
+            //});
 
             SeedNodeList.AddRange(seedNodes);
 

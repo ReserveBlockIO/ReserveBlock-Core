@@ -922,7 +922,6 @@ namespace ReserveBlockCore.Commands
                     }
                 }
                 return output;
-
             }
             else
             {
@@ -948,6 +947,26 @@ namespace ReserveBlockCore.Commands
                 
             }
             return "Unexpected entry detected. Please try again.";
+        }
+
+        public static void GetLatestTx()
+        {
+            var transactions = TransactionData.GetAll();
+
+            if (transactions.Count() == 0)
+            {
+                Console.WriteLine("No TXs...");
+            }
+            else
+            {
+                var transactionsList = transactions.FindAll().OrderByDescending(x => x.Timestamp).Take(10).ToList();
+                foreach(var tx in transactionsList)
+                {
+                    var txStr = $"TxId: {tx.Hash} - From: {tx.FromAddress} - To: {tx.ToAddress} - Amount: {tx.Amount} - Time: {tx.Timestamp}";
+                    Console.WriteLine(txStr);
+                }
+                
+            }
         }
 
         public static void PrintBlock()

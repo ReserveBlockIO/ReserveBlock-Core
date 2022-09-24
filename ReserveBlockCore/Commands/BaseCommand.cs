@@ -191,7 +191,7 @@ namespace ReserveBlockCore.Commands
                     BlockchainData.PrintBlock(currentBlock);
                     break;
                 case "6": //Transaction History
-                    //Insert Method
+                    BaseCommandServices.GetLatestTx();
                     break;
                 case "7": //Account Info
                     AccountData.PrintWalletAccounts();
