@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Services
                         else
                         {
                             if(Globals.IsChainSynced)
-                                ConsoleWriterService.Output(($"Block ({block.Height}) was added from: {block.Validator} "));
+                                ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] was added from: [purple]{block.Validator}[/] "));
                             else
                                 Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
                         }                        
@@ -152,7 +152,10 @@ namespace ReserveBlockCore.Services
 
                 if (block.Version > 1)
                 {
-                    //run new block rules.
+                    //Run block version 2 rules
+                    var version2Result = await BlockVersionUtility.Version2Rules(block);
+                    if (!result)
+                        return result;
                 }
 
                 //ensures the timestamps being produced are correct
@@ -579,18 +582,12 @@ namespace ReserveBlockCore.Services
                     {
                         var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                         rejectBlock = txResult == false ? rejectBlock = true : false;
-                        if(rejectBlock)
+                        if (rejectBlock)
                         {
-                            // This can cause a loop if a bad tx is continuously submitted. 
-                            // Need to instead remove bad TX from block and reprocess block.
-                            // Might need to improve response from this method. Return more detail response as to why Validation failed other than false
-                            RemoveTxFromMempool(transaction);
+                            RemoveTxFromMempool(transaction);//this should not happen, but if client did fail to properly handle tx it will reject it here.
                         }
                     }
-                    else
-                    {
-                        //do nothing as its the coinbase fee
-                    }
+                    else { }//do nothing as its the coinbase fee
 
                     if (rejectBlock)
                         break;

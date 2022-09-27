@@ -18,6 +18,7 @@ namespace ReserveBlockCore.Data
     internal static class DbContext
     {
         public static LiteDatabase DB { set; get; }// stores blocks
+        public static LiteDatabase DB_Mempool { set; get; }// stores blocks
         public static LiteDatabase DB_Assets { set; get; }// stores Assets        
         public static LiteDatabase DB_Wallet { set; get; } //stores wallet info
         public static LiteDatabase DB_HD_Wallet { set; get; } //stores HD wallet info
@@ -34,6 +35,7 @@ namespace ReserveBlockCore.Data
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
+        public const string RSRV_DB_MEMPOOL = @"rsrvmempooldata.db";
         public const string RSRV_DB_ASSETS = @"rsrvassetdata.db";        
         public const string RSRV_DB_WALLET_NAME = @"rsrvwaldata.db";
         public const string RSRV_DB_HD_WALLET_NAME = @"rsrvhdwaldata.db";
@@ -112,6 +114,7 @@ namespace ReserveBlockCore.Data
                 bson => DateTimeOffset.ParseExact(bson, "o", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
 
             DB = new LiteDatabase(new ConnectionString{Filename = path + RSRV_DB_NAME,Connection = ConnectionType.Direct,ReadOnly = false}, mapper);
+            DB_Mempool = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_MEMPOOL, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
             DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });          
             DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
@@ -148,6 +151,7 @@ namespace ReserveBlockCore.Data
             Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = true;
             
             DB.BeginTrans();
+            DB_Mempool.BeginTrans();
             DB_Assets.BeginTrans();
             DB_Wallet.BeginTrans();
             DB_HD_Wallet.BeginTrans();
@@ -169,6 +173,7 @@ namespace ReserveBlockCore.Data
             Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
 
             DB.Commit();
+            DB_Mempool.Commit();
             DB_Assets.Commit();
             DB_Wallet.Commit();
             DB_HD_Wallet.Commit();
@@ -191,6 +196,7 @@ namespace ReserveBlockCore.Data
             Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
 
             DB.Rollback();
+            DB_Mempool.Rollback();
             DB_Assets.Rollback();
             DB_Wallet.Rollback();
             DB_HD_Wallet.Rollback();
@@ -268,7 +274,8 @@ namespace ReserveBlockCore.Data
                 Directory.CreateDirectory(path);
             }
 
-            DB.Checkpoint();            
+            DB.Checkpoint();
+            DB_Mempool.Checkpoint();
             DB_WorldStateTrei.Checkpoint();
             DB_AccountStateTrei.Checkpoint();
             DB_Wallet.Checkpoint();
@@ -302,10 +309,11 @@ namespace ReserveBlockCore.Data
             {
                 ErrorLogUtility.LogError("Error making backup!", "DbContext.MigrateDbNewChainRef()");
             }
-            
-            
 
-            File.Delete(path + RSRV_DB_NAME);            
+
+
+            File.Delete(path + RSRV_DB_NAME);
+            File.Delete(path + RSRV_DB_MEMPOOL);
             File.Delete(path + RSRV_DB_WSTATE_TREI);
             File.Delete(path + RSRV_DB_ASTATE_TREI);
             File.Delete(path + RSRV_DB_WALLET_NAME);
@@ -330,6 +338,7 @@ namespace ReserveBlockCore.Data
 
             //recreate DBs
             DB = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_NAME, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
+            DB_Mempool = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_MEMPOOL, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
             DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });            
             DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
@@ -350,7 +359,8 @@ namespace ReserveBlockCore.Data
 
         public static void CloseDB()
         {
-            DB.Dispose();            
+            DB.Dispose();
+            DB_Mempool.Dispose();
             DB_Wallet.Dispose();
             DB_Peers.Dispose();
             DB_Banlist.Dispose();
@@ -370,6 +380,11 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Mempool.Checkpoint();
             }
             catch { }
             try

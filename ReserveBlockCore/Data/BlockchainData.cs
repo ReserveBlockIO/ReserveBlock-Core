@@ -23,6 +23,8 @@ namespace ReserveBlockCore.Data
         public static string ChainRef { get; set; }
 
         public static int BlockVersion { get; set; }
+
+        #region Initialize Chain
         internal static async Task InitializeChain()
         {
             await StartupService.DownloadBlocks();
@@ -54,6 +56,146 @@ namespace ReserveBlockCore.Data
                 DbContext.Commit();
             }
         }
+
+        #endregion
+
+        #region Craft Block New
+        public static async Task<Block?> CraftNewBlock_New(string validator, int totalVals, string valAnswer)
+        {
+            try
+            {
+                await BlockValidatorService.ValidationDelay();
+
+                var startCraftTimer = DateTime.UtcNow;
+                var validatorAccount = AccountData.GetSingleAccount(validator);
+
+                if (validatorAccount == null)
+                {
+                    return null;
+                }
+
+                //Get tx's from Mempool                
+                var processedTxPool = TransactionData.ProcessTxPool();
+                var txPool = TransactionData.GetPool();
+
+                var lastBlock = Globals.LastBlock;
+                var height = lastBlock.Height + 1;
+
+                //Need to get master node validator.
+                var timestamp = TimeUtil.GetTime();
+                var transactionList = new List<Transaction>();
+
+                //var coinbase_tx = new Transaction
+                //{
+                //    Amount = 0,
+                //    ToAddress = validator,
+                //    Fee = 0.00M,
+                //    Timestamp = timestamp,
+                //    FromAddress = "Coinbase_TrxFees",
+                //    TransactionType = TransactionType.TX
+                //};
+
+                var coinbase_tx2 = new Transaction
+                {
+                    Amount = GetBlockReward(),
+                    ToAddress = validator,
+                    Fee = 0.00M,
+                    Timestamp = timestamp,
+                    FromAddress = "Coinbase_BlkRwd",
+                    TransactionType = TransactionType.TX
+                };
+
+                if (processedTxPool.Count() > 0)
+                {
+                    //commenting these out to test burning of fee.
+                    //coinbase_tx.Amount = GetTotalFees(processedTxPool);
+                    //coinbase_tx.Build();
+                    coinbase_tx2.Build();
+
+                    //transactionList.Add(coinbase_tx);
+                    transactionList.Add(coinbase_tx2);
+
+                    transactionList.AddRange(processedTxPool);
+
+                    //need to only delete processed mempool tx's in event new ones get added while creating block.
+                    //delete after block is added, so they can't  be re-added before block is over.
+                    foreach (var tx in processedTxPool)
+                    {
+                        var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
+                        if (txRec != null)
+                        {
+                            //txPool.DeleteManySafe(x => x.Hash == tx.Hash);
+                        }
+                    }
+                }
+                else
+                {
+                    coinbase_tx2.Build();
+                    transactionList.Add(coinbase_tx2);
+                }
+
+                var block = new Block
+                {
+                    Height = height,
+                    Timestamp = timestamp,
+                    Transactions = GiveOtherInfos(transactionList, height),
+                    Validator = validator,
+                    ChainRefId = ChainRef,
+                    TotalValidators = totalVals,
+                    ValidatorAnswer = valAnswer
+                };
+                block.Build();
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
+
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                //Add validator signature
+                block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
+
+                //block size
+                var str = JsonConvert.SerializeObject(block);
+                block.Size = str.Length;
+
+                // get craft time    
+                var endTimer = DateTime.UtcNow;
+                var buildTime = endTimer - startCraftTimer;
+                block.BCraftTime = buildTime.Milliseconds;
+
+                int craftCount = 1;
+                bool blockCrafted = false;
+                do
+                {
+                    blockCrafted = await BlockValidatorService.ValidateBlockForTask(block);
+                    if (blockCrafted == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        craftCount += 1; //add count to attempts and retry.
+                    }
+
+                } while (craftCount != 5); // this will try up to 5 times to craft a block
+
+                if (blockCrafted == true)
+                {
+                    return block;
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+            }
+            // start craft time
+            return null;
+        }
+
+        #endregion
+
+        #region Craft Block Deprecated
         //Method needing validator functions still.
         public static async Task<Block?> CraftNewBlock(string validator, int totalVals, string valAnswer)
         {
@@ -157,10 +299,23 @@ namespace ReserveBlockCore.Data
                 var buildTime = endTimer - startCraftTimer;
                 block.BCraftTime = buildTime.Milliseconds;
 
+                int craftCount = 1;
+                bool blockCrafted = false;
+                do
+                {
+                    blockCrafted = await BlockValidatorService.ValidateBlockForTask(block);
+                    if (blockCrafted == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        craftCount += 1; //add count to attempts and retry.
+                    }
 
-                var blockValResult = await BlockValidatorService.ValidateBlockForTask(block);
+                } while (craftCount != 5); // this will try up to 5 times to craft a block
 
-                if (blockValResult == true)
+                if (blockCrafted == true)
                 {
                     return block;
                 }
@@ -174,6 +329,8 @@ namespace ReserveBlockCore.Data
             // start craft time
             return null;
         }
+
+        #endregion
 
         public static decimal GetBlockReward()
         {
