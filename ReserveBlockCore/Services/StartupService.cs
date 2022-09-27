@@ -709,13 +709,14 @@ namespace ReserveBlockCore.Services
                         Thread.Sleep(new TimeSpan(0, 0, 120));
                     }
 
-                    Console.WriteLine("Attempting to connect to peers...");
+                    AnsiConsole.MarkupLine("[bold yellow]Attempting to connect to peers...[/]");
                     result = await P2PClient.ConnectToPeers();
 
                     if (result == true)
                     {
                         peersConnected = true;
-                        Console.WriteLine("Connected to Peers...");
+                        Console.WriteLine(" ");
+                        AnsiConsole.MarkupLine("[bold green]Connected to Peers...[/]");
                         var accounts = AccountData.GetAccounts();
                         var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
                         if (myAccount != null)

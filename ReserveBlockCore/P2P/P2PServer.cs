@@ -513,10 +513,12 @@ namespace ReserveBlockCore.P2P
                                 }
                                 return "TFVP";
                             }
-                            var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
+                            var dblspndChk = await TransactionData.DoubleSpendReplayCheck(txReceived);
                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                            var rating = await TransactionRatingService.GetTransactionRating(txReceived);
+                            txReceived.TransactionRating = rating;
 
-                            if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
+                            if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
                                 await P2PClient.SendTXToAdjudicator(txReceived);
@@ -581,21 +583,22 @@ namespace ReserveBlockCore.P2P
                     if (!isTxStale)
                     {
                         var txResult = await TransactionValidatorService.VerifyTX(txReceived);
-                        if (txResult == false)
+                        if (!txResult)
                         {
                             try
                             {
                                 mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                             }
-                            catch (Exception ex)
-                            {
-                                //delete failed
-                            }
+                            catch { }
+
                             return "TFVP";
                         }
-                        var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
+                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(txReceived);
                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
-                        if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
+                        var rating = await TransactionRatingService.GetTransactionRating(txReceived);
+                        txReceived.TransactionRating = rating;
+
+                        if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                         {
                             mempool.InsertSafe(txReceived);
                             await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
@@ -607,10 +610,8 @@ namespace ReserveBlockCore.P2P
                             {
                                 mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
                             }
-                            catch (Exception ex)
-                            {
-                                //delete failed
-                            }
+                            catch { }
+
                             return "TFVP"; //transaction failed verification process
                         }
                     }

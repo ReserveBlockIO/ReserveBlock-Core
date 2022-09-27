@@ -54,59 +54,60 @@ namespace ReserveBlockCore.Services
 
         public static async Task GetSeedNodePeers(string url)
         {
-            try
+            if(Globals.IsTestNet == false)
             {
-                using (HttpClient client = new HttpClient())
+                try
                 {
-
-                    string endpoint = url + "/api/V1/GetNodes";
-                    using (var Response = await client.GetAsync(endpoint))
+                    using (HttpClient client = new HttpClient())
                     {
-                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                        string endpoint = url + "/api/V1/GetNodes";
+                        using (var Response = await client.GetAsync(endpoint))
                         {
-                            string data = await Response.Content.ReadAsStringAsync();
-                            var peers = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
-                            var peerCount = peers.Count() - 1;
-                            for (var i = 0; i <= peerCount; i++)
+                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                             {
-                                var peer = peers[i];
-                                if(peer != "No Nodes")
+                                string data = await Response.Content.ReadAsStringAsync();
+                                var peers = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
+                                var peerCount = peers.Count() - 1;
+                                for (var i = 0; i <= peerCount; i++)
                                 {
-                                    Peers nPeer = new Peers
+                                    var peer = peers[i];
+                                    if (peer != "No Nodes")
                                     {
-                                        IsIncoming = false,
-                                        IsOutgoing = true,
-                                        PeerIP = peer,
-                                        FailCount = 0
-                                    };
+                                        Peers nPeer = new Peers
+                                        {
+                                            IsIncoming = false,
+                                            IsOutgoing = true,
+                                            PeerIP = peer,
+                                            FailCount = 0
+                                        };
 
-                                    var dbPeers = Peers.GetAll();
-                                    var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
-                                    if (peerExist == null)
-                                    {
-                                        dbPeers.InsertSafe(nPeer);
+                                        var dbPeers = Peers.GetAll();
+                                        var peerExist = dbPeers.FindOne(x => x.PeerIP == peer);
+                                        if (peerExist == null)
+                                        {
+                                            dbPeers.InsertSafe(nPeer);
+                                        }
+                                        else
+                                        {
+                                            peerExist.FailCount = 0;
+                                            dbPeers.UpdateSafe(peerExist);
+                                        }
                                     }
-                                    else
-                                    {
-                                        peerExist.FailCount = 0;
-                                        dbPeers.UpdateSafe(peerExist);
-                                    }
+
                                 }
-                                
                             }
-                        }
-                        else
-                        {
+                            else
+                            {
 
+                            }
                         }
                     }
                 }
-            }
-            catch(Exception ex)
-            {
+                catch (Exception ex)
+                {
 
+                }
             }
-            
         }
 
         public static List<SeedNode> SeedNodes()
@@ -124,7 +125,6 @@ namespace ReserveBlockCore.Services
                 NodeUrl = "https://seed2.rbx.network"
             });
 
-            //
             //seedNodes.Add(new SeedNode
             //{
             //    NodeUrl = "https://marigold.rbx.network"

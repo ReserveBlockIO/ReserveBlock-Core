@@ -354,7 +354,7 @@ namespace ReserveBlockCore.P2P
                 if (conResult != false)
                 {
                     NodeCount++;
-                    ConsoleWriterService.Output($"Connected to {NodeCount}/8");
+                    ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
                     peer.IsOutgoing = true;
                     peer.FailCount = 0; //peer responded. Reset fail count
                     peerDB.UpdateSafe(peer);
@@ -397,8 +397,136 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Task Answer
-        public static async Task SendTaskAnswer(TaskAnswer taskAnswer)
+        #region Send Winning Task **NEW
+
+        public static async Task SendWinningTask_New(TaskWinner taskWin)
+        {
+            var adjudicatorConnected = IsAdjConnected1;
+   
+            if (adjudicatorConnected)
+            {
+                for (var i = 1; i < 4; i++)
+                {
+                    if (i > 1)
+                    {
+                        await Task.Delay(500); // if failed after first attempt waits 0.5 seconds then tries again.
+                    }
+
+                    try
+                    {
+                        if (taskWin != null)
+                        {
+                            if (taskWin.WinningBlock.Height == Globals.LastBlock.Height + 1)
+                            {
+                                if (hubAdjConnection1 != null)
+                                {
+
+                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveWinningTaskBlock", args: new object?[] { taskWin });
+                                    if (result)
+                                    {
+                                        Globals.LastWinningTaskError = false;
+                                        Globals.LastWinningTaskSentTime = DateTime.Now;
+                                        Globals.LastWinningTaskBlockHeight = taskWin.WinningBlock.Height;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Globals.LastWinningTaskError = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Globals.LastTaskError = true;
+
+                        ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+
+                        string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskWin != null ?
+                            DateTime.Now.ToString() : "No Time", ex.Message);
+                        ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                    }
+                }
+
+                if (Globals.LastTaskError == true)
+                {
+                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+                }
+
+            }
+        }
+
+        #endregion
+
+        #region Send Task Answer **NEW
+        public static async Task SendTaskAnswer_New(TaskNumberAnswer taskAnswer)
+        {
+            var adjudicatorConnected = IsAdjConnected1;
+            Random rand = new Random();
+            int randNum = (rand.Next(1, 7) * 1000);
+
+            if (adjudicatorConnected)
+            {
+                for (var i = 1; i < 4; i++)
+                {
+                    if (i != 1)
+                    {
+                        await Task.Delay(1000); // if failed on first attempt waits 1 seconds then tries again.
+                    }
+                    else
+                    {
+                        await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
+                    }
+                    try
+                    {
+                        if (taskAnswer != null)
+                        {
+                            if (taskAnswer.NextBlockHeight == Globals.LastBlock.Height + 1)
+                            {
+                                if (hubAdjConnection1 != null)
+                                {
+
+                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                    if (result)
+                                    {
+                                        Globals.LastTaskError = false;
+                                        Globals.LastTaskSentTime = DateTime.Now;
+                                        Globals.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        Globals.LastTaskError = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Globals.LastTaskError = true;
+
+                        ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+
+                        string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
+                            taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                        ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                    }
+                }
+
+                if (Globals.LastTaskError == true)
+                {
+                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+                }
+
+            }
+        }
+
+        #endregion
+
+        #region Send Task Answer **Deprecated
+        public static async Task SendTaskAnswer_Deprecated(TaskAnswer taskAnswer)
         {
             var adjudicatorConnected = IsAdjConnected1;
             Random rand = new Random();
@@ -445,17 +573,17 @@ namespace ReserveBlockCore.P2P
                     {
                         Globals.LastTaskError = true;
 
-                        ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+                        ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer_Deprecated()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
                             taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
-                        ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                        ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer_Deprecated(TaskAnswer taskAnswer)");
                     }
                 }
 
                 if(Globals.LastTaskError == true)
                 {
-                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer_Deprecated()");
                 }
 
             }

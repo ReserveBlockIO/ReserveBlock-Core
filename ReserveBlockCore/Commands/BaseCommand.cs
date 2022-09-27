@@ -70,39 +70,58 @@ namespace ReserveBlockCore.Commands
                     TransactionData.PrintMemPool();
                     break;
                 case "/recp":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.ReconnectPeers();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/optlog":
                     Globals.OptionalLogging = true;
                     break;
                 case "/beacon":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.CreateBeacon();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/switchbeacon":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.SwitchBeaconState();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/unlock":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.UnlockWallet();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/addpeer":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.AddPeer();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/creatednr":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.CreateDnr();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/deletednr":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.DeleteDnr();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/transferdnr":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.TransferDnr();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/findbeacon":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     var beacons = P2PClient.GetBeacons();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     ConsoleWriterService.Output($"Beacons found {beacons.Result.Count()}");
                     break;
                 case "/trillium":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     //start trillium
-                    if(commandParameter == null)
+                    if (commandParameter == null)
                     {
                         Console.WriteLine("Please include a command paramter. Ex. '/trillium #reset'");
                     }
@@ -111,7 +130,7 @@ namespace ReserveBlockCore.Commands
                         var repl = new TrilliumRepl();
                         var result = repl.Run(commandParameter);
                     }
-                    
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
@@ -121,6 +140,7 @@ namespace ReserveBlockCore.Commands
                     await BaseCommandServices.CreateAddress();
                     break;
                 case "2hd": // Create HD Wallet
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     var mnemonic = BaseCommandServices.CreateHDWallet();
                     if(mnemonic.Contains("Unexpected"))
                     {
@@ -133,10 +153,11 @@ namespace ReserveBlockCore.Commands
                         Console.WriteLine($"Mnemonic: {mnemonic}");
                         Console.WriteLine("-----------------------Type /menu to return to menu-----------------------");
                     }
-                    
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "3": // Restore Account
-                    if(Globals.IsWalletEncrypted == true)
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    if (Globals.IsWalletEncrypted == true)
                     {
                         if(Globals.EncryptPassword.Length > 0)
                         {
@@ -157,14 +178,15 @@ namespace ReserveBlockCore.Commands
                         var restoredAccount = new Account().Restore(privKey);
                         AccountData.WalletInfo(restoredAccount);
                     }
-                    
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "3hd": // Create HD Wallet
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     var mnemonicRestore = BaseCommandServices.RestoreHDWallet();
                     Console.WriteLine("-----------------------HD Wallet Process Result------------------------");
                     Console.WriteLine($"Result: {mnemonicRestore}");
                     Console.WriteLine("----------------------Type /menu to return to menu---------------------");
-
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "4": //Send Coins
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
@@ -197,7 +219,8 @@ namespace ReserveBlockCore.Commands
                     AccountData.PrintWalletAccounts();
                     break;
                 case "8": //Startup Masternode
-                    if(Globals.StopAllTimers == false && Globals.BlocksDownloading == 0)
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    if (Globals.StopAllTimers == false && Globals.BlocksDownloading == 0)
                     {
                         if(Globals.IsWalletEncrypted == true)
                         {
@@ -213,10 +236,12 @@ namespace ReserveBlockCore.Commands
                     {
                         Console.WriteLine("Please wait to start. wallet is still activating features.");
                     }
-                    
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "9": //Print specific block
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.PrintBlock();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "10": //Enable API
                     Startup.APIEnabled = Startup.APIEnabled == false ? true : false;

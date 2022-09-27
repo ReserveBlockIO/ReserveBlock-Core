@@ -230,7 +230,97 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Block and Task Answer
+        #region Receive Block and Task Answer **NEW
+        public async Task<bool> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
+        {
+            var answerSize = JsonConvert.SerializeObject(taskResult).Length;
+            return await P2PServer.SignalRQueue(Context, answerSize, async () =>
+            {
+                if (Globals.BlocksDownloading == 0)
+                {
+                    if (Globals.Adjudicate)
+                    {
+                        //This will result in users not getting their answers chosen if they are not in list.
+                        var fortisPool = Globals.FortisPool.ToList();
+                        if (fortisPool.Exists(x => x.Address == taskResult.Address))
+                        {
+                            if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
+                            {
+                                var taskAnswerList = Globals.TaskAnswerList_New.ToList();
+                                var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
+                                if (!answerExist)
+                                {
+                                    taskResult.SubmitTime = DateTime.Now;
+                                    Globals.TaskAnswerList_New.Add(taskResult);
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                //RejectedTaskAnswerList.Add(taskResult);
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            //RejectedTaskAnswerList.Add(taskResult);
+                            return false;
+                        }
+                    }
+                }
+                return false;
+            });
+        }
+
+        #endregion
+
+        #region Receive Winning Task Block Answer **NEW
+        public async Task<bool> ReceiveWinningTaskBlock(TaskWinner winningTask)
+        {
+            if (winningTask.WinningBlock.Size > 1048576)
+                return false;
+            return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
+            {
+                if (Globals.BlocksDownloading == 0)
+                {
+                    if (Globals.Adjudicate)
+                    {
+                        //This will result in users not getting their answers chosen if they are not in list.
+                        var fortisPool = Globals.FortisPool.ToList();
+                        if (fortisPool.Exists(x => x.Address == winningTask.Address))
+                        {
+                            //if(true)
+                            var exist = Globals.TaskSelectedNumbers.Exists(x => x.Address == winningTask.Address);
+                            if(exist)
+                            {
+                                if (winningTask.WinningBlock.Height == Globals.LastBlock.Height + 1 &&
+                            winningTask.VerifySecret == Globals.VerifySecret)
+                                {
+                                    Globals.TaskWinnerList.Add(winningTask);
+                                }
+                                else
+                                {
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return false;
+            });
+        }
+
+        #endregion
+
+        #region Receive Block and Task Answer **Deprecated
         public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
         {
             if (taskResult.Block.Size > 1048576)
@@ -301,10 +391,12 @@ namespace ReserveBlockCore.P2P
                                         var txResult = await TransactionValidatorService.VerifyTX(transaction);
                                         if (txResult == true)
                                         {
-                                            var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                            var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                            var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                            transaction.TransactionRating = rating;
 
-                                            if (dblspndChk == false && isCraftedIntoBlock == false)
+                                            if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                             {
                                                 mempool.InsertSafe(transaction);
                                                 var txOutput = "";
@@ -350,10 +442,12 @@ namespace ReserveBlockCore.P2P
                                     var txResult = await TransactionValidatorService.VerifyTX(transaction);
                                     if (txResult == true)
                                     {
-                                        var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                        var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                        transaction.TransactionRating = rating;
 
-                                        if (dblspndChk == false && isCraftedIntoBlock == false)
+                                        if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                         {
                                             mempool.InsertSafe(transaction);
                                             var txOutput = "";
