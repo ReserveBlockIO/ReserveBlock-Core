@@ -54,7 +54,11 @@ namespace ReserveBlockCore.Services
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
-            Console.WriteLine("Initializing Reserve Block Database...");            
+            DbContext.Initialize();
+            Console.WriteLine("Initializing Reserve Block Database...");
+            var peerDb = Peers.GetAll();
+            Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
+                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
         }
 
         internal static void HDWalletCheck()
@@ -190,7 +194,7 @@ namespace ReserveBlockCore.Services
                         IsActive = true,
                         IsLeadAdjuidcator = true,
                         LastChecked = DateTime.UtcNow,
-                        NodeIP = "173.254.253.106",
+                        NodeIP = "162.248.14.123",
                         Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
                         UniqueName = "Trillium Adjudicator TestNet",
                         WalletVersion = Globals.CLIVersion

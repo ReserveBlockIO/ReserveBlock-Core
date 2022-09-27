@@ -611,7 +611,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height < 250000)
+            if(Globals.LastBlock.Height < Globals.BlockLock)
             {
                 await DoWork_Deprecated();
             }

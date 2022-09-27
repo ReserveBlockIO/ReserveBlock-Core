@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Utilities
         {
             int blockVersion = 1;
 
-            if(height > 1000000)
+            if(height > Globals.BlockLock)
             {
                 blockVersion = 2;
             }

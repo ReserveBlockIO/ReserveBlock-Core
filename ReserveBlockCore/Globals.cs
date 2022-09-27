@@ -10,9 +10,9 @@ namespace ReserveBlockCore
     {
         static Globals()
         {
-            var peerDb = Peers.GetAll();
-            BannedIPs = new ConcurrentDictionary<string, bool>(
-                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+            //var peerDb = Peers.GetAll();
+            //BannedIPs = new ConcurrentDictionary<string, bool>(
+            //    peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
         }
 
         #region Timers
@@ -26,6 +26,7 @@ namespace ReserveBlockCore
 
         #region Global General Variables
 
+        public static int BlockLock = 250000;
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>();
         public static List<Validators> InactiveValidators = new List<Validators>();

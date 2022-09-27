@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Nodes
                     switch(taskQuestion.TaskType)
                     {
                         case "rndNum":
-                            if(Globals.LastBlock.Height < 250000)
+                            if(Globals.LastBlock.Height < Globals.BlockLock)
                             {
                                 RandomNumberTask_Deprecated();
                             }
