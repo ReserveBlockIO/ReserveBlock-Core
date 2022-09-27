@@ -10,9 +10,9 @@ namespace ReserveBlockCore
     {
         static Globals()
         {
-            var peerDb = Peers.GetAll();
-            BannedIPs = new ConcurrentDictionary<string, bool>(
-                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+            //var peerDb = Peers.GetAll();
+            //BannedIPs = new ConcurrentDictionary<string, bool>(
+            //    peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
         }
 
         #region Timers

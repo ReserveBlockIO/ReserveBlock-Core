@@ -54,7 +54,11 @@ namespace ReserveBlockCore.Services
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
-            Console.WriteLine("Initializing Reserve Block Database...");            
+            DbContext.Initialize();
+            Console.WriteLine("Initializing Reserve Block Database...");
+            var peerDb = Peers.GetAll();
+            Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
+                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
         }
 
         internal static void HDWalletCheck()
