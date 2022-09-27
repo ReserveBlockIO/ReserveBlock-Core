@@ -222,7 +222,7 @@ namespace ReserveBlockCore.Commands
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     if (Globals.StopAllTimers == false && Globals.BlocksDownloading == 0)
                     {
-                        if(Globals.IsWalletEncrypted == true)
+                        if(Globals.IsWalletEncrypted == false)
                         {
                             ValidatorService.DoValidate();
                         }

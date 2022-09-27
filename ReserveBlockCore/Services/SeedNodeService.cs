@@ -108,6 +108,29 @@ namespace ReserveBlockCore.Services
 
                 }
             }
+            if(Globals.IsTestNet == true)
+            {
+                //manually add testnet IPs
+                Peers nPeer = new Peers
+                {
+                    IsIncoming = false,
+                    IsOutgoing = true,
+                    PeerIP = "162.248.14.123",
+                    FailCount = 0
+                };
+
+                var dbPeers = Peers.GetAll();
+                var peerExist = dbPeers.FindOne(x => x.PeerIP == nPeer.PeerIP);
+                if (peerExist == null)
+                {
+                    dbPeers.InsertSafe(nPeer);
+                }
+                else
+                {
+                    peerExist.FailCount = 0;
+                    dbPeers.UpdateSafe(peerExist);
+                }
+            }
         }
 
         public static List<SeedNode> SeedNodes()

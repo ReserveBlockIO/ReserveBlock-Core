@@ -329,7 +329,7 @@ namespace ReserveBlockCore.P2P
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace($":{Globals.Port}", "")))
                 .Union(Globals.BannedIPs.Keys);
 
             Random rnd = new Random();

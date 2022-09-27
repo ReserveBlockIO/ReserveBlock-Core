@@ -190,7 +190,7 @@ namespace ReserveBlockCore.Services
                         IsActive = true,
                         IsLeadAdjuidcator = true,
                         LastChecked = DateTime.UtcNow,
-                        NodeIP = "173.254.253.106",
+                        NodeIP = "162.248.14.123",
                         Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
                         UniqueName = "Trillium Adjudicator TestNet",
                         WalletVersion = Globals.CLIVersion
