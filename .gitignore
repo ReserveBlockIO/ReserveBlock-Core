@@ -290,3 +290,4 @@ ReserveBlockCore/DatabasesTestNet/
 ReserveBlockCore/TrilliumTestNet/Submissions/
 ReserveBlockCore/AssetsTestNet/
 ReserveBlockCore/DBs/
+ReserveBlockCore/Properties/launchSettings.json

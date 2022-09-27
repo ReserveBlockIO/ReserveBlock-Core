@@ -487,7 +487,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
                                     if (result)
                                     {
                                         Globals.LastTaskError = false;
