@@ -79,6 +79,7 @@ namespace ReserveBlockCore.P2P
                                                 validator.UniqueName = uName;
                                                 validator.IpAddress = peerIP;
                                                 validator.WalletVersion = walletVersion;
+                                                keepValConnected = true;
                                                 ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
                                             }
                                             else
@@ -279,8 +280,8 @@ namespace ReserveBlockCore.P2P
         {
             if (winningTask.WinningBlock.Size > 1048576)
                 return false;
-            return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
-            {
+            //return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
+            //{
                 if (Globals.BlocksDownloading == 0)
                 {
                     if (Globals.Adjudicate)
@@ -297,6 +298,7 @@ namespace ReserveBlockCore.P2P
                             winningTask.VerifySecret == Globals.VerifySecret)
                                 {
                                     Globals.TaskWinnerList.Add(winningTask);
+                                    return true;
                                 }
                                 else
                                 {
@@ -315,7 +317,7 @@ namespace ReserveBlockCore.P2P
                     }
                 }
                 return false;
-            });
+            //});
         }
 
         #endregion
