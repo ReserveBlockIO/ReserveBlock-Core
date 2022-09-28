@@ -256,7 +256,13 @@ namespace ReserveBlockCore.P2P
                 Globals.AdjudicatorConnectDate = DateTime.UtcNow;
 
                 hubAdjConnection1.On<string, string>("GetAdjMessage", async (message, data) => {
-                    if (message == "task" || message == "taskResult" || message == "fortisPool" || message == "status" || message == "tx" || message == "badBlock")
+                    if (message == "task" || 
+                    message == "taskResult" ||
+                    message == "fortisPool" || 
+                    message == "status" || 
+                    message == "tx" || 
+                    message == "badBlock" || 
+                    message == "sendWinningBlock")
                     {
                         switch(message)
                         {
@@ -264,6 +270,9 @@ namespace ReserveBlockCore.P2P
                                 await ValidatorProcessor.ProcessData(message, data, ipAddress);
                                 break;
                             case "taskResult":
+                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                break;
+                            case "sendWinningBlock":
                                 await ValidatorProcessor.ProcessData(message, data, ipAddress);
                                 break;
                             case "fortisPool":
