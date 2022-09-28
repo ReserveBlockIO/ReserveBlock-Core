@@ -777,6 +777,22 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetTaskAnswersListNew")]
+        public async Task<string> GetTaskAnswersListNew()
+        {
+            string output = "";
+            var taskAnswerList = Globals.TaskAnswerList_New.Select(x => new {
+                Address = x.Address,
+                Answer = x.Answer,
+                NextBlockHeight = x.NextBlockHeight,
+                SubmitTime = x.SubmitTime
+
+            });
+            output = JsonConvert.SerializeObject(taskAnswerList);
+
+            return output;
+        }
+
         [HttpGet("GetMasternodesSent")]
         public async Task<string> GetMasternodesSent()
         {

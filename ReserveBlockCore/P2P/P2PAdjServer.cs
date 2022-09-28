@@ -79,6 +79,7 @@ namespace ReserveBlockCore.P2P
                                                 validator.UniqueName = uName;
                                                 validator.IpAddress = peerIP;
                                                 validator.WalletVersion = walletVersion;
+                                                keepValConnected = true;
                                                 ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
                                             }
                                             else

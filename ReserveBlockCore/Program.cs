@@ -107,8 +107,7 @@ namespace ReserveBlockCore
                 });
             }
 
-            //This is for adjudicator start.
-            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+            
 
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();
@@ -119,7 +118,10 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
-            
+
+            //This is for adjudicator start.
+            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
 

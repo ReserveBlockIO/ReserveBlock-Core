@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Services
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(180),
+            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(60),
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(240),
@@ -337,7 +337,7 @@ namespace ReserveBlockCore.Services
                             {
                                 //
                                 FirstRun = true;
-                                Console.WriteLine("Doing the work");
+                                Console.WriteLine("Doing the work **New**");
                             }
                             //get last block timestamp and current timestamp if they are more than 1 mins apart start new task
                             var lastBlockSubmitUnixTime = Globals.LastAdjudicateTime;
