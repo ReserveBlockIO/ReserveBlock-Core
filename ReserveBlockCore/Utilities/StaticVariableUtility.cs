@@ -39,6 +39,8 @@ namespace ReserveBlockCore.Utilities
             var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
             var isWalletEncrypted = Globals.IsWalletEncrypted;
+            var lastWinningTaskError = Globals.LastWinningTaskError.ToString();
+            var lastWinningTaskSentTime = Globals.LastWinningTaskSentTime.ToString();
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
@@ -60,6 +62,8 @@ namespace ReserveBlockCore.Utilities
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
+            var lastWinningTaskErrorText = "*Only for Validators* Last Winning task Error?: " + lastWinningTaskError;
+            var lastWinningTaskSentTimeText = "*Only for Validators* Last Winng Task Sent Time: " + lastWinningTaskSentTime;
             var lastTaskSentText = "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + lastTaskSent;
             var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
             var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
@@ -124,6 +128,10 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastTaskBlockHeightText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastTaskErrorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastWinningTaskErrorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastWinningTaskSentTimeText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
             nodes.Values.ToList().ForEach(x => {

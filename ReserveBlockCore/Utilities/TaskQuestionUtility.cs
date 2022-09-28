@@ -14,6 +14,7 @@ namespace ReserveBlockCore.Utilities
                 {
                     case "rndNum":
                         taskQuestion.TaskAnswer = GenerateRandomNumber().ToString();
+                        taskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
                         break;
                     case "pickCol":
                         break;

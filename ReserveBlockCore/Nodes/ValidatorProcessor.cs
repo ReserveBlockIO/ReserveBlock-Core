@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Nodes
 
                 if(message == "sendWinningBlock")
                 {
-                    var verifySecret = JsonConvert.DeserializeObject<string>(data);
+                    var verifySecret = data;
                     var taskWin = new TaskWinner();
                     var fortisPool = Globals.FortisPool.ToList();
                     var currentTaskAns = Globals.CurrentTaskNumberAnswer;
@@ -51,7 +51,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
                             taskWin.Address = currentTaskAns.Address;
                             taskWin.WinningBlock = block;
-                            //await P2PClient.SendTaskAnswer_Deprecated(taskAnswer);
+                            await P2PClient.SendWinningTask_New(taskWin);
                         }
                         else
                         {

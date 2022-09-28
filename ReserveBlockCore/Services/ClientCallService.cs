@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Services
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(180),
+            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(60),
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(240),
@@ -337,7 +337,7 @@ namespace ReserveBlockCore.Services
                             {
                                 //
                                 FirstRun = true;
-                                Console.WriteLine("Doing the work");
+                                Console.WriteLine("Doing the work **New**");
                             }
                             //get last block timestamp and current timestamp if they are more than 1 mins apart start new task
                             var lastBlockSubmitUnixTime = Globals.LastAdjudicateTime;
@@ -391,7 +391,9 @@ namespace ReserveBlockCore.Services
                                                         var fortisRec = Globals.FortisPool.Where(x => x.Address == chosen.Address).FirstOrDefault();
                                                         if(fortisRec != null)
                                                         {
-                                                            winners.Add(fortisRec);
+                                                            var alreadyIn = winners.Exists(x => x.Address == chosen.Address);
+                                                            if(!alreadyIn)
+                                                                winners.Add(fortisRec);
                                                         }
                                                     }
 
@@ -401,8 +403,20 @@ namespace ReserveBlockCore.Services
                                                     foreach (var fortis in winners)
                                                     {
                                                         //Give winners time to respond - exactly 3 seconds in total with 100ms response times per.
-                                                        await _hubContext.Clients.Client(fortis.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret).WaitAsync(new TimeSpan(0,0,0,0,100));
+                                                        try
+                                                        {
+                                                            await _hubContext.Clients.Client(fortis.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
+                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 100));
+                                                        }
+                                                        catch(Exception ex)
+                                                        {
+
+                                                        }
+                                                        
                                                     }
+
+                                                    //Give users time for responses to complete. They have 100ms + 3 secs here. Max 30 responses coming
+                                                    await Task.Delay(3000);
 
                                                     var winningBlocks = Globals.TaskWinnerList;
                                                     var winnersBlock = winningBlocks.Where(x => x.Address == taskWinner.Address).FirstOrDefault();
@@ -439,19 +453,18 @@ namespace ReserveBlockCore.Services
                                                             if (Globals.TaskAnswerList_New.Count() > 0)
                                                             {
                                                                 Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                if(Globals.TaskAnswerList.Count() > 0)
-                                                                {
-                                                                    Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                                }
-                                                                if(Globals.TaskSelectedNumbers.Count() >0)
-                                                                {
-                                                                    Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                }
-                                                                if(Globals.TaskWinnerList.Count() > 0)
-                                                                {
-                                                                    Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);                                                                    
-                                                                }
-
+                                                            }
+                                                            if (Globals.TaskAnswerList.Count() > 0)
+                                                            {
+                                                                Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                            }
+                                                            if (Globals.TaskSelectedNumbers.Count() > 0)
+                                                            {
+                                                                Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                            }
+                                                            if (Globals.TaskWinnerList.Count() > 0)
+                                                            {
+                                                                Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
                                                             }
 
                                                             Thread.Sleep(100);
@@ -517,21 +530,22 @@ namespace ReserveBlockCore.Services
                                                                 taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
                                                                 await ProcessFortisPool_New(taskAnswerList);
                                                                 ConsoleWriterService.Output("Fortis Pool Processed");
+
                                                                 if (Globals.TaskAnswerList_New.Count() > 0)
                                                                 {
                                                                     Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                    if (Globals.TaskAnswerList.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                                    }
-                                                                    if (Globals.TaskSelectedNumbers.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                    }
-                                                                    if (Globals.TaskWinnerList.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
-                                                                    }
+                                                                }
+                                                                if (Globals.TaskAnswerList.Count() > 0)
+                                                                {
+                                                                    Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                                }
+                                                                if (Globals.TaskSelectedNumbers.Count() > 0)
+                                                                {
+                                                                    Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                                }
+                                                                if (Globals.TaskWinnerList.Count() > 0)
+                                                                {
+                                                                    Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
                                                                 }
 
                                                                 Thread.Sleep(100);

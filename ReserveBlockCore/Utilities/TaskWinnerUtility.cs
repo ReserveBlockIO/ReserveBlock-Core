@@ -99,6 +99,7 @@ namespace ReserveBlockCore.Utilities
                     answerCount = taskAnswerList.Count() >= 30 ? 30 : taskAnswerList.Count();
 
                     GetWinningNodes(taskAnswerList, answer, answerCount);
+                    Globals.TaskSelectedNumbers.Add(winner);
                     return winner;
                 }
                 else
@@ -133,6 +134,7 @@ namespace ReserveBlockCore.Utilities
                         answerCount = taskAnswerList.Count() >= 30 ? 30 : taskAnswerList.Count();
 
                         GetWinningNodes(validTaskAnswerList, answer, answerCount);
+                        Globals.TaskSelectedNumbers.Add(winner);
                         return winner;
                     }
                     else
@@ -163,15 +165,18 @@ namespace ReserveBlockCore.Utilities
                 }
             };
 
-            for (var i = 0; i < 30; i++)
+            if(numChoices > 0)
             {
-                int nextClosest = answerList.Aggregate((x, y) => Math.Abs(x - answer) < Math.Abs(y - answer) ? x : y);
-                var NextWinner = taskAnswerList.Where(x => x.Answer == nextClosest.ToString()).OrderBy(x => x.SubmitTime).FirstOrDefault();
-                if(NextWinner != null)
+                for (var i = 0; i < numChoices; i++)
                 {
-                    chosenOnes.Add(NextWinner);
-                    taskAnswerList.Remove(NextWinner);
-                    answerList.Remove(nextClosest);
+                    int nextClosest = answerList.Aggregate((x, y) => Math.Abs(x - answer) < Math.Abs(y - answer) ? x : y);
+                    var NextWinner = taskAnswerList.Where(x => x.Answer == nextClosest.ToString()).OrderBy(x => x.SubmitTime).FirstOrDefault();
+                    if (NextWinner != null)
+                    {
+                        chosenOnes.Add(NextWinner);
+                        taskAnswerList.Remove(NextWinner);
+                        answerList.Remove(nextClosest);
+                    }
                 }
             }
 
