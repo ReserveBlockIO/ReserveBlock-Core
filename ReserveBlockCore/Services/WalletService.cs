@@ -163,7 +163,7 @@ namespace ReserveBlockCore.Services
 
             try
             {
-                var result = VerifyTX(nTx, account);
+                var result = await VerifyTX(nTx, account);
                 if(result == true)
                 {
                     output = "Success! TxId: " + txHash;
@@ -182,7 +182,7 @@ namespace ReserveBlockCore.Services
             return output;
         }
 
-        private static bool VerifyTX(Transaction txRequest, Account account)
+        private static async Task<bool> VerifyTX(Transaction txRequest, Account account)
         {
             bool txResult = false;
 
@@ -230,7 +230,11 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            
+            if(txRequest.TransactionRating == null)
+            {
+                var rating = await TransactionRatingService.GetTransactionRating(txRequest);
+                txRequest.TransactionRating = rating;
+            }
 
             if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
             {
