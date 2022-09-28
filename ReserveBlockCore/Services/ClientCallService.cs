@@ -401,8 +401,19 @@ namespace ReserveBlockCore.Services
                                                     foreach (var fortis in winners)
                                                     {
                                                         //Give winners time to respond - exactly 3 seconds in total with 100ms response times per.
-                                                        await _hubContext.Clients.Client(fortis.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret).WaitAsync(new TimeSpan(0,0,0,0,100));
+                                                        try
+                                                        {
+                                                            await _hubContext.Clients.Client(fortis.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
+                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 100));
+                                                        }
+                                                        catch(Exception ex)
+                                                        {
+
+                                                        }
+                                                        
                                                     }
+
+                                                    await Task.Delay(5000);
 
                                                     var winningBlocks = Globals.TaskWinnerList;
                                                     var winnersBlock = winningBlocks.Where(x => x.Address == taskWinner.Address).FirstOrDefault();

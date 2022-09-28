@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Services
                 {
                     //Run block version 2 rules
                     var version2Result = await BlockVersionUtility.Version2Rules(block);
-                    if (!result)
+                    if (!version2Result)
                         return result;
                 }
 

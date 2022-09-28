@@ -99,6 +99,7 @@ namespace ReserveBlockCore.Utilities
                     answerCount = taskAnswerList.Count() >= 30 ? 30 : taskAnswerList.Count();
 
                     GetWinningNodes(taskAnswerList, answer, answerCount);
+                    Globals.TaskSelectedNumbers.Add(winner);
                     return winner;
                 }
                 else
@@ -133,6 +134,7 @@ namespace ReserveBlockCore.Utilities
                         answerCount = taskAnswerList.Count() >= 30 ? 30 : taskAnswerList.Count();
 
                         GetWinningNodes(validTaskAnswerList, answer, answerCount);
+                        Globals.TaskSelectedNumbers.Add(winner);
                         return winner;
                     }
                     else
