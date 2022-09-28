@@ -121,8 +121,9 @@ namespace ReserveBlockCore.Data
                 var txs = pool.FindAll().ToList();
                 foreach(var tx in txs)
                 {
+                    var rating = tx.TransactionRating != null ? tx.TransactionRating.ToString() : "NA";
                     var txString = "From: " + tx.FromAddress + " | To: " + tx.ToAddress + " | Amount: " + tx.Amount.ToString() + " | Fee: " + tx.Fee.ToString()
-                        + " | TX ID: " + tx.Hash + " | Timestamp: " + tx.Timestamp.ToString() + " | Rating: " + tx.TransactionRating != null ? tx.TransactionRating.ToString() : "NA";
+                        + " | TX ID: " + tx.Hash + " | Timestamp: " + tx.Timestamp.ToString() + " | Rating: " + rating;
                     Console.WriteLine(txString);
                 }
             }
