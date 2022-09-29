@@ -49,7 +49,6 @@ namespace ReserveBlockCore.Services
                         }
                         else if (feature.FeatureName == FeatureName.Evolving)
                         {
-                            
                             List<EvolvingFeature> evolve = new List<EvolvingFeature>();
                             var myArray = ((object[])feature.FeatureFeatures).ToList();
                             
@@ -80,7 +79,8 @@ namespace ReserveBlockCore.Services
                                 //    SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
                                 //};
 
-                                var evolveDict = (EvolvingFeature)myArray[count];
+                                var evolveDict = myArray[count] as EvolvingFeature;
+                                
                                 SmartContractAsset evoAsset = new SmartContractAsset();
                                 if (evolveDict.SmartContractAsset != null)
                                 {
@@ -224,7 +224,11 @@ namespace ReserveBlockCore.Services
 
                                 var counter = 0;
                                 myArray.ForEach(x => {
-                                    var evolveDict = (EvolvingFeature)myArray[count];
+                                    var evolveDict = myArray[counter] as EvolvingFeature;
+                                    if(evolveDict != null)
+                                    {
+
+                                    }
                                     SmartContractAsset evoAsset = new SmartContractAsset();
                                     if (evolveDict.SmartContractAsset != null)
                                     {
@@ -284,7 +288,7 @@ namespace ReserveBlockCore.Services
 
                                 var counter = 0;
                                 myArray.ForEach(x => {
-                                    var multiAssetDict = (MultiAssetFeature)myArray[count];
+                                    var multiAssetDict = myArray[counter] as MultiAssetFeature;
                                     MultiAssetFeature maFeature = new MultiAssetFeature
                                     {
                                         FileName = multiAssetDict.FileName.ToString(),
