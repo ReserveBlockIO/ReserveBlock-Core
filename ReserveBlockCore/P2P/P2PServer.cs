@@ -522,6 +522,10 @@ namespace ReserveBlockCore.P2P
                             {
                                 mempool.InsertSafe(txReceived);
                                 await P2PClient.SendTXToAdjudicator(txReceived);
+                                if(Globals.Adjudicate)
+                                {
+                                    //send message to peers
+                                }
                                 return "ATMP";//added to mempool
                             }
                             else

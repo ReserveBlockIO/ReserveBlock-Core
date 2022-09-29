@@ -252,8 +252,14 @@ namespace ReserveBlockCore.Services
                                     if (mempoolTx.Count() > 0)
                                     {
                                         mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
+                                        try
+                                        {
+                                            Globals.BroadcastedTrxList.RemoveAll(x => x.Hash == localTransaction.Hash);
+                                        }
+                                        catch { };
                                     }
                                 }
+
 
                                 //Adds receiving TX to wallet
                                 var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
