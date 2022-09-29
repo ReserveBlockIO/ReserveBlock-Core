@@ -5,10 +5,12 @@ using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System.Data.Common;
 using System.Globalization;
 using System.IO.Compression;
 using System.Numerics;
 using System.Security;
+using System.Transactions;
 
 namespace ReserveBlockCore.Services
 {
@@ -36,7 +38,7 @@ namespace ReserveBlockCore.Services
             _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(60),
                 TimeSpan.FromSeconds(2));
 
-            _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(240),
+            _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
                 TimeSpan.FromMinutes(5));
 
             _blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
@@ -138,6 +140,64 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
+
+                //rebroadcast TXs
+                var pool = TransactionData.GetPool();
+                var mempool = TransactionData.GetMempool();
+                var blockHeight = Globals.LastBlock.Height;
+                if(mempool != null)
+                {
+                    if (mempool.Count() > 0)
+                    {
+                        foreach(var tx in mempool)
+                        {
+                            var heightDiff = (blockHeight - tx.Height);
+                            if (heightDiff > 10)
+                            {
+                                var txResult = await TransactionValidatorService.VerifyTX(tx);
+                                if (txResult == true)
+                                {
+                                    var dblspndChk = await TransactionData.DoubleSpendReplayCheck(tx);
+                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(tx);
+
+                                    if (dblspndChk == false && isCraftedIntoBlock == false && tx.TransactionRating != TransactionRating.F)
+                                    {
+                                        var txOutput = "";
+                                        txOutput = JsonConvert.SerializeObject(tx);
+                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);//sends messages to all in fortis pool
+                                        Globals.BroadcastedTrxList.Add(tx);
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            DbContext.Rollback();
+                                            //delete failed
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        DbContext.Rollback();
+                                        //delete failed
+                                    }
+                                }
+
+                            }
+                        }
+                }
+                }
+                
             }
             catch (Exception ex)
             {
@@ -258,7 +318,7 @@ namespace ReserveBlockCore.Services
                                                             Globals.AdjudicateLock = false;
                                                             Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                            Globals.BroadcastedTrxList = new List<Transaction>();
+                                                            Globals.BroadcastedTrxList = new List<Models.Transaction>();
                                                         }
                                                         else
                                                         {
@@ -355,6 +415,7 @@ namespace ReserveBlockCore.Services
 
                                     if (taskAnswerList.Count() > 0)
                                     {
+                                        await ProcessFortisPool_New(taskAnswerList);
                                         ConsoleWriterService.Output("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
                                         bool findWinner = true;
                                         int taskFindCount = 0;
@@ -448,7 +509,7 @@ namespace ReserveBlockCore.Services
                                                             nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
 
                                                             taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                            await ProcessFortisPool_New(taskAnswerList);
+                                                            //await ProcessFortisPool_New(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
                                                             if (Globals.TaskAnswerList_New.Count() > 0)
                                                             {
@@ -479,7 +540,7 @@ namespace ReserveBlockCore.Services
                                                             Globals.AdjudicateLock = false;
                                                             Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                            Globals.BroadcastedTrxList = new List<Transaction>();
+                                                            Globals.BroadcastedTrxList = new List<Models.Transaction>();
 
                                                         }
                                                         else
@@ -528,7 +589,7 @@ namespace ReserveBlockCore.Services
                                                                 nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
 
                                                                 taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                                await ProcessFortisPool_New(taskAnswerList);
+                                                                //await ProcessFortisPool_New(taskAnswerList);
                                                                 ConsoleWriterService.Output("Fortis Pool Processed");
 
                                                                 if (Globals.TaskAnswerList_New.Count() > 0)
@@ -560,7 +621,7 @@ namespace ReserveBlockCore.Services
                                                                 Globals.AdjudicateLock = false;
                                                                 Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                                Globals.BroadcastedTrxList = new List<Transaction>();
+                                                                Globals.BroadcastedTrxList = new List<Models.Transaction>();
 
                                                             }
                                                             else
@@ -623,6 +684,8 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
+        #region Do Work()
+
         private async void DoWork(object? state)
         {
             if(Globals.LastBlock.Height < Globals.BlockLock)
@@ -635,6 +698,10 @@ namespace ReserveBlockCore.Services
             }
             
         }
+
+        #endregion
+
+        #region Adjudicator Sign Block 
 
         private async Task<string> AdjudicatorSignBlock(string message)
         {
@@ -650,6 +717,8 @@ namespace ReserveBlockCore.Services
 
             return sig;
         }
+
+        #endregion
 
         #region Process Fortis Pool **NEW
         public async Task ProcessFortisPool_New(List<TaskNumberAnswer> taskAnswerList)
