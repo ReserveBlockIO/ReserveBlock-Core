@@ -16,7 +16,8 @@ namespace ReserveBlockCore
         {
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
-
+            //Forced Testnet
+            Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {

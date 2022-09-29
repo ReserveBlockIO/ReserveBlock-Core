@@ -4,6 +4,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.SmartContractSourceGenerator;
 using ReserveBlockCore.Utilities;
+using System.Diagnostics.Metrics;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -54,32 +55,58 @@ namespace ReserveBlockCore.Services
                             
                             var count = 0;
                             myArray.ForEach(x => {
-                                var evolveDict = (Dictionary<string, object>)myArray[count];
+                                //var evolveDict = (Dictionary<string, object>)myArray[count];
+                                //SmartContractAsset evoAsset = new SmartContractAsset();
+                                //if (evolveDict.ContainsKey("SmartContractAsset"))
+                                //{
+
+                                //    var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
+                                //    evoAsset.Name = (string)assetEvo["Name"];
+                                //    evoAsset.FileSize = (long)assetEvo["FileSize"];
+                                //    evoAsset.AssetId = (Guid)assetEvo["AssetId"];
+                                //    evoAsset.Location = (string)assetEvo["Location"];
+                                //    evoAsset.Extension = (string)assetEvo["Extension"];
+                                //}
+
+                                //EvolvingFeature evoFeature = new EvolvingFeature
+                                //{
+                                //    Name = evolveDict["Name"].ToString(),
+                                //    Description = evolveDict["Description"].ToString(),
+                                //    EvolutionState = (int)evolveDict["EvolutionState"],
+                                //    IsDynamic = (bool)evolveDict["IsDynamic"],
+                                //    IsCurrentState = (bool)evolveDict["IsCurrentState"],
+                                //    EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
+                                //    EvolveBlockHeight = evolveDict.ContainsKey("EvolveBlockHeight") == true ? (long)evolveDict["EvolveBlockHeight"] : null,
+                                //    SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
+                                //};
+
+                                var evolveDict = (EvolvingFeature)myArray[count];
                                 SmartContractAsset evoAsset = new SmartContractAsset();
-                                if (evolveDict.ContainsKey("SmartContractAsset"))
+                                if (evolveDict.SmartContractAsset != null)
                                 {
-                                    
-                                    var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                    evoAsset.Name = (string)assetEvo["Name"];
-                                    evoAsset.FileSize = (long)assetEvo["FileSize"];
-                                    evoAsset.AssetId = (Guid)assetEvo["AssetId"];
-                                    evoAsset.Location = (string)assetEvo["Location"];
-                                    evoAsset.Extension = (string)assetEvo["Extension"];
+
+                                    var assetEvo = evolveDict.SmartContractAsset;
+                                    evoAsset.Name = assetEvo.Name;
+                                    evoAsset.FileSize = assetEvo.FileSize;
+                                    evoAsset.AssetId = assetEvo.AssetId;
+                                    evoAsset.Location = assetEvo.Location;
+                                    evoAsset.Extension = assetEvo.Extension;
                                 }
 
                                 EvolvingFeature evoFeature = new EvolvingFeature
                                 {
-                                    Name = evolveDict["Name"].ToString(),
-                                    Description = evolveDict["Description"].ToString(),
-                                    EvolutionState = (int)evolveDict["EvolutionState"],
-                                    IsDynamic = (bool)evolveDict["IsDynamic"],
-                                    IsCurrentState = (bool)evolveDict["IsCurrentState"],
-                                    EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
-                                    EvolveBlockHeight = evolveDict.ContainsKey("EvolveBlockHeight") == true ? (long)evolveDict["EvolveBlockHeight"] : null,
-                                    SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
+                                    Name = evolveDict.Name.ToString(),
+                                    Description = evolveDict.Description.ToString(),
+                                    EvolutionState = evolveDict.EvolutionState,
+                                    IsDynamic = evolveDict.IsDynamic,
+                                    IsCurrentState = evolveDict.IsCurrentState,
+                                    EvolveDate = evolveDict.EvolveDate != null ? evolveDict.EvolveDate : null,
+                                    EvolveBlockHeight = evolveDict.EvolveBlockHeight != null ? evolveDict.EvolveBlockHeight : null,
+                                    SmartContractAsset = evolveDict.SmartContractAsset != null ? evoAsset : null
                                 };
 
-                                if(activeEvoState != null)
+
+                                if (activeEvoState != null)
                                 {
                                     if(evoFeature.EvolutionState == activeEvoState.Value)
                                     {
@@ -115,15 +142,24 @@ namespace ReserveBlockCore.Services
 
                             var count = 0;
                             myArray.ForEach(x => {
-                                var multiAssetDict = (Dictionary<string, object>)myArray[count];
-
+                                //changed on 9.28.2022
+                                //var multiAssetDict = (Dictionary<string, object>)myArray[count];
+                                //MultiAssetFeature maFeature = new MultiAssetFeature
+                                //{
+                                //    FileName = multiAssetDict["FileName"].ToString(),
+                                //    Extension = multiAssetDict["Extension"].ToString(),
+                                //    Location = multiAssetDict["Location"].ToString(),
+                                //    FileSize = (long)multiAssetDict["FileSize"],
+                                //    AssetAuthorName = multiAssetDict["AssetAuthorName"].ToString(),
+                                //};
+                                var multiAssetDict = (MultiAssetFeature)myArray[count];
                                 MultiAssetFeature maFeature = new MultiAssetFeature
                                 {
-                                    FileName = multiAssetDict["FileName"].ToString(),
-                                    Extension = multiAssetDict["Extension"].ToString(),
-                                    Location = multiAssetDict["Location"].ToString(),
-                                    FileSize = (long)multiAssetDict["FileSize"],
-                                    AssetAuthorName = multiAssetDict["AssetAuthorName"].ToString(),
+                                    FileName = multiAssetDict.FileName.ToString(),
+                                    Extension = multiAssetDict.Extension.ToString(),
+                                    Location = multiAssetDict.Location.ToString(),
+                                    FileSize = multiAssetDict.FileSize,
+                                    AssetAuthorName = multiAssetDict.AssetAuthorName.ToString(),
                                 };
                                 count += 1;
                                 multiAsset.Add(maFeature);
@@ -188,28 +224,29 @@ namespace ReserveBlockCore.Services
 
                                 var counter = 0;
                                 myArray.ForEach(x => {
+                                    var evolveDict = (EvolvingFeature)myArray[count];
                                     SmartContractAsset evoAsset = new SmartContractAsset();
-                                    var evolveDict = (Dictionary<string, object>)myArray[counter];
-                                    if (evolveDict.ContainsKey("SmartContractAsset"))
+                                    if (evolveDict.SmartContractAsset != null)
                                     {
-                                        var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                        evoAsset.Name = (string)assetEvo["Name"];
-                                        evoAsset.FileSize = (long)assetEvo["FileSize"];
-                                        evoAsset.AssetId = (Guid)assetEvo["AssetId"];
-                                        evoAsset.Location = (string)assetEvo["Location"];
-                                        evoAsset.Extension = (string)assetEvo["Extension"];
+
+                                        var assetEvo = evolveDict.SmartContractAsset;
+                                        evoAsset.Name = assetEvo.Name;
+                                        evoAsset.FileSize = assetEvo.FileSize;
+                                        evoAsset.AssetId = assetEvo.AssetId;
+                                        evoAsset.Location = assetEvo.Location;
+                                        evoAsset.Extension = assetEvo.Extension;
                                     }
 
                                     EvolvingFeature evoFeature = new EvolvingFeature
                                     {
-                                        Name = evolveDict["Name"].ToString(),
-                                        Description = evolveDict["Description"].ToString(),
-                                        EvolutionState = (int)evolveDict["EvolutionState"],
-                                        IsDynamic = (bool)evolveDict["IsDynamic"],
-                                        IsCurrentState = (bool)evolveDict["IsCurrentState"],
-                                        EvolveDate = evolveDict.ContainsKey("EvolveDate") == true ? (DateTime)evolveDict["EvolveDate"] : null,
-                                        EvolveBlockHeight = evolveDict.ContainsKey("EvolveBlockHeight") == true ? (long)evolveDict["EvolveBlockHeight"] : null,
-                                        SmartContractAsset = evolveDict.ContainsKey("SmartContractAsset") == true ? evoAsset : null
+                                        Name = evolveDict.Name.ToString(),
+                                        Description = evolveDict.Description.ToString(),
+                                        EvolutionState = evolveDict.EvolutionState,
+                                        IsDynamic = evolveDict.IsDynamic,
+                                        IsCurrentState = evolveDict.IsCurrentState,
+                                        EvolveDate = evolveDict.EvolveDate != null ? evolveDict.EvolveDate : null,
+                                        EvolveBlockHeight = evolveDict.EvolveBlockHeight != null ? evolveDict.EvolveBlockHeight : null,
+                                        SmartContractAsset = evolveDict.SmartContractAsset != null ? evoAsset : null
                                     };
 
                                     if (activeEvoState != null)
@@ -247,15 +284,14 @@ namespace ReserveBlockCore.Services
 
                                 var counter = 0;
                                 myArray.ForEach(x => {
-                                    var multiAssetDict = (Dictionary<string, object>)myArray[counter];
-
+                                    var multiAssetDict = (MultiAssetFeature)myArray[count];
                                     MultiAssetFeature maFeature = new MultiAssetFeature
                                     {
-                                        FileName = multiAssetDict["FileName"].ToString(),
-                                        Extension = multiAssetDict["Extension"].ToString(),
-                                        Location = multiAssetDict["Location"].ToString(),
-                                        FileSize = (long)multiAssetDict["FileSize"],
-                                        AssetAuthorName = multiAssetDict["AssetAuthorName"].ToString(),
+                                        FileName = multiAssetDict.FileName.ToString(),
+                                        Extension = multiAssetDict.Extension.ToString(),
+                                        Location = multiAssetDict.Location.ToString(),
+                                        FileSize = multiAssetDict.FileSize,
+                                        AssetAuthorName = multiAssetDict.AssetAuthorName.ToString(),
                                     };
                                     counter += 1;
                                     multiAsset.Add(maFeature);

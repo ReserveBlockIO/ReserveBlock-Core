@@ -33,13 +33,13 @@ namespace ReserveBlockCore.Services
                 return null;// record already exist
             }
 
-            var scData = SmartContractReaderService.ReadSmartContract(scMain);
+            var scData = await SmartContractReaderService.ReadSmartContract(scMain);
 
             var txData = "";
 
-            if(!string.IsNullOrWhiteSpace(scData.Result.Item1))
+            if(!string.IsNullOrWhiteSpace(scData.Item1))
             {
-                var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
+                var bytes = Encoding.Unicode.GetBytes(scData.Item1);
                 var scBase64 = bytes.ToCompress().ToBase64();
                 var newSCInfo = new[]
                 {
