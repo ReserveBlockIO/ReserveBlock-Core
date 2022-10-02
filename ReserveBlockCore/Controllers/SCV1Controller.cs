@@ -216,7 +216,7 @@ namespace ReserveBlockCore.Controllers
 
         }
 
-        [HttpGet("AssociatedNFTAsset/{nftId}/{**assetPath}")]
+        [HttpGet("AssociateNFTAsset/{nftId}/{**assetPath}")]
         public async Task<string> AssociateNFTAsset(string nftId, string assetPath)
         {
             return $"NFT Id: {nftId} Asset Location: {assetPath}";
