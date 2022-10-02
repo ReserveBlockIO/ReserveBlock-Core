@@ -1071,49 +1071,50 @@ namespace ReserveBlockCore.P2P
                 {
                     var beaconString = locator.ToStringFromBase64();
                     var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
-
-                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/blockchain";
-                    var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
-                    var alive = _tempHubConnection.StartAsync();
-
-                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
-                    if (response != true)
+                    if (beacon != null)
                     {
-                        var errorMsg = string.Format("Failed to talk to beacon.");
-                        ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - try");
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
-                        {
-                            await _tempHubConnection.DisposeAsync();
-                        }
+                        var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                        if(!IsBeaconConnected)
+                            await ConnectBeacon(url, "n", "y");
                     }
-                    else
+
+                    if (hubBeaconConnection != null)
                     {
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
+                        var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
+                        if (response != true)
                         {
-                            await _tempHubConnection.DisposeAsync();
-                        }
-
-                        int failCount = 0;
-                        foreach (var asset in bdd.Assets)
-                        {
-                            var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
-                            BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
-                            if (rsp.Status == 1)
+                            var errorMsg = string.Format("Failed to talk to beacon.");
+                            ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - try");
+                            try { await hubBeaconConnection.StopAsync(); }
+                            finally
                             {
-                                //success
-                            }
-                            else
-                            {
-                                failCount += 1;
+                                await hubBeaconConnection.DisposeAsync();
                             }
                         }
-
-                        if(failCount == 0)
+                        else
                         {
-                            result = true;
-                            break;
+
+
+                            int failCount = 0;
+                            foreach (var asset in bdd.Assets)
+                            {
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
+                                //BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
+                                //if (rsp.Status == 1)
+                                //{
+                                //    //success
+                                //}
+                                //else
+                                //{
+                                //    failCount += 1;
+                                //}
+                            }
+
+                            if (failCount == 0)
+                            {
+                                result = true;
+                                break;
+                            }
                         }
                     }
                 }
