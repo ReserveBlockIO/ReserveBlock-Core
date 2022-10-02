@@ -41,6 +41,7 @@ namespace ReserveBlockCore.Utilities
             var isWalletEncrypted = Globals.IsWalletEncrypted;
             var lastWinningTaskError = Globals.LastWinningTaskError.ToString();
             var lastWinningTaskSentTime = Globals.LastWinningTaskSentTime.ToString();
+            var beaconReference = Globals.BeaconReference;
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
@@ -72,6 +73,7 @@ namespace ReserveBlockCore.Utilities
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
             var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
+            var beaconRefText = $"Beacon Reference Id: {beaconReference}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -80,6 +82,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(validatorAddress);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(hdWalletText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(beaconRefText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isWalletEncryptedText);
             strBld.AppendLine("---------------------------------------------------------------------");

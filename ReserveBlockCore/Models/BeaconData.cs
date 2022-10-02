@@ -9,19 +9,24 @@ namespace ReserveBlockCore.Models
     {
         public int Id { get; set; }
         public string SmartContractUID { get; set; }
+        public string CurrentAssetOwnerAddress { get; set; }
+        public string Reference { get; set; }
         public string AssetName { get; set; }
         public string IPAdress { get; set; }
         public string DownloadIPAddress { get; set; }
         public long AssetReceiveDate { get; set; }
         public long AssetExpireDate { get; set; }
         public string NextAssetOwnerAddress { get; set; }
+        public string NextOwnerReference { get; set; }
 
         public class BeaconSendData
         {
+            public string CurrentOwnerAddress { get; set; }
             public string SmartContractUID { get; set; }
             public List<string> Assets { get; set; }
             public string Signature { get; set; }
             public string NextAssetOwnerAddress { get; set; }
+            public string Reference { get; set; }
         }
 
         public class BeaconDownloadData

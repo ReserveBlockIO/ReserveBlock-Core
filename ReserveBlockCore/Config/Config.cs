@@ -26,10 +26,13 @@ namespace ReserveBlockCore.Config
 		public string? ValidatorAddress { get; set; }
 		public string ValidatorName { get; set; }
 		public int NFTTimeout { get; set; }
-		public bool NFTIgnore { get; set; }
 		public int PasswordClearTime { get; set; }
+        public bool AutoDownloadNFTAsset { get; set; }
+        public bool IgnoreIncomingNFTs { get; set; }
+        public List<string> RejectAssetExtensionTypes { get; set; }
+		public List<string> AllowedExtensionsTypes { get; set; }
 
-		public static Config ReadConfigFile()
+        public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();
 
@@ -70,7 +73,58 @@ namespace ReserveBlockCore.Config
 				config.ChainCheckPointRetain = dict.ContainsKey("ChainCheckPointRetain") ? Convert.ToInt32(dict["ChainCheckPointRetain"]) : 2;
 				config.ChainCheckpointLocation = dict.ContainsKey("ChainCheckpointLocation") ? dict["ChainCheckpointLocation"] : GetPathUtility.GetCheckpointPath();
 				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
-			}
+
+                config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
+                config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
+				config.RejectAssetExtensionTypes = new List<string>();
+
+				var rejExtList = new List<string> { ".exe", ".pif", ".application", ".gadget", ".msi", ".msp", ".com", ".scr", ".hta",
+					".cpl", ".msc", ".jar", ".bat", ".cmd", ".vb", ".vbs", ".vbe", ".js", ".jse", ".ws", ".wsf" , ".wsc", ".wsh", ".ps1",
+					".ps1xml", ".ps2", ".ps2xml", ".psc1", ".psc2", ".msh", ".msh1", ".msh2", ".mshxml", ".msh1xml", ".msh2xml", ".scf",
+					".lnk", ".inf", ".reg", ".doc", ".xls", ".ppt", ".docm", ".dotm", ".xlsm", ".xltm", ".xlam", ".pptm", ".potm", ".ppam",
+					".ppsm", ".sldm", ".sys", ".dll", ".zip"};
+
+				var knownVirusMalwareExt = new List<string> {".xnxx", ".ozd", ".aur", ".boo", ".386", ".sop", ".dxz", ".hlp", ".tsa", ".exe1", 
+					".bkd", "exe_.", ".rhk", ".vbx", ".lik", ".osa", ".9", ".cih", ".mjz", ".dlb", ".php3", ".dyz", ".wsc", ".dom", ".hlw", 
+					".s7p", ".cla", ".mjg", ".mfu", ".dyv", ".kcd", ".spam", ".bup", ".rsc_tmp", ".mcq", ".upa", ".bxz", ".dli", ".txs", 
+					".xir", ".cxq", ".fnr", ".xdu", ".xlv", ".wlpginstall", ".ska", ".tti", ".cfxxe", ".dllx", ".smtmp", ".vexe", ".qrn", 
+					".xtbl", ".fag", ".oar", ".ceo", ".tko", ".uzy", ".bll", ".dbd", ".plc", ".smm", ".ssy", ".blf", ".zvz", ".cc", ".ce0", 
+					".nls", ".ctbl", ".crypt1", ".hsq", ".iws", ".vzr", ".lkh", ".ezt", ".rna", ".aepl", ".hts", ".atm", ".fuj", ".aut", 
+					".fjl", ".delf", ".buk", ".bmw", ".capxml", ".bps", ".cyw", ".iva", ".pid", ".lpaq5", ".dx", ".bqf", ".qit", ".pr", ".lok", 
+					"xnt"};
+
+                if (dict.ContainsKey("RejectAssetExtensionTypes"))
+				{
+					string rejectedExtensions = dict["RejectAssetExtensionTypes"].ToString();
+					var rejExtListConfig = rejectedExtensions.Split(',');
+					foreach (var rejExt in rejExtListConfig)
+					{
+						config.RejectAssetExtensionTypes.Add(rejExt);
+					}
+
+					config.RejectAssetExtensionTypes.AddRange(rejExtList);
+                    config.RejectAssetExtensionTypes.AddRange(knownVirusMalwareExt);
+                }
+				else
+				{
+                    config.RejectAssetExtensionTypes.AddRange(rejExtList);
+                    config.RejectAssetExtensionTypes.AddRange(knownVirusMalwareExt);
+                }
+				if (dict.ContainsKey("AllowedExtensionsTypes"))
+				{
+                    string allowedExtensions = dict["AllowedExtensionsTypes"].ToString();
+                    var allowedExtensionsList = allowedExtensions.Split(',');
+					foreach(var allowedExtension in allowedExtensionsList)
+					{
+						if(config.RejectAssetExtensionTypes.Contains(allowedExtension))
+						{
+							config.RejectAssetExtensionTypes.Remove(allowedExtension);
+						}
+					}
+                }
+
+
+            }
 
 			return config;
 		}
@@ -83,6 +137,9 @@ namespace ReserveBlockCore.Config
 			Globals.APICallURLLogging = config.APICallURLLogging;
 			Globals.NFTTimeout = config.NFTTimeout;
 			Globals.PasswordClearTime = config.PasswordClearTime;
+			Globals.RejectAssetExtensionTypes = config.RejectAssetExtensionTypes;
+			Globals.IgnoreIncomingNFTs = config.IgnoreIncomingNFTs;
+			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
 
 			if(config.TestNet == true)
             {
@@ -139,14 +196,16 @@ namespace ReserveBlockCore.Config
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=7292");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=false");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "NFTTimeout=15");
-				}
+                    File.AppendAllText(path + "config.txt", Environment.NewLine + "AutoDownloadNFTAsset=true");
+                }
                 else
                 {
 					File.AppendAllText(path + "config.txt", "Port=13338");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "APIPort=17292");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "TestNet=true");
 					File.AppendAllText(path + "config.txt", Environment.NewLine + "NFTTimeout=15");
-				}
+                    File.AppendAllText(path + "config.txt", Environment.NewLine + "AutoDownloadNFTAsset=true");
+                }
 				
 			}
 		}

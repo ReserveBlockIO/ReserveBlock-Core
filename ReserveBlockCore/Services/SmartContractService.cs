@@ -116,7 +116,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region TransferSmartContract
-        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA")
+        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA", string backupURL = "")
         {
             Transaction? scTx = null;
 
@@ -145,7 +145,8 @@ namespace ReserveBlockCore.Services
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64, Locators = locators, MD5List = md5List}
+                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64, 
+                        Locators = locators, MD5List = md5List, BackupURL = backupURL != "" ? backupURL : "NA"}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);

@@ -83,6 +83,10 @@ namespace ReserveBlockCore
         public static bool IsWalletEncrypted = false;
         public static SecureString EncryptPassword = new SecureString();
         public static int PasswordClearTime = 10;
+        public static bool AutoDownloadNFTAsset = false;
+        public static bool IgnoreIncomingNFTs = false;
+        public static List<string> RejectAssetExtensionTypes = new List<string>();
+        public static BeaconReference BeaconReference = new BeaconReference();
 
         #endregion
 
@@ -106,7 +110,8 @@ namespace ReserveBlockCore
 
         #region P2P Server Variables
 
-        public static ConcurrentDictionary<string, HubCallerContext> P2PPeerList = new ConcurrentDictionary<string, HubCallerContext>();        
+        public static ConcurrentDictionary<string, HubCallerContext> P2PPeerList = new ConcurrentDictionary<string, HubCallerContext>();
+        public static ConcurrentDictionary<string, HubCallerContext> BeaconPeerList = new ConcurrentDictionary<string, HubCallerContext>();
         public static ConcurrentDictionary<string, HubCallerContext> AdjPeerList = new ConcurrentDictionary<string, HubCallerContext>();
         public static ConcurrentDictionary<string, MessageLock> MessageLocks = new ConcurrentDictionary<string, MessageLock>();
         public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();
@@ -116,6 +121,7 @@ namespace ReserveBlockCore
         #region P2P Adj Server Variables
 
         public static List<FortisPool> FortisPool = new List<FortisPool>();
+        public static List<BeaconPool> BeaconPool = new List<BeaconPool>();
 
         public static TaskQuestion? CurrentTaskQuestion = null;
         public static TaskNumberAnswer? CurrentTaskNumberAnswer = null;

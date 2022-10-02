@@ -16,13 +16,13 @@
 
                 if(checksumList == "")
                 {
-                    var checksumAsset = asset + "," + checksum;
+                    var checksumAsset = asset + "::" + checksum;
                     checksumList = checksumAsset;
                 }
                 else
                 {
-                    var checksumAsset = asset + ":" + checksum;
-                    checksumList = checksumList + "," + checksumAsset;
+                    var checksumAsset = asset + "::" + checksum;
+                    checksumList = checksumList + "<>" + checksumAsset;
                 }
             }
 

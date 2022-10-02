@@ -199,12 +199,12 @@ namespace ReserveBlockCore.P2P
         {
             var peerIP = GetIP(Context);
             Globals.P2PPeerList.TryRemove(peerIP, out var test);
+            try
+            {
+                Globals.FortisPool.RemoveAll(x => x.IpAddress == peerIP && x.ConnectionId == Context.ConnectionId);
+            }
+            catch { };
 
-            string connectionId = Context.ConnectionId;
-            //FortisPool.RemoveAll(x => x.ConnectionId == connectionId);            
-            var fortisPoolStr = "";
-            //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
-            //await SendAdjMessageAll("fortisPool", fortisPoolStr);
             await base.OnDisconnectedAsync(ex);
         }
 
