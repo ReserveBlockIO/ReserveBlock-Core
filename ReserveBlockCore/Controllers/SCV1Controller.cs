@@ -435,8 +435,8 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("TransferNFT/{id}/{toAddress}/{**backupURL}")]
-        public async Task<string> TransferNFT(string id, string toAddress, string backupURL = "")
+        [HttpGet("TransferNFT/{id}/{toAddress}/{**backupURL?}")]
+        public async Task<string> TransferNFT(string id, string toAddress, string? backupURL = "")
         {
             var output = "";
 
