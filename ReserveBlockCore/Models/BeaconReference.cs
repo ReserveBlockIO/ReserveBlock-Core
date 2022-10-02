@@ -45,7 +45,7 @@ namespace ReserveBlockCore.Models
                     {
                         var record = beaconDataRec.First();
                         record.Reference = beaconRefData.Reference;
-                        beaconRef.Update(record);
+                        beaconRef.UpdateSafe(record);
                     }
                 }
             }

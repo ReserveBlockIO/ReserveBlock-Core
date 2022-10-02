@@ -196,6 +196,7 @@ namespace ReserveBlockCore
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
+            
             StartupService.CheckForDuplicateBlocks();
 
             if (Globals.DatabaseCorruptionDetected == true)
