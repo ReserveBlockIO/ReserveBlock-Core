@@ -85,7 +85,7 @@ The point of this paper is to outline the config file setup and features it has.
 	+ b.	Ex: PasswordClearTime=5
 	+ c.	This will control the clear time for an ecrypted wallets password
 
-18.	AutoDownloadNFTAsset (default is false)
+18.	AutoDownloadNFTAsset (default is true)
 	+ a.	Type Boolean
 	+ b.	Ex: AutoDownloadNFTAsset=false
 	+ c.	This will control whether or not an NFT's asset is automatically downloaded

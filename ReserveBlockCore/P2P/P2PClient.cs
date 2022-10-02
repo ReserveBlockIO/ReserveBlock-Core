@@ -822,7 +822,7 @@ namespace ReserveBlockCore.P2P
                 hubBeaconConnection.Closed += (sender) =>
                 {
                     LogUtility.Log("Closed to Beacon", "ConnectBeacon()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjuBeacondicator has been closed.");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to Beacon has been closed.");
                     return Task.CompletedTask;
                 };
 

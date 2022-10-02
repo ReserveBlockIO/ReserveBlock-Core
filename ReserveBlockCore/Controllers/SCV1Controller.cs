@@ -216,6 +216,18 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        [HttpGet("AssociatedNFTAsset/{nftId}/{**assetPath}")]
+        public async Task<string> AssociateNFTAsset(string nftId, string assetPath)
+        {
+            return $"NFT Id: {nftId} Asset Location: {assetPath}";
+        }
+
+        [HttpGet("DownloadNftAssets/{nftId}")]
+        public async Task<string> DownloadNftAssets(string nftId)
+        {
+            return $"NFT Id: {nftId}";
+        }
+
         [HttpPost("CreateSmartContract")]
         public async Task<string> CreateSmartContract([FromBody] object jsonData)
         {

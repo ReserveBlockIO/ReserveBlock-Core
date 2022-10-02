@@ -27,7 +27,7 @@ namespace ReserveBlockCore.Utilities
         public static long GetTimeForBeaconRelease()
         {
             long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddDays(3).Ticks;
+            long nowTicks = DateTime.UtcNow.AddDays(5).Ticks;
             long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerSecond);
             return timeStamp;//returns time in ticks from Epoch Time
         }
