@@ -42,7 +42,7 @@ namespace ReserveBlockCore.Utilities
             var isWalletEncrypted = Globals.IsWalletEncrypted;
             var lastWinningTaskError = Globals.LastWinningTaskError.ToString();
             var lastWinningTaskSentTime = Globals.LastWinningTaskSentTime.ToString();
-            var beaconReference = Globals.BeaconReference;
+            var beaconReference = Globals.BeaconReference.Reference;
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            

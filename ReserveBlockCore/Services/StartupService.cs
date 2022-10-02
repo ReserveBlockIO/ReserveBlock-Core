@@ -463,20 +463,23 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectoToBeacon()
         {
-            var beacon = Globals.Locators.FirstOrDefault();
-            if(beacon != null)
+            if(!Globals.Adjudicate)
             {
-                var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
-                if(beaconDataJsonDes != null)
+                var beacon = Globals.Locators.FirstOrDefault();
+                if (beacon != null)
                 {
-                    var port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000;
-                    var url = "http://" + beaconDataJsonDes.IPAddress + ":" + port + "/beacon";
-                    await P2PClient.ConnectBeacon(url);
+                    var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
+                    if (beaconDataJsonDes != null)
+                    {
+                        var port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000;
+                        var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
+                        await P2PClient.ConnectBeacon(url);
+                    }
                 }
-            }
-            else
-            {
-                Console.WriteLine("You have no remote beacons.");
+                else
+                {
+                    Console.WriteLine("You have no remote beacons.");
+                }
             }
         }
 
