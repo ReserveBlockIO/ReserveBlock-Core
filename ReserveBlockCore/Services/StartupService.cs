@@ -463,34 +463,20 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectoToBeacon()
         {
-            if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+            var beacon = Globals.Locators.FirstOrDefault();
+            if(beacon != null)
             {
-                var account = AccountData.GetLocalValidator();
-                var validators = Validators.Validator.GetAll();
-                var validator = validators.FindOne(x => x.Address == account.Address);
-                if (validator != null)
+                var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
+                if(beaconDataJsonDes != null)
                 {
-
-                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                    var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
-
-                    var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
-                    if (adjudicator != null)
-                    {
-                        var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
-                        await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
-                    }
-                    else
-                    {
-                        Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
-                    }
-
+                    var port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000;
+                    var url = "http://" + beaconDataJsonDes.IPAddress + ":" + port + "/beacon";
+                    await P2PClient.ConnectBeacon(url);
                 }
-
+            }
+            else
+            {
+                Console.WriteLine("You have no remote beacons.");
             }
         }
 

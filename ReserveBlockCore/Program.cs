@@ -133,6 +133,7 @@ namespace ReserveBlockCore
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
             await StartupService.EstablishBeaconReference();
+            await StartupService.ConnectoToBeacon();
 
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();

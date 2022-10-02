@@ -782,11 +782,11 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Connect Beacon
-        public static async Task ConnectBeacon(string url, string address, string isSender, string msg, string signature, string uplReq = "n")
+        public static async Task ConnectBeacon(string url, string uplReq = "n", string dwnlReq = "n")
         {
             try
             {
-                var beaconRef = await BeaconReference.GetReference();
+                var beaconRef = Globals.BeaconReference.Reference;
                 if(beaconRef == null)
                 {
                     throw new HubException("Cannot connect without a Beacon Reference");
@@ -795,11 +795,9 @@ namespace ReserveBlockCore.P2P
                 hubBeaconConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
                     options.Headers.Add("beaconRef", beaconRef);
-                    options.Headers.Add("isSender", isSender);
                     options.Headers.Add("walver", Globals.CLIVersion);
-                    options.Headers.Add("msg", msg);
-                    options.Headers.Add("signature", signature);
                     options.Headers.Add("uplReq", uplReq);
+                    options.Headers.Add("dwnlReq", dwnlReq);
                 })
                 .WithAutomaticReconnect()
                 .Build();

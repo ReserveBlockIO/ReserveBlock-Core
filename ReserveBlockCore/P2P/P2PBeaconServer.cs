@@ -26,7 +26,6 @@ namespace ReserveBlockCore.P2P
             if (httpContext != null)
             {
                 var beaconRef = httpContext.Request.Headers["beaconRef"].ToString();
-                var isSender = httpContext.Request.Headers["isSender"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
                 var uplReq = httpContext.Request.Headers["uplReq"].ToString();
                 var dwnlReq = httpContext.Request.Headers["dwnlReq"].ToString();
@@ -35,74 +34,69 @@ namespace ReserveBlockCore.P2P
 
                 var beaconPool = Globals.BeaconPool.ToList();
 
-                if (!string.IsNullOrWhiteSpace(beaconRef) && !string.IsNullOrWhiteSpace(isSender) && walletVersionVerify)
+                if (!string.IsNullOrWhiteSpace(beaconRef) && walletVersionVerify)
                 { 
                     var beaconData = BeaconData.GetBeaconData();
                     var beacon = BeaconData.GetBeacon();
-                    if (isSender == "y")
+                    
+                    if(uplReq == "n")
                     {
-                        if(uplReq == "n")
+                        if (beaconData != null)
                         {
-                            if (beaconData != null)
+                            var beaconSendData = beaconData.Where(x => x.Reference == beaconRef).ToList();
+                            if (beaconSendData.Count() > 0)
                             {
-                                var beaconSendData = beaconData.Where(x => x.Reference == beaconRef).ToList();
-                                if (beaconSendData.Count() > 0)
+                                var removeList = beaconSendData.Where(x => x.AssetExpireDate <= TimeUtil.GetTime());
+                                //remove record and remove any data sent
+                                if (beacon != null)
                                 {
-                                    var removeList = beaconSendData.Where(x => x.AssetExpireDate <= TimeUtil.GetTime());
-                                    //remove record and remove any data sent
-                                    if (beacon != null)
-                                    {
-                                        beacon.DeleteManySafe(x => removeList.Contains(x));
-                                    }
-                                    beaconData = BeaconData.GetBeaconData();
-                                    if(beaconData != null)
-                                    {
-                                        beaconSendData = beaconData.Where(x => x.Reference == beaconRef).ToList();
-                                        if (beaconSendData.Count() > 0)
-                                        {
-                                            pendingSends = true;
-                                        }
-                                    }    
+                                    beacon.DeleteManySafe(x => removeList.Contains(x));
                                 }
+                                beaconData = BeaconData.GetBeaconData();
+                                if(beaconData != null)
+                                {
+                                    beaconSendData = beaconData.Where(x => x.Reference == beaconRef).ToList();
+                                    if (beaconSendData.Count() > 0)
+                                    {
+                                        pendingSends = true;
+                                    }
+                                }    
                             }
-                        }
-                        else
-                        {
-                            pendingSends = true;
                         }
                     }
                     else
                     {
-                        if(dwnlReq == "n")
+                        pendingSends = true;
+                    }
+
+                    if(dwnlReq == "n")
+                    {
+                        if (beaconData != null)
                         {
-                            if (beaconData != null)
+                            var beaconRecData = beaconData.Where(x => x.NextOwnerReference == beaconRef).ToList();
+                            if (beaconRecData.Count() > 0)
                             {
-                                var beaconRecData = beaconData.Where(x => x.NextOwnerReference == beaconRef).ToList();
-                                if (beaconRecData.Count() > 0)
+                                var removeList = beaconRecData.Where(x => x.AssetExpireDate <= TimeUtil.GetTime());
+                                //remove record and remove any data sent
+                                if (beacon != null)
                                 {
-                                    var removeList = beaconRecData.Where(x => x.AssetExpireDate <= TimeUtil.GetTime());
-                                    //remove record and remove any data sent
-                                    if (beacon != null)
+                                    beacon.DeleteManySafe(x => removeList.Contains(x));
+                                }
+                                beaconData = BeaconData.GetBeaconData();
+                                if (beaconData != null)
+                                {
+                                    beaconRecData = beaconData.Where(x => x.NextOwnerReference == beaconRef).ToList();
+                                    if (beaconRecData.Count() > 0)
                                     {
-                                        beacon.DeleteManySafe(x => removeList.Contains(x));
-                                    }
-                                    beaconData = BeaconData.GetBeaconData();
-                                    if (beaconData != null)
-                                    {
-                                        beaconRecData = beaconData.Where(x => x.NextOwnerReference == beaconRef).ToList();
-                                        if (beaconRecData.Count() > 0)
-                                        {
-                                            pendingReceives = true;
-                                        }
+                                        pendingReceives = true;
                                     }
                                 }
                             }
                         }
-                        else
-                        {
-                            pendingReceives = true;
-                        }
-                        
+                    }
+                    else
+                    {
+                        pendingReceives = true;
                     }
 
                     if(pendingSends == true || pendingReceives == true)
@@ -141,7 +135,16 @@ namespace ReserveBlockCore.P2P
             }
 
             if(connected)
+            {
                 await SendBeaconMessageSingle("status", "Connected");
+            }
+            else
+            {
+                await SendBeaconMessageSingle("disconnect", "No downloads at this time.");
+                Context.Abort();
+            }
+
+
 
             await base.OnConnectedAsync();
         }

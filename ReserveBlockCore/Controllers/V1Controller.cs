@@ -815,6 +815,17 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetBeaconPool")]
+        public async Task<string> GetBeaconPool()
+        {
+            string output = "";
+            var beaconPool = Globals.BeaconPool.ToList();
+
+            output = JsonConvert.SerializeObject(beaconPool);
+
+            return output;
+        }
+
         [HttpGet("GetValidatorPoolInfo")]
         public async Task<string> GetValidatorPoolInfo()
         {

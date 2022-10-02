@@ -27,6 +27,7 @@ namespace ReserveBlockCore.Utilities
             var lastBlock = Globals.LastBlock;
             var adjudicator = Globals.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
+            var beaconConnection = P2PClient.IsBeaconConnected.ToString();
             var fortisPoolCount = Globals.FortisPool.Count().ToString();
             var isChainSynced = Globals.IsChainSynced.ToString();
             var peerCount = P2PServer.GetConnectedPeerCount();
@@ -74,6 +75,7 @@ namespace ReserveBlockCore.Utilities
             var externalIPText = $"External IP: {mostLikelyIP}";
             var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
             var beaconRefText = $"Beacon Reference Id: {beaconReference}";
+            var beacConnection = "Beacon Connected?: " + beaconConnection;
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -84,6 +86,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(hdWalletText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(beaconRefText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(beacConnection);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isWalletEncryptedText);
             strBld.AppendLine("---------------------------------------------------------------------");
