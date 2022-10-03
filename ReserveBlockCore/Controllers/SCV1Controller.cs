@@ -515,11 +515,11 @@ namespace ReserveBlockCore.Controllers
                         assets.ForEach(x => { assetString = assetString + x + " "; });
 
                         NFTLogUtility.Log($"Sending the following assets for upload: {assetString}", "SCV1Controller.TransferNFT()");
+                        var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
 
-                        var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress);
+                        var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, md5List);
                         if(result != "Fail" && result != "NA")
                         {
-                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
                             var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List, backupURL);
                             NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
                             NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");

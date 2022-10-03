@@ -18,6 +18,8 @@ namespace ReserveBlockCore.Models
         public long AssetExpireDate { get; set; }
         public string NextAssetOwnerAddress { get; set; }
         public string NextOwnerReference { get; set; }
+        public string MD5List { get; set; }
+        public bool IsReady { get; set; }
 
         public class BeaconSendData
         {
@@ -27,6 +29,7 @@ namespace ReserveBlockCore.Models
             public string Signature { get; set; }
             public string NextAssetOwnerAddress { get; set; }
             public string Reference { get; set; }
+            public string MD5List { get; set; }
         }
 
         public class BeaconDownloadData
@@ -35,6 +38,7 @@ namespace ReserveBlockCore.Models
             [JsonIgnore]
             public List<string> Assets { get; set; }
             public string Signature { get; set; }
+            public string Reference { get; set; }
         }
 
         public static LiteDB.ILiteCollection<BeaconData>? GetBeacon()

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.ObjectPool;
+using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -159,6 +161,10 @@ namespace ReserveBlockCore.P2P
             }
             catch { };
         }
+        private async Task SendMessageClient(string clientId, string method, string message)
+        {
+            await Clients.Client(clientId).SendAsync("GetBeaconData", method, message);
+        }
 
         private async Task SendBeaconMessageSingle(string message, string data)
         {
@@ -198,7 +204,7 @@ namespace ReserveBlockCore.P2P
             {
                 bool result = false;
                 var peerIP = GetIP(Context);
-
+                var beaconPool = Globals.BeaconPool.ToList();
                 try
                 {
                     if (bdd != null)
@@ -227,6 +233,7 @@ namespace ReserveBlockCore.P2P
                                     if (beaconDatas != null)
                                     {
                                         bdCheck.DownloadIPAddress = peerIP;
+                                        bdCheck.NextOwnerReference = bdd.Reference;
                                         beaconDatas.UpdateSafe(bdCheck);
                                     }
                                     else
@@ -246,6 +253,18 @@ namespace ReserveBlockCore.P2P
 
                             result = true; //success
                             //need to then call out to origin to process download
+                            var beaconDataRec = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
+                            if(beaconDataRec != null)
+                            {
+                                var remoteUser = beaconPool.Where(x => x.Reference == beaconDataRec.Reference).FirstOrDefault();
+                                string[] senddata = { beaconDataRec.SmartContractUID, beaconDataRec.AssetName };
+                                var sendJson = JsonConvert.SerializeObject(senddata);
+                                if(remoteUser != null)
+                                {
+                                    await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                                }
+                            }
+                            
                         }
 
                     }
@@ -298,7 +317,9 @@ namespace ReserveBlockCore.P2P
                                     AssetName = fileName,
                                     IPAdress = peerIP,
                                     NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                    SmartContractUID = bsd.SmartContractUID
+                                    SmartContractUID = bsd.SmartContractUID,
+                                    IsReady = false,
+                                    MD5List = bsd.MD5List
                                 };
 
                                 BeaconData.SaveBeaconData(bd);
@@ -334,6 +355,52 @@ namespace ReserveBlockCore.P2P
 
                 return result;
             });
+        }
+
+        #endregion
+
+        #region Beacon Data IsReady Flag Set - Sets IsReady to true if file is present
+        public async Task<bool> BeaconDataIsReady(string data)
+        {
+            bool output = false;
+            try
+            {
+                var beaconPool = Globals.BeaconPool.ToList();
+                var payload = JsonConvert.DeserializeObject<string[]>(data);
+                if (payload != null)
+                {
+                    var scUID = payload[0];
+                    var assetName = payload[1];
+
+                    var beacon = BeaconData.GetBeacon();
+                    if (beacon != null)
+                    {
+                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName);
+                        if (beaconData != null)
+                        {
+                            beaconData.IsReady = true;
+                            beacon.UpdateSafe(beaconData);
+                            output = true;
+
+                            //send message to receiver.
+                            var receiverRef = beaconData.NextOwnerReference;
+                            var remoteUser = beaconPool.Where(x => x.Reference == receiverRef).FirstOrDefault();
+                            if (remoteUser != null)
+                            {
+                                string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
+                                var sendJson = JsonConvert.SerializeObject(senddata);
+                                await SendMessageClient(remoteUser.ConnectionId, "receive", sendJson);
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+
+            }
+
+            return output;
         }
 
         #endregion
