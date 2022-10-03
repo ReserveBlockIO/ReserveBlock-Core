@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -219,6 +220,52 @@ namespace ReserveBlockCore.Services
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
                                 rejectBlock = txResult == false ? rejectBlock = true : false;
+                                //check for duplicate tx
+                                if (blkTransaction.TransactionType != TransactionType.TX)
+                                {
+                                    if(blkTransaction.Data != null)
+                                    {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
+                                        if (scDataArray != null)
+                                        {
+                                            var scData = scDataArray[0];
+
+                                            var function = (string?)scData["Function"];
+                                            var scUID = (string?)scData["ContractUID"];
+                                            if (!string.IsNullOrWhiteSpace(function))
+                                            {
+                                                var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                if (otherTxs.Count() > 0)
+                                                {
+                                                    foreach (var otx in otherTxs)
+                                                    {
+                                                        if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                                        {
+                                                            if (otx.Data != null)
+                                                            {
+                                                                var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                if (ottxDataArray != null)
+                                                                {
+                                                                    var ottxData = ottxDataArray[0];
+
+                                                                    var ottxFunction = (string?)ottxData["Function"];
+                                                                    var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                    if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                    {
+                                                                        if (ottxscUID == scUID)
+                                                                        {
+                                                                            rejectBlock = true;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
@@ -598,6 +645,9 @@ namespace ReserveBlockCore.Services
                     if (rejectBlock)
                         break;
                 }
+
+                
+
                 if (rejectBlock)
                 {
                     ValidatorLogUtility.Log("Block validated failed due to transactions not validating", "BlockValidatorService.ValidateBlockForTask()");
