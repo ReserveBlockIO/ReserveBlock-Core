@@ -132,6 +132,8 @@ namespace ReserveBlockCore
 
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
+            await StartupService.EstablishBeaconReference();
+            
 
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
@@ -194,6 +196,7 @@ namespace ReserveBlockCore
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
+            
             StartupService.CheckForDuplicateBlocks();
 
             if (Globals.DatabaseCorruptionDetected == true)
@@ -217,6 +220,9 @@ namespace ReserveBlockCore
             await StartupService.SetLeadAdjudicator();
             StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
+
+            await StartupService.ConnectoToBeacon();
+
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
             await StartupService.ConnectoToAdjudicator();

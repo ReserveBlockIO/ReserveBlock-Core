@@ -61,6 +61,10 @@ namespace ReserveBlockCore
                     options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
                     options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
                 });
+                endpoints.MapHub<P2PBeaconServer>("/beacon", options => {
+                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                });
 
             });
         }

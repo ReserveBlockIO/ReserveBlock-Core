@@ -74,3 +74,34 @@ The point of this paper is to outline the config file setup and features it has.
 	+ a.	Type string
 	+ b.	Ex: ValidatorName=MyValidatorRBX1
 	+ c.	This is the name for the above validator that will be used. Once validator has been imported once then these settings won’t do anything and can be removed or left there. 
+
+16.	NFTTimeout (default is 15 secs)
+	+ a.	Type int
+	+ b.	Ex: NFTTimeout=5
+	+ c.	This will control the timeout for processing an incoming NFT 
+
+17.	PasswordClearTime (default is 10 mins)
+	+ a.	Type int
+	+ b.	Ex: PasswordClearTime=5
+	+ c.	This will control the clear time for an ecrypted wallets password
+
+18.	AutoDownloadNFTAsset (default is true)
+	+ a.	Type Boolean
+	+ b.	Ex: AutoDownloadNFTAsset=false
+	+ c.	This will control whether or not an NFT's asset is automatically downloaded
+
+19.	IgnoreIncomingNFTs (default is false)
+	+ a.	Type Boolean
+	+ b.	Ex: IgnoreIncomingNFTs=false
+	+ c.	This will control whether or not incoming NFTs are processed or just added as a TX record
+
+20.	RejectAssetExtensionTypes (default is a List of rejected assets)
+	+ a.	Type List<string>
+	+ b.	Ex: RejectAssetExtensionTypes=exe,zip,pdf... (ensure there are no spaces between types)
+	+ c.	This will add extension types to the already defined list and will reject any NFT assets with these known extension types
+
+
+21.	AllowedExtensionsTypes (default is null)
+	+ a.	Type List<string>
+	+ b.	Ex: AllowedExtensionsTypes=pdf,doc,xls
+	+ c.	This will remove extension types to the already defined list and will allow any NFT assets with these known extension types to be downloaded

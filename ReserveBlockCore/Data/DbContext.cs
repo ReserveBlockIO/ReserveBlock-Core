@@ -73,6 +73,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_SCSTATE_TREI = "rsrv_scstate_trei";
         public const string RSRV_BEACON_INFO = "rsrv_beacon_info";
         public const string RSRV_BEACON_DATA = "rsrv_beacon_data";
+        public const string RSRV_BEACON_REF = "rsrv_beacon_ref";
         public const string RSRV_DNR = "rsrv_dnr";
         public const string RSRV_DECSHOP = "rsrv_decshop";
         public const string RSRV_DECSHOPSTATE_TREI = "rsrv_decshopstate_trei";

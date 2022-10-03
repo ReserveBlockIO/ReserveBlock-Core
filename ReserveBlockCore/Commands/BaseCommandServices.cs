@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Security;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml;
+using ReserveBlockCore.Beacon;
 
 namespace ReserveBlockCore.Commands
 {

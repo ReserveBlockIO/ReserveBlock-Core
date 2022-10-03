@@ -16,6 +16,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
+using System.Security.Cryptography.Xml;
 
 namespace ReserveBlockCore.Services
 {
@@ -144,10 +145,10 @@ namespace ReserveBlockCore.Services
                 var beaconInfo = BeaconInfo.GetBeaconInfo();
                 if(beaconInfo != null)
                 {
-                    var port = Globals.Port + 10000; //23338
+                    var port = Globals.Port + 10000; //23338 - mainnet
                     if (Globals.IsTestNet == true)
                     {
-                        port = port + 10000; //33338
+                        port = port + 10000; //33338 - testnet
                     }
 
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
@@ -245,8 +246,8 @@ namespace ReserveBlockCore.Services
             var locator3 = beaconLocJson3.ToBase64();
 
             locators.Add(locator1);
-            locators.Add(locator2);
-            locators.Add(locator3);
+            //locators.Add(locator2);
+            //locators.Add(locator3);
 
             Globals.Locators = locators;
         }
@@ -406,6 +407,79 @@ namespace ReserveBlockCore.Services
                     
                 }
 
+            }
+        }
+        public static async Task EstablishBeaconReference()
+        {
+            var beaconRef = BeaconReference.GetBeaconReference();
+            if(beaconRef != null)
+            {
+                var beaconRefRecord = beaconRef.FindAll();
+                if(beaconRefRecord.Count() > 0)
+                {
+                    var rec = beaconRefRecord.First();
+                    Globals.BeaconReference = rec;
+                }
+                else
+                {
+                    string reference = "";
+
+                    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                    var stringChars = new char[16];
+                    var random = new Random();
+
+                    for (int i = 0; i < stringChars.Length; i++)
+                    {
+                        stringChars[i] = chars[random.Next(chars.Length)];
+                    }
+
+                    var finalString = new string(stringChars);
+                    reference = finalString;
+
+                    BeaconReference br = new BeaconReference {
+                        Reference = reference,
+                        CreateDate = DateTime.UtcNow
+                    };
+
+                    var path = GetPathUtility.GetBeaconPath();
+                    var fileExist = File.Exists(path + "beacon_ref.bak");
+                    if (!fileExist)
+                    {
+                        BeaconReference.SaveBeaconReference(br);
+                        File.AppendAllText(path + "beacon_ref.bak", reference);
+                    }
+                    else
+                    {
+                        string text = File.ReadAllText(path + "beacon_ref.bak");
+                        br.Reference = text;
+                        BeaconReference.SaveBeaconReference(br, true);
+                    }
+
+                    Globals.BeaconReference = br;
+                }
+            }
+            
+        }
+
+        public static async Task ConnectoToBeacon()
+        {
+            if(!Globals.Adjudicate)
+            {
+                var beacon = Globals.Locators.FirstOrDefault();
+                if (beacon != null)
+                {
+                    var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
+                    if (beaconDataJsonDes != null)
+                    {
+                        var port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000;
+                        var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
+                        await P2PClient.ConnectBeacon(url);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("You have no remote beacons.");
+                }
             }
         }
 

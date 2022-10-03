@@ -16,6 +16,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ReserveBlockCore.P2P
 {
@@ -31,6 +32,9 @@ namespace ReserveBlockCore.P2P
 
         private static HubConnection? hubAdjConnection2; //reserved for validators
         public static bool IsAdjConnected2 => hubAdjConnection2?.State == HubConnectionState.Connected;
+
+        private static HubConnection? hubBeaconConnection; //reserved for beacon
+        public static bool IsBeaconConnected => hubBeaconConnection?.State == HubConnectionState.Connected;
 
         #endregion
 
@@ -777,14 +781,128 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Connect Beacon
+        public static async Task ConnectBeacon(string url, string uplReq = "n", string dwnlReq = "n")
+        {
+            try
+            {
+                var beaconRef = Globals.BeaconReference.Reference;
+                if(beaconRef == null)
+                {
+                    throw new HubException("Cannot connect without a Beacon Reference");
+                }
+
+                hubBeaconConnection = new HubConnectionBuilder()
+                .WithUrl(url, options => {
+                    options.Headers.Add("beaconRef", beaconRef);
+                    options.Headers.Add("walver", Globals.CLIVersion);
+                    options.Headers.Add("uplReq", uplReq);
+                    options.Headers.Add("dwnlReq", dwnlReq);
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+                LogUtility.Log("Connecting to Beacon", "ConnectBeacon()");
+
+                var ipAddress = url.Replace("http://", "").Replace("/beacon", "");
+                hubBeaconConnection.Reconnecting += (sender) =>
+                {
+                    LogUtility.Log("Reconnecting to Beacon", "ConnectBeacon()");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to Beacon lost. Attempting to Reconnect.");
+                    return Task.CompletedTask;
+                };
+
+                hubBeaconConnection.Reconnected += (sender) =>
+                {
+                    LogUtility.Log("Success! Reconnected to Beacon", "ConnectBeacon()");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to Beacon has been restored.");
+                    return Task.CompletedTask;
+                };
+
+                hubBeaconConnection.Closed += (sender) =>
+                {
+                    LogUtility.Log("Closed to Beacon", "ConnectBeacon()");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to Beacon has been closed.");
+                    return Task.CompletedTask;
+                };
+
+                //Globals.AdjudicatorConnectDate = DateTime.UtcNow;
+
+                hubBeaconConnection.On<string, string>("GetBeaconData", async (message, data) => {
+                    if (message == "send" ||
+                    message == "receive" ||
+                    message == "status" ||
+                    message == "disconnect")
+                    {
+                        switch (message)
+                        {
+                            case "status":
+                                Console.WriteLine(data);
+                                LogUtility.Log("Success! Connected to Beacon", "ConnectBeacon()");
+                                break;
+                            case "send":
+                                await BeaconProcessor.ProcessData(message, data);
+                                break;
+                            case "receive":
+                                await BeaconProcessor.ProcessData(message, data);
+                                break;
+                            case "disconnect":
+                                await DisconnectBeacon();
+                                break;
+                        }
+                    }
+                });
+
+                await hubBeaconConnection.StartAsync();
+
+            }
+            catch (Exception ex)
+            {
+                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
+            }
+        }
+
+
+        #endregion
+
+        #region Disconnect Beacon
+        public static async Task DisconnectBeacon()
+        {
+            try
+            {
+                if (hubBeaconConnection != null)
+                {
+                    if (IsBeaconConnected)
+                    {
+                        await hubBeaconConnection.DisposeAsync();
+                        ConsoleWriterService.Output($"Success! Disconnected from Beacon on: {DateTime.Now}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError("Failed! Did not disconnect from Beacon: Reason - " + ex.Message, "DisconnectBeacon()");
+            }
+        }
+
+
+        #endregion
+
         #region File Upload To Beacon Beacon
 
-        public static async Task<string> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string preSigned = "NA")
+        public static async Task<string> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
         {
             var result = "Fail";
             string signature = "";
             string locatorRetString = "";
             var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            var beaconRef = await BeaconReference.GetReference();
+
+            if(beaconRef == null)
+            {
+                return "Fail";
+            }
+
             if(scState == null)
             {
                 return "Fail"; // SC does not exist
@@ -817,10 +935,13 @@ namespace ReserveBlockCore.P2P
 
             //send file size, beacon will reply if it is ok to send.
             var bsd = new BeaconData.BeaconSendData {
+                CurrentOwnerAddress = scState.OwnerAddress,
                 Assets = assets,
                 SmartContractUID = scUID,
                 Signature = signature,
-                NextAssetOwnerAddress = nextOwnerAddress
+                NextAssetOwnerAddress = nextOwnerAddress,
+                Reference = beaconRef,
+                MD5List = md5List,
             };
             foreach(var locator in locators)
             {
@@ -828,57 +949,67 @@ namespace ReserveBlockCore.P2P
                 {
                     var beaconString = locator.ToStringFromBase64();
                     var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
-
-                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/blockchain";
-                    var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
-                    var alive = _tempHubConnection.StartAsync();
-                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveUploadRequest", args: new object?[] { bsd });
-                    if (response != true)
+                    if(beacon != null)
                     {
-                        var errorMsg = string.Format("Failed to talk to beacon.");
-                        ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - try");
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
+                        var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                        if(!IsBeaconConnected)
+                            await ConnectBeacon(url, "y");
+                    }
+                    
+                    if(IsBeaconConnected)
+                    {
+                        if(hubBeaconConnection != null)
                         {
-                            await _tempHubConnection.DisposeAsync();
+                            var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveUploadRequest", args: new object?[] { bsd });
+                            if (response != true)
+                            {
+                                var errorMsg = string.Format("Failed to talk to beacon.");
+                                ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - try");
+                                try { await hubBeaconConnection.StopAsync(); }
+                                finally
+                                {
+                                    await hubBeaconConnection.DisposeAsync();
+                                }
+                            }
+                            //else
+                            //{
+                            //    NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
+                            //    if (locatorRetString == "")
+                            //    {
+                            //        foreach (var asset in bsd.Assets)
+                            //        {
+                            //            NFTLogUtility.Log($"Preparing file to send. Sending {asset} for smart contract {bsd.SmartContractUID}", "P2PClient.BeaconUploadRequest()");
+                            //            var path = NFTAssetFileUtility.NFTAssetPath(asset, bsd.SmartContractUID);
+                            //            NFTLogUtility.Log($"Path for asset {assets} : {path}", "P2PClient.BeaconUploadRequest()");
+                            //            NFTLogUtility.Log($"Beacon IP {beacon.IPAddress} : Beacon Port {beacon.Port}", "P2PClient.BeaconUploadRequest()");
+                            //            //BeaconResponse rsp = BeaconClient.Send(path, beacon.IPAddress, beacon.Port);
+                            //            //if (rsp.Status == 1)
+                            //            //{
+                            //            //    //success
+                            //            //    NFTLogUtility.Log($"Success sending asset: {asset}", "P2PClient.BeaconUploadRequest()");
+                            //            //}
+                            //            //else
+                            //            //{
+                            //            //    NFTLogUtility.Log($"NFT Send for assets -> {asset} <- failed.", "SCV1Controller.TransferNFT()");
+                            //            //}
+                            //        }
+
+                            //        locatorRetString = locator;
+                            //    }
+                            //    else
+                            //    {
+                            //        locatorRetString = locatorRetString + "," + locator;
+                            //    }
+
+                            //}
                         }
                     }
                     else
                     {
-                        NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
-                        {
-                            await _tempHubConnection.DisposeAsync();
-                        }
-                        if(locatorRetString == "")
-                        {
-                            foreach(var asset in bsd.Assets)
-                            {
-                                NFTLogUtility.Log($"Preparing file to send. Sending {asset} for smart contract {bsd.SmartContractUID}", "P2PClient.BeaconUploadRequest()");
-                                var path = NFTAssetFileUtility.NFTAssetPath(asset, bsd.SmartContractUID);
-                                NFTLogUtility.Log($"Path for asset {assets} : {path}", "P2PClient.BeaconUploadRequest()");
-                                NFTLogUtility.Log($"Beacon IP {beacon.IPAddress} : Beacon Port {beacon.Port}", "P2PClient.BeaconUploadRequest()");
-                                BeaconResponse rsp = BeaconClient.Send(path, beacon.IPAddress, beacon.Port);
-                                if (rsp.Status == 1)
-                                {
-                                    //success
-                                    NFTLogUtility.Log($"Success sending asset: {asset}", "P2PClient.BeaconUploadRequest()");
-                                }
-                                else
-                                {
-                                    NFTLogUtility.Log($"NFT Send for assets -> {asset} <- failed.", "SCV1Controller.TransferNFT()");
-                                }
-                            }
-                            
-                            locatorRetString = locator;
-                        }
-                        else
-                        {
-                            locatorRetString = locatorRetString + "," + locator;
-                        }
-
+                        //failed to connect. Cancel TX
+                        return "Fail";
                     }
+                    
                 }
                 catch (Exception ex)
                 {
@@ -899,6 +1030,13 @@ namespace ReserveBlockCore.P2P
             var result = false;
             string signature = "";
             string locatorRetString = "";
+            var beaconRef = await BeaconReference.GetReference();
+
+            if (beaconRef == null)
+            {
+                return false;
+            }
+
             var scState = SmartContractStateTrei.GetSmartContractState(scUID);
             if (scState == null)
             {
@@ -934,6 +1072,7 @@ namespace ReserveBlockCore.P2P
                 Assets = assets,
                 SmartContractUID = scUID,
                 Signature = signature,
+                Reference = beaconRef
             };
 
             foreach (var locator in locators)
@@ -942,49 +1081,51 @@ namespace ReserveBlockCore.P2P
                 {
                     var beaconString = locator.ToStringFromBase64();
                     var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
-
-                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/blockchain";
-                    var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
-                    var alive = _tempHubConnection.StartAsync();
-
-                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
-                    if (response != true)
+                    if (beacon != null)
                     {
-                        var errorMsg = string.Format("Failed to talk to beacon.");
-                        ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - try");
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
-                        {
-                            await _tempHubConnection.DisposeAsync();
-                        }
+                        var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                        if(!IsBeaconConnected)
+                            await ConnectBeacon(url, "n", "y");
                     }
-                    else
+
+                    if (hubBeaconConnection != null)
                     {
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
+                        var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
+                        if (response != true)
                         {
-                            await _tempHubConnection.DisposeAsync();
-                        }
-
-                        int failCount = 0;
-                        foreach (var asset in bdd.Assets)
-                        {
-                            var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
-                            BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
-                            if (rsp.Status == 1)
+                            var errorMsg = string.Format("Failed to talk to beacon.");
+                            ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - try");
+                            try { await hubBeaconConnection.StopAsync(); }
+                            finally
                             {
-                                //success
-                            }
-                            else
-                            {
-                                failCount += 1;
+                                await hubBeaconConnection.DisposeAsync();
                             }
                         }
-
-                        if(failCount == 0)
+                        else
                         {
-                            result = true;
-                            break;
+
+
+                            int failCount = 0;
+                            foreach (var asset in bdd.Assets)
+                            {
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
+
+                                //BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
+                                //if (rsp.Status == 1)
+                                //{
+                                //    //success
+                                //}
+                                //else
+                                //{
+                                //    failCount += 1;
+                                //}
+                            }
+
+                            if (failCount == 0)
+                            {
+                                result = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -996,6 +1137,47 @@ namespace ReserveBlockCore.P2P
             }
 
             return result;
+        }
+
+        #endregion
+
+        #region Beacon IsReady Flag send
+        public static async Task BeaconFileIsReady(string scUID, string assetName)
+        {
+            try
+            {
+                string[] payload = { scUID, assetName };
+                var payloadJson = JsonConvert.SerializeObject(payload);
+
+                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                if (beacon != null)
+                {
+                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    if (!IsBeaconConnected)
+                        await ConnectBeacon(url, "y");
+
+                    if (hubBeaconConnection != null)
+                    {
+                        var response = await hubBeaconConnection.InvokeCoreAsync<bool>("BeaconDataIsReady", args: new object?[] { payloadJson });
+                        if (response != true)
+                        {
+                            var errorMsg = string.Format("Failed to talk to beacon.");
+                            NFTLogUtility.Log(errorMsg, "P2PClient.BeaconFileIsReady() - try");
+                            try { await hubBeaconConnection.StopAsync(); }
+                            finally
+                            {
+                                await hubBeaconConnection.DisposeAsync();
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.Message}", "P2PClient.BeaconFileIsReady() - catch");
+            }
+
         }
 
         #endregion
