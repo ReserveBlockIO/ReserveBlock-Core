@@ -202,6 +202,7 @@ namespace ReserveBlockCore.Data
                                                             if (ottxscUID == scUID)
                                                             {
                                                                 reject = true;
+
                                                             }
                                                         }
                                                     }
@@ -212,17 +213,35 @@ namespace ReserveBlockCore.Data
                                 }
                             }
                         }
-                        
-                        var signature = tx.Signature;
-                        var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
-                        if (sigCheck)
-                        {
-                            var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
 
-                            var totalSend = (tx.Amount + tx.Fee);
-                            if (balance >= totalSend)
+                        if(reject == false)
+                        {
+                            var signature = tx.Signature;
+                            var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                            if (sigCheck)
                             {
-                                approvedMemPoolList.Add(tx);
+                                var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
+
+                                var totalSend = (tx.Amount + tx.Fee);
+                                if (balance >= totalSend)
+                                {
+                                    approvedMemPoolList.Add(tx);
+                                }
+                                else
+                                {
+                                    var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                                    if (txToDelete != null)
+                                    {
+                                        try
+                                        {
+                                            collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            DbContext.Rollback();
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
@@ -237,21 +256,6 @@ namespace ReserveBlockCore.Data
                                     {
                                         DbContext.Rollback();
                                     }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
-                            if(txToDelete != null)
-                            {
-                                try
-                                {
-                                    collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
-                                }
-                                catch (Exception ex)
-                                {
-                                    DbContext.Rollback();
                                 }
                             }
                         }
