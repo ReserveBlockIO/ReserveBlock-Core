@@ -239,7 +239,7 @@ namespace ReserveBlockCore.Services
                                     Globals.AdjudicateLock = true;
 
                                     //once greater commit block winner
-                                    var taskAnswerList = Globals.TaskAnswerList;
+                                    var taskAnswerList = Globals.TaskAnswerList.ToList();
                                     var taskQuestion = Globals.CurrentTaskQuestion;
                                     List<TaskAnswer>? failedTaskAnswersList = null;
 
@@ -409,7 +409,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     Globals.AdjudicateLock = true;
 
-                                    var taskAnswerList = Globals.TaskAnswerList_New;
+                                    var taskAnswerList = Globals.TaskAnswerList_New.ToList();
                                     var taskQuestion = Globals.CurrentTaskQuestion;
                                     List<TaskNumberAnswer>? failedTaskAnswersList = null;
 
@@ -551,87 +551,182 @@ namespace ReserveBlockCore.Services
                                                                 failedTaskAnswersList = new List<TaskNumberAnswer>();
                                                             }
                                                             failedTaskAnswersList.Add(taskWinner);
+
+                                                            while(findWinner)
+                                                            {
+                                                                var randChoice = new Random();
+                                                                int index = randChoice.Next(winningBlocks.Count());
+                                                                //winners block missing, process others randomly
+                                                                var randomChosen = winningBlocks[index];
+
+                                                                if (randomChosen != null)
+                                                                {
+                                                                    winnersBlock = null;
+                                                                    winnersBlock = randomChosen;
+                                                                    var rSignature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash);
+                                                                    winnersBlock.WinningBlock.AdjudicatorSignature = rSignature;
+                                                                    var nResult = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
+                                                                    if (nResult == true)
+                                                                    {
+                                                                        var nextBlock = winnersBlock.WinningBlock;
+                                                                        ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
+                                                                        ConsoleWriterService.Output(DateTime.Now.ToString());
+                                                                        string data = "";
+                                                                        data = JsonConvert.SerializeObject(nextBlock);
+
+                                                                        ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
+                                                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
+                                                                        ConsoleWriterService.Output("Done sending - Height: " + nextBlock.Height.ToString());
+
+                                                                        string taskQuestionStr = "";
+                                                                        var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                                                                        ConsoleWriterService.Output("New Task Created.");
+                                                                        Globals.CurrentTaskQuestion = nTaskQuestion;
+                                                                        TaskQuestion nSTaskQuestion = new TaskQuestion();
+                                                                        nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
+                                                                        nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
+
+                                                                        taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
+                                                                        //await ProcessFortisPool_New(taskAnswerList);
+                                                                        ConsoleWriterService.Output("Fortis Pool Processed");
+
+                                                                        if (Globals.TaskAnswerList_New.Count() > 0)
+                                                                        {
+                                                                            Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                                        }
+                                                                        if (Globals.TaskAnswerList.Count() > 0)
+                                                                        {
+                                                                            Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                                        }
+                                                                        if (Globals.TaskSelectedNumbers.Count() > 0)
+                                                                        {
+                                                                            Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                                        }
+                                                                        if (Globals.TaskWinnerList.Count() > 0)
+                                                                        {
+                                                                            Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
+                                                                        }
+
+                                                                        Thread.Sleep(100);
+
+                                                                        Globals.VerifySecret = "";
+
+                                                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
+                                                                        ConsoleWriterService.Output("Task Sent.");
+
+                                                                        findWinner = false;
+                                                                        taskFindCount = 0;
+                                                                        Globals.AdjudicateLock = false;
+                                                                        Globals.LastAdjudicateTime = TimeUtil.GetTime();
+
+                                                                        Globals.BroadcastedTrxList = new List<Models.Transaction>();
+
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        var nTaskNumAnswer = taskAnswerList.Where(x => x.Address == winnersBlock.Address).FirstOrDefault();
+                                                                        ConsoleWriterService.Output("Block failed validation");
+                                                                        if(nTaskNumAnswer != null)
+                                                                        {
+                                                                            if (failedTaskAnswersList == null)
+                                                                            {
+                                                                                failedTaskAnswersList = new List<TaskNumberAnswer>();
+                                                                            }
+                                                                            failedTaskAnswersList.Add(nTaskNumAnswer);
+                                                                        }
+                                                                        winningBlocks.RemoveAt(index);
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                     else
                                                     {
                                                         //Selecting the other closest from winning numbers
                                                         //2.
-                                                        var randChoice = new Random();
-                                                        int index = randChoice.Next(winningBlocks.Count());
-                                                        //winners block missing, process others randomly
-                                                        var randomChosen = winningBlocks[index];
-
-                                                        if(randomChosen != null)
+                                                        while(findWinner)
                                                         {
-                                                            winnersBlock = randomChosen;
-                                                            var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash);
-                                                            winnersBlock.WinningBlock.AdjudicatorSignature = signature;
-                                                            var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
-                                                            if (result == true)
+                                                            var randChoice = new Random();
+                                                            int index = randChoice.Next(winningBlocks.Count());
+                                                            //winners block missing, process others randomly
+                                                            var randomChosen = winningBlocks[index];
+
+                                                            if (randomChosen != null)
                                                             {
-                                                                var nextBlock = winnersBlock.WinningBlock;
-                                                                ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                                ConsoleWriterService.Output(DateTime.Now.ToString());
-                                                                string data = "";
-                                                                data = JsonConvert.SerializeObject(nextBlock);
-
-                                                                ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
-                                                                await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-                                                                ConsoleWriterService.Output("Done sending - Height: " + nextBlock.Height.ToString());
-
-                                                                string taskQuestionStr = "";
-                                                                var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                                                ConsoleWriterService.Output("New Task Created.");
-                                                                Globals.CurrentTaskQuestion = nTaskQuestion;
-                                                                TaskQuestion nSTaskQuestion = new TaskQuestion();
-                                                                nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
-                                                                nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
-
-                                                                taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                                //await ProcessFortisPool_New(taskAnswerList);
-                                                                ConsoleWriterService.Output("Fortis Pool Processed");
-
-                                                                if (Globals.TaskAnswerList_New.Count() > 0)
+                                                                winnersBlock = randomChosen;
+                                                                var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash);
+                                                                winnersBlock.WinningBlock.AdjudicatorSignature = signature;
+                                                                var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
+                                                                if (result == true)
                                                                 {
-                                                                    Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                                    var nextBlock = winnersBlock.WinningBlock;
+                                                                    ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
+                                                                    ConsoleWriterService.Output(DateTime.Now.ToString());
+                                                                    string data = "";
+                                                                    data = JsonConvert.SerializeObject(nextBlock);
+
+                                                                    ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
+                                                                    await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
+                                                                    ConsoleWriterService.Output("Done sending - Height: " + nextBlock.Height.ToString());
+
+                                                                    string taskQuestionStr = "";
+                                                                    var nTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                                                                    ConsoleWriterService.Output("New Task Created.");
+                                                                    Globals.CurrentTaskQuestion = nTaskQuestion;
+                                                                    TaskQuestion nSTaskQuestion = new TaskQuestion();
+                                                                    nSTaskQuestion.TaskType = nTaskQuestion.TaskType;
+                                                                    nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
+
+                                                                    taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
+                                                                    //await ProcessFortisPool_New(taskAnswerList);
+                                                                    ConsoleWriterService.Output("Fortis Pool Processed");
+
+                                                                    if (Globals.TaskAnswerList_New.Count() > 0)
+                                                                    {
+                                                                        Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                                    }
+                                                                    if (Globals.TaskAnswerList.Count() > 0)
+                                                                    {
+                                                                        Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                                    }
+                                                                    if (Globals.TaskSelectedNumbers.Count() > 0)
+                                                                    {
+                                                                        Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
+                                                                    }
+                                                                    if (Globals.TaskWinnerList.Count() > 0)
+                                                                    {
+                                                                        Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
+                                                                    }
+
+                                                                    Thread.Sleep(100);
+
+                                                                    Globals.VerifySecret = "";
+
+                                                                    await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
+                                                                    ConsoleWriterService.Output("Task Sent.");
+
+                                                                    findWinner = false;
+                                                                    taskFindCount = 0;
+                                                                    Globals.AdjudicateLock = false;
+                                                                    Globals.LastAdjudicateTime = TimeUtil.GetTime();
+
+                                                                    Globals.BroadcastedTrxList = new List<Models.Transaction>();
+
                                                                 }
-                                                                if (Globals.TaskAnswerList.Count() > 0)
+                                                                else
                                                                 {
-                                                                    Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
+                                                                    var nTaskNumAnswer = taskAnswerList.Where(x => x.Address == winnersBlock.Address).FirstOrDefault();
+                                                                    ConsoleWriterService.Output("Block failed validation");
+                                                                    if (nTaskNumAnswer != null)
+                                                                    {
+                                                                        if (failedTaskAnswersList == null)
+                                                                        {
+                                                                            failedTaskAnswersList = new List<TaskNumberAnswer>();
+                                                                        }
+                                                                        failedTaskAnswersList.Add(nTaskNumAnswer);
+                                                                    }
+                                                                    winningBlocks.RemoveAt(index);
                                                                 }
-                                                                if (Globals.TaskSelectedNumbers.Count() > 0)
-                                                                {
-                                                                    Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                }
-                                                                if (Globals.TaskWinnerList.Count() > 0)
-                                                                {
-                                                                    Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
-                                                                }
-
-                                                                Thread.Sleep(100);
-
-                                                                Globals.VerifySecret = "";
-
-                                                                await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-                                                                ConsoleWriterService.Output("Task Sent.");
-
-                                                                findWinner = false;
-                                                                taskFindCount = 0;
-                                                                Globals.AdjudicateLock = false;
-                                                                Globals.LastAdjudicateTime = TimeUtil.GetTime();
-
-                                                                Globals.BroadcastedTrxList = new List<Models.Transaction>();
-
-                                                            }
-                                                            else
-                                                            {
-                                                                ConsoleWriterService.Output("Block failed validation");
-                                                                if (failedTaskAnswersList == null)
-                                                                {
-                                                                    failedTaskAnswersList = new List<TaskNumberAnswer>();
-                                                                }
-                                                                failedTaskAnswersList.Add(taskWinner);
                                                             }
                                                         }
                                                     }

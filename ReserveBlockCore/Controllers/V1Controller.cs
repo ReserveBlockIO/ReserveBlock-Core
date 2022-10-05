@@ -871,6 +871,16 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetClientInfo")]
+        public async Task<string> GetClientInfo()
+        {
+            var output = await StaticVariableUtility.GetClientInfo();
+
+            return output;
+        }
+
+
+
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()
         {

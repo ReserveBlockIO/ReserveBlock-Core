@@ -95,11 +95,6 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static void SetBlockchainVersion()
-        {
-            //BlockchainData.BlockVersion = BlockVersionUtility.GetBlockVersion();
-        }
-
         internal static void CheckBlockRefVerToDb()
         {
             var genesisBlock = BlockchainData.GetGenesisBlock();
