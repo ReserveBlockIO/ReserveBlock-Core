@@ -54,14 +54,14 @@ namespace ReserveBlockCore.Models
             Globals.BannedIPs[ipAddress] = true;
             var peerDb = Peers.GetAll();
             var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
+            BanLogUtility.Log(message, location);
             if (peer != null)
             {
                 peer.IsBanned = true;
-                peerDb.Update(peer);
-                //BanLogUtility.Log("Insert Ban Message Here", "Insert location from where the ban came from IE P2PServer.Connect() or something");
+                peerDb.UpdateSafe(peer);                
             }
             else
-                peerDb.Insert(new Peers { PeerIP = ipAddress, IsBanned = true });
+                peerDb.InsertSafe(new Peers { PeerIP = ipAddress, IsBanned = true });
 
             if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
                 context.Abort();
