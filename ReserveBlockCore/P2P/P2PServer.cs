@@ -68,14 +68,14 @@ namespace ReserveBlockCore.P2P
         #region SignalR DOS Protection
        
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
-        {
+        {            
             var now = TimeUtil.GetMillisecondTime();
             var ipAddress = GetIP(context);            
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
             {                               
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               
                 if (Lock.ConnectionCount > 20)                
-                    Peers.BanPeer(ipAddress);                                        
+                    Peers.BanPeer(ipAddress, ipAddress + ": Connection count exceeded limit.  Peer failed to wait for responses before sending new requests.", func.Method.Name);                                        
                 
                 if (Lock.BufferCost + sizeCost > 5000000)
                 {
