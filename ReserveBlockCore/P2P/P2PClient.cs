@@ -162,9 +162,9 @@ namespace ReserveBlockCore.P2P
                         {
                             var now = TimeUtil.GetMillisecondTime();
                             var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                            if (now - prevPrevTime < 15000)
+                            if (now - prevPrevTime < 5000)
                             {
-                                Peers.BanPeer(IPAddress);                                
+                                Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");                                
                                 return;
                             }
                             Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
@@ -343,7 +343,7 @@ namespace ReserveBlockCore.P2P
 
             await DropDisconnectedPeers();
             var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace($":{Globals.Port}", "")))
-                .Union(Globals.BannedIPs.Keys);
+                .Union(Globals.BannedIPs.Where(x => x.Value).Select(x => x.Key));
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
