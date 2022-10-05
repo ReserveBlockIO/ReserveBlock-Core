@@ -22,6 +22,7 @@ namespace ReserveBlockCore.Utilities
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();
+            var bannedPeers = Peers.BannedPeers();
             var blockHeight = Globals.LastBlock.Height;
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
@@ -79,6 +80,7 @@ namespace ReserveBlockCore.Utilities
             var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
             var beaconRefText = $"Beacon Reference Id: {beaconReference}";
             var beacConnection = "Beacon Connected?: " + beaconConnection;
+            var bannedPeersText = $"Banned Peer Count: {bannedPeers}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -105,6 +107,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(isPeersConnecting);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(peerConnectedToMe);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(bannedPeersText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isStopAllTimers);
             strBld.AppendLine("---------------------------------------------------------------------");
