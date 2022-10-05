@@ -49,7 +49,7 @@ namespace ReserveBlockCore.Models
             
         }
 
-        public static void BanPeer(string ipAddress)
+        public static void BanPeer(string ipAddress, string message, string location)
         {
             Globals.BannedIPs[ipAddress] = true;
             var peerDb = Peers.GetAll();

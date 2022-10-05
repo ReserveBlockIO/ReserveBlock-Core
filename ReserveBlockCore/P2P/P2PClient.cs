@@ -158,9 +158,9 @@ namespace ReserveBlockCore.P2P
                         {
                             var now = TimeUtil.GetMillisecondTime();
                             var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                            if (now - prevPrevTime < 15000)
+                            if (now - prevPrevTime < 5000)
                             {
-                                Peers.BanPeer(IPAddress);                                
+                                Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");                                
                                 return;
                             }
                             Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
