@@ -2,6 +2,9 @@
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
+using Spectre.Console;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ReserveBlockCore.Utilities
@@ -27,6 +30,7 @@ namespace ReserveBlockCore.Utilities
             var lastBlock = Globals.LastBlock;
             var adjudicator = Globals.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
+            var beaconConnection = P2PClient.IsBeaconConnected.ToString();
             var fortisPoolCount = Globals.FortisPool.Count().ToString();
             var isChainSynced = Globals.IsChainSynced.ToString();
             var peerCount = P2PServer.GetConnectedPeerCount();
@@ -36,9 +40,13 @@ namespace ReserveBlockCore.Utilities
             var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
             var lastTaskError = Globals.LastTaskError.ToString();
             var hdWallet = Globals.HDWallet.ToString();
-            var reportedIPs = string.Join(",", Globals.ReportedIPs.Select(x => Enumerable.Repeat(x.Key, x.Value))
-                .SelectMany(x => x));
+            var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
+            var isWalletEncrypted = Globals.IsWalletEncrypted;
+            var lastWinningTaskError = Globals.LastWinningTaskError.ToString();
+            var lastWinningTaskSentTime = Globals.LastWinningTaskSentTime.ToString();
+            var beaconReference = Globals.BeaconReference.Reference;
+
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
             var isBlocksDownloading = "Blocks Downloading: " + (Globals.BlocksDownloading == 1).ToString();
@@ -59,6 +67,8 @@ namespace ReserveBlockCore.Utilities
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
+            var lastWinningTaskErrorText = "*Only for Validators* Last Winning task Error?: " + lastWinningTaskError;
+            var lastWinningTaskSentTimeText = "*Only for Validators* Last Winng Task Sent Time: " + lastWinningTaskSentTime;
             var lastTaskSentText = "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + lastTaskSent;
             var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
             var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
@@ -66,6 +76,9 @@ namespace ReserveBlockCore.Utilities
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
+            var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
+            var beaconRefText = $"Beacon Reference Id: {beaconReference}";
+            var beacConnection = "Beacon Connected?: " + beaconConnection;
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -74,6 +87,12 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(validatorAddress);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(hdWalletText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(beaconRefText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(beacConnection);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(isWalletEncryptedText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isCorrupt);
             strBld.AppendLine("---------------------------------------------------------------------");            
@@ -121,6 +140,10 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastTaskErrorText);
             strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastWinningTaskErrorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastWinningTaskSentTimeText);
+            strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
             nodes.Values.ToList().ForEach(x => {
                 var ip = x.NodeIP;
@@ -140,6 +163,60 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastBlockInfo);
             strBld.AppendLine("---------------------------------------------------------------------");
                
+            return strBld.ToString();
+        }
+
+        public static async Task<string> GetClientInfo()
+        {
+            var network = Globals.IsTestNet == true ? "TestNet" : "MainNet";
+            var mostLikelyIP = P2PClient.MostLikelyIP();
+
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+
+            var osDesc = RuntimeInformation.OSDescription;
+            var processArch = RuntimeInformation.ProcessArchitecture;
+            var netFramework = RuntimeInformation.FrameworkDescription;
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+            }
+
+            var networkText = "Current Network: " + network;
+            var mostLikelyIPText = "Reported IP: " + mostLikelyIP;
+            var osText = "OS Description: " + osDesc;
+            var processArchText = "Processor Architecture: " + processArch;
+            var netFrameworkText = ".Net Core: " + netFramework;
+            var pathText = "Database Folder Location: " + path;
+
+            StringBuilder strBld = new StringBuilder();
+            strBld.AppendLine(networkText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(mostLikelyIPText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(osText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(processArchText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(netFrameworkText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(pathText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+
             return strBld.ToString();
         }
     }

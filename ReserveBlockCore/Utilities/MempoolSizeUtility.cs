@@ -10,7 +10,8 @@ namespace ReserveBlockCore.Utilities
             var txList = new List<Transaction>();
             long sizeCount = 0;
 
-            var mempoolSorted = mempoolTxs.OrderBy(x => x.Timestamp);
+            //Sorts the mempool by rating and then by date received
+            var mempoolSorted = mempoolTxs.Where(x =>x .TransactionRating != null && x.TransactionRating != TransactionRating.F).OrderBy(x => x.TransactionRating).ThenBy(x => x.Timestamp);
 
             foreach (var mempoolTx in mempoolSorted)
             {

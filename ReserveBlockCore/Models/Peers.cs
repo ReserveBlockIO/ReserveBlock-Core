@@ -58,6 +58,7 @@ namespace ReserveBlockCore.Models
             {
                 peer.IsBanned = true;
                 peerDb.Update(peer);
+                //BanLogUtility.Log("Insert Ban Message Here", "Insert location from where the ban came from IE P2PServer.Connect() or something");
             }
             else
                 peerDb.Insert(new Peers { PeerIP = ipAddress, IsBanned = true });

@@ -41,7 +41,7 @@ namespace ReserveBlockCore.Models
             {
                 try
                 {
-                    var validators = DbContext.DB_Peers.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
+                    var validators = DbContext.DB_Wallet.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
                     return validators;
                 }
                 catch (Exception ex)
@@ -51,6 +51,22 @@ namespace ReserveBlockCore.Models
                     return null;
                 }
                 
+            }
+
+            public static LiteDB.ILiteCollection<Validators> GetOldAll()
+            {
+                try
+                {
+                    var validators = DbContext.DB_Peers.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
+                    return validators;
+                }
+                catch (Exception ex)
+                {
+                    DbContext.Rollback();
+                    ErrorLogUtility.LogError(ex.Message, "Validators.GetAll()");
+                    return null;
+                }
+
             }
 
             internal static void Initialize()

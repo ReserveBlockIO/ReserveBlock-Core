@@ -1,13 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace ReserveBlockCore.Models
 {
@@ -30,6 +24,7 @@ namespace ReserveBlockCore.Models
 		public int NumOfTx { get; set; }
 		public long Size { get; set; }
 		public int BCraftTime { get; set; }
+		public string AdjudicatorSignature { get; set; }
 
 		public IList<Transaction> Transactions { get; set; }
 		//Methods

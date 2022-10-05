@@ -95,6 +95,9 @@ namespace ReserveBlockCore.Services
                             {
                                 stateTreiRec.Balance = bb.Balance;
                                 stateTrei.UpdateSafe(stateTreiRec);
+                                ErrorLogUtility.LogError(
+                                    $"Balance Off: {stateTreiRec.Key} | Reported: {stateTreiRec.Balance} - Actual: {bb.Balance}", 
+                                    "StateTreiSyncService()");
                             }
 
                         }

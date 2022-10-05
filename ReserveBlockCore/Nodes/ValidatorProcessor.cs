@@ -4,6 +4,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System;
 
 namespace ReserveBlockCore.Nodes
 {
@@ -23,10 +24,43 @@ namespace ReserveBlockCore.Nodes
                     switch(taskQuestion.TaskType)
                     {
                         case "rndNum":
-                            RandomNumberTask();
+                            if(Globals.LastBlock.Height < Globals.BlockLock)
+                            {
+                                RandomNumberTask_Deprecated();
+                            }
+                            else
+                            {
+                                RandomNumberTask_New(taskQuestion.BlockHeight);
+                            }
                             break;
                     }
                 }
+
+                if(message == "sendWinningBlock")
+                {
+                    var verifySecret = data;
+                    var taskWin = new TaskWinner();
+                    var fortisPool = Globals.FortisPool.ToList();
+                    var currentTaskAns = Globals.CurrentTaskNumberAnswer;
+
+                    if(currentTaskAns != null)
+                    {
+                        var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), currentTaskAns.Answer.ToString());
+                        if (block != null)
+                        {
+                            taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
+                            taskWin.Address = currentTaskAns.Address;
+                            taskWin.WinningBlock = block;
+                            await P2PClient.SendWinningTask_New(taskWin);
+                        }
+                        else
+                        {
+                            ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.ProcessData() - sendWinningBlock");
+                            Globals.LastTaskError = true;
+                        }
+                    }
+                }
+
                 if(message == "taskResult")
                 {
                     await BlockValidatorService.ValidationDelay();
@@ -92,10 +126,12 @@ namespace ReserveBlockCore.Nodes
                                     var txResult = await TransactionValidatorService.VerifyTX(transaction);
                                     if (txResult == true)
                                     {
-                                        var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                        var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                        transaction.TransactionRating = rating;
 
-                                        if (dblspndChk == false && isCraftedIntoBlock == false)
+                                        if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                         {
                                             mempool.InsertSafe(transaction);
                                         }
@@ -106,7 +142,10 @@ namespace ReserveBlockCore.Nodes
                                 {
 
                                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-                                    if (!isCraftedIntoBlock)
+                                    var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
+                                    var rating = await TransactionRatingService.GetTransactionRating(transaction);
+
+                                    if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                     {
 
                                     }
@@ -130,10 +169,12 @@ namespace ReserveBlockCore.Nodes
                                 var txResult = await TransactionValidatorService.VerifyTX(transaction);
                                 if (txResult == true)
                                 {
-                                    var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                    var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                    var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                    transaction.TransactionRating = rating;
 
-                                    if (dblspndChk == false && isCraftedIntoBlock == false)
+                                    if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                     {
                                         mempool.InsertSafe(transaction);
                                     }
@@ -147,7 +188,23 @@ namespace ReserveBlockCore.Nodes
             }            
         }
 
-        private static async void RandomNumberTask()
+        private static async void RandomNumberTask_New(long blockHeight)
+        {
+            var taskAnswer = new TaskNumberAnswer();
+            var num = TaskQuestionUtility.GenerateRandomNumber();
+            var fortisPool = Globals.FortisPool.ToList();
+            taskAnswer.Address = Globals.ValidatorAddress;
+            taskAnswer.Answer = num.ToString();
+            taskAnswer.SubmitTime = DateTime.Now;
+            taskAnswer.NextBlockHeight = blockHeight;
+
+            Globals.CurrentTaskNumberAnswer = taskAnswer;
+
+            await P2PClient.SendTaskAnswer_New(taskAnswer);
+
+        }
+
+        private static async void RandomNumberTask_Deprecated() 
         {
             var taskAnswer = new TaskAnswer();
             var num = TaskQuestionUtility.GenerateRandomNumber();
@@ -158,11 +215,11 @@ namespace ReserveBlockCore.Nodes
             if(block != null)
             {
                 taskAnswer.Block = block;
-                await P2PClient.SendTaskAnswer(taskAnswer);
+                await P2PClient.SendTaskAnswer_Deprecated(taskAnswer);
             }
             else
             {
-                ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.RandomNumberTask()");
+                ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.RandomNumberTask_Deprecated()");
                 Globals.LastTaskError = true;
             }
 

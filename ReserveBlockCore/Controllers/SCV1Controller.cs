@@ -216,6 +216,18 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        [HttpGet("AssociateNFTAsset/{nftId}/{**assetPath}")]
+        public async Task<string> AssociateNFTAsset(string nftId, string assetPath)
+        {
+            return $"NFT Id: {nftId} Asset Location: {assetPath}";
+        }
+
+        [HttpGet("DownloadNftAssets/{nftId}")]
+        public async Task<string> DownloadNftAssets(string nftId)
+        {
+            return $"NFT Id: {nftId}";
+        }
+
         [HttpPost("CreateSmartContract")]
         public async Task<string> CreateSmartContract([FromBody] object jsonData)
         {
@@ -423,8 +435,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("TransferNFT/{id}/{toAddress}")]
-        public async Task<string> TransferNFT(string id, string toAddress)
+        [HttpGet]
+        [Route("TransferNFT/{id}/{toAddress}")]
+        [Route("TransferNFT/{id}/{toAddress}/{**backupURL}")]
+        public async Task<string> TransferNFT(string id, string toAddress, string? backupURL = "")
         {
             var output = "";
 
@@ -501,12 +515,12 @@ namespace ReserveBlockCore.Controllers
                         assets.ForEach(x => { assetString = assetString + x + " "; });
 
                         NFTLogUtility.Log($"Sending the following assets for upload: {assetString}", "SCV1Controller.TransferNFT()");
+                        var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
 
-                        var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress);
+                        var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, md5List);
                         if(result != "Fail" && result != "NA")
                         {
-                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-                            var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List);
+                            var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List, backupURL);
                             NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
                             NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
 

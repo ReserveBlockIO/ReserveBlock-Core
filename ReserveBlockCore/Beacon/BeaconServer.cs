@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Models;
+﻿using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +13,7 @@ namespace ReserveBlockCore.Beacon
         public string SaveTo;
         public int Port;
         TcpListener obj_server;
+
 
         public BeaconServer(string SaveTo, int Port)
         {
@@ -34,6 +37,7 @@ namespace ReserveBlockCore.Beacon
                 obj_thread.Start();
             }
         }
+
     }
 
     class SocketHandler
@@ -77,6 +81,15 @@ namespace ReserveBlockCore.Beacon
                                         break;
                                     }
                                     fileName = Encoding.UTF8.GetString(recv_data);
+                                    //perform file check
+                                    var extChkResult = CheckExtensionApproval(fileName);
+                                    if (!extChkResult)
+                                    {
+                                        //Extension found in reject list
+                                        ns.Flush();
+                                        loop_break = true;
+                                        break;
+                                    }
                                     var beaconData = BeaconData.GetBeaconData();
                                     if (beaconData != null)
                                     {
@@ -277,5 +290,22 @@ namespace ReserveBlockCore.Beacon
 
             return ms.ToArray();
         }
+
+        private bool CheckExtensionApproval(string fileName)
+        {
+            bool output = false;
+
+            string ext = Path.GetExtension(fileName);
+
+            if(!string.IsNullOrEmpty(ext))
+            {
+                var rejectedExtList = Globals.RejectAssetExtensionTypes;
+                var exist = rejectedExtList.Exists(x => x == ext);
+                if(!exist)
+                    output = true;
+            }
+            return output;
+        }
+
     }
 }

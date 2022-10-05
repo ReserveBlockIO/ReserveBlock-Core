@@ -15,7 +15,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-
 namespace ReserveBlockCore.P2P
 {
     public class P2PAdjServer : Hub
@@ -80,6 +79,7 @@ namespace ReserveBlockCore.P2P
                                                 validator.UniqueName = uName;
                                                 validator.IpAddress = peerIP;
                                                 validator.WalletVersion = walletVersion;
+                                                keepValConnected = true;
                                                 ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
                                             }
                                             else
@@ -199,12 +199,12 @@ namespace ReserveBlockCore.P2P
         {
             var peerIP = GetIP(Context);
             Globals.P2PPeerList.TryRemove(peerIP, out var test);
+            try
+            {
+                Globals.FortisPool.RemoveAll(x => x.IpAddress == peerIP && x.ConnectionId == Context.ConnectionId);
+            }
+            catch { };
 
-            string connectionId = Context.ConnectionId;
-            //FortisPool.RemoveAll(x => x.ConnectionId == connectionId);            
-            var fortisPoolStr = "";
-            //fortisPoolStr = JsonConvert.SerializeObject(FortisPool);
-            //await SendAdjMessageAll("fortisPool", fortisPoolStr);
             await base.OnDisconnectedAsync(ex);
         }
 
@@ -225,53 +225,192 @@ namespace ReserveBlockCore.P2P
 
         public static async Task<int> GetConnectedValCount()
         {
-            var peerCount = Globals.AdjPeerList.Count;
-            return peerCount;
+            try
+            {
+                var peerCount = Globals.AdjPeerList.Count;
+                return peerCount;
+            }
+            catch { }
+
+            return -1;
         }
 
         #endregion
 
-        #region Receive Block and Task Answer
-        public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
+        #region Receive Block and Task Answer **NEW
+        public async Task<bool> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
         {
-            if (taskResult.Block.Size > 1048576)
-                return false;
-            return await P2PServer.SignalRQueue(Context, (int)taskResult.Block.Size, async () =>
+            try
             {
-                if (Globals.BlocksDownloading == 0)
+                if(taskResult != null)
                 {
-                    if (Globals.Adjudicate)
+                    var answerSize = JsonConvert.SerializeObject(taskResult).Length;
+                    if (answerSize > 1048576)
+                        return false;
+                    return await P2PServer.SignalRQueue(Context, answerSize, async () =>
                     {
-                        //This will result in users not getting their answers chosen if they are not in list.
-                        var fortisPool = Globals.FortisPool.ToList();
-                        if (fortisPool.Exists(x => x.Address == taskResult.Address))
+                        if (Globals.BlocksDownloading == 0)
                         {
-                            if (taskResult.Block.Height == Globals.LastBlock.Height + 1)
+                            if (Globals.Adjudicate)
                             {
-                                var taskAnswerList = Globals.TaskAnswerList.ToList();
-                                var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
-                                if (!answerExist)
+                                //This will result in users not getting their answers chosen if they are not in list.
+                                var fortisPool = Globals.FortisPool.ToList();
+                                if (fortisPool.Exists(x => x.Address == taskResult.Address))
                                 {
-                                    taskResult.SubmitTime = DateTime.UtcNow;
-                                    Globals.TaskAnswerList.Add(taskResult);                                    
-                                    return true;
+                                    if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
+                                    {
+                                        var taskAnswerList = Globals.TaskAnswerList_New.ToList();
+                                        var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
+                                        if (!answerExist)
+                                        {
+                                            taskResult.SubmitTime = DateTime.Now;
+                                            Globals.TaskAnswerList_New.Add(taskResult);
+                                            return true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //RejectedTaskAnswerList.Add(taskResult);
+                                        return false;
+                                    }
+                                }
+                                else
+                                {
+                                    //RejectedTaskAnswerList.Add(taskResult);
+                                    return false;
                                 }
                             }
-                            else
-                            {
-                                //RejectedTaskAnswerList.Add(taskResult);
-                                return false;
-                            }
                         }
-                        else
-                        {
-                            //RejectedTaskAnswerList.Add(taskResult);
+                        return false;
+                    });
+                }
+
+                return false;
+            }
+            catch { }
+            return false;
+        }
+
+        #endregion
+
+        #region Receive Winning Task Block Answer **NEW
+        public async Task<bool> ReceiveWinningTaskBlock(TaskWinner winningTask)
+        {
+            try
+            {
+                if(winningTask != null)
+                {
+                    if(winningTask.WinningBlock != null)
+                    {
+                        if (winningTask.WinningBlock.Size > 1048576)
                             return false;
-                        }
+                        return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
+                        {
+                            if (Globals.BlocksDownloading == 0)
+                            {
+                                if (Globals.Adjudicate)
+                                {
+                                    //This will result in users not getting their answers chosen if they are not in list.
+                                    var fortisPool = Globals.FortisPool.ToList();
+                                    if (fortisPool.Exists(x => x.Address == winningTask.Address))
+                                    {
+                                        //if(true)
+                                        var exist = Globals.TaskSelectedNumbers.Exists(x => x.Address == winningTask.Address);
+                                        if (exist)
+                                        {
+                                            if (winningTask.WinningBlock.Height == Globals.LastBlock.Height + 1 &&
+                                        winningTask.VerifySecret == Globals.VerifySecret)
+                                            {
+                                                Globals.TaskWinnerList.Add(winningTask);
+                                                return true;
+                                            }
+                                            else
+                                            {
+                                                return false;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
+                            return false;
+                        });
                     }
                 }
+
                 return false;
-            });
+            }
+            catch { }
+            return false;
+        }
+
+        #endregion
+
+        #region Receive Block and Task Answer **Deprecated
+        public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
+        {
+            try
+            {
+                if(taskResult != null)
+                {
+                    if(taskResult.Block != null)
+                    {
+                        if (taskResult.Block.Size > 1048576)
+                            return false;
+                        return await P2PServer.SignalRQueue(Context, (int)taskResult.Block.Size, async () =>
+                        {
+                            if (Globals.BlocksDownloading == 0)
+                            {
+                                if (Globals.Adjudicate)
+                                {
+                                    //This will result in users not getting their answers chosen if they are not in list.
+                                    var fortisPool = Globals.FortisPool.ToList();
+                                    if (fortisPool.Exists(x => x.Address == taskResult.Address))
+                                    {
+                                        if (taskResult.Block.Height == Globals.LastBlock.Height + 1)
+                                        {
+                                            var taskAnswerList = Globals.TaskAnswerList.ToList();
+                                            var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
+                                            if (!answerExist)
+                                            {
+                                                taskResult.SubmitTime = DateTime.UtcNow;
+                                                Globals.TaskAnswerList.Add(taskResult);
+                                                return true;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            //RejectedTaskAnswerList.Add(taskResult);
+                                            return false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //RejectedTaskAnswerList.Add(taskResult);
+                                        return false;
+                                    }
+                                }
+                            }
+                            return false;
+                        });
+                    }
+                }
+
+                return false;
+                
+            }
+            catch(Exception ex)
+            {
+                return false;
+            }
+            
         }
 
         #endregion
@@ -279,99 +418,109 @@ namespace ReserveBlockCore.P2P
         #region Receive TX to relay
 
         public async Task<bool> ReceiveTX(Transaction transaction)
-        {            
-            return await P2PServer.SignalRQueue(Context, (transaction.Data?.Length ?? 0) + 1028, async () =>
+        {
+            try
             {
-                bool output = false;
-                if (Globals.BlocksDownloading == 0)
+                return await P2PServer.SignalRQueue(Context, (transaction.Data?.Length ?? 0) + 1028, async () =>
                 {
-                    if (Globals.Adjudicate)
+                    bool output = false;
+                    if (Globals.BlocksDownloading == 0)
                     {
-                        if (transaction != null)
+                        if (Globals.Adjudicate)
                         {
-                            var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
-                            if (!isTxStale)
+                            if (transaction != null)
                             {
-                                var mempool = TransactionData.GetPool();
-                                if (mempool.Count() != 0)
+                                var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
+                                if (!isTxStale)
                                 {
-                                    var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
-                                    if (txFound == null)
+                                    var mempool = TransactionData.GetPool();
+                                    if (mempool.Count() != 0)
+                                    {
+                                        var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
+                                        if (txFound == null)
+                                        {
+
+                                            var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                                            if (txResult == true)
+                                            {
+                                                var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
+                                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                                var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                                transaction.TransactionRating = rating;
+
+                                                if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                                                {
+                                                    mempool.InsertSafe(transaction);
+                                                    var txOutput = "";
+                                                    txOutput = JsonConvert.SerializeObject(transaction);
+                                                    await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                                    Globals.BroadcastedTrxList.Add(transaction);
+                                                    output = true;
+                                                }
+                                            }
+
+                                        }
+                                        else
+                                        {
+
+                                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                            if (!isCraftedIntoBlock)
+                                            {
+                                                if (!Globals.BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
+                                                {
+                                                    var txOutput = "";
+                                                    txOutput = JsonConvert.SerializeObject(transaction);
+                                                    await SendAdjMessageAll("tx", txOutput);
+                                                    Globals.BroadcastedTrxList.Add(transaction);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                try
+                                                {
+                                                    mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    DbContext.Rollback();
+                                                    //delete failed
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
                                     {
 
                                         var txResult = await TransactionValidatorService.VerifyTX(transaction);
                                         if (txResult == true)
                                         {
-                                            var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
+                                            var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                            var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                            transaction.TransactionRating = rating;
 
-                                            if (dblspndChk == false && isCraftedIntoBlock == false)
+                                            if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                             {
                                                 mempool.InsertSafe(transaction);
                                                 var txOutput = "";
                                                 txOutput = JsonConvert.SerializeObject(transaction);
                                                 await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
-                                                Globals.BroadcastedTrxList.Add(transaction);
                                                 output = true;
                                             }
                                         }
-
-                                    }
-                                    else
-                                    {
-
-                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-                                        if (!isCraftedIntoBlock)
-                                        {
-                                            if (!Globals.BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
-                                            {
-                                                var txOutput = "";
-                                                txOutput = JsonConvert.SerializeObject(transaction);
-                                                await SendAdjMessageAll("tx", txOutput);
-                                                Globals.BroadcastedTrxList.Add(transaction);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            try
-                                            {
-                                                mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                DbContext.Rollback();
-                                                //delete failed
-                                            }
-                                        }
                                     }
                                 }
-                                else
-                                {
 
-                                    var txResult = await TransactionValidatorService.VerifyTX(transaction);
-                                    if (txResult == true)
-                                    {
-                                        var dblspndChk = await TransactionData.DoubleSpendCheck(transaction);
-                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-
-                                        if (dblspndChk == false && isCraftedIntoBlock == false)
-                                        {
-                                            mempool.InsertSafe(transaction);
-                                            var txOutput = "";
-                                            txOutput = JsonConvert.SerializeObject(transaction);
-                                            await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
-                                            output = true;
-                                        }
-                                    }
-                                }
                             }
-
                         }
                     }
-                }
 
-                return output;
-            });
+                    return output;
+                });
+            }
+            catch { } //incorrect TX received
+
+            return false;
         }
 
         #endregion
@@ -380,17 +529,23 @@ namespace ReserveBlockCore.P2P
 
         private static string GetIP(HubCallerContext context)
         {
-            var peerIP = "NA";
-            var feature = context.Features.Get<IHttpConnectionFeature>();
-            if(feature != null)
+            try
             {
-                if(feature.RemoteIpAddress != null)
+                var peerIP = "NA";
+                var feature = context.Features.Get<IHttpConnectionFeature>();
+                if (feature != null)
                 {
-                    peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
+                    if (feature.RemoteIpAddress != null)
+                    {
+                        peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
+                    }
                 }
-            }
 
-            return peerIP;
+                return peerIP;
+            }
+            catch { }
+
+            return "0.0.0.0";
         }
 
         #endregion

@@ -11,31 +11,45 @@ using System.Security.Cryptography;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Extensions;
 using Spectre.Console;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Data
 {
     internal static class AccountData
     {
-        public static Account CreateNewAccount()
+		public static Account CreateNewAccount(bool skipSave = false)
         {
-            Account account = new Account();
-            PrivateKey privateKey = new PrivateKey();
-            var privKeySecretHex = privateKey.secret.ToString("x");
-            var pubKey = privateKey.publicKey();
+			Account account = new Account();
+			var accountMade = false;
+			while(accountMade == false)
+            {
+				try
+				{
+					PrivateKey privateKey = new PrivateKey();
+					var privKeySecretHex = privateKey.secret.ToString("x");
+					var pubKey = privateKey.publicKey();
 
-            account.PrivateKey = privKeySecretHex;
-            account.PublicKey = "04" + ByteToHex(pubKey.toString());
-            account.Balance = 0.00M;
-			account.Address = GetHumanAddress(account.PublicKey);
+					account.PrivateKey = privKeySecretHex;
+					account.PublicKey = "04" + ByteToHex(pubKey.toString());
+					account.Balance = 0.00M;
+					account.Address = GetHumanAddress(account.PublicKey);
 
-			//var test = HexToByte(account.PublicKey.Remove(0,2));
+					var sig = Ecdsa.sign("test", privateKey);
+					var verify = Ecdsa.verify("test", sig, privateKey.publicKey());
 
-			//var pubKeyTest = PublicKey.fromString(test);
-
-			AddToAccount(account);
+                    if (verify == true)
+                    {
+						if (!skipSave)
+							AddToAccount(account);
+						accountMade = true;
+					}
+				}
+				catch { }
+			}
+			
 
 			return account;
-        }
+		}
 		public static Account RestoreAccount(string privKey, bool rescanForTx = false)
         {
 			Account account = new Account();
@@ -74,6 +88,10 @@ namespace ReserveBlockCore.Data
                     {
 						//rescan for all tx's sent out and all tx's received.
                     }
+					if(Globals.IsWalletEncrypted == true)
+					{
+						WalletEncryptionService.EncryptWallet(account, true);
+					}
 				}
 			}
 			catch (Exception ex)
@@ -139,8 +157,10 @@ namespace ReserveBlockCore.Data
 
 		public static PrivateKey GetPrivateKey(Account account)
         {
-			BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-			PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
 			return privateKey;
 		}
@@ -217,7 +237,7 @@ namespace ReserveBlockCore.Data
 			Console.WriteLine("*** Be sure to save private key!                   ***");
 			Console.WriteLine("*** Use your private key to restore account!       ***");
 		}
-		public static void AddToAccount(Account account)
+		public static async void AddToAccount(Account account)
 		{
 			var accountList = GetAccounts();
 			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.PrivateKey);
@@ -226,7 +246,11 @@ namespace ReserveBlockCore.Data
 			if(accountCheck == null)
             {
 				accountList.InsertSafe(account);
-			}
+     //           if (Globals.IsWalletEncrypted == true)
+     //           {
+					//var result = await WalletEncryptionService.EncryptWallet(account, true);
+     //           }
+            }
             else
             {
 				//do nothing as account is already in table. They are attempting to restore a key that already exist.

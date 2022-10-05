@@ -1,23 +1,11 @@
 ﻿global using ReserveBlockCore.Extensions;
 
-using ReserveBlockCore.Extensions;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json;
-using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
-using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
-using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
-using ReserveBlockCore.Config;
 using System.Diagnostics;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Collections.Concurrent;
 
 namespace ReserveBlockCore
 {
@@ -29,6 +17,8 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+            //Forced Testnet
+            Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {
@@ -65,6 +55,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
+            StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -118,28 +109,34 @@ namespace ReserveBlockCore
                 });
             }
 
-            //THis is for adjudicator start. This might need to be removed.
-            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+            
 
             //Temporary for TestNet------------------------------------
-            SeedNodeService.SeedNodes();
-            var nodeIp = await SeedNodeService.PingSeedNode();
-            await SeedNodeService.GetSeedNodePeers(nodeIp);
+            //SeedNodeService.SeedNodes();
+            //var nodeIp = await SeedNodeService.PingSeedNode();
+            //await SeedNodeService.GetSeedNodePeers(nodeIp);
             //Temporary for TestNet------------------------------------
 
-            StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
-            
+
+            //This is for adjudicator start.
+            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
 
-            StartupService.RunStateSync();
+            //StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
+            await StartupService.EstablishBeaconReference();
+            
+
+            //Removes validator record from DB_Peers as its now within the wallet.
+            StartupService.ClearOldValidatorDups();
 
             Globals.StopAllTimers = true;
 
@@ -195,13 +192,11 @@ namespace ReserveBlockCore
 
             builder.RunConsoleAsync();
             builder2.RunConsoleAsync();
-            
-
-            
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
+            
             StartupService.CheckForDuplicateBlocks();
 
             if (Globals.DatabaseCorruptionDetected == true)
@@ -225,6 +220,9 @@ namespace ReserveBlockCore
             await StartupService.SetLeadAdjudicator();
             StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
+
+            await StartupService.ConnectoToBeacon();
+
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
             await StartupService.ConnectoToAdjudicator();
@@ -247,7 +245,7 @@ namespace ReserveBlockCore
 
             await Task.WhenAll(tasks);
 
-            LogUtility.Log("Wallet Started and Running...", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
+            LogUtility.Log("Line Reached. Should not be reached Program.cs Line 251", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
 
             //await Task.WhenAny(builder2.RunConsoleAsync(), commandLoopTask2);
             //await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
@@ -266,8 +264,19 @@ namespace ReserveBlockCore
             {
                 var command = Console.ReadLine();
                 if(command == "/help" || 
-                    command == "/menu" || 
-                    command == "/printvars" || 
+                    command == "/menu" ||
+                    command == "/info" ||
+                    command == "/stopco" ||
+                    command == "/unlock" ||
+                    command == "/addpeer" ||
+                    command == "/val" ||
+                    command == "/mempool" ||
+                    command == "/debug" ||
+                    command == "1" ||
+                    command == "5" ||
+                    command == "6" ||
+                    command == "7" ||
+                    command == "/exit" ||
                     command == "/clear" || 
                     command == "/trillium")
                 {
@@ -391,17 +400,6 @@ namespace ReserveBlockCore
                                     }
                                 }
                             }
-                            
-                            //testing purposes only.
-                            //Nodes.ForEach(x =>
-                            //{
-                            //    Console.WriteLine(x.NodeIP);
-                            //    Console.WriteLine(x.NodeHeight.ToString());
-                            //    Console.WriteLine(x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime() : "N/A");
-                            //    Console.WriteLine((x.NodeLatency / 10).ToString() + " ms");
-
-                            //});
-
                         }
                         Globals.HeightCheckLock = false;
                     }
@@ -438,7 +436,7 @@ namespace ReserveBlockCore
                     }
                     else
                     {
-                        if (Globals.Nodes.Count != Globals.MaxPeers)
+                        if (Globals.Nodes.Count < Globals.MaxPeers)
                         {
                             bool result = false;
                             //Get more nodes!

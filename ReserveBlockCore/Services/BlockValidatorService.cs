@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -68,7 +69,7 @@ namespace ReserveBlockCore.Services
                         else
                         {
                             if(Globals.IsChainSynced)
-                                ConsoleWriterService.Output(($"Block ({block.Height}) was added from: {block.Validator} "));
+                                ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] was added from: [purple]{block.Validator}[/] "));
                             else
                                 Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
                         }                        
@@ -152,7 +153,10 @@ namespace ReserveBlockCore.Services
 
                 if (block.Version > 1)
                 {
-                    //run new block rules.
+                    //Run block version 2 rules
+                    var version2Result = await BlockVersionUtility.Version2Rules(block);
+                    if (!version2Result)
+                        return result;
                 }
 
                 //ensures the timestamps being produced are correct
@@ -216,6 +220,52 @@ namespace ReserveBlockCore.Services
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
                                 rejectBlock = txResult == false ? rejectBlock = true : false;
+                                //check for duplicate tx
+                                if (blkTransaction.TransactionType != TransactionType.TX)
+                                {
+                                    if(blkTransaction.Data != null)
+                                    {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
+                                        if (scDataArray != null)
+                                        {
+                                            var scData = scDataArray[0];
+
+                                            var function = (string?)scData["Function"];
+                                            var scUID = (string?)scData["ContractUID"];
+                                            if (!string.IsNullOrWhiteSpace(function))
+                                            {
+                                                var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                if (otherTxs.Count() > 0)
+                                                {
+                                                    foreach (var otx in otherTxs)
+                                                    {
+                                                        if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                                        {
+                                                            if (otx.Data != null)
+                                                            {
+                                                                var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                if (ottxDataArray != null)
+                                                                {
+                                                                    var ottxData = ottxDataArray[0];
+
+                                                                    var ottxFunction = (string?)ottxData["Function"];
+                                                                    var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                    if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                    {
+                                                                        if (ottxscUID == scUID)
+                                                                        {
+                                                                            rejectBlock = true;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
@@ -249,8 +299,14 @@ namespace ReserveBlockCore.Services
                                     if (mempoolTx.Count() > 0)
                                     {
                                         mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
+                                        try
+                                        {
+                                            Globals.BroadcastedTrxList.RemoveAll(x => x.Hash == localTransaction.Hash);
+                                        }
+                                        catch { };
                                     }
                                 }
+
 
                                 //Adds receiving TX to wallet
                                 var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
@@ -579,22 +635,19 @@ namespace ReserveBlockCore.Services
                     {
                         var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
                         rejectBlock = txResult == false ? rejectBlock = true : false;
-                        if(rejectBlock)
+                        if (rejectBlock)
                         {
-                            // This can cause a loop if a bad tx is continuously submitted. 
-                            // Need to instead remove bad TX from block and reprocess block.
-                            // Might need to improve response from this method. Return more detail response as to why Validation failed other than false
-                            RemoveTxFromMempool(transaction);
+                            RemoveTxFromMempool(transaction);//this should not happen, but if client did fail to properly handle tx it will reject it here.
                         }
                     }
-                    else
-                    {
-                        //do nothing as its the coinbase fee
-                    }
+                    else { }//do nothing as its the coinbase fee
 
                     if (rejectBlock)
                         break;
                 }
+
+                
+
                 if (rejectBlock)
                 {
                     ValidatorLogUtility.Log("Block validated failed due to transactions not validating", "BlockValidatorService.ValidateBlockForTask()");

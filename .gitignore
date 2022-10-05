@@ -264,9 +264,6 @@ paket-files/
 __pycache__/
 *.pyc
 /meetings recording
-/NoteMaster/Migrations/201904172302185_addcompanyid.resx
-/NoteMaster/Migrations/201904172302185_addcompanyid.Designer.cs
-/NoteMaster/Migrations/201904172302185_addcompanyid.cs
 ReserveBlockCore/Databases/debug.txt
 ReserveBlockCore/Databases/validatorlog.txt
 ReserveBlockCore/Databases/errorlog.txt
@@ -279,7 +276,6 @@ ReserveBlockCore/Databases/bakRECENT/debug.txt
 
 ReserveBlockCore/SmartContracts/
 ReserveBlockCore/SmartContractsTestNet/
-ReserveBlockCore/Properties/launchSettings.json
 ReserveBlockCore/Trillium/Submissions/
 ReserveBlockCore/Databases/mostRecent/
 ReserveBlockCore/BeaconAsset/
@@ -290,3 +286,5 @@ ReserveBlockCore/DatabasesTestNet/
 ReserveBlockCore/TrilliumTestNet/Submissions/
 ReserveBlockCore/AssetsTestNet/
 ReserveBlockCore/DBs/
+ReserveBlockCore/Properties/
+ReserveBlockCore/Properties/launchSettings.json

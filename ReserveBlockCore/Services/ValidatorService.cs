@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Services
                     Thread.Sleep(3000);
                     StartupService.MainMenu();
                 }
-                else
+                else if(confirmChoice.ToLower() == "y")
                 {
                     Console.Clear();
                     Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
@@ -80,13 +80,19 @@ namespace ReserveBlockCore.Services
                     }
 
                 }
+                else
+                {
+                    Console.WriteLine("Unexpected input detected.");
+                    Console.WriteLine("Returning you to main menu in 5 seconds...");
+                    Thread.Sleep(5000);
+                }
 
             }
             else
             {
                 Console.WriteLine("********************************************************************");
-                Console.WriteLine("No wallets found with a balance.");
-                Console.WriteLine("Returning you to main menu...");
+                Console.WriteLine("Insufficient balance to validate.");
+                Console.WriteLine("Returning you to main menu in 5 seconds...");
                 Thread.Sleep(5000);
                 StartupService.MainMenu();
             }
@@ -184,6 +190,10 @@ namespace ReserveBlockCore.Services
                         await StartupService.ConnectoToAdjudicator();
                     }
                 }
+                else
+                {
+                    output = "Insufficient balance to validate.";
+                }
             }
 
             return output;
@@ -265,6 +275,41 @@ namespace ReserveBlockCore.Services
 
             ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
+        }
+
+        public static async void ClearOldValidator()
+        {
+            try
+            {
+                var validators = Validators.Validator.GetOldAll();
+                var validatorList = validators.FindAll().ToList();
+
+                if (validatorList.Count() > 0)
+                {
+                    var accounts = AccountData.GetAccounts();
+                    var myAccounts = accounts.FindAll().ToList();
+
+                    if (myAccounts.Count() > 0)
+                    {
+                        myAccounts.ForEach(x => {
+                            x.IsValidating = false;
+                        });
+
+                        accounts.UpdateSafe(myAccounts);
+                    }
+
+                    validators.DeleteAllSafe();
+
+                    Globals.ValidatorAddress = "";
+
+                    await P2PClient.DisconnectAdjudicator();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                DbContext.Rollback();
+            }
         }
 
         public static async void ClearDuplicates()

@@ -92,6 +92,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             {
                 try
                 {
+                    string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
                     var databaseLocation = Globals.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
                     var text = scText;
                     string path = "";
@@ -108,7 +109,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                         }
                         else
                         {
-                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                         }
                     }
                     if (!Directory.Exists(path))

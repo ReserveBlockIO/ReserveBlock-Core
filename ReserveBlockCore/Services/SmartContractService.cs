@@ -33,13 +33,13 @@ namespace ReserveBlockCore.Services
                 return null;// record already exist
             }
 
-            var scData = SmartContractReaderService.ReadSmartContract(scMain);
+            var scData = await SmartContractReaderService.ReadSmartContract(scMain);
 
             var txData = "";
 
-            if(!string.IsNullOrWhiteSpace(scData.Result.Item1))
+            if(!string.IsNullOrWhiteSpace(scData.Item1))
             {
-                var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
+                var bytes = Encoding.Unicode.GetBytes(scData.Item1);
                 var scBase64 = bytes.ToCompress().ToBase64();
                 var newSCInfo = new[]
                 {
@@ -72,7 +72,9 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -114,7 +116,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region TransferSmartContract
-        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA")
+        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA", string backupURL = "")
         {
             Transaction? scTx = null;
 
@@ -143,7 +145,8 @@ namespace ReserveBlockCore.Services
                 var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64, Locators = locators, MD5List = md5List}
+                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64, 
+                        Locators = locators, MD5List = md5List, BackupURL = backupURL != "" ? backupURL : "NA"}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);
@@ -171,7 +174,9 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -266,7 +271,9 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -372,7 +379,9 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -479,7 +488,9 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -586,7 +597,9 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;

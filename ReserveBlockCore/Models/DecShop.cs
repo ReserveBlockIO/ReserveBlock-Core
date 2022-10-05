@@ -161,7 +161,9 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
             var signature = SignatureService.CreateSignature(decshop.ShopUID, privateKey, account.PublicKey);
             var hash = GetHash(address, name, signature, timestamp);

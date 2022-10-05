@@ -8,6 +8,8 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace ReserveBlockCore.Data
 {
@@ -102,7 +104,7 @@ namespace ReserveBlockCore.Data
         {
             try
             {
-                var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
+                var collection = DbContext.DB_Mempool.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
                 collection.EnsureIndexSafe(x => x.Hash);
                 return collection;
             }
@@ -121,8 +123,9 @@ namespace ReserveBlockCore.Data
                 var txs = pool.FindAll().ToList();
                 foreach(var tx in txs)
                 {
+                    var rating = tx.TransactionRating != null ? tx.TransactionRating.ToString() : "NA";
                     var txString = "From: " + tx.FromAddress + " | To: " + tx.ToAddress + " | Amount: " + tx.Amount.ToString() + " | Fee: " + tx.Fee.ToString()
-                        + " | TX ID: " + tx.Hash + " | Timestamp: " + tx.Timestamp.ToString();
+                        + " | TX ID: " + tx.Hash + " | Timestamp: " + tx.Timestamp.ToString() + " | Rating: " + rating;
                     Console.WriteLine(txString);
                 }
             }
@@ -152,7 +155,7 @@ namespace ReserveBlockCore.Data
 
         public static List<Transaction> ProcessTxPool()
         {
-            var collection = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
+            var collection = DbContext.DB_Mempool.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
 
             var memPoolTxList = collection.FindAll().ToList();
             //Size the pool to 1mb
@@ -166,18 +169,79 @@ namespace ReserveBlockCore.Data
                     var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
                     if(!txExist)
                     {
-                        var signature = tx.Signature;
-                        var sigCheck = VerifySignature(tx.Hash, signature);
-                        if (sigCheck == true)
+                        var reject = false;
+                        if(tx.TransactionType != TransactionType.TX)
                         {
-                            var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
-                            //var sumOfSend = memPoolTxList.Where(x => x.FromAddress == tx.FromAddress).Sum(x => x.Amount);
-                            //var sumOfSendFee = memPoolTxList.Where(x => x.FromAddress == tx.FromAddress).Sum(x => x.Fee);
-
-                            var totalSend = (tx.Amount + tx.Fee);
-                            if (balance >= totalSend)
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            if (scDataArray != null)
                             {
-                                approvedMemPoolList.Add(tx);
+                                var scData = scDataArray[0];
+
+                                var function = (string?)scData["Function"];
+                                var scUID = (string?)scData["ContractUID"];
+                                if (!string.IsNullOrWhiteSpace(function))
+                                {
+                                    var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                    if (otherTxs.Count() > 0)
+                                    {
+                                        foreach (var otx in otherTxs)
+                                        {
+                                            if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                            {
+                                                if (otx.Data != null)
+                                                {
+                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                    if (ottxDataArray != null)
+                                                    {
+                                                        var ottxData = ottxDataArray[0];
+
+                                                        var ottxFunction = (string?)ottxData["Function"];
+                                                        var ottxscUID = (string?)ottxData["ContractUID"];
+                                                        if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                        {
+                                                            if (ottxscUID == scUID)
+                                                            {
+                                                                reject = true;
+
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if(reject == false)
+                        {
+                            var signature = tx.Signature;
+                            var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                            if (sigCheck)
+                            {
+                                var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
+
+                                var totalSend = (tx.Amount + tx.Fee);
+                                if (balance >= totalSend)
+                                {
+                                    approvedMemPoolList.Add(tx);
+                                }
+                                else
+                                {
+                                    var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                                    if (txToDelete != null)
+                                    {
+                                        try
+                                        {
+                                            collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            DbContext.Rollback();
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
@@ -195,21 +259,6 @@ namespace ReserveBlockCore.Data
                                 }
                             }
                         }
-                        else
-                        {
-                            var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
-                            if(txToDelete != null)
-                            {
-                                try
-                                {
-                                    collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
-                                }
-                                catch (Exception ex)
-                                {
-                                    DbContext.Rollback();
-                                }
-                            }
-                        }
                     }
                 });
             }
@@ -217,9 +266,7 @@ namespace ReserveBlockCore.Data
             return approvedMemPoolList;
         }
 
-       
-
-        public static async Task<bool> DoubleSpendCheck(Transaction tx)
+        public static async Task<bool> DoubleSpendReplayCheck(Transaction tx)
         {
             bool result = false;
 
@@ -227,35 +274,123 @@ namespace ReserveBlockCore.Data
             if (transactions.Count() > 0)
             {
                 var txExist = transactions.Any(x => x.Hash == tx.Hash);
-                if (txExist == true)
+                if (txExist)
                 {
-                    result = true;//douple spend has occured
+                    result = true;//replay or douple spend has occured
                 }
 
             }
 
-            if(result == true)
+            if(result)
             {
-                return result;//douple spend has occured
+                return result;//replay or douple spend has occured
             }
 
-            var mempool = TransactionData.GetPool();
+            var mempool = GetPool();
             var txs = mempool.Find(x => x.FromAddress == tx.FromAddress).ToList();
 
             if(txs.Count() > 0)
             {
-                var amount = txs.Sum(x => x.Amount);
+                var amount = txs.Sum(x => x.Amount + x.Fee);
                 var stateTreiAcct = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
                 if(stateTreiAcct != null)
                 {
-                    var amountTotal = amount + tx.Amount;
-                    if(amountTotal > stateTreiAcct.Balance)
+                    var amountTotal = amount + tx.Amount + tx.Fee;
+                    if (amountTotal > stateTreiAcct.Balance)
                     {
-                        result = true; //douple spend has occured
+                        result = true; //douple spend or overspend has occured
                     }
                 }
             }
 
+            //double NFT transfer or burn check
+            if(tx.TransactionType != TransactionType.TX)
+            {
+                if(tx.Data != null)
+                {
+                    var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                    if(scDataArray != null)
+                    {
+                        var scData = scDataArray[0];
+
+                        var function = (string?)scData["Function"];
+                        var scUID = (string?)scData["ContractUID"];
+                        if (!string.IsNullOrWhiteSpace(function))
+                        {
+                            switch (function)
+                            {
+                                case "Transfer()":
+                                    //do something
+                                    var otherTransferTxs = mempool.Find(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                    if(otherTransferTxs.Count() > 0)
+                                    {
+                                        foreach(var ottx in otherTransferTxs)
+                                        {
+                                            if(ottx.TransactionType == TransactionType.NFT_TX || ottx.TransactionType == TransactionType.NFT_BURN)
+                                            {
+                                                if(ottx.Data != null)
+                                                {
+                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(ottx.Data);
+                                                    if(ottxDataArray != null)
+                                                    {
+                                                        var ottxData = ottxDataArray[0];
+
+                                                        var ottxFunction = (string?)ottxData["Function"];
+                                                        var ottxscUID = (string?)ottxData["ContractUID"];
+                                                        if(!string.IsNullOrWhiteSpace(ottxFunction))
+                                                        {
+                                                            if(ottxscUID == scUID)
+                                                            {
+                                                                //FAIL
+                                                                return false;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    break;
+                                case "Burn()":
+                                    var otherBurnTxs = mempool.Find(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                    if (otherBurnTxs.Count() > 0)
+                                    {
+                                        foreach (var obtx in otherBurnTxs)
+                                        {
+                                            if (obtx.TransactionType == TransactionType.NFT_TX || obtx.TransactionType == TransactionType.NFT_BURN)
+                                            {
+                                                if (obtx.Data != null)
+                                                {
+                                                    var obtxDataArray = JsonConvert.DeserializeObject<JArray>(obtx.Data);
+                                                    if (obtxDataArray != null)
+                                                    {
+                                                        var obtxData = obtxDataArray[0];
+
+                                                        var obtxFunction = (string?)obtxData["Function"];
+                                                        var obtxscUID = (string?)obtxData["ContractUID"];
+                                                        if (!string.IsNullOrWhiteSpace(obtxFunction))
+                                                        {
+                                                            if (obtxscUID == scUID)
+                                                            {
+                                                                //FAIL
+                                                                return false;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    
+                }
+            }
             return result;
         }
 
@@ -317,35 +452,6 @@ namespace ReserveBlockCore.Data
             return query;
         }
 
-        public static string CreateSignature(string message, PrivateKey PrivKey, string pubKey)
-        {
-
-            Signature signature = Ecdsa.sign(message, PrivKey);
-            var sigBase64 = signature.toBase64();
-            var pubKeyEncoded = Base58Utility.Base58Encode(HexByteUtility.HexToByte(pubKey.Remove(0, 2)));
-            var sigScript = sigBase64 + "." + pubKeyEncoded;
-
-            //validate new signature
-            var sigScriptArray = sigScript.Split('.', 2);
-            var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-            var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
-            var publicKey = PublicKey.fromString(pubKeyByte);
-            var verifyCheck = Ecdsa.verify(message, Signature.fromBase64(sigScriptArray[0]), publicKey);
-
-            if (verifyCheck != true)
-                return "ERROR";
-            return sigScript;
-        }
-
-        public static bool VerifySignature(string message, string sigScript)
-        {
-            var sigScriptArray = sigScript.Split('.', 2);
-            var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-            var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
-            var publicKey = PublicKey.fromString(pubKeyByte);
-
-            return Ecdsa.verify(message, Signature.fromBase64(sigScriptArray[0]), publicKey);
-        }
     }
 
 }
