@@ -28,6 +28,8 @@ namespace ReserveBlockCore.P2P
         /// </summary>
 
         private static HubConnection? hubAdjConnection1; //reserved for validators
+
+        private static SemaphoreSlim AdjLock = new SemaphoreSlim(1, 1);
         public static bool IsAdjConnected1 => hubAdjConnection1?.State == HubConnectionState.Connected;
 
         private static HubConnection? hubAdjConnection2; //reserved for validators
@@ -35,6 +37,22 @@ namespace ReserveBlockCore.P2P
 
         private static HubConnection? hubBeaconConnection; //reserved for beacon
         public static bool IsBeaconConnected => hubBeaconConnection?.State == HubConnectionState.Connected;
+
+        public static async Task<T> AdjInvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
+        {
+            await AdjLock.WaitAsync();
+            var delay = Task.Delay(1000);
+            try
+            {
+                return await hubAdjConnection1.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
+            }
+            finally
+            {
+                await delay;
+                if (AdjLock.CurrentCount == 0)
+                    AdjLock.Release();
+            }
+        }
 
         #endregion
 
@@ -434,7 +452,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveWinningTaskBlock", args: new object?[] { taskWin });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveWinningTaskBlock", new object?[] { taskWin });
                                     if (result)
                                     {
                                         Globals.LastWinningTaskError = false;
@@ -500,7 +518,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
                                     if (result)
                                     {
                                         Globals.LastTaskError = false;
@@ -566,7 +584,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
                                     
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
                                     if (result)
                                     {
                                         Globals.LastTaskError = false;
@@ -612,7 +630,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { tx });
+                    var result = await AdjInvokeAsync<bool>("ReceiveTX", args: new object?[] { tx });
                 }
                 catch (Exception ex)
                 {
@@ -698,7 +716,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var source = new CancellationTokenSource(30000);
-                Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
+                Block = await node.InvokeAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
                 if (Block != null)
                 {
                     blockSize = Block.Size;
@@ -729,7 +747,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await node.InvokeAsync<long>("SendBlockHeight");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
@@ -959,7 +977,7 @@ namespace ReserveBlockCore.P2P
                     if(IsBeaconConnected)
                     {
                         if(hubBeaconConnection != null)
-                        {
+                        {                            
                             var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveUploadRequest", args: new object?[] { bsd });
                             if (response != true)
                             {
@@ -1202,7 +1220,7 @@ namespace ReserveBlockCore.P2P
             {
                 foreach(var node in Globals.Nodes.Values)
                 {
-                    string beaconInfo = await node.Connection.InvokeAsync<string>("SendBeaconInfo");
+                    string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo");
                     if (beaconInfo != "NA")
                     {
                         NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
@@ -1244,7 +1262,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        var leadAdjudictor = await node.Connection.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
+                        var leadAdjudictor = await node.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
 
                         if (leadAdjudictor != null)
                         {
@@ -1288,7 +1306,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        string message = await node.Connection.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+                        string message = await node.InvokeAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
                         if (message == "ATMP")
                         {
@@ -1329,7 +1347,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {                        
-                        await node.Connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                        await node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
                         
                     }
                     catch (Exception ex)
