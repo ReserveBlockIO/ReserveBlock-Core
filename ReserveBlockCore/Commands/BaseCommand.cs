@@ -97,6 +97,16 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.AddPeer();
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
+                case "/banpeer":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    BaseCommandServices.BanPeer();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
+                case "/unbanpeer":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    BaseCommandServices.UnbanPeer();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
                 case "/creatednr":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.CreateDnr();
