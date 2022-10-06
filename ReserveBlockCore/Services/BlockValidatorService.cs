@@ -122,7 +122,6 @@ namespace ReserveBlockCore.Services
                     DbContext.Commit();
                     return result;
                 }
-
                 if (block.Height != 0)
                 {
                     var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
@@ -158,7 +157,6 @@ namespace ReserveBlockCore.Services
                     if (!version2Result)
                         return result;
                 }
-
                 //ensures the timestamps being produced are correct
                 if (block.Height != 0)
                 {
@@ -275,18 +273,17 @@ namespace ReserveBlockCore.Services
                             if (rejectBlock)
                                 break;
                         }
+
                         if (rejectBlock)
                         {
                             DbContext.Rollback();
                             return result;//block rejected due to bad transaction(s)
                         }
 
-
                         result = true;
                         BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                         StateData.UpdateTreis(block);
-
                         var mempool = TransactionData.GetPool();
 
                         if (block.Transactions.Count() > 0)
@@ -527,7 +524,6 @@ namespace ReserveBlockCore.Services
                         }
 
                     }
-
                     DbContext.Commit();
                     return result;//block accepted
                 }
@@ -541,9 +537,10 @@ namespace ReserveBlockCore.Services
                     return result;
                 }                
             }
-            catch
+            catch(Exception ex)
             {
                 DbContext.Rollback();
+                Console.WriteLine($"Error: {ex.Message}");
             }
             return false;
         }

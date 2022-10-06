@@ -269,7 +269,7 @@ namespace ReserveBlockCore.Services
                                                 }
                                                 else
                                                 {
-                                                    ConsoleWriterService.Output("Task Winner was Found! " + taskWinner.Address);
+                                                    ConsoleWriterService.Output("Task Winner was Found! *DEP " + taskWinner.Address);
                                                     var nextBlock = taskWinner.Block;
                                                     if (nextBlock != null)
                                                     {
@@ -329,6 +329,15 @@ namespace ReserveBlockCore.Services
                                                             }
                                                             failedTaskAnswersList.Add(taskWinner);
                                                         }
+                                                    }
+                                                    else
+                                                    {
+                                                        Console.WriteLine("Block was null");
+                                                        if (failedTaskAnswersList == null)
+                                                        {
+                                                            failedTaskAnswersList = new List<TaskAnswer>();
+                                                        }
+                                                        failedTaskAnswersList.Add(taskWinner);
                                                     }
                                                 }
                                             }
@@ -843,6 +852,16 @@ namespace ReserveBlockCore.Services
                                 validator.LastAnswerSendDate = DateTime.Now;
                             }
                         }
+                    }
+                }
+
+                var nodeWithAnswer = pool.Where(x => x.LastAnswerSendDate != null).ToList();
+                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
+                if(deadNodes.Count() > 0)
+                {
+                    foreach (var deadNode in deadNodes)
+                    {
+                        pool.Remove(deadNode);
                     }
                 }
             }

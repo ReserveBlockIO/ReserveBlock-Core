@@ -73,13 +73,61 @@ namespace ReserveBlockCore.P2P
                                             var validator = Globals.FortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
                                             if (validator != null)
                                             {
-                                                validator.ConnectDate = DateTime.UtcNow;
-                                                validator.Address = address;
-                                                validator.ConnectionId = connectionId;
-                                                validator.UniqueName = uName;
-                                                validator.IpAddress = peerIP;
-                                                validator.WalletVersion = walletVersion;
-                                                keepValConnected = true;
+                                                if(validator.Address != address)
+                                                {
+                                                    DateTime? lastResponseTime = validator.LastAnswerSendDate != null ? validator.LastAnswerSendDate.Value.AddMinutes(15) : null;
+                                                    if(lastResponseTime == null)
+                                                    {
+                                                        var connectDate = validator.ConnectDate.AddMinutes(15);
+                                                        if (connectDate >= DateTime.Now)
+                                                        {
+                                                            //Connection aborted
+                                                            keepValConnected = false;
+                                                        }
+                                                        else
+                                                        {
+                                                            validator.ConnectDate = DateTime.UtcNow;
+                                                            validator.Address = address;
+                                                            validator.ConnectionId = connectionId;
+                                                            validator.UniqueName = uName;
+                                                            validator.IpAddress = peerIP;
+                                                            validator.WalletVersion = walletVersion;
+                                                            keepValConnected = true;
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        if(lastResponseTime >= DateTime.Now)
+                                                        {
+                                                            //Connection aborted
+                                                            keepValConnected = false;
+                                                        }
+                                                        else
+                                                        {
+                                                            validator.ConnectDate = DateTime.UtcNow;
+                                                            validator.Address = address;
+                                                            validator.ConnectionId = connectionId;
+                                                            validator.UniqueName = uName;
+                                                            validator.IpAddress = peerIP;
+                                                            validator.WalletVersion = walletVersion;
+                                                            keepValConnected = true;
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    if(validator.IpAddress == peerIP)
+                                                    {
+                                                        validator.ConnectDate = DateTime.UtcNow;
+                                                        validator.Address = address; 
+                                                        validator.ConnectionId = connectionId;
+                                                        validator.UniqueName = uName;
+                                                        validator.IpAddress = peerIP;
+                                                        validator.WalletVersion = walletVersion;
+                                                        keepValConnected = true;
+                                                    }
+                                                }
+                                                
                                                 //ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
                                             }
                                             else
@@ -217,7 +265,6 @@ namespace ReserveBlockCore.P2P
         {
             await Clients.All.SendAsync("GetAdjMessage", message, data);
         }
-
 
         #endregion
 

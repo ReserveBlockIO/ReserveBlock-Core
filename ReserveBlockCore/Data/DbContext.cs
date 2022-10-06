@@ -130,16 +130,6 @@ namespace ReserveBlockCore.Data
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
 
-            //DB_Assets = new LiteDatabase(path + RSRV_DB_ASSETS, mapper);
-            //DB_Queue = new LiteDatabase(path + RSRV_DB_QUEUE_NAME);
-            //DB_WorldStateTrei = new LiteDatabase(path + RSRV_DB_WSTATE_TREI);
-            //DB_AccountStateTrei = new LiteDatabase(path + RSRV_DB_ASTATE_TREI);
-            //DB_SmartContractStateTrei = new LiteDatabase(path + RSRV_DB_SCSTATE_TREI, mapper);
-            //DB_Wallet = new LiteDatabase(path + RSRV_DB_WALLET_NAME);
-            //DB_Peers = new LiteDatabase(path + RSRV_DB_PEERS_NAME);
-            //DB_Banlist = new LiteDatabase(path + RSRV_DB_BANLIST_NAME);
-            //DB_Config = new LiteDatabase(path + RSRV_DB_CONFIG);
-
             DB_Assets.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
 
