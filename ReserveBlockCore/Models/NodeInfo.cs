@@ -24,5 +24,23 @@ namespace ReserveBlockCore.Models
         public long PreviousReceiveTime;
 
         public long SecondPreviousReceiveTime;
+
+        public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
+
+        public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
+        {
+            await APILock.WaitAsync();
+            var delay = Task.Delay(1000);
+            try
+            {
+                return await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
+            }
+            finally
+            {
+                await delay;
+                if (APILock.CurrentCount == 0)
+                    APILock.Release();
+            }
+        }
     }
 }
