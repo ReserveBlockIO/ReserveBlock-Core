@@ -68,7 +68,10 @@ namespace ReserveBlockCore.P2P
         #region SignalR DOS Protection
        
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
-        {            
+        {
+            if (Globals.LastBlock.Height < Globals.BlockLock)
+                return await func();
+
             var now = TimeUtil.GetMillisecondTime();
             var ipAddress = GetIP(context);            
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))

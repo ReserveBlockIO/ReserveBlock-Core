@@ -105,7 +105,6 @@ namespace ReserveBlockCore.Data
             try
             {
                 var collection = DbContext.DB_Mempool.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
-                collection.EnsureIndexSafe(x => x.Hash);
                 return collection;
             }
             catch(Exception ex)
@@ -404,7 +403,6 @@ namespace ReserveBlockCore.Data
         public static Transaction GetTxByAddress(string address)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndexSafe(x => x.Timestamp);
             var tx = transactions.FindOne(x => x.FromAddress == address || x.ToAddress == address);
             return tx;
         }
@@ -412,8 +410,6 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndexSafe(x => x.FromAddress);
-            transactions.EnsureIndexSafe(x => x.ToAddress);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
                 .Where(x => x.FromAddress == address || x.ToAddress == address)
@@ -424,7 +420,6 @@ namespace ReserveBlockCore.Data
         public static Transaction GetTxByHash(string hash)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndexSafe(x => x.Timestamp);
             var tx = transactions.FindOne(x => x.Hash == hash);
             return tx;
         }
@@ -444,7 +439,6 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            transactions.EnsureIndexSafe(x => x.Timestamp);
             var query = transactions.Query()
                 .OrderByDescending(x => x.Timestamp)
                 .Offset((pageNumber - 1) * resultPerPage)

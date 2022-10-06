@@ -283,7 +283,7 @@ namespace ReserveBlockCore.Services
                         result = true;
                         BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
-                        StateData.UpdateTreis(block);
+                        StateData.UpdateTreis(block); //update treis
                         var mempool = TransactionData.GetPool();
 
                         if (block.Transactions.Count() > 0)

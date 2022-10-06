@@ -41,8 +41,8 @@ namespace ReserveBlockCore.Services
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
                 TimeSpan.FromMinutes(5));
 
-            _blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
-                TimeSpan.FromHours(8));
+            //_blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
+            //    TimeSpan.FromHours(8));
 
             if (Globals.ChainCheckPoint == true)
             {
@@ -106,7 +106,7 @@ namespace ReserveBlockCore.Services
             if(!StateSyncLock)
             {
                 StateSyncLock = true;
-                await StateTreiSyncService.SyncAccountStateTrei();
+                //await StateTreiSyncService.SyncAccountStateTrei();
                 StateSyncLock = false;
             }
             else

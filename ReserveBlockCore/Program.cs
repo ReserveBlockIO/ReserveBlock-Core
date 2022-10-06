@@ -18,7 +18,7 @@ namespace ReserveBlockCore
             DateTime currentDate = DateTime.Now;
 
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {
