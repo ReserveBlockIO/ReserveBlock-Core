@@ -716,7 +716,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var source = new CancellationTokenSource(30000);
-                Block = await node.InvokeAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
+                Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
                 if (Block != null)
                 {
                     blockSize = Block.Size;

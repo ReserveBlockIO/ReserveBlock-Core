@@ -430,23 +430,37 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                return await SignalRQueue(Context, 1179648, async () =>
+                //return await SignalRQueue(Context, 1179648, async () =>
+                //{
+                //    var peerIP = GetIP(Context);
+
+                //    var message = "";
+                //    var nextBlockHeight = currentBlock + 1;
+                //    var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
+
+                //    if (nextBlock != null)
+                //    {
+                //        return nextBlock;
+                //    }
+                //    else
+                //    {
+                //        return null;
+                //    }
+                //});
+                var peerIP = GetIP(Context);
+
+                var message = "";
+                var nextBlockHeight = currentBlock + 1;
+                var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
+
+                if (nextBlock != null)
                 {
-                    var peerIP = GetIP(Context);
-
-                    var message = "";
-                    var nextBlockHeight = currentBlock + 1;
-                    var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
-
-                    if (nextBlock != null)
-                    {
-                        return nextBlock;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                });
+                    return nextBlock;
+                }
+                else
+                {
+                    return null;
+                }
             }
             catch { }
 

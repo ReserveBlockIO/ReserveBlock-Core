@@ -130,6 +130,10 @@ namespace ReserveBlockCore.Data
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
 
+            var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
+            blocks.EnsureIndexSafe(x => x.Height);
+
+
             DB_Assets.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
 
