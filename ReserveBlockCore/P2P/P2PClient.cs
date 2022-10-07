@@ -1093,6 +1093,11 @@ namespace ReserveBlockCore.P2P
                 Reference = beaconRef
             };
 
+            foreach (var asset in bdd.Assets)
+            {
+                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
+            }
+
             foreach (var locator in locators)
             {
                 try
@@ -1108,6 +1113,8 @@ namespace ReserveBlockCore.P2P
 
                     if (hubBeaconConnection != null)
                     {
+                        //Remove this. Just for testing!
+                        Console.WriteLine($"Download request: {bdd.Assets} SCUID: {bdd.SmartContractUID} Signature: {bdd.Signature} Ref: {bdd.Reference}");
                         var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
                         if (response != true)
                         {
@@ -1121,35 +1128,14 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
-
-
-                            int failCount = 0;
-                            foreach (var asset in bdd.Assets)
-                            {
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
-
-                                //BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
-                                //if (rsp.Status == 1)
-                                //{
-                                //    //success
-                                //}
-                                //else
-                                //{
-                                //    failCount += 1;
-                                //}
-                            }
-
-                            if (failCount == 0)
-                            {
-                                result = true;
-                                break;
-                            }
+                            
                         }
                     }
                 }
                 catch(Exception ex)
                 {
                     var errorMsg = string.Format("Failed to send bdd to Beacon. Error Message : {0}", ex.Message);
+                    Console.WriteLine(errorMsg);
                     ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - catch");
                 }
             }
