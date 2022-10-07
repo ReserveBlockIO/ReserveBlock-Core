@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Nodes
                             if (rsp.Status == 1)
                             {
                                 //success
-                                NFTLogUtility.Log($"Success sending asset: {assetName}", "BeaconProcessor.ProcessData()");
+                                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData()");
                                 await P2PClient.BeaconFileIsReady(scUID, assetName);
                             }
                             else

@@ -518,9 +518,9 @@ namespace ReserveBlockCore.Controllers
                         var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
 
                         var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, md5List);
-                        if(result != "Fail" && result != "NA")
+                        if(result == true)
                         {
-                            var tx = await SmartContractService.TransferSmartContract(sc, toAddress, result, md5List, backupURL);
+                            var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locators.FirstOrDefault(), md5List, backupURL);
                             NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
                             NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
 
