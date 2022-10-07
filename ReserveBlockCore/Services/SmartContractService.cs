@@ -89,6 +89,12 @@ namespace ReserveBlockCore.Services
 
             try
             {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(scTx);
                 if (result == true)
                 {
@@ -190,6 +196,12 @@ namespace ReserveBlockCore.Services
 
             try
             {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(scTx);
                 if (result == true)
                 {
@@ -287,6 +299,12 @@ namespace ReserveBlockCore.Services
 
             try
             {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(scTx);
                 if (result == true)
                 {
@@ -395,6 +413,12 @@ namespace ReserveBlockCore.Services
 
             try
             {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(scTx);
                 if (result == true)
                 {
@@ -504,6 +528,12 @@ namespace ReserveBlockCore.Services
 
             try
             {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(scTx);
                 if (result == true)
                 {
@@ -613,6 +643,12 @@ namespace ReserveBlockCore.Services
 
             try
             {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(scTx);
                 if (result == true)
                 {

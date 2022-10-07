@@ -908,9 +908,9 @@ namespace ReserveBlockCore.P2P
 
         #region File Upload To Beacon Beacon
 
-        public static async Task<string> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
+        public static async Task<bool> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
         {
-            var result = "Fail";
+            bool result = false;
             string signature = "";
             string locatorRetString = "";
             var scState = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -918,12 +918,12 @@ namespace ReserveBlockCore.P2P
 
             if(beaconRef == null)
             {
-                return "Fail";
+                return result;
             }
 
             if(scState == null)
             {
-                return "Fail"; // SC does not exist
+                return result; // SC does not exist
             }
             else
             {
@@ -945,7 +945,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
-                        return "Fail";
+                        return result;
                     }
                 }
                 
@@ -989,6 +989,8 @@ namespace ReserveBlockCore.P2P
                                     await hubBeaconConnection.DisposeAsync();
                                 }
                             }
+
+                            result = response;
                             //else
                             //{
                             //    NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
@@ -1025,7 +1027,7 @@ namespace ReserveBlockCore.P2P
                     else
                     {
                         //failed to connect. Cancel TX
-                        return "Fail";
+                        return result;
                     }
                     
                 }
@@ -1035,7 +1037,7 @@ namespace ReserveBlockCore.P2P
                     ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - catch");
                 }
             }
-            result = locatorRetString;
+
             return result;
         }
 
