@@ -363,6 +363,8 @@ namespace ReserveBlockCore.Services
                                                     case "Transfer()":
                                                         if (!string.IsNullOrWhiteSpace(data))
                                                         {
+                                                            var localFromAddress = AccountData.GetSingleAccount(localTransaction.FromAddress);
+
                                                             var locators = (string?)scData["Locators"];
                                                             var md5List = (string?)scData["MD5List"];
                                                             var scUID = (string?)scData["ContractUID"];
@@ -376,11 +378,14 @@ namespace ReserveBlockCore.Services
                                                             else
                                                             {
                                                                 //download files here.
-                                                                if (locators != "NA")
+                                                                if (localFromAddress == null)
                                                                 {
-                                                                    await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
-                                                                }
+                                                                    if (locators != "NA")
+                                                                    {
+                                                                        await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                                    }
 
+                                                                }
                                                             }
                                                         }
                                                         break;

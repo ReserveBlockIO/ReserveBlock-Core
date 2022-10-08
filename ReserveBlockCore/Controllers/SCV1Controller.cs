@@ -514,10 +514,21 @@ namespace ReserveBlockCore.Controllers
                         var assetString = "";
                         assets.ForEach(x => { assetString = assetString + x + " "; });
 
+                        var localAddress = AccountData.GetSingleAccount(toAddress);
+
                         NFTLogUtility.Log($"Sending the following assets for upload: {assetString}", "SCV1Controller.TransferNFT()");
                         var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
 
-                        var result  = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, md5List);
+                        bool result = false;
+                        if(localAddress == null)
+                        {
+                            result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, md5List);
+                        }
+                        else
+                        {
+                            result = true;
+                        }
+                        
                         if(result == true)
                         {
                             var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locators.FirstOrDefault(), md5List, backupURL);

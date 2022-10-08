@@ -74,6 +74,11 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.ReconnectPeers();
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
+                case "/resblocks":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    await BaseCommandServices.ResyncBlocks();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
                 case "/optlog":
                     Globals.OptionalLogging = !Globals.OptionalLogging;
                     Console.WriteLine($"Optional Logging Switched to: {Globals.OptionalLogging}");

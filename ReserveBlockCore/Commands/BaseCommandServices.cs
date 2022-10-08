@@ -443,6 +443,23 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static async Task ResyncBlocks()
+        {
+            Console.WriteLine("Resync Blocks? y/n");
+            var reconnect = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(reconnect))
+            {
+                if (reconnect == "y")
+                {
+                    await BlockDownloadService.GetAllBlocks();
+                }
+                else
+                {
+                    MainMenuReturn();
+                }
+            }
+        }
+
         public static async void CreateBeacon()
         {
             Console.WriteLine("Please give your beacon a name...");
