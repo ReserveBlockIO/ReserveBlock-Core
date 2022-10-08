@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace ReserveBlockCore.Models
 {
@@ -49,28 +50,89 @@ namespace ReserveBlockCore.Models
             
         }
 
-        public static void BanPeer(string ipAddress)
+        public static int BannedPeers()
         {
-            Globals.BannedIPs[ipAddress] = true;
-            var peerDb = Peers.GetAll();
-            var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
-            if (peer != null)
+            int banned = 0;
+
+            var peers = GetAll();
+
+            var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
+
+            banned = bannedPeers.Count();
+
+            return banned;
+        }
+
+        public static List<Peers> ListBannedPeers()
+        {
+            var peers = GetAll();
+
+            var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
+
+            return bannedPeers;
+        }
+
+        public static async Task<int> UnbanAllPeers()
+        {
+            var peers = GetAll();
+            var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
+            var count = 0;
+            foreach(var peer in bannedPeers)
             {
-                peer.IsBanned = true;
-                peerDb.Update(peer);
+                peer.IsBanned = false;
+                Globals.BannedIPs[peer.PeerIP] = false;
+                peers.UpdateSafe(peer);
+                count += 1;
             }
-            else
-                peerDb.Insert(new Peers { PeerIP = ipAddress, IsBanned = true });
 
-            if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
-                context.Abort();
+            return count;
+        }
+
+        public static async Task<string> UnbanPeer(string ipAddress)
+        {
+            try
+            {
+                Globals.BannedIPs[ipAddress] = false;
+                var peerDb = Peers.GetAll();
+                var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
+                if (peer != null)
+                {
+                    peer.IsBanned = false;
+                    peerDb.UpdateSafe(peer);
+
+                    return "Peer has been unbanned";
+                }
+
+                return "Peer not found";
+            }
+            catch { }
+
+            return "Peer not found";
+        }
+
+        public static void BanPeer(string ipAddress, string message, string location)
+        {
+            //Globals.BannedIPs[ipAddress] = true;
+            //var peerDb = Peers.GetAll();
+            //var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
+            BanLogUtility.Log(message, location);
+            //if (peer != null)
+            //{
+            //    peer.IsBanned = true;
+            //    peerDb.UpdateSafe(peer);                
+            //}
+            //else
+            //    peerDb.InsertSafe(new Peers { PeerIP = ipAddress, IsBanned = true });
+
+            //if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
+            //    context.Abort();
 
 
-            if (Globals.AdjPeerList.TryRemove(ipAddress, out var context2))
-                context2.Abort();
+            //if (Globals.AdjPeerList.TryRemove(ipAddress, out var context2))
+            //    context2.Abort();
 
-            if (Globals.Nodes.TryRemove(ipAddress, out NodeInfo node))
-                node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            //if (Globals.Nodes.TryRemove(ipAddress, out NodeInfo node))
+            //    node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public static void UpdatePeerLastReach(Peers incPeer)

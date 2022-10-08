@@ -74,8 +74,14 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.ReconnectPeers();
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
+                case "/resblocks":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    await BaseCommandServices.ResyncBlocks();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
                 case "/optlog":
-                    Globals.OptionalLogging = true;
+                    Globals.OptionalLogging = !Globals.OptionalLogging;
+                    Console.WriteLine($"Optional Logging Switched to: {Globals.OptionalLogging}");
                     break;
                 case "/beacon":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
@@ -95,6 +101,16 @@ namespace ReserveBlockCore.Commands
                 case "/addpeer":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     BaseCommandServices.AddPeer();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
+                case "/banpeer":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    BaseCommandServices.BanPeer();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
+                case "/unbanpeer":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    BaseCommandServices.UnbanPeer();
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/creatednr":

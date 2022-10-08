@@ -62,7 +62,6 @@ namespace ReserveBlockCore.Models
 		public static LiteDB.ILiteCollection<Block> GetBlocks()
 		{
 			var block = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-			block.EnsureIndexSafe(x => x.Height);
 			return block;
 		}
 		private decimal GetTotalAmount()

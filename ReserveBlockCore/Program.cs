@@ -16,8 +16,9 @@ namespace ReserveBlockCore
         {
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
+
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {
@@ -116,7 +117,6 @@ namespace ReserveBlockCore
             //await SeedNodeService.GetSeedNodePeers(nodeIp);
             //Temporary for TestNet------------------------------------
 
-            StartupService.SetBlockchainVersion(); //sets the block version for rules
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
 
@@ -144,13 +144,13 @@ namespace ReserveBlockCore
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(60000, 30000); //waits 1 minute, then runs every 30 seconds for new blocks
+            Globals.heightTimer.Change(60000, 20000); //waits 1 minute, then runs every 30 seconds for new blocks
 
             Globals.PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 4 minutes
 
             Globals.ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.ValidatorListTimer.Change(70000, 2 * 10 * 6000); //waits 1 minute, then runs every 2 minutes
+            Globals.ValidatorListTimer.Change(70000, 1 * 10 * 6000); //waits 1 minute, then runs every 2 minutes
 
             Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 5 minutes
@@ -387,9 +387,10 @@ namespace ReserveBlockCore
                         await P2PClient.UpdateNodeHeights();
                         if(Globals.Nodes.Any())                        
                         {
+                            var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
                             if (Globals.ValidatorAddress == "")
                             {                                
-                                var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
+                                
                                 if (maxHeightNode != null)
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
@@ -397,6 +398,20 @@ namespace ReserveBlockCore
                                     if (maxHeight > Globals.LastBlock.Height)
                                     {
                                         await BlockDownloadService.GetAllBlocks();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if(maxHeightNode != null)
+                                {
+                                    var maxHeight = maxHeightNode.NodeHeight;
+                                    var myMaxHeight = Globals.LastBlock.Height + 10;
+                                    if (maxHeight > myMaxHeight)
+                                    {
+                                        await BlockDownloadService.GetAllBlocks();
+                                        Thread.Sleep(1000);
+                                        await StartupService.ConnectoToAdjudicator();
                                     }
                                 }
                             }

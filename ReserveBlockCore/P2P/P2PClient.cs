@@ -28,6 +28,8 @@ namespace ReserveBlockCore.P2P
         /// </summary>
 
         private static HubConnection? hubAdjConnection1; //reserved for validators
+
+        private static SemaphoreSlim AdjLock = new SemaphoreSlim(1, 1);
         public static bool IsAdjConnected1 => hubAdjConnection1?.State == HubConnectionState.Connected;
 
         private static HubConnection? hubAdjConnection2; //reserved for validators
@@ -35,6 +37,22 @@ namespace ReserveBlockCore.P2P
 
         private static HubConnection? hubBeaconConnection; //reserved for beacon
         public static bool IsBeaconConnected => hubBeaconConnection?.State == HubConnectionState.Connected;
+
+        public static async Task<T> AdjInvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
+        {
+            await AdjLock.WaitAsync();
+            var delay = Task.Delay(1000);
+            try
+            {
+                return await hubAdjConnection1.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
+            }
+            finally
+            {
+                await delay;
+                if (AdjLock.CurrentCount == 0)
+                    AdjLock.Release();
+            }
+        }
 
         #endregion
 
@@ -162,9 +180,9 @@ namespace ReserveBlockCore.P2P
                         {
                             var now = TimeUtil.GetMillisecondTime();
                             var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                            if (now - prevPrevTime < 15000)
+                            if (now - prevPrevTime < 5000)
                             {
-                                Peers.BanPeer(IPAddress);                                
+                                Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");                                
                                 return;
                             }
                             Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
@@ -285,7 +303,14 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "status":
                                 Console.WriteLine(data);
-                                ValidatorLogUtility.Log("Connected to Validator Pool", "P2PClient.ConnectAdjudicator()", true);
+                                if(data == "Connected")
+                                {
+                                    ValidatorLogUtility.Log("Connected to Validator Pool.", "P2PClient.ConnectAdjudicator()", true);
+                                }
+                                else
+                                {
+                                    ValidatorLogUtility.Log($"Response from adj: {data}", "P2PClient.ConnectAdjudicator()", true);
+                                }
                                 LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
                                 break;
                             case "tx":
@@ -343,7 +368,7 @@ namespace ReserveBlockCore.P2P
 
             await DropDisconnectedPeers();
             var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace($":{Globals.Port}", "")))
-                .Union(Globals.BannedIPs.Keys);
+                .Union(Globals.BannedIPs.Where(x => x.Value).Select(x => x.Key));
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
@@ -434,7 +459,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveWinningTaskBlock", args: new object?[] { taskWin });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveWinningTaskBlock", new object?[] { taskWin });
                                     if (result)
                                     {
                                         Globals.LastWinningTaskError = false;
@@ -500,7 +525,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
                                     if (result)
                                     {
                                         Globals.LastTaskError = false;
@@ -566,7 +591,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
                                     
-                                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
                                     if (result)
                                     {
                                         Globals.LastTaskError = false;
@@ -612,7 +637,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var result = await hubAdjConnection1.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { tx });
+                    var result = await AdjInvokeAsync<bool>("ReceiveTX", args: new object?[] { tx });
                 }
                 catch (Exception ex)
                 {
@@ -729,7 +754,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await node.InvokeAsync<long>("SendBlockHeight");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
@@ -890,9 +915,9 @@ namespace ReserveBlockCore.P2P
 
         #region File Upload To Beacon Beacon
 
-        public static async Task<string> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
+        public static async Task<bool> BeaconUploadRequest(List<string> locators, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
         {
-            var result = "Fail";
+            bool result = false;
             string signature = "";
             string locatorRetString = "";
             var scState = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -900,12 +925,12 @@ namespace ReserveBlockCore.P2P
 
             if(beaconRef == null)
             {
-                return "Fail";
+                return result;
             }
 
             if(scState == null)
             {
-                return "Fail"; // SC does not exist
+                return result; // SC does not exist
             }
             else
             {
@@ -927,7 +952,7 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
-                        return "Fail";
+                        return result;
                     }
                 }
                 
@@ -959,7 +984,7 @@ namespace ReserveBlockCore.P2P
                     if(IsBeaconConnected)
                     {
                         if(hubBeaconConnection != null)
-                        {
+                        {                            
                             var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveUploadRequest", args: new object?[] { bsd });
                             if (response != true)
                             {
@@ -971,6 +996,8 @@ namespace ReserveBlockCore.P2P
                                     await hubBeaconConnection.DisposeAsync();
                                 }
                             }
+
+                            result = response;
                             //else
                             //{
                             //    NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
@@ -1007,7 +1034,7 @@ namespace ReserveBlockCore.P2P
                     else
                     {
                         //failed to connect. Cancel TX
-                        return "Fail";
+                        return result;
                     }
                     
                 }
@@ -1017,7 +1044,7 @@ namespace ReserveBlockCore.P2P
                     ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - catch");
                 }
             }
-            result = locatorRetString;
+
             return result;
         }
 
@@ -1075,6 +1102,11 @@ namespace ReserveBlockCore.P2P
                 Reference = beaconRef
             };
 
+            foreach (var asset in bdd.Assets)
+            {
+                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
+            }
+
             foreach (var locator in locators)
             {
                 try
@@ -1090,6 +1122,8 @@ namespace ReserveBlockCore.P2P
 
                     if (hubBeaconConnection != null)
                     {
+                        //Remove this. Just for testing!
+                        Console.WriteLine($"Download request: {bdd.Assets} SCUID: {bdd.SmartContractUID} Signature: {bdd.Signature} Ref: {bdd.Reference}");
                         var response = await hubBeaconConnection.InvokeCoreAsync<bool>("ReceiveDownloadRequest", args: new object?[] { bdd });
                         if (response != true)
                         {
@@ -1103,35 +1137,14 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
-
-
-                            int failCount = 0;
-                            foreach (var asset in bdd.Assets)
-                            {
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, bdd.SmartContractUID);
-
-                                //BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, scUID);
-                                //if (rsp.Status == 1)
-                                //{
-                                //    //success
-                                //}
-                                //else
-                                //{
-                                //    failCount += 1;
-                                //}
-                            }
-
-                            if (failCount == 0)
-                            {
-                                result = true;
-                                break;
-                            }
+                            
                         }
                     }
                 }
                 catch(Exception ex)
                 {
                     var errorMsg = string.Format("Failed to send bdd to Beacon. Error Message : {0}", ex.Message);
+                    Console.WriteLine(errorMsg);
                     ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - catch");
                 }
             }
@@ -1202,7 +1215,7 @@ namespace ReserveBlockCore.P2P
             {
                 foreach(var node in Globals.Nodes.Values)
                 {
-                    string beaconInfo = await node.Connection.InvokeAsync<string>("SendBeaconInfo");
+                    string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo");
                     if (beaconInfo != "NA")
                     {
                         NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
@@ -1244,7 +1257,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        var leadAdjudictor = await node.Connection.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
+                        var leadAdjudictor = await node.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
 
                         if (leadAdjudictor != null)
                         {
@@ -1288,7 +1301,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        string message = await node.Connection.InvokeCoreAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+                        string message = await node.InvokeAsync<string>("SendTxToMempool", args: new object?[] { txSend });
 
                         if (message == "ATMP")
                         {
@@ -1329,7 +1342,7 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {                        
-                        await node.Connection.InvokeCoreAsync<string>("ReceiveBlock", args: new object?[] { block });
+                        await node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
                         
                     }
                     catch (Exception ex)

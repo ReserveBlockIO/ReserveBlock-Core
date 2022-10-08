@@ -863,6 +863,40 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        [HttpGet("ListBannedPeers")]
+        public async Task<string> ListBannedPeers()
+        {
+            var output = "";
+            var bannedPeers = Peers.ListBannedPeers();
+
+            if(bannedPeers.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(bannedPeers);
+            }
+            else
+            {
+                output = "No banned peers";
+            }
+
+            return output;
+        }
+
+        [HttpGet("UnbanPeer/{**ipAddress}")]
+        public async Task<string> UnbanPeer(string ipAddress)
+        {
+            var result = await Peers.UnbanPeer(ipAddress);
+
+            return result;
+        }
+
+        [HttpGet("UnbanAllPeers")]
+        public async Task<string> UnbanAllPeers()
+        {
+            var result = await Peers.UnbanAllPeers();
+
+            return result.ToString();
+        }
+
         [HttpGet("GetDebugInfo")]
         public async Task<string> GetDebugInfo()
         {
@@ -870,6 +904,16 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        [HttpGet("GetClientInfo")]
+        public async Task<string> GetClientInfo()
+        {
+            var output = await StaticVariableUtility.GetClientInfo();
+
+            return output;
+        }
+
+
 
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()

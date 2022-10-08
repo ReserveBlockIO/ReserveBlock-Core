@@ -93,11 +93,12 @@ namespace ReserveBlockCore.Services
                         {
                             if (stateTreiRec.Balance != bb.Balance)
                             {
+                                ErrorLogUtility.LogError(
+                                    $"Balance Off: {stateTreiRec.Key} | Reported: {stateTreiRec.Balance} - Actual: {bb.Balance}",
+                                    "StateTreiSyncService()");
                                 stateTreiRec.Balance = bb.Balance;
                                 stateTrei.UpdateSafe(stateTreiRec);
-                                ErrorLogUtility.LogError(
-                                    $"Balance Off: {stateTreiRec.Key} | Reported: {stateTreiRec.Balance} - Actual: {bb.Balance}", 
-                                    "StateTreiSyncService()");
+                                
                             }
 
                         }

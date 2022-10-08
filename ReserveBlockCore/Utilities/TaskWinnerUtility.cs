@@ -149,36 +149,39 @@ namespace ReserveBlockCore.Utilities
             }
         }
 
-        private static void GetWinningNodes(List<TaskNumberAnswer> taskAnswerList, int answer, int numChoices)
+        private static void GetWinningNodes(List<TaskNumberAnswer> validTaskAnswerList, int answer, int numChoices)
         {
             var answerList = new List<int>();
             var chosenOnes = new List<TaskNumberAnswer>();
             Globals.TaskSelectedNumbers = new List<TaskNumberAnswer>();
 
-            foreach (var taskAnswer in taskAnswerList)
-            {
-                int parsedAnswer = 0;
-                var valAnswer = int.TryParse(taskAnswer.Answer, out parsedAnswer);
-                if (parsedAnswer != 0)
-                {
-                    answerList.Add(parsedAnswer);
-                }
-            };
 
-            if(numChoices > 0)
-            {
-                for (var i = 0; i < numChoices; i++)
-                {
-                    int nextClosest = answerList.Aggregate((x, y) => Math.Abs(x - answer) < Math.Abs(y - answer) ? x : y);
-                    var NextWinner = taskAnswerList.Where(x => x.Answer == nextClosest.ToString()).OrderBy(x => x.SubmitTime).FirstOrDefault();
-                    if (NextWinner != null)
-                    {
-                        chosenOnes.Add(NextWinner);
-                        taskAnswerList.Remove(NextWinner);
-                        answerList.Remove(nextClosest);
-                    }
-                }
-            }
+            chosenOnes = validTaskAnswerList.Where(x => x.Answer.ToInt32() != 0).OrderBy(x => Math.Abs(x.Answer.ToInt32() - answer)).ThenBy(x => x.SubmitTime).Take(numChoices).ToList();
+
+            //foreach (var taskAnswer in validTaskAnswerList)
+            //{
+            //    int parsedAnswer = 0;
+            //    var valAnswer = int.TryParse(taskAnswer.Answer, out parsedAnswer);
+            //    if (parsedAnswer != 0)
+            //    {
+            //        answerList.Add(parsedAnswer);
+            //    }
+            //};
+
+            //if(numChoices > 0)
+            //{
+            //    for (var i = 0; i < numChoices; i++)
+            //    {
+            //        int nextClosest = answerList.Aggregate((x, y) => Math.Abs(x - answer) < Math.Abs(y - answer) ? x : y);
+            //        var NextWinner = validTaskAnswerList.Where(x => x.Answer == nextClosest.ToString()).OrderBy(x => x.SubmitTime).FirstOrDefault();
+            //        if (NextWinner != null)
+            //        {
+            //            chosenOnes.Add(NextWinner);
+            //            validTaskAnswerList.Remove(NextWinner);
+            //            answerList.Remove(nextClosest);
+            //        }
+            //    }
+            //}
 
             Globals.TaskSelectedNumbers = chosenOnes;
         }

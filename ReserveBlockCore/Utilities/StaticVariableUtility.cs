@@ -2,6 +2,9 @@
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
+using Spectre.Console;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ReserveBlockCore.Utilities
@@ -19,6 +22,7 @@ namespace ReserveBlockCore.Utilities
         public static async Task<string> GetStaticVars()
         {
             var peersConnected = await P2PClient.ArePeersConnected();
+            var bannedPeers = Peers.BannedPeers();
             var blockHeight = Globals.LastBlock.Height;
             var accounts = AccountData.GetAccounts();
             var localValidator = accounts.FindOne(x => x.IsValidating == true);
@@ -76,6 +80,7 @@ namespace ReserveBlockCore.Utilities
             var isWalletEncryptedText = $"Wallet Encrypted? {isWalletEncrypted}";
             var beaconRefText = $"Beacon Reference Id: {beaconReference}";
             var beacConnection = "Beacon Connected?: " + beaconConnection;
+            var bannedPeersText = $"Banned Peer Count: {bannedPeers}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -102,6 +107,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(isPeersConnecting);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(peerConnectedToMe);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(bannedPeersText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(isStopAllTimers);
             strBld.AppendLine("---------------------------------------------------------------------");
@@ -160,6 +167,60 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastBlockInfo);
             strBld.AppendLine("---------------------------------------------------------------------");
                
+            return strBld.ToString();
+        }
+
+        public static async Task<string> GetClientInfo()
+        {
+            var network = Globals.IsTestNet == true ? "TestNet" : "MainNet";
+            var mostLikelyIP = P2PClient.MostLikelyIP();
+
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+
+            var osDesc = RuntimeInformation.OSDescription;
+            var processArch = RuntimeInformation.ProcessArchitecture;
+            var netFramework = RuntimeInformation.FrameworkDescription;
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+            }
+
+            var networkText = "Current Network: " + network;
+            var mostLikelyIPText = "Reported IP: " + mostLikelyIP;
+            var osText = "OS Description: " + osDesc;
+            var processArchText = "Processor Architecture: " + processArch;
+            var netFrameworkText = ".Net Core: " + netFramework;
+            var pathText = "Database Folder Location: " + path;
+
+            StringBuilder strBld = new StringBuilder();
+            strBld.AppendLine(networkText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(mostLikelyIPText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(osText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(processArchText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(netFrameworkText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(pathText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+
             return strBld.ToString();
         }
     }

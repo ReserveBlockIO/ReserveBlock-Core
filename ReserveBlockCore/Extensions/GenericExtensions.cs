@@ -15,7 +15,14 @@ namespace ReserveBlockCore.Extensions
                 foreach (var x in source) yield return x;
             }
         }
-
+        public static int ToInt32(this string obj)
+        {
+            int value;
+            if (obj != null && int.TryParse(obj, out value))
+                return value;
+            else
+                return -1000000;
+        }
         public static string ToMD5(this string filePath)
         {
             using (var md5 = MD5.Create())

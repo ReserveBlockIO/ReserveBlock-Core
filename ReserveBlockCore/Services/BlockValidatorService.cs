@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -59,7 +60,7 @@ namespace ReserveBlockCore.Services
                         var result = await ValidateBlock(block, true);                        
                         if (!result)
                         {                            
-                            Peers.BanPeer(ipAddress);
+                            Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
                             if(Globals.Nodes.TryRemove(ipAddress, out var node))
                                 await node.Connection.DisposeAsync();                            
@@ -121,7 +122,6 @@ namespace ReserveBlockCore.Services
                     DbContext.Commit();
                     return result;
                 }
-
                 if (block.Height != 0)
                 {
                     var verifyBlockSig = SignatureService.VerifySignature(block.Validator, block.Hash, block.ValidatorSignature);
@@ -157,7 +157,6 @@ namespace ReserveBlockCore.Services
                     if (!version2Result)
                         return result;
                 }
-
                 //ensures the timestamps being produced are correct
                 if (block.Height != 0)
                 {
@@ -219,6 +218,52 @@ namespace ReserveBlockCore.Services
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
                                 rejectBlock = txResult == false ? rejectBlock = true : false;
+                                //check for duplicate tx
+                                if (blkTransaction.TransactionType != TransactionType.TX)
+                                {
+                                    if(blkTransaction.Data != null)
+                                    {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
+                                        if (scDataArray != null)
+                                        {
+                                            var scData = scDataArray[0];
+
+                                            var function = (string?)scData["Function"];
+                                            var scUID = (string?)scData["ContractUID"];
+                                            if (!string.IsNullOrWhiteSpace(function))
+                                            {
+                                                var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                if (otherTxs.Count() > 0)
+                                                {
+                                                    foreach (var otx in otherTxs)
+                                                    {
+                                                        if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                                        {
+                                                            if (otx.Data != null)
+                                                            {
+                                                                var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                if (ottxDataArray != null)
+                                                                {
+                                                                    var ottxData = ottxDataArray[0];
+
+                                                                    var ottxFunction = (string?)ottxData["Function"];
+                                                                    var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                    if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                                    {
+                                                                        if (ottxscUID == scUID)
+                                                                        {
+                                                                            rejectBlock = true;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
@@ -228,18 +273,17 @@ namespace ReserveBlockCore.Services
                             if (rejectBlock)
                                 break;
                         }
+
                         if (rejectBlock)
                         {
                             DbContext.Rollback();
                             return result;//block rejected due to bad transaction(s)
                         }
 
-
                         result = true;
                         BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
-                        StateData.UpdateTreis(block);
-
+                        StateData.UpdateTreis(block); //update treis
                         var mempool = TransactionData.GetPool();
 
                         if (block.Transactions.Count() > 0)
@@ -319,6 +363,8 @@ namespace ReserveBlockCore.Services
                                                     case "Transfer()":
                                                         if (!string.IsNullOrWhiteSpace(data))
                                                         {
+                                                            var localFromAddress = AccountData.GetSingleAccount(localTransaction.FromAddress);
+
                                                             var locators = (string?)scData["Locators"];
                                                             var md5List = (string?)scData["MD5List"];
                                                             var scUID = (string?)scData["ContractUID"];
@@ -332,11 +378,14 @@ namespace ReserveBlockCore.Services
                                                             else
                                                             {
                                                                 //download files here.
-                                                                if (locators != "NA")
+                                                                if (localFromAddress == null)
                                                                 {
-                                                                    await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
-                                                                }
+                                                                    if (locators != "NA")
+                                                                    {
+                                                                        await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                                    }
 
+                                                                }
                                                             }
                                                         }
                                                         break;
@@ -480,7 +529,6 @@ namespace ReserveBlockCore.Services
                         }
 
                     }
-
                     DbContext.Commit();
                     return result;//block accepted
                 }
@@ -494,9 +542,10 @@ namespace ReserveBlockCore.Services
                     return result;
                 }                
             }
-            catch
+            catch(Exception ex)
             {
                 DbContext.Rollback();
+                Console.WriteLine($"Error: {ex.Message}");
             }
             return false;
         }
@@ -598,6 +647,9 @@ namespace ReserveBlockCore.Services
                     if (rejectBlock)
                         break;
                 }
+
+                
+
                 if (rejectBlock)
                 {
                     ValidatorLogUtility.Log("Block validated failed due to transactions not validating", "BlockValidatorService.ValidateBlockForTask()");

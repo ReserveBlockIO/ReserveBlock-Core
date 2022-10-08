@@ -351,7 +351,15 @@ namespace ReserveBlockCore.Data
             try
             {
                 var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-                blocks.EnsureIndexSafe(x => x.Height);
+                //var test = blocks.EnsureIndexSafe(x => x.Height);
+                //if(test == true)
+                //{
+                //    Console.WriteLine("Ensure Index OK");
+                //}
+                //else
+                //{
+                //    Console.WriteLine("Ensure Index Fail");
+                //}
                 return blocks;
             }
             catch(Exception ex)
@@ -448,25 +456,25 @@ namespace ReserveBlockCore.Data
         public static void AddBlock(Block block)
         {
             var blocks = GetBlocks();
-            blocks.EnsureIndexSafe(x => x.Height);
+            //blocks.EnsureIndexSafe(x => x.Height);
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
-            {               
+            {
                 //Update in memory fields.
-                Globals.LastBlock = block;                
+                Globals.LastBlock = block;
                 blocks.InsertSafe(block);
             }
             else
             {
-                var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
-                var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
-                if (eBlock == null)
-                {
-                    //database corrupt
-                    Globals.DatabaseCorruptionDetected = true;
-                    ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
-                }
+                //var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
+                //var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
+                //if (eBlock == null)
+                //{
+                //    //database corrupt
+                //    Globals.DatabaseCorruptionDetected = true;
+                //    ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
+                //}
             }
         }
         private static decimal GetTotalFees(List<Transaction> txs)

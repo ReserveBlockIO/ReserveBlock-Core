@@ -18,7 +18,6 @@ namespace ReserveBlockCore.Data
         public static LiteDB.ILiteCollection<Models.Block> GetBlocks()
         {
             var coll = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            coll.EnsureIndexSafe(x => x.Height);
             return coll;
         }
 

@@ -306,6 +306,130 @@ namespace ReserveBlockCore.Commands
                 }
             }
         }
+
+        public static async void BanPeer()
+        {
+            IPAddress ip;
+            Console.WriteLine("Please input the IP of the peer...");
+            var peer = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(peer))
+            {
+                try
+                {
+                    bool ValidateIP = IPAddress.TryParse(peer, out ip);
+                    if (ValidateIP)
+                    {
+                        Globals.BannedIPs[peer] = true;
+                        var peers = Peers.GetAll();
+                        var peerExist = peers.Exists(x => x.PeerIP == peer);
+                        if (!peerExist)
+                        {
+                            Peers nPeer = new Peers
+                            {
+                                IsIncoming = false,
+                                IsOutgoing = true,
+                                PeerIP = peer,
+                                FailCount = 0,
+                                IsBanned = true
+                            };
+
+                            peers.InsertSafe(nPeer);
+
+                            Console.WriteLine("Success! Peer has been Banned.");
+                            Console.WriteLine("Returning you to main menu...");
+                            Thread.Sleep(4000);
+                            StartupService.MainMenu();
+
+                        }
+                        else
+                        {
+                            var peerRec = peers.FindOne(x => x.PeerIP == peer);
+                            peerRec.IsBanned = true;
+                            peers.UpdateSafe(peerRec);
+
+                            Console.WriteLine("Success! Peer has been Banned.");
+                            Console.WriteLine("Returning you to main menu...");
+                            Thread.Sleep(4000);
+                            StartupService.MainMenu();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to process. Please input a valid IP...");
+                        Console.WriteLine("Returning you to main menu...");
+                        Thread.Sleep(4000);
+                        StartupService.MainMenu();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine("Type /menu to return to main menu.");
+                }
+            }
+        }
+
+        public static async void UnbanPeer()
+        {
+            IPAddress ip;
+            Console.WriteLine("Please input the IP of the peer...");
+            var peer = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(peer))
+            {
+                try
+                {
+                    bool ValidateIP = IPAddress.TryParse(peer, out ip);
+                    if (ValidateIP)
+                    {
+                        Globals.BannedIPs[peer] = false;
+                        var peers = Peers.GetAll();
+                        var peerExist = peers.Exists(x => x.PeerIP == peer);
+                        if (!peerExist)
+                        {
+                            Peers nPeer = new Peers
+                            {
+                                IsIncoming = false,
+                                IsOutgoing = true,
+                                PeerIP = peer,
+                                FailCount = 0,
+                                IsBanned = false
+                            };
+
+                            peers.InsertSafe(nPeer);
+
+                            Console.WriteLine("Success! Peer has been unbanned.");
+                            Console.WriteLine("Returning you to main menu...");
+                            Thread.Sleep(4000);
+                            StartupService.MainMenu();
+
+                        }
+                        else
+                        {
+                            var peerRec = peers.FindOne(x => x.PeerIP == peer);
+                            peerRec.IsBanned = false;
+                            peers.UpdateSafe(peerRec);
+
+                            Console.WriteLine("Success! Peer has been unbanned.");
+                            Console.WriteLine("Returning you to main menu...");
+                            Thread.Sleep(4000);
+                            StartupService.MainMenu();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to process. Please input a valid IP...");
+                        Console.WriteLine("Returning you to main menu...");
+                        Thread.Sleep(4000);
+                        StartupService.MainMenu();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine("Type /menu to return to main menu.");
+                }
+            }
+        }
         public static async void ReconnectPeers()
         {
             Console.WriteLine("Re-establish Peers? y/n");
@@ -315,6 +439,23 @@ namespace ReserveBlockCore.Commands
                 if (reconnect == "y")
                 {
                     await StartupService.StartupPeers();
+                }
+            }
+        }
+
+        public static async Task ResyncBlocks()
+        {
+            Console.WriteLine("Resync Blocks? y/n");
+            var reconnect = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(reconnect))
+            {
+                if (reconnect == "y")
+                {
+                    await BlockDownloadService.GetAllBlocks();
+                }
+                else
+                {
+                    MainMenuReturn();
                 }
             }
         }

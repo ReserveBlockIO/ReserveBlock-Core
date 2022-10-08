@@ -200,8 +200,8 @@ namespace ReserveBlockCore.P2P
         #region  Beacon Receive Download Request - The receiver of the NFT Asset
         public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
         {
-            return await SignalRQueue(Context, 1024, async () =>
-            {
+            //return await SignalRQueue(Context, 1024, async () =>
+            //{
                 bool result = false;
                 var peerIP = GetIP(Context);
                 var beaconPool = Globals.BeaconPool.ToList();
@@ -215,11 +215,11 @@ namespace ReserveBlockCore.P2P
                             return result; //fail
                         }
 
-                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
-                        if (sigCheck == false)
-                        {
-                            return result; //fail
-                        }
+                        //var sigCheck = SignatureService.VerifySignature(scState, bdd.SmartContractUID, bdd.Signature);
+                        //if (sigCheck == false)
+                        //{
+                        //    return result; //fail
+                        //}
 
                         var beaconDatas = BeaconData.GetBeacon();
                         var beaconData = BeaconData.GetBeaconData();
@@ -276,7 +276,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 return result;
-            });
+            //});
         }
 
         #endregion
@@ -284,8 +284,8 @@ namespace ReserveBlockCore.P2P
         #region Beacon Receive Upload Request - The sender of the NFT Asset
         public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
         {
-            return await SignalRQueue(Context, 1024, async () =>
-            {
+            //return await SignalRQueue(Context, 1024, async () =>
+            //{
                 bool result = false;
                 var peerIP = GetIP(Context);
                 try
@@ -319,7 +319,8 @@ namespace ReserveBlockCore.P2P
                                     NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
                                     SmartContractUID = bsd.SmartContractUID,
                                     IsReady = false,
-                                    MD5List = bsd.MD5List
+                                    MD5List = bsd.MD5List,
+                                    Reference = bsd.Reference
                                 };
 
                                 BeaconData.SaveBeaconData(bd);
@@ -331,12 +332,16 @@ namespace ReserveBlockCore.P2P
                                 {
                                     var bd = new BeaconData
                                     {
-                                        AssetExpireDate = 0,
-                                        AssetReceiveDate = 0,
+                                        CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
+                                        AssetExpireDate = TimeUtil.GetTime(),
+                                        AssetReceiveDate = TimeUtil.GetTimeForBeaconRelease(),
                                         AssetName = fileName,
                                         IPAdress = peerIP,
                                         NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                        SmartContractUID = bsd.SmartContractUID
+                                        SmartContractUID = bsd.SmartContractUID,
+                                        IsReady = false,
+                                        MD5List = bsd.MD5List,
+                                        Reference = bsd.Reference
                                     };
 
                                     BeaconData.SaveBeaconData(bd);
@@ -354,7 +359,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 return result;
-            });
+            //});
         }
 
         #endregion
@@ -415,7 +420,7 @@ namespace ReserveBlockCore.P2P
             {
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);
                 if (Lock.ConnectionCount > 20)
-                    Peers.BanPeer(ipAddress);
+                    Peers.BanPeer(ipAddress, "Connection count exceeded limit", "P2PBeaconServer.SignalRQueue()");
 
                 if (Lock.BufferCost + sizeCost > 5000000)
                 {
