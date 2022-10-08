@@ -24,7 +24,7 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                var keepValConnected = false;
+                var keepValConnected = true;
                 var peerIP = GetIP(Context);
 
                 string connectionId = Context.ConnectionId;
@@ -65,7 +65,7 @@ namespace ReserveBlockCore.P2P
                                             fortisPools.WalletVersion = walletVersion;
 
                                             Globals.FortisPool.Add(fortisPools);
-                                            keepValConnected = true;                                            
+                                            //keepValConnected = true;                                            
                                             //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
                                         }
                                         else
@@ -94,7 +94,7 @@ namespace ReserveBlockCore.P2P
                                                             validator.IpAddress = peerIP;
                                                             validator.WalletVersion = walletVersion;
                                                             validator.LastAnswerSendDate = null;
-                                                            keepValConnected = true;
+                                                            //keepValConnected = true;
                                                         }
                                                     }
                                                     else
@@ -114,7 +114,7 @@ namespace ReserveBlockCore.P2P
                                                             validator.IpAddress = peerIP;
                                                             validator.WalletVersion = walletVersion;
                                                             validator.LastAnswerSendDate = null;
-                                                            keepValConnected = true;
+                                                            //keepValConnected = true;
                                                         }
                                                     }
                                                 }
@@ -129,7 +129,7 @@ namespace ReserveBlockCore.P2P
                                                         validator.IpAddress = peerIP;
                                                         validator.WalletVersion = walletVersion;
                                                         validator.LastAnswerSendDate = null;
-                                                        keepValConnected = true;
+                                                        //keepValConnected = true;
                                                     }
                                                 }
                                                 
@@ -146,7 +146,7 @@ namespace ReserveBlockCore.P2P
                                                 fortisPools.WalletVersion = walletVersion;
 
                                                 Globals.FortisPool.Add(fortisPools);                                                
-                                                keepValConnected = true;
+                                                //keepValConnected = true;
                                             }
                                         }
 

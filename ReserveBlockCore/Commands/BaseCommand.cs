@@ -75,7 +75,8 @@ namespace ReserveBlockCore.Commands
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
                 case "/optlog":
-                    Globals.OptionalLogging = true;
+                    Globals.OptionalLogging = !Globals.OptionalLogging;
+                    Console.WriteLine($"Optional Logging Switched to: {Globals.OptionalLogging}");
                     break;
                 case "/beacon":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
