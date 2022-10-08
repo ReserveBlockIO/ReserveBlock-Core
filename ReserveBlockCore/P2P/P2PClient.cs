@@ -1034,6 +1034,15 @@ namespace ReserveBlockCore.P2P
                     else
                     {
                         //failed to connect. Cancel TX
+                        if(beacon != null)
+                        {
+                            NFTLogUtility.Log($"Failed to connect to beacon. Beacon Info: {beacon.Name} - {beacon.IPAddress}", "P2PClient.BeaconUploadRequest()");
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log($"Failed to connect to beacon. Beacon was null.", "P2PClient.BeaconUploadRequest()");
+                        }
+                        
                         return result;
                     }
                     
