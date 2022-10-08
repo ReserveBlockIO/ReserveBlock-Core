@@ -79,9 +79,10 @@ namespace ReserveBlockCore.P2P
                                                     if(lastResponseTime == null)
                                                     {
                                                         var connectDate = validator.ConnectDate.AddMinutes(15);
-                                                        if (connectDate >= DateTime.Now)
+                                                        if (connectDate >= DateTime.UtcNow)
                                                         {
                                                             //Connection aborted
+                                                            await SendAdjMessageSingle("status", "Disconnected. Connect DateTime >= Current DateTime");
                                                             keepValConnected = false;
                                                         }
                                                         else
@@ -92,6 +93,7 @@ namespace ReserveBlockCore.P2P
                                                             validator.UniqueName = uName;
                                                             validator.IpAddress = peerIP;
                                                             validator.WalletVersion = walletVersion;
+                                                            validator.LastAnswerSendDate = null;
                                                             keepValConnected = true;
                                                         }
                                                     }
@@ -100,6 +102,7 @@ namespace ReserveBlockCore.P2P
                                                         if(lastResponseTime >= DateTime.Now)
                                                         {
                                                             //Connection aborted
+                                                            await SendAdjMessageSingle("status", "Disconnected. Last Task Sent DateTime >= Current Last Task Sent DateTime");
                                                             keepValConnected = false;
                                                         }
                                                         else
@@ -110,6 +113,7 @@ namespace ReserveBlockCore.P2P
                                                             validator.UniqueName = uName;
                                                             validator.IpAddress = peerIP;
                                                             validator.WalletVersion = walletVersion;
+                                                            validator.LastAnswerSendDate = null;
                                                             keepValConnected = true;
                                                         }
                                                     }
@@ -124,6 +128,7 @@ namespace ReserveBlockCore.P2P
                                                         validator.UniqueName = uName;
                                                         validator.IpAddress = peerIP;
                                                         validator.WalletVersion = walletVersion;
+                                                        validator.LastAnswerSendDate = null;
                                                         keepValConnected = true;
                                                     }
                                                 }
@@ -144,6 +149,8 @@ namespace ReserveBlockCore.P2P
                                                 keepValConnected = true;
                                             }
                                         }
+
+                                        await SendAdjMessageSingle("status", $"Authenticated? {keepValConnected}");
 
                                         var fortisPoolStr = "";
 

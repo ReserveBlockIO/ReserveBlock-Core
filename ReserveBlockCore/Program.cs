@@ -387,9 +387,10 @@ namespace ReserveBlockCore
                         await P2PClient.UpdateNodeHeights();
                         if(Globals.Nodes.Any())                        
                         {
+                            var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
                             if (Globals.ValidatorAddress == "")
                             {                                
-                                var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
+                                
                                 if (maxHeightNode != null)
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
@@ -397,6 +398,20 @@ namespace ReserveBlockCore
                                     if (maxHeight > Globals.LastBlock.Height)
                                     {
                                         await BlockDownloadService.GetAllBlocks();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if(maxHeightNode != null)
+                                {
+                                    var maxHeight = maxHeightNode.NodeHeight;
+                                    var myMaxHeight = Globals.LastBlock.Height + 10;
+                                    if (maxHeight > myMaxHeight)
+                                    {
+                                        await BlockDownloadService.GetAllBlocks();
+                                        Thread.Sleep(1000);
+                                        await StartupService.ConnectoToAdjudicator();
                                     }
                                 }
                             }
