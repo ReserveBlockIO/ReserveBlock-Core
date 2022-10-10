@@ -537,8 +537,8 @@ namespace ReserveBlockCore.P2P
                                         }
                                         else
                                         {
-                                            ConsoleWriterService.Output($"Task was not accpeted: Reason: {result.AnswerDescription}. Attempt: {i}/4");
-                                            ValidatorLogUtility.Log($"Task Answer was not accepted. Reason: {result.AnswerDescription}", "");
+                                            ConsoleWriterService.Output($"Task was not accpeted: Reason: {result.AnswerDescription}. Attempt: {i}/3. Waiting {randNum} seconds before next attempt");
+                                            ValidatorLogUtility.Log($"Task Answer was not accepted. Reason: {result.AnswerDescription}", "P2PClient.SendTaskAnswer_New()");
                                             Globals.LastTaskError = true;
                                         }
                                     }
