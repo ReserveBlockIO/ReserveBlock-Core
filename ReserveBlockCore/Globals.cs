@@ -121,6 +121,7 @@ namespace ReserveBlockCore
         #region P2P Adj Server Variables
 
         public static List<FortisPool> FortisPool = new List<FortisPool>();
+        public static ConcurrentDictionary<string, FortisPool> FortisPoolDict = new ConcurrentDictionary<string, FortisPool>();
         public static List<BeaconPool> BeaconPool = new List<BeaconPool>();
 
         public static TaskQuestion? CurrentTaskQuestion = null;

@@ -291,16 +291,21 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Block and Task Answer **NEW
-        public async Task<bool> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
+        #region Receive Rand Num and Task Answer **NEW
+        public async Task<TaskAnswerResult> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
         {
+            TaskAnswerResult taskAnsRes = new TaskAnswerResult();
             try
             {
                 if(taskResult != null)
                 {
                     var answerSize = JsonConvert.SerializeObject(taskResult).Length;
                     if (answerSize > 1048576)
-                        return false;
+                    {
+                        taskAnsRes.AnswerDescription = "Answer size was too large.";
+                        return taskAnsRes;
+                    }
+                        
                     return await P2PServer.SignalRQueue(Context, answerSize, async () =>
                     {
                         if (Globals.BlocksDownloading == 0)
@@ -319,30 +324,38 @@ namespace ReserveBlockCore.P2P
                                         {
                                             taskResult.SubmitTime = DateTime.Now;
                                             Globals.TaskAnswerList_New.Add(taskResult);
-                                            return true;
+                                            taskAnsRes.AnswerAccepted = true;
+                                            return taskAnsRes;
                                         }
                                     }
                                     else
                                     {
-                                        //RejectedTaskAnswerList.Add(taskResult);
-                                        return false;
+                                        var nextBlockHeight = Globals.LastBlock.Height + 1;
+                                        taskAnsRes.AnswerDescription = $"Answers block height did not match the adjudicators next block height of: {nextBlockHeight}";
+                                        return taskAnsRes;
                                     }
                                 }
                                 else
                                 {
-                                    //RejectedTaskAnswerList.Add(taskResult);
-                                    return false;
+                                    taskAnsRes.AnswerDescription = $"The address: '{taskResult.Address}' associated with this task was not found in the validator pool. Please try to reconnect.";
+                                    return taskAnsRes;
                                 }
                             }
                         }
-                        return false;
+                        taskAnsRes.AnswerDescription = "Adjudicator is still booting up. Please wait...";
+                        return taskAnsRes;
                     });
                 }
+                taskAnsRes.AnswerDescription = "Your task answer was null.";
 
-                return false;
+                return taskAnsRes;
             }
-            catch { }
-            return false;
+            catch(Exception ex) 
+            {
+                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.Message}", "P2PAdjServer.ReceiveTaskAnswer_New()");
+            }
+            taskAnsRes.AnswerDescription = "Unknown Error";
+            return taskAnsRes;
         }
 
         #endregion

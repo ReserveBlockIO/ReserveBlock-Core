@@ -525,17 +525,22 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await AdjInvokeAsync<bool>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
-                                    if (result)
+                                    var result = await AdjInvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
+                                    if(result != null)
                                     {
-                                        Globals.LastTaskError = false;
-                                        Globals.LastTaskSentTime = DateTime.Now;
-                                        Globals.LastSentBlockHeight = taskAnswer.NextBlockHeight;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        Globals.LastTaskError = true;
+                                        if (result.AnswerAccepted)
+                                        {
+                                            Globals.LastTaskError = false;
+                                            Globals.LastTaskSentTime = DateTime.Now;
+                                            Globals.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            ConsoleWriterService.Output($"Task was not accpeted: Reason: {result.AnswerDescription}. Attempt: {i}/4");
+                                            ValidatorLogUtility.Log($"Task Answer was not accepted. Reason: {result.AnswerDescription}", "");
+                                            Globals.LastTaskError = true;
+                                        }
                                     }
                                 }
                             }

@@ -136,7 +136,14 @@ namespace ReserveBlockCore.Services
 
                         if (explorerNode != null)
                         {
-                            await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                            try
+                            {
+                                await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                            }
+                            catch 
+                            {
+                                ErrorLogUtility.LogError("Failed to send fortis pool to RHNCRbgCs7KGdXk17pzRYAYPRKCkSMwasf", "ClientCallSerivce.DoFortisPoolWork()");
+                            }
                         }
                     }
                 }
