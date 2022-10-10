@@ -3,6 +3,6 @@
     public class TaskAnswerResult
     {
         public bool AnswerAccepted { get; set; }
-        public string AnswerDescription { get; set; }
+        public int AnswerCode { get; set; }
     }
 }

@@ -302,7 +302,7 @@ namespace ReserveBlockCore.P2P
                     var answerSize = JsonConvert.SerializeObject(taskResult).Length;
                     if (answerSize > 1048576)
                     {
-                        taskAnsRes.AnswerDescription = "Answer size was too large.";
+                        taskAnsRes.AnswerCode = 1; //Answer too large
                         return taskAnsRes;
                     }
                         
@@ -325,28 +325,29 @@ namespace ReserveBlockCore.P2P
                                             taskResult.SubmitTime = DateTime.Now;
                                             Globals.TaskAnswerList_New.Add(taskResult);
                                             taskAnsRes.AnswerAccepted = true;
+                                            taskAnsRes.AnswerCode = 0;
                                             return taskAnsRes;
                                         }
                                     }
                                     else
                                     {
                                         var nextBlockHeight = Globals.LastBlock.Height + 1;
-                                        taskAnsRes.AnswerDescription = $"Answers block height did not match the adjudicators next block height of: {nextBlockHeight}";
+                                        taskAnsRes.AnswerCode = 2; //Answers block height did not match the adjudicators next block height
                                         return taskAnsRes;
                                     }
                                 }
                                 else
                                 {
-                                    taskAnsRes.AnswerDescription = $"The address: '{taskResult.Address}' associated with this task was not found in the validator pool. Please try to reconnect.";
+                                    taskAnsRes.AnswerCode = 3; //address is not pressent in the fortis pool
                                     return taskAnsRes;
                                 }
                             }
                         }
-                        taskAnsRes.AnswerDescription = "Adjudicator is still booting up. Please wait...";
+                        taskAnsRes.AnswerCode = 4; //adjudicator is still booting up
                         return taskAnsRes;
                     });
                 }
-                taskAnsRes.AnswerDescription = "Your task answer was null.";
+                taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
 
                 return taskAnsRes;
             }
@@ -354,7 +355,7 @@ namespace ReserveBlockCore.P2P
             {
                 ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.Message}", "P2PAdjServer.ReceiveTaskAnswer_New()");
             }
-            taskAnsRes.AnswerDescription = "Unknown Error";
+            taskAnsRes.AnswerCode = 1337; // Unknown Error
             return taskAnsRes;
         }
 

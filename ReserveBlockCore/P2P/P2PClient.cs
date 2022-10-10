@@ -459,7 +459,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await AdjInvokeAsync<bool>("ReceiveWinningTaskBlock", new object?[] { taskWin });
+                                    var result = await AdjInvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin });
                                     if (result)
                                     {
                                         Globals.LastWinningTaskError = false;
@@ -510,7 +510,7 @@ namespace ReserveBlockCore.P2P
                 {
                     if (i != 1)
                     {
-                        await Task.Delay(1000); // if failed on first attempt waits 1 seconds then tries again.
+                        await Task.Delay(1500); // if failed after first attempt waits 1 seconds then tries again.
                     }
                     else
                     {
@@ -525,7 +525,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await AdjInvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object?[] { taskAnswer });
+                                    var result = await AdjInvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer });
                                     if(result != null)
                                     {
                                         if (result.AnswerAccepted)
@@ -537,8 +537,9 @@ namespace ReserveBlockCore.P2P
                                         }
                                         else
                                         {
-                                            ConsoleWriterService.Output($"Task was not accpeted: Reason: {result.AnswerDescription}. Attempt: {i}/3. Waiting {randNum} seconds before next attempt");
-                                            ValidatorLogUtility.Log($"Task Answer was not accepted. Reason: {result.AnswerDescription}", "P2PClient.SendTaskAnswer_New()");
+                                            var errorCodeDesc = await TaskAnswerCodeUtility.TaskAnswerCodeReason(result.AnswerCode);
+                                            ConsoleWriterService.Output($"Task was not accpeted: Reason: {errorCodeDesc}. Attempt: {i}/3. Waiting {randNum} seconds before next attempt");
+                                            ValidatorLogUtility.Log($"Task Answer was not accepted. Reason: {errorCodeDesc}", "P2PClient.SendTaskAnswer_New()");
                                             Globals.LastTaskError = true;
                                         }
                                     }
