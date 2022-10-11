@@ -120,7 +120,7 @@ namespace ReserveBlockCore.Data
             DB = new LiteDatabase(new ConnectionString{Filename = path + RSRV_DB_NAME,Connection = ConnectionType.Direct,ReadOnly = false}, mapper);
             DB_Mempool = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_MEMPOOL, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
             DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
-            DB_AssetQueue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_AssetQueue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSET_QUEUE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_SmartContractStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SCSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
@@ -345,7 +345,7 @@ namespace ReserveBlockCore.Data
             DB = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_NAME, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
             DB_Mempool = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_MEMPOOL, Connection = ConnectionType.Direct, ReadOnly = false }, mapper);
             DB_Assets = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
-            DB_AssetQueue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSETS, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_AssetQueue = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASSET_QUEUE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_WorldStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_WSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_AccountStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_ASTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_SmartContractStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SCSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
