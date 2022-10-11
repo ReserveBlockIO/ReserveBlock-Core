@@ -151,6 +151,30 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetAssetQuestComplete")]
+        public async Task<string> GetAssetQuestComplete()
+        {
+            //signature message = scUID
+            string output = "Done";
+
+            var aqDB = AssetQueue.GetAssetQueue();
+            if (aqDB != null)
+            {
+                var aqList = aqDB.FindAll().ToList();
+                if (aqList.Count() > 0)
+                {
+                    foreach(var item in aqList)
+                    {
+                        item.IsComplete = true;
+                        aqDB.UpdateSafe(item);
+                    }
+                }
+            }
+
+            return output;
+        }
+
+
         [HttpGet("GetBeaconRequest")]
         public async Task<string> GetBeaconRequest()
         {
