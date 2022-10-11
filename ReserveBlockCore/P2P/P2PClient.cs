@@ -1156,7 +1156,7 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
-                            
+                            result = true;
                         }
                     }
                 }
