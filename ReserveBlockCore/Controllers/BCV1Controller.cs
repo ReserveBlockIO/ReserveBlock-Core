@@ -131,5 +131,24 @@ namespace ReserveBlockCore.Controllers
             var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
             return output;
         }
+
+        [HttpGet("GetAssetQueue")]
+        public async Task<string> GetAssetQueue()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var aqDB = AssetQueue.GetAssetQueue();
+            if(aqDB != null)
+            {
+                var aqList = aqDB.FindAll().ToList();
+                if(aqList.Count() > 0)
+                {
+                    output = JsonConvert.SerializeObject(aqList);
+                }
+            }
+
+            return output;
+        }
     }
 }

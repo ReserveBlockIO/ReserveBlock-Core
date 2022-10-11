@@ -352,89 +352,6 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("ChangeNFTPublicState/{id}")]
-        public async Task<string> ChangeNFTPublicState(string id)
-        {
-            var output = "";
-
-            //Get SmartContractMain.IsPublic and set to True.
-            var scs = SmartContractMain.SmartContractData.GetSCs();
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            sc.IsPublic ^= true;
-
-            scs.UpdateSafe(sc);
-
-            return output;
-
-        }
-
-        [HttpGet("GetSmartContractData/{id}")]
-        public async Task<string> GetSmartContractData(string id)
-        {
-            var output = "";
-
-            var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
-            if(scStateTrei != null)
-            {
-                var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                output = JsonConvert.SerializeObject(scMain);
-            }
-
-            return output;
-        }
-
-        [HttpGet("TestDynamicNFT/{id}")]
-        public async Task<string> TestDynamicNFT(string id)
-        {
-            var output = "";
-
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-
-            var result = await SmartContractReaderService.ReadSmartContract(sc);
-
-            var scMain = result.Item2;
-            var scCode = result.Item1;
-
-            var bytes = Encoding.Unicode.GetBytes(scCode);
-            var scBase64 = bytes.ToCompress().ToBase64();
-
-            SmartContractMain.SmartContractData.CreateSmartContract(scBase64);
-
-            return output;
-        }
-
-        [HttpGet("TestRemove/{id}/{toAddress}")]
-        public async Task<string> TestRemove(string id, string toAddress)
-        {
-            var output = "";
-
-            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            if (sc != null)
-            {
-                if (sc.IsPublished == true)
-                {
-                    var result = await SmartContractReaderService.ReadSmartContract(sc);
-
-                    var scText = result.Item1;
-                    var bytes = Encoding.Unicode.GetBytes(scText);
-                    var compressBase64 = SmartContractUtility.Compress(bytes).ToBase64();
-
-                    SmartContractMain.SmartContractData.CreateSmartContract(compressBase64);
-                    
-                }
-                else
-                {
-                    output = "Smart Contract Found, but has not been minted.";
-                }
-            }
-            else
-            {
-                output = "No Smart Contract Found Locally.";
-            }
-
-            return output;
-        }
-
         [HttpGet]
         [Route("TransferNFT/{id}/{toAddress}")]
         [Route("TransferNFT/{id}/{toAddress}/{**backupURL}")]
@@ -448,15 +365,15 @@ namespace ReserveBlockCore.Controllers
                 if (sc.IsPublished == true)
                 {
                     //Get beacons here!
-                    var locators = await P2PClient.GetBeacons();
-                    if(locators.Count() == 0)
+                    //This will eventually need to be a chosen parameter someone chooses. 
+                    var locator = Globals.Locators.FirstOrDefault();
+                    if(locator != null)
                     {
-                        output = "You are not connected to any beacons.";
-                        NFTLogUtility.Log("Error - You are not connected to any beacons.", "SCV1Controller.TransferNFT()");
+                        output = "You do not have any beacons stored.";
+                        NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
                     }
                     else
                     {
-                        NFTLogUtility.Log("Beacons Found. Getting asset names", "SCV1Controller.TransferNFT()");
                         List<string> assets = new List<string>();
 
                         if(sc.SmartContractAsset != null)
@@ -522,7 +439,7 @@ namespace ReserveBlockCore.Controllers
                         bool result = false;
                         if(localAddress == null)
                         {
-                            result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, md5List);
+                            result = await P2PClient.BeaconUploadRequest(locator, assets, sc.SmartContractUID, toAddress, md5List);
                         }
                         else
                         {
@@ -531,12 +448,24 @@ namespace ReserveBlockCore.Controllers
                         
                         if(result == true)
                         {
-                            var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locators.FirstOrDefault(), md5List, backupURL);
-                            NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
-                            NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
+                            var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, locator, md5List, assets, 
+                                AssetQueue.TransferType.Upload);
 
-                            var txJson = JsonConvert.SerializeObject(tx);
-                            output = txJson;
+                            if(aqResult)
+                            {
+                                var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
+                                NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
+                                NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
+
+                                var txJson = JsonConvert.SerializeObject(tx);
+                                output = txJson;
+                            }
+                            else
+                            {
+                                output = "Failed to add upload to Asset Queue. Please check logs for more details.";
+                                NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated.", "SCV1Controller.TransferNFT()");
+                            }
+                            
                         }
                         else
                         {
@@ -633,6 +562,89 @@ namespace ReserveBlockCore.Controllers
             {
                 var txJson = JsonConvert.SerializeObject(tx);
                 output = txJson;
+            }
+
+            return output;
+        }
+
+        [HttpGet("ChangeNFTPublicState/{id}")]
+        public async Task<string> ChangeNFTPublicState(string id)
+        {
+            var output = "";
+
+            //Get SmartContractMain.IsPublic and set to True.
+            var scs = SmartContractMain.SmartContractData.GetSCs();
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            sc.IsPublic ^= true;
+
+            scs.UpdateSafe(sc);
+
+            return output;
+
+        }
+
+        [HttpGet("GetSmartContractData/{id}")]
+        public async Task<string> GetSmartContractData(string id)
+        {
+            var output = "";
+
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
+            if (scStateTrei != null)
+            {
+                var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                output = JsonConvert.SerializeObject(scMain);
+            }
+
+            return output;
+        }
+
+        [HttpGet("TestDynamicNFT/{id}")]
+        public async Task<string> TestDynamicNFT(string id)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+
+            var result = await SmartContractReaderService.ReadSmartContract(sc);
+
+            var scMain = result.Item2;
+            var scCode = result.Item1;
+
+            var bytes = Encoding.Unicode.GetBytes(scCode);
+            var scBase64 = bytes.ToCompress().ToBase64();
+
+            SmartContractMain.SmartContractData.CreateSmartContract(scBase64);
+
+            return output;
+        }
+
+        [HttpGet("TestRemove/{id}/{toAddress}")]
+        public async Task<string> TestRemove(string id, string toAddress)
+        {
+            var output = "";
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+                    var result = await SmartContractReaderService.ReadSmartContract(sc);
+
+                    var scText = result.Item1;
+                    var bytes = Encoding.Unicode.GetBytes(scText);
+                    var compressBase64 = SmartContractUtility.Compress(bytes).ToBase64();
+
+                    SmartContractMain.SmartContractData.CreateSmartContract(compressBase64);
+
+                }
+                else
+                {
+                    output = "Smart Contract Found, but has not been minted.";
+                }
+            }
+            else
+            {
+                output = "No Smart Contract Found Locally.";
             }
 
             return output;

@@ -9,7 +9,7 @@
             switch(code)
             {
                 case 0:
-                    reason = "No Error";
+                    reason = "No Error.";
                     break;
                 case 1:
                     reason = "Task Answer too large.";
@@ -30,7 +30,7 @@
                     reason = "Unknown Error.";
                     break;
                     
-                default: reason = "Code was not found.";
+                default: reason = "Error Code was not found.";
                     break;
             }
 

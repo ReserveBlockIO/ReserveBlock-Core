@@ -382,7 +382,9 @@ namespace ReserveBlockCore.Services
                                                                 {
                                                                     if (locators != "NA")
                                                                     {
-                                                                        await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                                        var assetList = await MD5Utility.GetAssetList(md5List);
+                                                                        var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download);
+                                                                        //await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
                                                                     }
 
                                                                 }
