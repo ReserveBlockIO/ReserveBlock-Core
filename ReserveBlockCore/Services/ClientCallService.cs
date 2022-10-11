@@ -133,9 +133,48 @@ namespace ReserveBlockCore.Services
                                     var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(aq.SmartContractUID, aq.Locator, "NA", aq.MD5List);
                                     if(result == "Success")
                                     {
+                                        NFTLogUtility.Log($"Download Request has been sent", "ClientCallService.DoAssetWork()");
                                         aq.IsComplete = true;
                                         aqDB.UpdateSafe(aq);
                                     }
+                                    else
+                                    {
+                                        NFTLogUtility.Log($"Download Request has not been sent. Reason: {result}", "ClientCallService.DoAssetWork()");
+                                        aqDB.UpdateSafe(aq);
+                                    }
+
+                                    try
+                                    {
+                                        //Look to see if media exist
+                                        if (aq.MediaListJson != null)
+                                        {
+                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+
+                                            if (assetList != null)
+                                            {
+                                                if (assetList.Count() > 0)
+                                                {
+                                                    var assetCount = assetList.Count();
+                                                    var assestExistCount = 0;
+                                                    foreach (string asset in assetList)
+                                                    {
+                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                                        var fileExist = File.Exists(path);
+                                                        if (fileExist)
+                                                            assestExistCount += 1;
+                                                    }
+
+                                                    if (assetCount == assestExistCount)
+                                                    {
+                                                        aq.IsComplete = true;
+                                                        aqDB.UpdateSafe(aq);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch { }
+                                    
                                 }
                                 catch(Exception ex)
                                 {
