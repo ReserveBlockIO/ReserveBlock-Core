@@ -367,10 +367,11 @@ namespace ReserveBlockCore.Controllers
                     //Get beacons here!
                     //This will eventually need to be a chosen parameter someone chooses. 
                     var locator = Globals.Locators.FirstOrDefault();
-                    if(locator != null)
+                    if(locator == null)
                     {
                         output = "You do not have any beacons stored.";
                         NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
+                        return output;
                     }
                     else
                     {
