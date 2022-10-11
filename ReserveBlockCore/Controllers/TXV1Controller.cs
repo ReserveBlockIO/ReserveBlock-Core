@@ -101,7 +101,7 @@ namespace ReserveBlockCore.Controllers
                     if (sc.IsPublished == true)
                     {
                         //Get beacons here!
-                        var locators = await P2PClient.GetBeacons();
+                        var locators = Globals.Locators.FirstOrDefault();
                         if (locators.Count() == 0)
                         {
                             output = "You are not connected to any beacons.";

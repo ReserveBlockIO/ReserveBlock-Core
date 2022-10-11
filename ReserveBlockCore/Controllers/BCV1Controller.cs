@@ -150,5 +150,20 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        [HttpGet("GetBeaconRequest")]
+        public async Task<string> GetBeaconRequest()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var beaconData = BeaconData.GetBeaconData();
+            if (beaconData != null)
+            {
+                output = JsonConvert.SerializeObject(beaconData);
+            }
+
+            return output;
+        }
     }
 }
