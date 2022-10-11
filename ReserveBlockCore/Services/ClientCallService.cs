@@ -166,6 +166,7 @@ namespace ReserveBlockCore.Services
 
                                                     if (assetCount == assestExistCount)
                                                     {
+                                                        aq.IsDownloaded = true;
                                                         aq.IsComplete = true;
                                                         aqDB.UpdateSafe(aq);
                                                     }
