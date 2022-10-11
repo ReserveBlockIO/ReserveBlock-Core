@@ -79,7 +79,7 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static string SaveBeaconData(BeaconData beaconData)
+        public static bool SaveBeaconData(BeaconData beaconData)
         {
             var beacon = GetBeacon();
             if (beacon == null)
@@ -88,18 +88,19 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                var beaconDataRec = beacon.FindOne(x => x.AssetName == beaconData.AssetName);
+                var beaconDataRec = beacon.FindOne(x => x.AssetName == beaconData.AssetName && x.SmartContractUID == beaconData.SmartContractUID);
                 if(beaconDataRec != null)
                 {
-                    return "Record Already Exist";
+                    return false;
                 }
                 else
                 {
                     beacon.InsertSafe(beaconData);
+                    return true;
                 }
             }
 
-            return "Error Saving Beacon Data";
+            return false;
 
         }
 
@@ -116,6 +117,37 @@ namespace ReserveBlockCore.Models
             }
         }
 
+        public static async Task<bool> DeleteBeaconData(int id)
+        {
+            var beacon = GetBeacon();
+            if (beacon == null)
+            {
+                ErrorLogUtility.LogError("GetBeacon() returned a null value.", "BeaconData.SaveBeaconInfo()");
+            }
+            else
+            {
+                beacon.DeleteSafe(id);
+                return true;
+            }
+
+            return false;
+        }
+
+        public static async Task<bool> DeleteAllBeaconData()
+        {
+            var beacon = GetBeacon();
+            if (beacon == null)
+            {
+                ErrorLogUtility.LogError("GetBeacon() returned a null value.", "BeaconData.SaveBeaconInfo()");
+            }
+            else
+            {
+                beacon.DeleteAllSafe();
+                return true;
+            }
+
+            return false;
+        }
 
     }
 }

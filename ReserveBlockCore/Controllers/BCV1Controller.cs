@@ -165,5 +165,30 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+        [HttpGet("GetDeleteBeaconRequest/{id}")]
+        public async Task<string> GetDeleteBeaconRequest(int id)
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await BeaconData.DeleteBeaconData(id);
+
+            output = result.ToString();
+
+            return output;
+        }
+
+        [HttpGet("GetDeleteBeaconRequestAll")]
+        public async Task<string> GetDeleteBeaconRequestAll()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await BeaconData.DeleteAllBeaconData();
+
+            output = result.ToString();
+
+            return output;
+        }
     }
 }

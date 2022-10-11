@@ -312,8 +312,8 @@ namespace ReserveBlockCore.P2P
                                 var bd = new BeaconData
                                 {
                                     CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
-                                    AssetExpireDate = TimeUtil.GetTime(),
-                                    AssetReceiveDate = TimeUtil.GetTimeForBeaconRelease(),
+                                    AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(),
+                                    AssetReceiveDate = TimeUtil.GetTime(),
                                     AssetName = fileName,
                                     IPAdress = peerIP,
                                     NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
@@ -323,7 +323,7 @@ namespace ReserveBlockCore.P2P
                                     Reference = bsd.Reference
                                 };
 
-                                BeaconData.SaveBeaconData(bd);
+                                var beaconResult = BeaconData.SaveBeaconData(bd);
                             }
                             else
                             {
@@ -333,8 +333,8 @@ namespace ReserveBlockCore.P2P
                                     var bd = new BeaconData
                                     {
                                         CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
-                                        AssetExpireDate = TimeUtil.GetTime(),
-                                        AssetReceiveDate = TimeUtil.GetTimeForBeaconRelease(),
+                                        AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(),
+                                        AssetReceiveDate = TimeUtil.GetTime(),
                                         AssetName = fileName,
                                         IPAdress = peerIP,
                                         NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
@@ -344,13 +344,12 @@ namespace ReserveBlockCore.P2P
                                         Reference = bsd.Reference
                                     };
 
-                                    BeaconData.SaveBeaconData(bd);
+                                    var beaconResult = BeaconData.SaveBeaconData(bd);
                                 }
                             }
                         }
 
                         result = true;
-
                     }
                 }
                 catch (Exception ex)

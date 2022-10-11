@@ -30,7 +30,7 @@ namespace ReserveBlockCore.Models
             var beaconRef = GetBeaconReference();
             if (beaconRef == null)
             {
-                ErrorLogUtility.LogError("GetBeaconReference() returned a null value.", "BeaconReference.SaveBeaconData()");
+                ErrorLogUtility.LogError("SaveBeaconReference() returned a null value.", "BeaconReference.SaveBeaconReference()");
             }
             else
             {
@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Models
             var beaconRef = GetBeaconReference();
             if (beaconRef == null)
             {
-                ErrorLogUtility.LogError("GetBeaconReference() returned a null value.", "BeaconReference.SaveBeaconData()");
+                ErrorLogUtility.LogError("GetReference() returned a null value.", "BeaconReference.GetReference()");
                 return null;
             }
             else
