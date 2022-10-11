@@ -131,5 +131,88 @@ namespace ReserveBlockCore.Controllers
             var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
             return output;
         }
+
+        [HttpGet("GetAssetQueue")]
+        public async Task<string> GetAssetQueue()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var aqDB = AssetQueue.GetAssetQueue();
+            if(aqDB != null)
+            {
+                var aqList = aqDB.FindAll().ToList();
+                if(aqList.Count() > 0)
+                {
+                    output = JsonConvert.SerializeObject(aqList);
+                }
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetAssetQuestComplete")]
+        public async Task<string> GetAssetQuestComplete()
+        {
+            //signature message = scUID
+            string output = "Done";
+
+            var aqDB = AssetQueue.GetAssetQueue();
+            if (aqDB != null)
+            {
+                var aqList = aqDB.FindAll().ToList();
+                if (aqList.Count() > 0)
+                {
+                    foreach(var item in aqList)
+                    {
+                        item.IsComplete = true;
+                        aqDB.UpdateSafe(item);
+                    }
+                }
+            }
+
+            return output;
+        }
+
+
+        [HttpGet("GetBeaconRequest")]
+        public async Task<string> GetBeaconRequest()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var beaconData = BeaconData.GetBeaconData();
+            if (beaconData != null)
+            {
+                output = JsonConvert.SerializeObject(beaconData);
+            }
+
+            return output;
+        }
+        [HttpGet("GetDeleteBeaconRequest/{id}")]
+        public async Task<string> GetDeleteBeaconRequest(int id)
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await BeaconData.DeleteBeaconData(id);
+
+            output = result.ToString();
+
+            return output;
+        }
+
+        [HttpGet("GetDeleteBeaconRequestAll")]
+        public async Task<string> GetDeleteBeaconRequestAll()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await BeaconData.DeleteAllBeaconData();
+
+            output = result.ToString();
+
+            return output;
+        }
     }
 }

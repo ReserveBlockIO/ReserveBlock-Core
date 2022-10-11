@@ -291,16 +291,21 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Block and Task Answer **NEW
-        public async Task<bool> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
+        #region Receive Rand Num and Task Answer **NEW
+        public async Task<TaskAnswerResult> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
         {
+            TaskAnswerResult taskAnsRes = new TaskAnswerResult();
             try
             {
                 if(taskResult != null)
                 {
                     var answerSize = JsonConvert.SerializeObject(taskResult).Length;
                     if (answerSize > 1048576)
-                        return false;
+                    {
+                        taskAnsRes.AnswerCode = 1; //Answer too large
+                        return taskAnsRes;
+                    }
+                        
                     return await P2PServer.SignalRQueue(Context, answerSize, async () =>
                     {
                         if (Globals.BlocksDownloading == 0)
@@ -319,30 +324,39 @@ namespace ReserveBlockCore.P2P
                                         {
                                             taskResult.SubmitTime = DateTime.Now;
                                             Globals.TaskAnswerList_New.Add(taskResult);
-                                            return true;
+                                            taskAnsRes.AnswerAccepted = true;
+                                            taskAnsRes.AnswerCode = 0;
+                                            return taskAnsRes;
                                         }
                                     }
                                     else
                                     {
-                                        //RejectedTaskAnswerList.Add(taskResult);
-                                        return false;
+                                        var nextBlockHeight = Globals.LastBlock.Height + 1;
+                                        taskAnsRes.AnswerCode = 2; //Answers block height did not match the adjudicators next block height
+                                        return taskAnsRes;
                                     }
                                 }
                                 else
                                 {
-                                    //RejectedTaskAnswerList.Add(taskResult);
-                                    return false;
+                                    taskAnsRes.AnswerCode = 3; //address is not pressent in the fortis pool
+                                    return taskAnsRes;
                                 }
                             }
                         }
-                        return false;
+                        taskAnsRes.AnswerCode = 4; //adjudicator is still booting up
+                        return taskAnsRes;
                     });
                 }
+                taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
 
-                return false;
+                return taskAnsRes;
             }
-            catch { }
-            return false;
+            catch(Exception ex) 
+            {
+                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.Message}", "P2PAdjServer.ReceiveTaskAnswer_New()");
+            }
+            taskAnsRes.AnswerCode = 1337; // Unknown Error
+            return taskAnsRes;
         }
 
         #endregion
@@ -468,7 +482,7 @@ namespace ReserveBlockCore.P2P
         }
 
         #endregion
-
+        
         #region Receive TX to relay
 
         public async Task<bool> ReceiveTX(Transaction transaction)

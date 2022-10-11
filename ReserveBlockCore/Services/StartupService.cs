@@ -210,7 +210,6 @@ namespace ReserveBlockCore.Services
                 Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 1",
                 BeaconUID = "Foundation Beacon 1"
-
             };
 
             var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);

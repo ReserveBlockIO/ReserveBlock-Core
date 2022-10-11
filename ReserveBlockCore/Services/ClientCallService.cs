@@ -5,6 +5,7 @@ using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Data.Common;
 using System.Globalization;
 using System.IO.Compression;
@@ -22,10 +23,12 @@ namespace ReserveBlockCore.Services
         private Timer _timer = null!;
         private Timer _fortisPoolTimer = null!;
         private Timer _checkpointTimer = null!;
-        private Timer _blockStateSyncTimer = null;
-        private Timer _encryptedPasswordTimer = null;
+        private Timer _blockStateSyncTimer = null!;
+        private Timer _encryptedPasswordTimer = null!;
+        private Timer _assetTimer = null!;
         private static bool FirstRun = false;
         private static bool StateSyncLock = false;
+        private static bool AssetLock = false;
 
         public ClientCallService(IHubContext<P2PAdjServer> hubContext, IHostApplicationLifetime appLifetime)
         {
@@ -54,6 +57,9 @@ namespace ReserveBlockCore.Services
 
             _encryptedPasswordTimer = new Timer(DoPasswordClearWork, null, TimeSpan.FromSeconds(5),
                 TimeSpan.FromMinutes(Globals.PasswordClearTime));
+
+            _assetTimer = new Timer(DoAssetWork, null, TimeSpan.FromSeconds(30),
+                TimeSpan.FromSeconds(5));
 
             return Task.CompletedTask;
         }
@@ -100,6 +106,91 @@ namespace ReserveBlockCore.Services
         }
         #endregion
 
+        #region Asset Download/Upload Work
+
+        private async void DoAssetWork(object? state)
+        {
+            if (AssetLock == false)
+            {
+                AssetLock = true;
+                {
+                    var currentDate = DateTime.UtcNow;
+                    var aqDB = AssetQueue.GetAssetQueue();
+                    if(aqDB != null)
+                    {
+                        var aqList = aqDB.Find(x => x.NextAttempt != null && x.NextAttempt <= currentDate && x.IsComplete != true && 
+                            x.AssetTransferType == AssetQueue.TransferType.Download).ToList();
+
+                        if(aqList.Count() > 0)
+                        {
+                            foreach(var aq in aqList)
+                            {
+                                aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
+                                var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
+                                aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
+                                try
+                                {
+                                    var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(aq.SmartContractUID, aq.Locator, "NA", aq.MD5List);
+                                    if(result == "Success")
+                                    {
+                                        NFTLogUtility.Log($"Download Request has been sent", "ClientCallService.DoAssetWork()");
+                                        aq.IsComplete = true;
+                                        aqDB.UpdateSafe(aq);
+                                    }
+                                    else
+                                    {
+                                        NFTLogUtility.Log($"Download Request has not been sent. Reason: {result}", "ClientCallService.DoAssetWork()");
+                                        aqDB.UpdateSafe(aq);
+                                    }
+
+                                    try
+                                    {
+                                        //Look to see if media exist
+                                        if (aq.MediaListJson != null)
+                                        {
+                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+
+                                            if (assetList != null)
+                                            {
+                                                if (assetList.Count() > 0)
+                                                {
+                                                    var assetCount = assetList.Count();
+                                                    var assestExistCount = 0;
+                                                    foreach (string asset in assetList)
+                                                    {
+                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                                        var fileExist = File.Exists(path);
+                                                        if (fileExist)
+                                                            assestExistCount += 1;
+                                                    }
+
+                                                    if (assetCount == assestExistCount)
+                                                    {
+                                                        aq.IsDownloaded = true;
+                                                        aq.IsComplete = true;
+                                                        aqDB.UpdateSafe(aq);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch { }
+                                    
+                                }
+                                catch(Exception ex)
+                                {
+                                    NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.Message}", "ClientCallService.DoAssetWork()");
+                                }
+                            }
+                        }
+                    }
+                }
+
+                AssetLock = false;
+            }
+        }
+        #endregion
+
         #region Block State Sync Work
         private async void DoBlockStateSyncWork(object? state)
         {
@@ -136,7 +227,14 @@ namespace ReserveBlockCore.Services
 
                         if (explorerNode != null)
                         {
-                            await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                            try
+                            {
+                                await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                            }
+                            catch 
+                            {
+                                ErrorLogUtility.LogError("Failed to send fortis pool to RHNCRbgCs7KGdXk17pzRYAYPRKCkSMwasf", "ClientCallSerivce.DoFortisPoolWork()");
+                            }
                         }
                     }
                 }

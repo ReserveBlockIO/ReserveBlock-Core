@@ -276,7 +276,7 @@ namespace ReserveBlockCore.Commands
                 case "11": //Stop Masternode
                     await ValidatorService.DoMasterNodeStop();
                     break;
-                case "12": //Stop Datanode
+                case "12": //SC import
                     ConsoleWriterService.Output("Feature coming soon");
                     break;
                 case "13": //Exit
