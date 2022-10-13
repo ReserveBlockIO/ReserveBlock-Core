@@ -111,10 +111,6 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
             }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
 
             var newPath = path + fileName;
 
@@ -129,8 +125,8 @@ namespace ReserveBlockCore.Utilities
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
-                NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
+                ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.NFTAssetPath()");
+                NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.NFTAssetPath()");
                 return "NA";
             }
 
