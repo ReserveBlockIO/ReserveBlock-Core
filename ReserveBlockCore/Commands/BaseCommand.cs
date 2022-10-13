@@ -155,6 +155,7 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "2": // Create Account
                     await BaseCommandServices.CreateAddress();
+                    Console.WriteLine("Please type /menu to return to mainscreen.");
                     break;
                 case "2hd": // Create HD Wallet
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
@@ -194,6 +195,7 @@ namespace ReserveBlockCore.Commands
                         var privKey = Console.ReadLine();
                         var restoredAccount = new Account().Restore(privKey);
                         AccountData.WalletInfo(restoredAccount);
+                        Console.WriteLine("Please type /menu to return to mainscreen.");
                     }
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;

@@ -892,13 +892,16 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 4. Send Coins                        |");
             Console.WriteLine("| 5. Get Latest Block                  |");
             Console.WriteLine("| 6. Transaction History               |");
-            Console.WriteLine("| 7. Account Info                      |");
+            Console.WriteLine("| 7. Wallet Address(es) Info           |");
             Console.WriteLine("| 8. Startup Masternode                |");
             Console.WriteLine("| 9. Search Block                      |");
             Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
             Console.WriteLine("| 11. Stop Masternode                  |");
-            Console.WriteLine("| 12. Import Smart Contract            |");
+            Console.WriteLine("| 12. Import Smart Contract (disabled) |");
             Console.WriteLine("| 13. Exit                             |");
+            Console.WriteLine("|======================================|");
+            Console.WriteLine("|type /help for menu options           |");
+            Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
         }
     }
