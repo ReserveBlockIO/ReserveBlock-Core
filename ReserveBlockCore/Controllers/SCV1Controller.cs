@@ -584,6 +584,21 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        [HttpGet("GetNFTAssetLocation/{scUID}/{**fileName}")]
+        public async Task<string> GetNFTAssetLocation(string scUID, string fileName)
+        {
+            var output = "";
+
+            try
+            {
+                output = NFTAssetFileUtility.NFTAssetPath(fileName, scUID);
+            }
+            catch { output = "Error"; }
+
+            return output;
+
+        }
+
         [HttpGet("GetSmartContractData/{id}")]
         public async Task<string> GetSmartContractData(string id)
         {

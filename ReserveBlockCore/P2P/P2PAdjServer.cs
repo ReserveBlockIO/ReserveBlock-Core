@@ -22,11 +22,13 @@ namespace ReserveBlockCore.P2P
         #region Broadcast methods
         public override async Task OnConnectedAsync()
         {
+            string lastArea = "";
             try
             {
                 var keepValConnected = true;
                 var peerIP = GetIP(Context);
-
+                bool logData = false;
+                
                 string connectionId = Context.ConnectionId;
                 var httpContext = Context.GetHttpContext();
                 if (httpContext != null)
@@ -39,23 +41,27 @@ namespace ReserveBlockCore.P2P
                     var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
                     var fortisPool = Globals.FortisPool.ToList();
-
+                    lastArea = "A";
                     if (!string.IsNullOrWhiteSpace(address) && !string.IsNullOrWhiteSpace(uName) && !string.IsNullOrWhiteSpace(signature) && walletVersionVerify)
                     {
                         try
                         {
+                            lastArea = "B";
                             var stateAddress = StateData.GetSpecificAccountStateTrei(address);
                             if (!string.IsNullOrWhiteSpace(address))
                             {
+                                lastArea = "C";
                                 if (stateAddress.Balance >= 1000)
                                 {
+                                    lastArea = "D";
                                     var verifySig = SignatureService.VerifySignature(address, address, signature);
                                     if (verifySig != false)
                                     {
-
+                                        lastArea = "E";
                                         var valExist = fortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
                                         if (valExist == null)
                                         {
+                                            lastArea = "F";
                                             FortisPool fortisPools = new FortisPool();
                                             fortisPools.IpAddress = peerIP;
                                             fortisPools.UniqueName = uName;
@@ -70,23 +76,29 @@ namespace ReserveBlockCore.P2P
                                         }
                                         else
                                         {
+                                            lastArea = "G";
                                             var validator = Globals.FortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
                                             if (validator != null)
                                             {
-                                                if(validator.Address != address)
+                                                lastArea = "H";
+                                                if (validator.Address != address)
                                                 {
+                                                    lastArea = "I";
                                                     DateTime? lastResponseTime = validator.LastAnswerSendDate != null ? validator.LastAnswerSendDate.Value.AddMinutes(15) : null;
                                                     if(lastResponseTime == null)
                                                     {
+                                                        lastArea = "J";
                                                         var connectDate = validator.ConnectDate.AddMinutes(15);
                                                         if (connectDate >= DateTime.UtcNow)
                                                         {
+                                                            lastArea = "K";
                                                             //Connection aborted
                                                             await SendAdjMessageSingle("status", "Disconnected. Connect DateTime >= Current DateTime");
                                                             keepValConnected = false;
                                                         }
                                                         else
                                                         {
+                                                            lastArea = "L";
                                                             validator.ConnectDate = DateTime.UtcNow;
                                                             validator.Address = address;
                                                             validator.ConnectionId = connectionId;
@@ -99,14 +111,17 @@ namespace ReserveBlockCore.P2P
                                                     }
                                                     else
                                                     {
-                                                        if(lastResponseTime >= DateTime.Now)
+                                                        lastArea = "M";
+                                                        if (lastResponseTime >= DateTime.Now)
                                                         {
+                                                            lastArea = "N";
                                                             //Connection aborted
                                                             await SendAdjMessageSingle("status", "Disconnected. Last Task Sent DateTime >= Current Last Task Sent DateTime");
                                                             keepValConnected = false;
                                                         }
                                                         else
                                                         {
+                                                            lastArea = "O";
                                                             validator.ConnectDate = DateTime.UtcNow;
                                                             validator.Address = address;
                                                             validator.ConnectionId = connectionId;
@@ -120,8 +135,10 @@ namespace ReserveBlockCore.P2P
                                                 }
                                                 else
                                                 {
-                                                    if(validator.IpAddress == peerIP)
+                                                    lastArea = "P";
+                                                    if (validator.IpAddress == peerIP)
                                                     {
+                                                        lastArea = "Q";
                                                         validator.ConnectDate = DateTime.UtcNow;
                                                         validator.Address = address; 
                                                         validator.ConnectionId = connectionId;
@@ -132,7 +149,7 @@ namespace ReserveBlockCore.P2P
                                                         //keepValConnected = true;
                                                     }
                                                 }
-                                                
+                                                lastArea = "R";
                                                 //ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
                                             }
                                             else
@@ -148,6 +165,7 @@ namespace ReserveBlockCore.P2P
                                                 Globals.FortisPool.Add(fortisPools);                                                
                                                 //keepValConnected = true;
                                             }
+                                            lastArea = "S";
                                         }
 
                                         await SendAdjMessageSingle("status", $"Authenticated? {keepValConnected}");
@@ -156,6 +174,7 @@ namespace ReserveBlockCore.P2P
 
                                         if (Globals.CurrentTaskQuestion == null)
                                         {
+                                            lastArea = "T";
                                             await SendAdjMessageSingle("status", "Connected");
                                             Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
                                             ConsoleWriterService.Output("Task Created");
@@ -170,6 +189,7 @@ namespace ReserveBlockCore.P2P
                                         }
                                         else
                                         {
+                                            lastArea = "U";
                                             await SendAdjMessageSingle("status", "Connected");
                                             var taskQuest = Globals.CurrentTaskQuestion;
                                             TaskQuestion nTaskQuestion = new TaskQuestion();
@@ -180,28 +200,39 @@ namespace ReserveBlockCore.P2P
                                             await SendAdjMessageSingle("task", taskQuestionStr);
                                             //Console.WriteLine("Task Sent Single");
                                         }
-
+                                    }
+                                    else
+                                    {
+                                        lastArea = "V";
+                                        await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify. You are being disconnected.");
+                                        keepValConnected = false;
+                                        if (Globals.OptionalLogging == true)
+                                        {
+                                            LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
+                                        }
 
                                     }
                                 }
                                 else
                                 {
-                                    await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify. You are being disconnected.");
-                                    Context.Abort();
+                                    lastArea = "W";
+                                    await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.");
+                                    keepValConnected = false;
                                     if (Globals.OptionalLogging == true)
                                     {
-                                        LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
+                                        LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
                                     }
 
                                 }
                             }
                             else
                             {
-                                await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.");
-                                Context.Abort();
+                                lastArea = "X";
+                                await SendAdjMessageSingle("status", "Connection Attempted, But failed to find the address in trie. You are being disconnected.");
+                                keepValConnected = false;
                                 if (Globals.OptionalLogging == true)
                                 {
-                                    LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
+                                    LogUtility.Log("onnection Attempted, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
                                 }
 
                             }
@@ -209,19 +240,33 @@ namespace ReserveBlockCore.P2P
                         }
                         catch (Exception ex)
                         {
+                            lastArea = "Y";
                             DbContext.Rollback();
-                            //Console.WriteLine("Error: " + ex.Message.ToString());
-                            //Console.WriteLine("Error: " + (ex.StackTrace != null ? ex.StackTrace.ToString() : "No Stack Trace"));
+                            if (Globals.OptionalLogging == true)
+                            {
+                                ErrorLogUtility.LogError($"Exception thrown: Error: {ex.Message}", "Adj Connection");
+                            }
                         }
                     }
                     else
                     {
+                        lastArea = "Z";
                         await SendAdjMessageSingle("status", "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.");
-                        Context.Abort();
+                        keepValConnected = false;
                         if (Globals.OptionalLogging == true)
                         {
                             LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
                         }
+                    }
+                }
+                else
+                {
+                    lastArea = "1";
+                    keepValConnected = false;
+                    await SendAdjMessageSingle("status", "httpcontext was null");
+                    if (Globals.OptionalLogging == true)
+                    {
+                        LogUtility.Log("Httpcontext was null.", "Adj Connection");
                     }
                 }
 
@@ -235,6 +280,12 @@ namespace ReserveBlockCore.P2P
                 else
                     Context.Abort();
 
+                if (Globals.OptionalLogging == true)
+                {
+                    LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {peerIP} ", "Adj Connection");
+                }
+
+
             }
             catch (Exception ex)
             {
@@ -245,7 +296,7 @@ namespace ReserveBlockCore.P2P
                     ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.Message}", "Adj Connection");
                 }
             }
-            
+
             
             await base.OnConnectedAsync();
         }

@@ -25,10 +25,15 @@ namespace ReserveBlockCore.Services
                 //5. validate new signature
                 var sigScriptArray = sigScript.Split('.', 2);
                 var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-                if (pubKeyDecoded.Length / 2 == 63)
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
-                    pubKeyDecoded = "00" + pubKeyDecoded;
+                    //This is a patch for sigs with 0000 start point.
+                    if (pubKeyDecoded.Length / 2 == 63)
+                    {
+                        pubKeyDecoded = "00" + pubKeyDecoded;
+                    }
                 }
+                
                 var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
                 var publicKey = PublicKey.fromString(pubKeyByte);
                 var verifyCheck = Ecdsa.verify(message, Signature.fromBase64(sigScriptArray[0]), publicKey);
@@ -50,9 +55,13 @@ namespace ReserveBlockCore.Services
             {
                 var sigScriptArray = sigScript.Split('.', 2);
                 var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-                if (pubKeyDecoded.Length / 2 == 63)
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
-                    pubKeyDecoded = "00" + pubKeyDecoded;
+                    //This is a patch for sigs with 0000 start point. remove lock after update has been achieved.
+                    if (pubKeyDecoded.Length / 2 == 63)
+                    {
+                        pubKeyDecoded = "00" + pubKeyDecoded;
+                    }
                 }
                 var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
                 var publicKey = PublicKey.fromString(pubKeyByte);

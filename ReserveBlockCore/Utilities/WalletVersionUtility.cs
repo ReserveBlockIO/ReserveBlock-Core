@@ -21,9 +21,23 @@
                     {
                         return output;
                     }
-                    if(minor < Globals.MinorVer)
+                    if (Globals.LastBlock.Height < Globals.BlockLock)
                     {
-                        return output;
+                        if (minor < 0)
+                        {
+                            return output;
+                        }
+                    }
+                    else
+                    {
+                        if(!Globals.IsTestNet)
+                        {
+                            if (minor < 1)
+                            {
+                                return output;
+                            }
+                        }
+                        
                     }
 
                     output = true;
@@ -33,8 +47,6 @@
                     //wallet version either mismatched or malformed
                 }
             }
-
-
 
             return output;
         }
