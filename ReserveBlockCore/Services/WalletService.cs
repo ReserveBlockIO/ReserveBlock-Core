@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Services
                     while (string.IsNullOrEmpty(walletChoice))
                     {
                         Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
-                        walletChoice = Console.ReadLine();
+                        walletChoice = await ReadLineUtility.ReadLine();
                     }
                     var wallet = accountNumberList[walletChoice];
                     Console.WriteLine("********************************************************************");
