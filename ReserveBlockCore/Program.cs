@@ -199,6 +199,8 @@ namespace ReserveBlockCore
             
             StartupService.CheckForDuplicateBlocks();
 
+            await StartupService.SetLeadAdjudicator();
+
             if (Globals.DatabaseCorruptionDetected == true)
             {
                 while (true)
@@ -217,7 +219,7 @@ namespace ReserveBlockCore
                 Console.WriteLine(ex.ToString());
             }
 
-            await StartupService.SetLeadAdjudicator();
+            
             StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
 
