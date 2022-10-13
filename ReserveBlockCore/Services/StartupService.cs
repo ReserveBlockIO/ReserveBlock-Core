@@ -495,22 +495,28 @@ namespace ReserveBlockCore.Services
                     //This is not being reached on some devices. 
                     else
                     {
-                        ConsoleWriterService.Output("Block downloads finished.");
-                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");                        
-                        download = false; //exit the while.
-                        Globals.StopAllTimers = false;
-                        var accounts = AccountData.GetAccounts();
-                        var accountList = accounts.FindAll().ToList();
-                        if (accountList.Count() > 0)
+                        var lastBlock = Globals.LastBlock;
+                        var currentTimestamp = TimeUtil.GetTime(-60);
+
+                        if(lastBlock.Timestamp >= currentTimestamp)
                         {
-                            var stateTrei = StateData.GetAccountStateTrei();
-                            foreach (var account in accountList)
+                            ConsoleWriterService.Output("Block downloads finished.");
+                            LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                            download = false; //exit the while.
+                            Globals.StopAllTimers = false;
+                            var accounts = AccountData.GetAccounts();
+                            var accountList = accounts.FindAll().ToList();
+                            if (accountList.Count() > 0)
                             {
-                                var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                                if (stateRec != null)
+                                var stateTrei = StateData.GetAccountStateTrei();
+                                foreach (var account in accountList)
                                 {
-                                    account.Balance = stateRec.Balance;
-                                    accounts.UpdateSafe(account);//updating local record with synced state trei
+                                    var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                                    if (stateRec != null)
+                                    {
+                                        account.Balance = stateRec.Balance;
+                                        accounts.UpdateSafe(account);//updating local record with synced state trei
+                                    }
                                 }
                             }
                         }
