@@ -32,6 +32,8 @@ namespace ReserveBlockCore
                 });
             }
 
+            Globals.Platform = PlatformUtility.GetPlatform();
+
             Config.Config.EstablishConfigFile();
             var config = Config.Config.ReadConfigFile();
             Config.Config.ProcessConfig(config);
@@ -40,12 +42,13 @@ namespace ReserveBlockCore
             Globals.BuildVer = dateDiff;
 
             Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + Globals.BuildVer.ToString() + "-beta";
-            LogUtility.Log("", "Main", true);
             var logCLIVer = Globals.CLIVersion.ToString();
 
+            LogUtility.Log(logCLIVer, "Main", true);
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
 
-            NFTLogUtility.Log("", "Main", true);
+            NFTLogUtility.Log(logCLIVer, "Main", true);
+            
             NFTLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
 
             StartupService.AnotherInstanceCheck();
@@ -199,6 +202,8 @@ namespace ReserveBlockCore
             
             StartupService.CheckForDuplicateBlocks();
 
+            await StartupService.SetLeadAdjudicator();
+
             if (Globals.DatabaseCorruptionDetected == true)
             {
                 while (true)
@@ -217,7 +222,7 @@ namespace ReserveBlockCore
                 Console.WriteLine(ex.ToString());
             }
 
-            await StartupService.SetLeadAdjudicator();
+            
             StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
 

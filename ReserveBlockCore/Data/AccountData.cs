@@ -194,31 +194,36 @@ namespace ReserveBlockCore.Data
 				table.Border(TableBorder.Rounded);
 
 				AnsiConsole.Write(table);
-			}
+
+                Console.WriteLine("Please type /menu to return to mainscreen.");
+            }
 			else
             {
 				Console.Clear();
 				Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 				Console.WriteLine("ReserveBlock Main Menu");
-				Console.WriteLine("|======================================|");
-				Console.WriteLine("| 1. Genesis Block (Check)             |");
-				Console.WriteLine("| 2. Create Account                    |");
-				Console.WriteLine("| 2hd. Create HD Wallet                |");
-				Console.WriteLine("| 3. Restore Account                   |");
-				Console.WriteLine("| 3hd. Restore HD Wallet               |");
-				Console.WriteLine("| 4. Send Coins                        |");
-				Console.WriteLine("| 5. Get Latest Block                  |");
-				Console.WriteLine("| 6. Transaction History               |");
-				Console.WriteLine("| 7. Account Info                      |");
-				Console.WriteLine("| 8. Startup Masternode                |");
-				Console.WriteLine("| 9. Search Block                      |");
-				Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-				Console.WriteLine("| 11. Stop Masternode                  |");
-				Console.WriteLine("| 12. Import Smart Contract            |");
-				Console.WriteLine("| 13. Exit                             |");
-				Console.WriteLine("|======================================|");
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("| 1. Genesis Block (Check)             |");
+                Console.WriteLine("| 2. Create Account                    |");
+                Console.WriteLine("| 2hd. Create HD Wallet                |");
+                Console.WriteLine("| 3. Restore Account                   |");
+                Console.WriteLine("| 3hd. Restore HD Wallet               |");
+                Console.WriteLine("| 4. Send Coins                        |");
+                Console.WriteLine("| 5. Get Latest Block                  |");
+                Console.WriteLine("| 6. Transaction History               |");
+                Console.WriteLine("| 7. Wallet Address(es) Info           |");
+                Console.WriteLine("| 8. Startup Masternode                |");
+                Console.WriteLine("| 9. Search Block                      |");
+                Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
+                Console.WriteLine("| 11. Stop Masternode                  |");
+                Console.WriteLine("| 12. Import Smart Contract (disabled) |");
+                Console.WriteLine("| 13. Exit                             |");
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("|type /help for menu options           |");
+                Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|======================================|");
 
-				Console.WriteLine("********************************************************************");
+                Console.WriteLine("********************************************************************");
 				Console.WriteLine("You do not have any accounts yet. Please choose option 2 to create a new account.");
 				
 

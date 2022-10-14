@@ -27,6 +27,7 @@ namespace ReserveBlockCore
         #region Global General Variables
 
         public static int BlockLock = 350000;
+        public static string Platform = "";
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>();
         public static List<Validators> InactiveValidators = new List<Validators>();
@@ -76,7 +77,7 @@ namespace ReserveBlockCore
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
         public static int MajorVer = 2;
-        public static int MinorVer = 0;
+        public static int MinorVer = 0; //change this to 1 for main release
         public static int BuildVer = 0;
         public static string CLIVersion = "";
         public static bool HDWallet = false;

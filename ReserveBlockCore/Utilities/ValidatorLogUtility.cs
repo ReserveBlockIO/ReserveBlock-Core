@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class ValidatorLogUtility
     {
-        public static async void Log(string message, string location, bool firstEntry = false)
+        public static void Log(string message, string location, bool firstEntry = false)
         {
             try
             {
@@ -37,12 +37,12 @@ namespace ReserveBlockCore.Utilities
                 }
                 if (firstEntry == true)
                 {
-                    await File.AppendAllTextAsync(path + "validatorlog.txt", Environment.NewLine + " ");
+                    File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + " ");
 
 
                 }
 
-                await File.AppendAllTextAsync(path + "validatorlog.txt", Environment.NewLine + text);
+                File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {

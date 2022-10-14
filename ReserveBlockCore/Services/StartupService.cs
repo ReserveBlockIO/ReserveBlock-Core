@@ -495,22 +495,28 @@ namespace ReserveBlockCore.Services
                     //This is not being reached on some devices. 
                     else
                     {
-                        ConsoleWriterService.Output("Block downloads finished.");
-                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");                        
-                        download = false; //exit the while.
-                        Globals.StopAllTimers = false;
-                        var accounts = AccountData.GetAccounts();
-                        var accountList = accounts.FindAll().ToList();
-                        if (accountList.Count() > 0)
+                        var lastBlock = Globals.LastBlock;
+                        var currentTimestamp = TimeUtil.GetTime(-60);
+
+                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate)
                         {
-                            var stateTrei = StateData.GetAccountStateTrei();
-                            foreach (var account in accountList)
+                            ConsoleWriterService.Output("Block downloads finished.");
+                            LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                            download = false; //exit the while.
+                            Globals.StopAllTimers = false;
+                            var accounts = AccountData.GetAccounts();
+                            var accountList = accounts.FindAll().ToList();
+                            if (accountList.Count() > 0)
                             {
-                                var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                                if (stateRec != null)
+                                var stateTrei = StateData.GetAccountStateTrei();
+                                foreach (var account in accountList)
                                 {
-                                    account.Balance = stateRec.Balance;
-                                    accounts.UpdateSafe(account);//updating local record with synced state trei
+                                    var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                                    if (stateRec != null)
+                                    {
+                                        account.Balance = stateRec.Balance;
+                                        accounts.UpdateSafe(account);//updating local record with synced state trei
+                                    }
                                 }
                             }
                         }
@@ -892,13 +898,16 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 4. Send Coins                        |");
             Console.WriteLine("| 5. Get Latest Block                  |");
             Console.WriteLine("| 6. Transaction History               |");
-            Console.WriteLine("| 7. Account Info                      |");
+            Console.WriteLine("| 7. Wallet Address(es) Info           |");
             Console.WriteLine("| 8. Startup Masternode                |");
             Console.WriteLine("| 9. Search Block                      |");
             Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
             Console.WriteLine("| 11. Stop Masternode                  |");
-            Console.WriteLine("| 12. Import Smart Contract            |");
+            Console.WriteLine("| 12. Import Smart Contract (disabled) |");
             Console.WriteLine("| 13. Exit                             |");
+            Console.WriteLine("|======================================|");
+            Console.WriteLine("|type /help for menu options           |");
+            Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
         }
     }

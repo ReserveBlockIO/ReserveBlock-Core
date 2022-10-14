@@ -169,7 +169,6 @@ namespace ReserveBlockCore.Services
                     }
                 }
 
-
                 var newBlock = new Block
                 {
                     Height = block.Height,
@@ -315,7 +314,28 @@ namespace ReserveBlockCore.Services
                                         var txdata = TransactionData.GetAll();
                                         txdata.InsertSafe(localTransaction);
                                     }
-                                    if (Globals.IsChainSynced == true)
+                                    if(localTransaction.TransactionType == TransactionType.NFT_TX || localTransaction.TransactionType == TransactionType.NFT_SALE)
+                                    {
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
+                                        if(scDataArray != null)
+                                        {
+                                            var scData = scDataArray[0];
+                                            if (scData != null)
+                                            {
+                                                var function = (string?)scData["Function"];
+                                                if(!string.IsNullOrWhiteSpace(function))
+                                                {
+                                                    if(function == "Transfer()")
+                                                    {
+                                                        var txdata = TransactionData.GetAll();
+                                                        txdata.InsertSafe(localTransaction);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                    }
+                                    if (Globals.IsChainSynced == true)//this is here so someone doesn't get spammed with API calls when starting wallet or syncing
                                     {
                                         //Call out to custom URL from config file with TX details
                                         if (!string.IsNullOrWhiteSpace(Globals.APICallURL))

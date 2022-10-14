@@ -110,7 +110,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoAssetWork(object? state)
         {
-            if (AssetLock == false)
+            if (!AssetLock)
             {
                 AssetLock = true;
                 {
@@ -218,7 +218,7 @@ namespace ReserveBlockCore.Services
                     if (Globals.Adjudicate)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = Globals.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
+                        var fortisPool = Globals.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime).ToList();
 
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
@@ -300,7 +300,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 //no node found
-                Console.WriteLine("****************DoFortisPoolWork - Failed****************");
+                Console.WriteLine("Error: ClientCallService.DoFortisPoolWork(): " + ex.Message);
             }
         }
 
@@ -890,13 +890,14 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height < Globals.BlockLock)
+            if(Globals.LastBlock.Height > Globals.BlockLock)
             {
-                await DoWork_Deprecated();
+                await DoWork_New();
+                
             }
             else
             {
-                await DoWork_New();
+                await DoWork_Deprecated();
             }
             
         }
@@ -934,8 +935,16 @@ namespace ReserveBlockCore.Services
                 {
                     result.ForEach(x =>
                     {
-                        var recKeep = x.First();
-                        Globals.FortisPool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                        try
+                        {
+                            var recKeep = x.FirstOrDefault();
+                            if(recKeep != null)
+                            {
+                                pool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                            }
+                        }
+                        catch { }
+                        
                     });
                 }
 
@@ -943,11 +952,15 @@ namespace ReserveBlockCore.Services
                 {
                     foreach (TaskNumberAnswer taskAnswer in taskAnswerList)
                     {
-                        var validator = Globals.FortisPool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
+                        var validator = pool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
                         {
                             if (validator != null)
                             {
-                                validator.LastAnswerSendDate = DateTime.Now;
+                                try
+                                {
+                                    validator.LastAnswerSendDate = DateTime.Now;
+                                }
+                                catch { }
                             }
                         }
                     }
@@ -959,7 +972,12 @@ namespace ReserveBlockCore.Services
                 {
                     foreach (var deadNode in deadNodes)
                     {
-                        pool.Remove(deadNode);
+                        try
+                        {
+                            pool.Remove(deadNode);
+                        }
+                        catch { }
+                        
                     }
                 }
             }
@@ -975,6 +993,9 @@ namespace ReserveBlockCore.Services
         #region Process Fortis Pool **Deprecated
         public async Task ProcessFortisPool_Deprecated(List<TaskAnswer> taskAnswerList)
         {
+            int errorCountA = 0;
+            int errorCountB = 0;
+            int errorCountC = 0;
             try
             {
                 var pool = Globals.FortisPool;
@@ -984,8 +1005,14 @@ namespace ReserveBlockCore.Services
                 {
                     result.ForEach(x =>
                     {
-                        var recKeep = x.First();
-                        Globals.FortisPool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                        try
+                        {
+                            var recKeep = x.FirstOrDefault();
+                            if(recKeep != null)
+                                pool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                        }
+                        catch { errorCountA += 1; }
+                        
                     });
                 }
 
@@ -993,21 +1020,43 @@ namespace ReserveBlockCore.Services
                 {
                     foreach (TaskAnswer taskAnswer in taskAnswerList)
                     {
-                        var validator = Globals.FortisPool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
+                        try
                         {
-                            if (validator != null)
+                            var validator = pool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
                             {
-                                validator.LastAnswerSendDate = DateTime.Now;
+                                if (validator != null)
+                                {
+                                    validator.LastAnswerSendDate = DateTime.Now;
+                                }
                             }
                         }
+                        catch { errorCountB += 1; }
+                        
+                    }
+                }
+
+                var nodeWithAnswer = pool.Where(x => x.LastAnswerSendDate != null).ToList();
+                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
+                if (deadNodes.Count() > 0)
+                {
+                    foreach (var deadNode in deadNodes)
+                    {
+                        try
+                        {
+                            pool.Remove(deadNode);
+                        }
+                        catch { errorCountC += 1; }
+
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool_Deprecated(): " + ex.Message);
             }
 
+            if(errorCountA > 0 || errorCountB > 0 || errorCountC > 0)
+                Console.WriteLine($"Error Count A = {errorCountA} || Error Count B = {errorCountB} || Error Count C = {errorCountC}");
         }
 
         #endregion

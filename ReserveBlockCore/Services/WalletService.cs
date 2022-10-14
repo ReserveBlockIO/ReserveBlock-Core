@@ -14,87 +14,92 @@ namespace ReserveBlockCore.Services
     {
         public static async Task StartSend()
         {
-            Console.Clear();
-            var accountList = AccountData.GetAccountsWithBalance();
-            var accountNumberList = new Dictionary<string, Account>();
-
-            if (accountList.Count() > 0)
+            try
             {
-                int count = 1;
-                accountList.ToList().ForEach(x => {
-                    accountNumberList.Add(count.ToString(), x);
+                Console.Clear();
+                var accountList = AccountData.GetAccountsWithBalance();
+                var accountNumberList = new Dictionary<string, Account>();
+
+                if (accountList.Count() > 0)
+                {
+                    int count = 1;
+                    accountList.ToList().ForEach(x => {
+                        accountNumberList.Add(count.ToString(), x);
+                        Console.WriteLine("********************************************************************");
+                        Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
+
+                        Console.WriteLine("\n #" + count.ToString());
+                        Console.WriteLine("\nAddress :\n{0}", x.Address);
+                        Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+                        count++;
+                    });
+                    string? walletChoice = "";
+                    walletChoice = await ReadLineUtility.ReadLine();
+                    while (string.IsNullOrEmpty(walletChoice))
+                    {
+                        Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
+                        walletChoice = await ReadLineUtility.ReadLine();
+                    }
+                    var wallet = accountNumberList[walletChoice];
                     Console.WriteLine("********************************************************************");
-                    Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
 
-                    Console.WriteLine("\n #" + count.ToString() );
-                    Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
-                    count++;
-                });
-                string walletChoice = "";
-                walletChoice = Console.ReadLine();
-                while (walletChoice == "")
-                {
-                    Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
-                    walletChoice = Console.ReadLine();
-                }
-                var wallet = accountNumberList[walletChoice];
-                Console.WriteLine("********************************************************************");
+                    Console.WriteLine("From Address address:");
+                    string fromAddress = wallet.Address;
+                    Console.WriteLine(fromAddress);
 
-                Console.WriteLine("From Address address:");
-                string fromAddress = wallet.Address;
-                Console.WriteLine(fromAddress);
+                    Console.WriteLine("\nPlease enter the recipient address!:");
+                    string? toAddress = await ReadLineUtility.ReadLine();
 
-                Console.WriteLine("\nPlease enter the recipient address!:");
-                string toAddress = Console.ReadLine();
+                    Console.WriteLine("\nPlease enter the amount (number)!:");
+                    string? strAmount = await ReadLineUtility.ReadLine();
 
-                Console.WriteLine("\nPlease enter the amount (number)!:");
-                string strAmount = Console.ReadLine();
+                    if (string.IsNullOrEmpty(fromAddress) ||
+                    string.IsNullOrEmpty(toAddress) ||
+                    string.IsNullOrEmpty(strAmount))
+                    {
 
-                if (string.IsNullOrEmpty(fromAddress) ||
-                string.IsNullOrEmpty(toAddress) ||
-                string.IsNullOrEmpty(strAmount))
-                {
-
-                    Console.WriteLine("\n\nError! Please input all fields: sender, recipient, and the amount.\n");
-                    return;
-                }
+                        Console.WriteLine("\n\nError! Please input all fields: sender, recipient, and the amount.\n");
+                        return;
+                    }
 
 
-                var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
+                    var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
 
 
-                if (addrCheck == false)
-                {
-                    Console.WriteLine("\nError! You have entered an invalid RBX Address!");
-                    return;
-                }
+                    if (addrCheck == false)
+                    {
+                        Console.WriteLine("\nError! You have entered an invalid RBX Address!");
+                        return;
+                    }
 
-                decimal amount = new decimal();
+                    decimal amount = new decimal();
 
-                try
-                {
-                    amount = decimal.Parse(strAmount);
-                }
-                catch
-                {
-                    Console.WriteLine("\nError! You have entered an incorrect value for  the amount!");
-                    return;
+                    try
+                    {
+                        amount = decimal.Parse(strAmount);
+                    }
+                    catch
+                    {
+                        Console.WriteLine("\nError! You have entered an incorrect value for  the amount!");
+                        return;
+                    }
+
+                    //RWCjeJ1pcwEqRS9ksgQs3987x78WVYsaFT
+                    var result = await SendTXOut(fromAddress, toAddress, amount);
+                    Console.WriteLine(result);
                 }
 
-                //RWCjeJ1pcwEqRS9ksgQs3987x78WVYsaFT
-                var result = await SendTXOut(fromAddress, toAddress, amount);
-                Console.WriteLine(result);
+                else
+                {
+                    StartupService.MainMenu();
+                    Console.WriteLine("No wallets found with a balance.");
+                }
             }
-
-            else
+            catch(Exception ex)
             {
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("No wallets found with a balance.");
-                Console.WriteLine("Returning you to main menu.");
-                Thread.Sleep(5000);
-                StartupService.MainMenu();
+                Console.WriteLine(ex.Message);
             }
+            
         }
         public static async Task<string> SendTXOut(string FromAddress, string ToAddress, decimal Amount, TransactionType tranType = TransactionType.TX)
         {

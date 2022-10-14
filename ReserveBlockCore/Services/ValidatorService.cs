@@ -10,92 +10,96 @@ namespace ReserveBlockCore.Services
     {
         public static async void DoValidate()
         {
-            Console.Clear();
-            var accountList = AccountData.GetPossibleValidatorAccounts();
-            var accountNumberList = new Dictionary<string, Account>();
-
-            if (accountList.Count() > 0)
+            try
             {
-                int count = 1;
-                accountList.ToList().ForEach(x => {
-                    accountNumberList.Add(count.ToString(), x);
-                    Console.WriteLine("********************************************************************");
-                    Console.WriteLine("Please choose an address below to be a validator by typing its # and pressing enter.");
+                Console.Clear();
+                var accountList = AccountData.GetPossibleValidatorAccounts();
+                var accountNumberList = new Dictionary<string, Account>();
 
-                    Console.WriteLine("\n #" + count.ToString());
-                    Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
-                    count++;
-                });
+                if (accountList.Count() > 0)
+                {
+                    int count = 1;
+                    accountList.ToList().ForEach(x => {
+                        accountNumberList.Add(count.ToString(), x);
+                        Console.WriteLine("********************************************************************");
+                        Console.WriteLine("Please choose an address below to be a validator by typing its # and pressing enter.");
 
-                var walletChoice = Console.ReadLine();
-                while(walletChoice == "")
-                {
-                    Console.WriteLine("You must choose a wallet please. Type a number from above and press enter please."); 
-                    walletChoice = Console.ReadLine();
-                }
-                var account = accountNumberList[walletChoice];
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("The chosen validator address is:");
-                string validatorAddress = account.Address;
-                Console.WriteLine(validatorAddress);
-                Console.WriteLine("Are you sure you want to activate this address as a validator? (Type 'y' for yes and 'n' for no.)");
-                var confirmChoice = Console.ReadLine();
+                        Console.WriteLine("\n #" + count.ToString());
+                        Console.WriteLine("\nAddress :\n{0}", x.Address);
+                        Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+                        count++;
+                    });
 
-                if(confirmChoice == null)
-                {
-                    Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
-                    Console.WriteLine("Returning you to main menu...");
-                    Thread.Sleep(5000);
-                    StartupService.MainMenu();
-                }
-                else if(confirmChoice.ToLower() == "n")
-                {
-                    Console.WriteLine("Returning you to main menu in 3 seconds...");
-                    Thread.Sleep(3000);
-                    StartupService.MainMenu();
-                }
-                else if(confirmChoice.ToLower() == "y")
-                {
-                    Console.Clear();
-                    Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
-                    var nodeName = Console.ReadLine();
-                    
-                    if(!string.IsNullOrWhiteSpace(nodeName))
+                    var walletChoice = await ReadLineUtility.ReadLine();
+                    while (walletChoice == "")
                     {
-                        var nodeNameCheck = UniqueNameCheck(nodeName);
+                        Console.WriteLine("You must choose a wallet please. Type a number from above and press enter please.");
+                        walletChoice = await ReadLineUtility.ReadLine();
+                    }
+                    var account = accountNumberList[walletChoice];
+                    Console.WriteLine("********************************************************************");
+                    Console.WriteLine("The chosen validator address is:");
+                    string validatorAddress = account.Address;
+                    Console.WriteLine(validatorAddress);
+                    Console.WriteLine("Are you sure you want to activate this address as a validator? (Type 'y' for yes and 'n' for no.)");
+                    var confirmChoice = await ReadLineUtility.ReadLine();
 
-                        while (nodeNameCheck == false)
+                    if (confirmChoice == null)
+                    {
+                        Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
+                        Console.WriteLine("Returning you to main menu...");
+                        Thread.Sleep(5000);
+                        StartupService.MainMenu();
+                    }
+                    else if (confirmChoice.ToLower() == "n")
+                    {
+                        Console.WriteLine("Returning you to main menu in 3 seconds...");
+                        Thread.Sleep(3000);
+                        StartupService.MainMenu();
+                    }
+                    else if (confirmChoice.ToLower() == "y")
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                        var nodeName = await ReadLineUtility.ReadLine();
+
+                        if (!string.IsNullOrWhiteSpace(nodeName))
                         {
-                            Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
-                            nodeName = Console.ReadLine();
-                            nodeNameCheck = UniqueNameCheck(nodeName);
+                            var nodeNameCheck = UniqueNameCheck(nodeName);
+
+                            while (nodeNameCheck == false)
+                            {
+                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                                nodeName = await ReadLineUtility.ReadLine();
+                                nodeNameCheck = UniqueNameCheck(nodeName);
+                            }
+
+                            var result = await StartValidating(account, nodeName);
+                            Console.WriteLine(result);
+                            Console.WriteLine("Returning you to main menu in 10 seconds...");
+                            Thread.Sleep(10000);
+                            StartupService.MainMenu();
                         }
 
-                        var result = await StartValidating(account,nodeName);
-                        Console.WriteLine(result);
-                        Console.WriteLine("Returning you to main menu in 10 seconds...");
-                        Thread.Sleep(10000);
-                        StartupService.MainMenu();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Unexpected input detected.");
+                        Console.WriteLine("Returning you to main menu in 5 seconds...");
+                        Thread.Sleep(5000);
                     }
 
                 }
                 else
                 {
-                    Console.WriteLine("Unexpected input detected.");
+                    Console.WriteLine("********************************************************************");
+                    Console.WriteLine("Insufficient balance to validate.");
                     Console.WriteLine("Returning you to main menu in 5 seconds...");
                     Thread.Sleep(5000);
+                    StartupService.MainMenu();
                 }
-
             }
-            else
-            {
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("Insufficient balance to validate.");
-                Console.WriteLine("Returning you to main menu in 5 seconds...");
-                Thread.Sleep(5000);
-                StartupService.MainMenu();
-            }
+            catch (Exception ex) { }
         }
         public static async Task<string> StartValidating(Account account, string uName = "")
         {

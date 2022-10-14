@@ -251,6 +251,7 @@ namespace ReserveBlockCore.P2P
                 .WithAutomaticReconnect()
                 .Build();
 
+
                 LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
 
                 var ipAddress = url.Replace("http://", "").Replace("/blockchain", "");
@@ -303,15 +304,15 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "status":
                                 Console.WriteLine(data);
-                                if(data == "Connected")
+                                if (data == "Connected")
                                 {
                                     ValidatorLogUtility.Log("Connected to Validator Pool.", "P2PClient.ConnectAdjudicator()", true);
+                                    LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
                                 }
                                 else
                                 {
                                     ValidatorLogUtility.Log($"Response from adj: {data}", "P2PClient.ConnectAdjudicator()", true);
                                 }
-                                LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
                                 break;
                             case "tx":
                                 await ValidatorProcessor.ProcessData(message, data, ipAddress);

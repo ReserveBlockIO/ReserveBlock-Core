@@ -155,6 +155,7 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "2": // Create Account
                     await BaseCommandServices.CreateAddress();
+                    Console.WriteLine("Please type /menu to return to mainscreen.");
                     break;
                 case "2hd": // Create HD Wallet
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
@@ -179,9 +180,17 @@ namespace ReserveBlockCore.Commands
                         if(Globals.EncryptPassword.Length > 0)
                         {
                             Console.WriteLine("Please enter private key... ");
-                            var privKey = Console.ReadLine();
-                            var restoredAccount = new Account().Restore(privKey);
-                            AccountData.WalletInfo(restoredAccount);
+                            try
+                            {
+                                var privKey = await ReadLineUtility.ReadLine();
+                                if(!string.IsNullOrEmpty(privKey))
+                                {
+                                    var restoredAccount = new Account().Restore(privKey);
+                                    AccountData.WalletInfo(restoredAccount);
+                                }
+                            }
+                            catch(Exception ex) { }
+                            
                         }
                         else
                         {
@@ -191,9 +200,17 @@ namespace ReserveBlockCore.Commands
                     else
                     {
                         Console.WriteLine("Please enter private key... ");
-                        var privKey = Console.ReadLine();
-                        var restoredAccount = new Account().Restore(privKey);
-                        AccountData.WalletInfo(restoredAccount);
+                        try
+                        {
+                            var privKey = await ReadLineUtility.ReadLine();
+                            if (!string.IsNullOrEmpty(privKey))
+                            {
+                                var restoredAccount = new Account().Restore(privKey);
+                                AccountData.WalletInfo(restoredAccount);
+                            }
+                        }
+                        catch (Exception ex) { }
+                        Console.WriteLine("Please type /menu to return to mainscreen.");
                     }
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     break;
