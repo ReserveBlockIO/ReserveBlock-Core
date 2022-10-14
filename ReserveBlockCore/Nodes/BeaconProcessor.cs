@@ -34,6 +34,16 @@ namespace ReserveBlockCore.Nodes
                             if (rsp.Status == 1)
                             {
                                 //success
+                                var aqDb = AssetQueue.GetAssetQueue();
+                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID);
+                                if(aq != null)
+                                {
+                                    aq.IsComplete = true;
+                                    aq.IsDownloaded = true;
+
+                                    aqDb.UpdateSafe(aq);
+                                }
+
                                 NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData()");
                                 await P2PClient.BeaconFileIsReady(scUID, assetName);
                             }
@@ -69,8 +79,6 @@ namespace ReserveBlockCore.Nodes
                                 if (rsp.Status == 1)
                                 {
                                     //success
-                                    //report to beacon file is downloaded
-                                    //beacon will close connection and terminate relationship between you and sender
                                 }
                                 else
                                 {

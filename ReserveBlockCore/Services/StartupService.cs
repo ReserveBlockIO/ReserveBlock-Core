@@ -498,7 +498,7 @@ namespace ReserveBlockCore.Services
                         var lastBlock = Globals.LastBlock;
                         var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate)
+                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                         {
                             ConsoleWriterService.Output("Block downloads finished.");
                             LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
