@@ -169,13 +169,13 @@ namespace ReserveBlockCore.Utilities
                             var count = 0;
                             var myArray = ((object[])feature.FeatureFeatures).ToList();
                             myArray.ForEach(x => {
-                                var evolveDict = (Dictionary<string, object>)myArray[count];
+                                var evolveDict = (EvolvingFeature)myArray[count];
                                 SmartContractAsset evoAsset = new SmartContractAsset();
-                                if (evolveDict.ContainsKey("SmartContractAsset"))
+                                if (evolveDict.SmartContractAsset != null)
                                 {
 
-                                    var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                    evoAsset.Name = (string)assetEvo["Name"];
+                                    var assetEvo = evolveDict.SmartContractAsset;
+                                    evoAsset.Name = assetEvo.Name;
                                     if (!assets.Contains(evoAsset.Name))
                                     {
                                         assets.Add(evoAsset.Name);
@@ -191,14 +191,17 @@ namespace ReserveBlockCore.Utilities
                             var myArray = ((object[])feature.FeatureFeatures).ToList();
 
                             myArray.ForEach(x => {
-                                var multiAssetDict = (Dictionary<string, object>)myArray[count];
+                                var multiAssetDict = (MultiAssetFeature)myArray[count];
 
-                                var fileName = multiAssetDict["FileName"].ToString();
-                                if (!assets.Contains(fileName))
+                                if(multiAssetDict != null)
                                 {
-                                    assets.Add(fileName);
+                                    var fileName = multiAssetDict.FileName;
+                                    if (!assets.Contains(fileName))
+                                    {
+                                        assets.Add(fileName);
+                                    }
                                 }
-
+                                
                                 count += 1;
 
                             });
