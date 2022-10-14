@@ -414,6 +414,48 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Beacon Is File Ready check for receiver
+        public async Task<bool> BeaconIsFileReady(string data)
+        {
+            bool result = false;
+            var payload = JsonConvert.DeserializeObject<string[]>(data);
+            if (payload != null)
+            {
+                var scUID = payload[0];
+                var assetName = payload[1];
+                var beacon = BeaconData.GetBeacon();
+                if (beacon != null)
+                {
+                    var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName);
+                    if (beaconData != null)
+                    {
+                        if (beaconData.IsReady)
+                        {
+                            result = true;
+                            return result;
+                        }
+                        else
+                        {
+                            //attempt to call to person to get file.
+                            var beaconPool = Globals.BeaconPool.ToList();
+                            var remoteUser = beaconPool.Where(x => x.Reference == beaconData.Reference).FirstOrDefault();
+                            string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
+                            var sendJson = JsonConvert.SerializeObject(senddata);
+                            if (remoteUser != null)
+                            {
+                                await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                            }
+                        }
+                            
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
+
         #region SignalR DOS Protection
 
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)

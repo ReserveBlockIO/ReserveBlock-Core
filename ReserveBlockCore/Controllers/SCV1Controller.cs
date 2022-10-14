@@ -468,7 +468,8 @@ namespace ReserveBlockCore.Controllers
                                 else
                                 {
                                     output = "Failed to add upload to Asset Queue. Please check logs for more details.";
-                                    NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated.", "SCV1Controller.TransferNFT()");
+                                    NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                                     
                                 }
 
                             }
