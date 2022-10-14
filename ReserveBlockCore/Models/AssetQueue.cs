@@ -102,7 +102,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                var acRec = aqDB.FindOne(x => x.SmartContractUID == aq.SmartContractUID);
+                var acRec = aqDB.FindOne(x => x.SmartContractUID == aq.SmartContractUID && x.AssetTransferType == aq.AssetTransferType && x.IsComplete != true);
                 if (acRec != null)
                 {
                     return false;

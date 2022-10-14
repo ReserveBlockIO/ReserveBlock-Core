@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Models;
+﻿using Newtonsoft.Json;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using System.Diagnostics;
@@ -131,6 +132,46 @@ namespace ReserveBlockCore.Utilities
             }
 
             return "NA";
+        }
+
+        public static async Task CheckForAssets(AssetQueue aq)
+        {
+            try
+            {
+                var aqDB = AssetQueue.GetAssetQueue();
+                //Look to see if media exist
+                if(aqDB != null)
+                {
+                    if (aq.MediaListJson != null)
+                    {
+                        var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+
+                        if (assetList != null)
+                        {
+                            if (assetList.Count() > 0)
+                            {
+                                var assetCount = assetList.Count();
+                                var assestExistCount = 0;
+                                foreach (string asset in assetList)
+                                {
+                                    var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                    var fileExist = File.Exists(path);
+                                    if (fileExist)
+                                        assestExistCount += 1;
+                                }
+
+                                if (assetCount == assestExistCount)
+                                {
+                                    aq.IsDownloaded = true;
+                                    aq.IsComplete = true;
+                                    aqDB.UpdateSafe(aq);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         public static async Task<string> DownloadAssetFromBeacon(string scUID, string locators, string preSigned = "NA", string md5List = "NA")

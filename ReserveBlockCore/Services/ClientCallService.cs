@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
+using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
@@ -135,6 +136,8 @@ namespace ReserveBlockCore.Services
                                     {
                                         NFTLogUtility.Log($"Download Request has been sent", "ClientCallService.DoAssetWork()");
                                         aq.IsComplete = true;
+                                        aq.Attempts = 0;
+                                        aq.NextAttempt = DateTime.UtcNow;
                                         aqDB.UpdateSafe(aq);
                                     }
                                     else
@@ -142,45 +145,80 @@ namespace ReserveBlockCore.Services
                                         NFTLogUtility.Log($"Download Request has not been sent. Reason: {result}", "ClientCallService.DoAssetWork()");
                                         aqDB.UpdateSafe(aq);
                                     }
-
-                                    try
-                                    {
-                                        //Look to see if media exist
-                                        if (aq.MediaListJson != null)
-                                        {
-                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
-
-                                            if (assetList != null)
-                                            {
-                                                if (assetList.Count() > 0)
-                                                {
-                                                    var assetCount = assetList.Count();
-                                                    var assestExistCount = 0;
-                                                    foreach (string asset in assetList)
-                                                    {
-                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
-                                                        var fileExist = File.Exists(path);
-                                                        if (fileExist)
-                                                            assestExistCount += 1;
-                                                    }
-
-                                                    if (assetCount == assestExistCount)
-                                                    {
-                                                        aq.IsDownloaded = true;
-                                                        aq.IsComplete = true;
-                                                        aqDB.UpdateSafe(aq);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch { }
                                     
                                 }
                                 catch(Exception ex)
                                 {
                                     NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.Message}", "ClientCallService.DoAssetWork()");
                                 }
+                            }
+                        }
+
+                        var aqCompleteList = aqDB.Find(x =>  x.IsComplete == true && x.IsDownloaded == false &&
+                            x.AssetTransferType == AssetQueue.TransferType.Download).ToList();
+
+                        if(aqCompleteList.Count() > 0)
+                        {
+                            foreach(var aq in aqCompleteList)
+                            {
+                                try
+                                {
+                                    var curDate = DateTime.UtcNow;
+                                    if(aq.NextAttempt <= curDate)
+                                    {
+                                        await NFTAssetFileUtility.CheckForAssets(aq);
+                                        aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
+                                        var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
+                                        aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
+                                        //attempt to get file again. call out to beacon
+                                        if (aq.MediaListJson != null)
+                                        {
+                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+                                            if (assetList != null)
+                                            {
+                                                if (assetList.Count() > 0)
+                                                {
+                                                    foreach (string asset in assetList)
+                                                    {
+                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                                        var fileExist = File.Exists(path);
+                                                        if (!fileExist)
+                                                        {
+                                                            try
+                                                            {
+                                                                var fileCheckResult = await P2PClient.BeaconFileReadyCheck(aq.SmartContractUID, asset);
+                                                                if (fileCheckResult)
+                                                                {
+                                                                    var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                                                                    var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+                                                                    if (beacon != null)
+                                                                    {
+                                                                        BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, aq.SmartContractUID);
+                                                                        if (rsp.Status != 1)
+                                                                        {
+                                                                            //failed to download
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            catch { }
+                                                        }
+                                                    }
+                                                   
+                                                }
+                                            }
+                                            
+                                        }
+                                        
+                                    }
+
+
+
+                                    //Look to see if media exist
+                                    await NFTAssetFileUtility.CheckForAssets(aq);
+                                }
+                                catch { }
                             }
                         }
                     }
