@@ -890,13 +890,14 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height < Globals.BlockLock)
+            if(Globals.LastBlock.Height > Globals.BlockLock)
             {
-                await DoWork_Deprecated();
+                await DoWork_New();
+                
             }
             else
             {
-                await DoWork_New();
+                await DoWork_Deprecated();
             }
             
         }

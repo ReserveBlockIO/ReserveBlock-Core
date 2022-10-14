@@ -498,8 +498,8 @@ namespace ReserveBlockCore.Services
                         var lastBlock = Globals.LastBlock;
                         var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        //if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate)
-                        //{
+                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate)
+                        {
                             ConsoleWriterService.Output("Block downloads finished.");
                             LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
                             download = false; //exit the while.
@@ -519,7 +519,7 @@ namespace ReserveBlockCore.Services
                                     }
                                 }
                             }
-                        //}
+                        }
                     }
                 }
                 else

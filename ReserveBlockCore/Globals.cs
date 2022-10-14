@@ -27,6 +27,7 @@ namespace ReserveBlockCore
         #region Global General Variables
 
         public static int BlockLock = 350000;
+        public static string Platform = "";
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>();
         public static List<Validators> InactiveValidators = new List<Validators>();

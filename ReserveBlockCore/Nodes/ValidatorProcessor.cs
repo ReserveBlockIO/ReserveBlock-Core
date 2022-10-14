@@ -24,13 +24,14 @@ namespace ReserveBlockCore.Nodes
                     switch(taskQuestion.TaskType)
                     {
                         case "rndNum":
-                            if(Globals.LastBlock.Height < Globals.BlockLock)
+                            if(Globals.LastBlock.Height > Globals.BlockLock)
                             {
-                                RandomNumberTask_Deprecated();
+                                RandomNumberTask_New(taskQuestion.BlockHeight);
+                                
                             }
                             else
                             {
-                                RandomNumberTask_New(taskQuestion.BlockHeight);
+                                RandomNumberTask_Deprecated();
                             }
                             break;
                     }

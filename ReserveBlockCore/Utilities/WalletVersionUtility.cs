@@ -21,23 +21,22 @@
                     {
                         return output;
                     }
-                    if (Globals.LastBlock.Height < Globals.BlockLock)
+                    if (Globals.LastBlock.Height > Globals.BlockLock)
                     {
-                        if (minor < 0)
-                        {
-                            return output;
-                        }
-                    }
-                    else
-                    {
-                        if(!Globals.IsTestNet)
+                        if (!Globals.IsTestNet)
                         {
                             if (minor < 1)
                             {
                                 return output;
                             }
                         }
-                        
+                    }
+                    else
+                    {
+                        if (minor < 0)
+                        {
+                            return output;
+                        }
                     }
 
                     output = true;
