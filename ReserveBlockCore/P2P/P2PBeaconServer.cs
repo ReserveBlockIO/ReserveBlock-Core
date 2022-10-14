@@ -394,6 +394,11 @@ namespace ReserveBlockCore.P2P
                                 string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
                                 var sendJson = JsonConvert.SerializeObject(senddata);
                                 await SendMessageClient(remoteUser.ConnectionId, "receive", sendJson);
+                                NFTLogUtility.Log($"Receive request was sent to: {remoteUser.IpAddress}. Information JSON sent: {sendJson}", "P2PBeaconServer.BeaconDataIsReady()");
+                            }
+                            else
+                            {
+                                NFTLogUtility.Log($"Remote user was null. Ref: {receiverRef}", "P2PBeaconServer.BeaconDataIsReady()");
                             }
                         }
                     }
@@ -401,7 +406,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-
+                NFTLogUtility.Log($"Error occurred when sending receive. Error: {ex.Message}", "P2PBeaconServer.BeaconDataIsReady()");
             }
 
             return output;

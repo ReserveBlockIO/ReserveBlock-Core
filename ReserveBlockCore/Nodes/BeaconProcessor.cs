@@ -34,18 +34,18 @@ namespace ReserveBlockCore.Nodes
                             if (rsp.Status == 1)
                             {
                                 //success
-                                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData()");
+                                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
                                 await P2PClient.BeaconFileIsReady(scUID, assetName);
                             }
                             else
                             {
-                                NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed.", "BeaconProcessor.ProcessData()");
+                                NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed.", "BeaconProcessor.ProcessData() - send");
                             }
                         }
                     }
                     catch(Exception ex)
                     {
-                        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.Message}. Data: {data}", "BeaconProcessor.ProcessData()");
+                        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.Message}. Data: {data}", "BeaconProcessor.ProcessData() - send");
                     }
 
                 }
@@ -71,18 +71,28 @@ namespace ReserveBlockCore.Nodes
                                     //success
                                     //report to beacon file is downloaded
                                     //beacon will close connection and terminate relationship between you and sender
+                                    NFTLogUtility.Log($"File was received - {assetName}", "BeaconProcessor.ProcessData() - receive");
                                 }
                                 else
                                 {
                                     //failed
+                                    NFTLogUtility.Log($"Failed to get rsp.Status = 1. Status was {rsp.Status}", "BeaconProcessor.ProcessData() - receive");
                                 }
                             }
+                            else
+                            {
+                                NFTLogUtility.Log($"Beacon was null.", "BeaconProcessor.ProcessData() - receive");
+                            }
                             
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log($"Payload was null.", "BeaconProcessor.ProcessData() - receive");
                         }
                     }
                     catch(Exception ex)
                     {
-
+                        NFTLogUtility.Log($"Error Receiving File. Error: {ex.Message}", "BeaconProcessor.ProcessData() - receive");
                     }
                 }
 
