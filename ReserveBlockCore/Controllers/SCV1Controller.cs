@@ -432,6 +432,7 @@ namespace ReserveBlockCore.Controllers
                         var assetString = "";
                         assets.ForEach(x => { assetString = assetString + x + " "; });
 
+                        toAddress = toAddress.Replace(" ", "");
                         var localAddress = AccountData.GetSingleAccount(toAddress);
 
                         NFTLogUtility.Log($"Sending the following assets for upload: {assetString}", "SCV1Controller.TransferNFT()");

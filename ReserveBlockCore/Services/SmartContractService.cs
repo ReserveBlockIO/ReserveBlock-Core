@@ -133,7 +133,7 @@ namespace ReserveBlockCore.Services
                 return null;
             }
 
-            toAddress.Replace(" ", "");
+            toAddress = toAddress.Replace(" ", "");
 
             var account = AccountData.GetSingleAccount(scst.OwnerAddress);
             if (account == null)
