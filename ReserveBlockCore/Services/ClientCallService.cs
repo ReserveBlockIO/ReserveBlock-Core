@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Services
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
-                TimeSpan.FromMinutes(5));
+                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 300));
 
             //_blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
             //    TimeSpan.FromHours(8));
@@ -253,7 +253,7 @@ namespace ReserveBlockCore.Services
             {
                 if (Globals.StopAllTimers == false)
                 {
-                    if (Globals.Adjudicate)
+                    if (Globals.Adjudicate && !Globals.IsTestNet)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
                         var fortisPool = Globals.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime).ToList();
