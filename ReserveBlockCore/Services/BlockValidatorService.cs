@@ -509,8 +509,11 @@ namespace ReserveBlockCore.Services
                                                                     {
                                                                         SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                                     }
-                                                                }
-                                                               
+                                                                }  
+                                                            }
+                                                            else
+                                                            {
+                                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                             }
                                                         }
                                                     }
