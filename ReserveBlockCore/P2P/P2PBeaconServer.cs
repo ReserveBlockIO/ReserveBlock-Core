@@ -330,7 +330,7 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName && x.IPAdress == peerIP).FirstOrDefault();
                                 if (bdCheck == null)
                                 {
                                     var bd = new BeaconData
@@ -369,6 +369,7 @@ namespace ReserveBlockCore.P2P
         #region Beacon Data IsReady Flag Set - Sets IsReady to true if file is present
         public async Task<bool> BeaconDataIsReady(string data)
         {
+            var peerIP = GetIP(Context);
             bool output = false;
             try
             {
@@ -382,7 +383,7 @@ namespace ReserveBlockCore.P2P
                     var beacon = BeaconData.GetBeacon();
                     if (beacon != null)
                     {
-                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName);
+                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.IPAdress == peerIP);
                         if (beaconData != null)
                         {
                             beaconData.IsReady = true;
@@ -420,6 +421,8 @@ namespace ReserveBlockCore.P2P
         #region Beacon Is File Ready check for receiver
         public async Task<bool> BeaconIsFileReady(string data)
         {
+            var peerIP = GetIP(Context);
+
             bool result = false;
             var payload = JsonConvert.DeserializeObject<string[]>(data);
             if (payload != null)
@@ -429,7 +432,7 @@ namespace ReserveBlockCore.P2P
                 var beacon = BeaconData.GetBeacon();
                 if (beacon != null)
                 {
-                    var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName);
+                    var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.DownloadIPAddress == peerIP);
                     if (beaconData != null)
                     {
                         if (beaconData.IsReady)

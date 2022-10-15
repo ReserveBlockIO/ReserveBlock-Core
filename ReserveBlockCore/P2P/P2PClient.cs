@@ -1009,37 +1009,6 @@ namespace ReserveBlockCore.P2P
                         }
 
                         result = response;
-                        //else
-                        //{
-                        //    NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
-                        //    if (locatorRetString == "")
-                        //    {
-                        //        foreach (var asset in bsd.Assets)
-                        //        {
-                        //            NFTLogUtility.Log($"Preparing file to send. Sending {asset} for smart contract {bsd.SmartContractUID}", "P2PClient.BeaconUploadRequest()");
-                        //            var path = NFTAssetFileUtility.NFTAssetPath(asset, bsd.SmartContractUID);
-                        //            NFTLogUtility.Log($"Path for asset {assets} : {path}", "P2PClient.BeaconUploadRequest()");
-                        //            NFTLogUtility.Log($"Beacon IP {beacon.IPAddress} : Beacon Port {beacon.Port}", "P2PClient.BeaconUploadRequest()");
-                        //            //BeaconResponse rsp = BeaconClient.Send(path, beacon.IPAddress, beacon.Port);
-                        //            //if (rsp.Status == 1)
-                        //            //{
-                        //            //    //success
-                        //            //    NFTLogUtility.Log($"Success sending asset: {asset}", "P2PClient.BeaconUploadRequest()");
-                        //            //}
-                        //            //else
-                        //            //{
-                        //            //    NFTLogUtility.Log($"NFT Send for assets -> {asset} <- failed.", "SCV1Controller.TransferNFT()");
-                        //            //}
-                        //        }
-
-                        //        locatorRetString = locator;
-                        //    }
-                        //    else
-                        //    {
-                        //        locatorRetString = locatorRetString + "," + locator;
-                        //    }
-
-                        //}
                     }
                 }
                 else

@@ -88,7 +88,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                var beaconDataRec = beacon.FindOne(x => x.AssetName == beaconData.AssetName && x.SmartContractUID == beaconData.SmartContractUID);
+                var beaconDataRec = beacon.FindOne(x => x.AssetName == beaconData.AssetName && x.SmartContractUID == beaconData.SmartContractUID && x.IPAdress == beaconData.IPAdress);
                 if(beaconDataRec != null)
                 {
                     return false;
