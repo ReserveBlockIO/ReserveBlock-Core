@@ -212,9 +212,6 @@ namespace ReserveBlockCore.Services
                                         }
                                         
                                     }
-
-
-
                                     //Look to see if media exist
                                     await NFTAssetFileUtility.CheckForAssets(aq);
                                 }

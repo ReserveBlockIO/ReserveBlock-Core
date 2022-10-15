@@ -261,7 +261,10 @@ namespace ReserveBlockCore.P2P
                                 var sendJson = JsonConvert.SerializeObject(senddata);
                                 if(remoteUser != null)
                                 {
-                                    await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                                    if(beaconDataRec.IsReady != true)
+                                    {
+                                        await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                                    }
                                 }
                             }
                             
