@@ -489,13 +489,30 @@ namespace ReserveBlockCore.Services
                                             //do transfer logic here! This is for person giving away or feature actions
                                             var scUID = (string?)scData["ContractUID"];
                                             var function = (string?)scData["Function"];
+                                            var features = (string?)scData["Features"];
+                                            var minterAddress = (string?)scData["MinterAddress"];
+
                                             if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 if (function == "Transfer()")
                                                 {
                                                     if (!string.IsNullOrWhiteSpace(scUID))
                                                     {
-                                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                        if(features != null)
+                                                        {
+                                                            if(features.Contains("0"))
+                                                            {
+                                                                if(minterAddress != null)
+                                                                {
+                                                                    var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == minterAddress);
+                                                                    if(evoOwner == null)
+                                                                    {
+                                                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                                    }
+                                                                }
+                                                               
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
