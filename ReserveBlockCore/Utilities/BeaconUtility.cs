@@ -45,6 +45,27 @@ namespace ReserveBlockCore.Utilities
 
                             result = true;
                         }
+                        else if(rsp.Status == 777)
+                        {
+                            retry = false;
+                            var aqDb = AssetQueue.GetAssetQueue();
+                            if (aqDb != null)
+                            {
+                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID);
+                                if (aq != null)
+                                {
+                                    aq.IsComplete = true;
+                                    aq.IsDownloaded = true;
+
+                                    aqDb.UpdateSafe(aq);
+                                }
+                            }
+                            NFTLogUtility.Log($"Asset already existed: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+
+                            await P2PClient.BeaconFileIsReady(scUID, assetName);
+
+                            result = true;
+                        }
                         else
                         {
                             retryCount += 1;
