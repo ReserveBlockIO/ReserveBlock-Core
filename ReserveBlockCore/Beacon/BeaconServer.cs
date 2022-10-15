@@ -76,6 +76,8 @@ namespace ReserveBlockCore.Beacon
                                     bool fileExist = File.Exists(@"" + SaveTo + Encoding.UTF8.GetString(recv_data));
                                     if (fileExist)
                                     {
+                                        byte[] data_file_exist = CreateDataPacket(Encoding.UTF8.GetBytes("777"), Encoding.UTF8.GetBytes(Convert.ToString(current_file_pointer)));
+                                        ns.Write(data_file_exist, 0, data_file_exist.Length);
                                         ns.Flush();
                                         loop_break = true;
                                         break;
