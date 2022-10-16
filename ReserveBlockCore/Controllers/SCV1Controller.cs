@@ -119,7 +119,7 @@ namespace ReserveBlockCore.Controllers
 
             if (scMainList.Count() > 0)
             {
-                var json = JsonConvert.SerializeObject(scs);
+                var json = JsonConvert.SerializeObject(scMainList);
                 output = json;
             }
             else
