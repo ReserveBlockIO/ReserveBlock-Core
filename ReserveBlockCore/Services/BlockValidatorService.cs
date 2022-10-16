@@ -490,8 +490,7 @@ namespace ReserveBlockCore.Services
                                             var scUID = (string?)scData["ContractUID"];
                                             var function = (string?)scData["Function"];
                                             var features = (string?)scData["Features"];
-                                            var minterAddress = (string?)scData["MinterAddress"];
-
+                                            
                                             if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 if (function == "Transfer()")
@@ -502,19 +501,31 @@ namespace ReserveBlockCore.Services
                                                         {
                                                             if(features.Contains("0"))
                                                             {
-                                                                if(minterAddress != null)
+                                                                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                                                if(scStateTreiRec != null)
                                                                 {
-                                                                    var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == minterAddress);
-                                                                    if(evoOwner == null)
+                                                                    if (scStateTreiRec.MinterAddress != null)
+                                                                    {
+                                                                        var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == scStateTreiRec.MinterAddress);
+                                                                        if (evoOwner == null)
+                                                                        {
+                                                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                                        }
+                                                                    }
+                                                                    else
                                                                     {
                                                                         SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                                     }
-                                                                }  
+                                                                }
+                                                                else
+                                                                {
+                                                                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                                }
                                                             }
-                                                            else
-                                                            {
-                                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
-                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                         }
                                                     }
                                                 }
