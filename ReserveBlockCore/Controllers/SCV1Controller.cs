@@ -103,9 +103,21 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true).ToList();
+            List<SmartContractMain> scMainList = new List<SmartContractMain>();
 
-            if (scs.Count() > 0)
+            var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true).ToList();
+            
+            foreach(var sc in scs)
+            {
+                var scStateTrei = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+                if (scStateTrei != null)
+                {
+                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                    scMainList.Add(scMain);
+                }
+            }
+
+            if (scMainList.Count() > 0)
             {
                 var json = JsonConvert.SerializeObject(scs);
                 output = json;
