@@ -489,7 +489,6 @@ namespace ReserveBlockCore.Services
                                             //do transfer logic here! This is for person giving away or feature actions
                                             var scUID = (string?)scData["ContractUID"];
                                             var function = (string?)scData["Function"];
-                                            var features = (string?)scData["Features"];
                                             
                                             if (!string.IsNullOrWhiteSpace(function))
                                             {
@@ -497,17 +496,26 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     if (!string.IsNullOrWhiteSpace(scUID))
                                                     {
-                                                        if(features != null)
+                                                        var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                                        var scs = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                                                        if(scs != null)
                                                         {
-                                                            if(features.Contains("0"))
+                                                            if (scs.Features != null)
                                                             {
-                                                                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                                                if(scStateTreiRec != null)
+                                                                if (scs.Features.Exists(x => x.FeatureName == FeatureName.Evolving))
                                                                 {
-                                                                    if (scStateTreiRec.MinterAddress != null)
+                                                                    if (scStateTreiRec != null)
                                                                     {
-                                                                        var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == scStateTreiRec.MinterAddress);
-                                                                        if (evoOwner == null)
+                                                                        if (scStateTreiRec.MinterAddress != null)
+                                                                        {
+                                                                            var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == scStateTreiRec.MinterAddress);
+                                                                            if (evoOwner == null)
+                                                                            {
+                                                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                                            }
+                                                                        }
+                                                                        else
                                                                         {
                                                                             SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                                         }
@@ -522,10 +530,10 @@ namespace ReserveBlockCore.Services
                                                                     SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
                                                                 }
                                                             }
-                                                        }
-                                                        else
-                                                        {
-                                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                            else
+                                                            {
+                                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
+                                                            }
                                                         }
                                                     }
                                                 }
