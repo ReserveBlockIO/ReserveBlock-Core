@@ -103,7 +103,7 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
 
                 if(x.SmartContractAsset != null && isReading == false)
                 {
-                    if(!x.SmartContractAsset.Location.Contains("Asset Folder"))
+                    if(!string.IsNullOrEmpty(x.SmartContractAsset.Location))
                     {
                         var result = NFTAssetFileUtility.MoveAsset(x.SmartContractAsset.Location, x.SmartContractAsset.Name, scUID);
                         if (result == false)

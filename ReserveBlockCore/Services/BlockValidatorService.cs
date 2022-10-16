@@ -391,6 +391,9 @@ namespace ReserveBlockCore.Services
 
                                                             var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
                                                             bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                                                            //testing
+                                                            //bool isCompletedSuccessfully = true;
+                                                            //transferTask.Wait();
                                                             if (!isCompletedSuccessfully)
                                                             {
                                                                 NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock() - line 213");

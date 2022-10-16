@@ -298,7 +298,20 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     if (evolveFeature != null)
                                     {
                                         evolveFeature.IsCurrentState = true;
+                                        
                                     }
+
+                                    var evoDynamicList = evolveFeatureList.Where(x => x.EvolveBlockHeight != null || x.EvolveDate != null).ToList();
+                                    if(evoDynamicList.Count() > 0)
+                                    {
+                                        foreach(var evo in evoDynamicList)
+                                        {
+                                            var update = evolveFeatureList.Where(x => x.EvolutionState == evo.EvolutionState).FirstOrDefault();
+                                            if (update != null)
+                                                update.IsDynamic = true;
+                                        }
+                                    }
+                                    
                                 }
 
                                 scFeature.FeatureName = FeatureName.Evolving;
