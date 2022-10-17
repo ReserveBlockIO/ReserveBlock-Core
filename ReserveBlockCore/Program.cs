@@ -411,7 +411,7 @@ namespace ReserveBlockCore
                                 if(maxHeightNode != null)
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
-                                    var myMaxHeight = Globals.LastBlock.Height + 10;
+                                    var myMaxHeight = Globals.LastBlock.Height + 2;
                                     if (maxHeight > myMaxHeight)
                                     {
                                         await BlockDownloadService.GetAllBlocks();

@@ -232,7 +232,7 @@ namespace ReserveBlockCore.P2P
                                 keepValConnected = false;
                                 if (Globals.OptionalLogging == true)
                                 {
-                                    LogUtility.Log("onnection Attempted, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
+                                    LogUtility.Log("Connection Attempted, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
                                 }
 
                             }

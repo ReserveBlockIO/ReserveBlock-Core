@@ -18,6 +18,8 @@ namespace ReserveBlockCore.Services
 {
     public class ClientCallService : IHostedService, IDisposable
     {
+
+        #region Timers and Private Variables
         private readonly IHubContext<P2PAdjServer> _hubContext;
         private readonly IHostApplicationLifetime _appLifetime;
         private int executionCount = 0;
@@ -64,6 +66,8 @@ namespace ReserveBlockCore.Services
 
             return Task.CompletedTask;
         }
+
+        #endregion
 
         #region Checkpoint Work
         private async void DoCheckpointWork(object? state)
@@ -1034,22 +1038,22 @@ namespace ReserveBlockCore.Services
             try
             {
                 var pool = Globals.FortisPool;
-                var result = pool.GroupBy(x => x.Address).Where(x => x.Count() > 1).Select(y => y.OrderByDescending(z => z.ConnectDate).ToList()).ToList();
+                //var result = pool.GroupBy(x => x.Address).Where(x => x.Count() > 1).Select(y => y.OrderByDescending(z => z.ConnectDate).ToList()).ToList();
 
-                if (result.Count() > 0)
-                {
-                    result.ForEach(x =>
-                    {
-                        try
-                        {
-                            var recKeep = x.FirstOrDefault();
-                            if(recKeep != null)
-                                pool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
-                        }
-                        catch { errorCountA += 1; }
+                //if (result.Count() > 0)
+                //{
+                //    result.ForEach(x =>
+                //    {
+                //        try
+                //        {
+                //            var recKeep = x.FirstOrDefault();
+                //            if(recKeep != null)
+                //                pool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
+                //        }
+                //        catch { errorCountA += 1; }
                         
-                    });
-                }
+                //    });
+                //}
 
                 if (taskAnswerList != null)
                 {
@@ -1070,20 +1074,20 @@ namespace ReserveBlockCore.Services
                     }
                 }
 
-                var nodeWithAnswer = pool.Where(x => x.LastAnswerSendDate != null).ToList();
-                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
-                if (deadNodes.Count() > 0)
-                {
-                    foreach (var deadNode in deadNodes)
-                    {
-                        try
-                        {
-                            pool.Remove(deadNode);
-                        }
-                        catch { errorCountC += 1; }
+                //var nodeWithAnswer = pool.Where(x => x.LastAnswerSendDate != null).ToList();
+                //var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
+                //if (deadNodes.Count() > 0)
+                //{
+                //    foreach (var deadNode in deadNodes)
+                //    {
+                //        try
+                //        {
+                //            pool.Remove(deadNode);
+                //        }
+                //        catch { errorCountC += 1; }
 
-                    }
-                }
+                //    }
+                //}
             }
             catch (Exception ex)
             {

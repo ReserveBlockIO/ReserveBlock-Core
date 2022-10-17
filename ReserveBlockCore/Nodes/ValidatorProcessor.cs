@@ -31,7 +31,7 @@ namespace ReserveBlockCore.Nodes
                             }
                             else
                             {
-                                RandomNumberTask_Deprecated();
+                                RandomNumberTask_Deprecated(taskQuestion.BlockHeight);
                             }
                             break;
                     }
@@ -191,6 +191,13 @@ namespace ReserveBlockCore.Nodes
 
         private static async void RandomNumberTask_New(long blockHeight)
         {
+            var nextBlock = Globals.LastBlock.Height + 1;
+            if (nextBlock != blockHeight)
+            {
+                //download blocks
+                await BlockDownloadService.GetAllBlocks();
+            }
+
             var taskAnswer = new TaskNumberAnswer();
             var num = TaskQuestionUtility.GenerateRandomNumber();
             var fortisPool = Globals.FortisPool.ToList();
@@ -205,8 +212,15 @@ namespace ReserveBlockCore.Nodes
 
         }
 
-        private static async void RandomNumberTask_Deprecated() 
+        private static async void RandomNumberTask_Deprecated(long blockHeight) 
         {
+            var nextBlock = Globals.LastBlock.Height + 1;
+            if(nextBlock != blockHeight)
+            {
+                //download blocks
+                await BlockDownloadService.GetAllBlocks();
+            }
+
             var taskAnswer = new TaskAnswer();
             var num = TaskQuestionUtility.GenerateRandomNumber();
             var fortisPool = Globals.FortisPool.ToList();
