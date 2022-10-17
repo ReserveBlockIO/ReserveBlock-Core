@@ -84,6 +84,8 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
+                List<SmartContractMain> scMainList = new List<SmartContractMain>();
+
                 var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
@@ -93,9 +95,19 @@ namespace ReserveBlockCore.Controllers
 
                 var filterSCMain = scs.Where(x => filterSCList.Any(y => y.SmartContractUID == x.SmartContractUID)).ToList();
 
-                if (filterSCMain.Count() > 0)
+                foreach (var sc in filterSCMain)
                 {
-                    var json = JsonConvert.SerializeObject(filterSCMain);
+                    var scStateTreis = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+                    if (scStateTreis != null)
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTreis.ContractData);
+                        scMainList.Add(scMain);
+                    }
+                }
+
+                if (scMainList.Count() > 0)
+                {
+                    var json = JsonConvert.SerializeObject(scMainList);
                     output = json;
                 }
                 else
