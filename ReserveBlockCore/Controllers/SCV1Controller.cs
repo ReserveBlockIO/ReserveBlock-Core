@@ -82,17 +82,30 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetAllSmartContracts()
         {
             var output = "";
-
-            var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
-
-            if (scs.Count() > 0)
+            try
             {
-                var json = JsonConvert.SerializeObject(scs);
-                output = json;
+                var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
+                var scStateTrei = SmartContractStateTrei.GetSCST();
+                var accounts = AccountData.GetAccounts().FindAll().ToList();
+
+                var filterSCList = scStateTrei.FindAll().Where(x => scs.Any(y => y.SmartContractUID == x.SmartContractUID)).ToList()
+                    .Where(x => accounts.Any(y => y.Address == x.OwnerAddress)).ToList();
+
+                var filterSCMain = scs.Where(x => filterSCList.Any(y => y.SmartContractUID == x.SmartContractUID)).ToList();
+
+                if (filterSCMain.Count() > 0)
+                {
+                    var json = JsonConvert.SerializeObject(scs);
+                    output = json;
+                }
+                else
+                {
+                    output = "null";
+                }
             }
-            else
+            catch(Exception ex)
             {
-                output = "null";
+
             }
 
             return output;
