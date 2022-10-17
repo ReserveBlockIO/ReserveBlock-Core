@@ -40,6 +40,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResult = Globals.LastTaskResultTime.ToString();
             var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
             var lastTaskError = Globals.LastTaskError.ToString();
+            var lastTaskErrorCount = Globals.LastTaskErrorCount.ToString();
             var hdWallet = Globals.HDWallet.ToString();
             var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
@@ -74,6 +75,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
             var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
             var lastTaskErrorText = "*Only for Validators* Last Task Error : " + lastTaskError;
+            var lastTaskErrorCountText = "*Only for Validators* Last Task Error Count: " + lastTaskErrorCount;
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
@@ -143,6 +145,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastTaskBlockHeightText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastTaskErrorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastTaskErrorCountText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastWinningTaskErrorText);
             strBld.AppendLine("---------------------------------------------------------------------");
