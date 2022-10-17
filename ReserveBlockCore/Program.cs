@@ -507,17 +507,20 @@ namespace ReserveBlockCore
                     }
                 }
 
-                if(taskErrorCount > 3)
+                if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
                 {
-                    //stop connection and reconnct to ADJ plainly. 
-                    var result = await ValidatorService.ValidatorErrorReset();
-                    if(result)
+                    if (taskErrorCount > 3)
                     {
-                        Globals.LastTaskErrorCount = 0;
-                        ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
-                    }
-                        
+                        //stop connection and reconnct to ADJ plainly. 
+                        var result = await ValidatorService.ValidatorErrorReset();
+                        if (result)
+                        {
+                            Globals.LastTaskErrorCount = 0;
+                            ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
+                        }
 
+
+                    }
                 }
             }
             
