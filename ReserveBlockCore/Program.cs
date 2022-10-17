@@ -147,13 +147,13 @@ namespace ReserveBlockCore
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(60000, 20000); //waits 1 minute, then runs every 30 seconds for new blocks
+            Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 30 seconds for new blocks
 
             Globals.PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.PeerCheckTimer.Change(90000, 4 * 10 * 6000); //waits 1.5 minute, then runs every 4 minutes
+            Globals.PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 4 minutes
 
             Globals.ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.ValidatorListTimer.Change(70000, 1 * 10 * 6000); //waits 1 minute, then runs every 2 minutes
+            Globals.ValidatorListTimer.Change(70000, 1 * 10 * 6000); //waits 1 minute, then runs every 1 minutes
 
             Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 5 minutes
@@ -480,14 +480,15 @@ namespace ReserveBlockCore
         {
             if (Globals.StopAllTimers == false)
             {
-                ValidatorService.ClearDuplicates();
+                //ValidatorService.ClearDuplicates();
 
                 var peersConnected = await P2PClient.ArePeersConnected();
+                var taskErrorCount = Globals.LastTaskErrorCount;
 
                 if (!peersConnected)
                 {
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    LogUtility.Log("Connection to Peers Lost", "validatorListCheckTimer_Elapsed()");
+                    LogUtility.Log("Connection to Peers Lost", "Program.validatorListCheckTimer_Elapsed()");
                     await StartupService.StartupPeers();
                     //potentially no connected nodes.
                 }
@@ -500,11 +501,22 @@ namespace ReserveBlockCore
                         if (connection != true)
                         {
                             Console.WriteLine("You have lost connection to the adjudicator. Attempting to reconnect...");
-                            LogUtility.Log("Connection to Adj Lost", "validatorListCheckTimer_Elapsed()");
+                            LogUtility.Log("Connection to Adj Lost", "Program.validatorListCheckTimer_Elapsed()");
                             await StartupService.ConnectoToAdjudicator();
                         }
                     }
+                }
 
+                if(taskErrorCount > 3)
+                {
+                    //stop connection and reconnct to ADJ plainly. 
+                    var result = await ValidatorService.ValidatorErrorReset();
+                    if(result)
+                    {
+                        Globals.LastTaskErrorCount = 0;
+                        ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
+                    }
+                        
 
                 }
             }

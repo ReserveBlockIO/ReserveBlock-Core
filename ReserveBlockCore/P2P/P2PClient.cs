@@ -285,7 +285,9 @@ namespace ReserveBlockCore.P2P
                     message == "status" || 
                     message == "tx" || 
                     message == "badBlock" || 
-                    message == "sendWinningBlock")
+                    message == "sendWinningBlock" ||
+                    message == "disconnect" ||
+                    message == "terminate")
                     {
                         switch(message)
                         {
@@ -320,6 +322,12 @@ namespace ReserveBlockCore.P2P
                             case "badBlock":
                                 //do something
                                 break;
+                            case "disconnect":
+                                await DisconnectAdjudicator();
+                                break;
+                            case "terminate":
+                                await ValidatorService.DoMasterNodeStop();
+                                break;
                         }
                     }
                 });
@@ -333,7 +341,6 @@ namespace ReserveBlockCore.P2P
             }
         }
 
-
         #endregion
 
         #region Disconnect Adjudicator
@@ -346,7 +353,7 @@ namespace ReserveBlockCore.P2P
                 {
                     if(IsAdjConnected1)
                     {
-                        await hubAdjConnection1.DisposeAsync();
+                        await hubAdjConnection1.StopAsync();
                         ConsoleWriterService.Output($"Success! Disconnected from Adjudicator on: {DateTime.Now}");
                         ValidatorLogUtility.Log($"Success! Disconnected from Adjudicator on: {DateTime.Now}", "DisconnectAdjudicator()");
                     }
@@ -356,6 +363,14 @@ namespace ReserveBlockCore.P2P
             {
                 ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.Message, "DisconnectAdjudicator()");
             }
+            finally
+            {
+                if (hubAdjConnection1 != null)
+                {
+                    await hubAdjConnection1.DisposeAsync();
+                }
+            }
+            
         }
 
 
@@ -534,6 +549,7 @@ namespace ReserveBlockCore.P2P
                                             Globals.LastTaskError = false;
                                             Globals.LastTaskSentTime = DateTime.Now;
                                             Globals.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                                            Globals.LastTaskErrorCount = 0;
                                             break;
                                         }
                                         else
@@ -545,6 +561,10 @@ namespace ReserveBlockCore.P2P
                                         }
                                     }
                                 }
+                            }
+                            else
+                            {
+                                Globals.LastTaskError = true;
                             }
                         }
                     }
@@ -562,6 +582,7 @@ namespace ReserveBlockCore.P2P
 
                 if (Globals.LastTaskError == true)
                 {
+                    Globals.LastTaskErrorCount += 1;
                     ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
                 }
 
@@ -576,18 +597,22 @@ namespace ReserveBlockCore.P2P
             var adjudicatorConnected = IsAdjConnected1;
             Random rand = new Random();
             int randNum = (rand.Next(1, 7) * 1000);
+            
 
             if(adjudicatorConnected)
             {
                 for(var i = 1; i < 4; i++)
                 {
-                    if(i != 1)
+                    if(i == 1)
                     {
-                        await Task.Delay(1000); // if failed on first attempt waits 1 seconds then tries again.
+                        //wait random amount between 1-7 to not overload network all at once.
+                        //Speed does not matter for adj. 
+                        await Task.Delay(randNum);
                     }
                     else
                     {
-                        await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
+                        await Task.Delay(1000);
+                        
                     }
                     try
                     {
@@ -604,11 +629,13 @@ namespace ReserveBlockCore.P2P
                                         Globals.LastTaskError = false;
                                         Globals.LastTaskSentTime = DateTime.Now;
                                         Globals.LastSentBlockHeight = taskAnswer.Block.Height;
+                                        Globals.LastTaskErrorCount = 0;
                                         break;
                                     }
                                     else
                                     {
-                                        Globals.LastTaskError = true;
+                                        
+                                        Globals.LastTaskErrorCount += 1;
                                     }
                                 }
                             }
@@ -616,7 +643,7 @@ namespace ReserveBlockCore.P2P
                     }
                     catch (Exception ex)
                     {
-                        Globals.LastTaskError = true;
+                        Globals.LastTaskErrorCount += 1;
 
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer_Deprecated()");
 
@@ -628,6 +655,7 @@ namespace ReserveBlockCore.P2P
 
                 if(Globals.LastTaskError == true)
                 {
+                    Globals.LastTaskErrorCount += 1;
                     ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer_Deprecated()");
                 }
 

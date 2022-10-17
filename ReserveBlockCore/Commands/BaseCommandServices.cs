@@ -248,7 +248,13 @@ namespace ReserveBlockCore.Commands
 
         public static async void ResetValidator()
         {
-            await ValidatorService.DoMasterNodeStop();
+            Globals.ValidatorAddress = "";
+            var result = await ValidatorService.ValidatorErrorReset();
+            if (result)
+            {
+                Globals.LastTaskErrorCount = 0;
+                ValidatorLogUtility.Log("ValidatorErrorReset() called manually. Results: Success!", "Program.validatorListCheckTimer_Elapsed()");
+            }
         }
         public static async void AddPeer()
         {
@@ -1248,14 +1254,18 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/switchbeacon[/]", "[green]This will turn a beacon on and off.[/]");
             table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Globals.WalletUnlockTime} minutes.[/]");
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
+            table.AddRow("[blue]/banpeer[/]", "[green]Bans a peer by their IP address.[/]");
+            table.AddRow("[blue]/unbanpeer[/]", "[green]Unbans a peer by their IP address.[/]");
             table.AddRow("[blue]/creatednr[/]", "[green]Creates an address domain name registrar.[/]");
             table.AddRow("[blue]/deletednr[/]", "[green]Deletes a domain name registrar.[/]");
             table.AddRow("[blue]/transferdnr[/]", "[green]transfers a domain name registrar.[/]");
             table.AddRow("[blue]/printkeys[/]", "[green]Prints all private keys associated to a wallet.[/]");
             table.AddRow("[blue]/encrypt[/]", "[green]Encrypts the wallets private keys.[/]");
+            table.AddRow("[blue]/decrypt[/]", "[green]Decrypts the wallets private keys.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
-            table.AddRow("[blue]/resetval[/]", "[green]Resets all validator information in databases.[/]");
+            table.AddRow("[blue]/resetval[/]", "[green]Resets all validator and reconnects them.[/]");
+            table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");

@@ -103,6 +103,7 @@ namespace ReserveBlockCore
         public static DateTime? LastTaskResultTime = null;
         public static long LastTaskBlockHeight = 0;
         public static bool LastTaskError = false;
+        public static int LastTaskErrorCount = 0;
         public static bool LastWinningTaskError = false;
         public static long LastWinningTaskBlockHeight = 0;
         public static CancellationTokenSource source = new CancellationTokenSource(10000);

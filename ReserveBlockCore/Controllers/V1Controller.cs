@@ -706,6 +706,18 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("ResetValidator")]
+        public async Task<string> ResetValidator()
+        {
+            string output = "Failed!";
+
+            var result = await ValidatorService.ValidatorErrorReset();
+            if (result)
+                output = "Success!";
+            
+            return output;
+        }
+
         [HttpGet("CreateSignature/{message}/{address}")]
         public async Task<string> CreateSignature(string message, string address)
         {
