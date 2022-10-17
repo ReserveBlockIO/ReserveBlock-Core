@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var evolveDateTicks = evArray[4].ToString();
                 if(!string.IsNullOrWhiteSpace(evolveDateTicks))
                 {
-                    DateTime myDate = new DateTime(Convert.ToInt64(evolveDateTicks));
+                    DateTime myDate = new DateTime(Convert.ToInt64(evolveDateTicks), DateTimeKind.Utc);
                     evolveFeature.EvolveDate = myDate;
                 }
                 else
