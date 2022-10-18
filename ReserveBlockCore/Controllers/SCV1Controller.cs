@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Controllers
 
 
         [HttpGet("GetAllSmartContracts/{pageNumber}")]
-        public async Task<string> GetAllSmartContracts(int pageNumber)
+        public async Task<string> GetAllSmartContracts(int pageNumber = 1)
         {
             var output = "";
             Stopwatch stopwatch3 = Stopwatch.StartNew();
@@ -122,6 +122,9 @@ namespace ReserveBlockCore.Controllers
                     Parallel.ForEach(scStateMainList, scState =>
                     {
                         var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+                        var scMainRec = scs.Where(x => x.SmartContractUID == scMain.SmartContractUID).FirstOrDefault();
+
+                        scMain.Id = scMainRec != null ? scMainRec.Id : 0;
                         scMainList.Add(scMain);
                     });
                     if (scMainList.Count() > 0)
@@ -145,7 +148,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         [HttpGet("GetMintedSmartContracts/{pageNumber}")]
-        public async Task<string> GetMintedSmartContracts(int pageNumber)
+        public async Task<string> GetMintedSmartContracts(int pageNumber = 1)
         {
             var output = "";
             try
@@ -168,6 +171,7 @@ namespace ReserveBlockCore.Controllers
                         var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
                         if (scMain.Features != null)
                         {
+                            scMain.Id = sc.Id;
                             var evoFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).Select(x => x.FeatureFeatures).FirstOrDefault();
                             var isDynamic = false;
                             if(evoFeatures != null)
