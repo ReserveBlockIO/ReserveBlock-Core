@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Diagnostics;
 using System.Text;
 
 namespace ReserveBlockCore.Controllers
@@ -84,6 +85,9 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
+                List<SmartContractMain> scMainList = new List<SmartContractMain>();
+                List<SmartContractMain> scMainList2 = new List<SmartContractMain>();
+
                 var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
@@ -92,6 +96,23 @@ namespace ReserveBlockCore.Controllers
                     .Where(x => accounts.Any(y => y.Address == x.OwnerAddress)).ToList();
 
                 var filterSCMain = scs.Where(x => filterSCList.Any(y => y.SmartContractUID == x.SmartContractUID)).ToList();
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                foreach (var scState in filterSCList)
+                {
+                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+                    scMainList.Add(scMain);
+                }
+                stopwatch.Stop();
+
+
+                Stopwatch stopwatch2 = Stopwatch.StartNew();
+                Parallel.ForEach(filterSCList, scState => {
+                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+                    scMainList2.Add(scMain);
+                });
+
+                stopwatch2.Stop();
 
                 if (filterSCMain.Count() > 0)
                 {
