@@ -79,87 +79,138 @@ namespace ReserveBlockCore.Controllers
         }
 
 
-        [HttpGet("GetAllSmartContracts")]
-        public async Task<string> GetAllSmartContracts()
+        [HttpGet("GetAllSmartContracts/{pageNumber}")]
+        public async Task<string> GetAllSmartContracts(int pageNumber)
         {
             var output = "";
+            Stopwatch stopwatch3 = Stopwatch.StartNew();
             try
             {
                 List<SmartContractMain> scMainList = new List<SmartContractMain>();
-                List<SmartContractMain> scMainList2 = new List<SmartContractMain>();
+                List<SmartContractStateTrei> scStateMainList = new List<SmartContractStateTrei>();
 
-                var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
+                var maxIndex = pageNumber * 9;
+                var startIndex = ((maxIndex - 9));
+                var range = 9;
+
+                var scs = SmartContractMain.SmartContractData.GetSCs()
+                    .FindAll()
+                    .ToList();
+
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
 
-                var filterSCList = scStateTrei.FindAll().Where(x => scs.Any(y => y.SmartContractUID == x.SmartContractUID)).ToList()
-                    .Where(x => accounts.Any(y => y.Address == x.OwnerAddress)).ToList();
-
-                var filterSCMain = scs.Where(x => filterSCList.Any(y => y.SmartContractUID == x.SmartContractUID)).ToList();
-
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                foreach (var scState in filterSCList)
-                {
-                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
-                    scMainList.Add(scMain);
-                }
-                stopwatch.Stop();
-
-
-                Stopwatch stopwatch2 = Stopwatch.StartNew();
-                Parallel.ForEach(filterSCList, scState => {
-                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
-                    scMainList2.Add(scMain);
+                Parallel.ForEach(scs, sc => {
+                    var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
+                    if(scState != null)
+                    {
+                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress);
+                        if(exist)
+                            scStateMainList.Add(scState);
+                    }
                 });
 
-                stopwatch2.Stop();
+                var scStateCount = scStateMainList.Count();
 
-                if (filterSCMain.Count() > 0)
+                if (maxIndex > scStateCount)
+                    range = (range - (maxIndex - scStateCount));
+
+                scStateMainList = scStateMainList.GetRange(startIndex, range);
+
+                if (scStateMainList.Count > 0)
                 {
-                    var json = JsonConvert.SerializeObject(filterSCMain);
-                    output = json;
+                    Parallel.ForEach(scStateMainList, scState =>
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+                        scMainList.Add(scMain);
+                    });
+                    if (scMainList.Count() > 0)
+                    {
+                        scMainList.OrderByDescending(x => x.Id);
+                        var json = JsonConvert.SerializeObject(new { Count = scStateCount, Results = scMainList });
+                        output = json;
+                    }
                 }
                 else
                 {
-                    output = "null";
+                    output = JsonConvert.SerializeObject(new { Count = 0, Results = scMainList}); ;
                 }
             }
             catch(Exception ex)
             {
-
+                output = JsonConvert.SerializeObject(new { Count = 0, Results = "null" }); ;
             }
 
             return output;
         }
 
-        [HttpGet("GetMintedSmartContracts")]
-        public async Task<string> GetMintedSmartContracts()
+        [HttpGet("GetMintedSmartContracts/{pageNumber}")]
+        public async Task<string> GetMintedSmartContracts(int pageNumber)
         {
             var output = "";
-
-            List<SmartContractMain> scMainList = new List<SmartContractMain>();
-
-            var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true).ToList();
-            
-            foreach(var sc in scs)
+            try
             {
-                var scStateTrei = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
-                if (scStateTrei != null)
+                List<SmartContractMain> scMainList = new List<SmartContractMain>();
+                List<SmartContractMain> scEvoMainList = new List<SmartContractMain>();
+
+                var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
+                    .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
+                    .ToList();
+
+                var maxIndex = pageNumber * 9;
+                var startIndex = ((maxIndex - 9));
+                var range = 9;
+
+                Parallel.ForEach(scs, sc => {
+                    var scStateTrei = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+                    if (scStateTrei != null)
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                        if (scMain.Features != null)
+                        {
+                            var evoFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).Select(x => x.FeatureFeatures).FirstOrDefault();
+                            var isDynamic = false;
+                            if(evoFeatures != null)
+                            {
+                                var evoFeatureList = (List<EvolvingFeature>)evoFeatures;
+                                foreach (var feature in evoFeatureList)
+                                {
+                                    var evoFeature = (EvolvingFeature)feature;
+                                    if (evoFeature.IsDynamic == true)
+                                        isDynamic = true;
+                                }
+                            }
+
+                            if (!isDynamic)
+                                scEvoMainList.Add(scMain);
+                        }
+                    }
+                });
+
+                var scscMainListCount = scMainList.Count();
+
+                if (maxIndex > scscMainListCount)
+                    range = (range - (maxIndex - scscMainListCount));
+
+                scMainList = scMainList.GetRange(startIndex, range);
+
+                if (scMainList.Count() > 0)
                 {
-                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                    scMainList.Add(scMain);
+                    var json = JsonConvert.SerializeObject(new { Count = scscMainListCount, Results = scMainList });
+                    output = json;
+                }
+                else
+                {
+                    var json = JsonConvert.SerializeObject(new { Count = 0, Results = scMainList });
+                    output = json;
                 }
             }
-
-            if (scMainList.Count() > 0)
+            catch(Exception ex)
             {
-                var json = JsonConvert.SerializeObject(scMainList);
+                var json = JsonConvert.SerializeObject(new { Count = 0, Results = "null" });
                 output = json;
             }
-            else
-            {
-                output = "null";
-            }
+            
 
             return output;
         }
