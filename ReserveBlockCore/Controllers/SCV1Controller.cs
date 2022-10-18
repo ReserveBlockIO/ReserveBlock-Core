@@ -196,6 +196,7 @@ namespace ReserveBlockCore.Controllers
 
                 if (scMainList.Count() > 0)
                 {
+                    scMainList.OrderByDescending(x => x.Id);
                     var json = JsonConvert.SerializeObject(new { Count = scscMainListCount, Results = scMainList });
                     output = json;
                 }
