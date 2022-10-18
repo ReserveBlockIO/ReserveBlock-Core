@@ -182,7 +182,7 @@ namespace ReserveBlockCore.Controllers
                             }
 
                             if (!isDynamic)
-                                scEvoMainList.Add(scMain);
+                                scMainList.Add(scMain);
                         }
                     }
                 });
