@@ -126,8 +126,8 @@ namespace ReserveBlockCore.Controllers
                     });
                     if (scMainList.Count() > 0)
                     {
-                        scMainList.OrderByDescending(x => x.Id);
-                        var json = JsonConvert.SerializeObject(new { Count = scStateCount, Results = scMainList });
+                        var orderedMainList = scMainList.OrderByDescending(x => x.Id).ToList();
+                        var json = JsonConvert.SerializeObject(new { Count = scStateCount, Results = orderedMainList });
                         output = json;
                     }
                 }
@@ -196,8 +196,8 @@ namespace ReserveBlockCore.Controllers
 
                 if (scMainList.Count() > 0)
                 {
-                    scMainList.OrderByDescending(x => x.Id);
-                    var json = JsonConvert.SerializeObject(new { Count = scscMainListCount, Results = scMainList });
+                    var orderedMainList = scMainList.OrderByDescending(x => x.Id).ToList();
+                    var json = JsonConvert.SerializeObject(new { Count = scscMainListCount, Results = orderedMainList });
                     output = json;
                 }
                 else
