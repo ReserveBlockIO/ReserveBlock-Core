@@ -80,8 +80,10 @@ namespace ReserveBlockCore.Controllers
         }
 
 
-        [HttpGet("GetAllSmartContracts/{pageNumber}")]
-        public async Task<string> GetAllSmartContracts(int pageNumber = 1)
+        [HttpGet]
+        [Route("GetAllSmartContracts/{pageNumber}")]
+        [Route("GetAllSmartContracts/{pageNumber}/{**search}")]
+        public async Task<string> GetAllSmartContracts(int pageNumber = 1, string? search = "")
         {
             var output = "";
             Stopwatch stopwatch3 = Stopwatch.StartNew();
@@ -94,6 +96,11 @@ namespace ReserveBlockCore.Controllers
                 var maxIndex = pageNumber * 9;
                 var startIndex = ((maxIndex - 9));
                 var range = 9;
+
+                if(search != "" || search != "~")
+                {
+
+                }
 
                 var scs = SmartContractMain.SmartContractData.GetSCs()
                     .FindAll()
@@ -152,8 +159,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetMintedSmartContracts/{pageNumber}")]
-        public async Task<string> GetMintedSmartContracts(int pageNumber = 1)
+        [HttpGet]
+        [Route("GetMintedSmartContracts/{pageNumber}")]
+        [Route("GetMintedSmartContracts/{pageNumber}/{**search}")]
+        public async Task<string> GetMintedSmartContracts(int pageNumber = 1, string? search = "")
         {
             var output = "";
             try
@@ -161,6 +170,11 @@ namespace ReserveBlockCore.Controllers
                 List<SmartContractMain> scMainList = new List<SmartContractMain>();
                 List<SmartContractMain> scEvoMainList = new List<SmartContractMain>();
                 ConcurrentBag<SmartContractMain> resultCollection = new ConcurrentBag<SmartContractMain>();
+
+                if (search != "" || search != "~")
+                {
+
+                }
 
                 var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
                     .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
