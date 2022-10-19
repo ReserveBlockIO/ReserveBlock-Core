@@ -197,7 +197,7 @@ namespace ReserveBlockCore.Data
 
         #region Craft Block Deprecated
         //Method needing validator functions still.
-        public static async Task<Block?> CraftNewBlock(string validator, int totalVals, string valAnswer)
+        public static async Task<Block?> CraftNewBlock(string validator, string valAnswer)
         {
             try
             {
@@ -278,7 +278,7 @@ namespace ReserveBlockCore.Data
                     Transactions = GiveOtherInfos(transactionList, height),
                     Validator = validator,
                     ChainRefId = ChainRef,
-                    TotalValidators = totalVals,
+                    TotalValidators = Globals.FortisPool.Count,
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();

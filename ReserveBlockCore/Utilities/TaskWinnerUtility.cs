@@ -5,13 +5,15 @@ namespace ReserveBlockCore.Utilities
 {
     public class TaskWinnerUtility
     {
-        public static async Task<TaskAnswer?> TaskWinner(TaskQuestion taskQuestion, List<TaskAnswer> taskAnswerList, List<TaskAnswer>? failedTaskAnswerList = null)
+        public static async Task<TaskAnswer?> TaskWinner(TaskQuestion taskQuestion, List<TaskAnswer>? failedTaskAnswerList = null)
         {
             var answer = Convert.ToInt32(taskQuestion.TaskAnswer);
             var answerList = new List<int>();
+            var taskAnswerList = Globals.TaskAnswerDict.Values.ToArray();
+
             if (failedTaskAnswerList == null)
-            {
-                foreach(var taskAnswer in taskAnswerList)
+            {                
+                foreach (var taskAnswer in taskAnswerList)
                 {
                     int parsedAnswer = 0;
                     var valAnswer = int.TryParse(taskAnswer.Answer, out parsedAnswer);
@@ -99,7 +101,7 @@ namespace ReserveBlockCore.Utilities
                     answerCount = taskAnswerList.Count() >= 30 ? 30 : taskAnswerList.Count();
 
                     GetWinningNodes(taskAnswerList, answer, answerCount);
-                    Globals.TaskSelectedNumbers.Add(winner);
+                    Globals.TaskSelectedNumbers[winner.Address] = winner;
                     return winner;
                 }
                 else
@@ -134,7 +136,7 @@ namespace ReserveBlockCore.Utilities
                         answerCount = taskAnswerList.Count() >= 30 ? 30 : taskAnswerList.Count();
 
                         GetWinningNodes(validTaskAnswerList, answer, answerCount);
-                        Globals.TaskSelectedNumbers.Add(winner);
+                        Globals.TaskSelectedNumbers[winner.Address] = winner;
                         return winner;
                     }
                     else
@@ -152,38 +154,14 @@ namespace ReserveBlockCore.Utilities
         private static void GetWinningNodes(List<TaskNumberAnswer> validTaskAnswerList, int answer, int numChoices)
         {
             var answerList = new List<int>();
-            var chosenOnes = new List<TaskNumberAnswer>();
-            Globals.TaskSelectedNumbers = new List<TaskNumberAnswer>();
 
+            Globals.TaskSelectedNumbers.Clear();
 
-            chosenOnes = validTaskAnswerList.Where(x => x.Answer.ToInt32() != 0).OrderBy(x => Math.Abs(x.Answer.ToInt32() - answer)).ThenBy(x => x.SubmitTime).Take(numChoices).ToList();
+            var chosenOnes = validTaskAnswerList.Where(x => x.Answer.ToInt32() != 0).OrderBy(x => Math.Abs(x.Answer.ToInt32() - answer))
+                .ThenBy(x => x.SubmitTime).Take(numChoices).ToList();
 
-            //foreach (var taskAnswer in validTaskAnswerList)
-            //{
-            //    int parsedAnswer = 0;
-            //    var valAnswer = int.TryParse(taskAnswer.Answer, out parsedAnswer);
-            //    if (parsedAnswer != 0)
-            //    {
-            //        answerList.Add(parsedAnswer);
-            //    }
-            //};
-
-            //if(numChoices > 0)
-            //{
-            //    for (var i = 0; i < numChoices; i++)
-            //    {
-            //        int nextClosest = answerList.Aggregate((x, y) => Math.Abs(x - answer) < Math.Abs(y - answer) ? x : y);
-            //        var NextWinner = validTaskAnswerList.Where(x => x.Answer == nextClosest.ToString()).OrderBy(x => x.SubmitTime).FirstOrDefault();
-            //        if (NextWinner != null)
-            //        {
-            //            chosenOnes.Add(NextWinner);
-            //            validTaskAnswerList.Remove(NextWinner);
-            //            answerList.Remove(nextClosest);
-            //        }
-            //    }
-            //}
-
-            Globals.TaskSelectedNumbers = chosenOnes;
+            foreach(var chosen in chosenOnes)
+                Globals.TaskSelectedNumbers[chosen.Address] = chosen;
         }
 
         public static string GetVerifySecret()

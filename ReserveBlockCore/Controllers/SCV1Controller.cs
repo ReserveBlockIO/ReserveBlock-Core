@@ -391,9 +391,8 @@ namespace ReserveBlockCore.Controllers
                     if (sc.IsPublished == true)
                     {
                         //Get beacons here!
-                        //This will eventually need to be a chosen parameter someone chooses. 
-                        var locator = Globals.Locators.FirstOrDefault();
-                        if (locator == null)
+                        //This will eventually need to be a chosen parameter someone chooses.                         
+                        if (!Globals.Locators.Any())
                         {
                             output = "You do not have any beacons stored.";
                             NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
@@ -401,6 +400,7 @@ namespace ReserveBlockCore.Controllers
                         }
                         else
                         {
+                            var locator = Globals.Locators.Values.FirstOrDefault();
                             List<string> assets = new List<string>();
 
                             if (sc.SmartContractAsset != null)

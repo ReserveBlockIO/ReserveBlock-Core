@@ -19,10 +19,10 @@ namespace ReserveBlockCore.P2P
             bool pendingReceives = false;
 
             var peerIP = GetIP(Context);
-            if (Globals.BeaconPeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+            if (Globals.BeaconPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
                 context.Abort();
 
-            Globals.BeaconPeerList[peerIP] = Context;
+            Globals.BeaconPeerDict[peerIP] = Context;
 
             var httpContext = Context.GetHttpContext();
             if (httpContext != null)
@@ -34,7 +34,7 @@ namespace ReserveBlockCore.P2P
 
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
-                var beaconPool = Globals.BeaconPool.ToList();
+                var beaconPool = Globals.BeaconPool.Values.ToList();
 
                 if (!string.IsNullOrWhiteSpace(beaconRef) && walletVersionVerify)
                 { 
@@ -102,11 +102,11 @@ namespace ReserveBlockCore.P2P
                     }
 
                     if(pendingSends == true || pendingReceives == true)
-                    {
+                    {                        
                         var conExist = beaconPool.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
                         if (conExist != null)
                         {
-                            var beaconCon = Globals.BeaconPool.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
+                            var beaconCon = Globals.BeaconPool.Values.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
                             if (beaconCon != null)
                             {
                                 beaconCon.WalletVersion = walletVersion;
@@ -127,7 +127,7 @@ namespace ReserveBlockCore.P2P
                                 IpAddress = peerIP
                             };
 
-                            Globals.BeaconPool.Add(beaconConnection);
+                            Globals.BeaconPool[(peerIP, beaconRef)] = beaconConnection;
                         }
 
                         connected = true;
@@ -154,12 +154,8 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            _ = Globals.BeaconPeerList.TryRemove(peerIP, out var test);
-            try 
-            { 
-                Globals.BeaconPool.RemoveAll(x => x.IpAddress == peerIP && x.ConnectionId == Context.ConnectionId); 
-            }
-            catch { };
+            Globals.BeaconPeerDict.TryRemove(peerIP, out var test);
+            Globals.BeaconPool.TryGetFromKey1(peerIP, out var test2);
         }
         private async Task SendMessageClient(string clientId, string method, string message)
         {
@@ -204,7 +200,7 @@ namespace ReserveBlockCore.P2P
             //{
                 bool result = false;
                 var peerIP = GetIP(Context);
-                var beaconPool = Globals.BeaconPool.ToList();
+                var beaconPool = Globals.BeaconPool.Values.ToList();
                 try
                 {
                     if (bdd != null)
@@ -373,7 +369,7 @@ namespace ReserveBlockCore.P2P
             bool output = false;
             try
             {
-                var beaconPool = Globals.BeaconPool.ToList();
+                var beaconPool = Globals.BeaconPool.Values.ToList();
                 var payload = JsonConvert.DeserializeObject<string[]>(data);
                 if (payload != null)
                 {
@@ -443,13 +439,15 @@ namespace ReserveBlockCore.P2P
                         else
                         {
                             //attempt to call to person to get file.
-                            var beaconPool = Globals.BeaconPool.ToList();
-                            var remoteUser = beaconPool.Where(x => x.Reference == beaconData.Reference).FirstOrDefault();
-                            string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
-                            var sendJson = JsonConvert.SerializeObject(senddata);
-                            if (remoteUser != null)
+
+                            if (Globals.BeaconPool.TryGetFromKey2(beaconData.Reference, out var remoteUser))
                             {
-                                await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                                string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
+                                var sendJson = JsonConvert.SerializeObject(senddata);
+                                if (remoteUser.Value != null)
+                                {
+                                    await SendMessageClient(remoteUser.Value.ConnectionId, "send", sendJson);
+                                }
                             }
                         }
                             

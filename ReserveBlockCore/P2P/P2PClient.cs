@@ -1179,7 +1179,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {
@@ -1221,7 +1221,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {
@@ -1279,7 +1279,7 @@ namespace ReserveBlockCore.P2P
                 if(foundBeaconCount == 0)
                 {
                     NFTLogUtility.Log("Zero beacons found. Adding bootstrap.", "SCV1Controller.TransferNFT()");
-                    BeaconList = Globals.Locators;
+                    BeaconList = Globals.Locators.Values.ToList();
                     BeaconList.ForEach(x => { NFTLogUtility.Log($"Bootstrap Beacons {x}", "P2PClient.GetBeacons()"); });
                 }
 

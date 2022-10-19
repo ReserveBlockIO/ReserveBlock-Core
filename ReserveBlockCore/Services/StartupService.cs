@@ -212,8 +212,8 @@ namespace ReserveBlockCore.Services
                 BeaconUID = "Foundation Beacon 1"
             };
 
-            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
-            var locator1 = beaconLocJson1.ToBase64();
+            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);            
+            Globals.Locators[beaconLoc1.BeaconUID] = beaconLocJson1.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
@@ -223,9 +223,8 @@ namespace ReserveBlockCore.Services
                 BeaconUID = "Foundation Beacon 2"
 
             };
-
-            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);
-            var locator2 = beaconLocJson2.ToBase64();
+            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);            
+            Globals.Locators[beaconLoc2.BeaconUID] = beaconLocJson2.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
@@ -237,13 +236,7 @@ namespace ReserveBlockCore.Services
             };
 
             var beaconLocJson3 = JsonConvert.SerializeObject(beaconLoc3);
-            var locator3 = beaconLocJson3.ToBase64();
-
-            locators.Add(locator1);
-            //locators.Add(locator2);
-            //locators.Add(locator3);
-
-            Globals.Locators = locators;
+            Globals.Locators[beaconLoc3.BeaconUID] = beaconLocJson3.ToBase64();
         }
         internal static void ClearStaleMempool()
         {
@@ -458,10 +451,10 @@ namespace ReserveBlockCore.Services
         public static async Task ConnectoToBeacon()
         {
             if(!Globals.Adjudicate)
-            {
-                var beacon = Globals.Locators.FirstOrDefault();
-                if (beacon != null)
+            {                
+                if (Globals.Locators.Any())
                 {
+                    var beacon = Globals.Locators.Values.FirstOrDefault();
                     var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
                     if (beaconDataJsonDes != null)
                     {

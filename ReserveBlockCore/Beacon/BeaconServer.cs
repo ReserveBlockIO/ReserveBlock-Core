@@ -308,7 +308,7 @@ namespace ReserveBlockCore.Beacon
             if(!string.IsNullOrEmpty(ext))
             {
                 var rejectedExtList = Globals.RejectAssetExtensionTypes;
-                var exist = rejectedExtList.Exists(x => x == ext);
+                var exist = rejectedExtList.Contains(ext);                
                 if(!exist)
                     output = true;
             }

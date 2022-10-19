@@ -100,14 +100,14 @@ namespace ReserveBlockCore.Controllers
                 {
                     if (sc.IsPublished == true)
                     {
-                        //Get beacons here!
-                        var locators = Globals.Locators.FirstOrDefault();
-                        if (locators.Count() == 0)
+                        //Get beacons here!                        
+                        if (!Globals.Locators.Any())
                         {
                             output = "You are not connected to any beacons.";
                         }
                         else
                         {
+                            var locators = Globals.Locators.Values.FirstOrDefault();
                             List<string> assets = new List<string>();
 
                             if (sc.SmartContractAsset != null)
