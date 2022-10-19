@@ -288,12 +288,10 @@ namespace ReserveBlockCore.Controllers
                     if (featuresList != null)
                     {
                         var evoFeatureList = (List<EvolvingFeature>)featuresList.FeatureFeatures;
-                        foreach (var evoFeature in evoFeatureList)
+                        var currentStage = evoFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
+                        if(currentStage != null)
                         {
-                            if (evoFeature.IsCurrentState == true)
-                            {
-                                currentState = evoFeature.EvolutionState;
-                            }
+                            currentState = currentStage.EvolutionState;
                         }
                     }
 
@@ -302,12 +300,12 @@ namespace ReserveBlockCore.Controllers
                     if (scMainFeatures != null)
                     {
                         var scMainFeaturesList = (List<EvolvingFeature>)scMainFeatures.FeatureFeatures;
-                        foreach (var evoFeature in scMainFeaturesList)
+                        var evoStage = scMainFeaturesList.Where(x => x.EvolutionState == currentState).FirstOrDefault();
+                        if(evoStage != null)
                         {
-                            if (evoFeature.EvolutionState == currentState)
-                            {
-                                evoFeature.IsCurrentState = true;
-                            }
+                            evoStage.IsCurrentState = true;
+                            var stageList = scMainFeaturesList.Where(x => x.EvolutionState != currentState).ToList();
+                            stageList.ForEach(x => { x.IsCurrentState = false; });
                         }
                     }
                 }
