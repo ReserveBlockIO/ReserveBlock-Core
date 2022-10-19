@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Models.SmartContracts;
+﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 
 namespace ReserveBlockCore.Utilities
 {
@@ -12,7 +13,7 @@ namespace ReserveBlockCore.Utilities
                     .ToList();
 
             if (isMinted)
-                scs = scs.Where(x => x.IsMinter == true).ToList();
+                scs = scs.Where(x => x.IsMinter == true).Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving)).ToList();
 
             var specificNFT = scs.Where(x => x.SmartContractUID.ToLower().Contains(searchParam.ToLower())).FirstOrDefault();
             if(specificNFT != null)
