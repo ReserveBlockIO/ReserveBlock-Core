@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 
@@ -88,6 +89,7 @@ namespace ReserveBlockCore.Controllers
             {
                 List<SmartContractMain> scMainList = new List<SmartContractMain>();
                 List<SmartContractStateTrei> scStateMainList = new List<SmartContractStateTrei>();
+                ConcurrentBag<SmartContractStateTrei> scStateMainBag = new ConcurrentBag<SmartContractStateTrei>();
 
                 var maxIndex = pageNumber * 9;
                 var startIndex = ((maxIndex - 9));
@@ -100,15 +102,18 @@ namespace ReserveBlockCore.Controllers
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
 
-                Parallel.ForEach(scs, sc => {
+               foreach(var sc in scs)
+                { 
                     var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
                     if(scState != null)
                     {
                         var exist = accounts.Exists(x => x.Address == scState.OwnerAddress);
                         if(exist)
-                            scStateMainList.Add(scState);
+                            scStateMainBag.Add(scState);
                     }
-                });
+                }
+
+                scStateMainList = scStateMainBag.ToList();
 
                 var scStateCount = scStateMainList.Count();
 
@@ -119,14 +124,14 @@ namespace ReserveBlockCore.Controllers
 
                 if (scStateMainList.Count > 0)
                 {
-                    Parallel.ForEach(scStateMainList, scState =>
+                    foreach(var scState in scStateMainList)
                     {
                         var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
                         var scMainRec = scs.Where(x => x.SmartContractUID == scMain.SmartContractUID).FirstOrDefault();
 
                         scMain.Id = scMainRec != null ? scMainRec.Id : 0;
                         scMainList.Add(scMain);
-                    });
+                    }
                     if (scMainList.Count() > 0)
                     {
                         var orderedMainList = scMainList.OrderByDescending(x => x.Id).ToList();
@@ -155,6 +160,7 @@ namespace ReserveBlockCore.Controllers
             {
                 List<SmartContractMain> scMainList = new List<SmartContractMain>();
                 List<SmartContractMain> scEvoMainList = new List<SmartContractMain>();
+                ConcurrentBag<SmartContractMain> resultCollection = new ConcurrentBag<SmartContractMain>();
 
                 var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
                     .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
@@ -164,7 +170,8 @@ namespace ReserveBlockCore.Controllers
                 var startIndex = ((maxIndex - 9));
                 var range = 9;
 
-                Parallel.ForEach(scs, sc => {
+                foreach(var sc in scs)
+                {
                     var scStateTrei = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
                     if (scStateTrei != null)
                     {
@@ -174,7 +181,7 @@ namespace ReserveBlockCore.Controllers
                             scMain.Id = sc.Id;
                             var evoFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).Select(x => x.FeatureFeatures).FirstOrDefault();
                             var isDynamic = false;
-                            if(evoFeatures != null)
+                            if (evoFeatures != null)
                             {
                                 var evoFeatureList = (List<EvolvingFeature>)evoFeatures;
                                 foreach (var feature in evoFeatureList)
@@ -186,10 +193,12 @@ namespace ReserveBlockCore.Controllers
                             }
 
                             if (!isDynamic)
-                                scMainList.Add(scMain);
+                                resultCollection.Add(scMain);
                         }
                     }
-                });
+                }
+
+                scMainList = resultCollection.ToList();
 
                 var scscMainListCount = scMainList.Count();
 
