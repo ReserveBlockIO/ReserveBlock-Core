@@ -134,6 +134,67 @@ namespace ReserveBlockCore.Utilities
             return "NA";
         }
 
+        public static async Task<List<string>> GetAssetListFromSmartContract(SmartContractMain sc)
+        {
+            List<string> assets = new List<string>();
+
+            if (sc.SmartContractAsset != null)
+            {
+                assets.Add(sc.SmartContractAsset.Name);
+            }
+
+            if (sc.Features != null)
+            {
+                foreach (var feature in sc.Features)
+                {
+                    if (feature.FeatureName == FeatureName.Evolving)
+                    {
+                        var count = 0;
+                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+                        myArray.ForEach(x => {
+                            var evolveDict = (EvolvingFeature)myArray[count];
+                            SmartContractAsset evoAsset = new SmartContractAsset();
+                            if (evolveDict.SmartContractAsset != null)
+                            {
+
+                                var assetEvo = evolveDict.SmartContractAsset;
+                                evoAsset.Name = assetEvo.Name;
+                                if (!assets.Contains(evoAsset.Name))
+                                {
+                                    assets.Add(evoAsset.Name);
+                                }
+                                count += 1;
+                            }
+
+                        });
+                    }
+                    if (feature.FeatureName == FeatureName.MultiAsset)
+                    {
+                        var count = 0;
+                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+
+                        myArray.ForEach(x => {
+                            var multiAssetDict = (MultiAssetFeature)myArray[count];
+
+                            if (multiAssetDict != null)
+                            {
+                                var fileName = multiAssetDict.FileName;
+                                if (!assets.Contains(fileName))
+                                {
+                                    assets.Add(fileName);
+                                }
+                            }
+                            count += 1;
+
+                        });
+
+                    }
+                }
+            }
+
+            return assets;
+        }
+
         public static async Task CheckForAssets(AssetQueue aq)
         {
             try
@@ -154,7 +215,7 @@ namespace ReserveBlockCore.Utilities
                                 var assestExistCount = 0;
                                 foreach (string asset in assetList)
                                 {
-                                    var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                    var path = NFTAssetPath(asset, aq.SmartContractUID);
                                     var fileExist = File.Exists(path);
                                     if (fileExist)
                                         assestExistCount += 1;
@@ -165,6 +226,16 @@ namespace ReserveBlockCore.Utilities
                                     aq.IsDownloaded = true;
                                     aq.IsComplete = true;
                                     aqDB.UpdateSafe(aq);
+
+                                    foreach (string asset in assetList)
+                                    {
+                                        try
+                                        {
+                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset);
+                                        }
+                                        catch { }
+                                    }
+
                                 }
                             }
                         }

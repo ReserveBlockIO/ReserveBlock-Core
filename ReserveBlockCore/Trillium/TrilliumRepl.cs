@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Trillium
 
 		public TrilliumRepl()
 		{
-			LoadSubmissions();
+			//LoadSubmissions();
 		}
 
 		protected override void RenderLine(string line)
@@ -179,7 +179,7 @@ namespace ReserveBlockCore.Trillium
 				}
 				_previous = compilation;
 
-				SaveSubmission(text);
+				//SaveSubmission(text);
 			}
 			else
 			{
@@ -243,8 +243,8 @@ namespace ReserveBlockCore.Trillium
 
 			foreach (var file in files)
 			{
-				var text = File.ReadAllText(file);
-				EvaluateSubmission(text);
+				//var text = File.ReadAllText(file);
+				//EvaluateSubmission(text);
 			}
 
 			_loadingSubmission = false;
@@ -254,7 +254,11 @@ namespace ReserveBlockCore.Trillium
 		{
 			var dir = GetSubmissionsDirectory();
 			if (Directory.Exists(dir))
-				Directory.Delete(dir, recursive: true);
+				try
+				{
+					Directory.Delete(dir, recursive: true);
+				}
+				catch { }
 		}
 
 		private static void SaveSubmission(string text)

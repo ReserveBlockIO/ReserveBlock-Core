@@ -1,7 +1,21 @@
-﻿namespace ReserveBlockCore.Utilities
+﻿using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Models;
+
+namespace ReserveBlockCore.Utilities
 {
     public class MD5Utility
     {
+        public static async Task<string> GetMD5FromSmartContract(SmartContractMain sc)
+        {
+            List<string> assets = new List<string>();
+
+            assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+
+            var md5List = MD5ListCreator(assets, sc.SmartContractUID);
+
+            return md5List;
+        }
+
         public static string MD5ListCreator(List<string> assets, string scUID)
         {
             var output = "";

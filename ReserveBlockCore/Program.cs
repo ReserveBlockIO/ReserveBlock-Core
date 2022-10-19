@@ -129,7 +129,7 @@ namespace ReserveBlockCore
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
 
-            //StartupService.RunStateSync();
+            StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 

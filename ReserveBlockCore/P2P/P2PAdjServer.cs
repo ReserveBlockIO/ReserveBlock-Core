@@ -533,7 +533,6 @@ namespace ReserveBlockCore.P2P
         #endregion
         
         #region Receive TX to relay
-
         public async Task<bool> ReceiveTX(Transaction transaction)
         {
             try

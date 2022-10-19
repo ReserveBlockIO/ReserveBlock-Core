@@ -37,13 +37,15 @@ namespace ReserveBlockCore.Services
 
             var txData = "";
 
-            if(!string.IsNullOrWhiteSpace(scData.Item1))
+            var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
+
+            if (!string.IsNullOrWhiteSpace(scData.Item1))
             {
                 var bytes = Encoding.Unicode.GetBytes(scData.Item1);
                 var scBase64 = bytes.ToCompress().ToBase64();
                 var newSCInfo = new[]
                 {
-                    new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64}
+                    new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
                 };
 
                 txData = JsonConvert.SerializeObject(newSCInfo);

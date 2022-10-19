@@ -124,7 +124,8 @@ namespace ReserveBlockCore.Services
 
         internal static async void RunStateSync()
         {
-            await StateTreiSyncService.SyncAccountStateTrei();
+            if(Globals.LastBlock.Height < Globals.BlockLock)
+                await StateTreiSyncService.SyncAccountStateTrei();
         }
         internal static void RunRules()
         {
