@@ -150,7 +150,7 @@ namespace ReserveBlockCore.Utilities
                     if (feature.FeatureName == FeatureName.Evolving)
                     {
                         var count = 0;
-                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+                        var myArray = ((List<EvolvingFeature>)feature.FeatureFeatures);
                         myArray.ForEach(x => {
                             var evolveDict = (EvolvingFeature)myArray[count];
                             SmartContractAsset evoAsset = new SmartContractAsset();
@@ -171,7 +171,7 @@ namespace ReserveBlockCore.Utilities
                     if (feature.FeatureName == FeatureName.MultiAsset)
                     {
                         var count = 0;
-                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+                        var myArray = ((List<MultiAssetFeature>)feature.FeatureFeatures);
 
                         myArray.ForEach(x => {
                             var multiAssetDict = (MultiAssetFeature)myArray[count];
