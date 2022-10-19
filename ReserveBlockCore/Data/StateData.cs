@@ -315,13 +315,15 @@ namespace ReserveBlockCore.Data
                 var function = (string?)scData["Function"];
                 var data = (string?)scData["Data"];
                 var scUID = (string?)scData["ContractUID"];
-                
+                var md5List = (string?)scData["MD5List"];
+
 
                 scST.ContractData = data;
                 scST.MinterAddress = tx.FromAddress;
                 scST.OwnerAddress = tx.FromAddress;
                 scST.SmartContractUID = scUID;
                 scST.Nonce = 0;
+                scST.MD5List = md5List;
 
 
                 //Save to state trei

@@ -12,6 +12,7 @@ namespace ReserveBlockCore.Models
         public string OwnerAddress { get; set; }
         public string? Locators { get; set; }
         public long Nonce { get; set; }
+        public string? MD5List { get; set; }
 
         public static LiteDB.ILiteCollection<SmartContractStateTrei> GetSCST()
         {
