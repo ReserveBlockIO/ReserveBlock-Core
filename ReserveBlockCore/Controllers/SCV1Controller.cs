@@ -111,10 +111,11 @@ namespace ReserveBlockCore.Controllers
                 }
                 else
                 {
-                    scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
-                    .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
+                     scs = SmartContractMain.SmartContractData.GetSCs()
+                    .FindAll()
                     .ToList();
                 }
+                
 
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
