@@ -102,7 +102,7 @@ namespace ReserveBlockCore.Controllers
                 {
                     if (search != null)
                     {
-                        var result = await NFTSearchUtility.Search(search, true);
+                        var result = await NFTSearchUtility.Search(search);
                         if (result != null)
                         {
                             scs = result;
