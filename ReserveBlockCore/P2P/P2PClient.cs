@@ -1247,6 +1247,41 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Beacon File Is Downloaded
+        public static async Task<bool> BeaconFileIsDownloaded(string scUID, string assetName)
+        {
+            bool result = false;
+            try
+            {
+                string[] payload = { scUID, assetName };
+                var payloadJson = JsonConvert.SerializeObject(payload);
+
+                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                if (beacon != null)
+                {
+                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    if (!IsBeaconConnected)
+                        await ConnectBeacon(url, "y");
+
+                    if (hubBeaconConnection != null)
+                    {
+                        var response = await hubBeaconConnection.InvokeCoreAsync<bool>("BeaconFileIsDownloaded", args: new object?[] { payloadJson });
+                        return response;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.Message}", "P2PClient.BeaconFileIsDownloaded() - catch");
+            }
+
+            return result;
+
+        }
+
+        #endregion
+
         #region Get Beacon Status of Nodes
         public static async Task<List<string>> GetBeacons()
         {

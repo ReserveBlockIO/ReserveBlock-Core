@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Utilities
                                 var assestExistCount = 0;
                                 foreach (string asset in assetList)
                                 {
-                                    var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                    var path = NFTAssetPath(asset, aq.SmartContractUID);
                                     var fileExist = File.Exists(path);
                                     if (fileExist)
                                         assestExistCount += 1;
@@ -165,6 +165,16 @@ namespace ReserveBlockCore.Utilities
                                     aq.IsDownloaded = true;
                                     aq.IsComplete = true;
                                     aqDB.UpdateSafe(aq);
+
+                                    foreach (string asset in assetList)
+                                    {
+                                        try
+                                        {
+                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset);
+                                        }
+                                        catch { }
+                                    }
+
                                 }
                             }
                         }

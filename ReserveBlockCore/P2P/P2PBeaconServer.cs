@@ -462,6 +462,35 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Beacon File Is Downloaded set
+        public async Task<bool> BeaconFileIsDownloaded(string data)
+        {
+            var peerIP = GetIP(Context);
+
+            bool result = false;
+            var payload = JsonConvert.DeserializeObject<string[]>(data);
+            if (payload != null)
+            {
+                var scUID = payload[0];
+                var assetName = payload[1];
+                var beacon = BeaconData.GetBeacon();
+                if (beacon != null)
+                {
+                    var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.DownloadIPAddress == peerIP);
+                    if (beaconData != null)
+                    {
+                        beaconData.IsDownloaded = true;
+                        beacon.UpdateSafe(beaconData);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
+
+
         #region SignalR DOS Protection
 
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
