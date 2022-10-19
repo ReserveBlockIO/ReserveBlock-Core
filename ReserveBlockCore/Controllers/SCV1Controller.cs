@@ -89,6 +89,7 @@ namespace ReserveBlockCore.Controllers
             Stopwatch stopwatch3 = Stopwatch.StartNew();
             try
             {
+                List<SmartContractMain> scs = new List<SmartContractMain>();
                 List<SmartContractMain> scMainList = new List<SmartContractMain>();
                 List<SmartContractStateTrei> scStateMainList = new List<SmartContractStateTrei>();
                 ConcurrentBag<SmartContractStateTrei> scStateMainBag = new ConcurrentBag<SmartContractStateTrei>();
@@ -97,14 +98,23 @@ namespace ReserveBlockCore.Controllers
                 var startIndex = ((maxIndex - 9));
                 var range = 9;
 
-                if(search != "" && search != "~")
+                if (search != "" && search != "~")
                 {
-
+                    if (search != null)
+                    {
+                        var result = await NFTSearchUtility.Search(search, true);
+                        if (result != null)
+                        {
+                            scs = result;
+                        }
+                    }
                 }
-
-                var scs = SmartContractMain.SmartContractData.GetSCs()
-                    .FindAll()
+                else
+                {
+                    scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
+                    .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
                     .ToList();
+                }
 
                 var scStateTrei = SmartContractStateTrei.GetSCST();
                 var accounts = AccountData.GetAccounts().FindAll().ToList();
