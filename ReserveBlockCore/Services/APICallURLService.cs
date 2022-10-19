@@ -27,7 +27,7 @@ namespace ReserveBlockCore.Services
             {
                 if (Globals.APICallURLLogging == true)
                 {
-                    ErrorLogUtility.LogError($"Error Sending Transaction to URL. Error Message: {ex.Message}", "BlockValidatorService.ValidateBlock()");
+                    ErrorLogUtility.LogError($"Error Sending Transaction to URL. Error Message: {ex.ToString()}", "BlockValidatorService.ValidateBlock()");
                 }
             }
         }

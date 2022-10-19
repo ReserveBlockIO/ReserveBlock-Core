@@ -271,7 +271,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     result = false; //just in case setting this to false
-                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
                 }
 
                 return result;
@@ -353,7 +353,7 @@ namespace ReserveBlockCore.P2P
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
                 }
 
                 return result;
@@ -406,7 +406,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                NFTLogUtility.Log($"Error occurred when sending receive. Error: {ex.Message}", "P2PBeaconServer.BeaconDataIsReady()");
+                NFTLogUtility.Log($"Error occurred when sending receive. Error: {ex.ToString()}", "P2PBeaconServer.BeaconDataIsReady()");
             }
 
             return output;

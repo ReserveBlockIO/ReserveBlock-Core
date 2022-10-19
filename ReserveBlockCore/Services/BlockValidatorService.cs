@@ -605,7 +605,7 @@ namespace ReserveBlockCore.Services
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error: {ex.ToString()}");
             }
             return false;
         }

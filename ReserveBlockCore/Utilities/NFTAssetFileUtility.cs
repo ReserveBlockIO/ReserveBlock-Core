@@ -52,7 +52,7 @@ namespace ReserveBlockCore.Utilities
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
+                ErrorLogUtility.LogError(ex.ToString(), "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
                 NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
                 return false;
             }
@@ -126,7 +126,7 @@ namespace ReserveBlockCore.Utilities
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.NFTAssetPath()");
+                ErrorLogUtility.LogError(ex.ToString(), "NFTAssetFileUtility.NFTAssetPath()");
                 NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.NFTAssetPath()");
                 return "NA";
             }
@@ -264,7 +264,7 @@ namespace ReserveBlockCore.Utilities
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error downloading assets from beacon. Error Msg: {ex.Message}", "NFTAssetFileUtility.DownloadAssetFromBeacon()");
+                ErrorLogUtility.LogError($"Error downloading assets from beacon. Error Msg: {ex.ToString()}", "NFTAssetFileUtility.DownloadAssetFromBeacon()");
             }
             
             return output;

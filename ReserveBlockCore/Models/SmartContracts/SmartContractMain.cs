@@ -85,7 +85,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 catch(Exception ex)
                 {
                     DbContext.Rollback();
-                    ErrorLogUtility.LogError(ex.Message, "SmartContractMain.DeleteSmartContract()");
+                    ErrorLogUtility.LogError(ex.ToString(), "SmartContractMain.DeleteSmartContract()");
                 }
             }
             public static async void SaveSCLocally(SmartContractMain scMain, string scText)
@@ -122,7 +122,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.Message}",
+                    NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
                     "SmartContractMain.SaveSCLocally(SmartContractMain scMain, string scText)");
                 }
             }

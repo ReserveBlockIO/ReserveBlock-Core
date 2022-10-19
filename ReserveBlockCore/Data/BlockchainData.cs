@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
@@ -324,7 +324,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {                
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
@@ -365,7 +365,7 @@ namespace ReserveBlockCore.Data
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.GetBlocks()");
                 return null;
             }
             

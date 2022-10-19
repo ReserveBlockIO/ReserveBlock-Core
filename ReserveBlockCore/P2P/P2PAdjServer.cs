@@ -244,7 +244,7 @@ namespace ReserveBlockCore.P2P
                             DbContext.Rollback();
                             if (Globals.OptionalLogging == true)
                             {
-                                ErrorLogUtility.LogError($"Exception thrown: Error: {ex.Message}", "Adj Connection");
+                                ErrorLogUtility.LogError($"Exception thrown: Error: {ex.ToString()}", "Adj Connection");
                             }
                         }
                     }
@@ -295,7 +295,7 @@ namespace ReserveBlockCore.P2P
                 //Connection attempt failed with unhandled error.
                 if (Globals.OptionalLogging == true)
                 {
-                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.Message}", "Adj Connection");
+                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "Adj Connection");
                 }
             }
 
@@ -402,7 +402,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex) 
             {
-                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.Message}", "P2PAdjServer.ReceiveTaskAnswer_New()");
+                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswer_New()");
             }
             taskAnsRes.AnswerCode = 1337; // Unknown Error
             return taskAnsRes;

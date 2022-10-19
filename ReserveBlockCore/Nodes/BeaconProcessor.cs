@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Nodes
                     }
                     catch(Exception ex)
                     {
-                        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.Message}. Data: {data}", "BeaconProcessor.ProcessData() - send");
+                        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}. Data: {data}", "BeaconProcessor.ProcessData() - send");
                     }
 
                 }
@@ -102,7 +102,7 @@ namespace ReserveBlockCore.Nodes
                     }
                     catch(Exception ex)
                     {
-                        NFTLogUtility.Log($"Error Receiving File. Error: {ex.Message}", "BeaconProcessor.ProcessData() - receive");
+                        NFTLogUtility.Log($"Error Receiving File. Error: {ex.ToString()}", "BeaconProcessor.ProcessData() - receive");
                     }
                 }
 

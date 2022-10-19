@@ -93,7 +93,7 @@ namespace ReserveBlockCore.Beacon
             }
             catch (Exception e)
             {
-                return new BeaconResponse { Status = -1, Description = "Error: " + e.Message };
+                return new BeaconResponse { Status = -1, Description = "Error: " + e.ToString() };
             }
         }
 
@@ -181,7 +181,7 @@ namespace ReserveBlockCore.Beacon
             }
             catch (Exception e)
             {
-                return new BeaconResponse { Status = -1, Description = "Error: " + e.Message };
+                return new BeaconResponse { Status = -1, Description = "Error: " + e.ToString() };
             }
         }
 

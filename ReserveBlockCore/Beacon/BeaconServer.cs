@@ -242,7 +242,7 @@ namespace ReserveBlockCore.Beacon
                 }
                 catch(Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.Message}", "BeaconServer.ProcessSocketRequest()");
+                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.ToString()}", "BeaconServer.ProcessSocketRequest()");
                     try
                     {
                         File.Delete(@"" + SaveTo + fileName);

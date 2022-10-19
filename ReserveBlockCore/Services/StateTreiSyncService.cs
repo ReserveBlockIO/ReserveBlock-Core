@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Services
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.Message}", "StateTreiSyncService.SyncAccountStateTrei()");
+                ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.ToString()}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }
     }

@@ -93,7 +93,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error creating checkpoint. Error Message: {ex.Message}", "ClientCallService.DoCheckpointWork()");
+                ErrorLogUtility.LogError($"Error creating checkpoint. Error Message: {ex.ToString()}", "ClientCallService.DoCheckpointWork()");
             }
         }
 
@@ -153,7 +153,7 @@ namespace ReserveBlockCore.Services
                                 }
                                 catch(Exception ex)
                                 {
-                                    NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.Message}", "ClientCallService.DoAssetWork()");
+                                    NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.ToString()}", "ClientCallService.DoAssetWork()");
                                 }
                             }
                         }
@@ -339,7 +339,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 //no node found
-                Console.WriteLine("Error: ClientCallService.DoFortisPoolWork(): " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.DoFortisPoolWork(): " + ex.ToString());
             }
         }
 
@@ -515,7 +515,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("Error: " + ex.ToString());
                 Console.WriteLine("Client Call Service");
                 Globals.AdjudicateLock = false;
             }
@@ -911,7 +911,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("Error: " + ex.ToString());
                 Console.WriteLine("Client Call Service");
                 Globals.AdjudicateLock = false;
             }
@@ -980,7 +980,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.ToString());
             }
 
         }
@@ -1013,7 +1013,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: ClientCallService.ProcessFortisPool_Deprecated(): " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool_Deprecated(): " + ex.ToString());
             }
 
             if(errorCountA > 0 || errorCountB > 0 || errorCountC > 0)

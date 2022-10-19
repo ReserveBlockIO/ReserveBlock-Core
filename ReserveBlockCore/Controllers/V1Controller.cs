@@ -222,7 +222,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 catch (Exception ex)
                 {
-                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"There was an error encrypting your wallet. Error: {ex.Message}" });
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"There was an error encrypting your wallet. Error: {ex.ToString()}" });
                 }
             }
             else
@@ -670,8 +670,8 @@ namespace ReserveBlockCore.Controllers
                         }
                         catch (Exception ex)
                         {
-                            ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
-                            result = $"Unknown Error Occured: {ex.Message}";
+                            ErrorLogUtility.LogError(ex.ToString(), "V1Controller.StartValidating - result: " + result);
+                            result = $"Unknown Error Occured: {ex.ToString()}";
                         }
                         output = true;
                     }

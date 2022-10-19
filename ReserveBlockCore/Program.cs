@@ -466,7 +466,7 @@ namespace ReserveBlockCore
                 }
                 catch(Exception ex)
                 {
-                    ErrorLogUtility.LogError(ex.Message, "Globals.peerCheckTimer_Elapsed()");
+                    ErrorLogUtility.LogError(ex.ToString(), "Globals.peerCheckTimer_Elapsed()");
                 }
                 
             }

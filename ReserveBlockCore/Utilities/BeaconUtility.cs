@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Utilities
                 catch (Exception ex)
                 {
                     retryCount += 1;
-                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.Message}.", "BeaconProcessor.ProcessData() - send");
+                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.ProcessData() - send");
                 }
             }
 

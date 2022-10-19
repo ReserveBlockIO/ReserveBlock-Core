@@ -113,7 +113,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return null;
@@ -221,7 +221,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return null;
@@ -324,7 +324,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return null;
@@ -438,7 +438,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return null;
@@ -553,7 +553,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return null;
@@ -668,7 +668,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return null;

@@ -311,7 +311,7 @@ namespace ReserveBlockCore.Commands
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
                 }
             }
@@ -373,7 +373,7 @@ namespace ReserveBlockCore.Commands
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
                 }
             }
@@ -435,7 +435,7 @@ namespace ReserveBlockCore.Commands
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
                 }
             }
@@ -1158,7 +1158,7 @@ namespace ReserveBlockCore.Commands
             }
             catch(Exception ex)
             {
-                ConsoleWriterService.Output($"Unexpected error. Please try again. Error Message: {ex.Message}");
+                ConsoleWriterService.Output($"Unexpected error. Please try again. Error Message: {ex.ToString()}");
             }
             
         }
