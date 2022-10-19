@@ -97,7 +97,7 @@ namespace ReserveBlockCore.Controllers
                 var startIndex = ((maxIndex - 9));
                 var range = 9;
 
-                if(search != "" || search != "~")
+                if(search != "" && search != "~")
                 {
 
                 }
@@ -167,18 +167,29 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             try
             {
+                List<SmartContractMain> scs = new List<SmartContractMain>();
                 List<SmartContractMain> scMainList = new List<SmartContractMain>();
                 List<SmartContractMain> scEvoMainList = new List<SmartContractMain>();
                 ConcurrentBag<SmartContractMain> resultCollection = new ConcurrentBag<SmartContractMain>();
 
-                if (search != "" || search != "~")
+                if (search != "" && search != "~")
                 {
-
+                    if(search != null)
+                    {
+                        var result = await NFTSearchUtility.Search(search, true);
+                        if(result != null)
+                        {
+                            scs = result;
+                        }
+                    }
                 }
-
-                var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
+                else
+                {
+                    scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
                     .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
                     .ToList();
+                }
+                
 
                 var maxIndex = pageNumber * 9;
                 var startIndex = ((maxIndex - 9));
