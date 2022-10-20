@@ -277,7 +277,6 @@ namespace ReserveBlockCore.Data
                 {
                     result = true;//replay or douple spend has occured
                 }
-
             }
 
             if(result)
@@ -286,7 +285,7 @@ namespace ReserveBlockCore.Data
             }
 
             var mempool = GetPool();
-            var txs = mempool.Find(x => x.FromAddress == tx.FromAddress).ToList();
+            var txs = mempool.Find(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
 
             if(txs.Count() > 0)
             {
@@ -302,8 +301,13 @@ namespace ReserveBlockCore.Data
                 }
             }
 
+            if (result)
+            {
+                return result;//replay or douple spend has occured
+            }
+
             //double NFT transfer or burn check
-            if(tx.TransactionType != TransactionType.TX)
+            if (tx.TransactionType != TransactionType.TX)
             {
                 if(tx.Data != null)
                 {

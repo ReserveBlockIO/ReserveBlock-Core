@@ -284,12 +284,14 @@ namespace ReserveBlockCore.Services
                 var blockHeight = Globals.LastBlock.Height;
                 if(mempool != null)
                 {
+                    var currentTime = TimeUtil.GetTime(-60);
                     if (mempool.Count() > 0)
                     {
                         foreach(var tx in mempool)
                         {
-                            var heightDiff = (blockHeight - tx.Height);
-                            if (heightDiff > 10)
+                            var txTime = tx.Timestamp;
+                            var sendTx = currentTime > txTime ? true : false;
+                            if (sendTx)
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(tx);
                                 if (txResult == true)
