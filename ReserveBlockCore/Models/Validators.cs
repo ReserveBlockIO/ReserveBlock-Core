@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Models
                 catch (Exception ex)
                 {
                     DbContext.Rollback();
-                    ErrorLogUtility.LogError(ex.Message, "Validators.GetAll()");
+                    ErrorLogUtility.LogError(ex.ToString(), "Validators.GetAll()");
                     return null;
                 }
                 
@@ -63,7 +63,7 @@ namespace ReserveBlockCore.Models
                 catch (Exception ex)
                 {
                     DbContext.Rollback();
-                    ErrorLogUtility.LogError(ex.Message, "Validators.GetAll()");
+                    ErrorLogUtility.LogError(ex.ToString(), "Validators.GetAll()");
                     return null;
                 }
 

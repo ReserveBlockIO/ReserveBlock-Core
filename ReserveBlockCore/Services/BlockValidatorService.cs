@@ -295,11 +295,7 @@ namespace ReserveBlockCore.Services
                                     if (mempoolTx.Count() > 0)
                                     {
                                         mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
-                                        try
-                                        {
-                                            Globals.BroadcastedTrxList.RemoveAll(x => x.Hash == localTransaction.Hash);
-                                        }
-                                        catch { };
+                                        Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out var test);
                                     }
                                 }
 
@@ -609,7 +605,7 @@ namespace ReserveBlockCore.Services
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error: {ex.ToString()}");
             }
             return false;
         }

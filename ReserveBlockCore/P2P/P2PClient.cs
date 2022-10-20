@@ -337,7 +337,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
         }
 
@@ -361,7 +361,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.Message, "DisconnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.ToString(), "DisconnectAdjudicator()");
             }
             finally
             {
@@ -498,7 +498,7 @@ namespace ReserveBlockCore.P2P
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskWin != null ?
-                            DateTime.Now.ToString() : "No Time", ex.Message);
+                            DateTime.Now.ToString() : "No Time", ex.ToString());
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                     }
                 }
@@ -575,7 +575,7 @@ namespace ReserveBlockCore.P2P
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                            taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                            taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                     }
                 }
@@ -648,7 +648,7 @@ namespace ReserveBlockCore.P2P
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer_Deprecated()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                            taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                            taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer_Deprecated(TaskAnswer taskAnswer)");
                     }
                 }
@@ -744,7 +744,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                var errorMsg = string.Format("Failed to send TX to Adjudicator. Error Message : {0}", ex.Message);
+                var errorMsg = string.Format("Failed to send TX to Adjudicator. Error Message : {0}", ex.ToString());
                 ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - catch");
             }
         }
@@ -923,7 +923,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
         }
 
@@ -946,7 +946,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError("Failed! Did not disconnect from Beacon: Reason - " + ex.Message, "DisconnectBeacon()");
+                ErrorLogUtility.LogError("Failed! Did not disconnect from Beacon: Reason - " + ex.ToString(), "DisconnectBeacon()");
             }
         }
 
@@ -1057,7 +1057,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                var errorMsg = string.Format("Failed to send bsd to Beacon. Error Message : {0}", ex.Message);
+                var errorMsg = string.Format("Failed to send bsd to Beacon. Error Message : {0}", ex.ToString());
                 ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - catch");
             }
             
@@ -1160,7 +1160,7 @@ namespace ReserveBlockCore.P2P
                 }
                 catch(Exception ex)
                 {
-                    var errorMsg = string.Format("Failed to send bdd to Beacon. Error Message : {0}", ex.Message);
+                    var errorMsg = string.Format("Failed to send bdd to Beacon. Error Message : {0}", ex.ToString());
                     Console.WriteLine(errorMsg);
                     ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - catch");
                 }
@@ -1179,7 +1179,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {
@@ -1205,7 +1205,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.Message}", "P2PClient.BeaconFileIsReady() - catch");
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "P2PClient.BeaconFileIsReady() - catch");
             }
 
         }
@@ -1221,7 +1221,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {
@@ -1238,7 +1238,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.Message}", "P2PClient.BeaconFileIsReady() - catch");
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "P2PClient.BeaconFileIsReady() - catch");
             }
 
             return result;
@@ -1314,7 +1314,7 @@ namespace ReserveBlockCore.P2P
                 if(foundBeaconCount == 0)
                 {
                     NFTLogUtility.Log("Zero beacons found. Adding bootstrap.", "SCV1Controller.TransferNFT()");
-                    BeaconList = Globals.Locators;
+                    BeaconList = Globals.Locators.Values.ToList();
                     BeaconList.ForEach(x => { NFTLogUtility.Log($"Bootstrap Beacons {x}", "P2PClient.GetBeacons()"); });
                 }
 

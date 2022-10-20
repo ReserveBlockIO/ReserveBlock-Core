@@ -298,7 +298,7 @@ namespace ReserveBlockCore.Data
 			catch(Exception ex)
             {
 				DbContext.Rollback();
-				ErrorLogUtility.LogError(ex.Message, "AccountData.GetAccounts()");
+				ErrorLogUtility.LogError(ex.ToString(), "AccountData.GetAccounts()");
 				return null;
 			}			
 		}

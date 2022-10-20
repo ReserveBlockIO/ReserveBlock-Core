@@ -44,7 +44,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error with sig signing. Message: {ex.Message}", "SignatureService.CreateSignature");
+                ErrorLogUtility.LogError($"Error with sig signing. Message: {ex.ToString()}", "SignatureService.CreateSignature");
                 return "ERROR";
             }
         }
@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error with sig verify. Message: {ex.Message}", "SignatureService.VerifySignature");
+                ErrorLogUtility.LogError($"Error with sig verify. Message: {ex.ToString()}", "SignatureService.VerifySignature");
                 return false;
             }
             

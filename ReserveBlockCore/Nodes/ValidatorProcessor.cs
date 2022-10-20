@@ -41,7 +41,7 @@ namespace ReserveBlockCore.Nodes
                 {
                     var verifySecret = data;
                     var taskWin = new TaskWinner();
-                    var fortisPool = Globals.FortisPool.ToList();
+                    var fortisPool = Globals.FortisPool.Values;
                     var currentTaskAns = Globals.CurrentTaskNumberAnswer;
 
                     if(currentTaskAns != null)
@@ -105,7 +105,8 @@ namespace ReserveBlockCore.Nodes
                     var fortisPool = JsonConvert.DeserializeObject<List<FortisPool>>(data);
                     if(fortisPool != null)
                     {
-                        Globals.FortisPool = fortisPool;
+                        foreach (var pool in fortisPool)
+                            Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
                     }
                 }
 
@@ -199,8 +200,7 @@ namespace ReserveBlockCore.Nodes
             }
 
             var taskAnswer = new TaskNumberAnswer();
-            var num = TaskQuestionUtility.GenerateRandomNumber();
-            var fortisPool = Globals.FortisPool.ToList();
+            var num = TaskQuestionUtility.GenerateRandomNumber();            
             taskAnswer.Address = Globals.ValidatorAddress;
             taskAnswer.Answer = num.ToString();
             taskAnswer.SubmitTime = DateTime.Now;
@@ -222,11 +222,10 @@ namespace ReserveBlockCore.Nodes
             }
 
             var taskAnswer = new TaskAnswer();
-            var num = TaskQuestionUtility.GenerateRandomNumber();
-            var fortisPool = Globals.FortisPool.ToList();
+            var num = TaskQuestionUtility.GenerateRandomNumber();            
             taskAnswer.Address = Globals.ValidatorAddress;
             taskAnswer.Answer = num.ToString();
-            var block = await BlockchainData.CraftNewBlock(Globals.ValidatorAddress, fortisPool.Count(), num.ToString());
+            var block = await BlockchainData.CraftNewBlock(Globals.ValidatorAddress, num.ToString());
             if(block != null)
             {
                 taskAnswer.Block = block;

@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "AccountKeystore.GetAccountKeystore()");
+                ErrorLogUtility.LogError(ex.ToString(), "AccountKeystore.GetAccountKeystore()");
                 return null;
             }
         }

@@ -59,7 +59,7 @@ namespace ReserveBlockCore.Utilities
                     }
                     catch (Exception ex)
                     {
-                        return $"Unknown Error decrypting keys. Error: {ex.Message}";
+                        return $"Unknown Error decrypting keys. Error: {ex.ToString()}";
                     }
                 }
             }

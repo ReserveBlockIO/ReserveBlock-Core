@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "Adnr.GetAdnr()");
+                ErrorLogUtility.LogError(ex.ToString(), "Adnr.GetAdnr()");
                 return null;
             }
 
@@ -167,7 +167,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");
@@ -242,8 +242,8 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
-                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.Message}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                Console.WriteLine("Error: {0}", ex.ToString());
+                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
             }
 
             return (null, "Error. Please see message above.");
@@ -317,7 +317,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");

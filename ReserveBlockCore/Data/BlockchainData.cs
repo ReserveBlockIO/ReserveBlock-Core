@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
@@ -197,7 +197,7 @@ namespace ReserveBlockCore.Data
 
         #region Craft Block Deprecated
         //Method needing validator functions still.
-        public static async Task<Block?> CraftNewBlock(string validator, int totalVals, string valAnswer)
+        public static async Task<Block?> CraftNewBlock(string validator, string valAnswer)
         {
             try
             {
@@ -278,7 +278,7 @@ namespace ReserveBlockCore.Data
                     Transactions = GiveOtherInfos(transactionList, height),
                     Validator = validator,
                     ChainRefId = ChainRef,
-                    TotalValidators = totalVals,
+                    TotalValidators = Globals.FortisPool.Count,
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
@@ -324,7 +324,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {                
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
@@ -365,7 +365,7 @@ namespace ReserveBlockCore.Data
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.GetBlocks()");
                 return null;
             }
             

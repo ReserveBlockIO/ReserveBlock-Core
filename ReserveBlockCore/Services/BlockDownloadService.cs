@@ -107,7 +107,7 @@ namespace ReserveBlockCore.Services
                 if (Globals.PrintConsoleErrors == true)
                 {
                     Console.WriteLine("Failure in GetAllBlocks Method");
-                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.ToString());
                 }
             }
             finally
