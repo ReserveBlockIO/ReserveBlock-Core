@@ -1256,7 +1256,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {
