@@ -204,7 +204,7 @@ namespace ReserveBlockCore.P2P
                     }                    
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,10));
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,2));
                 if (hubConnection.ConnectionId == null)
                     return false;
 
