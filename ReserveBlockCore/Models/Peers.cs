@@ -44,7 +44,7 @@ namespace ReserveBlockCore.Models
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "Peers.GetAll()");
+                ErrorLogUtility.LogError(ex.ToString(), "Peers.GetAll()");
                 return null;
             }
             

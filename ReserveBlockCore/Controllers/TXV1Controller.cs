@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message});
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString()});
             }
 
             return output;
@@ -100,14 +100,14 @@ namespace ReserveBlockCore.Controllers
                 {
                     if (sc.IsPublished == true)
                     {
-                        //Get beacons here!
-                        var locators = Globals.Locators.FirstOrDefault();
-                        if (locators.Count() == 0)
+                        //Get beacons here!                        
+                        if (!Globals.Locators.Any())
                         {
                             output = "You are not connected to any beacons.";
                         }
                         else
                         {
+                            var locators = Globals.Locators.Values.FirstOrDefault();
                             List<string> assets = new List<string>();
 
                             if (sc.SmartContractAsset != null)
@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
             }
 
             return output;
@@ -246,7 +246,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
             }
 
             return output;
@@ -284,7 +284,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to calcuate Fee. Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to calcuate Fee. Error: {ex.ToString()}" });
             }
 
             return output;
@@ -309,7 +309,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to create Hash. Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to create Hash. Error: {ex.ToString()}" });
             }
 
             return output;
@@ -339,7 +339,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified. Unknown Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified. Unknown Error: {ex.ToString()}" });
             }
             
             return output;
@@ -380,7 +380,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.Message}. Please Try Again." });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.ToString()}. Please Try Again." });
             }
 
             return output;
@@ -423,7 +423,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.Message}. Please Try Again." });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.ToString()}. Please Try Again." });
             }
 
             return output;
@@ -443,7 +443,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = $"Error - {ex.Message}. Please Try Again.";
+                output = $"Error - {ex.ToString()}. Please Try Again.";
             }
 
             return output;
@@ -515,7 +515,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
             }
 
             return output;
@@ -584,7 +584,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
             }
 
             return output;
@@ -630,7 +630,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
             }
 
             return output;

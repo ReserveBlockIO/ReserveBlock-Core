@@ -31,7 +31,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "DecShop.GetDecShops()");
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetDecShops()");
                 return null;
             }
 
@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "DecShop.GetMyDecShop()");
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetMyDecShop()");
                 return null;
             }
 
@@ -74,7 +74,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "DecShop.GetMyDecShopInfo()");
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetMyDecShopInfo()");
                 return null;
             }
         }
@@ -225,7 +225,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");

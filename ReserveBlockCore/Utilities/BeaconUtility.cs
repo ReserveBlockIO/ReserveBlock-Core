@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Utilities
                     if(retryCount < 4)
                     {
                         var filePath = NFTAssetFileUtility.NFTAssetPath(assetName, scUID);
-                        var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                        var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                         var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
                         BeaconResponse rsp = BeaconClient.Send(filePath, beacon.IPAddress, beacon.Port);
@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Utilities
                 catch (Exception ex)
                 {
                     retryCount += 1;
-                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.Message}.", "BeaconProcessor.ProcessData() - send");
+                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.ProcessData() - send");
                 }
             }
 

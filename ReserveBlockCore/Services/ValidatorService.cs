@@ -228,7 +228,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.Message}", "ValidatorService.DoMasterNodeStop()");
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
             }
         }
 
@@ -250,7 +250,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.Message}", "ValidatorService.ValidatorErrorReset()");
+                ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
             }
 
             return false;

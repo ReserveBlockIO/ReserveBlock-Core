@@ -279,7 +279,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                NFTLogUtility.Log($"Error Writing Smart Contract: {scMain.SmartContractUID}. Error Message: {ex.Message}", 
+                NFTLogUtility.Log($"Error Writing Smart Contract: {scMain.SmartContractUID}. Error Message: {ex.ToString()}", 
                     "SmartContractWriterService.WriteSmartContract(SmartContractMain scMain)");
             }
 

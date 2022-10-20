@@ -27,7 +27,7 @@ namespace ReserveBlockCore.Nodes
                             var assetName = payload[1];
 
                             var filePath = NFTAssetFileUtility.NFTAssetPath(assetName, scUID);
-                            var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                            var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                             var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
                             BeaconResponse rsp = BeaconClient.Send(filePath, beacon.IPAddress, beacon.Port);
@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Nodes
                     }
                     catch(Exception ex)
                     {
-                        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.Message}. Data: {data}", "BeaconProcessor.ProcessData() - send");
+                        NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}. Data: {data}", "BeaconProcessor.ProcessData() - send");
                     }
 
                 }
@@ -71,7 +71,7 @@ namespace ReserveBlockCore.Nodes
                             var scUID = payload[0];
                             var assetName = payload[1];
 
-                            var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                            var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                             var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
                             if(beacon != null)
@@ -102,7 +102,7 @@ namespace ReserveBlockCore.Nodes
                     }
                     catch(Exception ex)
                     {
-                        NFTLogUtility.Log($"Error Receiving File. Error: {ex.Message}", "BeaconProcessor.ProcessData() - receive");
+                        NFTLogUtility.Log($"Error Receiving File. Error: {ex.ToString()}", "BeaconProcessor.ProcessData() - receive");
                     }
                 }
 

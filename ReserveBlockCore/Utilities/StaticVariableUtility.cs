@@ -31,8 +31,7 @@ namespace ReserveBlockCore.Utilities
             var lastBlock = Globals.LastBlock;
             var adjudicator = Globals.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
-            var beaconConnection = P2PClient.IsBeaconConnected.ToString();
-            var fortisPoolCount = Globals.FortisPool.Count().ToString();
+            var beaconConnection = P2PClient.IsBeaconConnected.ToString();            
             var isChainSynced = Globals.IsChainSynced.ToString();
             var peerCount = P2PServer.GetConnectedPeerCount();
             var valCount = await P2PAdjServer.GetConnectedValCount();
@@ -67,7 +66,7 @@ namespace ReserveBlockCore.Utilities
             var isCorrupt = "Database Corruption Detected? : " + Globals.DatabaseCorruptionDetected.ToString();
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
-            var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();
+            var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + Globals.FortisPool.Count.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
             var lastWinningTaskErrorText = "*Only for Validators* Last Winning task Error?: " + lastWinningTaskError;
             var lastWinningTaskSentTimeText = "*Only for Validators* Last Winng Task Sent Time: " + lastWinningTaskSentTime;

@@ -65,7 +65,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = $"Error - {ex.Message}. Please Try Again.";
+                output = $"Error - {ex.ToString()}. Please Try Again.";
             }
 
             return output;
@@ -335,7 +335,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = ex.Message;
+                output = ex.ToString();
             }
             
             return output;
@@ -442,7 +442,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.Message}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 231 catch");
+                    NFTLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.ToString()}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 231 catch");
                     scReturnData.Success = false;
                     scReturnData.SmartContractCode = "Failure";
                     scReturnData.SmartContractMain = scMain;
@@ -458,8 +458,8 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                NFTLogUtility.Log($"Failed to create smart contract. Error Message: {ex.Message}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 247 catch");
-                output = $"Error - {ex.Message}. Please Try Again...";
+                NFTLogUtility.Log($"Failed to create smart contract. Error Message: {ex.ToString()}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 247 catch");
+                output = $"Error - {ex.ToString()}. Please Try Again...";
             }
 
 
@@ -511,9 +511,8 @@ namespace ReserveBlockCore.Controllers
                     if (sc.IsPublished == true)
                     {
                         //Get beacons here!
-                        //This will eventually need to be a chosen parameter someone chooses. 
-                        var locator = Globals.Locators.FirstOrDefault();
-                        if (locator == null)
+                        //This will eventually need to be a chosen parameter someone chooses.                         
+                        if (!Globals.Locators.Any())
                         {
                             output = "You do not have any beacons stored.";
                             NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
@@ -521,6 +520,7 @@ namespace ReserveBlockCore.Controllers
                         }
                         else
                         {
+                            var locator = Globals.Locators.Values.FirstOrDefault();
                             toAddress = toAddress.Replace(" ", "");
                             var localAddress = AccountData.GetSingleAccount(toAddress);
 
@@ -599,8 +599,8 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = $"Unknown Error Occurred. Error: {ex.Message}";
-                NFTLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.Message}", "SCV1Controller.TransferNFT()");
+                output = $"Unknown Error Occurred. Error: {ex.ToString()}";
+                NFTLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.ToString()}", "SCV1Controller.TransferNFT()");
             }
             
             

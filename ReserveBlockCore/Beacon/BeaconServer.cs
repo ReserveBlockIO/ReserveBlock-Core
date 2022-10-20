@@ -242,7 +242,7 @@ namespace ReserveBlockCore.Beacon
                 }
                 catch(Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.Message}", "BeaconServer.ProcessSocketRequest()");
+                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.ToString()}", "BeaconServer.ProcessSocketRequest()");
                     try
                     {
                         File.Delete(@"" + SaveTo + fileName);
@@ -308,7 +308,7 @@ namespace ReserveBlockCore.Beacon
             if(!string.IsNullOrEmpty(ext))
             {
                 var rejectedExtList = Globals.RejectAssetExtensionTypes;
-                var exist = rejectedExtList.Exists(x => x == ext);
+                var exist = rejectedExtList.Contains(ext);                
                 if(!exist)
                     output = true;
             }

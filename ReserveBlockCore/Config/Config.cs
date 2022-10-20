@@ -137,7 +137,9 @@ namespace ReserveBlockCore.Config
 			Globals.APICallURLLogging = config.APICallURLLogging;
 			Globals.NFTTimeout = config.NFTTimeout;
 			Globals.PasswordClearTime = config.PasswordClearTime;
-			Globals.RejectAssetExtensionTypes = config.RejectAssetExtensionTypes;
+			if (config.RejectAssetExtensionTypes != null)
+				foreach (var type in config.RejectAssetExtensionTypes)
+					Globals.RejectAssetExtensionTypes.Add(type);
 			Globals.IgnoreIncomingNFTs = config.IgnoreIncomingNFTs;
 			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
 
