@@ -150,6 +150,12 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
                 if (result.Item1 == true)
                 {

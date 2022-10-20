@@ -472,6 +472,16 @@ namespace ReserveBlockCore.Controllers
 
                         if (!string.IsNullOrWhiteSpace(name))
                         {
+                            name = name.ToLower();
+
+                            var limit = Globals.ADNRLimit;
+
+                            if(name.Length > limit)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "A DNR may only be a max of 65 characters" });
+                                return output;
+                            }
+
                             var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                             if (!nameCharCheck)
                             {

@@ -27,6 +27,7 @@ namespace ReserveBlockCore
 
         #region Global General Variables
 
+        public const int ADNRLimit = 65;
         public static int BlockLock = 350000;
         public static string Platform = "";
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
