@@ -573,6 +573,8 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     if (!string.IsNullOrWhiteSpace(name))
                                                     {
+                                                        if (!name.Contains(".rbx"))
+                                                            name = name + ".rbx";
                                                         await Account.AddAdnrToAccount(localTransaction.FromAddress, name);
                                                     }
                                                 }
