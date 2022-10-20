@@ -149,45 +149,111 @@ namespace ReserveBlockCore.Utilities
                 {
                     if (feature.FeatureName == FeatureName.Evolving)
                     {
+                        List<object> myArrayObj = new List<object>();
+                        List<EvolvingFeature> myArray = new List<EvolvingFeature>();
+                        bool useObject = false;
                         var count = 0;
-                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-                        myArray.ForEach(x => {
-                            var evolveDict = (EvolvingFeature)myArray[count];
-                            SmartContractAsset evoAsset = new SmartContractAsset();
-                            if (evolveDict.SmartContractAsset != null)
-                            {
-
-                                var assetEvo = evolveDict.SmartContractAsset;
-                                evoAsset.Name = assetEvo.Name;
-                                if (!assets.Contains(evoAsset.Name))
+                        try
+                        {
+                            myArray = ((List<EvolvingFeature>)feature.FeatureFeatures);
+                        }
+                        catch
+                        {
+                            //need to explore why these are serializing weirdly. Might make more sense to json them in future.
+                            myArrayObj = ((object[])feature.FeatureFeatures).ToList();
+                            useObject = true;
+                        }
+                        if(useObject)
+                        {
+                            myArrayObj.ForEach(x => {
+                                var evolveDict = (EvolvingFeature)myArrayObj[count];
+                                SmartContractAsset evoAsset = new SmartContractAsset();
+                                if (evolveDict.SmartContractAsset != null)
                                 {
-                                    assets.Add(evoAsset.Name);
-                                }
-                                count += 1;
-                            }
 
-                        });
+                                    var assetEvo = evolveDict.SmartContractAsset;
+                                    evoAsset.Name = assetEvo.Name;
+                                    if (!assets.Contains(evoAsset.Name))
+                                    {
+                                        assets.Add(evoAsset.Name);
+                                    }
+                                    count += 1;
+                                }
+
+                            });
+                        }
+                        else
+                        {
+                            myArray.ForEach(x => {
+                                var evolveDict = myArray[count];
+                                SmartContractAsset evoAsset = new SmartContractAsset();
+                                if (evolveDict.SmartContractAsset != null)
+                                {
+
+                                    var assetEvo = evolveDict.SmartContractAsset;
+                                    evoAsset.Name = assetEvo.Name;
+                                    if (!assets.Contains(evoAsset.Name))
+                                    {
+                                        assets.Add(evoAsset.Name);
+                                    }
+                                    count += 1;
+                                }
+
+                            });
+                        }
+                        
                     }
                     if (feature.FeatureName == FeatureName.MultiAsset)
                     {
+                        List<object> myArrayObj = new List<object>();
+                        List<MultiAssetFeature> myArray = new List<MultiAssetFeature>();
+                        bool useObject = false;
                         var count = 0;
-                        var myArray = ((object[])feature.FeatureFeatures).ToList();
+                        try
+                        {
+                            myArray = ((List<MultiAssetFeature>)feature.FeatureFeatures);
+                        }
+                        catch
+                        {
+                            myArrayObj = ((object[])feature.FeatureFeatures).ToList();
+                            useObject = true;
+                        }
 
-                        myArray.ForEach(x => {
-                            var multiAssetDict = (MultiAssetFeature)myArray[count];
+                        if(useObject)
+                        {
+                            myArrayObj.ForEach(x => {
+                                var multiAssetDict = (MultiAssetFeature)myArrayObj[count];
 
-                            if (multiAssetDict != null)
-                            {
-                                var fileName = multiAssetDict.FileName;
-                                if (!assets.Contains(fileName))
+                                if (multiAssetDict != null)
                                 {
-                                    assets.Add(fileName);
+                                    var fileName = multiAssetDict.FileName;
+                                    if (!assets.Contains(fileName))
+                                    {
+                                        assets.Add(fileName);
+                                    }
                                 }
-                            }
-                            count += 1;
+                                count += 1;
 
-                        });
+                            });
+                        }
+                        else
+                        {
+                            myArray.ForEach(x => {
+                                var multiAssetDict = myArray[count];
 
+                                if (multiAssetDict != null)
+                                {
+                                    var fileName = multiAssetDict.FileName;
+                                    if (!assets.Contains(fileName))
+                                    {
+                                        assets.Add(fileName);
+                                    }
+                                }
+                                count += 1;
+
+                            });
+
+                        }
                     }
                 }
             }
