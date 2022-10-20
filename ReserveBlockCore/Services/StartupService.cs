@@ -258,6 +258,12 @@ namespace ReserveBlockCore.Services
                         pool.DeleteManySafe(x => x.Hash == tx.Hash);
                         memTxDeleted = true;
                     }
+
+                    if(tx.TransactionRating == TransactionRating.F)
+                    {
+                        pool.DeleteManySafe(x => x.Hash == tx.Hash);
+                        memTxDeleted = true;
+                    }
                 }
 
                 DbContext.DB.Checkpoint();
