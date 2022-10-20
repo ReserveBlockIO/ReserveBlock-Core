@@ -225,7 +225,7 @@ namespace ReserveBlockCore.Services
 
             };
             var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);            
-            Globals.Locators[beaconLoc2.BeaconUID] = beaconLocJson2.ToBase64();
+            //Globals.Locators[beaconLoc2.BeaconUID] = beaconLocJson2.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
@@ -237,7 +237,7 @@ namespace ReserveBlockCore.Services
             };
 
             var beaconLocJson3 = JsonConvert.SerializeObject(beaconLoc3);
-            Globals.Locators[beaconLoc3.BeaconUID] = beaconLocJson3.ToBase64();
+            //Globals.Locators[beaconLoc3.BeaconUID] = beaconLocJson3.ToBase64();
         }
         internal static void ClearStaleMempool()
         {
