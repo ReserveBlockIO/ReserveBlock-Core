@@ -820,7 +820,16 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodes()
         {
             string output = "";
-            var validators = Globals.FortisPool.Values.ToList();
+            var validators = Globals.FortisPool.Values.Select(x => new
+            {
+                x.Context.ConnectionId,
+                x.ConnectDate,
+                x.LastAnswerSendDate,
+                x.IpAddress,
+                x.Address,
+                x.UniqueName,
+                x.WalletVersion
+            }).ToList();
 
             output = JsonConvert.SerializeObject(validators);
 
