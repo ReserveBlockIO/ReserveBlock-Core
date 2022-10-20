@@ -218,7 +218,7 @@ namespace ReserveBlockCore.Services
                                 var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
                                 rejectBlock = txResult == false ? rejectBlock = true : false;
                                 //check for duplicate tx
-                                if (blkTransaction.TransactionType != TransactionType.TX)
+                                if (blkTransaction.TransactionType != TransactionType.TX && blkTransaction.TransactionType != TransactionType.ADNR)
                                 {
                                     if(blkTransaction.Data != null)
                                     {
@@ -228,7 +228,7 @@ namespace ReserveBlockCore.Services
                                             var scData = scDataArray[0];
 
                                             var function = (string?)scData["Function"];
-                                            var scUID = (string?)scData["ContractUID"];
+                                            
                                             if (!string.IsNullOrWhiteSpace(function))
                                             {
                                                 var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
@@ -236,8 +236,11 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     foreach (var otx in otherTxs)
                                                     {
-                                                        if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                                        if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                            otx.TransactionType == TransactionType.NFT_BURN ||
+                                                            otx.TransactionType == TransactionType.NFT_MINT)
                                                         {
+                                                            var scUID = (string?)scData["ContractUID"];
                                                             if (otx.Data != null)
                                                             {
                                                                 var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
