@@ -540,10 +540,7 @@ namespace ReserveBlockCore.P2P
                             if (!isTxStale)
                             {
                                 var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
-                                if (!isCraftedIntoBlock)
-                                {
-                                }
-                                else
+                                if (isCraftedIntoBlock)
                                 {
                                     try
                                     {

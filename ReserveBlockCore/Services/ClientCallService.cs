@@ -18,7 +18,6 @@ namespace ReserveBlockCore.Services
 {
     public class ClientCallService : IHostedService, IDisposable
     {
-
         #region Timers and Private Variables
         private readonly IHubContext<P2PAdjServer> _hubContext;
         private readonly IHostApplicationLifetime _appLifetime;
@@ -653,7 +652,8 @@ namespace ReserveBlockCore.Services
                                                             nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
 
                                                             taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                            //await ProcessFortisPool_New(taskAnswerList);
+
+                                                            await ProcessFortisPool_New(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
 
                                                             foreach (var answer in Globals.TaskAnswerDict_New.Values)

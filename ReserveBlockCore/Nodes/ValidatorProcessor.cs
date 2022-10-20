@@ -142,16 +142,8 @@ namespace ReserveBlockCore.Nodes
                                 }
                                 else
                                 {
-
                                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-                                    var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
-                                    var rating = await TransactionRatingService.GetTransactionRating(transaction);
-
-                                    if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
-                                    {
-
-                                    }
-                                    else
+                                    if (isCraftedIntoBlock)
                                     {
                                         try
                                         {
