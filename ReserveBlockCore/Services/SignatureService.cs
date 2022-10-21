@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Services
                 //5. validate new signature
                 var sigScriptArray = sigScript.Split('.', 2);
                 var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-                if (Globals.LastBlock.Height > Globals.BlockLock)
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
                     //This is a patch for sigs with 0000 start point.
                     if (pubKeyDecoded.Length / 2 == 63)
@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Services
             {
                 var sigScriptArray = sigScript.Split('.', 2);
                 var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-                if (Globals.LastBlock.Height > Globals.BlockLock)
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
                     //This is a patch for sigs with 0000 start point. remove lock after update has been achieved.
                     if (pubKeyDecoded.Length / 2 == 63)

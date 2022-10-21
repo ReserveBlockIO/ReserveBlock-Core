@@ -925,7 +925,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height > Globals.BlockLock)
+            if(Globals.LastBlock.Height >= Globals.BlockLock)
             {
                 await DoWork_New();
                 
