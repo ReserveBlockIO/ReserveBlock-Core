@@ -208,23 +208,20 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return false;
 
-
-                var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
-                var endTimer = DateTime.UtcNow;
-                var totalMS = (endTimer - startTimer).Milliseconds;
-
                 Globals.Nodes[IPAddress] = new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
-                    NodeHeight = remoteNodeHeight,
-                    NodeLastChecked = startTimer,
-                    NodeLatency = totalMS,
+                    NodeHeight = 0,//needs update
+                    NodeLastChecked = null,
+                    NodeLatency = 0,//needs update
                     IsSendingBlock = 0,
                     SendingBlockTime = 0,
                     TotalDataSent = 0
                 };
+
+                var node = Globals.Nodes[IPAddress];
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);
 
                 return true;
             }
