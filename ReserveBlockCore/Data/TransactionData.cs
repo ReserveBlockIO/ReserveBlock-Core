@@ -264,6 +264,21 @@ namespace ReserveBlockCore.Data
                                 }
                             }
                         }
+                        else
+                        {
+                            var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                            if (txToDelete != null)
+                            {
+                                try
+                                {
+                                    collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
+                                }
+                                catch (Exception ex)
+                                {
+                                    DbContext.Rollback();
+                                }
+                            }
+                        }
                     }
                 });
             }
