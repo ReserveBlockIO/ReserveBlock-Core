@@ -39,7 +39,7 @@ namespace ReserveBlockCore.Models
 
             if(account != null)
             {
-                account.ADNR = name;
+                account.ADNR = name.ToLower();
                 accounts.UpdateSafe(account);
             }
         }

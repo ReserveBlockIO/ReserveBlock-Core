@@ -111,7 +111,9 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            if(ToAddress.ToLower().EndsWith(".rbx"))
+            var adnrCheck = ToAddress.ToLower().EndsWith(".rbx");
+
+            if (adnrCheck)
             {
                 var result = Adnr.GetAddress(ToAddress);
                 if(result.Item1 == true)
