@@ -137,12 +137,25 @@ namespace ReserveBlockCore.Data
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
 
+            var transactionPool = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
+            transactionPool.EnsureIndexSafe(x => x.Hash, false);
+            transactionPool.EnsureIndexSafe(x => x.FromAddress, false);
+            transactionPool.EnsureIndexSafe(x => x.ToAddress, false);
+
+            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
+            transactions.EnsureIndexSafe(x => x.Hash, false);
+            transactions.EnsureIndexSafe(x => x.FromAddress, false);
+            transactions.EnsureIndexSafe(x => x.ToAddress, false);
+
+            var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);            
+            aTrei.EnsureIndexSafe(x => x.Key, false);
+
+            var peers = DbContext.DB_Peers.GetCollection<Peers>(DbContext.RSRV_PEERS);
+            peers.EnsureIndex(x => x.PeerIP, true);
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
-
-            
         }        
         public static void BeginTrans()
         {

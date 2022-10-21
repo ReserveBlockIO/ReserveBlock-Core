@@ -351,15 +351,6 @@ namespace ReserveBlockCore.Data
             try
             {
                 var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-                //var test = blocks.EnsureIndexSafe(x => x.Height);
-                //if(test == true)
-                //{
-                //    Console.WriteLine("Ensure Index OK");
-                //}
-                //else
-                //{
-                //    Console.WriteLine("Ensure Index Fail");
-                //}
                 return blocks;
             }
             catch(Exception ex)
@@ -377,8 +368,7 @@ namespace ReserveBlockCore.Data
         }
         public static Block GetBlockByHeight(long height)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Height); 
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
             var block = blocks.FindOne(x => x.Height == height);
             return block;
         }
@@ -386,8 +376,7 @@ namespace ReserveBlockCore.Data
 
         public static Block GetBlockByHash(string hash)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Hash); 
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -455,8 +444,7 @@ namespace ReserveBlockCore.Data
         }
         public static void AddBlock(Block block)
         {
-            var blocks = GetBlocks();
-            //blocks.EnsureIndexSafe(x => x.Height);
+            var blocks = GetBlocks();            
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
@@ -486,8 +474,7 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Block> GetBlocksByValidator(string address)
         {
 
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Validator);
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);            
             var query = blocks.Query()
                 .OrderByDescending(x => x.Height)
                 .Where(x => x.Validator == address)
