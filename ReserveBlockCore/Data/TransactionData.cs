@@ -448,19 +448,6 @@ namespace ReserveBlockCore.Data
             var tx = transactions.FindOne(x => x.Hash == hash);
             return tx;
         }
-
-        //public static IEnumerable<Transaction> GetTxnsByHeight(long height, int limit = 50)
-        //{
-        //    var transactions = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    transactions.EnsureIndexSafe(x => x.Timestamp);
-        //    var query = transactions.Query()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Where(x => x.Height == height)
-        //        .Limit(limit).ToList();
-        //    return query;
-
-        //}
-
         public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);

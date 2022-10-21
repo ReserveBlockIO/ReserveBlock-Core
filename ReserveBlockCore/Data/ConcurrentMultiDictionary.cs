@@ -14,8 +14,29 @@ namespace ReserveBlockCore.Data
 			set {
 				lock (WriteLock)
 				{
-					Dict1[key.Item1] = (key.Item2, value);
-					Dict2[key.Item2] = (key.Item1, value);
+					if(Dict1.TryGetValue(key.Item1, out var Out1))
+                    {
+						Dict1[key.Item1] = (key.Item2, value);
+						var Comparer = EqualityComparer<K2>.Default;
+						if (Comparer.Equals(Out1.Item1, key.Item2))
+							Dict2.TryRemove(Out1.Item1, out _);
+						Dict2[key.Item2] = (key.Item1, value);
+					}
+					else if (Dict2.TryGetValue(key.Item2, out var Out2))
+					{
+						Dict2[key.Item2] = (key.Item1, value);
+						UseDict2 = true;
+						var Comparer = EqualityComparer<K1>.Default;
+						if (Comparer.Equals(Out2.Item1, key.Item1))
+							Dict1.TryRemove(Out2.Item1, out _);
+						Dict1[key.Item1] = (key.Item2, value);
+						UseDict2 = false;
+					}
+					else
+                    {
+						Dict1[key.Item1] = (key.Item2, value);
+						Dict2[key.Item2] = (key.Item1, value);
+					}
 				}
 			}
 		}
@@ -49,7 +70,7 @@ namespace ReserveBlockCore.Data
 				{
 					Dict1[key] = (newKey, Out.Item2);
 					Dict2[newKey] = (key, Out.Item2);
-					Dict2.TryRemove(Out.Item1, out var test);					
+					Dict2.TryRemove(Out.Item1, out var test);
 				}
 
 				return true;
@@ -64,7 +85,7 @@ namespace ReserveBlockCore.Data
 				if (Dict1.TryRemove(key, out var Out1))
 				{
 					KeyValue = Out1;
-					(K2 key2, _) = Out1;					
+					(K2 key2, _) = Out1;
 					Dict2.TryRemove(key2, out var Out2);
 					return true;
 				}
@@ -81,7 +102,7 @@ namespace ReserveBlockCore.Data
 				if (Dict2.TryRemove(key, out var Out1))
 				{
 					KeyValue = Out1;
-					(K1 key2, _) = Out1;					
+					(K1 key2, _) = Out1;
 					Dict1.TryRemove(key2, out var Out2);
 					return true;
 				}

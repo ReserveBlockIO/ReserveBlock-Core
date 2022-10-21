@@ -291,8 +291,7 @@ namespace ReserveBlockCore.Data
 		{
             try
             {
-				var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-				//accounts.EnsureIndexSafe(x => x.id);
+				var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);				
 				return accounts;
 			}
 			catch(Exception ex)
