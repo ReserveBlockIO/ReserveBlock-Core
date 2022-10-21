@@ -204,7 +204,7 @@ namespace ReserveBlockCore.P2P
                     }                    
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,2));
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,8));
                 if (hubConnection.ConnectionId == null)
                     return false;
 
@@ -383,46 +383,46 @@ namespace ReserveBlockCore.P2P
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace($":{Globals.Port}", "")))
-                .Union(Globals.BannedIPs.Where(x => x.Value).Select(x => x.Key));
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
+                .Union(Globals.BannedIPs.Keys);
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
-                .OrderBy(x => rnd.Next())                
+                .OrderBy(x => rnd.Next())
                 .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
-                .OrderBy(x => rnd.Next()))                
+                .OrderBy(x => rnd.Next()))
                 .ToArray();
 
-            var NodeCount = Globals.Nodes.Count;
-            foreach(var peer in newPeers)
+            while (Globals.Nodes.Count == 0)
             {
-                if (NodeCount == Globals.MaxPeers)
-                    break;
-
-                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
-                var conResult = await Connect(url);
-                if (conResult != false)
+                var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
                 {
-                    NodeCount++;
-                    ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
-                    peer.IsOutgoing = true;
-                    peer.FailCount = 0; //peer responded. Reset fail count
-                    peerDB.UpdateSafe(peer);
-                }
-                else
-                {
-                    //peer.FailCount += 1;
-                    //peerDB.UpdateSafe(peer);
-                }
+                    try
+                    {
+                        var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+                        var conResult = await Connect(url);
+                        if (conResult != false)
+                        {
+                            ConsoleWriterService.Output($"Connected to {Globals.Nodes.Count}/8");
+                            peer.IsOutgoing = true;
+                            peer.FailCount = 0; //peer responded. Reset fail count
+                            peerDB.UpdateSafe(peer);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                });
             }
-                                 
-            return NodeCount != 0;
-        }
 
+
+            return Globals.MaxPeers != 0;
+        }
         public static async Task<bool> PingBackPeer(string peerIP)
         {
             try
