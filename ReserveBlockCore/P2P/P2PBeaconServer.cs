@@ -326,7 +326,7 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName && x.IPAdress == peerIP).FirstOrDefault();
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName && x.IPAdress == peerIP && x.IsReady != true).FirstOrDefault();
                                 if (bdCheck == null)
                                 {
                                     var bd = new BeaconData
@@ -379,7 +379,7 @@ namespace ReserveBlockCore.P2P
                     var beacon = BeaconData.GetBeacon();
                     if (beacon != null)
                     {
-                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.IPAdress == peerIP);
+                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.IPAdress == peerIP && x.IsReady == false);
                         if (beaconData != null)
                         {
                             beaconData.IsReady = true;

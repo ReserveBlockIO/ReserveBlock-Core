@@ -46,6 +46,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     if (!string.IsNullOrWhiteSpace(blockHeight))
                     {
                         evolveFeature.EvolveBlockHeight = Convert.ToInt64(evArray[5].ToString());
+                        evolveFeature.IsDynamic = true;
                     }
                     else
                     {
@@ -82,6 +83,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 {
                     DateTime myDate = new DateTime(Convert.ToInt64(evolveDateTicks), DateTimeKind.Utc);
                     evolveFeature.EvolveDate = myDate;
+                    evolveFeature.IsDynamic = true;
                 }
                 else
                 {
