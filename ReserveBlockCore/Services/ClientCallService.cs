@@ -256,7 +256,17 @@ namespace ReserveBlockCore.Services
                     if (Globals.Adjudicate && !Globals.IsTestNet)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime).ToList();
+                        var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime)
+                            .Select(x => new
+                            {
+                                x.Context.ConnectionId,
+                                x.ConnectDate,
+                                x.LastAnswerSendDate,
+                                x.IpAddress,
+                                x.Address,
+                                x.UniqueName,
+                                x.WalletVersion
+                            }).ToList();
 
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
@@ -267,7 +277,7 @@ namespace ReserveBlockCore.Services
                         {
                             try
                             {
-                                await _hubContext.Clients.Client(explorerNode.Context.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                                await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
                             }
                             catch 
                             {

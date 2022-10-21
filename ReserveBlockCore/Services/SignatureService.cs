@@ -53,6 +53,9 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                if (sigScript == null)
+                    return false;
+
                 var sigScriptArray = sigScript.Split('.', 2);
                 var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
