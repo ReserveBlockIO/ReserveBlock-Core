@@ -75,7 +75,7 @@ namespace ReserveBlockCore.Data
                 }
 
                 //Get tx's from Mempool                
-                var processedTxPool = TransactionData.ProcessTxPool();
+                var processedTxPool = await TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
                 var lastBlock = Globals.LastBlock;
@@ -212,7 +212,7 @@ namespace ReserveBlockCore.Data
                 }
 
                 //Get tx's from Mempool                
-                var processedTxPool = TransactionData.ProcessTxPool();
+                var processedTxPool = await TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
                 var lastBlock = Globals.LastBlock;

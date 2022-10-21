@@ -152,7 +152,7 @@ namespace ReserveBlockCore.Data
             return null;
         }
 
-        public static List<Transaction> ProcessTxPool()
+        public static async Task<List<Transaction>> ProcessTxPool()
         {
             var collection = DbContext.DB_Mempool.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
 
@@ -164,7 +164,7 @@ namespace ReserveBlockCore.Data
 
             if(sizedMempoolList.Count() > 0)
             {
-                sizedMempoolList.ForEach(tx => {
+                sizedMempoolList.ForEach(async tx =>  {
                     var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
                     if(!txExist)
                     {
@@ -185,7 +185,9 @@ namespace ReserveBlockCore.Data
                                     {
                                         foreach (var otx in otherTxs)
                                         {
-                                            if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                            if (otx.TransactionType == TransactionType.NFT_TX || 
+                                            otx.TransactionType == TransactionType.NFT_BURN ||
+                                            otx.TransactionType == TransactionType.NFT_MINT)
                                             {
                                                 if (otx.Data != null)
                                                 {
@@ -201,7 +203,6 @@ namespace ReserveBlockCore.Data
                                                             if (ottxscUID == scUID)
                                                             {
                                                                 reject = true;
-
                                                             }
                                                         }
                                                     }
@@ -224,7 +225,12 @@ namespace ReserveBlockCore.Data
                                 var totalSend = (tx.Amount + tx.Fee);
                                 if (balance >= totalSend)
                                 {
-                                    approvedMemPoolList.Add(tx);
+                                    var dblspndChk = await DoubleSpendReplayCheck(tx);
+                                    var isCraftedIntoBlock = await HasTxBeenCraftedIntoBlock(tx);
+                                    var txVerify = await TransactionValidatorService.VerifyTX(tx);
+
+                                    if(txVerify && !dblspndChk && !isCraftedIntoBlock)
+                                        approvedMemPoolList.Add(tx);
                                 }
                                 else
                                 {
