@@ -150,8 +150,8 @@ namespace ReserveBlockCore.Data
             var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);            
             aTrei.EnsureIndexSafe(x => x.Key, false);
 
-            var peers = DbContext.DB_Peers.GetCollection<Peers>(DbContext.RSRV_PEERS);
-            peers.EnsureIndex(x => x.PeerIP, true);
+            //var peers = DbContext.DB_Peers.GetCollection<Peers>(DbContext.RSRV_PEERS);
+            //peers.EnsureIndex(x => x.PeerIP, true);
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);

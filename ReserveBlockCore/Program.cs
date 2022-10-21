@@ -128,7 +128,6 @@ namespace ReserveBlockCore
 
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
-            await StartupService.SetLeadAdjudicator();
 
             StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
@@ -138,7 +137,6 @@ namespace ReserveBlockCore
             StartupService.BootstrapBeacons();
             await StartupService.EstablishBeaconReference();
             
-
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
 
@@ -203,7 +201,7 @@ namespace ReserveBlockCore
             
             StartupService.CheckForDuplicateBlocks();
 
-            
+            await StartupService.SetLeadAdjudicator();
 
             if (Globals.DatabaseCorruptionDetected == true)
             {
