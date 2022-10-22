@@ -237,9 +237,7 @@ namespace ReserveBlockCore.P2P
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
-            return await SignalRQueue(Context, 128, async () => {
-                return Globals.LastBlock.Height;
-            });            
+            return Globals.LastBlock.Height;
         }
 
         #endregion

@@ -816,7 +816,6 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Block
-
         public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
         {
             if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
@@ -826,7 +825,7 @@ namespace ReserveBlockCore.P2P
             Block Block = null;
             try
             {
-                var source = new CancellationTokenSource(30000);
+                var source = new CancellationTokenSource(10000);
                 Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
                 if (Block != null)
                 {
@@ -842,9 +841,11 @@ namespace ReserveBlockCore.P2P
                 if (node != null)
                 {
                     node.TotalDataSent += blockSize;
-                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;                    
+                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
                 }
             }
+
+            await P2PClient.RemoveNode(node);
 
             return null;
         }
@@ -858,7 +859,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 

@@ -485,10 +485,11 @@ namespace ReserveBlockCore.Services
             {
                 if(Globals.IsResyncing == false)
                 {
+                    DateTime startTime = DateTime.UtcNow;
                     var result = await P2PClient.GetCurrentHeight();
                     if (result.Item1 == true)
                     {
-                        ConsoleWriterService.Output("Block downloads started.");
+                        ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
                         await BlockDownloadService.GetAllBlocks();
                     }
@@ -500,7 +501,10 @@ namespace ReserveBlockCore.Services
 
                         if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                         {
-                            ConsoleWriterService.Output("Block downloads finished.");
+                            DateTime endTime = DateTime.UtcNow;
+                            ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
+                            var difference = (endTime - startTime);
+                            ConsoleWriterService.Output($"Total Time to Sync: {difference}");
                             LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
                             download = false; //exit the while.
                             Globals.StopAllTimers = false;
