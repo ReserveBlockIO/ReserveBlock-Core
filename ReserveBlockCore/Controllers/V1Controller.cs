@@ -464,7 +464,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if(Globals.EncryptPassword.Length > 0)
                 {
-                    var account = AccountData.RestoreAccount(id);
+                    var account = await AccountData.RestoreAccount(id);
 
                     if (account == null)
                     {
@@ -486,7 +486,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var account = AccountData.RestoreAccount(id);
+                var account = await AccountData.RestoreAccount(id);
 
                 if (account == null)
                 {

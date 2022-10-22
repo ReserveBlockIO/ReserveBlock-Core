@@ -190,7 +190,7 @@ namespace ReserveBlockCore.Commands
                                 var privKey = await ReadLineUtility.ReadLine();
                                 if(!string.IsNullOrEmpty(privKey))
                                 {
-                                    var restoredAccount = new Account().Restore(privKey);
+                                    var restoredAccount = await new Account().Restore(privKey);
                                     AccountData.WalletInfo(restoredAccount);
                                 }
                             }
@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Commands
                             var privKey = await ReadLineUtility.ReadLine();
                             if (!string.IsNullOrEmpty(privKey))
                             {
-                                var restoredAccount = new Account().Restore(privKey);
+                                var restoredAccount = await new Account().Restore(privKey);
                                 AccountData.WalletInfo(restoredAccount);
                             }
                         }

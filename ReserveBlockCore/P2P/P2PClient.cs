@@ -212,9 +212,9 @@ namespace ReserveBlockCore.P2P
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
-                    NodeHeight = 0,//needs update
+                    NodeHeight = 0,
                     NodeLastChecked = null,
-                    NodeLatency = 0,//needs update
+                    NodeLatency = 0,
                     IsSendingBlock = 0,
                     SendingBlockTime = 0,
                     TotalDataSent = 0

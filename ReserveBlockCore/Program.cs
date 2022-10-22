@@ -97,7 +97,7 @@ namespace ReserveBlockCore
                         {
                             var keySplit = argC.Split(new char[] { '=' });
                             var privateKey = keySplit[1];
-                            var account = AccountData.RestoreAccount(privateKey);
+                            var account = await AccountData.RestoreAccount(privateKey);
                             if (account != null)
                             {
                                 Console.WriteLine("Account Loaded: " + account.Address);
@@ -221,7 +221,6 @@ namespace ReserveBlockCore
                 Console.WriteLine(ex.ToString());
             }
 
-            
             StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
 

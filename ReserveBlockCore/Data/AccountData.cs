@@ -50,7 +50,7 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
-		public static Account RestoreAccount(string privKey, bool rescanForTx = false)
+		public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false)
         {
 			Account account = new Account();
             try
@@ -66,6 +66,9 @@ namespace ReserveBlockCore.Data
 				account.Address = GetHumanAddress(account.PublicKey);
 				//Update balance from state trei
 				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
+				var adnrState = Adnr.GetAdnr(account.Address);
+
+				account.ADNR = adnrState != null ? adnrState : null;
 				account.Balance = accountState != null ? accountState.Balance : 0M;
 
 				var validators = Validators.Validator.GetAll();
@@ -90,7 +93,7 @@ namespace ReserveBlockCore.Data
                     }
 					if(Globals.IsWalletEncrypted == true)
 					{
-						WalletEncryptionService.EncryptWallet(account, true);
+						await WalletEncryptionService.EncryptWallet(account, true);
 					}
 				}
 			}

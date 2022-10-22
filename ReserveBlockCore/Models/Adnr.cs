@@ -41,13 +41,13 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region GetAddress(string addr)
-        public static (bool, string) GetAddress(string addr)
+        public static (bool, string) GetAddress(string name)
         {
             bool result = false;
             string strResult = "";
 
             var adnr = GetAdnr();
-            var adnrExist = adnr.FindOne(x => x.Name == addr.ToLower());
+            var adnrExist = adnr.FindOne(x => x.Name == name.ToLower());
             if (adnrExist != null)
             {
                 strResult = adnrExist.Address;
@@ -55,6 +55,24 @@ namespace ReserveBlockCore.Models
             }
 
             return (result, strResult);
+        }
+        #endregion
+
+        #region GetAdnr(string addr)
+        public static string? GetAdnr(string addr)
+        {
+            string? strResult = null;
+
+            var adnr = GetAdnr();
+            if(adnr != null)
+            {
+                var adnrExist = adnr.FindOne(x => x.Address == addr);
+                if (adnrExist != null)
+                {
+                    strResult = adnrExist.Name;
+                }
+            }
+            return strResult;
         }
         #endregion
 
