@@ -421,7 +421,7 @@ namespace ReserveBlockCore.P2P
                         var conResult = await Connect(url);
                         if (conResult != false)
                         {
-                            ConsoleWriterService.Output($"Connected to {Globals.Nodes.Count}/8");
+                            ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
                             peer.IsOutgoing = true;
                             peer.FailCount = 0; //peer responded. Reset fail count
                             peerDB.UpdateSafe(peer);
@@ -446,7 +446,7 @@ namespace ReserveBlockCore.P2P
                             var conResult = await Connect(url);
                             if (conResult != false)
                             {
-                                ConsoleWriterService.Output($"Connected to {Globals.Nodes.Count}/8");
+                                ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
                                 peer.IsOutgoing = true;
                                 peer.FailCount = 0; //peer responded. Reset fail count
                                 peerDB.UpdateSafe(peer);
