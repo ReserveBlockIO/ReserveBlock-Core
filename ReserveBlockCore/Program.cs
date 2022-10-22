@@ -63,7 +63,7 @@ namespace ReserveBlockCore
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
-                argList.ForEach(x => {
+                argList.ForEach(async x => {
                     var argC = x.ToLower();
                     if (argC == "enableapi")
                     {
