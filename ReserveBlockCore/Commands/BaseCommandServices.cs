@@ -450,7 +450,7 @@ namespace ReserveBlockCore.Commands
             {
                 if (reconnect == "y")
                 {
-                    await StartupService.StartupPeers();
+                    var result = await P2PClient.ConnectToPeers(true);
                 }
                 else
                 {

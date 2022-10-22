@@ -208,6 +208,22 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return false;
 
+                //var startTimer = DateTime.UtcNow;
+                //long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
+                //var endTimer = DateTime.UtcNow;
+                //var totalMS = (endTimer - startTimer).Milliseconds;
+
+                //Globals.Nodes[IPAddress] = new NodeInfo
+                //{
+                //    Connection = hubConnection,
+                //    NodeIP = IPAddress,
+                //    NodeHeight = remoteNodeHeight,
+                //    NodeLastChecked = startTimer,
+                //    NodeLatency = totalMS,
+                //    IsSendingBlock = 0,
+                //    SendingBlockTime = 0,
+                //    TotalDataSent = 0
+                //};
                 Globals.Nodes[IPAddress] = new NodeInfo
                 {
                     Connection = hubConnection,
@@ -374,7 +390,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Connect to Peers
-        public static async Task<bool> ConnectToPeers()
+        public static async Task<bool> ConnectToPeers(bool addMorePeers = false)
         {
             await NodeConnector.StartNodeConnecting();
             var peerDB = Peers.GetAll();
@@ -417,8 +433,59 @@ namespace ReserveBlockCore.P2P
                 });
             }
 
+            if(addMorePeers)
+            {
+                do
+                {
+                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                    await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
+                    {
+                        try
+                        {
+                            var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+                            var conResult = await Connect(url);
+                            if (conResult != false)
+                            {
+                                ConsoleWriterService.Output($"Connected to {Globals.Nodes.Count}/8");
+                                peer.IsOutgoing = true;
+                                peer.FailCount = 0; //peer responded. Reset fail count
+                                peerDB.UpdateSafe(peer);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+                    });
+                } while (Globals.Nodes.Count == 0);
+            }
 
             return Globals.MaxPeers != 0;
+
+            //var NodeCount = Globals.Nodes.Count;
+            //foreach (var peer in newPeers)
+            //{
+            //    if (NodeCount == Globals.MaxPeers)
+            //        break;
+
+            //    var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+            //    var conResult = await Connect(url);
+            //    if (conResult != false)
+            //    {
+            //        NodeCount++;
+            //        ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
+            //        peer.IsOutgoing = true;
+            //        peer.FailCount = 0; //peer responded. Reset fail count
+            //        peerDB.UpdateSafe(peer);
+            //    }
+            //    else
+            //    {
+            //        //peer.FailCount += 1;
+            //        //peerDB.UpdateSafe(peer);
+            //    }
+            //}
+
+
+            //return NodeCount != 0;
         }
         public static async Task<bool> PingBackPeer(string peerIP)
         {
@@ -795,7 +862,7 @@ namespace ReserveBlockCore.P2P
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
-                return (remoteNodeHeight, startTimer, totalMS); ;
+                return (remoteNodeHeight, startTimer, totalMS); 
             }
             catch { }
             return default;
