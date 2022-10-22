@@ -399,6 +399,10 @@ namespace ReserveBlockCore.P2P
             var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
                 .Union(Globals.BannedIPs.Keys);
 
+            if(Globals.IsTestNet)
+                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":13338", "")))
+                .Union(Globals.BannedIPs.Keys);
+
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
