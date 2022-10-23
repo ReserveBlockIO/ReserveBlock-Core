@@ -22,6 +22,7 @@ namespace ReserveBlockCore
         public static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? DBCommitTimer;//checks dbs and commits log files. 
+        public static Timer? ConnectionHistoryTimer;//process connections and history of them
 
         #endregion
 
@@ -124,6 +125,8 @@ namespace ReserveBlockCore
 
         public static ConcurrentMultiDictionary<string, string, FortisPool> FortisPool = new ConcurrentMultiDictionary<string, string, FortisPool>(); // IP address, RBX address
         public static ConcurrentMultiDictionary<string, string, BeaconPool> BeaconPool = new ConcurrentMultiDictionary<string, string, BeaconPool>(); // IP address, Reference
+        public static ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue> ConnectionHistoryDict = new ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue>();
+        public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
 
         public static TaskQuestion? CurrentTaskQuestion = null;
         public static TaskNumberAnswer? CurrentTaskNumberAnswer = null;

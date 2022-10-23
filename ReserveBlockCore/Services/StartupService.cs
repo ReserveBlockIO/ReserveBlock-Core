@@ -503,8 +503,6 @@ namespace ReserveBlockCore.Services
                         {
                             DateTime endTime = DateTime.UtcNow;
                             ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
-                            var difference = (endTime - startTime);
-                            ConsoleWriterService.Output($"Total Time to Sync: {difference}");
                             LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
                             download = false; //exit the while.
                             Globals.StopAllTimers = false;

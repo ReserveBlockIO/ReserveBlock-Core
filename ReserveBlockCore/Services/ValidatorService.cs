@@ -240,7 +240,7 @@ namespace ReserveBlockCore.Services
                 await P2PClient.DisconnectAdjudicator();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
-                Thread.Sleep(300);
+                Thread.Sleep(2000);
                 //Reset validator variable.
                 StartupService.SetValidator();
                 //Reconnect

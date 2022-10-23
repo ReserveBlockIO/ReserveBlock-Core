@@ -926,6 +926,14 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetConnectionHistory")]
+        public async Task<string> GetConnectionHistory()
+        {
+            var output = await ConnectionHistory.Read();
+
+            return output;
+        }
+
         [HttpGet("GetClientInfo")]
         public async Task<string> GetClientInfo()
         {
@@ -933,8 +941,6 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
-
-
 
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()

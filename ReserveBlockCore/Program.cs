@@ -2,6 +2,7 @@
 
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -156,6 +157,10 @@ namespace ReserveBlockCore
 
             Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
+
+            Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
+
 
             //add method to remove stale state trei records and stale validator records too
 
@@ -533,6 +538,32 @@ namespace ReserveBlockCore
             {
                 await DbContext.CheckPoint();
             }
+            
+        }
+
+        #endregion
+
+        #region Connection History Timer
+        private static async void connectionHistoryTimer_Elapsed(object sender)
+        {
+            try
+            {
+                if(Globals.Adjudicate)
+                {
+                    var connectionQueueList = Globals.ConnectionHistoryDict.Values.ToList();
+
+                    foreach (var cq in connectionQueueList)
+                    {
+                        new ConnectionHistory().Process(cq.IPAddress, cq.Address, cq.ConnectionTime, cq.WasSuccess);
+                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out var test);
+                    }
+
+                    var conList = await ConnectionHistory.Read();
+
+                    ConnectionHistory.WriteToConHistFile(conList);
+                }
+            }
+            catch { }
             
         }
 
