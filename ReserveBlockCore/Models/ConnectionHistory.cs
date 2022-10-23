@@ -44,7 +44,9 @@ namespace ReserveBlockCore.Models
             if(rec != null)
             {
                 rec.Address = address;
-                rec.IPAddress.Add(ipAddress);
+                var ipExist = rec.IPAddress.Any(x => x == ipAddress);
+                if (!ipExist)
+                    rec.IPAddress.Add(ipAddress);
                 rec.LongestConnectionTime = rec.LongestConnectionTime < connectionTime ? connectionTime : rec.LongestConnectionTime;
                 rec.ConnectionAttempts += 1;
                 rec.LastConnectionAttempt = DateTime.UtcNow;

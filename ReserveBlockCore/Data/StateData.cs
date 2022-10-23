@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Data
 {
@@ -325,10 +326,32 @@ namespace ReserveBlockCore.Data
                 scST.Nonce = 0;
                 scST.MD5List = md5List;
 
+                try
+                {
+                    var sc = SmartContractMain.GenerateSmartContractInMemory(data);
+                    if (sc.Features != null)
+                    {
+                        var evoFeatures = sc.Features.Where(x => x.FeatureName == FeatureName.Evolving).Select(x => x.FeatureFeatures).FirstOrDefault();
+                        var isDynamic = false;
+                        if (evoFeatures != null)
+                        {
+                            var evoFeatureList = (List<EvolvingFeature>)evoFeatures;
+                            foreach (var feature in evoFeatureList)
+                            {
+                                var evoFeature = (EvolvingFeature)feature;
+                                if (evoFeature.IsDynamic == true)
+                                    isDynamic = true;
+                            }
+                        }
+
+                        if (!isDynamic)
+                            scST.MinterManaged = true;
+                    }
+                }
+                catch { }
 
                 //Save to state trei
                 SmartContractStateTrei.SaveSmartContract(scST);
-                //SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);
             }
 
         }

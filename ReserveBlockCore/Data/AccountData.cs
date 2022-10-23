@@ -12,6 +12,7 @@ using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Extensions;
 using Spectre.Console;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Models.SmartContracts;
 
 namespace ReserveBlockCore.Data
 {
@@ -67,6 +68,8 @@ namespace ReserveBlockCore.Data
 				//Update balance from state trei
 				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
 				var adnrState = Adnr.GetAdnr(account.Address);
+				var scStateTrei = SmartContractStateTrei.GetSCST();
+				var scs = scStateTrei.Find(x => x.OwnerAddress == account.Address || (x.MinterAddress == account.Address && x.MinterManaged == true)).ToList();
 
 				account.ADNR = adnrState != null ? adnrState : null;
 				account.Balance = accountState != null ? accountState.Balance : 0M;
@@ -82,6 +85,27 @@ namespace ReserveBlockCore.Data
 
 					}
 				}
+
+				if(scs.Count() > 0)
+				{
+					foreach (var sc in scs)
+					{
+						try
+						{
+                            var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(sc.ContractData); });
+                            bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                            if (!isCompletedSuccessfully)
+                            {
+                                NFTLogUtility.Log("Failed to decompile smart contract in time.", "AccountData.RestoreAccount()");
+                            }
+                        }
+						catch(Exception ex)
+						{
+							ErrorLogUtility.LogError($"Failed to import Smart contract during account restore. SCUID: {sc.SmartContractUID}", "AccountData.RestoreAccount()");
+
+                        }
+                    }
+                }
 
 				var accountCheck = AccountData.GetSingleAccount(account.Address);
 				if(accountCheck == null)
