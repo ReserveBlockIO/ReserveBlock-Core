@@ -490,7 +490,8 @@ namespace ReserveBlockCore.Controllers
                             }
                             else
                             {
-                                var nameCheck = adnr.FindOne(x => x.Name == name);
+                                var nameRBX = name.ToLower() + ".rbx";
+                                var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                 if (nameCheck == null)
                                 {
                                     var result = await Adnr.CreateAdnrTx(address, name);

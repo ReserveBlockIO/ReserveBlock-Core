@@ -811,7 +811,8 @@ namespace ReserveBlockCore.Commands
                                     }
                                     else
                                     {
-                                        var nameCheck = adnr.FindOne(x => x.Name == name);
+                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                         if (nameCheck == null)
                                         {
                                             nameFound = false;
