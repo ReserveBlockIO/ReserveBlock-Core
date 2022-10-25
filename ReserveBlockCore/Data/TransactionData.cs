@@ -231,13 +231,13 @@ namespace ReserveBlockCore.Data
                                         var name = (string?)scData["Name"];
                                         if (!string.IsNullOrWhiteSpace(name))
                                         {
-                                            if (adnrNameList.Contains(name))
+                                            if (adnrNameList.Contains(name.ToLower()))
                                             {
                                                 reject = true;
                                             }
                                             else
                                             {
-                                                adnrNameList.Add(name);
+                                                adnrNameList.Add(name.ToLower());
                                             }
                                         }
                                     }
