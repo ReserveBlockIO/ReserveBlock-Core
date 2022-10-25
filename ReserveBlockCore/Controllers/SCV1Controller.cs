@@ -273,6 +273,9 @@ namespace ReserveBlockCore.Controllers
             {
                 var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
 
+                if (sc == null)
+                    return "null";
+
                 var result = await SmartContractReaderService.ReadSmartContract(sc);
 
                 var scMain = result.Item2;
