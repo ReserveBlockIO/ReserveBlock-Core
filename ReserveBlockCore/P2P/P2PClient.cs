@@ -416,12 +416,7 @@ namespace ReserveBlockCore.P2P
 
             while (Globals.Nodes.Count == 0)
             {
-                var maxDegParallelism = Globals.MaxPeers;
-                if(newPeers.Count() < Globals.MaxPeers)
-                {
-                    maxDegParallelism = newPeers.Count();
-                }
-                var options = new ParallelOptions { MaxDegreeOfParallelism = maxDegParallelism };
+                var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
                 await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
                 {
                     try
@@ -446,12 +441,7 @@ namespace ReserveBlockCore.P2P
             {
                 do
                 {
-                    var maxDegParallelism = Globals.MaxPeers;
-                    if (newPeers.Count() < Globals.MaxPeers)
-                    {
-                        maxDegParallelism = newPeers.Count();
-                    }
-                    var options = new ParallelOptions { MaxDegreeOfParallelism = maxDegParallelism };
+                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
                     if (newPeers.Count() > 0)
                     {
                         await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>

@@ -30,7 +30,7 @@ namespace ReserveBlockCore.Services
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Globals.LastBlock.Height + 1;
 
-                    var options = new ParallelOptions { MaxDegreeOfParallelism = 8 };
+                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
                     var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i)).ToArray();
                     heightToDownload += heightsFromNodes.Length;
                     await Parallel.ForEachAsync(heightsFromNodes, options, async (h, ct) => {
