@@ -219,7 +219,7 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()" });
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()", Name = account.ADNR });
 
             adnrTx = new Transaction
             {
@@ -300,7 +300,7 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()" });
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()", Name = account.ADNR });
 
             adnrTx = new Transaction
             {

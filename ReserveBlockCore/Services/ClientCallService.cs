@@ -256,7 +256,7 @@ namespace ReserveBlockCore.Services
                     if (Globals.Adjudicate && !Globals.IsTestNet)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime)
+                        var fortisPool = Globals.FortisPool.Values
                             .Select(x => new
                             {
                                 x.Context.ConnectionId,

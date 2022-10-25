@@ -388,18 +388,10 @@ namespace ReserveBlockCore.Services
                                                             var md5List = (string?)scData["MD5List"];
                                                             var scUID = (string?)scData["ContractUID"];
 
-                                                            var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                            bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-                                                            //testing
-                                                            //bool isCompletedSuccessfully = true;
-                                                            //transferTask.Wait();
-                                                            if (!isCompletedSuccessfully)
+                                                            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                                                            if(sc != null)
                                                             {
-                                                                NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
-                                                            }
-                                                            else
-                                                            {
-                                                                //download files here.
                                                                 if (localFromAddress == null)
                                                                 {
                                                                     if (locators != "NA")
@@ -408,9 +400,35 @@ namespace ReserveBlockCore.Services
                                                                         var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
                                                                         //await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
                                                                     }
-
                                                                 }
                                                             }
+                                                            else
+                                                            {
+                                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
+                                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+                                                                //testing
+                                                                //bool isCompletedSuccessfully = true;
+                                                                //transferTask.Wait();
+                                                                if (!isCompletedSuccessfully)
+                                                                {
+                                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                                                }
+                                                                else
+                                                                {
+                                                                    //download files here.
+                                                                    if (localFromAddress == null)
+                                                                    {
+                                                                        if (locators != "NA")
+                                                                        {
+                                                                            var assetList = await MD5Utility.GetAssetList(md5List);
+                                                                            var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
+                                                                            //await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                                        }
+
+                                                                    }
+                                                                }
+                                                            }
+                                                            
                                                         }
                                                         break;
                                                     case "Evolve()":
