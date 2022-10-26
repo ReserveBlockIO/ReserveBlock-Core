@@ -768,14 +768,13 @@ namespace ReserveBlockCore.Controllers
             var output = "";
 
             //Get SmartContractMain.IsPublic and set to True.
-            var scs = SmartContractMain.SmartContractData.GetSCs();
             var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            sc.IsPublic ^= true;
-
-            scs.UpdateSafe(sc);
-
+            if(sc != null)
+            {
+                sc.IsPublic ^= true;
+                SmartContractMain.SmartContractData.UpdateSmartContract(sc);
+            }
             return output;
-
         }
 
         [HttpGet("GetNFTAssetLocation/{scUID}/{**fileName}")]

@@ -62,8 +62,12 @@ namespace ReserveBlockCore.Models.SmartContracts
             {
                 var scs = GetSCs();
 
-                scs.InsertSafe(scMain);
+                var exist = scs.FindOne(x => x.SmartContractUID == scMain.SmartContractUID);
 
+                if (exist == null)
+                {
+                    scs.InsertSafe(scMain);
+                }
                 SaveSCLocaly(scMain, scText);
             }
 

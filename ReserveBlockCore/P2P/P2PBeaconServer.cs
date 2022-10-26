@@ -326,7 +326,12 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName && x.IPAdress == peerIP && x.IsReady != true).FirstOrDefault();
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && 
+                                x.AssetName == fileName && 
+                                x.IPAdress == peerIP && 
+                                x.IsReady != true && 
+                                x.NextAssetOwnerAddress == bsd.NextAssetOwnerAddress).FirstOrDefault();
+
                                 if (bdCheck == null)
                                 {
                                     var bd = new BeaconData
@@ -344,6 +349,10 @@ namespace ReserveBlockCore.P2P
                                     };
 
                                     var beaconResult = BeaconData.SaveBeaconData(bd);
+                                }
+                                else
+                                {
+                                    ErrorLogUtility.LogError($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "P2PBeaconService.ReceiveUploadRequest()");
                                 }
                             }
                         }
@@ -480,14 +489,18 @@ namespace ReserveBlockCore.P2P
                         beaconData.IsDownloaded = true;
                         beacon.UpdateSafe(beaconData);
                     }
+
+                    //remove all completed beacon request
+                    beacon.DeleteManySafe(x => x.IsDownloaded == true);
                 }
             }
+
+
 
             return result;
         }
 
         #endregion
-
 
         #region SignalR DOS Protection
 

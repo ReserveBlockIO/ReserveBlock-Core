@@ -40,7 +40,12 @@ namespace ReserveBlockCore.Models
         {
             var scs = GetSCST();
 
-            scs.InsertSafe(scMain);
+            var exist = scs.FindOne(x => x.SmartContractUID == scMain.SmartContractUID);
+
+            if(exist == null)
+            {
+                scs.InsertSafe(scMain);
+            }
         }
         public static void UpdateSmartContract(SmartContractStateTrei scMain)
         {
