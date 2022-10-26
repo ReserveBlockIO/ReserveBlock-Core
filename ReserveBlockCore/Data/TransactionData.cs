@@ -220,15 +220,13 @@ namespace ReserveBlockCore.Data
                             }
                             if (tx.TransactionType == TransactionType.ADNR)
                             {
-                                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                                if (scDataArray != null)
+                                var jobj = JObject.Parse(tx.Data);
+                                if (jobj != null)
                                 {
-                                    var scData = scDataArray[0];
-
-                                    var function = (string?)scData["Function"];
+                                    var function = (string)jobj["Function"];
                                     if (!string.IsNullOrWhiteSpace(function))
                                     {
-                                        var name = (string?)scData["Name"];
+                                        var name = (string?)jobj["Name"];
                                         if (!string.IsNullOrWhiteSpace(name))
                                         {
                                             if (adnrNameList.Contains(name.ToLower()))
