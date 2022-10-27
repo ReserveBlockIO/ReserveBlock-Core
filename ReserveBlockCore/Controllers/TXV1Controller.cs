@@ -472,6 +472,16 @@ namespace ReserveBlockCore.Controllers
 
                         if (!string.IsNullOrWhiteSpace(name))
                         {
+                            name = name.ToLower();
+
+                            var limit = Globals.ADNRLimit;
+
+                            if(name.Length > limit)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "A DNR may only be a max of 65 characters" });
+                                return output;
+                            }
+
                             var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                             if (!nameCharCheck)
                             {
@@ -480,7 +490,8 @@ namespace ReserveBlockCore.Controllers
                             }
                             else
                             {
-                                var nameCheck = adnr.FindOne(x => x.Name == name);
+                                var nameRBX = name.ToLower() + ".rbx";
+                                var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                 if (nameCheck == null)
                                 {
                                     var result = await Adnr.CreateAdnrTx(address, name);

@@ -18,7 +18,6 @@ namespace ReserveBlockCore.Services
 {
     public class ClientCallService : IHostedService, IDisposable
     {
-
         #region Timers and Private Variables
         private readonly IHubContext<P2PAdjServer> _hubContext;
         private readonly IHostApplicationLifetime _appLifetime;
@@ -257,7 +256,17 @@ namespace ReserveBlockCore.Services
                     if (Globals.Adjudicate && !Globals.IsTestNet)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime).ToList();
+                        var fortisPool = Globals.FortisPool.Values
+                            .Select(x => new
+                            {
+                                x.Context.ConnectionId,
+                                x.ConnectDate,
+                                x.LastAnswerSendDate,
+                                x.IpAddress,
+                                x.Address,
+                                x.UniqueName,
+                                x.WalletVersion
+                            }).ToList();
 
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
@@ -268,7 +277,7 @@ namespace ReserveBlockCore.Services
                         {
                             try
                             {
-                                await _hubContext.Clients.Client(explorerNode.Context.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
+                                await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
                             }
                             catch 
                             {
@@ -284,12 +293,14 @@ namespace ReserveBlockCore.Services
                 var blockHeight = Globals.LastBlock.Height;
                 if(mempool != null)
                 {
+                    var currentTime = TimeUtil.GetTime(-60);
                     if (mempool.Count() > 0)
                     {
                         foreach(var tx in mempool)
                         {
-                            var heightDiff = (blockHeight - tx.Height);
-                            if (heightDiff > 10)
+                            var txTime = tx.Timestamp;
+                            var sendTx = currentTime > txTime ? true : false;
+                            if (sendTx)
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(tx);
                                 if (txResult == true)
@@ -657,7 +668,8 @@ namespace ReserveBlockCore.Services
                                                             nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
 
                                                             taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                            //await ProcessFortisPool_New(taskAnswerList);
+
+                                                            await ProcessFortisPool_New(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
 
                                                             foreach (var answer in Globals.TaskAnswerDict_New.Values)
@@ -929,7 +941,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height > Globals.BlockLock)
+            if(Globals.LastBlock.Height >= Globals.BlockLock)
             {
                 await DoWork_New();
                 

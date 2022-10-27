@@ -13,6 +13,8 @@ using System.Diagnostics;
 using System.Security;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml;
 using ReserveBlockCore.Beacon;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.IO;
 
 namespace ReserveBlockCore.Commands
 {
@@ -448,7 +450,7 @@ namespace ReserveBlockCore.Commands
             {
                 if (reconnect == "y")
                 {
-                    await StartupService.StartupPeers();
+                    var result = await P2PClient.ConnectToPeers(true);
                 }
                 else
                 {
@@ -472,6 +474,79 @@ namespace ReserveBlockCore.Commands
                     MainMenuReturn();
                 }
             }
+        }
+
+        public static async Task BlockDetails()
+        {
+            try
+            {
+                Console.WriteLine("Please enter the block you want all details on.");
+                var blockStr = await ReadLineUtility.ReadLine();
+                if (!string.IsNullOrWhiteSpace(blockStr))
+                {
+                    int.TryParse(blockStr, out var blockNumber);
+
+                    if(blockNumber > 0)
+                    {
+                        var block = BlockchainData.GetBlockByHeight(blockNumber);
+
+                        if (block != null)
+                        {
+                            var blockLocalTime = TimeUtil.ToDateTime(block.Timestamp);
+                            var txList = block.Transactions.ToList();
+                            var blockTable = new Table();
+                            blockTable.Title("[yellow]Block Info[/]").Centered();
+                            // Add some columns
+                            blockTable.AddColumn(new TableColumn(new Panel($"Block {block.Height}")));
+                            blockTable.AddColumn(new TableColumn(new Panel("Details")));
+
+                            blockTable.AddRow("[blue]Version[/]", $"[green]{block.Version}[/]");
+                            blockTable.AddRow("[blue]Previous Hash[/]", $"[green]{block.PrevHash}[/]");
+                            blockTable.AddRow("[blue]Hash[/]", $"[green]{block.Hash}[/]");
+                            blockTable.AddRow("[blue]Merkle Root[/]", $"[green]{block.MerkleRoot}[/]");
+                            blockTable.AddRow("[blue]State Root[/]", $"[green]{block.StateRoot}[/]");
+                            blockTable.AddRow("[blue]Timestamp[/]", $"[green]{block.Timestamp} - Local: {blockLocalTime}[/]");
+                            blockTable.AddRow("[blue]Validator[/]", $"[green]{block.Validator}[/]");
+                            blockTable.AddRow("[blue]Number of Tx(s)[/]", $"[green]{block.NumberOfTransactions}[/]");
+                            blockTable.AddRow("[blue]Size[/]", $"[green]{block.Size}[/]");
+                            blockTable.AddRow("[blue]Craft Time[/]", $"[green]{block.BCraftTime}[/]");
+                            blockTable.AddRow("[blue]Chain Ref[/]", $"[green]{block.ChainRefId}[/]");
+
+                            blockTable.Border(TableBorder.Rounded);
+
+                            AnsiConsole.Write(blockTable);
+
+                            var txTable = new Table();
+                            txTable.Title("[yellow]Transaction Info[/]").Centered();
+                            // Add some columns
+                            txTable.AddColumn(new TableColumn(new Panel("Hash")));
+                            txTable.AddColumn(new TableColumn(new Panel("From")));
+                            txTable.AddColumn(new TableColumn(new Panel("To")));
+                            txTable.AddColumn(new TableColumn(new Panel("Amount")));
+                            txTable.AddColumn(new TableColumn(new Panel("Fee")));
+                            txTable.AddColumn(new TableColumn(new Panel("Timestamp")));
+                            txTable.AddColumn(new TableColumn(new Panel("Transaction Type")));
+                            txTable.AddColumn(new TableColumn(new Panel("Transaction Rating")));
+
+                            txList.ForEach(x => {
+                                txTable.AddRow($"{x.Hash}", $"[blue]{x.FromAddress}[/]", $"[red]{x.ToAddress}[/]", $"[green]{x.Amount}[/]",
+                                    $"{x.Fee}", $"[yellow]{x.Timestamp}[/]", $"{x.TransactionType}", $"{x.TransactionRating}");
+                            });
+
+                            txTable.Border(TableBorder.Rounded);
+
+                            AnsiConsole.Write(txTable);
+
+                        }
+                        else
+                        {
+                            ConsoleWriterService.Output($"Could not find block with height: {blockStr}");
+                        }
+                    }
+                    
+                }
+            }
+            catch(Exception ex) { }
         }
 
         public static async void CreateBeacon()
@@ -736,7 +811,8 @@ namespace ReserveBlockCore.Commands
                                     }
                                     else
                                     {
-                                        var nameCheck = adnr.FindOne(x => x.Name == name);
+                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                         if (nameCheck == null)
                                         {
                                             nameFound = false;

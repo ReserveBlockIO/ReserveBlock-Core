@@ -23,6 +23,8 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {
             string lastArea = "";
+            var startTime = DateTime.UtcNow;
+            ConnectionHistory.ConnectionHistoryQueue conQueue = new ConnectionHistory.ConnectionHistoryQueue();
             try
             {
                 var keepValConnected = true;
@@ -45,6 +47,9 @@ namespace ReserveBlockCore.P2P
                     {
                         try
                         {
+                            conQueue.Address = address;
+                            conQueue.IPAddress = peerIP;
+                            
                             lastArea = "B";
                             var stateAddress = StateData.GetSpecificAccountStateTrei(address);
                             if (!string.IsNullOrWhiteSpace(address))
@@ -175,6 +180,7 @@ namespace ReserveBlockCore.P2P
                                         if (Globals.CurrentTaskQuestion == null)
                                         {
                                             lastArea = "T";
+                                            conQueue.WasSuccess = true;
                                             await SendAdjMessageSingle("status", "Connected");
                                             Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
                                             ConsoleWriterService.Output("Task Created");
@@ -189,6 +195,7 @@ namespace ReserveBlockCore.P2P
                                         }
                                         else
                                         {
+                                            conQueue.WasSuccess = true;
                                             lastArea = "U";
                                             await SendAdjMessageSingle("status", "Connected");
                                             var taskQuest = Globals.CurrentTaskQuestion;
@@ -232,7 +239,7 @@ namespace ReserveBlockCore.P2P
                                 keepValConnected = false;
                                 if (Globals.OptionalLogging == true)
                                 {
-                                    LogUtility.Log("Connection Attempted, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
+                                    LogUtility.Log("Connection Attempted, but missing field Address: " + address + " IP: " + peerIP, "Adj Connection");
                                 }
 
                             }
@@ -288,18 +295,22 @@ namespace ReserveBlockCore.P2P
                 {
                     LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {peerIP} ", "Adj Connection");
                 }
+
+                conQueue.ConnectionTime = (DateTime.UtcNow - startTime).Milliseconds;
+                Globals.ConnectionHistoryDict.TryAdd(conQueue.Address, conQueue);
             }
             catch (Exception ex)
             {
                 DbContext.Rollback();
                 //Connection attempt failed with unhandled error.
-                if (Globals.OptionalLogging == true)
-                {
-                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "Adj Connection");
-                }
+                //if (Globals.OptionalLogging == true)
+                //{
+                //    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "P2PAdjServer.OnConnectedAsync()");
+                //}
+                //Going to produce all errors for now.
+                ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "P2PAdjServer.OnConnectedAsync()");
             }
 
-            
             await base.OnConnectedAsync();
         }
 

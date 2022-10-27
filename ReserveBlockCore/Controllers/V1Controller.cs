@@ -464,7 +464,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if(Globals.EncryptPassword.Length > 0)
                 {
-                    var account = AccountData.RestoreAccount(id);
+                    var account = await AccountData.RestoreAccount(id);
 
                     if (account == null)
                     {
@@ -486,7 +486,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var account = AccountData.RestoreAccount(id);
+                var account = await AccountData.RestoreAccount(id);
 
                 if (account == null)
                 {
@@ -820,7 +820,16 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodes()
         {
             string output = "";
-            var validators = Globals.FortisPool.Values.ToList();
+            var validators = Globals.FortisPool.Values.Select(x => new
+            {
+                x.Context.ConnectionId,
+                x.ConnectDate,
+                x.LastAnswerSendDate,
+                x.IpAddress,
+                x.Address,
+                x.UniqueName,
+                x.WalletVersion
+            }).ToList();
 
             output = JsonConvert.SerializeObject(validators);
 
@@ -917,6 +926,14 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetConnectionHistory")]
+        public async Task<string> GetConnectionHistory()
+        {
+            var output = await ConnectionHistory.Read();
+
+            return output;
+        }
+
         [HttpGet("GetClientInfo")]
         public async Task<string> GetClientInfo()
         {
@@ -924,8 +941,6 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
-
-
 
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()

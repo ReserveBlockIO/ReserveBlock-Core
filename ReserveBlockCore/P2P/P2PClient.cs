@@ -204,27 +204,40 @@ namespace ReserveBlockCore.P2P
                     }                    
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,10));
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,8));
                 if (hubConnection.ConnectionId == null)
                     return false;
 
+                //var startTimer = DateTime.UtcNow;
+                //long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
+                //var endTimer = DateTime.UtcNow;
+                //var totalMS = (endTimer - startTimer).Milliseconds;
 
-                var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
-                var endTimer = DateTime.UtcNow;
-                var totalMS = (endTimer - startTimer).Milliseconds;
-
+                //Globals.Nodes[IPAddress] = new NodeInfo
+                //{
+                //    Connection = hubConnection,
+                //    NodeIP = IPAddress,
+                //    NodeHeight = remoteNodeHeight,
+                //    NodeLastChecked = startTimer,
+                //    NodeLatency = totalMS,
+                //    IsSendingBlock = 0,
+                //    SendingBlockTime = 0,
+                //    TotalDataSent = 0
+                //};
                 Globals.Nodes[IPAddress] = new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
-                    NodeHeight = remoteNodeHeight,
-                    NodeLastChecked = startTimer,
-                    NodeLatency = totalMS,
+                    NodeHeight = 0,
+                    NodeLastChecked = null,
+                    NodeLatency = 0,
                     IsSendingBlock = 0,
                     SendingBlockTime = 0,
                     TotalDataSent = 0
                 };
+
+                var node = Globals.Nodes[IPAddress];
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);
 
                 return true;
             }
@@ -377,52 +390,112 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Connect to Peers
-        public static async Task<bool> ConnectToPeers()
+        public static async Task<bool> ConnectToPeers(bool addMorePeers = false)
         {
             await NodeConnector.StartNodeConnecting();
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace($":{Globals.Port}", "")))
-                .Union(Globals.BannedIPs.Where(x => x.Value).Select(x => x.Key));
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
+                .Union(Globals.BannedIPs.Keys);
+
+            if(Globals.IsTestNet)
+                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":13338", "")))
+                .Union(Globals.BannedIPs.Keys);
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
-                .OrderBy(x => rnd.Next())                
+                .OrderBy(x => rnd.Next())
                 .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
-                .OrderBy(x => rnd.Next()))                
+                .OrderBy(x => rnd.Next()))
                 .ToArray();
 
-            var NodeCount = Globals.Nodes.Count;
-            foreach(var peer in newPeers)
+            while (Globals.Nodes.Count == 0)
             {
-                if (NodeCount == Globals.MaxPeers)
-                    break;
-
-                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
-                var conResult = await Connect(url);
-                if (conResult != false)
+                var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
                 {
-                    NodeCount++;
-                    ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
-                    peer.IsOutgoing = true;
-                    peer.FailCount = 0; //peer responded. Reset fail count
-                    peerDB.UpdateSafe(peer);
-                }
-                else
-                {
-                    //peer.FailCount += 1;
-                    //peerDB.UpdateSafe(peer);
-                }
+                    try
+                    {
+                        var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+                        var conResult = await Connect(url);
+                        if (conResult != false)
+                        {
+                            ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                            peer.IsOutgoing = true;
+                            peer.FailCount = 0; //peer responded. Reset fail count
+                            peerDB.UpdateSafe(peer);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                });
             }
-                                 
-            return NodeCount != 0;
-        }
 
+            if(addMorePeers)
+            {
+                do
+                {
+                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                    if (newPeers.Count() > 0)
+                    {
+                        await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
+                        {
+                            try
+                            {
+                                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+                                var conResult = await Connect(url);
+                                if (conResult != false)
+                                {
+                                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                                    peer.IsOutgoing = true;
+                                    peer.FailCount = 0; //peer responded. Reset fail count
+                                    peerDB.UpdateSafe(peer);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                            }
+                        });
+
+                    }
+                    
+                } while (Globals.Nodes.Count == 0);
+            }
+
+            return Globals.MaxPeers != 0;
+
+            //var NodeCount = Globals.Nodes.Count;
+            //foreach (var peer in newPeers)
+            //{
+            //    if (NodeCount == Globals.MaxPeers)
+            //        break;
+
+            //    var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+            //    var conResult = await Connect(url);
+            //    if (conResult != false)
+            //    {
+            //        NodeCount++;
+            //        ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
+            //        peer.IsOutgoing = true;
+            //        peer.FailCount = 0; //peer responded. Reset fail count
+            //        peerDB.UpdateSafe(peer);
+            //    }
+            //    else
+            //    {
+            //        //peer.FailCount += 1;
+            //        //peerDB.UpdateSafe(peer);
+            //    }
+            //}
+
+
+            //return NodeCount != 0;
+        }
         public static async Task<bool> PingBackPeer(string peerIP)
         {
             try
@@ -752,7 +825,6 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Block
-
         public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
         {
             if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
@@ -762,7 +834,7 @@ namespace ReserveBlockCore.P2P
             Block Block = null;
             try
             {
-                var source = new CancellationTokenSource(30000);
+                var source = new CancellationTokenSource(10000);
                 Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
                 if (Block != null)
                 {
@@ -778,9 +850,11 @@ namespace ReserveBlockCore.P2P
                 if (node != null)
                 {
                     node.TotalDataSent += blockSize;
-                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;                    
+                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
                 }
             }
+
+            await P2PClient.RemoveNode(node);
 
             return null;
         }
@@ -794,11 +868,11 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
-                return (remoteNodeHeight, startTimer, totalMS); ;
+                return (remoteNodeHeight, startTimer, totalMS); 
             }
             catch { }
             return default;
@@ -1256,7 +1330,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {

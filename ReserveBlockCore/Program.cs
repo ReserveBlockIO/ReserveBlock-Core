@@ -2,6 +2,7 @@
 
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -63,7 +64,7 @@ namespace ReserveBlockCore
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
-                argList.ForEach(x => {
+                argList.ForEach(async x => {
                     var argC = x.ToLower();
                     if (argC == "enableapi")
                     {
@@ -97,7 +98,7 @@ namespace ReserveBlockCore
                         {
                             var keySplit = argC.Split(new char[] { '=' });
                             var privateKey = keySplit[1];
-                            var account = AccountData.RestoreAccount(privateKey);
+                            var account = await AccountData.RestoreAccount(privateKey);
                             if (account != null)
                             {
                                 Console.WriteLine("Account Loaded: " + account.Address);
@@ -137,7 +138,6 @@ namespace ReserveBlockCore
             StartupService.BootstrapBeacons();
             await StartupService.EstablishBeaconReference();
             
-
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
 
@@ -147,16 +147,20 @@ namespace ReserveBlockCore
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 30 seconds for new blocks
+            Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
 
             Globals.PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 4 minutes
+            Globals.PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 1 minutes
 
             Globals.ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ValidatorListTimer.Change(70000, 1 * 10 * 6000); //waits 1 minute, then runs every 1 minutes
 
             Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 5 minutes
+            Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
+
+            Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
+
 
             //add method to remove stale state trei records and stale validator records too
 
@@ -222,7 +226,6 @@ namespace ReserveBlockCore
                 Console.WriteLine(ex.ToString());
             }
 
-            
             StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
 
@@ -460,7 +463,7 @@ namespace ReserveBlockCore
                         {
                             bool result = false;
                             //Get more nodes!
-                            result = await P2PClient.ConnectToPeers();
+                            result = await P2PClient.ConnectToPeers(true);
                         }
                     }
                 }
@@ -535,6 +538,32 @@ namespace ReserveBlockCore
             {
                 await DbContext.CheckPoint();
             }
+            
+        }
+
+        #endregion
+
+        #region Connection History Timer
+        private static async void connectionHistoryTimer_Elapsed(object sender)
+        {
+            try
+            {
+                if(Globals.Adjudicate)
+                {
+                    var connectionQueueList = Globals.ConnectionHistoryDict.Values.ToList();
+
+                    foreach (var cq in connectionQueueList)
+                    {
+                        new ConnectionHistory().Process(cq.IPAddress, cq.Address, cq.ConnectionTime, cq.WasSuccess);
+                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out var test);
+                    }
+
+                    var conList = await ConnectionHistory.Read();
+
+                    ConnectionHistory.WriteToConHistFile(conList);
+                }
+            }
+            catch { }
             
         }
 

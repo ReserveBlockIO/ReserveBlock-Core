@@ -12,6 +12,8 @@ using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Extensions;
 using Spectre.Console;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Models.SmartContracts;
+using System.Net.NetworkInformation;
 
 namespace ReserveBlockCore.Data
 {
@@ -50,7 +52,7 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
-		public static Account RestoreAccount(string privKey, bool rescanForTx = false)
+		public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false)
         {
 			Account account = new Account();
             try
@@ -66,6 +68,11 @@ namespace ReserveBlockCore.Data
 				account.Address = GetHumanAddress(account.PublicKey);
 				//Update balance from state trei
 				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
+				var adnrState = Adnr.GetAdnr(account.Address);
+				var scStateTrei = SmartContractStateTrei.GetSCST();
+				var scs = scStateTrei.Find(x => x.OwnerAddress == account.Address || (x.MinterAddress == account.Address && x.MinterManaged == true)).ToList();
+
+				account.ADNR = adnrState != null ? adnrState : null;
 				account.Balance = accountState != null ? accountState.Balance : 0M;
 
 				var validators = Validators.Validator.GetAll();
@@ -80,6 +87,31 @@ namespace ReserveBlockCore.Data
 					}
 				}
 
+				if(scs.Count() > 0)
+				{
+					foreach (var sc in scs)
+					{
+						try
+						{
+                            var scMain = SmartContractMain.GenerateSmartContractInMemory(sc.ContractData);
+							if(sc.MinterManaged == true)
+							{
+								if(sc.MinterAddress == account.Address)
+								{
+									scMain.IsMinter = true;
+								}
+							}
+
+							SmartContractMain.SmartContractData.SaveSmartContract(scMain, null);
+                        }
+						catch(Exception ex)
+						{
+							ErrorLogUtility.LogError($"Failed to import Smart contract during account restore. SCUID: {sc.SmartContractUID}", "AccountData.RestoreAccount()");
+
+                        }
+                    }
+                }
+
 				var accountCheck = AccountData.GetSingleAccount(account.Address);
 				if(accountCheck == null)
                 {
@@ -90,7 +122,7 @@ namespace ReserveBlockCore.Data
                     }
 					if(Globals.IsWalletEncrypted == true)
 					{
-						WalletEncryptionService.EncryptWallet(account, true);
+						await WalletEncryptionService.EncryptWallet(account, true);
 					}
 				}
 			}

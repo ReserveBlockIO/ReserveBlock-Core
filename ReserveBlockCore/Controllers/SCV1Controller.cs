@@ -273,6 +273,9 @@ namespace ReserveBlockCore.Controllers
             {
                 var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
 
+                if (sc == null)
+                    return "null";
+
                 var result = await SmartContractReaderService.ReadSmartContract(sc);
 
                 var scMain = result.Item2;
@@ -361,10 +364,82 @@ namespace ReserveBlockCore.Controllers
 
         }
 
-        [HttpGet("AssociateNFTAsset/{nftId}/{**assetPath}")]
-        public async Task<string> AssociateNFTAsset(string nftId, string assetPath)
+        [HttpGet("AssociateNFTAsset/{scUID}/{**assetPath}")]
+        public async Task<string> AssociateNFTAsset(string scUID, string assetPath)
         {
-            return $"NFT Id: {nftId} Asset Location: {assetPath}";
+            string output = "";
+
+            try
+            {
+                assetPath = assetPath.Replace("%2F", "/");
+                string fileName = Path.GetFileName(assetPath);
+                string incFileMD5 = assetPath.ToMD5();
+                string scMD5List = "";
+                Dictionary<string, string> assetMD5Dict = new Dictionary<string, string>();
+
+                var scStateTrei = SmartContractStateTrei.GetSCST();
+                if (scStateTrei != null)
+                {
+                    var scState = scStateTrei.FindOne(x => x.SmartContractUID == scUID);
+                    if (scState != null)
+                    {
+                        scMD5List = scState.MD5List != null ? scState.MD5List : "";
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Could not find record of NFT on chain." });
+                        return output;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(scMD5List))
+                {
+                    var scAssetList = scMD5List.Split("<>").ToList();
+                    foreach (var scAsset in scAssetList)
+                    {
+                        var recSplit = scAsset.Split("::");
+
+                        assetMD5Dict.Add(recSplit[0], recSplit[1]);
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"MD5 List was not found. Cannot verify integrity of asset media." });
+                    return output;
+                }
+
+                var keyCheck = assetMD5Dict.ContainsKey(fileName);
+                if (keyCheck)
+                {
+                    var chainMD5 = assetMD5Dict[fileName];
+                    if (chainMD5 == incFileMD5)
+                    {
+                        //import
+                        var result = NFTAssetFileUtility.MoveAsset(assetPath, fileName, scUID);
+                        if(result == true)
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Media associated with NFT." });
+                        else
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to move media. Please ensure file is not open anywhere." });
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Incoming media did not match the MD5 on chain." });
+                        return output;
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"File was not found in on-chain list. Please ensure file name has been altered." });
+                    return output;
+                }
+            }
+            catch(Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown error occured. Error {ex.ToString()}" });
+                return output;
+            }
+            
         }
 
         [HttpGet("DownloadNftAssets/{nftId}")]
@@ -693,14 +768,13 @@ namespace ReserveBlockCore.Controllers
             var output = "";
 
             //Get SmartContractMain.IsPublic and set to True.
-            var scs = SmartContractMain.SmartContractData.GetSCs();
             var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            sc.IsPublic ^= true;
-
-            scs.UpdateSafe(sc);
-
+            if(sc != null)
+            {
+                sc.IsPublic ^= true;
+                SmartContractMain.SmartContractData.UpdateSmartContract(sc);
+            }
             return output;
-
         }
 
         [HttpGet("GetNFTAssetLocation/{scUID}/{**fileName}")]
