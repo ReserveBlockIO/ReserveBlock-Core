@@ -47,7 +47,7 @@ namespace ReserveBlockCore.P2P
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
                 var fortisPool = Globals.FortisPool.Values;                
-                if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(uName) || !string.IsNullOrWhiteSpace(signature) || !walletVersionVerify) 
+                if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(uName) || string.IsNullOrWhiteSpace(signature) || !walletVersionVerify) 
                 {
                     await EndOnConnect(peerIP, "Z", startTime, conQueue,
                         "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.",
