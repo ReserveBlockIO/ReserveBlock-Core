@@ -323,6 +323,7 @@ namespace ReserveBlockCore.P2P
                                 };
 
                                 var beaconResult = BeaconData.SaveBeaconData(bd);
+                                result = true;
                             }
                             else
                             {
@@ -349,20 +350,21 @@ namespace ReserveBlockCore.P2P
                                     };
 
                                     var beaconResult = BeaconData.SaveBeaconData(bd);
+                                    result = true;
                                 }
                                 else
                                 {
                                     ErrorLogUtility.LogError($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "P2PBeaconService.ReceiveUploadRequest()");
+                                    return false;
                                 }
                             }
                         }
-
-                        result = true;
                     }
                 }
                 catch (Exception ex)
                 {
                     ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+                    return false;
                 }
 
                 return result;
