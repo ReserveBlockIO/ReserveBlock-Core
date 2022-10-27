@@ -16,67 +16,26 @@ namespace ReserveBlockCore.Data
 				{
 					if(Dict1.TryGetValue(key.Item1, out var Out1))
                     {
-						Dict1[key.Item1] = (key.Item2, value);
 						var Comparer = EqualityComparer<K2>.Default;
-						if (Comparer.Equals(Out1.Item1, key.Item2))
+						if (!Comparer.Equals(Out1.Item1, key.Item2))
 							Dict2.TryRemove(Out1.Item1, out _);
-						Dict2[key.Item2] = (key.Item1, value);
 					}
-					else if (Dict2.TryGetValue(key.Item2, out var Out2))
-					{
-						Dict2[key.Item2] = (key.Item1, value);
-						UseDict2 = true;
-						var Comparer = EqualityComparer<K1>.Default;
-						if (Comparer.Equals(Out2.Item1, key.Item1))
-							Dict1.TryRemove(Out2.Item1, out _);
-						Dict1[key.Item1] = (key.Item2, value);
-						UseDict2 = false;
-					}
-					else
-                    {
-						Dict1[key.Item1] = (key.Item2, value);
-						Dict2[key.Item2] = (key.Item1, value);
-					}
-				}
-			}
-		}
 
-		public bool TryUpdateKey1(K2 key, K1 newKey)
-        {
-			var Comparer = EqualityComparer<K1>.Default;
-			if (Dict2.TryGetValue(key, out var Out) && !Comparer.Equals(Out.Item1, newKey))
-			{				
-				lock (WriteLock)
-				{					
-					Dict2[key] = (newKey, Out.Item2);
-					UseDict2 = true;
-					Dict1[newKey] = (key, Out.Item2);
-					Dict1.TryRemove(Out.Item1, out var test);
+					if (Dict2.TryGetValue(key.Item2, out var Out2))
+					{
+						var Comparer = EqualityComparer<K1>.Default;
+						if (!Comparer.Equals(Out2.Item1, key.Item1))
+						{
+							UseDict2 = true;
+							Dict1.TryRemove(Out2.Item1, out _);
+						}
+					}
+
+					Dict1[key.Item1] = (key.Item2, value);
+					Dict2[key.Item2] = (key.Item1, value);
 					UseDict2 = false;
 				}
-
-				return true;
 			}
-			
-			return false;
-		}
-
-		public bool TryUpdateKey2(K1 key, K2 newKey)
-		{
-			var Comparer = EqualityComparer<K2>.Default;
-			if (Dict1.TryGetValue(key, out var Out) && !Comparer.Equals(Out.Item1, newKey))
-			{
-				lock (WriteLock)
-				{
-					Dict1[key] = (newKey, Out.Item2);
-					Dict2[newKey] = (key, Out.Item2);
-					Dict2.TryRemove(Out.Item1, out var test);
-				}
-
-				return true;
-			}
-
-			return false;
 		}
 		public bool TryRemoveFromKey1(K1 key, out (K2, V) KeyValue)
 		{

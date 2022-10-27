@@ -408,6 +408,9 @@ namespace ReserveBlockCore.Services
 
                                                 if (acctStateTreiBalance < 1000)
                                                 {
+                                                    if (Globals.FortisPool.TryRemoveFromKey2(taskWinnerAddr, out var Out))
+                                                        Out.Item2.Context.Abort();
+
                                                     ConsoleWriterService.Output("Address failed validation. Balance is too low.");
                                                     if (failedTaskAnswersList == null)
                                                     {
@@ -585,6 +588,9 @@ namespace ReserveBlockCore.Services
 
                                                 if (acctStateTreiBalance < 1000)
                                                 {
+                                                    if (Globals.FortisPool.TryRemoveFromKey2(taskWinnerAddr, out var Out))
+                                                        Out.Item2.Context.Abort();
+
                                                     ConsoleWriterService.Output("Address failed validation. Balance is too low.");
                                                     if (failedTaskAnswersList == null)
                                                     {
@@ -988,7 +994,7 @@ namespace ReserveBlockCore.Services
                 {
                     Globals.FortisPool.TryRemoveFromKey1(deadNode.IpAddress, out var test);
                     deadNode.Context.Abort();
-                }
+                }                
             }
             catch (Exception ex)
             {
