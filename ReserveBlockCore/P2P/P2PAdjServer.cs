@@ -81,6 +81,38 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
+                await SendAdjMessageSingle("status", $"Authenticated? True");                
+                if (Globals.CurrentTaskQuestion == null)
+                {
+                    lastArea = "T";
+                    conQueue.WasSuccess = true;
+                    await SendAdjMessageSingle("status", "Connected");
+                    Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                    ConsoleWriterService.Output("Task Created");
+                    var taskQuest = Globals.CurrentTaskQuestion;
+                    TaskQuestion nTaskQuestion = new TaskQuestion();
+                    nTaskQuestion.TaskType = taskQuest.TaskType;
+                    nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
+                    string taskQuestionStr = "";
+                    taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                    await SendAdjMessageAll("task", taskQuestionStr);
+                    //Console.WriteLine("Task Sent All");
+                }
+                else
+                {
+                    conQueue.WasSuccess = true;
+                    lastArea = "U";
+                    await SendAdjMessageSingle("status", "Connected");
+                    var taskQuest = Globals.CurrentTaskQuestion;
+                    TaskQuestion nTaskQuestion = new TaskQuestion();
+                    nTaskQuestion.TaskType = taskQuest.TaskType;
+                    nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
+                    string taskQuestionStr = "";
+                    taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                    await SendAdjMessageSingle("task", taskQuestionStr);
+                    //Console.WriteLine("Task Sent Single");
+                }
+
                 var fortisPools = new FortisPool();
                 fortisPools.IpAddress = peerIP;
                 fortisPools.UniqueName = uName;
