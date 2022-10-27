@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     scs.UpdateSafe(scMain);
                 }              
             }
-            public static void SaveSmartContract(SmartContractMain scMain, string scText)
+            public static void SaveSmartContract(SmartContractMain scMain, string? scText)
             {
                 var scs = GetSCs();
 
@@ -68,7 +68,11 @@ namespace ReserveBlockCore.Models.SmartContracts
                 {
                     scs.InsertSafe(scMain);
                 }
-                SaveSCLocaly(scMain, scText);
+                if(scText != null)
+                {
+                    SaveSCLocaly(scMain, scText);
+                }
+                
             }
 
             public static void UpdateSmartContract(SmartContractMain scMain)

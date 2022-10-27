@@ -13,6 +13,7 @@ using ReserveBlockCore.Extensions;
 using Spectre.Console;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Models.SmartContracts;
+using System.Net.NetworkInformation;
 
 namespace ReserveBlockCore.Data
 {
@@ -92,12 +93,16 @@ namespace ReserveBlockCore.Data
 					{
 						try
 						{
-                            var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(sc.ContractData); });
-                            bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-                            if (!isCompletedSuccessfully)
-                            {
-                                NFTLogUtility.Log("Failed to decompile smart contract in time.", "AccountData.RestoreAccount()");
-                            }
+                            var scMain = SmartContractMain.GenerateSmartContractInMemory(sc.ContractData);
+							if(sc.MinterManaged == true)
+							{
+								if(sc.MinterAddress == account.Address)
+								{
+									scMain.IsMinter = true;
+								}
+							}
+
+							SmartContractMain.SmartContractData.SaveSmartContract(scMain, null);
                         }
 						catch(Exception ex)
 						{
