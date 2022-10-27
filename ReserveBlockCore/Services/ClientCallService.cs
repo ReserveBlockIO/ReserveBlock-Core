@@ -44,7 +44,7 @@ namespace ReserveBlockCore.Services
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
-                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 300));
+                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 180));
 
             //_blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
             //    TimeSpan.FromHours(8));

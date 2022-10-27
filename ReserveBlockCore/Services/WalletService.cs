@@ -250,7 +250,8 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                P2PClient.SendTXMempool(txRequest);//send out to mempool
+                //P2PClient.SendTXMempool(txRequest);//send out to mempool
+                await P2PClient.SendTXToAdjudicator(txRequest);
                 //add method to send to nearest validators too
                 //}
             }

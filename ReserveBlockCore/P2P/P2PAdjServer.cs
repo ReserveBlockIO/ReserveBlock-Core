@@ -81,7 +81,17 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                await SendAdjMessageSingle("status", $"Authenticated? True");                
+                var fortisPools = new FortisPool();
+                fortisPools.IpAddress = peerIP;
+                fortisPools.UniqueName = uName;
+                fortisPools.ConnectDate = DateTime.UtcNow;
+                fortisPools.Address = address;
+                fortisPools.Context = Context;
+                fortisPools.WalletVersion = walletVersion;
+
+                UpdateFortisPool(fortisPools);
+
+                await SendAdjMessageSingle("status", $"Authenticated? True");
                 if (Globals.CurrentTaskQuestion == null)
                 {
                     lastArea = "T";
@@ -112,16 +122,6 @@ namespace ReserveBlockCore.P2P
                     await SendAdjMessageSingle("task", taskQuestionStr);
                     //Console.WriteLine("Task Sent Single");
                 }
-
-                var fortisPools = new FortisPool();
-                fortisPools.IpAddress = peerIP;
-                fortisPools.UniqueName = uName;
-                fortisPools.ConnectDate = DateTime.UtcNow;
-                fortisPools.Address = address;
-                fortisPools.Context = Context;
-                fortisPools.WalletVersion = walletVersion;
-
-                UpdateFortisPool(fortisPools);
 
                 lastArea = "A";
                 if (Globals.OptionalLogging == true)                
