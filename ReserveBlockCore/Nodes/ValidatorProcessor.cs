@@ -102,11 +102,18 @@ namespace ReserveBlockCore.Nodes
                 }
                 if(message == "fortisPool")
                 {
-                    var fortisPool = JsonConvert.DeserializeObject<List<FortisPool>>(data);
-                    if(fortisPool != null)
+                    try
                     {
-                        foreach (var pool in fortisPool)
-                            Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
+                        var fortisPool = JsonConvert.DeserializeObject<List<FortisPool>>(data);
+                        if (fortisPool != null)
+                        {
+                            foreach (var pool in fortisPool)
+                                Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        ErrorLogUtility.LogError($"Error getting Masternodes (Fortis Pool). Error: {ex.ToString}", "ValidatorProcessor.ProcessData()");
                     }
                 }
 
