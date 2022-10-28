@@ -173,8 +173,8 @@ namespace ReserveBlockCore.Trillium
 			{
 				if (result.Value != null)
 				{
-					Console.ForegroundColor = ConsoleColor.White;
-					Console.WriteLine(result.Value);
+					//Console.ForegroundColor = ConsoleColor.White;
+					//Console.WriteLine(result.Value);
 					Console.ResetColor();
 				}
 				_previous = compilation;
