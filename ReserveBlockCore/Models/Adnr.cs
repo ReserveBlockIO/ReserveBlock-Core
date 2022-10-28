@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "Adnr.GetAdnr()");
+                ErrorLogUtility.LogError(ex.ToString(), "Adnr.GetAdnr()");
                 return null;
             }
 
@@ -41,13 +41,13 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region GetAddress(string addr)
-        public static (bool, string) GetAddress(string addr)
+        public static (bool, string) GetAddress(string name)
         {
             bool result = false;
             string strResult = "";
 
             var adnr = GetAdnr();
-            var adnrExist = adnr.FindOne(x => x.Name == addr.ToLower());
+            var adnrExist = adnr.FindOne(x => x.Name == name.ToLower());
             if (adnrExist != null)
             {
                 strResult = adnrExist.Address;
@@ -55,6 +55,24 @@ namespace ReserveBlockCore.Models
             }
 
             return (result, strResult);
+        }
+        #endregion
+
+        #region GetAdnr(string addr)
+        public static string? GetAdnr(string addr)
+        {
+            string? strResult = null;
+
+            var adnr = GetAdnr();
+            if(adnr != null)
+            {
+                var adnrExist = adnr.FindOne(x => x.Address == addr);
+                if (adnrExist != null)
+                {
+                    strResult = adnrExist.Name;
+                }
+            }
+            return strResult;
         }
         #endregion
 
@@ -150,6 +168,12 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
                 if (result.Item1 == true)
                 {
@@ -167,7 +191,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");
@@ -195,7 +219,7 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()" });
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()", Name = account.ADNR });
 
             adnrTx = new Transaction
             {
@@ -225,6 +249,12 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
                 if (result.Item1 == true)
                 {
@@ -242,8 +272,8 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                Console.WriteLine("Error: {0}", ex.Message);
-                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.Message}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                Console.WriteLine("Error: {0}", ex.ToString());
+                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
             }
 
             return (null, "Error. Please see message above.");
@@ -270,7 +300,7 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()" });
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()", Name = account.ADNR });
 
             adnrTx = new Transaction
             {
@@ -300,6 +330,12 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
                 if (result.Item1 == true)
                 {
@@ -317,7 +353,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");

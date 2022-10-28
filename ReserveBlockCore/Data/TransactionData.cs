@@ -66,7 +66,7 @@ namespace ReserveBlockCore.Data
         {
             var result = false;
 
-            var transactions = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var transactions = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
                 var txExist = transactions.Any(x => x.Hash == tx.Hash);
@@ -152,7 +152,7 @@ namespace ReserveBlockCore.Data
             return null;
         }
 
-        public static List<Transaction> ProcessTxPool()
+        public static async Task<List<Transaction>> ProcessTxPool()
         {
             var collection = DbContext.DB_Mempool.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
 
@@ -162,46 +162,53 @@ namespace ReserveBlockCore.Data
 
             var approvedMemPoolList = new List<Transaction>();
 
+            var adnrNameList = new List<string>();
+
             if(sizedMempoolList.Count() > 0)
             {
-                sizedMempoolList.ForEach(tx => {
-                    var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
-                    if(!txExist)
+                sizedMempoolList.ForEach(async tx =>
+                {
+                    try
                     {
-                        var reject = false;
-                        if(tx.TransactionType != TransactionType.TX)
+                        var txExist = approvedMemPoolList.Exists(x => x.Hash == tx.Hash);
+                        if (!txExist)
                         {
-                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                            if (scDataArray != null)
+                            var reject = false;
+                            if (tx.TransactionType != TransactionType.TX && tx.TransactionType != TransactionType.ADNR)
                             {
-                                var scData = scDataArray[0];
-
-                                var function = (string?)scData["Function"];
-                                var scUID = (string?)scData["ContractUID"];
-                                if (!string.IsNullOrWhiteSpace(function))
+                                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                                if (scDataArray != null)
                                 {
-                                    var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
-                                    if (otherTxs.Count() > 0)
+                                    var scData = scDataArray[0];
+
+                                    var function = (string?)scData["Function"];
+                                    var scUID = (string?)scData["ContractUID"];
+                                    if (!string.IsNullOrWhiteSpace(function))
                                     {
-                                        foreach (var otx in otherTxs)
+                                        var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
+                                        if (otherTxs.Count() > 0)
                                         {
-                                            if (otx.TransactionType == TransactionType.NFT_TX || otx.TransactionType == TransactionType.NFT_BURN)
+                                            foreach (var otx in otherTxs)
                                             {
-                                                if (otx.Data != null)
+                                                if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                otx.TransactionType == TransactionType.NFT_BURN ||
+                                                otx.TransactionType == TransactionType.NFT_MINT)
                                                 {
-                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
-                                                    if (ottxDataArray != null)
+                                                    if (otx.Data != null)
                                                     {
-                                                        var ottxData = ottxDataArray[0];
-
-                                                        var ottxFunction = (string?)ottxData["Function"];
-                                                        var ottxscUID = (string?)ottxData["ContractUID"];
-                                                        if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                        if (ottxDataArray != null)
                                                         {
-                                                            if (ottxscUID == scUID)
-                                                            {
-                                                                reject = true;
+                                                            var ottxData = ottxDataArray[0];
 
+                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                            {
+                                                                if (ottxscUID == scUID)
+                                                                {
+                                                                    reject = true;
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -211,20 +218,63 @@ namespace ReserveBlockCore.Data
                                     }
                                 }
                             }
-                        }
-
-                        if(reject == false)
-                        {
-                            var signature = tx.Signature;
-                            var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
-                            if (sigCheck)
+                            if (tx.TransactionType == TransactionType.ADNR)
                             {
-                                var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
-
-                                var totalSend = (tx.Amount + tx.Fee);
-                                if (balance >= totalSend)
+                                var jobj = JObject.Parse(tx.Data);
+                                if (jobj != null)
                                 {
-                                    approvedMemPoolList.Add(tx);
+                                    var function = (string)jobj["Function"];
+                                    if (!string.IsNullOrWhiteSpace(function))
+                                    {
+                                        var name = (string?)jobj["Name"];
+                                        if (!string.IsNullOrWhiteSpace(name))
+                                        {
+                                            if (adnrNameList.Contains(name.ToLower()))
+                                            {
+                                                reject = true;
+                                            }
+                                            else
+                                            {
+                                                adnrNameList.Add(name.ToLower());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (reject == false)
+                            {
+                                var signature = tx.Signature;
+                                var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                                if (sigCheck)
+                                {
+                                    var balance = AccountStateTrei.GetAccountBalance(tx.FromAddress);
+
+                                    var totalSend = (tx.Amount + tx.Fee);
+                                    if (balance >= totalSend)
+                                    {
+                                        var dblspndChk = await DoubleSpendReplayCheck(tx);
+                                        var isCraftedIntoBlock = await HasTxBeenCraftedIntoBlock(tx);
+                                        var txVerify = await TransactionValidatorService.VerifyTX(tx);
+
+                                        if (txVerify && !dblspndChk && !isCraftedIntoBlock)
+                                            approvedMemPoolList.Add(tx);
+                                    }
+                                    else
+                                    {
+                                        var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                                        if (txToDelete != null)
+                                        {
+                                            try
+                                            {
+                                                collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                DbContext.Rollback();
+                                            }
+                                        }
+                                    }
                                 }
                                 else
                                 {
@@ -259,7 +309,23 @@ namespace ReserveBlockCore.Data
                             }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        var txToDelete = collection.FindOne(t => t.Hash == tx.Hash);
+                        if (txToDelete != null)
+                        {
+                            try
+                            {
+                                collection.DeleteManySafe(x => x.Hash == txToDelete.Hash);
+                            }
+                            catch (Exception ex2)
+                            {
+                                DbContext.Rollback();
+                            }
+                        }
+                    }
                 });
+
             }
 
             return approvedMemPoolList;
@@ -269,7 +335,7 @@ namespace ReserveBlockCore.Data
         {
             bool result = false;
 
-            var transactions = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var transactions = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
             if (transactions.Count() > 0)
             {
                 var txExist = transactions.Any(x => x.Hash == tx.Hash);
@@ -277,7 +343,6 @@ namespace ReserveBlockCore.Data
                 {
                     result = true;//replay or douple spend has occured
                 }
-
             }
 
             if(result)
@@ -286,7 +351,7 @@ namespace ReserveBlockCore.Data
             }
 
             var mempool = GetPool();
-            var txs = mempool.Find(x => x.FromAddress == tx.FromAddress).ToList();
+            var txs = mempool.Find(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
 
             if(txs.Count() > 0)
             {
@@ -302,8 +367,13 @@ namespace ReserveBlockCore.Data
                 }
             }
 
+            if (result)
+            {
+                return result;//replay or douple spend has occured
+            }
+
             //double NFT transfer or burn check
-            if(tx.TransactionType != TransactionType.TX)
+            if (tx.TransactionType != TransactionType.TX && tx.TransactionType != TransactionType.ADNR)
             {
                 if(tx.Data != null)
                 {
@@ -423,19 +493,6 @@ namespace ReserveBlockCore.Data
             var tx = transactions.FindOne(x => x.Hash == hash);
             return tx;
         }
-
-        //public static IEnumerable<Transaction> GetTxnsByHeight(long height, int limit = 50)
-        //{
-        //    var transactions = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    transactions.EnsureIndexSafe(x => x.Timestamp);
-        //    var query = transactions.Query()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Where(x => x.Height == height)
-        //        .Limit(limit).ToList();
-        //    return query;
-
-        //}
-
         public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
         {
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);

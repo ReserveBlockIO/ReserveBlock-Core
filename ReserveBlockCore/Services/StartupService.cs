@@ -124,7 +124,8 @@ namespace ReserveBlockCore.Services
 
         internal static async void RunStateSync()
         {
-            await StateTreiSyncService.SyncAccountStateTrei();
+            if(Globals.LastBlock.Height < Globals.BlockLock && !Globals.Adjudicate)
+                await StateTreiSyncService.SyncAccountStateTrei();
         }
         internal static void RunRules()
         {
@@ -153,7 +154,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
             }
             
         }
@@ -212,8 +213,8 @@ namespace ReserveBlockCore.Services
                 BeaconUID = "Foundation Beacon 1"
             };
 
-            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
-            var locator1 = beaconLocJson1.ToBase64();
+            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);            
+            Globals.Locators[beaconLoc1.BeaconUID] = beaconLocJson1.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
@@ -223,9 +224,8 @@ namespace ReserveBlockCore.Services
                 BeaconUID = "Foundation Beacon 2"
 
             };
-
-            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);
-            var locator2 = beaconLocJson2.ToBase64();
+            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);            
+            //Globals.Locators[beaconLoc2.BeaconUID] = beaconLocJson2.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
@@ -237,13 +237,7 @@ namespace ReserveBlockCore.Services
             };
 
             var beaconLocJson3 = JsonConvert.SerializeObject(beaconLoc3);
-            var locator3 = beaconLocJson3.ToBase64();
-
-            locators.Add(locator1);
-            //locators.Add(locator2);
-            //locators.Add(locator3);
-
-            Globals.Locators = locators;
+            //Globals.Locators[beaconLoc3.BeaconUID] = beaconLocJson3.ToBase64();
         }
         internal static void ClearStaleMempool()
         {
@@ -260,6 +254,12 @@ namespace ReserveBlockCore.Services
                     var minuteDiff = timeDiff / 60M;
 
                     if(minuteDiff > 120.0M)
+                    {
+                        pool.DeleteManySafe(x => x.Hash == tx.Hash);
+                        memTxDeleted = true;
+                    }
+
+                    if(tx.TransactionRating == TransactionRating.F)
                     {
                         pool.DeleteManySafe(x => x.Hash == tx.Hash);
                         memTxDeleted = true;
@@ -458,10 +458,10 @@ namespace ReserveBlockCore.Services
         public static async Task ConnectoToBeacon()
         {
             if(!Globals.Adjudicate)
-            {
-                var beacon = Globals.Locators.FirstOrDefault();
-                if (beacon != null)
+            {                
+                if (Globals.Locators.Any())
                 {
+                    var beacon = Globals.Locators.Values.FirstOrDefault();
                     var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
                     if (beaconDataJsonDes != null)
                     {
@@ -485,10 +485,11 @@ namespace ReserveBlockCore.Services
             {
                 if(Globals.IsResyncing == false)
                 {
+                    DateTime startTime = DateTime.UtcNow;
                     var result = await P2PClient.GetCurrentHeight();
                     if (result.Item1 == true)
                     {
-                        ConsoleWriterService.Output("Block downloads started.");
+                        ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
                         await BlockDownloadService.GetAllBlocks();
                     }
@@ -498,9 +499,10 @@ namespace ReserveBlockCore.Services
                         var lastBlock = Globals.LastBlock;
                         var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate)
+                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                         {
-                            ConsoleWriterService.Output("Block downloads finished.");
+                            DateTime endTime = DateTime.UtcNow;
+                            ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
                             LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
                             download = false; //exit the while.
                             Globals.StopAllTimers = false;
@@ -816,7 +818,7 @@ namespace ReserveBlockCore.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.ToString());
                 }
             }
             

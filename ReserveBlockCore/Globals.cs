@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -21,18 +22,19 @@ namespace ReserveBlockCore
         public static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? DBCommitTimer;//checks dbs and commits log files. 
+        public static Timer? ConnectionHistoryTimer;//process connections and history of them
 
         #endregion
 
         #region Global General Variables
 
-        public static int BlockLock = 350000;
+        public const int ADNRLimit = 65;
+        public static int BlockLock = 294000;
         public static string Platform = "";
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
-        public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>();
-        public static List<Validators> InactiveValidators = new List<Validators>();
-        public static List<Validators> MasternodePool = new List<Validators>();
-        public static List<string> Locators = new List<string>();
+        public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
+        public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        
+        public static ConcurrentDictionary<string, string> Locators = new ConcurrentDictionary<string, string>(); // BeaconUID
         public static bool StopConsoleOutput = false;
         public static Block LastBlock = new Block { Height = -1 };
         public static Adjudicators? LeadAdjudicator = null;
@@ -77,7 +79,7 @@ namespace ReserveBlockCore
         public static bool PrintConsoleErrors = false;
         public static Process proc = new Process();
         public static int MajorVer = 2;
-        public static int MinorVer = 0; //change this to 1 for main release
+        public static int MinorVer = 1; //change this to 1 for main release
         public static int BuildVer = 0;
         public static string CLIVersion = "";
         public static bool HDWallet = false;
@@ -86,7 +88,7 @@ namespace ReserveBlockCore
         public static int PasswordClearTime = 10;
         public static bool AutoDownloadNFTAsset = false;
         public static bool IgnoreIncomingNFTs = false;
-        public static List<string> RejectAssetExtensionTypes = new List<string>();
+        public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static BeaconReference BeaconReference = new BeaconReference();
 
         #endregion
@@ -103,6 +105,7 @@ namespace ReserveBlockCore
         public static DateTime? LastTaskResultTime = null;
         public static long LastTaskBlockHeight = 0;
         public static bool LastTaskError = false;
+        public static int LastTaskErrorCount = 0;
         public static bool LastWinningTaskError = false;
         public static long LastWinningTaskBlockHeight = 0;
         public static CancellationTokenSource source = new CancellationTokenSource(10000);
@@ -111,9 +114,8 @@ namespace ReserveBlockCore
 
         #region P2P Server Variables
 
-        public static ConcurrentDictionary<string, HubCallerContext> P2PPeerList = new ConcurrentDictionary<string, HubCallerContext>();
-        public static ConcurrentDictionary<string, HubCallerContext> BeaconPeerList = new ConcurrentDictionary<string, HubCallerContext>();
-        public static ConcurrentDictionary<string, HubCallerContext> AdjPeerList = new ConcurrentDictionary<string, HubCallerContext>();
+        public static ConcurrentDictionary<string, HubCallerContext> P2PPeerDict = new ConcurrentDictionary<string, HubCallerContext>();
+        public static ConcurrentDictionary<string, HubCallerContext> BeaconPeerDict = new ConcurrentDictionary<string, HubCallerContext>();        
         public static ConcurrentDictionary<string, MessageLock> MessageLocks = new ConcurrentDictionary<string, MessageLock>();
         public static ConcurrentDictionary<string, int> TxRebroadcastDict = new ConcurrentDictionary<string, int>();
 
@@ -121,21 +123,22 @@ namespace ReserveBlockCore
 
         #region P2P Adj Server Variables
 
-        public static List<FortisPool> FortisPool = new List<FortisPool>();
-        public static ConcurrentDictionary<string, FortisPool> FortisPoolDict = new ConcurrentDictionary<string, FortisPool>();
-        public static List<BeaconPool> BeaconPool = new List<BeaconPool>();
+        public static ConcurrentMultiDictionary<string, string, FortisPool> FortisPool = new ConcurrentMultiDictionary<string, string, FortisPool>(); // IP address, RBX address
+        public static ConcurrentMultiDictionary<string, string, BeaconPool> BeaconPool = new ConcurrentMultiDictionary<string, string, BeaconPool>(); // IP address, Reference
+        public static ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue> ConnectionHistoryDict = new ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue>();
+        public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
 
         public static TaskQuestion? CurrentTaskQuestion = null;
         public static TaskNumberAnswer? CurrentTaskNumberAnswer = null;
         public static string VerifySecret = "";
 
-        public static List<TaskWinner> TaskWinnerList = new List<TaskWinner>();
-        public static List<TaskNumberAnswer> TaskSelectedNumbers = new List<TaskNumberAnswer>();
-        public static List<TaskAnswer> TaskAnswerList = new List<TaskAnswer>();
-        public static List<TaskNumberAnswer> TaskAnswerList_New = new List<TaskNumberAnswer>();
-        public static List<TaskAnswer> RejectedTaskAnswerList = new List<TaskAnswer>();
-        public static List<TaskNumberAnswer> RejectedTaskAnswerList_New = new List<TaskNumberAnswer>();
-        public static List<Transaction> BroadcastedTrxList = new List<Transaction>();        
+        public static ConcurrentDictionary<string, TaskWinner> TaskWinnerDict = new ConcurrentDictionary<string, TaskWinner>(); // RBX address
+        public static ConcurrentDictionary<string, TaskNumberAnswer> TaskSelectedNumbers = new ConcurrentDictionary<string, TaskNumberAnswer>(); // RBX address
+        public static ConcurrentDictionary<string, TaskAnswer> TaskAnswerDict = new ConcurrentDictionary<string, TaskAnswer>(); // RBX address
+        public static ConcurrentDictionary<string, TaskNumberAnswer> TaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswer>(); // RBX address
+        public static ConcurrentDictionary<string, TaskAnswer> RejectedTaskAnswerDict = new ConcurrentDictionary<string, TaskAnswer>(); // RBX address
+        public static ConcurrentDictionary<string, TaskNumberAnswer> RejectedTaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswer>(); // RBX address
+        public static ConcurrentDictionary<string, Transaction> BroadcastedTrxDict = new ConcurrentDictionary<string, Transaction>(); // Hash
 
         #endregion
 

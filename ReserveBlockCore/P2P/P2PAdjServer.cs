@@ -14,6 +14,7 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using static ReserveBlockCore.Models.ConnectionHistory;
 
 namespace ReserveBlockCore.P2P
 {
@@ -23,293 +24,125 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {
             string lastArea = "";
+            var startTime = DateTime.UtcNow;
+            ConnectionHistory.ConnectionHistoryQueue conQueue = new ConnectionHistory.ConnectionHistoryQueue();
             try
             {
-                var keepValConnected = true;
                 var peerIP = GetIP(Context);
-                bool logData = false;
-                
-                string connectionId = Context.ConnectionId;
                 var httpContext = Context.GetHttpContext();
-                if (httpContext != null)
+                if(httpContext == null)
+                {                    
+                    await EndOnConnect(peerIP, "1", startTime, conQueue, "httpcontext was null", "httpcontext was null");
+                    return;
+                }
+                
+                var address = httpContext.Request.Headers["address"].ToString();
+                var uName = httpContext.Request.Headers["uName"].ToString();
+                var signature = httpContext.Request.Headers["signature"].ToString();
+                var walletVersion = httpContext.Request.Headers["walver"].ToString();
+
+                conQueue.Address = address;
+                conQueue.IPAddress = peerIP;
+
+                var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
+
+                var fortisPool = Globals.FortisPool.Values;                
+                if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(uName) || string.IsNullOrWhiteSpace(signature) || !walletVersionVerify) 
                 {
-                    var address = httpContext.Request.Headers["address"].ToString();
-                    var uName = httpContext.Request.Headers["uName"].ToString();
-                    var signature = httpContext.Request.Headers["signature"].ToString();
-                    var walletVersion = httpContext.Request.Headers["walver"].ToString();
+                    await EndOnConnect(peerIP, "Z", startTime, conQueue,
+                        "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.",
+                        "Connected, but missing field(s). Address, Unique name, and Signature required: " + address);
+                    return;
+                }
+                
+                var stateAddress = StateData.GetSpecificAccountStateTrei(address);
+                if(stateAddress == null)
+                {
+                    await EndOnConnect(peerIP, "X", startTime, conQueue,
+                        "Connection Attempted, But failed to find the address in trie. You are being disconnected.",
+                        "Connection Attempted, but missing field Address: " + address + " IP: " + peerIP);
+                    return;                    
+                }
 
-                    var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
+                if(stateAddress.Balance < 1000)
+                {
+                    await EndOnConnect(peerIP, "W", startTime, conQueue,
+                        "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.",
+                        "Connected, but you do not have the minimum balance of 1000 RBX: " + address);
+                    return;
+                }
 
-                    var fortisPool = Globals.FortisPool.ToList();
-                    lastArea = "A";
-                    if (!string.IsNullOrWhiteSpace(address) && !string.IsNullOrWhiteSpace(uName) && !string.IsNullOrWhiteSpace(signature) && walletVersionVerify)
-                    {
-                        try
-                        {
-                            lastArea = "B";
-                            var stateAddress = StateData.GetSpecificAccountStateTrei(address);
-                            if (!string.IsNullOrWhiteSpace(address))
-                            {
-                                lastArea = "C";
-                                if (stateAddress.Balance >= 1000)
-                                {
-                                    lastArea = "D";
-                                    var verifySig = SignatureService.VerifySignature(address, address, signature);
-                                    if (verifySig != false)
-                                    {
-                                        lastArea = "E";
-                                        var valExist = fortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
-                                        if (valExist == null)
-                                        {
-                                            lastArea = "F";
-                                            FortisPool fortisPools = new FortisPool();
-                                            fortisPools.IpAddress = peerIP;
-                                            fortisPools.UniqueName = uName;
-                                            fortisPools.ConnectDate = DateTime.UtcNow;
-                                            fortisPools.Address = address;
-                                            fortisPools.ConnectionId = connectionId;
-                                            fortisPools.WalletVersion = walletVersion;
+                var verifySig = SignatureService.VerifySignature(address, address, signature);
+                if(!verifySig)
+                {
+                    await EndOnConnect(peerIP, "V", startTime, conQueue,
+                        "Connected, but your address signature failed to verify. You are being disconnected.",
+                        "Connected, but your address signature failed to verify with ADJ: " + address);
+                    return;
+                }
 
-                                            Globals.FortisPool.Add(fortisPools);
-                                            //keepValConnected = true;                                            
-                                            //Console.WriteLine("User Added! RBX Addr: " + address + " Unique Name: " + uName);
-                                        }
-                                        else
-                                        {
-                                            lastArea = "G";
-                                            var validator = Globals.FortisPool.Where(x => x.Address == address || x.IpAddress == peerIP).FirstOrDefault();
-                                            if (validator != null)
-                                            {
-                                                lastArea = "H";
-                                                if (validator.Address != address)
-                                                {
-                                                    lastArea = "I";
-                                                    DateTime? lastResponseTime = validator.LastAnswerSendDate != null ? validator.LastAnswerSendDate.Value.AddMinutes(15) : null;
-                                                    if(lastResponseTime == null)
-                                                    {
-                                                        lastArea = "J";
-                                                        var connectDate = validator.ConnectDate.AddMinutes(15);
-                                                        if (connectDate >= DateTime.UtcNow)
-                                                        {
-                                                            lastArea = "K";
-                                                            //Connection aborted
-                                                            await SendAdjMessageSingle("status", "Disconnected. Connect DateTime >= Current DateTime");
-                                                            keepValConnected = false;
-                                                        }
-                                                        else
-                                                        {
-                                                            lastArea = "L";
-                                                            validator.ConnectDate = DateTime.UtcNow;
-                                                            validator.Address = address;
-                                                            validator.ConnectionId = connectionId;
-                                                            validator.UniqueName = uName;
-                                                            validator.IpAddress = peerIP;
-                                                            validator.WalletVersion = walletVersion;
-                                                            validator.LastAnswerSendDate = null;
-                                                            //keepValConnected = true;
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        lastArea = "M";
-                                                        if (lastResponseTime >= DateTime.Now)
-                                                        {
-                                                            lastArea = "N";
-                                                            //Connection aborted
-                                                            await SendAdjMessageSingle("status", "Disconnected. Last Task Sent DateTime >= Current Last Task Sent DateTime");
-                                                            keepValConnected = false;
-                                                        }
-                                                        else
-                                                        {
-                                                            lastArea = "O";
-                                                            validator.ConnectDate = DateTime.UtcNow;
-                                                            validator.Address = address;
-                                                            validator.ConnectionId = connectionId;
-                                                            validator.UniqueName = uName;
-                                                            validator.IpAddress = peerIP;
-                                                            validator.WalletVersion = walletVersion;
-                                                            validator.LastAnswerSendDate = null;
-                                                            //keepValConnected = true;
-                                                        }
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    lastArea = "P";
-                                                    if (validator.IpAddress == peerIP)
-                                                    {
-                                                        lastArea = "Q";
-                                                        validator.ConnectDate = DateTime.UtcNow;
-                                                        validator.Address = address; 
-                                                        validator.ConnectionId = connectionId;
-                                                        validator.UniqueName = uName;
-                                                        validator.IpAddress = peerIP;
-                                                        validator.WalletVersion = walletVersion;
-                                                        validator.LastAnswerSendDate = null;
-                                                        //keepValConnected = true;
-                                                    }
-                                                }
-                                                lastArea = "R";
-                                                //ConsoleWriterService.Output($"User Updated! RBX Addr: {address} / Unique Name: {uName} / Peer IP: {peerIP}");
-                                            }
-                                            else
-                                            {
-                                                FortisPool fortisPools = new FortisPool();
-                                                fortisPools.IpAddress = peerIP;
-                                                fortisPools.UniqueName = uName;
-                                                fortisPools.ConnectDate = DateTime.UtcNow;
-                                                fortisPools.Address = address;
-                                                fortisPools.ConnectionId = connectionId;
-                                                fortisPools.WalletVersion = walletVersion;
+                var fortisPools = new FortisPool();
+                fortisPools.IpAddress = peerIP;
+                fortisPools.UniqueName = uName;
+                fortisPools.ConnectDate = DateTime.UtcNow;
+                fortisPools.Address = address;
+                fortisPools.Context = Context;
+                fortisPools.WalletVersion = walletVersion;
 
-                                                Globals.FortisPool.Add(fortisPools);                                                
-                                                //keepValConnected = true;
-                                            }
-                                            lastArea = "S";
-                                        }
+                UpdateFortisPool(fortisPools);
 
-                                        await SendAdjMessageSingle("status", $"Authenticated? {keepValConnected}");
-
-                                        var fortisPoolStr = "";
-
-                                        if (Globals.CurrentTaskQuestion == null)
-                                        {
-                                            lastArea = "T";
-                                            await SendAdjMessageSingle("status", "Connected");
-                                            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                            ConsoleWriterService.Output("Task Created");
-                                            var taskQuest = Globals.CurrentTaskQuestion;
-                                            TaskQuestion nTaskQuestion = new TaskQuestion();
-                                            nTaskQuestion.TaskType = taskQuest.TaskType;
-                                            nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
-                                            string taskQuestionStr = "";
-                                            taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                                            await SendAdjMessageAll("task", taskQuestionStr);
-                                            //Console.WriteLine("Task Sent All");
-                                        }
-                                        else
-                                        {
-                                            lastArea = "U";
-                                            await SendAdjMessageSingle("status", "Connected");
-                                            var taskQuest = Globals.CurrentTaskQuestion;
-                                            TaskQuestion nTaskQuestion = new TaskQuestion();
-                                            nTaskQuestion.TaskType = taskQuest.TaskType;
-                                            nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
-                                            string taskQuestionStr = "";
-                                            taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                                            await SendAdjMessageSingle("task", taskQuestionStr);
-                                            //Console.WriteLine("Task Sent Single");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        lastArea = "V";
-                                        await SendAdjMessageSingle("status", "Connected, but your address signature failed to verify. You are being disconnected.");
-                                        keepValConnected = false;
-                                        if (Globals.OptionalLogging == true)
-                                        {
-                                            LogUtility.Log("Connected, but your address signature failed to verify with ADJ: " + address, "Adj Connection");
-                                        }
-
-                                    }
-                                }
-                                else
-                                {
-                                    lastArea = "W";
-                                    await SendAdjMessageSingle("status", "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.");
-                                    keepValConnected = false;
-                                    if (Globals.OptionalLogging == true)
-                                    {
-                                        LogUtility.Log("Connected, but you do not have the minimum balance of 1000 RBX: " + address, "Adj Connection");
-                                    }
-
-                                }
-                            }
-                            else
-                            {
-                                lastArea = "X";
-                                await SendAdjMessageSingle("status", "Connection Attempted, But failed to find the address in trie. You are being disconnected.");
-                                keepValConnected = false;
-                                if (Globals.OptionalLogging == true)
-                                {
-                                    LogUtility.Log("onnection Attempted, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
-                                }
-
-                            }
-
-                        }
-                        catch (Exception ex)
-                        {
-                            lastArea = "Y";
-                            DbContext.Rollback();
-                            if (Globals.OptionalLogging == true)
-                            {
-                                ErrorLogUtility.LogError($"Exception thrown: Error: {ex.Message}", "Adj Connection");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        lastArea = "Z";
-                        await SendAdjMessageSingle("status", "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.");
-                        keepValConnected = false;
-                        if (Globals.OptionalLogging == true)
-                        {
-                            LogUtility.Log("Connected, but missing field(s). Address, Unique name, and Signature required: " + address, "Adj Connection");
-                        }
-                    }
+                await SendAdjMessageSingle("status", $"Authenticated? True");
+                if (Globals.CurrentTaskQuestion == null)
+                {
+                    lastArea = "T";
+                    conQueue.WasSuccess = true;
+                    await SendAdjMessageSingle("status", "Connected");
+                    Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                    ConsoleWriterService.Output("Task Created");
+                    var taskQuest = Globals.CurrentTaskQuestion;
+                    TaskQuestion nTaskQuestion = new TaskQuestion();
+                    nTaskQuestion.TaskType = taskQuest.TaskType;
+                    nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
+                    string taskQuestionStr = "";
+                    taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                    await SendAdjMessageAll("task", taskQuestionStr);
+                    //Console.WriteLine("Task Sent All");
                 }
                 else
                 {
-                    lastArea = "1";
-                    keepValConnected = false;
-                    await SendAdjMessageSingle("status", "httpcontext was null");
-                    if (Globals.OptionalLogging == true)
-                    {
-                        LogUtility.Log("Httpcontext was null.", "Adj Connection");
-                    }
+                    conQueue.WasSuccess = true;
+                    lastArea = "U";
+                    await SendAdjMessageSingle("status", "Connected");
+                    var taskQuest = Globals.CurrentTaskQuestion;
+                    TaskQuestion nTaskQuestion = new TaskQuestion();
+                    nTaskQuestion.TaskType = taskQuest.TaskType;
+                    nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
+                    string taskQuestionStr = "";
+                    taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                    await SendAdjMessageSingle("task", taskQuestionStr);
+                    //Console.WriteLine("Task Sent Single");
                 }
 
-                if (keepValConnected)
-                {
-                    if (Globals.AdjPeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
-                        context.Abort();
+                lastArea = "A";
+                if (Globals.OptionalLogging == true)                
+                    LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {peerIP} ", "Adj Connection");                
 
-                    Globals.AdjPeerList[peerIP] = Context;
-                }
-                else
-                    Context.Abort();
-
-                if (Globals.OptionalLogging == true)
-                {
-                    LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {peerIP} ", "Adj Connection");
-                }
-
-
+                conQueue.ConnectionTime = (DateTime.UtcNow - startTime).Milliseconds;
+                Globals.ConnectionHistoryDict.TryAdd(conQueue.Address, conQueue);
             }
             catch (Exception ex)
             {
-                DbContext.Rollback();
-                //Connection attempt failed with unhandled error.
-                if (Globals.OptionalLogging == true)
-                {
-                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.Message}", "Adj Connection");
-                }
+                ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "P2PAdjServer.OnConnectedAsync()");
             }
 
-            
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            Globals.P2PPeerList.TryRemove(peerIP, out var test);
-            try
-            {
-                Globals.FortisPool.RemoveAll(x => x.IpAddress == peerIP && x.ConnectionId == Context.ConnectionId);
-            }
-            catch { };
+            Globals.P2PPeerDict.TryRemove(peerIP, out _);
+            Globals.FortisPool.TryRemoveFromKey1(peerIP, out _);
 
             await base.OnDisconnectedAsync(ex);
         }
@@ -324,6 +157,36 @@ namespace ReserveBlockCore.P2P
             await Clients.All.SendAsync("GetAdjMessage", message, data);
         }
 
+        private async Task EndOnConnect(string ipAddress, string lastArea, DateTime startTime, ConnectionHistoryQueue queue, 
+            string adjMessage, string loggMessage)
+        {            
+            await SendAdjMessageSingle("status", adjMessage);
+            if (Globals.OptionalLogging == true)
+            {
+                LogUtility.Log(loggMessage, "Adj Connection");
+                LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {ipAddress} ", "Adj Connection");
+            }
+
+
+            queue.ConnectionTime = (DateTime.UtcNow - startTime).Milliseconds;
+            Globals.ConnectionHistoryDict.TryAdd(queue.Address, queue);
+            Context?.Abort();
+        }
+
+        private static void UpdateFortisPool(FortisPool pool)
+        {
+            var hasIpPool = Globals.FortisPool.TryGetFromKey1(pool.IpAddress, out var ipPool);
+            var hasAddressPool = Globals.FortisPool.TryGetFromKey2(pool.Address, out var addressPool);
+
+            if (hasIpPool && ipPool.Value.Context.ConnectionId != pool.Context.ConnectionId)
+                ipPool.Value.Context.Abort();
+
+            if (hasAddressPool && addressPool.Value.Context.ConnectionId != pool.Context.ConnectionId)
+                addressPool.Value.Context.Abort();
+
+            Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
+        }
+
         #endregion
 
         #region Get Connected Val Count
@@ -332,7 +195,7 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                var peerCount = Globals.AdjPeerList.Count;
+                var peerCount = Globals.FortisPool.Count;
                 return peerCount;
             }
             catch { }
@@ -356,7 +219,8 @@ namespace ReserveBlockCore.P2P
                         taskAnsRes.AnswerCode = 1; //Answer too large
                         return taskAnsRes;
                     }
-                        
+
+                    var ipAddress = GetIP(Context);
                     return await P2PServer.SignalRQueue(Context, answerSize, async () =>
                     {
                         if (Globals.BlocksDownloading == 0)
@@ -364,17 +228,16 @@ namespace ReserveBlockCore.P2P
                             if (Globals.Adjudicate)
                             {
                                 //This will result in users not getting their answers chosen if they are not in list.
-                                var fortisPool = Globals.FortisPool.ToList();
-                                if (fortisPool.Exists(x => x.Address == taskResult.Address))
+                                var fortisPool = Globals.FortisPool.Values;
+                                if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                 {
+                                    (taskResult.Address, _) = Out;
                                     if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
-                                    {
-                                        var taskAnswerList = Globals.TaskAnswerList_New.ToList();
-                                        var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
-                                        if (!answerExist)
+                                    {                                                                                
+                                        if (!Globals.TaskAnswerDict_New.TryGetValue(taskResult.Address, out var Answer))
                                         {
                                             taskResult.SubmitTime = DateTime.Now;
-                                            Globals.TaskAnswerList_New.Add(taskResult);
+                                            Globals.TaskAnswerDict_New[taskResult.Address] = taskResult;
                                             taskAnsRes.AnswerAccepted = true;
                                             taskAnsRes.AnswerCode = 0;
                                             return taskAnsRes;
@@ -404,7 +267,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex) 
             {
-                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.Message}", "P2PAdjServer.ReceiveTaskAnswer_New()");
+                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswer_New()");
             }
             taskAnsRes.AnswerCode = 1337; // Unknown Error
             return taskAnsRes;
@@ -423,24 +286,24 @@ namespace ReserveBlockCore.P2P
                     {
                         if (winningTask.WinningBlock.Size > 1048576)
                             return false;
+
+                        var ipAddress = GetIP(Context);
                         return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
                         {
                             if (Globals.BlocksDownloading == 0)
                             {
                                 if (Globals.Adjudicate)
                                 {
-                                    //This will result in users not getting their answers chosen if they are not in list.
-                                    var fortisPool = Globals.FortisPool.ToList();
-                                    if (fortisPool.Exists(x => x.Address == winningTask.Address))
+                                    //This will result in users not getting their answers chosen if they are not in list.                                    
+                                    if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                     {
-                                        //if(true)
-                                        var exist = Globals.TaskSelectedNumbers.Exists(x => x.Address == winningTask.Address);
-                                        if (exist)
+                                        (winningTask.Address, _) = Out;                                        
+                                        if (Globals.TaskSelectedNumbers.TryGetValue(winningTask.Address, out var Winner))
                                         {
                                             if (winningTask.WinningBlock.Height == Globals.LastBlock.Height + 1 &&
                                         winningTask.VerifySecret == Globals.VerifySecret)
                                             {
-                                                Globals.TaskWinnerList.Add(winningTask);
+                                                Globals.TaskWinnerDict[winningTask.Address] = winningTask;
                                                 return true;
                                             }
                                             else
@@ -483,24 +346,24 @@ namespace ReserveBlockCore.P2P
                     {
                         if (taskResult.Block.Size > 1048576)
                             return false;
+
+                        var ipAddress = GetIP(Context);
                         return await P2PServer.SignalRQueue(Context, (int)taskResult.Block.Size, async () =>
                         {
                             if (Globals.BlocksDownloading == 0)
                             {
                                 if (Globals.Adjudicate)
                                 {
-                                    //This will result in users not getting their answers chosen if they are not in list.
-                                    var fortisPool = Globals.FortisPool.ToList();
-                                    if (fortisPool.Exists(x => x.Address == taskResult.Address))
+                                    //This will result in users not getting their answers chosen if they are not in list.                                    
+                                    if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                     {
+                                        (taskResult.Address, _) = Out;
                                         if (taskResult.Block.Height == Globals.LastBlock.Height + 1)
-                                        {
-                                            var taskAnswerList = Globals.TaskAnswerList.ToList();
-                                            var answerExist = taskAnswerList.Exists(x => x.Address == taskResult.Address);
-                                            if (!answerExist)
+                                        {                                            
+                                            if (!Globals.TaskAnswerDict.TryGetValue(taskResult.Address, out var Answer))
                                             {
                                                 taskResult.SubmitTime = DateTime.UtcNow;
-                                                Globals.TaskAnswerList.Add(taskResult);
+                                                Globals.TaskAnswerDict[taskResult.Address] = taskResult;
                                                 return true;
                                             }
                                         }
@@ -535,7 +398,6 @@ namespace ReserveBlockCore.P2P
         #endregion
         
         #region Receive TX to relay
-
         public async Task<bool> ReceiveTX(Transaction transaction)
         {
             try
@@ -573,7 +435,7 @@ namespace ReserveBlockCore.P2P
                                                     var txOutput = "";
                                                     txOutput = JsonConvert.SerializeObject(transaction);
                                                     await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
-                                                    Globals.BroadcastedTrxList.Add(transaction);
+                                                    Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
                                                     output = true;
                                                 }
                                             }
@@ -585,12 +447,12 @@ namespace ReserveBlockCore.P2P
                                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
                                             if (!isCraftedIntoBlock)
                                             {
-                                                if (!Globals.BroadcastedTrxList.Exists(x => x.Hash == transaction.Hash))
+                                                if (!Globals.BroadcastedTrxDict.TryGetValue(transaction.Hash, out var test))
                                                 {
                                                     var txOutput = "";
                                                     txOutput = JsonConvert.SerializeObject(transaction);
                                                     await SendAdjMessageAll("tx", txOutput);
-                                                    Globals.BroadcastedTrxList.Add(transaction);
+                                                    Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
                                                 }
                                             }
                                             else

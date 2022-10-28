@@ -75,7 +75,7 @@ namespace ReserveBlockCore.Data
                 }
 
                 //Get tx's from Mempool                
-                var processedTxPool = TransactionData.ProcessTxPool();
+                var processedTxPool = await TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
                 var lastBlock = Globals.LastBlock;
@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
@@ -197,7 +197,7 @@ namespace ReserveBlockCore.Data
 
         #region Craft Block Deprecated
         //Method needing validator functions still.
-        public static async Task<Block?> CraftNewBlock(string validator, int totalVals, string valAnswer)
+        public static async Task<Block?> CraftNewBlock(string validator, string valAnswer)
         {
             try
             {
@@ -212,7 +212,7 @@ namespace ReserveBlockCore.Data
                 }
 
                 //Get tx's from Mempool                
-                var processedTxPool = TransactionData.ProcessTxPool();
+                var processedTxPool = await TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
                 var lastBlock = Globals.LastBlock;
@@ -278,7 +278,7 @@ namespace ReserveBlockCore.Data
                     Transactions = GiveOtherInfos(transactionList, height),
                     Validator = validator,
                     ChainRefId = ChainRef,
-                    TotalValidators = totalVals,
+                    TotalValidators = Globals.FortisPool.Count,
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
@@ -324,7 +324,7 @@ namespace ReserveBlockCore.Data
             }
             catch (Exception ex)
             {                
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
@@ -351,21 +351,12 @@ namespace ReserveBlockCore.Data
             try
             {
                 var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-                //var test = blocks.EnsureIndexSafe(x => x.Height);
-                //if(test == true)
-                //{
-                //    Console.WriteLine("Ensure Index OK");
-                //}
-                //else
-                //{
-                //    Console.WriteLine("Ensure Index Fail");
-                //}
                 return blocks;
             }
             catch(Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.GetBlocks()");
                 return null;
             }
             
@@ -377,8 +368,7 @@ namespace ReserveBlockCore.Data
         }
         public static Block GetBlockByHeight(long height)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Height); 
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
             var block = blocks.FindOne(x => x.Height == height);
             return block;
         }
@@ -386,8 +376,7 @@ namespace ReserveBlockCore.Data
 
         public static Block GetBlockByHash(string hash)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Hash); 
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -455,8 +444,7 @@ namespace ReserveBlockCore.Data
         }
         public static void AddBlock(Block block)
         {
-            var blocks = GetBlocks();
-            //blocks.EnsureIndexSafe(x => x.Height);
+            var blocks = GetBlocks();            
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
@@ -486,8 +474,7 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Block> GetBlocksByValidator(string address)
         {
 
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Validator);
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);            
             var query = blocks.Query()
                 .OrderByDescending(x => x.Height)
                 .Where(x => x.Validator == address)

@@ -19,10 +19,10 @@ namespace ReserveBlockCore.P2P
             bool pendingReceives = false;
 
             var peerIP = GetIP(Context);
-            if (Globals.BeaconPeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+            if (Globals.BeaconPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
                 context.Abort();
 
-            Globals.BeaconPeerList[peerIP] = Context;
+            Globals.BeaconPeerDict[peerIP] = Context;
 
             var httpContext = Context.GetHttpContext();
             if (httpContext != null)
@@ -34,7 +34,7 @@ namespace ReserveBlockCore.P2P
 
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
-                var beaconPool = Globals.BeaconPool.ToList();
+                var beaconPool = Globals.BeaconPool.Values.ToList();
 
                 if (!string.IsNullOrWhiteSpace(beaconRef) && walletVersionVerify)
                 { 
@@ -102,11 +102,11 @@ namespace ReserveBlockCore.P2P
                     }
 
                     if(pendingSends == true || pendingReceives == true)
-                    {
+                    {                        
                         var conExist = beaconPool.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
                         if (conExist != null)
                         {
-                            var beaconCon = Globals.BeaconPool.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
+                            var beaconCon = Globals.BeaconPool.Values.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
                             if (beaconCon != null)
                             {
                                 beaconCon.WalletVersion = walletVersion;
@@ -127,7 +127,7 @@ namespace ReserveBlockCore.P2P
                                 IpAddress = peerIP
                             };
 
-                            Globals.BeaconPool.Add(beaconConnection);
+                            Globals.BeaconPool[(peerIP, beaconRef)] = beaconConnection;
                         }
 
                         connected = true;
@@ -154,12 +154,8 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            _ = Globals.BeaconPeerList.TryRemove(peerIP, out var test);
-            try 
-            { 
-                Globals.BeaconPool.RemoveAll(x => x.IpAddress == peerIP && x.ConnectionId == Context.ConnectionId); 
-            }
-            catch { };
+            Globals.BeaconPeerDict.TryRemove(peerIP, out var test);
+            Globals.BeaconPool.TryGetFromKey1(peerIP, out var test2);
         }
         private async Task SendMessageClient(string clientId, string method, string message)
         {
@@ -204,7 +200,7 @@ namespace ReserveBlockCore.P2P
             //{
                 bool result = false;
                 var peerIP = GetIP(Context);
-                var beaconPool = Globals.BeaconPool.ToList();
+                var beaconPool = Globals.BeaconPool.Values.ToList();
                 try
                 {
                     if (bdd != null)
@@ -261,7 +257,10 @@ namespace ReserveBlockCore.P2P
                                 var sendJson = JsonConvert.SerializeObject(senddata);
                                 if(remoteUser != null)
                                 {
-                                    await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                                    if(beaconDataRec.IsReady != true)
+                                    {
+                                        await SendMessageClient(remoteUser.ConnectionId, "send", sendJson);
+                                    }
                                 }
                             }
                             
@@ -272,7 +271,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                     result = false; //just in case setting this to false
-                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
                 }
 
                 return result;
@@ -324,10 +323,16 @@ namespace ReserveBlockCore.P2P
                                 };
 
                                 var beaconResult = BeaconData.SaveBeaconData(bd);
+                                result = true;
                             }
                             else
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && 
+                                x.AssetName == fileName && 
+                                x.IPAdress == peerIP && 
+                                x.IsReady != true && 
+                                x.NextAssetOwnerAddress == bsd.NextAssetOwnerAddress).FirstOrDefault();
+
                                 if (bdCheck == null)
                                 {
                                     var bd = new BeaconData
@@ -345,16 +350,21 @@ namespace ReserveBlockCore.P2P
                                     };
 
                                     var beaconResult = BeaconData.SaveBeaconData(bd);
+                                    result = true;
+                                }
+                                else
+                                {
+                                    ErrorLogUtility.LogError($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "P2PBeaconService.ReceiveUploadRequest()");
+                                    return false;
                                 }
                             }
                         }
-
-                        result = true;
                     }
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+                    return false;
                 }
 
                 return result;
@@ -366,10 +376,11 @@ namespace ReserveBlockCore.P2P
         #region Beacon Data IsReady Flag Set - Sets IsReady to true if file is present
         public async Task<bool> BeaconDataIsReady(string data)
         {
+            var peerIP = GetIP(Context);
             bool output = false;
             try
             {
-                var beaconPool = Globals.BeaconPool.ToList();
+                var beaconPool = Globals.BeaconPool.Values.ToList();
                 var payload = JsonConvert.DeserializeObject<string[]>(data);
                 if (payload != null)
                 {
@@ -379,7 +390,7 @@ namespace ReserveBlockCore.P2P
                     var beacon = BeaconData.GetBeacon();
                     if (beacon != null)
                     {
-                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName);
+                        var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.IPAdress == peerIP && x.IsReady == false);
                         if (beaconData != null)
                         {
                             beaconData.IsReady = true;
@@ -394,6 +405,11 @@ namespace ReserveBlockCore.P2P
                                 string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
                                 var sendJson = JsonConvert.SerializeObject(senddata);
                                 await SendMessageClient(remoteUser.ConnectionId, "receive", sendJson);
+                                NFTLogUtility.Log($"Receive request was sent to: {remoteUser.IpAddress}. Information JSON sent: {sendJson}", "P2PBeaconServer.BeaconDataIsReady()");
+                            }
+                            else
+                            {
+                                NFTLogUtility.Log($"Remote user was null. Ref: {receiverRef}", "P2PBeaconServer.BeaconDataIsReady()");
                             }
                         }
                     }
@@ -401,10 +417,89 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-
+                NFTLogUtility.Log($"Error occurred when sending receive. Error: {ex.ToString()}", "P2PBeaconServer.BeaconDataIsReady()");
             }
 
             return output;
+        }
+
+        #endregion
+
+        #region Beacon Is File Ready check for receiver
+        public async Task<bool> BeaconIsFileReady(string data)
+        {
+            var peerIP = GetIP(Context);
+
+            bool result = false;
+            var payload = JsonConvert.DeserializeObject<string[]>(data);
+            if (payload != null)
+            {
+                var scUID = payload[0];
+                var assetName = payload[1];
+                var beacon = BeaconData.GetBeacon();
+                if (beacon != null)
+                {
+                    var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.DownloadIPAddress == peerIP);
+                    if (beaconData != null)
+                    {
+                        if (beaconData.IsReady)
+                        {
+                            result = true;
+                            return result;
+                        }
+                        else
+                        {
+                            //attempt to call to person to get file.
+
+                            if (Globals.BeaconPool.TryGetFromKey2(beaconData.Reference, out var remoteUser))
+                            {
+                                string[] senddata = { beaconData.SmartContractUID, beaconData.AssetName };
+                                var sendJson = JsonConvert.SerializeObject(senddata);
+                                if (remoteUser.Value != null)
+                                {
+                                    await SendMessageClient(remoteUser.Value.ConnectionId, "send", sendJson);
+                                }
+                            }
+                        }
+                            
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Beacon File Is Downloaded set
+        public async Task<bool> BeaconFileIsDownloaded(string data)
+        {
+            var peerIP = GetIP(Context);
+
+            bool result = false;
+            var payload = JsonConvert.DeserializeObject<string[]>(data);
+            if (payload != null)
+            {
+                var scUID = payload[0];
+                var assetName = payload[1];
+                var beacon = BeaconData.GetBeacon();
+                if (beacon != null)
+                {
+                    var beaconData = beacon.FindOne(x => x.SmartContractUID == scUID && x.AssetName == assetName && x.DownloadIPAddress == peerIP);
+                    if (beaconData != null)
+                    {
+                        beaconData.IsDownloaded = true;
+                        beacon.UpdateSafe(beaconData);
+                    }
+
+                    //remove all completed beacon request
+                    beacon.DeleteManySafe(x => x.IsDownloaded == true);
+                }
+            }
+
+
+
+            return result;
         }
 
         #endregion

@@ -13,6 +13,8 @@ using System.Diagnostics;
 using System.Security;
 using Microsoft.AspNetCore.Mvc.Formatters.Xml;
 using ReserveBlockCore.Beacon;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.IO;
 
 namespace ReserveBlockCore.Commands
 {
@@ -248,7 +250,13 @@ namespace ReserveBlockCore.Commands
 
         public static async void ResetValidator()
         {
-            await ValidatorService.DoMasterNodeStop();
+            Globals.ValidatorAddress = "";
+            var result = await ValidatorService.ValidatorErrorReset();
+            if (result)
+            {
+                Globals.LastTaskErrorCount = 0;
+                ValidatorLogUtility.Log("ValidatorErrorReset() called manually. Results: Success!", "Program.validatorListCheckTimer_Elapsed()");
+            }
         }
         public static async void AddPeer()
         {
@@ -305,7 +313,7 @@ namespace ReserveBlockCore.Commands
                 }
                 catch(Exception ex)
                 {
-                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
                 }
             }
@@ -367,7 +375,7 @@ namespace ReserveBlockCore.Commands
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
                 }
             }
@@ -429,7 +437,7 @@ namespace ReserveBlockCore.Commands
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Unexpected Error. Error Message: {ex.Message}");
+                    Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
                 }
             }
@@ -442,7 +450,7 @@ namespace ReserveBlockCore.Commands
             {
                 if (reconnect == "y")
                 {
-                    await StartupService.StartupPeers();
+                    var result = await P2PClient.ConnectToPeers(true);
                 }
                 else
                 {
@@ -466,6 +474,79 @@ namespace ReserveBlockCore.Commands
                     MainMenuReturn();
                 }
             }
+        }
+
+        public static async Task BlockDetails()
+        {
+            try
+            {
+                Console.WriteLine("Please enter the block you want all details on.");
+                var blockStr = await ReadLineUtility.ReadLine();
+                if (!string.IsNullOrWhiteSpace(blockStr))
+                {
+                    int.TryParse(blockStr, out var blockNumber);
+
+                    if(blockNumber > 0)
+                    {
+                        var block = BlockchainData.GetBlockByHeight(blockNumber);
+
+                        if (block != null)
+                        {
+                            var blockLocalTime = TimeUtil.ToDateTime(block.Timestamp);
+                            var txList = block.Transactions.ToList();
+                            var blockTable = new Table();
+                            blockTable.Title("[yellow]Block Info[/]").Centered();
+                            // Add some columns
+                            blockTable.AddColumn(new TableColumn(new Panel($"Block {block.Height}")));
+                            blockTable.AddColumn(new TableColumn(new Panel("Details")));
+
+                            blockTable.AddRow("[blue]Version[/]", $"[green]{block.Version}[/]");
+                            blockTable.AddRow("[blue]Previous Hash[/]", $"[green]{block.PrevHash}[/]");
+                            blockTable.AddRow("[blue]Hash[/]", $"[green]{block.Hash}[/]");
+                            blockTable.AddRow("[blue]Merkle Root[/]", $"[green]{block.MerkleRoot}[/]");
+                            blockTable.AddRow("[blue]State Root[/]", $"[green]{block.StateRoot}[/]");
+                            blockTable.AddRow("[blue]Timestamp[/]", $"[green]{block.Timestamp} - Local: {blockLocalTime}[/]");
+                            blockTable.AddRow("[blue]Validator[/]", $"[green]{block.Validator}[/]");
+                            blockTable.AddRow("[blue]Number of Tx(s)[/]", $"[green]{block.NumberOfTransactions}[/]");
+                            blockTable.AddRow("[blue]Size[/]", $"[green]{block.Size}[/]");
+                            blockTable.AddRow("[blue]Craft Time[/]", $"[green]{block.BCraftTime}[/]");
+                            blockTable.AddRow("[blue]Chain Ref[/]", $"[green]{block.ChainRefId}[/]");
+
+                            blockTable.Border(TableBorder.Rounded);
+
+                            AnsiConsole.Write(blockTable);
+
+                            var txTable = new Table();
+                            txTable.Title("[yellow]Transaction Info[/]").Centered();
+                            // Add some columns
+                            txTable.AddColumn(new TableColumn(new Panel("Hash")));
+                            txTable.AddColumn(new TableColumn(new Panel("From")));
+                            txTable.AddColumn(new TableColumn(new Panel("To")));
+                            txTable.AddColumn(new TableColumn(new Panel("Amount")));
+                            txTable.AddColumn(new TableColumn(new Panel("Fee")));
+                            txTable.AddColumn(new TableColumn(new Panel("Timestamp")));
+                            txTable.AddColumn(new TableColumn(new Panel("Transaction Type")));
+                            txTable.AddColumn(new TableColumn(new Panel("Transaction Rating")));
+
+                            txList.ForEach(x => {
+                                txTable.AddRow($"{x.Hash}", $"[blue]{x.FromAddress}[/]", $"[red]{x.ToAddress}[/]", $"[green]{x.Amount}[/]",
+                                    $"{x.Fee}", $"[yellow]{x.Timestamp}[/]", $"{x.TransactionType}", $"{x.TransactionRating}");
+                            });
+
+                            txTable.Border(TableBorder.Rounded);
+
+                            AnsiConsole.Write(txTable);
+
+                        }
+                        else
+                        {
+                            ConsoleWriterService.Output($"Could not find block with height: {blockStr}");
+                        }
+                    }
+                    
+                }
+            }
+            catch(Exception ex) { }
         }
 
         public static async void CreateBeacon()
@@ -730,7 +811,8 @@ namespace ReserveBlockCore.Commands
                                     }
                                     else
                                     {
-                                        var nameCheck = adnr.FindOne(x => x.Name == name);
+                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                         if (nameCheck == null)
                                         {
                                             nameFound = false;
@@ -1152,7 +1234,7 @@ namespace ReserveBlockCore.Commands
             }
             catch(Exception ex)
             {
-                ConsoleWriterService.Output($"Unexpected error. Please try again. Error Message: {ex.Message}");
+                ConsoleWriterService.Output($"Unexpected error. Please try again. Error Message: {ex.ToString()}");
             }
             
         }
@@ -1248,14 +1330,18 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/switchbeacon[/]", "[green]This will turn a beacon on and off.[/]");
             table.AddRow("[blue]/unlock[/]", $"[green]This will unlock your wallet for {Globals.WalletUnlockTime} minutes.[/]");
             table.AddRow("[blue]/addpeer[/]", "[green]This will allow a user to add a peer manually.[/]");
+            table.AddRow("[blue]/banpeer[/]", "[green]Bans a peer by their IP address.[/]");
+            table.AddRow("[blue]/unbanpeer[/]", "[green]Unbans a peer by their IP address.[/]");
             table.AddRow("[blue]/creatednr[/]", "[green]Creates an address domain name registrar.[/]");
             table.AddRow("[blue]/deletednr[/]", "[green]Deletes a domain name registrar.[/]");
             table.AddRow("[blue]/transferdnr[/]", "[green]transfers a domain name registrar.[/]");
             table.AddRow("[blue]/printkeys[/]", "[green]Prints all private keys associated to a wallet.[/]");
             table.AddRow("[blue]/encrypt[/]", "[green]Encrypts the wallets private keys.[/]");
+            table.AddRow("[blue]/decrypt[/]", "[green]Decrypts the wallets private keys.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
-            table.AddRow("[blue]/resetval[/]", "[green]Resets all validator information in databases.[/]");
+            table.AddRow("[blue]/resetval[/]", "[green]Resets all validator and reconnects them.[/]");
+            table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");

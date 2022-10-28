@@ -31,8 +31,7 @@ namespace ReserveBlockCore.Utilities
             var lastBlock = Globals.LastBlock;
             var adjudicator = Globals.Adjudicate.ToString();
             var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
-            var beaconConnection = P2PClient.IsBeaconConnected.ToString();
-            var fortisPoolCount = Globals.FortisPool.Count().ToString();
+            var beaconConnection = P2PClient.IsBeaconConnected.ToString();            
             var isChainSynced = Globals.IsChainSynced.ToString();
             var peerCount = P2PServer.GetConnectedPeerCount();
             var valCount = await P2PAdjServer.GetConnectedValCount();
@@ -40,6 +39,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResult = Globals.LastTaskResultTime.ToString();
             var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
             var lastTaskError = Globals.LastTaskError.ToString();
+            var lastTaskErrorCount = Globals.LastTaskErrorCount.ToString();
             var hdWallet = Globals.HDWallet.ToString();
             var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
@@ -66,7 +66,7 @@ namespace ReserveBlockCore.Utilities
             var isCorrupt = "Database Corruption Detected? : " + Globals.DatabaseCorruptionDetected.ToString();
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
-            var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + fortisPoolCount.ToString();
+            var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + Globals.FortisPool.Count.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
             var lastWinningTaskErrorText = "*Only for Validators* Last Winning task Error?: " + lastWinningTaskError;
             var lastWinningTaskSentTimeText = "*Only for Validators* Last Winng Task Sent Time: " + lastWinningTaskSentTime;
@@ -74,6 +74,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
             var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
             var lastTaskErrorText = "*Only for Validators* Last Task Error : " + lastTaskError;
+            var lastTaskErrorCountText = "*Only for Validators* Last Task Error Count: " + lastTaskErrorCount;
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
@@ -143,6 +144,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastTaskBlockHeightText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastTaskErrorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastTaskErrorCountText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastWinningTaskErrorText);
             strBld.AppendLine("---------------------------------------------------------------------");

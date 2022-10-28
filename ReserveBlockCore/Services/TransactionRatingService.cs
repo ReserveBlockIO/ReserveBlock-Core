@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Services
             catch(Exception ex)
             {
                 //something failed. should not happen unless TX is malformed or malicious, in which case it gets an F and won't be processed.
-                ErrorLogUtility.LogError($"Error rating transaction. TXId = {tx.Hash}. Error Message: {ex.Message}", "TransactionRatingService.GetTransactionRating(Transaction tx)");
+                ErrorLogUtility.LogError($"Error rating transaction. TXId = {tx.Hash}. Error Message: {ex.ToString()}", "TransactionRatingService.GetTransactionRating(Transaction tx)");
                 return rating;
             }
         }

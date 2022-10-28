@@ -97,7 +97,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
             }
             
         }
@@ -111,7 +111,9 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            if(ToAddress.ToLower().EndsWith(".rbx"))
+            var adnrCheck = ToAddress.ToLower().EndsWith(".rbx");
+
+            if (adnrCheck)
             {
                 var result = Adnr.GetAddress(ToAddress);
                 if(result.Item1 == true)
@@ -181,7 +183,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return output;
@@ -217,7 +219,7 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            var memBlocksTxs = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
@@ -248,7 +250,8 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                P2PClient.SendTXMempool(txRequest);//send out to mempool
+                //P2PClient.SendTXMempool(txRequest);//send out to mempool
+                await P2PClient.SendTXToAdjudicator(txRequest);
                 //add method to send to nearest validators too
                 //}
             }

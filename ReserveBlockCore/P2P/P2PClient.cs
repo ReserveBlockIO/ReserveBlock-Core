@@ -204,27 +204,40 @@ namespace ReserveBlockCore.P2P
                     }                    
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,10));
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,8));
                 if (hubConnection.ConnectionId == null)
                     return false;
 
+                //var startTimer = DateTime.UtcNow;
+                //long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
+                //var endTimer = DateTime.UtcNow;
+                //var totalMS = (endTimer - startTimer).Milliseconds;
 
-                var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
-                var endTimer = DateTime.UtcNow;
-                var totalMS = (endTimer - startTimer).Milliseconds;
-
+                //Globals.Nodes[IPAddress] = new NodeInfo
+                //{
+                //    Connection = hubConnection,
+                //    NodeIP = IPAddress,
+                //    NodeHeight = remoteNodeHeight,
+                //    NodeLastChecked = startTimer,
+                //    NodeLatency = totalMS,
+                //    IsSendingBlock = 0,
+                //    SendingBlockTime = 0,
+                //    TotalDataSent = 0
+                //};
                 Globals.Nodes[IPAddress] = new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
-                    NodeHeight = remoteNodeHeight,
-                    NodeLastChecked = startTimer,
-                    NodeLatency = totalMS,
+                    NodeHeight = 0,
+                    NodeLastChecked = null,
+                    NodeLatency = 0,
                     IsSendingBlock = 0,
                     SendingBlockTime = 0,
                     TotalDataSent = 0
                 };
+
+                var node = Globals.Nodes[IPAddress];
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);
 
                 return true;
             }
@@ -285,7 +298,9 @@ namespace ReserveBlockCore.P2P
                     message == "status" || 
                     message == "tx" || 
                     message == "badBlock" || 
-                    message == "sendWinningBlock")
+                    message == "sendWinningBlock" ||
+                    message == "disconnect" ||
+                    message == "terminate")
                     {
                         switch(message)
                         {
@@ -320,6 +335,12 @@ namespace ReserveBlockCore.P2P
                             case "badBlock":
                                 //do something
                                 break;
+                            case "disconnect":
+                                await DisconnectAdjudicator();
+                                break;
+                            case "terminate":
+                                await ValidatorService.DoMasterNodeStop();
+                                break;
                         }
                     }
                 });
@@ -329,10 +350,9 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
         }
-
 
         #endregion
 
@@ -346,7 +366,7 @@ namespace ReserveBlockCore.P2P
                 {
                     if(IsAdjConnected1)
                     {
-                        await hubAdjConnection1.DisposeAsync();
+                        await hubAdjConnection1.StopAsync();
                         ConsoleWriterService.Output($"Success! Disconnected from Adjudicator on: {DateTime.Now}");
                         ValidatorLogUtility.Log($"Success! Disconnected from Adjudicator on: {DateTime.Now}", "DisconnectAdjudicator()");
                     }
@@ -354,60 +374,128 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.Message, "DisconnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.ToString(), "DisconnectAdjudicator()");
             }
+            finally
+            {
+                if (hubAdjConnection1 != null)
+                {
+                    await hubAdjConnection1.DisposeAsync();
+                }
+            }
+            
         }
 
 
         #endregion
 
         #region Connect to Peers
-        public static async Task<bool> ConnectToPeers()
+        public static async Task<bool> ConnectToPeers(bool addMorePeers = false)
         {
             await NodeConnector.StartNodeConnecting();
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace($":{Globals.Port}", "")))
-                .Union(Globals.BannedIPs.Where(x => x.Value).Select(x => x.Key));
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
+                .Union(Globals.BannedIPs.Keys);
+
+            if(Globals.IsTestNet)
+                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":13338", "")))
+                .Union(Globals.BannedIPs.Keys);
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
-                .OrderBy(x => rnd.Next())                
+                .OrderBy(x => rnd.Next())
                 .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
                 .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
-                .OrderBy(x => rnd.Next()))                
+                .OrderBy(x => rnd.Next()))
                 .ToArray();
 
-            var NodeCount = Globals.Nodes.Count;
-            foreach(var peer in newPeers)
+            while (Globals.Nodes.Count == 0)
             {
-                if (NodeCount == Globals.MaxPeers)
-                    break;
-
-                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
-                var conResult = await Connect(url);
-                if (conResult != false)
+                var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
                 {
-                    NodeCount++;
-                    ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
-                    peer.IsOutgoing = true;
-                    peer.FailCount = 0; //peer responded. Reset fail count
-                    peerDB.UpdateSafe(peer);
-                }
-                else
-                {
-                    //peer.FailCount += 1;
-                    //peerDB.UpdateSafe(peer);
-                }
+                    try
+                    {
+                        var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+                        var conResult = await Connect(url);
+                        if (conResult != false)
+                        {
+                            ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                            peer.IsOutgoing = true;
+                            peer.FailCount = 0; //peer responded. Reset fail count
+                            peerDB.UpdateSafe(peer);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                });
             }
-                                 
-            return NodeCount != 0;
-        }
 
+            if(addMorePeers)
+            {
+                do
+                {
+                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                    if (newPeers.Count() > 0)
+                    {
+                        await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
+                        {
+                            try
+                            {
+                                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+                                var conResult = await Connect(url);
+                                if (conResult != false)
+                                {
+                                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                                    peer.IsOutgoing = true;
+                                    peer.FailCount = 0; //peer responded. Reset fail count
+                                    peerDB.UpdateSafe(peer);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                            }
+                        });
+
+                    }
+                    
+                } while (Globals.Nodes.Count == 0);
+            }
+
+            return Globals.MaxPeers != 0;
+
+            //var NodeCount = Globals.Nodes.Count;
+            //foreach (var peer in newPeers)
+            //{
+            //    if (NodeCount == Globals.MaxPeers)
+            //        break;
+
+            //    var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
+            //    var conResult = await Connect(url);
+            //    if (conResult != false)
+            //    {
+            //        NodeCount++;
+            //        ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
+            //        peer.IsOutgoing = true;
+            //        peer.FailCount = 0; //peer responded. Reset fail count
+            //        peerDB.UpdateSafe(peer);
+            //    }
+            //    else
+            //    {
+            //        //peer.FailCount += 1;
+            //        //peerDB.UpdateSafe(peer);
+            //    }
+            //}
+
+
+            //return NodeCount != 0;
+        }
         public static async Task<bool> PingBackPeer(string peerIP)
         {
             try
@@ -483,7 +571,7 @@ namespace ReserveBlockCore.P2P
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskWin != null ?
-                            DateTime.Now.ToString() : "No Time", ex.Message);
+                            DateTime.Now.ToString() : "No Time", ex.ToString());
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                     }
                 }
@@ -534,6 +622,7 @@ namespace ReserveBlockCore.P2P
                                             Globals.LastTaskError = false;
                                             Globals.LastTaskSentTime = DateTime.Now;
                                             Globals.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                                            Globals.LastTaskErrorCount = 0;
                                             break;
                                         }
                                         else
@@ -546,6 +635,10 @@ namespace ReserveBlockCore.P2P
                                     }
                                 }
                             }
+                            else
+                            {
+                                Globals.LastTaskError = true;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -555,13 +648,14 @@ namespace ReserveBlockCore.P2P
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                            taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                            taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                     }
                 }
 
                 if (Globals.LastTaskError == true)
                 {
+                    Globals.LastTaskErrorCount += 1;
                     ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
                 }
 
@@ -576,18 +670,22 @@ namespace ReserveBlockCore.P2P
             var adjudicatorConnected = IsAdjConnected1;
             Random rand = new Random();
             int randNum = (rand.Next(1, 7) * 1000);
+            
 
             if(adjudicatorConnected)
             {
                 for(var i = 1; i < 4; i++)
                 {
-                    if(i != 1)
+                    if(i == 1)
                     {
-                        await Task.Delay(1000); // if failed on first attempt waits 1 seconds then tries again.
+                        //wait random amount between 1-7 to not overload network all at once.
+                        //Speed does not matter for adj. 
+                        await Task.Delay(randNum);
                     }
                     else
                     {
-                        await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
+                        await Task.Delay(1000);
+                        
                     }
                     try
                     {
@@ -604,11 +702,13 @@ namespace ReserveBlockCore.P2P
                                         Globals.LastTaskError = false;
                                         Globals.LastTaskSentTime = DateTime.Now;
                                         Globals.LastSentBlockHeight = taskAnswer.Block.Height;
+                                        Globals.LastTaskErrorCount = 0;
                                         break;
                                     }
                                     else
                                     {
-                                        Globals.LastTaskError = true;
+                                        
+                                        Globals.LastTaskErrorCount += 1;
                                     }
                                 }
                             }
@@ -616,18 +716,19 @@ namespace ReserveBlockCore.P2P
                     }
                     catch (Exception ex)
                     {
-                        Globals.LastTaskError = true;
+                        Globals.LastTaskErrorCount += 1;
 
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer_Deprecated()");
 
                         string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                            taskAnswer.SubmitTime.ToString() : "No Time", ex.Message);
+                            taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
                         ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer_Deprecated(TaskAnswer taskAnswer)");
                     }
                 }
 
                 if(Globals.LastTaskError == true)
                 {
+                    Globals.LastTaskErrorCount += 1;
                     ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer_Deprecated()");
                 }
 
@@ -716,7 +817,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                var errorMsg = string.Format("Failed to send TX to Adjudicator. Error Message : {0}", ex.Message);
+                var errorMsg = string.Format("Failed to send TX to Adjudicator. Error Message : {0}", ex.ToString());
                 ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - catch");
             }
         }
@@ -724,7 +825,6 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Block
-
         public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
         {
             if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
@@ -734,7 +834,7 @@ namespace ReserveBlockCore.P2P
             Block Block = null;
             try
             {
-                var source = new CancellationTokenSource(30000);
+                var source = new CancellationTokenSource(10000);
                 Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
                 if (Block != null)
                 {
@@ -750,9 +850,11 @@ namespace ReserveBlockCore.P2P
                 if (node != null)
                 {
                     node.TotalDataSent += blockSize;
-                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;                    
+                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
                 }
             }
+
+            await P2PClient.RemoveNode(node);
 
             return null;
         }
@@ -766,11 +868,11 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
-                return (remoteNodeHeight, startTimer, totalMS); ;
+                return (remoteNodeHeight, startTimer, totalMS); 
             }
             catch { }
             return default;
@@ -895,7 +997,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.Message, "ConnectAdjudicator()");
+                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
         }
 
@@ -918,7 +1020,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError("Failed! Did not disconnect from Beacon: Reason - " + ex.Message, "DisconnectBeacon()");
+                ErrorLogUtility.LogError("Failed! Did not disconnect from Beacon: Reason - " + ex.ToString(), "DisconnectBeacon()");
             }
         }
 
@@ -1009,37 +1111,6 @@ namespace ReserveBlockCore.P2P
                         }
 
                         result = response;
-                        //else
-                        //{
-                        //    NFTLogUtility.Log($"Beacon response was true.", "P2PClient.BeaconUploadRequest()");
-                        //    if (locatorRetString == "")
-                        //    {
-                        //        foreach (var asset in bsd.Assets)
-                        //        {
-                        //            NFTLogUtility.Log($"Preparing file to send. Sending {asset} for smart contract {bsd.SmartContractUID}", "P2PClient.BeaconUploadRequest()");
-                        //            var path = NFTAssetFileUtility.NFTAssetPath(asset, bsd.SmartContractUID);
-                        //            NFTLogUtility.Log($"Path for asset {assets} : {path}", "P2PClient.BeaconUploadRequest()");
-                        //            NFTLogUtility.Log($"Beacon IP {beacon.IPAddress} : Beacon Port {beacon.Port}", "P2PClient.BeaconUploadRequest()");
-                        //            //BeaconResponse rsp = BeaconClient.Send(path, beacon.IPAddress, beacon.Port);
-                        //            //if (rsp.Status == 1)
-                        //            //{
-                        //            //    //success
-                        //            //    NFTLogUtility.Log($"Success sending asset: {asset}", "P2PClient.BeaconUploadRequest()");
-                        //            //}
-                        //            //else
-                        //            //{
-                        //            //    NFTLogUtility.Log($"NFT Send for assets -> {asset} <- failed.", "SCV1Controller.TransferNFT()");
-                        //            //}
-                        //        }
-
-                        //        locatorRetString = locator;
-                        //    }
-                        //    else
-                        //    {
-                        //        locatorRetString = locatorRetString + "," + locator;
-                        //    }
-
-                        //}
                     }
                 }
                 else
@@ -1060,7 +1131,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                var errorMsg = string.Format("Failed to send bsd to Beacon. Error Message : {0}", ex.Message);
+                var errorMsg = string.Format("Failed to send bsd to Beacon. Error Message : {0}", ex.ToString());
                 ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - catch");
             }
             
@@ -1163,7 +1234,7 @@ namespace ReserveBlockCore.P2P
                 }
                 catch(Exception ex)
                 {
-                    var errorMsg = string.Format("Failed to send bdd to Beacon. Error Message : {0}", ex.Message);
+                    var errorMsg = string.Format("Failed to send bdd to Beacon. Error Message : {0}", ex.ToString());
                     Console.WriteLine(errorMsg);
                     ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - catch");
                 }
@@ -1182,7 +1253,7 @@ namespace ReserveBlockCore.P2P
                 string[] payload = { scUID, assetName };
                 var payloadJson = JsonConvert.SerializeObject(payload);
 
-                var beaconString = Globals.Locators.FirstOrDefault().ToStringFromBase64();
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                 var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
                 if (beacon != null)
                 {
@@ -1208,8 +1279,78 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.Message}", "P2PClient.BeaconFileIsReady() - catch");
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "P2PClient.BeaconFileIsReady() - catch");
             }
+
+        }
+
+        #endregion
+
+        #region Beacon Is File Ready
+        public static async Task<bool> BeaconFileReadyCheck(string scUID, string assetName)
+        {
+            bool result = false;
+            try
+            {
+                string[] payload = { scUID, assetName };
+                var payloadJson = JsonConvert.SerializeObject(payload);
+
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
+                var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                if (beacon != null)
+                {
+                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    if (!IsBeaconConnected)
+                        await ConnectBeacon(url, "y");
+
+                    if (hubBeaconConnection != null)
+                    {
+                        var response = await hubBeaconConnection.InvokeCoreAsync<bool>("BeaconIsFileReady", args: new object?[] { payloadJson });
+                        return response;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "P2PClient.BeaconFileIsReady() - catch");
+            }
+
+            return result;
+
+        }
+
+        #endregion
+
+        #region Beacon File Is Downloaded
+        public static async Task<bool> BeaconFileIsDownloaded(string scUID, string assetName)
+        {
+            bool result = false;
+            try
+            {
+                string[] payload = { scUID, assetName };
+                var payloadJson = JsonConvert.SerializeObject(payload);
+
+                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
+                var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                if (beacon != null)
+                {
+                    var url = "http://" + beacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    if (!IsBeaconConnected)
+                        await ConnectBeacon(url, "y");
+
+                    if (hubBeaconConnection != null)
+                    {
+                        var response = await hubBeaconConnection.InvokeCoreAsync<bool>("BeaconFileIsDownloaded", args: new object?[] { payloadJson });
+                        return response;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.Message}", "P2PClient.BeaconFileIsDownloaded() - catch");
+            }
+
+            return result;
 
         }
 
@@ -1247,7 +1388,7 @@ namespace ReserveBlockCore.P2P
                 if(foundBeaconCount == 0)
                 {
                     NFTLogUtility.Log("Zero beacons found. Adding bootstrap.", "SCV1Controller.TransferNFT()");
-                    BeaconList = Globals.Locators;
+                    BeaconList = Globals.Locators.Values.ToList();
                     BeaconList.ForEach(x => { NFTLogUtility.Log($"Bootstrap Beacons {x}", "P2PClient.GetBeacons()"); });
                 }
 

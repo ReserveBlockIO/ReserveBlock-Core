@@ -13,14 +13,13 @@ namespace ReserveBlockCore.Models
         {
             try
             {
-                var accountKS = DbContext.DB_Wallet.GetCollection<AccountKeystore>(DbContext.RSRV_ACCOUNT_KEYSTORE);
-                //accounts.EnsureIndexSafe(x => x.id);
+                var accountKS = DbContext.DB_Wallet.GetCollection<AccountKeystore>(DbContext.RSRV_ACCOUNT_KEYSTORE);                
                 return accountKS;
             }
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "AccountKeystore.GetAccountKeystore()");
+                ErrorLogUtility.LogError(ex.ToString(), "AccountKeystore.GetAccountKeystore()");
                 return null;
             }
         }

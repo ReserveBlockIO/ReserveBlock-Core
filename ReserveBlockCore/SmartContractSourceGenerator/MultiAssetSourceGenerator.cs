@@ -29,11 +29,14 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
 
                 if(isReading == false)
                 {
-                    var result = NFTAssetFileUtility.MoveAsset(x.Location, x.FileName, scUID);
-                    if (result == false)
+                    if (!x.Location.Contains("Asset Folder"))
                     {
-                        //did not copy files
-                        failedToSaveAsset = true;
+                        var result = NFTAssetFileUtility.MoveAsset(x.Location, x.FileName, scUID);
+                        if (result == false)
+                        {
+                            //did not copy files
+                            failedToSaveAsset = true;
+                        }
                     }
                 }
 

@@ -36,12 +36,15 @@ namespace ReserveBlockCore.Services
             var scAsset = scMain.SmartContractAsset;
 
             //Save to local folder here for beacon transfer later
-            var result = NFTAssetFileUtility.MoveAsset(scAsset.Location, scAsset.Name, scMain.SmartContractUID);
-            if(result == false)
+            if(!scAsset.Location.Contains("Asset Folder"))
             {
-                return ("Failed to save smart contract asset. Please try again.", scMain);
+                var result = NFTAssetFileUtility.MoveAsset(scAsset.Location, scAsset.Name, scMain.SmartContractUID);
+                if (result == false)
+                {
+                    return ("Failed to save smart contract asset. Please try again.", scMain);
+                }
             }
-
+            
             StringBuilder strBuild = new StringBuilder();
 
             try
@@ -276,7 +279,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                NFTLogUtility.Log($"Error Writing Smart Contract: {scMain.SmartContractUID}. Error Message: {ex.Message}", 
+                NFTLogUtility.Log($"Error Writing Smart Contract: {scMain.SmartContractUID}. Error Message: {ex.ToString()}", 
                     "SmartContractWriterService.WriteSmartContract(SmartContractMain scMain)");
             }
 

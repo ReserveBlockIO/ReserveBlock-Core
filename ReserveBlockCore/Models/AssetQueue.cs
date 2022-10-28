@@ -40,7 +40,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "AssetQueue.GetAssetQueue()");
+                ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.GetAssetQueue()");
                 return null;
             }
 
@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Models
                 catch(Exception ex)
                 {
                     DbContext.Rollback();
-                    ErrorLogUtility.LogError($"Failed to create asset queue item. Error:  {ex.Message}", "AssetQueue.CreateAssetQueueItem()");
+                    ErrorLogUtility.LogError($"Failed to create asset queue item. Error:  {ex.ToString()}", "AssetQueue.CreateAssetQueueItem()");
                 }
                 
             }
@@ -102,7 +102,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                var acRec = aqDB.FindOne(x => x.SmartContractUID == aq.SmartContractUID);
+                var acRec = aqDB.FindOne(x => x.SmartContractUID == aq.SmartContractUID && x.AssetTransferType == aq.AssetTransferType && x.IsComplete != true);
                 if (acRec != null)
                 {
                     return false;
@@ -143,7 +143,7 @@ namespace ReserveBlockCore.Models
                 catch (Exception ex)
                 {
                     DbContext.Rollback();
-                    ErrorLogUtility.LogError(ex.Message, "AssetQueue.DeleteAssetQueue()");
+                    ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
                 }
             }
         }

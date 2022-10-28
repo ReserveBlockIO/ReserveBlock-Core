@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
+using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
@@ -17,6 +18,7 @@ namespace ReserveBlockCore.Services
 {
     public class ClientCallService : IHostedService, IDisposable
     {
+        #region Timers and Private Variables
         private readonly IHubContext<P2PAdjServer> _hubContext;
         private readonly IHostApplicationLifetime _appLifetime;
         private int executionCount = 0;
@@ -42,7 +44,7 @@ namespace ReserveBlockCore.Services
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
-                TimeSpan.FromMinutes(5));
+                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 180));
 
             //_blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
             //    TimeSpan.FromHours(8));
@@ -63,6 +65,8 @@ namespace ReserveBlockCore.Services
 
             return Task.CompletedTask;
         }
+
+        #endregion
 
         #region Checkpoint Work
         private async void DoCheckpointWork(object? state)
@@ -88,7 +92,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error creating checkpoint. Error Message: {ex.Message}", "ClientCallService.DoCheckpointWork()");
+                ErrorLogUtility.LogError($"Error creating checkpoint. Error Message: {ex.ToString()}", "ClientCallService.DoCheckpointWork()");
             }
         }
 
@@ -135,6 +139,8 @@ namespace ReserveBlockCore.Services
                                     {
                                         NFTLogUtility.Log($"Download Request has been sent", "ClientCallService.DoAssetWork()");
                                         aq.IsComplete = true;
+                                        aq.Attempts = 0;
+                                        aq.NextAttempt = DateTime.UtcNow;
                                         aqDB.UpdateSafe(aq);
                                     }
                                     else
@@ -142,45 +148,77 @@ namespace ReserveBlockCore.Services
                                         NFTLogUtility.Log($"Download Request has not been sent. Reason: {result}", "ClientCallService.DoAssetWork()");
                                         aqDB.UpdateSafe(aq);
                                     }
-
-                                    try
-                                    {
-                                        //Look to see if media exist
-                                        if (aq.MediaListJson != null)
-                                        {
-                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
-
-                                            if (assetList != null)
-                                            {
-                                                if (assetList.Count() > 0)
-                                                {
-                                                    var assetCount = assetList.Count();
-                                                    var assestExistCount = 0;
-                                                    foreach (string asset in assetList)
-                                                    {
-                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
-                                                        var fileExist = File.Exists(path);
-                                                        if (fileExist)
-                                                            assestExistCount += 1;
-                                                    }
-
-                                                    if (assetCount == assestExistCount)
-                                                    {
-                                                        aq.IsDownloaded = true;
-                                                        aq.IsComplete = true;
-                                                        aqDB.UpdateSafe(aq);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch { }
                                     
                                 }
                                 catch(Exception ex)
                                 {
-                                    NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.Message}", "ClientCallService.DoAssetWork()");
+                                    NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.ToString()}", "ClientCallService.DoAssetWork()");
                                 }
+                            }
+                        }
+
+                        var aqCompleteList = aqDB.Find(x =>  x.IsComplete == true && x.IsDownloaded == false &&
+                            x.AssetTransferType == AssetQueue.TransferType.Download).ToList();
+
+                        if(aqCompleteList.Count() > 0)
+                        {
+                            foreach(var aq in aqCompleteList)
+                            {
+                                try
+                                {
+                                    var curDate = DateTime.UtcNow;
+                                    if(aq.NextAttempt <= curDate)
+                                    {
+                                        await NFTAssetFileUtility.CheckForAssets(aq);
+                                        aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
+                                        var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
+                                        aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
+                                        //attempt to get file again. call out to beacon
+                                        if (aq.MediaListJson != null)
+                                        {
+                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+                                            if (assetList != null)
+                                            {
+                                                if (assetList.Count() > 0)
+                                                {
+                                                    foreach (string asset in assetList)
+                                                    {
+                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                                        var fileExist = File.Exists(path);
+                                                        if (!fileExist)
+                                                        {
+                                                            try
+                                                            {
+                                                                var fileCheckResult = await P2PClient.BeaconFileReadyCheck(aq.SmartContractUID, asset);
+                                                                if (fileCheckResult)
+                                                                {
+                                                                    var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
+                                                                    var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+                                                                    if (beacon != null)
+                                                                    {
+                                                                        BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, aq.SmartContractUID);
+                                                                        if (rsp.Status != 1)
+                                                                        {
+                                                                            //failed to download
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            catch { }
+                                                        }
+                                                    }
+                                                   
+                                                }
+                                            }
+                                            
+                                        }
+                                        
+                                    }
+                                    //Look to see if media exist
+                                    await NFTAssetFileUtility.CheckForAssets(aq);
+                                }
+                                catch { }
                             }
                         }
                     }
@@ -215,10 +253,20 @@ namespace ReserveBlockCore.Services
             {
                 if (Globals.StopAllTimers == false)
                 {
-                    if (Globals.Adjudicate)
+                    if (Globals.Adjudicate && !Globals.IsTestNet)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = Globals.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime).ToList();
+                        var fortisPool = Globals.FortisPool.Values
+                            .Select(x => new
+                            {
+                                x.Context.ConnectionId,
+                                x.ConnectDate,
+                                x.LastAnswerSendDate,
+                                x.IpAddress,
+                                x.Address,
+                                x.UniqueName,
+                                x.WalletVersion
+                            }).ToList();
 
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
@@ -245,12 +293,14 @@ namespace ReserveBlockCore.Services
                 var blockHeight = Globals.LastBlock.Height;
                 if(mempool != null)
                 {
+                    var currentTime = TimeUtil.GetTime(-60);
                     if (mempool.Count() > 0)
                     {
                         foreach(var tx in mempool)
                         {
-                            var heightDiff = (blockHeight - tx.Height);
-                            if (heightDiff > 10)
+                            var txTime = tx.Timestamp;
+                            var sendTx = currentTime > txTime ? true : false;
+                            if (sendTx)
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(tx);
                                 if (txResult == true)
@@ -263,7 +313,7 @@ namespace ReserveBlockCore.Services
                                         var txOutput = "";
                                         txOutput = JsonConvert.SerializeObject(tx);
                                         await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);//sends messages to all in fortis pool
-                                        Globals.BroadcastedTrxList.Add(tx);
+                                        Globals.BroadcastedTrxDict[tx.Hash] = tx;
                                     }
                                     else
                                     {
@@ -300,7 +350,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
                 //no node found
-                Console.WriteLine("Error: ClientCallService.DoFortisPoolWork(): " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.DoFortisPoolWork(): " + ex.ToString());
             }
         }
 
@@ -317,7 +367,7 @@ namespace ReserveBlockCore.Services
                     {
                         var fortisPool = Globals.FortisPool;
 
-                        if (fortisPool.Count() > 0)
+                        if (fortisPool.Count > 0)
                         {
                             if (FirstRun == false)
                             {
@@ -337,7 +387,7 @@ namespace ReserveBlockCore.Services
                                     Globals.AdjudicateLock = true;
 
                                     //once greater commit block winner
-                                    var taskAnswerList = Globals.TaskAnswerList.ToList();
+                                    var taskAnswerList = Globals.TaskAnswerDict.Values.ToList();
                                     var taskQuestion = Globals.CurrentTaskQuestion;
                                     List<TaskAnswer>? failedTaskAnswersList = null;
 
@@ -350,7 +400,7 @@ namespace ReserveBlockCore.Services
                                         {
                                             taskFindCount += 1;
                                             ConsoleWriterService.Output($"Current Task Find Count: {taskFindCount}");
-                                            var taskWinner = await TaskWinnerUtility.TaskWinner(taskQuestion, taskAnswerList, failedTaskAnswersList);
+                                            var taskWinner = await TaskWinnerUtility.TaskWinner(taskQuestion, failedTaskAnswersList);
                                             if (taskWinner != null)
                                             {
                                                 var taskWinnerAddr = taskWinner.Address;
@@ -358,6 +408,9 @@ namespace ReserveBlockCore.Services
 
                                                 if (acctStateTreiBalance < 1000)
                                                 {
+                                                    if (Globals.FortisPool.TryRemoveFromKey2(taskWinnerAddr, out var Out))
+                                                        Out.Item2.Context.Abort();
+
                                                     ConsoleWriterService.Output("Address failed validation. Balance is too low.");
                                                     if (failedTaskAnswersList == null)
                                                     {
@@ -399,12 +452,9 @@ namespace ReserveBlockCore.Services
                                                             await ProcessFortisPool_Deprecated(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
 
-                                                            if (Globals.TaskAnswerList != null)
-                                                            {
-                                                                //P2PAdjServer.TaskAnswerList.Clear();
-                                                                //P2PAdjServer.TaskAnswerList.TrimExcess();
-                                                                Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                            }
+                                                            foreach (var answer in Globals.TaskAnswerDict.Values)
+                                                                if (answer.Block.Height <= nextBlock.Height)
+                                                                    Globals.TaskAnswerDict.TryRemove(answer.Address, out var test);
 
                                                             Thread.Sleep(1000);
 
@@ -416,7 +466,7 @@ namespace ReserveBlockCore.Services
                                                             Globals.AdjudicateLock = false;
                                                             Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                            Globals.BroadcastedTrxList = new List<Models.Transaction>();
+                                                            Globals.BroadcastedTrxDict.Clear();
                                                         }
                                                         else
                                                         {
@@ -479,7 +529,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("Error: " + ex.ToString());
                 Console.WriteLine("Client Call Service");
                 Globals.AdjudicateLock = false;
             }
@@ -496,9 +546,9 @@ namespace ReserveBlockCore.Services
                 {
                     if (Globals.Adjudicate)
                     {
-                        var fortisPool = Globals.FortisPool;
+                        var fortisPool = Globals.FortisPool.Values;
 
-                        if (fortisPool.Count() > 0)
+                        if (Globals.FortisPool.Count > 0)
                         {
                             if (FirstRun == false)
                             {
@@ -516,7 +566,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     Globals.AdjudicateLock = true;
 
-                                    var taskAnswerList = Globals.TaskAnswerList_New.ToList();
+                                    var taskAnswerList = Globals.TaskAnswerDict_New.Values.ToList();
                                     var taskQuestion = Globals.CurrentTaskQuestion;
                                     List<TaskNumberAnswer>? failedTaskAnswersList = null;
 
@@ -538,6 +588,9 @@ namespace ReserveBlockCore.Services
 
                                                 if (acctStateTreiBalance < 1000)
                                                 {
+                                                    if (Globals.FortisPool.TryRemoveFromKey2(taskWinnerAddr, out var Out))
+                                                        Out.Item2.Context.Abort();
+
                                                     ConsoleWriterService.Output("Address failed validation. Balance is too low.");
                                                     if (failedTaskAnswersList == null)
                                                     {
@@ -549,14 +602,14 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     ConsoleWriterService.Output("Task Winner was Found! " + taskWinner.Address);
                                                     List<FortisPool> winners = new List<FortisPool>();
-                                                    var winner = Globals.FortisPool.Where(x => x.Address == taskWinner.Address).FirstOrDefault();
+                                                    var winner = fortisPool.Where(x => x.Address == taskWinner.Address).FirstOrDefault();
                                                     if(winner != null)
                                                     {
                                                         winners.Add(winner);
                                                     }
-                                                    foreach (var chosen in Globals.TaskSelectedNumbers)
+                                                    foreach (var chosen in Globals.TaskSelectedNumbers.Values)
                                                     {
-                                                        var fortisRec = Globals.FortisPool.Where(x => x.Address == chosen.Address).FirstOrDefault();
+                                                        var fortisRec = fortisPool.Where(x => x.Address == chosen.Address).FirstOrDefault();
                                                         if(fortisRec != null)
                                                         {
                                                             var alreadyIn = winners.Exists(x => x.Address == chosen.Address);
@@ -573,7 +626,7 @@ namespace ReserveBlockCore.Services
                                                         //Give winners time to respond - exactly 3 seconds in total with 100ms response times per.
                                                         try
                                                         {
-                                                            await _hubContext.Clients.Client(fortis.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
+                                                            await _hubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
                                                                 .WaitAsync(new TimeSpan(0, 0, 0, 0, 100));
                                                         }
                                                         catch(Exception ex)
@@ -586,9 +639,8 @@ namespace ReserveBlockCore.Services
                                                     //Give users time for responses to complete. They have 100ms + 3 secs here. Max 30 responses coming
                                                     await Task.Delay(3000);
 
-                                                    var winningBlocks = Globals.TaskWinnerList;
-                                                    var winnersBlock = winningBlocks.Where(x => x.Address == taskWinner.Address).FirstOrDefault();
-                                                    if(winnersBlock != null)
+                                                    var winningBlocks = Globals.TaskWinnerDict;                                                                                                        
+                                                    if(winningBlocks.TryGetValue(taskWinner.Address, out var winnersBlock))
                                                     {
                                                         //process winners block
                                                         //1. 
@@ -616,24 +668,25 @@ namespace ReserveBlockCore.Services
                                                             nSTaskQuestion.BlockHeight = nTaskQuestion.BlockHeight;
 
                                                             taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                            //await ProcessFortisPool_New(taskAnswerList);
+
+                                                            await ProcessFortisPool_New(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
-                                                            if (Globals.TaskAnswerList_New.Count() > 0)
-                                                            {
-                                                                Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                            }
-                                                            if (Globals.TaskAnswerList.Count() > 0)
-                                                            {
-                                                                Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                            }
-                                                            if (Globals.TaskSelectedNumbers.Count() > 0)
-                                                            {
-                                                                Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                            }
-                                                            if (Globals.TaskWinnerList.Count() > 0)
-                                                            {
-                                                                Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
-                                                            }
+
+                                                            foreach (var answer in Globals.TaskAnswerDict_New.Values)
+                                                                if (answer.NextBlockHeight <= nextBlock.Height)
+                                                                    Globals.TaskAnswerDict_New.TryRemove(answer.Address, out var test);
+
+                                                            foreach (var answer in Globals.TaskAnswerDict.Values)
+                                                                if (answer.Block.Height <= nextBlock.Height)
+                                                                    Globals.TaskAnswerDict.TryRemove(answer.Address, out var test);
+
+                                                            foreach (var number in Globals.TaskSelectedNumbers.Values)
+                                                                if (number.NextBlockHeight <= nextBlock.Height)
+                                                                    Globals.TaskSelectedNumbers.TryRemove(number.Address, out var test);
+
+                                                            foreach (var number in Globals.TaskWinnerDict.Values)
+                                                                if (number.WinningBlock.Height <= nextBlock.Height)
+                                                                    Globals.TaskWinnerDict.TryRemove(number.Address, out var test);                                                            
 
                                                             Thread.Sleep(100);
 
@@ -647,7 +700,7 @@ namespace ReserveBlockCore.Services
                                                             Globals.AdjudicateLock = false;
                                                             Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                            Globals.BroadcastedTrxList = new List<Models.Transaction>();
+                                                            Globals.BroadcastedTrxDict.Clear();
 
                                                         }
                                                         else
@@ -664,7 +717,7 @@ namespace ReserveBlockCore.Services
                                                                 var randChoice = new Random();
                                                                 int index = randChoice.Next(winningBlocks.Count());
                                                                 //winners block missing, process others randomly
-                                                                var randomChosen = winningBlocks[index];
+                                                                var randomChosen = winningBlocks.Skip(index).First().Value;
 
                                                                 if (randomChosen != null)
                                                                 {
@@ -697,22 +750,21 @@ namespace ReserveBlockCore.Services
                                                                         //await ProcessFortisPool_New(taskAnswerList);
                                                                         ConsoleWriterService.Output("Fortis Pool Processed");
 
-                                                                        if (Globals.TaskAnswerList_New.Count() > 0)
-                                                                        {
-                                                                            Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                        }
-                                                                        if (Globals.TaskAnswerList.Count() > 0)
-                                                                        {
-                                                                            Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                                        }
-                                                                        if (Globals.TaskSelectedNumbers.Count() > 0)
-                                                                        {
-                                                                            Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                        }
-                                                                        if (Globals.TaskWinnerList.Count() > 0)
-                                                                        {
-                                                                            Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
-                                                                        }
+                                                                        foreach (var answer in Globals.TaskAnswerDict_New.Values)
+                                                                            if (answer.NextBlockHeight <= nextBlock.Height)
+                                                                                Globals.TaskAnswerDict_New.TryRemove(answer.Address, out var test);
+
+                                                                        foreach (var answer in Globals.TaskAnswerDict.Values)
+                                                                            if (answer.Block.Height <= nextBlock.Height)
+                                                                                Globals.TaskAnswerDict.TryRemove(answer.Address, out var test);
+
+                                                                        foreach (var number in Globals.TaskSelectedNumbers.Values)
+                                                                            if (number.NextBlockHeight <= nextBlock.Height)
+                                                                                Globals.TaskSelectedNumbers.TryRemove(number.Address, out var test);
+
+                                                                        foreach (var number in Globals.TaskWinnerDict.Values)
+                                                                            if (number.WinningBlock.Height <= nextBlock.Height)
+                                                                                Globals.TaskWinnerDict.TryRemove(number.Address, out var test);
 
                                                                         Thread.Sleep(100);
 
@@ -726,7 +778,7 @@ namespace ReserveBlockCore.Services
                                                                         Globals.AdjudicateLock = false;
                                                                         Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                                        Globals.BroadcastedTrxList = new List<Models.Transaction>();
+                                                                        Globals.BroadcastedTrxDict.Clear();
 
                                                                     }
                                                                     else
@@ -741,7 +793,7 @@ namespace ReserveBlockCore.Services
                                                                             }
                                                                             failedTaskAnswersList.Add(nTaskNumAnswer);
                                                                         }
-                                                                        winningBlocks.RemoveAt(index);
+                                                                        winningBlocks.TryRemove(randomChosen.Address, out var test);
                                                                     }
                                                                 }
                                                             }
@@ -756,7 +808,7 @@ namespace ReserveBlockCore.Services
                                                             var randChoice = new Random();
                                                             int index = randChoice.Next(winningBlocks.Count());
                                                             //winners block missing, process others randomly
-                                                            var randomChosen = winningBlocks[index];
+                                                            var randomChosen = winningBlocks.Skip(index).First().Value;
 
                                                             if (randomChosen != null)
                                                             {
@@ -788,22 +840,21 @@ namespace ReserveBlockCore.Services
                                                                     //await ProcessFortisPool_New(taskAnswerList);
                                                                     ConsoleWriterService.Output("Fortis Pool Processed");
 
-                                                                    if (Globals.TaskAnswerList_New.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskAnswerList_New.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                    }
-                                                                    if (Globals.TaskAnswerList.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskAnswerList.RemoveAll(x => x.Block.Height <= nextBlock.Height);
-                                                                    }
-                                                                    if (Globals.TaskSelectedNumbers.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskSelectedNumbers.RemoveAll(x => x.NextBlockHeight <= nextBlock.Height);
-                                                                    }
-                                                                    if (Globals.TaskWinnerList.Count() > 0)
-                                                                    {
-                                                                        Globals.TaskWinnerList.RemoveAll(x => x.WinningBlock.Height <= nextBlock.Height);
-                                                                    }
+                                                                    foreach (var answer in Globals.TaskAnswerDict_New.Values)
+                                                                        if (answer.NextBlockHeight <= nextBlock.Height)
+                                                                            Globals.TaskAnswerDict_New.TryRemove(answer.Address, out var test);
+
+                                                                    foreach (var answer in Globals.TaskAnswerDict.Values)
+                                                                        if (answer.Block.Height <= nextBlock.Height)
+                                                                            Globals.TaskAnswerDict.TryRemove(answer.Address, out var test);
+
+                                                                    foreach (var number in Globals.TaskSelectedNumbers.Values)
+                                                                        if (number.NextBlockHeight <= nextBlock.Height)
+                                                                            Globals.TaskSelectedNumbers.TryRemove(number.Address, out var test);
+
+                                                                    foreach (var number in Globals.TaskWinnerDict.Values)
+                                                                        if (number.WinningBlock.Height <= nextBlock.Height)
+                                                                            Globals.TaskWinnerDict.TryRemove(number.Address, out var test);
 
                                                                     Thread.Sleep(100);
 
@@ -817,7 +868,7 @@ namespace ReserveBlockCore.Services
                                                                     Globals.AdjudicateLock = false;
                                                                     Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
-                                                                    Globals.BroadcastedTrxList = new List<Models.Transaction>();
+                                                                    Globals.BroadcastedTrxDict.Clear();
 
                                                                 }
                                                                 else
@@ -832,7 +883,7 @@ namespace ReserveBlockCore.Services
                                                                         }
                                                                         failedTaskAnswersList.Add(nTaskNumAnswer);
                                                                     }
-                                                                    winningBlocks.RemoveAt(index);
+                                                                    winningBlocks.TryRemove(randomChosen.Address, out var test);
                                                                 }
                                                             }
                                                         }
@@ -878,7 +929,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message);
+                Console.WriteLine("Error: " + ex.ToString());
                 Console.WriteLine("Client Call Service");
                 Globals.AdjudicateLock = false;
             }
@@ -890,7 +941,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height > Globals.BlockLock)
+            if(Globals.LastBlock.Height >= Globals.BlockLock)
             {
                 await DoWork_New();
                 
@@ -928,62 +979,26 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                var pool = Globals.FortisPool;
-                var result = pool.GroupBy(x => x.Address).Where(x => x.Count() > 1).Select(y => y.OrderByDescending(z => z.ConnectDate).ToList()).ToList();
-
-                if (result.Count() > 0)
-                {
-                    result.ForEach(x =>
-                    {
-                        try
-                        {
-                            var recKeep = x.FirstOrDefault();
-                            if(recKeep != null)
-                            {
-                                pool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
-                            }
-                        }
-                        catch { }
-                        
-                    });
-                }
-
                 if (taskAnswerList != null)
                 {
                     foreach (TaskNumberAnswer taskAnswer in taskAnswerList)
                     {
-                        var validator = pool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
-                        {
-                            if (validator != null)
-                            {
-                                try
-                                {
-                                    validator.LastAnswerSendDate = DateTime.Now;
-                                }
-                                catch { }
-                            }
-                        }
+                        if (Globals.FortisPool.TryGetFromKey2(taskAnswer.Address, out var validator))
+                            validator.Value.LastAnswerSendDate = DateTime.Now;
                     }
                 }
 
-                var nodeWithAnswer = pool.Where(x => x.LastAnswerSendDate != null).ToList();
+                var nodeWithAnswer = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).ToList();
                 var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
-                if(deadNodes.Count() > 0)
+                foreach (var deadNode in deadNodes)
                 {
-                    foreach (var deadNode in deadNodes)
-                    {
-                        try
-                        {
-                            pool.Remove(deadNode);
-                        }
-                        catch { }
-                        
-                    }
-                }
+                    Globals.FortisPool.TryRemoveFromKey1(deadNode.IpAddress, out var test);
+                    deadNode.Context.Abort();
+                }                
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.ToString());
             }
 
         }
@@ -999,22 +1014,6 @@ namespace ReserveBlockCore.Services
             try
             {
                 var pool = Globals.FortisPool;
-                var result = pool.GroupBy(x => x.Address).Where(x => x.Count() > 1).Select(y => y.OrderByDescending(z => z.ConnectDate).ToList()).ToList();
-
-                if (result.Count() > 0)
-                {
-                    result.ForEach(x =>
-                    {
-                        try
-                        {
-                            var recKeep = x.FirstOrDefault();
-                            if(recKeep != null)
-                                pool.RemoveAll(f => f.ConnectionId != recKeep.ConnectionId && f.Address == recKeep.Address);
-                        }
-                        catch { errorCountA += 1; }
-                        
-                    });
-                }
 
                 if (taskAnswerList != null)
                 {
@@ -1022,37 +1021,17 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
-                            var validator = pool.Where(x => x.Address == taskAnswer.Address).FirstOrDefault();
-                            {
-                                if (validator != null)
-                                {
-                                    validator.LastAnswerSendDate = DateTime.Now;
-                                }
-                            }
+                            if(Globals.FortisPool.TryGetFromKey2(taskAnswer.Address, out var validator))
+                                validator.Value.LastAnswerSendDate = DateTime.Now;
                         }
                         catch { errorCountB += 1; }
                         
                     }
                 }
-
-                var nodeWithAnswer = pool.Where(x => x.LastAnswerSendDate != null).ToList();
-                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
-                if (deadNodes.Count() > 0)
-                {
-                    foreach (var deadNode in deadNodes)
-                    {
-                        try
-                        {
-                            pool.Remove(deadNode);
-                        }
-                        catch { errorCountC += 1; }
-
-                    }
-                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: ClientCallService.ProcessFortisPool_Deprecated(): " + ex.Message);
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool_Deprecated(): " + ex.ToString());
             }
 
             if(errorCountA > 0 || errorCountB > 0 || errorCountC > 0)

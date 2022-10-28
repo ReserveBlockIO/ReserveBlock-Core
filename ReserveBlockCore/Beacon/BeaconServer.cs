@@ -76,6 +76,8 @@ namespace ReserveBlockCore.Beacon
                                     bool fileExist = File.Exists(@"" + SaveTo + Encoding.UTF8.GetString(recv_data));
                                     if (fileExist)
                                     {
+                                        byte[] data_file_exist = CreateDataPacket(Encoding.UTF8.GetBytes("777"), Encoding.UTF8.GetBytes(Convert.ToString(current_file_pointer)));
+                                        ns.Write(data_file_exist, 0, data_file_exist.Length);
                                         ns.Flush();
                                         loop_break = true;
                                         break;
@@ -240,7 +242,13 @@ namespace ReserveBlockCore.Beacon
                 }
                 catch(Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.Message}", "BeaconServer.ProcessSocketRequest()");
+                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.ToString()}", "BeaconServer.ProcessSocketRequest()");
+                    try
+                    {
+                        File.Delete(@"" + SaveTo + fileName);
+                        break;
+                    }
+                    catch { }
                 }
                 
             }
@@ -300,7 +308,7 @@ namespace ReserveBlockCore.Beacon
             if(!string.IsNullOrEmpty(ext))
             {
                 var rejectedExtList = Globals.RejectAssetExtensionTypes;
-                var exist = rejectedExtList.Exists(x => x == ext);
+                var exist = rejectedExtList.Contains(ext);                
                 if(!exist)
                     output = true;
             }

@@ -26,8 +26,11 @@ namespace ReserveBlockCore.Utilities
             var leadAdj = Globals.LeadAdjudicator;
             var leadAdjAddr = leadAdj.Address;
 
-            var sigResult = SignatureService.VerifySignature(leadAdjAddr, block.Hash, block.AdjudicatorSignature);
-            result = sigResult;
+            if(block.AdjudicatorSignature != null)
+            {
+                var sigResult = SignatureService.VerifySignature(leadAdjAddr, block.Hash, block.AdjudicatorSignature);
+                result = sigResult;
+            }
 
             return result;
             //////////////////////

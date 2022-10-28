@@ -22,7 +22,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "BeaconInfo.GetBeacon()");
+                ErrorLogUtility.LogError(ex.ToString(), "BeaconInfo.GetBeacon()");
                 return null;
             }
         }
@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Models
             catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError(ex.Message, "BeaconInfo.GetBeaconInfo()");
+                ErrorLogUtility.LogError(ex.ToString(), "BeaconInfo.GetBeaconInfo()");
                 return null;
             }
         }

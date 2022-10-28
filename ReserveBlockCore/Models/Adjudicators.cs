@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Models
                 catch (Exception ex)
                 {
                     DbContext.Rollback();
-                    ErrorLogUtility.LogError(ex.Message, "Adjudicators.GetAll()");
+                    ErrorLogUtility.LogError(ex.ToString(), "Adjudicators.GetAll()");
                     return null;
                 }
 

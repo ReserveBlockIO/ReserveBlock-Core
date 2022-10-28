@@ -106,41 +106,41 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if(Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
+            if (Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
             {
                 output = "Wallet is still starting. Please wait";
                 return output;
             }
-            
 
-            if(account == null) { throw new ArgumentNullException(nameof(account)); }
-            else 
+
+            if (account == null) { throw new ArgumentNullException(nameof(account)); }
+            else
             {
                 var sTreiAcct = StateData.GetSpecificAccountStateTrei(account.Address);
-                
-                if(sTreiAcct == null)
+
+                if (sTreiAcct == null)
                 {
                     output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                     return output;
                 }
-                if(sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
+                if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
                 {
                     output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                     return output;
                 }
-                if(!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
+                if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
                 {
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
                 }
-                if(sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
+                if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
                 {
                     //validate account with signature check
                     var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
 
                     var verifySig = SignatureService.VerifySignature(account.Address, account.Address, signature);
 
-                    if(verifySig == false)
+                    if (verifySig == false)
                     {
                         output = "Signature check has failed. Please provide correct private key for public address: " + account.Address;
                         return output;
@@ -150,7 +150,7 @@ namespace ReserveBlockCore.Services
 
                     var accounts = AccountData.GetAccounts();
                     var IsThereValidator = accounts.FindOne(x => x.IsValidating == true);
-                    if(IsThereValidator != null)
+                    if (IsThereValidator != null)
                     {
                         output = "This wallet already has a validator active on it. You can only have 1 validator active per wallet: " + IsThereValidator.Address;
                         return output;
@@ -222,17 +222,40 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                Globals.ValidatorAddress = "";
-
                 await P2PClient.DisconnectAdjudicator();
                 Console.WriteLine("Validator database records have been reset.");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 DbContext.Rollback();
-                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.Message}", "ValidatorService.DoMasterNodeStop()");
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
             }
         }
+
+        public static async Task<bool> ValidatorErrorReset()
+        {
+            //Disconnect from adj
+            try
+            {
+                await P2PClient.DisconnectAdjudicator();
+                //Do a block check to ensure all blocks are present.
+                await BlockDownloadService.GetAllBlocks();
+                Thread.Sleep(2000);
+                //Reset validator variable.
+                StartupService.SetValidator();
+                //Reconnect
+                await StartupService.ConnectoToAdjudicator();
+
+                return true;
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
+            }
+
+            return false;
+        }
+
 
         public static bool ValidateTheValidator(Validators validator)
         {

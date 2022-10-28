@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Models;
+﻿using Newtonsoft.Json;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using System.Diagnostics;
@@ -51,7 +52,7 @@ namespace ReserveBlockCore.Utilities
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
+                ErrorLogUtility.LogError(ex.ToString(), "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
                 NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.MoveAsset(string fileLocation, string fileName)");
                 return false;
             }
@@ -125,12 +126,189 @@ namespace ReserveBlockCore.Utilities
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "NFTAssetFileUtility.NFTAssetPath()");
+                ErrorLogUtility.LogError(ex.ToString(), "NFTAssetFileUtility.NFTAssetPath()");
                 NFTLogUtility.Log("Error Saving NFT File.", "NFTAssetFileUtility.NFTAssetPath()");
                 return "NA";
             }
 
             return "NA";
+        }
+
+        public static async Task<List<string>> GetAssetListFromSmartContract(SmartContractMain sc)
+        {
+            List<string> assets = new List<string>();
+
+            if (sc.SmartContractAsset != null)
+            {
+                assets.Add(sc.SmartContractAsset.Name);
+            }
+
+            if (sc.Features != null)
+            {
+                foreach (var feature in sc.Features)
+                {
+                    if (feature.FeatureName == FeatureName.Evolving)
+                    {
+                        List<object> myArrayObj = new List<object>();
+                        List<EvolvingFeature> myArray = new List<EvolvingFeature>();
+                        bool useObject = false;
+                        var count = 0;
+                        try
+                        {
+                            myArray = ((List<EvolvingFeature>)feature.FeatureFeatures);
+                        }
+                        catch
+                        {
+                            //need to explore why these are serializing weirdly. Might make more sense to json them in future.
+                            myArrayObj = ((object[])feature.FeatureFeatures).ToList();
+                            useObject = true;
+                        }
+                        if(useObject)
+                        {
+                            myArrayObj.ForEach(x => {
+                                var evolveDict = (EvolvingFeature)myArrayObj[count];
+                                SmartContractAsset evoAsset = new SmartContractAsset();
+                                if (evolveDict.SmartContractAsset != null)
+                                {
+
+                                    var assetEvo = evolveDict.SmartContractAsset;
+                                    evoAsset.Name = assetEvo.Name;
+                                    if (!assets.Contains(evoAsset.Name))
+                                    {
+                                        assets.Add(evoAsset.Name);
+                                    }
+                                    count += 1;
+                                }
+
+                            });
+                        }
+                        else
+                        {
+                            myArray.ForEach(x => {
+                                var evolveDict = myArray[count];
+                                SmartContractAsset evoAsset = new SmartContractAsset();
+                                if (evolveDict.SmartContractAsset != null)
+                                {
+
+                                    var assetEvo = evolveDict.SmartContractAsset;
+                                    evoAsset.Name = assetEvo.Name;
+                                    if (!assets.Contains(evoAsset.Name))
+                                    {
+                                        assets.Add(evoAsset.Name);
+                                    }
+                                    count += 1;
+                                }
+
+                            });
+                        }
+                        
+                    }
+                    if (feature.FeatureName == FeatureName.MultiAsset)
+                    {
+                        List<object> myArrayObj = new List<object>();
+                        List<MultiAssetFeature> myArray = new List<MultiAssetFeature>();
+                        bool useObject = false;
+                        var count = 0;
+                        try
+                        {
+                            myArray = ((List<MultiAssetFeature>)feature.FeatureFeatures);
+                        }
+                        catch
+                        {
+                            myArrayObj = ((object[])feature.FeatureFeatures).ToList();
+                            useObject = true;
+                        }
+
+                        if(useObject)
+                        {
+                            myArrayObj.ForEach(x => {
+                                var multiAssetDict = (MultiAssetFeature)myArrayObj[count];
+
+                                if (multiAssetDict != null)
+                                {
+                                    var fileName = multiAssetDict.FileName;
+                                    if (!assets.Contains(fileName))
+                                    {
+                                        assets.Add(fileName);
+                                    }
+                                }
+                                count += 1;
+
+                            });
+                        }
+                        else
+                        {
+                            myArray.ForEach(x => {
+                                var multiAssetDict = myArray[count];
+
+                                if (multiAssetDict != null)
+                                {
+                                    var fileName = multiAssetDict.FileName;
+                                    if (!assets.Contains(fileName))
+                                    {
+                                        assets.Add(fileName);
+                                    }
+                                }
+                                count += 1;
+
+                            });
+
+                        }
+                    }
+                }
+            }
+
+            return assets;
+        }
+
+        public static async Task CheckForAssets(AssetQueue aq)
+        {
+            try
+            {
+                var aqDB = AssetQueue.GetAssetQueue();
+                //Look to see if media exist
+                if(aqDB != null)
+                {
+                    if (aq.MediaListJson != null)
+                    {
+                        var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+
+                        if (assetList != null)
+                        {
+                            if (assetList.Count() > 0)
+                            {
+                                var assetCount = assetList.Count();
+                                var assestExistCount = 0;
+                                foreach (string asset in assetList)
+                                {
+                                    var path = NFTAssetPath(asset, aq.SmartContractUID);
+                                    var fileExist = File.Exists(path);
+                                    if (fileExist)
+                                        assestExistCount += 1;
+                                }
+
+                                if (assetCount == assestExistCount)
+                                {
+                                    aq.IsDownloaded = true;
+                                    aq.IsComplete = true;
+                                    aqDB.UpdateSafe(aq);
+
+                                    foreach (string asset in assetList)
+                                    {
+                                        try
+                                        {
+                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset);
+                                        }
+                                        catch { }
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         public static async Task<string> DownloadAssetFromBeacon(string scUID, string locators, string preSigned = "NA", string md5List = "NA")
@@ -223,7 +401,7 @@ namespace ReserveBlockCore.Utilities
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Error downloading assets from beacon. Error Msg: {ex.Message}", "NFTAssetFileUtility.DownloadAssetFromBeacon()");
+                ErrorLogUtility.LogError($"Error downloading assets from beacon. Error Msg: {ex.ToString()}", "NFTAssetFileUtility.DownloadAssetFromBeacon()");
             }
             
             return output;

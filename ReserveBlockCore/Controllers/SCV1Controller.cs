@@ -6,6 +6,8 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text;
 
 namespace ReserveBlockCore.Controllers
@@ -63,7 +65,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = $"Error - {ex.Message}. Please Try Again.";
+                output = $"Error - {ex.ToString()}. Please Try Again.";
             }
 
             return output;
@@ -78,42 +80,187 @@ namespace ReserveBlockCore.Controllers
         }
 
 
-        [HttpGet("GetAllSmartContracts")]
-        public async Task<string> GetAllSmartContracts()
+        [HttpGet]
+        [Route("GetAllSmartContracts/{pageNumber}")]
+        [Route("GetAllSmartContracts/{pageNumber}/{**search}")]
+        public async Task<string> GetAllSmartContracts(int pageNumber = 1, string? search = "")
         {
             var output = "";
-
-            var scs = SmartContractMain.SmartContractData.GetSCs().FindAll().ToList();
-
-            if (scs.Count() > 0)
+            Stopwatch stopwatch3 = Stopwatch.StartNew();
+            try
             {
-                var json = JsonConvert.SerializeObject(scs);
-                output = json;
+                List<SmartContractMain> scs = new List<SmartContractMain>();
+                List<SmartContractMain> scMainList = new List<SmartContractMain>();
+                List<SmartContractStateTrei> scStateMainList = new List<SmartContractStateTrei>();
+                ConcurrentBag<SmartContractStateTrei> scStateMainBag = new ConcurrentBag<SmartContractStateTrei>();
+
+                var maxIndex = pageNumber * 9;
+                var startIndex = ((maxIndex - 9));
+                var range = 9;
+
+                if (search != "" && search != "~")
+                {
+                    if (search != null)
+                    {
+                        var result = await NFTSearchUtility.Search(search);
+                        if (result != null)
+                        {
+                            scs = result;
+                        }
+                    }
+                }
+                else
+                {
+                     scs = SmartContractMain.SmartContractData.GetSCs()
+                    .FindAll()
+                    .ToList();
+                }
+                
+
+                var scStateTrei = SmartContractStateTrei.GetSCST();
+                var accounts = AccountData.GetAccounts().FindAll().ToList();
+
+               foreach(var sc in scs)
+                { 
+                    var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
+                    if(scState != null)
+                    {
+                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress);
+                        if(exist)
+                            scStateMainBag.Add(scState);
+                    }
+                }
+
+                scStateMainList = scStateMainBag.ToList();
+
+                var scStateCount = scStateMainList.Count();
+
+                if (maxIndex > scStateCount)
+                    range = (range - (maxIndex - scStateCount));
+
+                scStateMainList = scStateMainList.GetRange(startIndex, range);
+
+                if (scStateMainList.Count > 0)
+                {
+                    foreach(var scState in scStateMainList)
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scState.ContractData);
+                        var scMainRec = scs.Where(x => x.SmartContractUID == scMain.SmartContractUID).FirstOrDefault();
+
+                        scMain.Id = scMainRec != null ? scMainRec.Id : 0;
+                        scMainList.Add(scMain);
+                    }
+                    if (scMainList.Count() > 0)
+                    {
+                        var orderedMainList = scMainList.OrderByDescending(x => x.Id).ToList();
+                        var json = JsonConvert.SerializeObject(new { Count = scStateCount, Results = orderedMainList });
+                        output = json;
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Count = 0, Results = scMainList}); ;
+                }
             }
-            else
+            catch(Exception ex)
             {
-                output = "null";
+                output = JsonConvert.SerializeObject(new { Count = 0, Results = "null" }); ;
             }
 
             return output;
         }
 
-        [HttpGet("GetMintedSmartContracts")]
-        public async Task<string> GetMintedSmartContracts()
+        [HttpGet]
+        [Route("GetMintedSmartContracts/{pageNumber}")]
+        [Route("GetMintedSmartContracts/{pageNumber}/{**search}")]
+        public async Task<string> GetMintedSmartContracts(int pageNumber = 1, string? search = "")
         {
             var output = "";
-
-            var scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true).ToList();
-
-            if (scs.Count() > 0)
+            try
             {
-                var json = JsonConvert.SerializeObject(scs);
+                List<SmartContractMain> scs = new List<SmartContractMain>();
+                List<SmartContractMain> scMainList = new List<SmartContractMain>();
+                List<SmartContractMain> scEvoMainList = new List<SmartContractMain>();
+                ConcurrentBag<SmartContractMain> resultCollection = new ConcurrentBag<SmartContractMain>();
+
+                if (search != "" && search != "~")
+                {
+                    if(search != null)
+                    {
+                        var result = await NFTSearchUtility.Search(search, true);
+                        if(result != null)
+                        {
+                            scs = result;
+                        }
+                    }
+                }
+                else
+                {
+                    scs = SmartContractMain.SmartContractData.GetSCs().Find(x => x.IsMinter == true)
+                    .Where(x => x.Features != null && x.Features.Any(y => y.FeatureName == FeatureName.Evolving))
+                    .ToList();
+                }
+                
+
+                var maxIndex = pageNumber * 9;
+                var startIndex = ((maxIndex - 9));
+                var range = 9;
+
+                foreach(var sc in scs)
+                {
+                    var scStateTrei = SmartContractStateTrei.GetSmartContractState(sc.SmartContractUID);
+                    if (scStateTrei != null)
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                        if (scMain.Features != null)
+                        {
+                            scMain.Id = sc.Id;
+                            var evoFeatures = scMain.Features.Where(x => x.FeatureName == FeatureName.Evolving).Select(x => x.FeatureFeatures).FirstOrDefault();
+                            var isDynamic = false;
+                            if (evoFeatures != null)
+                            {
+                                var evoFeatureList = (List<EvolvingFeature>)evoFeatures;
+                                foreach (var feature in evoFeatureList)
+                                {
+                                    var evoFeature = (EvolvingFeature)feature;
+                                    if (evoFeature.IsDynamic == true)
+                                        isDynamic = true;
+                                }
+                            }
+
+                            if (!isDynamic)
+                                resultCollection.Add(scMain);
+                        }
+                    }
+                }
+
+                scMainList = resultCollection.ToList();
+
+                var scscMainListCount = scMainList.Count();
+
+                if (maxIndex > scscMainListCount)
+                    range = (range - (maxIndex - scscMainListCount));
+
+                scMainList = scMainList.GetRange(startIndex, range);
+
+                if (scMainList.Count() > 0)
+                {
+                    var orderedMainList = scMainList.OrderByDescending(x => x.Id).ToList();
+                    var json = JsonConvert.SerializeObject(new { Count = scscMainListCount, Results = orderedMainList });
+                    output = json;
+                }
+                else
+                {
+                    var json = JsonConvert.SerializeObject(new { Count = 0, Results = scMainList });
+                    output = json;
+                }
+            }
+            catch(Exception ex)
+            {
+                var json = JsonConvert.SerializeObject(new { Count = 0, Results = "null" });
                 output = json;
             }
-            else
-            {
-                output = "null";
-            }
+            
 
             return output;
         }
@@ -125,6 +272,9 @@ namespace ReserveBlockCore.Controllers
             try
             {
                 var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
+
+                if (sc == null)
+                    return "null";
 
                 var result = await SmartContractReaderService.ReadSmartContract(sc);
 
@@ -141,12 +291,10 @@ namespace ReserveBlockCore.Controllers
                     if (featuresList != null)
                     {
                         var evoFeatureList = (List<EvolvingFeature>)featuresList.FeatureFeatures;
-                        foreach (var evoFeature in evoFeatureList)
+                        var currentStage = evoFeatureList.Where(x => x.IsCurrentState == true).FirstOrDefault();
+                        if(currentStage != null)
                         {
-                            if (evoFeature.IsCurrentState == true)
-                            {
-                                currentState = evoFeature.EvolutionState;
-                            }
+                            currentState = currentStage.EvolutionState;
                         }
                     }
 
@@ -155,12 +303,12 @@ namespace ReserveBlockCore.Controllers
                     if (scMainFeatures != null)
                     {
                         var scMainFeaturesList = (List<EvolvingFeature>)scMainFeatures.FeatureFeatures;
-                        foreach (var evoFeature in scMainFeaturesList)
+                        var evoStage = scMainFeaturesList.Where(x => x.EvolutionState == currentState).FirstOrDefault();
+                        if(evoStage != null)
                         {
-                            if (evoFeature.EvolutionState == currentState)
-                            {
-                                evoFeature.IsCurrentState = true;
-                            }
+                            evoStage.IsCurrentState = true;
+                            var stageList = scMainFeaturesList.Where(x => x.EvolutionState != currentState).ToList();
+                            stageList.ForEach(x => { x.IsCurrentState = false; });
                         }
                     }
                 }
@@ -190,7 +338,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = ex.Message;
+                output = ex.ToString();
             }
             
             return output;
@@ -216,10 +364,82 @@ namespace ReserveBlockCore.Controllers
 
         }
 
-        [HttpGet("AssociateNFTAsset/{nftId}/{**assetPath}")]
-        public async Task<string> AssociateNFTAsset(string nftId, string assetPath)
+        [HttpGet("AssociateNFTAsset/{scUID}/{**assetPath}")]
+        public async Task<string> AssociateNFTAsset(string scUID, string assetPath)
         {
-            return $"NFT Id: {nftId} Asset Location: {assetPath}";
+            string output = "";
+
+            try
+            {
+                assetPath = assetPath.Replace("%2F", "/");
+                string fileName = Path.GetFileName(assetPath);
+                string incFileMD5 = assetPath.ToMD5();
+                string scMD5List = "";
+                Dictionary<string, string> assetMD5Dict = new Dictionary<string, string>();
+
+                var scStateTrei = SmartContractStateTrei.GetSCST();
+                if (scStateTrei != null)
+                {
+                    var scState = scStateTrei.FindOne(x => x.SmartContractUID == scUID);
+                    if (scState != null)
+                    {
+                        scMD5List = scState.MD5List != null ? scState.MD5List : "";
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Could not find record of NFT on chain." });
+                        return output;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(scMD5List))
+                {
+                    var scAssetList = scMD5List.Split("<>").ToList();
+                    foreach (var scAsset in scAssetList)
+                    {
+                        var recSplit = scAsset.Split("::");
+
+                        assetMD5Dict.Add(recSplit[0], recSplit[1]);
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"MD5 List was not found. Cannot verify integrity of asset media." });
+                    return output;
+                }
+
+                var keyCheck = assetMD5Dict.ContainsKey(fileName);
+                if (keyCheck)
+                {
+                    var chainMD5 = assetMD5Dict[fileName];
+                    if (chainMD5 == incFileMD5)
+                    {
+                        //import
+                        var result = NFTAssetFileUtility.MoveAsset(assetPath, fileName, scUID);
+                        if(result == true)
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Media associated with NFT." });
+                        else
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to move media. Please ensure file is not open anywhere." });
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Incoming media did not match the MD5 on chain." });
+                        return output;
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"File was not found in on-chain list. Please ensure file name has been altered." });
+                    return output;
+                }
+            }
+            catch(Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown error occured. Error {ex.ToString()}" });
+                return output;
+            }
+            
         }
 
         [HttpGet("DownloadNftAssets/{nftId}")]
@@ -297,7 +517,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.Message}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 231 catch");
+                    NFTLogUtility.Log($"Failed to create TX for Smartcontract. Error: {ex.ToString()}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 231 catch");
                     scReturnData.Success = false;
                     scReturnData.SmartContractCode = "Failure";
                     scReturnData.SmartContractMain = scMain;
@@ -313,8 +533,8 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                NFTLogUtility.Log($"Failed to create smart contract. Error Message: {ex.Message}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 247 catch");
-                output = $"Error - {ex.Message}. Please Try Again...";
+                NFTLogUtility.Log($"Failed to create smart contract. Error Message: {ex.ToString()}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 247 catch");
+                output = $"Error - {ex.ToString()}. Please Try Again...";
             }
 
 
@@ -366,9 +586,8 @@ namespace ReserveBlockCore.Controllers
                     if (sc.IsPublished == true)
                     {
                         //Get beacons here!
-                        //This will eventually need to be a chosen parameter someone chooses. 
-                        var locator = Globals.Locators.FirstOrDefault();
-                        if (locator == null)
+                        //This will eventually need to be a chosen parameter someone chooses.                         
+                        if (!Globals.Locators.Any())
                         {
                             output = "You do not have any beacons stored.";
                             NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
@@ -376,70 +595,14 @@ namespace ReserveBlockCore.Controllers
                         }
                         else
                         {
-                            List<string> assets = new List<string>();
-
-                            if (sc.SmartContractAsset != null)
-                            {
-                                assets.Add(sc.SmartContractAsset.Name);
-                            }
-
-                            if (sc.Features != null)
-                            {
-                                foreach (var feature in sc.Features)
-                                {
-                                    if (feature.FeatureName == FeatureName.Evolving)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-                                        myArray.ForEach(x => {
-                                            var evolveDict = (EvolvingFeature)myArray[count];
-                                            SmartContractAsset evoAsset = new SmartContractAsset();
-                                            if (evolveDict.SmartContractAsset != null)
-                                            {
-
-                                                var assetEvo = evolveDict.SmartContractAsset;
-                                                evoAsset.Name = assetEvo.Name;
-                                                if (!assets.Contains(evoAsset.Name))
-                                                {
-                                                    assets.Add(evoAsset.Name);
-                                                }
-                                                count += 1;
-                                            }
-
-                                        });
-                                    }
-                                    if (feature.FeatureName == FeatureName.MultiAsset)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-
-                                        myArray.ForEach(x => {
-                                            var multiAssetDict = (MultiAssetFeature)myArray[count];
-
-                                            if (multiAssetDict != null)
-                                            {
-                                                var fileName = multiAssetDict.FileName;
-                                                if (!assets.Contains(fileName))
-                                                {
-                                                    assets.Add(fileName);
-                                                }
-                                            }
-                                            count += 1;
-
-                                        });
-
-                                    }
-                                }
-                            }
-
-                            var assetString = "";
-                            assets.ForEach(x => { assetString = assetString + x + " "; });
-
+                            var locator = Globals.Locators.Values.FirstOrDefault();
                             toAddress = toAddress.Replace(" ", "");
                             var localAddress = AccountData.GetSingleAccount(toAddress);
 
-                            NFTLogUtility.Log($"Sending the following assets for upload: {assetString}", "SCV1Controller.TransferNFT()");
-                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
+                            var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+                            var md5List = await MD5Utility.GetMD5FromSmartContract(sc);
+
+                            NFTLogUtility.Log($"Sending the following assets for upload: {md5List}", "SCV1Controller.TransferNFT()");
 
                             bool result = false;
                             if (localAddress == null)
@@ -458,17 +621,37 @@ namespace ReserveBlockCore.Controllers
 
                                 if (aqResult)
                                 {
-                                    var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
-                                    NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
-                                    NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
 
-                                    var txJson = JsonConvert.SerializeObject(tx);
-                                    output = txJson;
+                                    bool beaconSendFinalResult = true;
+                                    if(assets.Count() > 0)
+                                    {
+                                        foreach(var asset in assets)
+                                        {
+                                            var sendResult = await BeaconUtility.SendAssets(sc.SmartContractUID, asset);
+                                            if (!sendResult)
+                                                beaconSendFinalResult = false;
+                                        }
+                                    }
+                                    if(beaconSendFinalResult)
+                                    {
+                                        var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
+                                        NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
+                                        NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
+
+                                        var txJson = JsonConvert.SerializeObject(tx);
+                                        output = txJson;
+                                    }
+                                    else
+                                    {
+                                        output = "Failed to upload to Beacon. Please check NFT logs for more details.";
+                                        NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                                    }
                                 }
                                 else
                                 {
                                     output = "Failed to add upload to Asset Queue. Please check logs for more details.";
-                                    NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated.", "SCV1Controller.TransferNFT()");
+                                    NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                                     
                                 }
 
                             }
@@ -491,8 +674,8 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = $"Unknown Error Occurred. Error: {ex.Message}";
-                NFTLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.Message}", "SCV1Controller.TransferNFT()");
+                output = $"Unknown Error Occurred. Error: {ex.ToString()}";
+                NFTLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.ToString()}", "SCV1Controller.TransferNFT()");
             }
             
             
@@ -585,14 +768,13 @@ namespace ReserveBlockCore.Controllers
             var output = "";
 
             //Get SmartContractMain.IsPublic and set to True.
-            var scs = SmartContractMain.SmartContractData.GetSCs();
             var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
-            sc.IsPublic ^= true;
-
-            scs.UpdateSafe(sc);
-
+            if(sc != null)
+            {
+                sc.IsPublic ^= true;
+                SmartContractMain.SmartContractData.UpdateSmartContract(sc);
+            }
             return output;
-
         }
 
         [HttpGet("GetNFTAssetLocation/{scUID}/{**fileName}")]

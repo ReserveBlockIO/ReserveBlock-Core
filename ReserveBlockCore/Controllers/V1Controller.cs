@@ -222,7 +222,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 catch (Exception ex)
                 {
-                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"There was an error encrypting your wallet. Error: {ex.Message}" });
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"There was an error encrypting your wallet. Error: {ex.ToString()}" });
                 }
             }
             else
@@ -464,7 +464,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if(Globals.EncryptPassword.Length > 0)
                 {
-                    var account = AccountData.RestoreAccount(id);
+                    var account = await AccountData.RestoreAccount(id);
 
                     if (account == null)
                     {
@@ -486,7 +486,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var account = AccountData.RestoreAccount(id);
+                var account = await AccountData.RestoreAccount(id);
 
                 if (account == null)
                 {
@@ -670,8 +670,8 @@ namespace ReserveBlockCore.Controllers
                         }
                         catch (Exception ex)
                         {
-                            ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
-                            result = $"Unknown Error Occured: {ex.Message}";
+                            ErrorLogUtility.LogError(ex.ToString(), "V1Controller.StartValidating - result: " + result);
+                            result = $"Unknown Error Occured: {ex.ToString()}";
                         }
                         output = true;
                     }
@@ -703,6 +703,18 @@ namespace ReserveBlockCore.Controllers
 
                 output = "Validator Unique Name Updated. Please restart wallet.";
             }
+            return output;
+        }
+
+        [HttpGet("ResetValidator")]
+        public async Task<string> ResetValidator()
+        {
+            string output = "Failed!";
+
+            var result = await ValidatorService.ValidatorErrorReset();
+            if (result)
+                output = "Success!";
+            
             return output;
         }
 
@@ -765,7 +777,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetTaskAnswersList()
         {
             string output = "";
-            var taskAnswerList = Globals.TaskAnswerList.Select(x => new {
+            var taskAnswerList = Globals.TaskAnswerDict.Values.Select(x => new {
                 Address = x.Address,
                 Answer = x.Answer,
                 BlockHeight = x.Block != null ? x.Block.Height : 0,
@@ -781,7 +793,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetTaskAnswersListNew()
         {
             string output = "";
-            var taskAnswerList = Globals.TaskAnswerList_New.Select(x => new {
+            var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
                 Address = x.Address,
                 Answer = x.Answer,
                 NextBlockHeight = x.NextBlockHeight,
@@ -798,7 +810,7 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             var currentTime = DateTime.Now.AddMinutes(-15);
-            var fortisPool = Globals.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
+            var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime);
             output = JsonConvert.SerializeObject(fortisPool);
 
             return output;
@@ -808,7 +820,16 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodes()
         {
             string output = "";
-            var validators = Globals.FortisPool.ToList();
+            var validators = Globals.FortisPool.Values.Select(x => new
+            {
+                x.Context.ConnectionId,
+                x.ConnectDate,
+                x.LastAnswerSendDate,
+                x.IpAddress,
+                x.Address,
+                x.UniqueName,
+                x.WalletVersion
+            }).ToList();
 
             output = JsonConvert.SerializeObject(validators);
 
@@ -819,7 +840,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetBeaconPool()
         {
             string output = "";
-            var beaconPool = Globals.BeaconPool.ToList();
+            var beaconPool = Globals.BeaconPool.Values.ToList();
 
             output = JsonConvert.SerializeObject(beaconPool);
 
@@ -905,6 +926,14 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetConnectionHistory")]
+        public async Task<string> GetConnectionHistory()
+        {
+            var output = await ConnectionHistory.Read();
+
+            return output;
+        }
+
         [HttpGet("GetClientInfo")]
         public async Task<string> GetClientInfo()
         {
@@ -912,8 +941,6 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
-
-
 
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()

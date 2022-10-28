@@ -12,6 +12,8 @@ namespace ReserveBlockCore.Models
         public string OwnerAddress { get; set; }
         public string? Locators { get; set; }
         public long Nonce { get; set; }
+        public string? MD5List { get; set; }
+        public bool? MinterManaged { get; set; }
 
         public static LiteDB.ILiteCollection<SmartContractStateTrei> GetSCST()
         {
@@ -38,7 +40,12 @@ namespace ReserveBlockCore.Models
         {
             var scs = GetSCST();
 
-            scs.InsertSafe(scMain);
+            var exist = scs.FindOne(x => x.SmartContractUID == scMain.SmartContractUID);
+
+            if(exist == null)
+            {
+                scs.InsertSafe(scMain);
+            }
         }
         public static void UpdateSmartContract(SmartContractStateTrei scMain)
         {

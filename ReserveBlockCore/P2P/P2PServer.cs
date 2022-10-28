@@ -24,10 +24,10 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {            
             var peerIP = GetIP(Context);
-            if(Globals.P2PPeerList.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+            if(Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
                 context.Abort();
 
-            Globals.P2PPeerList[peerIP] = Context;
+            Globals.P2PPeerDict[peerIP] = Context;
 
             //Save Peer here
             var peers = Peers.GetAll();
@@ -52,7 +52,7 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            Globals.P2PPeerList.TryRemove(peerIP, out var test);
+            Globals.P2PPeerDict.TryRemove(peerIP, out var test);
         }
 
         #endregion
@@ -60,7 +60,7 @@ namespace ReserveBlockCore.P2P
         #region GetConnectedPeerCount
         public static int GetConnectedPeerCount()
         {
-            return Globals.P2PPeerList.Count;
+            return Globals.P2PPeerDict.Count;
         }
 
         #endregion
@@ -237,9 +237,7 @@ namespace ReserveBlockCore.P2P
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
-            return await SignalRQueue(Context, 128, async () => {
-                return Globals.LastBlock.Height;
-            });            
+            return Globals.LastBlock.Height;
         }
 
         #endregion
@@ -323,7 +321,7 @@ namespace ReserveBlockCore.P2P
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
                 }
 
                 return result;
@@ -398,7 +396,7 @@ namespace ReserveBlockCore.P2P
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
+                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
                 }
 
                 return result;
@@ -540,10 +538,7 @@ namespace ReserveBlockCore.P2P
                             if (!isTxStale)
                             {
                                 var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
-                                if (!isCraftedIntoBlock)
-                                {
-                                }
-                                else
+                                if (isCraftedIntoBlock)
                                 {
                                     try
                                     {
@@ -595,7 +590,8 @@ namespace ReserveBlockCore.P2P
                             if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
-                                await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
+                                if(!Globals.Adjudicate)
+                                    await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
                                 return "ATMP";//added to mempool
                             }
                             else
