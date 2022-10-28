@@ -810,7 +810,7 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             var currentTime = DateTime.Now.AddMinutes(-15);
-            var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime);
+            var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null);
             output = JsonConvert.SerializeObject(fortisPool);
 
             return output;
