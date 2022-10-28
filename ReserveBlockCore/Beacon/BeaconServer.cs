@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Models;
+﻿using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.SignalR;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +13,7 @@ namespace ReserveBlockCore.Beacon
         public string SaveTo;
         public int Port;
         TcpListener obj_server;
+
 
         public BeaconServer(string SaveTo, int Port)
         {
@@ -34,6 +37,7 @@ namespace ReserveBlockCore.Beacon
                 obj_thread.Start();
             }
         }
+
     }
 
     class SocketHandler
@@ -72,11 +76,22 @@ namespace ReserveBlockCore.Beacon
                                     bool fileExist = File.Exists(@"" + SaveTo + Encoding.UTF8.GetString(recv_data));
                                     if (fileExist)
                                     {
+                                        byte[] data_file_exist = CreateDataPacket(Encoding.UTF8.GetBytes("777"), Encoding.UTF8.GetBytes(Convert.ToString(current_file_pointer)));
+                                        ns.Write(data_file_exist, 0, data_file_exist.Length);
                                         ns.Flush();
                                         loop_break = true;
                                         break;
                                     }
                                     fileName = Encoding.UTF8.GetString(recv_data);
+                                    //perform file check
+                                    var extChkResult = CheckExtensionApproval(fileName);
+                                    if (!extChkResult)
+                                    {
+                                        //Extension found in reject list
+                                        ns.Flush();
+                                        loop_break = true;
+                                        break;
+                                    }
                                     var beaconData = BeaconData.GetBeaconData();
                                     if (beaconData != null)
                                     {
@@ -227,7 +242,13 @@ namespace ReserveBlockCore.Beacon
                 }
                 catch(Exception ex)
                 {
-                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.Message}", "BeaconServer.ProcessSocketRequest()");
+                    ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.ToString()}", "BeaconServer.ProcessSocketRequest()");
+                    try
+                    {
+                        File.Delete(@"" + SaveTo + fileName);
+                        break;
+                    }
+                    catch { }
                 }
                 
             }
@@ -277,5 +298,22 @@ namespace ReserveBlockCore.Beacon
 
             return ms.ToArray();
         }
+
+        private bool CheckExtensionApproval(string fileName)
+        {
+            bool output = false;
+
+            string ext = Path.GetExtension(fileName);
+
+            if(!string.IsNullOrEmpty(ext))
+            {
+                var rejectedExtList = Globals.RejectAssetExtensionTypes;
+                var exist = rejectedExtList.Contains(ext);                
+                if(!exist)
+                    output = true;
+            }
+            return output;
+        }
+
     }
 }

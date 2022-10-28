@@ -12,6 +12,7 @@ using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using ReserveBlockCore.Extensions;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Data
 {
@@ -22,15 +23,19 @@ namespace ReserveBlockCore.Data
         public static string ChainRef { get; set; }
 
         public static int BlockVersion { get; set; }
+
+        #region Initialize Chain
         internal static async Task InitializeChain()
         {
             await StartupService.DownloadBlocks();
 
             var blocks = BlockData.GetBlocks();
             
-            if (blocks.Count() < 1)
+            if (blocks.FindOne(x => true) == null)
             {
                 var genesisTime = DateTime.UtcNow;
+
+                DbContext.BeginTrans();
                 TransactionData.CreateGenesisTransction();
 
                 //Get all transaction in pool. This can be used to create multiple accounts to receive funds at start of chain
@@ -47,14 +52,19 @@ namespace ReserveBlockCore.Data
 
                 // clear mempool
                 trxPool.DeleteAllSafe();
+
+                DbContext.Commit();
             }
         }
-        //Method needing validator functions still.
-        public static async Task<Block?> CraftNewBlock(string validator, int totalVals, string valAnswer)
+
+        #endregion
+
+        #region Craft Block New
+        public static async Task<Block?> CraftNewBlock_New(string validator, int totalVals, string valAnswer)
         {
             try
             {
-                await BlockQueueService.ProcessBlockQueue();
+                await BlockValidatorService.ValidationDelay();
 
                 var startCraftTimer = DateTime.UtcNow;
                 var validatorAccount = AccountData.GetSingleAccount(validator);
@@ -64,11 +74,11 @@ namespace ReserveBlockCore.Data
                     return null;
                 }
 
-                //Get tx's from Mempool
-                var processedTxPool = TransactionData.ProcessTxPool();
+                //Get tx's from Mempool                
+                var processedTxPool = await TransactionData.ProcessTxPool();
                 var txPool = TransactionData.GetPool();
 
-                var lastBlock = Program.LastBlock;
+                var lastBlock = Globals.LastBlock;
                 var height = lastBlock.Height + 1;
 
                 //Need to get master node validator.
@@ -135,8 +145,9 @@ namespace ReserveBlockCore.Data
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
 
-                BigInteger b1 = BigInteger.Parse(validatorAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 //Add validator signature
@@ -151,10 +162,160 @@ namespace ReserveBlockCore.Data
                 var buildTime = endTimer - startCraftTimer;
                 block.BCraftTime = buildTime.Milliseconds;
 
+                int craftCount = 1;
+                bool blockCrafted = false;
+                do
+                {
+                    blockCrafted = await BlockValidatorService.ValidateBlockForTask(block);
+                    if (blockCrafted == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        craftCount += 1; //add count to attempts and retry.
+                    }
 
-                var blockValResult = await BlockValidatorService.ValidateBlockForTask(block);
+                } while (craftCount != 5); // this will try up to 5 times to craft a block
 
-                if (blockValResult == true)
+                if (blockCrafted == true)
+                {
+                    return block;
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
+            }
+            // start craft time
+            return null;
+        }
+
+        #endregion
+
+        #region Craft Block Deprecated
+        //Method needing validator functions still.
+        public static async Task<Block?> CraftNewBlock(string validator, string valAnswer)
+        {
+            try
+            {
+                await BlockValidatorService.ValidationDelay();
+
+                var startCraftTimer = DateTime.UtcNow;
+                var validatorAccount = AccountData.GetSingleAccount(validator);
+
+                if (validatorAccount == null)
+                {
+                    return null;
+                }
+
+                //Get tx's from Mempool                
+                var processedTxPool = await TransactionData.ProcessTxPool();
+                var txPool = TransactionData.GetPool();
+
+                var lastBlock = Globals.LastBlock;
+                var height = lastBlock.Height + 1;
+
+                //Need to get master node validator.
+                var timestamp = TimeUtil.GetTime();
+                var transactionList = new List<Transaction>();
+
+                //var coinbase_tx = new Transaction
+                //{
+                //    Amount = 0,
+                //    ToAddress = validator,
+                //    Fee = 0.00M,
+                //    Timestamp = timestamp,
+                //    FromAddress = "Coinbase_TrxFees",
+                //    TransactionType = TransactionType.TX
+                //};
+
+                var coinbase_tx2 = new Transaction
+                {
+                    Amount = GetBlockReward(),
+                    ToAddress = validator,
+                    Fee = 0.00M,
+                    Timestamp = timestamp,
+                    FromAddress = "Coinbase_BlkRwd",
+                    TransactionType = TransactionType.TX
+                };
+
+                if (processedTxPool.Count() > 0)
+                {
+                    //commenting these out to test burning of fee.
+                    //coinbase_tx.Amount = GetTotalFees(processedTxPool);
+                    //coinbase_tx.Build();
+                    coinbase_tx2.Build();
+
+                    //transactionList.Add(coinbase_tx);
+                    transactionList.Add(coinbase_tx2);
+
+                    transactionList.AddRange(processedTxPool);
+
+                    //need to only delete processed mempool tx's in event new ones get added while creating block.
+                    //delete after block is added, so they can't  be re-added before block is over.
+                    foreach (var tx in processedTxPool)
+                    {
+                        var txRec = txPool.FindOne(x => x.Hash == tx.Hash);
+                        if (txRec != null)
+                        {
+                            //txPool.DeleteManySafe(x => x.Hash == tx.Hash);
+                        }
+                    }
+                }
+                else
+                {
+                    coinbase_tx2.Build();
+                    transactionList.Add(coinbase_tx2);
+                }
+
+                var block = new Block
+                {
+                    Height = height,
+                    Timestamp = timestamp,
+                    Transactions = GiveOtherInfos(transactionList, height),
+                    Validator = validator,
+                    ChainRefId = ChainRef,
+                    TotalValidators = Globals.FortisPool.Count,
+                    ValidatorAnswer = valAnswer
+                };
+                block.Build();
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
+
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                //Add validator signature
+                block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
+
+                //block size
+                var str = JsonConvert.SerializeObject(block);
+                block.Size = str.Length;
+
+                // get craft time    
+                var endTimer = DateTime.UtcNow;
+                var buildTime = endTimer - startCraftTimer;
+                block.BCraftTime = buildTime.Milliseconds;
+
+                int craftCount = 1;
+                bool blockCrafted = false;
+                do
+                {
+                    blockCrafted = await BlockValidatorService.ValidateBlockForTask(block);
+                    if (blockCrafted == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        craftCount += 1; //add count to attempts and retry.
+                    }
+
+                } while (craftCount != 5); // this will try up to 5 times to craft a block
+
+                if (blockCrafted == true)
                 {
                     return block;
                 }
@@ -162,12 +323,14 @@ namespace ReserveBlockCore.Data
                 
             }
             catch (Exception ex)
-            {
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.CraftNewBlock(string validator)");
+            {                
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.CraftNewBlock(string validator)");
             }
             // start craft time
             return null;
         }
+
+        #endregion
 
         public static decimal GetBlockReward()
         {
@@ -188,39 +351,32 @@ namespace ReserveBlockCore.Data
             try
             {
                 var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-                blocks.EnsureIndexSafe(x => x.Height);
                 return blocks;
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "BlockchainData.GetBlocks()");
+                DbContext.Rollback();
+                ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.GetBlocks()");
                 return null;
             }
             
         }
-        public static LiteDB.ILiteCollection<Block> GetBlockQueue()
-        {
-            var blocks = DbContext.DB_Queue.GetCollection<Block>(DbContext.RSRV_BLOCK_QUEUE);
-            blocks.EnsureIndexSafe(x => x.Height);
-            return blocks;
-        }
         public static Block GetGenesisBlock()
         {
-            var block = GetBlocks().FindAll().FirstOrDefault();
+            var block = GetBlocks().FindOne(x => true);
             return block;
         }
         public static Block GetBlockByHeight(long height)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Height); 
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
             var block = blocks.FindOne(x => x.Height == height);
             return block;
         }
 
+
         public static Block GetBlockByHash(string hash)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Height); 
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
             var block = blocks.FindOne(x => x.Hash == hash);
             return block;
         }
@@ -288,28 +444,25 @@ namespace ReserveBlockCore.Data
         }
         public static void AddBlock(Block block)
         {
-            var blocks = GetBlocks();
-            blocks.EnsureIndexSafe(x => x.Height);
+            var blocks = GetBlocks();            
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);
             if (blockCheck == null)
             {
-                blocks.InsertSafe(block);
-
                 //Update in memory fields.
-                Program.LastBlock = block;
-                Program.BlockHeight = block.Height;
+                Globals.LastBlock = block;
+                blocks.InsertSafe(block);
             }
             else
             {
-                var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
-                var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
-                if (eBlock == null)
-                {
-                    //database corrupt
-                    Program.DatabaseCorruptionDetected = true;
-                    ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
-                }
+                //var blockList = blocks.Find(LiteDB.Query.All(LiteDB.Query.Descending)).ToList();
+                //var eBlock = blockList.Where(x => x.Height == block.Height).FirstOrDefault();
+                //if (eBlock == null)
+                //{
+                //    //database corrupt
+                //    Globals.DatabaseCorruptionDetected = true;
+                //    ErrorLogUtility.LogError($"Database Corrupted at block height: {block.Height}", "BlockchainData.AddBlock()");
+                //}
             }
         }
         private static decimal GetTotalFees(List<Transaction> txs)
@@ -321,8 +474,7 @@ namespace ReserveBlockCore.Data
         public static IEnumerable<Block> GetBlocksByValidator(string address)
         {
 
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            blocks.EnsureIndexSafe(x => x.Validator);
+            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);            
             var query = blocks.Query()
                 .OrderByDescending(x => x.Height)
                 .Where(x => x.Validator == address)
@@ -344,7 +496,7 @@ namespace ReserveBlockCore.Data
             Console.WriteLine(" * Chain Validator : {0}", block.Validator);
 
             Console.WriteLine(" * Number Of Tx(s) : {0}", block.NumOfTx);
-            Console.WriteLine(" * Amout...........: {0}", block.TotalAmount);
+            Console.WriteLine(" * Amount...........: {0}", block.TotalAmount);
             Console.WriteLine(" * Reward          : {0}", block.TotalReward);
             Console.WriteLine(" * Size............: {0}", block.Size);
             Console.WriteLine(" * Craft Time      : {0}", block.BCraftTime);

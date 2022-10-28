@@ -19,7 +19,6 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class TXV1Controller : ControllerBase
     {
-
         //Step 1.
         [HttpGet("GetTimestamp")]
         public async Task<string> GetTimestamp()
@@ -81,7 +80,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message});
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString()});
             }
 
             return output;
@@ -101,14 +100,14 @@ namespace ReserveBlockCore.Controllers
                 {
                     if (sc.IsPublished == true)
                     {
-                        //Get beacons here!
-                        var locators = await P2PClient.GetBeacons();
-                        if (locators.Count() == 0)
+                        //Get beacons here!                        
+                        if (!Globals.Locators.Any())
                         {
                             output = "You are not connected to any beacons.";
                         }
                         else
                         {
+                            var locators = Globals.Locators.Values.FirstOrDefault();
                             List<string> assets = new List<string>();
 
                             if (sc.SmartContractAsset != null)
@@ -163,7 +162,7 @@ namespace ReserveBlockCore.Controllers
                             }
 
                             var result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, signature);
-                            if (result != "NA" && result != "Fail")
+                            if (result == true)
                             {
                                 var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
 
@@ -211,7 +210,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
             }
 
             return output;
@@ -247,7 +246,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.Message });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
             }
 
             return output;
@@ -285,7 +284,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to calcuate Fee. Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to calcuate Fee. Error: {ex.ToString()}" });
             }
 
             return output;
@@ -310,7 +309,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to create Hash. Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to create Hash. Error: {ex.ToString()}" });
             }
 
             return output;
@@ -340,7 +339,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified. Unknown Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Signature Not Verified. Unknown Error: {ex.ToString()}" });
             }
             
             return output;
@@ -381,7 +380,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.Message}. Please Try Again." });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.ToString()}. Please Try Again." });
             }
 
             return output;
@@ -424,7 +423,7 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.Message}. Please Try Again." });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Error - {ex.ToString()}. Please Try Again." });
             }
 
             return output;
@@ -444,14 +443,14 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = $"Error - {ex.Message}. Please Try Again.";
+                output = $"Error - {ex.ToString()}. Please Try Again.";
             }
 
             return output;
         }
 
-        [HttpGet("CreateADnr/{address}/{name}")]
-        public async Task<string> CreateADnr(string address, string name)
+        [HttpGet("CreateAdnr/{address}/{name}")]
+        public async Task<string> CreateAdnr(string address, string name)
         {
             string output = "";
 
@@ -464,14 +463,25 @@ namespace ReserveBlockCore.Controllers
                     var adnr = Adnr.GetAdnr();
                     if(adnr != null)
                     {
-                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
-                        if (adnrCheck != null)
+                        var adnrAddressCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrAddressCheck != null)
                         {
-                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrCheck.Name}" });
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrAddressCheck.Name}" });
                             return output;
                         }
-                        if (name != null && name != "")
+
+                        if (!string.IsNullOrWhiteSpace(name))
                         {
+                            name = name.ToLower();
+
+                            var limit = Globals.ADNRLimit;
+
+                            if(name.Length > limit)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "A DNR may only be a max of 65 characters" });
+                                return output;
+                            }
+
                             var nameCharCheck = Regex.IsMatch(name, @"^[a-zA-Z0-9]+$");
                             if (!nameCharCheck)
                             {
@@ -480,7 +490,8 @@ namespace ReserveBlockCore.Controllers
                             }
                             else
                             {
-                                var nameCheck = adnr.FindOne(x => x.Name == name);
+                                var nameRBX = name.ToLower() + ".rbx";
+                                var nameCheck = adnr.FindOne(x => x.Name == nameRBX);
                                 if (nameCheck == null)
                                 {
                                     var result = await Adnr.CreateAdnrTx(address, name);
@@ -492,6 +503,11 @@ namespace ReserveBlockCore.Controllers
                                     {
                                         output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
                                     }
+                                }
+                                else
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This name already has a DNR associated with it: {nameCheck.Name}" });
+                                    return output;
                                 }
                             }
 
@@ -510,7 +526,122 @@ namespace ReserveBlockCore.Controllers
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.Message}" });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
+        [HttpGet("TransferAdnr/{fromAddress}/{toAddress}")]
+        public async Task<string> TransferAdnr(string fromAddress, string toAddress)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(fromAddress);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = Adnr.GetAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrCheck == null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address does not have a DNR associated with it." });
+                            return output;
+                        }
+                        if (!string.IsNullOrWhiteSpace(toAddress))
+                        {
+                            var addrVerify = AddressValidateUtility.ValidateAddress(toAddress);
+                            if (addrVerify == true)
+                            {
+                                var toAddrAdnr = adnr.FindOne(x => x.Address == toAddress);
+                                if(toAddrAdnr == null)
+                                {
+                                    var result = await Adnr.TransferAdnrTx(fromAddress, toAddress);
+                                    if (result.Item1 != null)
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                                    }
+                                    else
+                                    {
+                                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                                    }
+                                }
+                                else
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address already has adnr associated to it." });
+                                }
+                            }
+                            else
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address is not a valid RBX address." });
+                            }
+
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Name was empty." });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {fromAddress} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
+        [HttpGet("DeleteAdnr/{address}")]
+        public async Task<string> DeleteAdnr(string address)
+        {
+            string output = "";
+
+            try
+            {
+                var wallet = AccountData.GetSingleAccount(address);
+                if (wallet != null)
+                {
+                    var addressFrom = wallet.Address;
+                    var adnr = Adnr.GetAdnr();
+                    if (adnr != null)
+                    {
+                        var adnrCheck = adnr.FindOne(x => x.Address == addressFrom);
+                        if (adnrCheck == null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"This address already has a DNR associated with it: {adnrCheck.Name}" });
+                            return output;
+                        }
+
+                        var result = await Adnr.DeleteAdnrTx(address);
+                        if (result.Item1 != null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = result.Item1.Hash });
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Transaction failed to broadcast. Error: {result.Item2}" });
+                        }
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Account with address: {address} was not found." });
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error: {ex.ToString()}" });
             }
 
             return output;
@@ -543,10 +674,22 @@ namespace ReserveBlockCore.Controllers
                 return output;
             }
 
-            var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
-
-            if (result.Contains("Success"))
+            if (Globals.IsWalletEncrypted == true)
             {
+                if (Globals.EncryptPassword.Length > 0)
+                {
+                    var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
+
+                    output = result;
+                }
+                else
+                {
+                    output = "FAIL. Please type in wallet encryption password first.";
+                }
+            }
+            else
+            {
+                var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
                 output = result;
             }
 

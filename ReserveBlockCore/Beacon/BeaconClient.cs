@@ -93,7 +93,7 @@ namespace ReserveBlockCore.Beacon
             }
             catch (Exception e)
             {
-                return new BeaconResponse { Status = -1, Description = "Error: " + e.Message };
+                return new BeaconResponse { Status = -1, Description = "Error: " + e.ToString() };
             }
         }
 
@@ -117,6 +117,7 @@ namespace ReserveBlockCore.Beacon
                 ns.Write(data_tosend, 0, data_tosend.Length);
                 ns.Flush();
                 bool loop_break = false;
+                bool loop_break_file_exist = false;
                 while (true)
                 {
                     if (ns.ReadByte() == 2)
@@ -149,21 +150,38 @@ namespace ReserveBlockCore.Beacon
                                     loop_break = true;
                                 }
                                 break;
+                            case 777:
+                                //file exist
+                                ns.Flush();
+                                fs.Close();
+                                loop_break_file_exist = true;
+                                break;
                             default:
                                 break;
                         }
+                    }
+                    else
+                    {
+                        loop_break = true;
+                        ns.Close();
+                        return new BeaconResponse { Status = -1, Description = "Error: " + "Error sending asset." };
                     }
                     if (loop_break == true)
                     {
                         ns.Close();
                         return new BeaconResponse { Status = 1, Description = "Send successful." };
                     }
+                    if (loop_break_file_exist == true)
+                    {
+                        ns.Close();
+                        return new BeaconResponse { Status = 777, Description = "File Already Exist" };
+                    }
 
                 }
             }
             catch (Exception e)
             {
-                return new BeaconResponse { Status = -1, Description = "Error: " + e.Message };
+                return new BeaconResponse { Status = -1, Description = "Error: " + e.ToString() };
             }
         }
 

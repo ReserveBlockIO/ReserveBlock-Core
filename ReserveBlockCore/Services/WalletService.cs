@@ -6,96 +6,102 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 
 namespace ReserveBlockCore.Services
 {
     public static class WalletService
     {
-        public static void StartSend()
+        public static async Task StartSend()
         {
-            Console.Clear();
-            var accountList = AccountData.GetAccountsWithBalance();
-            var accountNumberList = new Dictionary<string, Account>();
-
-            if (accountList.Count() > 0)
+            try
             {
-                int count = 1;
-                accountList.ToList().ForEach(x => {
-                    accountNumberList.Add(count.ToString(), x);
+                Console.Clear();
+                var accountList = AccountData.GetAccountsWithBalance();
+                var accountNumberList = new Dictionary<string, Account>();
+
+                if (accountList.Count() > 0)
+                {
+                    int count = 1;
+                    accountList.ToList().ForEach(x => {
+                        accountNumberList.Add(count.ToString(), x);
+                        Console.WriteLine("********************************************************************");
+                        Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
+
+                        Console.WriteLine("\n #" + count.ToString());
+                        Console.WriteLine("\nAddress :\n{0}", x.Address);
+                        Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+                        count++;
+                    });
+                    string? walletChoice = "";
+                    walletChoice = await ReadLineUtility.ReadLine();
+                    while (string.IsNullOrEmpty(walletChoice))
+                    {
+                        Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
+                        walletChoice = await ReadLineUtility.ReadLine();
+                    }
+                    var wallet = accountNumberList[walletChoice];
                     Console.WriteLine("********************************************************************");
-                    Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
 
-                    Console.WriteLine("\n #" + count.ToString() );
-                    Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
-                    count++;
-                });
-                string walletChoice = "";
-                walletChoice = Console.ReadLine();
-                while (walletChoice == "")
-                {
-                    Console.WriteLine("Entry not recognized. Please try it again. Sorry for trouble!");
-                    walletChoice = Console.ReadLine();
-                }
-                var wallet = accountNumberList[walletChoice];
-                Console.WriteLine("********************************************************************");
+                    Console.WriteLine("From Address address:");
+                    string fromAddress = wallet.Address;
+                    Console.WriteLine(fromAddress);
 
-                Console.WriteLine("From Address address:");
-                string fromAddress = wallet.Address;
-                Console.WriteLine(fromAddress);
+                    Console.WriteLine("\nPlease enter the recipient address!:");
+                    string? toAddress = await ReadLineUtility.ReadLine();
 
-                Console.WriteLine("\nPlease enter the recipient address!:");
-                string toAddress = Console.ReadLine();
+                    Console.WriteLine("\nPlease enter the amount (number)!:");
+                    string? strAmount = await ReadLineUtility.ReadLine();
 
-                Console.WriteLine("\nPlease enter the amount (number)!:");
-                string strAmount = Console.ReadLine();
+                    if (string.IsNullOrEmpty(fromAddress) ||
+                    string.IsNullOrEmpty(toAddress) ||
+                    string.IsNullOrEmpty(strAmount))
+                    {
 
-                if (string.IsNullOrEmpty(fromAddress) ||
-                string.IsNullOrEmpty(toAddress) ||
-                string.IsNullOrEmpty(strAmount))
-                {
-
-                    Console.WriteLine("\n\nError! Please input all fields: sender, recipient, and the amount.\n");
-                    return;
-                }
+                        Console.WriteLine("\n\nError! Please input all fields: sender, recipient, and the amount.\n");
+                        return;
+                    }
 
 
-                var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
+                    var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
 
 
-                if (addrCheck == false)
-                {
-                    Console.WriteLine("\nError! You have entered an invalid RBX Address!");
-                    return;
-                }
+                    if (addrCheck == false)
+                    {
+                        Console.WriteLine("\nError! You have entered an invalid RBX Address!");
+                        return;
+                    }
 
-                decimal amount = new decimal();
+                    decimal amount = new decimal();
 
-                try
-                {
-                    amount = decimal.Parse(strAmount);
-                }
-                catch
-                {
-                    Console.WriteLine("\nError! You have entered an incorrect value for  the amount!");
-                    return;
+                    try
+                    {
+                        amount = decimal.Parse(strAmount);
+                    }
+                    catch
+                    {
+                        Console.WriteLine("\nError! You have entered an incorrect value for  the amount!");
+                        return;
+                    }
+
+                    //RWCjeJ1pcwEqRS9ksgQs3987x78WVYsaFT
+                    var result = await SendTXOut(fromAddress, toAddress, amount);
+                    Console.WriteLine(result);
                 }
 
-                //RWCjeJ1pcwEqRS9ksgQs3987x78WVYsaFT
-                var result = SendTXOut(fromAddress, toAddress, amount);
-                Console.WriteLine(result);
+                else
+                {
+                    StartupService.MainMenu();
+                    Console.WriteLine("No wallets found with a balance.");
+                }
             }
-
-            else
+            catch(Exception ex)
             {
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("No wallets found with a balance.");
-                Console.WriteLine("Returning you to main menu.");
-                Thread.Sleep(5000);
-                StartupService.MainMenu();
+                Console.WriteLine(ex.ToString());
             }
+            
         }
-        public static string SendTXOut(string FromAddress, string ToAddress, decimal Amount, TransactionType tranType = TransactionType.TX)
+        public static async Task<string> SendTXOut(string FromAddress, string ToAddress, decimal Amount, TransactionType tranType = TransactionType.TX)
         {
             string output = "Bad TX Format... Please Try Again";
             var account = AccountData.GetSingleAccount(FromAddress);
@@ -105,7 +111,9 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            if(ToAddress.EndsWith(".rbx"))
+            var adnrCheck = ToAddress.ToLower().EndsWith(".rbx");
+
+            if (adnrCheck)
             {
                 var result = Adnr.GetAddress(ToAddress);
                 if(result.Item1 == true)
@@ -145,7 +153,9 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+            
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = nTx.Hash;
@@ -160,10 +170,11 @@ namespace ReserveBlockCore.Services
 
             try
             {
-                var result = VerifyTX(nTx, account);
+                var result = await VerifyTX(nTx, account);
                 if(result == true)
                 {
                     output = "Success! TxId: " + txHash;
+                    accPrivateKey = "0";
                 }
                 else
                 {
@@ -172,13 +183,13 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return output;
         }
 
-        private static bool VerifyTX(Transaction txRequest, Account account)
+        private static async Task<bool> VerifyTX(Transaction txRequest, Account account)
         {
             bool txResult = false;
 
@@ -208,7 +219,7 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
@@ -226,7 +237,11 @@ namespace ReserveBlockCore.Services
                 return txResult;
             }
 
-            
+            if(txRequest.TransactionRating == null)
+            {
+                var rating = await TransactionRatingService.GetTransactionRating(txRequest);
+                txRequest.TransactionRating = rating;
+            }
 
             if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
             {
@@ -235,7 +250,8 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                P2PClient.SendTXMempool(txRequest);//send out to mempool
+                //P2PClient.SendTXMempool(txRequest);//send out to mempool
+                await P2PClient.SendTXToAdjudicator(txRequest);
                 //add method to send to nearest validators too
                 //}
             }

@@ -58,13 +58,21 @@ namespace ReserveBlockCore.Models.SmartContracts
                     scs.UpdateSafe(scMain);
                 }              
             }
-            public static void SaveSmartContract(SmartContractMain scMain, string scText)
+            public static void SaveSmartContract(SmartContractMain scMain, string? scText)
             {
                 var scs = GetSCs();
 
-                scs.InsertSafe(scMain);
+                var exist = scs.FindOne(x => x.SmartContractUID == scMain.SmartContractUID);
 
-                SaveSCLocally(scMain, scText);
+                if (exist == null)
+                {
+                    scs.InsertSafe(scMain);
+                }
+                if(scText != null)
+                {
+                    SaveSCLocaly(scMain, scText);
+                }
+                
             }
 
             public static void UpdateSmartContract(SmartContractMain scMain)
@@ -84,14 +92,16 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }
                 catch(Exception ex)
                 {
-                    ErrorLogUtility.LogError(ex.Message, "SmartContractMain.DeleteSmartContract()");
+                    DbContext.Rollback();
+                    ErrorLogUtility.LogError(ex.ToString(), "SmartContractMain.DeleteSmartContract()");
                 }
             }
-            public static async void SaveSCLocally(SmartContractMain scMain, string scText)
+            public static async void SaveSCLocaly(SmartContractMain scMain, string scText)
             {
                 try
                 {
-                    var databaseLocation = Program.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
+                    string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+                    var databaseLocation = Globals.IsTestNet != true ? "SmartContracts" : "SmartContractsTestNet";
                     var text = scText;
                     string path = "";
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -107,7 +117,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                         }
                         else
                         {
-                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + "RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                            path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                         }
                     }
                     if (!Directory.Exists(path))
@@ -120,7 +130,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.Message}",
+                    NFTLogUtility.Log($"Failed to save smart contract locally: {scMain.SmartContractUID}. Error Message: {ex.ToString()}",
                     "SmartContractMain.SaveSCLocally(SmartContractMain scMain, string scText)");
                 }
             }
@@ -166,13 +176,13 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value.ToString();
                 var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
 
-                var extension = fileName != "" && fileName != null ? Path.GetExtension(fileName) : "";
+                var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
                 var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
                 var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
                 smartContractMain.SmartContractAsset = smartContractAssset;
 
 
-                if ((string)features != "")
+                if (!string.IsNullOrWhiteSpace((string)features))
                 {
                     List<SmartContractFeatures> featuresList = new List<SmartContractFeatures>();
                     var feats = (string)features;
@@ -224,7 +234,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                     if (isDynamic == true)
                                     {
-                                        var blockHeight = Program.BlockHeight.ToString();
+                                        var blockHeight = Globals.LastBlock.Height.ToString();
                                         var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                         var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
@@ -289,14 +299,27 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (isDynamic == true)
                                 {
-                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var blockHeight = Globals.LastBlock.Height.ToString();
                                     var evolveState = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                     var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveState).FirstOrDefault();
                                     if (evolveFeature != null)
                                     {
                                         evolveFeature.IsCurrentState = true;
+                                        
                                     }
+
+                                    var evoDynamicList = evolveFeatureList.Where(x => x.EvolveBlockHeight != null || x.EvolveDate != null).ToList();
+                                    if(evoDynamicList.Count() > 0)
+                                    {
+                                        foreach(var evo in evoDynamicList)
+                                        {
+                                            var update = evolveFeatureList.Where(x => x.EvolutionState == evo.EvolutionState).FirstOrDefault();
+                                            if (update != null)
+                                                update.IsDynamic = true;
+                                        }
+                                    }
+                                    
                                 }
 
                                 scFeature.FeatureName = FeatureName.Evolving;
@@ -350,12 +373,12 @@ namespace ReserveBlockCore.Models.SmartContracts
 
             var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
             
-            var extension = fileName != "" && fileName != null ? Path.GetExtension(fileName) : "";
+            var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
             var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
             smartContractMain.SmartContractAsset = smartContractAssset;
 
 
-            if ((string)features != "")
+            if (!string.IsNullOrWhiteSpace((string)features))
             {
                 List<SmartContractFeatures> featuresList = new List<SmartContractFeatures>();
                 var feats = (string)features;
@@ -413,14 +436,22 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 if (isDynamic == true)
                                 {
-                                    var blockHeight = Program.BlockHeight.ToString();
+                                    var blockHeight = Globals.LastBlock.Height.ToString();
                                     var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                     var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();
                                     if (evolveFeature != null)
                                     {
+                                        var evoFeaturesList = evolveFeatureList.Where(x => x.IsCurrentState == true).ToList();
+                                        foreach(var evoFeature in evoFeaturesList)
+                                        {
+                                            evoFeature.IsCurrentState = false;
+                                        }
                                         evolveFeature.IsCurrentState = true;
+                                        
                                     }
+
+
                                 }
 
                                 scFeature.FeatureName = FeatureName.Evolving;
@@ -481,7 +512,7 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                             if (isDynamic == true)
                             {
-                                var blockHeight = Program.BlockHeight.ToString();
+                                var blockHeight = Globals.LastBlock.Height.ToString();
                                 var evolveStateDynamic = (int)repl.Run(@"DynamicEvolve(1, " + blockHeight + ")").Value;
 
                                 var evolveFeature = evolveFeatureList.Where(x => x.EvolutionState == evolveStateDynamic).FirstOrDefault();

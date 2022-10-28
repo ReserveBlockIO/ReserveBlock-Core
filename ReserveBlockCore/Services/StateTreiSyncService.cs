@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                DbContext.BeginTrans();
                 if (IsRunning == false)
                 {
                     IsRunning = true;
@@ -54,26 +55,31 @@ namespace ReserveBlockCore.Services
                                 }
 
                             }
-                            var to = blockBalances.Where(a => a.Key == x.ToAddress).FirstOrDefault();
-
-                            if (to == null)
+                            if (x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
                             {
-                                var acctStateTreiTo = new AccountStateTrei
+                                if (x.TransactionType == TransactionType.TX)
                                 {
-                                    Key = x.ToAddress,
-                                    Nonce = 0,
-                                    Balance = x.Amount,
-                                    StateRoot = block.StateRoot
-                                };
+                                    var to = blockBalances.Where(a => a.Key == x.ToAddress).FirstOrDefault();
 
-                                blockBalances.Add(acctStateTreiTo);
-                            }
-                            else
-                            {
-                                to.Balance += x.Amount;
-                                to.StateRoot = block.StateRoot;
-                            }
+                                    if (to == null)
+                                    {
+                                        var acctStateTreiTo = new AccountStateTrei
+                                        {
+                                            Key = x.ToAddress,
+                                            Nonce = 0,
+                                            Balance = x.Amount,
+                                            StateRoot = block.StateRoot
+                                        };
 
+                                        blockBalances.Add(acctStateTreiTo);
+                                    }
+                                    else
+                                    {
+                                        to.Balance += x.Amount;
+                                        to.StateRoot = block.StateRoot;
+                                    }
+                                }
+                            }
                         });
                     }
 
@@ -87,8 +93,12 @@ namespace ReserveBlockCore.Services
                         {
                             if (stateTreiRec.Balance != bb.Balance)
                             {
+                                ErrorLogUtility.LogError(
+                                    $"Balance Off: {stateTreiRec.Key} | Reported: {stateTreiRec.Balance} - Actual: {bb.Balance}",
+                                    "StateTreiSyncService()");
                                 stateTreiRec.Balance = bb.Balance;
                                 stateTrei.UpdateSafe(stateTreiRec);
+                                
                             }
 
                         }
@@ -113,10 +123,12 @@ namespace ReserveBlockCore.Services
                 }
 
                 IsRunning = false;
+                DbContext.Commit();
             }
             catch(Exception ex)
             {
-                ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.Message}", "StateTreiSyncService.SyncAccountStateTrei()");
+                DbContext.Rollback();
+                ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.ToString()}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }
     }

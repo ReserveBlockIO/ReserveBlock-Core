@@ -10,32 +10,49 @@ using System.Numerics;
 using System.Security.Cryptography;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Extensions;
+using Spectre.Console;
+using ReserveBlockCore.Services;
+using ReserveBlockCore.Models.SmartContracts;
+using System.Net.NetworkInformation;
 
 namespace ReserveBlockCore.Data
 {
     internal static class AccountData
     {
-        public static Account CreateNewAccount()
+		public static Account CreateNewAccount(bool skipSave = false)
         {
-            Account account = new Account();
-            PrivateKey privateKey = new PrivateKey();
-            var privKeySecretHex = privateKey.secret.ToString("x");
-            var pubKey = privateKey.publicKey();
+			Account account = new Account();
+			var accountMade = false;
+			while(accountMade == false)
+            {
+				try
+				{
+					PrivateKey privateKey = new PrivateKey();
+					var privKeySecretHex = privateKey.secret.ToString("x");
+					var pubKey = privateKey.publicKey();
 
-            account.PrivateKey = privKeySecretHex;
-            account.PublicKey = "04" + ByteToHex(pubKey.toString());
-            account.Balance = 0.00M;
-			account.Address = GetHumanAddress(account.PublicKey);
+					account.PrivateKey = privKeySecretHex;
+					account.PublicKey = "04" + ByteToHex(pubKey.toString());
+					account.Balance = 0.00M;
+					account.Address = GetHumanAddress(account.PublicKey);
 
-			//var test = HexToByte(account.PublicKey.Remove(0,2));
+					var sig = Ecdsa.sign("test", privateKey);
+					var verify = Ecdsa.verify("test", sig, privateKey.publicKey());
 
-			//var pubKeyTest = PublicKey.fromString(test);
-
-			AddToAccount(account);
+                    if (verify == true)
+                    {
+						if (!skipSave)
+							AddToAccount(account);
+						accountMade = true;
+					}
+				}
+				catch { }
+			}
+			
 
 			return account;
-        }
-		public static Account RestoreAccount(string privKey, bool rescanForTx = false)
+		}
+		public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false)
         {
 			Account account = new Account();
             try
@@ -51,6 +68,11 @@ namespace ReserveBlockCore.Data
 				account.Address = GetHumanAddress(account.PublicKey);
 				//Update balance from state trei
 				var accountState = StateData.GetSpecificAccountStateTrei(account.Address);
+				var adnrState = Adnr.GetAdnr(account.Address);
+				var scStateTrei = SmartContractStateTrei.GetSCST();
+				var scs = scStateTrei.Find(x => x.OwnerAddress == account.Address || (x.MinterAddress == account.Address && x.MinterManaged == true)).ToList();
+
+				account.ADNR = adnrState != null ? adnrState : null;
 				account.Balance = accountState != null ? accountState.Balance : 0M;
 
 				var validators = Validators.Validator.GetAll();
@@ -65,6 +87,31 @@ namespace ReserveBlockCore.Data
 					}
 				}
 
+				if(scs.Count() > 0)
+				{
+					foreach (var sc in scs)
+					{
+						try
+						{
+                            var scMain = SmartContractMain.GenerateSmartContractInMemory(sc.ContractData);
+							if(sc.MinterManaged == true)
+							{
+								if(sc.MinterAddress == account.Address)
+								{
+									scMain.IsMinter = true;
+								}
+							}
+
+							SmartContractMain.SmartContractData.SaveSmartContract(scMain, null);
+                        }
+						catch(Exception ex)
+						{
+							ErrorLogUtility.LogError($"Failed to import Smart contract during account restore. SCUID: {sc.SmartContractUID}", "AccountData.RestoreAccount()");
+
+                        }
+                    }
+                }
+
 				var accountCheck = AccountData.GetSingleAccount(account.Address);
 				if(accountCheck == null)
                 {
@@ -73,11 +120,16 @@ namespace ReserveBlockCore.Data
                     {
 						//rescan for all tx's sent out and all tx's received.
                     }
+					if(Globals.IsWalletEncrypted == true)
+					{
+						await WalletEncryptionService.EncryptWallet(account, true);
+					}
 				}
 			}
 			catch (Exception ex)
             {
 				//restore failed
+				DbContext.Rollback();
 				Console.WriteLine("Account restore failed. Not a valid private key");
             }
 			
@@ -126,6 +178,7 @@ namespace ReserveBlockCore.Data
 			catch (Exception ex)
 			{
 				//restore failed
+				DbContext.Rollback();
 				Console.WriteLine("Account restore failed. Not a valid private key");
 			}
 
@@ -136,47 +189,73 @@ namespace ReserveBlockCore.Data
 
 		public static PrivateKey GetPrivateKey(Account account)
         {
-			BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-			PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
 			return privateKey;
 		}
 		public static void PrintWalletAccounts()
         {
 			Console.Clear();
-			var accountList = GetAccounts();
-			if(accountList.Count() > 0)
+			var accounts = GetAccounts();
+
+			var accountList = accounts.FindAll().ToList();
+
+			if (accountList.Count() > 0)
             {
-				accountList.FindAll().ToList().ForEach(x => {
-					Console.WriteLine("********************************************************************");
-					Console.WriteLine("\nAddress :\n{0}", x.Address);
-					Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+				Console.Clear();
+				Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+				AnsiConsole.Write(
+				new FigletText("RBX Accounts")
+				.Centered()
+				.Color(Color.Green));
+
+				var table = new Table();
+
+				table.Title("[yellow]RBX Wallet Accounts[/]").Centered();
+				table.AddColumn(new TableColumn(new Panel("Address")));
+				table.AddColumn(new TableColumn(new Panel("Balance"))).Centered();
+
+				accountList.ForEach(x => {
+					table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
 				});
-			}
+
+				table.Border(TableBorder.Rounded);
+
+				AnsiConsole.Write(table);
+
+                Console.WriteLine("Please type /menu to return to mainscreen.");
+            }
 			else
             {
 				Console.Clear();
 				Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 				Console.WriteLine("ReserveBlock Main Menu");
-				Console.WriteLine("|======================================|");
-				Console.WriteLine("| 1. Genesis Block (Check)             |");
-				Console.WriteLine("| 2. Create Account                    |");
-				Console.WriteLine("| 2hd. Create HD Wallet                |");
-				Console.WriteLine("| 3. Restore Account                   |");
-				Console.WriteLine("| 3hd. Restore HD Wallet               |");
-				Console.WriteLine("| 4. Send Coins                        |");
-				Console.WriteLine("| 5. Get Latest Block                  |");
-				Console.WriteLine("| 6. Transaction History               |");
-				Console.WriteLine("| 7. Account Info                      |");
-				Console.WriteLine("| 8. Startup Masternode                |");
-				Console.WriteLine("| 9. Search Block                      |");
-				Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-				Console.WriteLine("| 11. Stop Masternode                  |");
-				Console.WriteLine("| 12. Import Smart Contract            |");
-				Console.WriteLine("| 13. Exit                             |");
-				Console.WriteLine("|======================================|");
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("| 1. Genesis Block (Check)             |");
+                Console.WriteLine("| 2. Create Account                    |");
+                Console.WriteLine("| 2hd. Create HD Wallet                |");
+                Console.WriteLine("| 3. Restore Account                   |");
+                Console.WriteLine("| 3hd. Restore HD Wallet               |");
+                Console.WriteLine("| 4. Send Coins                        |");
+                Console.WriteLine("| 5. Get Latest Block                  |");
+                Console.WriteLine("| 6. Transaction History               |");
+                Console.WriteLine("| 7. Wallet Address(es) Info           |");
+                Console.WriteLine("| 8. Startup Masternode                |");
+                Console.WriteLine("| 9. Search Block                      |");
+                Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
+                Console.WriteLine("| 11. Stop Masternode                  |");
+                Console.WriteLine("| 12. Import Smart Contract (disabled) |");
+                Console.WriteLine("| 13. Exit                             |");
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("|type /help for menu options           |");
+                Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|======================================|");
 
-				Console.WriteLine("********************************************************************");
+                Console.WriteLine("********************************************************************");
 				Console.WriteLine("You do not have any accounts yet. Please choose option 2 to create a new account.");
 				
 
@@ -195,7 +274,7 @@ namespace ReserveBlockCore.Data
 			Console.WriteLine("*** Be sure to save private key!                   ***");
 			Console.WriteLine("*** Use your private key to restore account!       ***");
 		}
-		public static void AddToAccount(Account account)
+		public static async void AddToAccount(Account account)
 		{
 			var accountList = GetAccounts();
 			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.PrivateKey);
@@ -204,7 +283,11 @@ namespace ReserveBlockCore.Data
 			if(accountCheck == null)
             {
 				accountList.InsertSafe(account);
-			}
+     //           if (Globals.IsWalletEncrypted == true)
+     //           {
+					//var result = await WalletEncryptionService.EncryptWallet(account, true);
+     //           }
+            }
             else
             {
 				//do nothing as account is already in table. They are attempting to restore a key that already exist.
@@ -240,13 +323,13 @@ namespace ReserveBlockCore.Data
 		{
             try
             {
-				var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-				//accounts.EnsureIndexSafe(x => x.id);
+				var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);				
 				return accounts;
 			}
 			catch(Exception ex)
             {
-				ErrorLogUtility.LogError(ex.Message, "AccountData.GetAccounts()");
+				DbContext.Rollback();
+				ErrorLogUtility.LogError(ex.ToString(), "AccountData.GetAccounts()");
 				return null;
 			}			
 		}
@@ -261,9 +344,16 @@ namespace ReserveBlockCore.Data
 		public static IEnumerable<Account> GetAccountsWithBalanceForAdnr()
 		{
 			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-			var accountsWithBal = accounts.Find(x => x.Balance >= 1.01M);
+			var accountsWithBal = accounts.Find(x => x.Balance >= 1.00M);
 
 			return accountsWithBal;
+		}
+		public static IEnumerable<Account> GetAccountsWithAdnr()
+		{
+			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
+			var accountsWithAdnr = accounts.Find(x => x.ADNR != null);
+
+			return accountsWithAdnr;
 		}
 		public static IEnumerable<Account> GetPossibleValidatorAccounts()
 		{
@@ -299,7 +389,7 @@ namespace ReserveBlockCore.Data
 			byte[] PubKey = HexToByte(pubKeyHash);
 			byte[] PubKeySha = Sha256(PubKey);
 			byte[] PubKeyShaRIPE = RipeMD160(PubKeySha);
-			byte[] PreHashWNetwork = AppendReserveBlockNetwork(PubKeyShaRIPE, Program.AddressPrefix);//This will create Address starting with 'R'
+			byte[] PreHashWNetwork = AppendReserveBlockNetwork(PubKeyShaRIPE, Globals.AddressPrefix);//This will create Address starting with 'R'
 			byte[] PublicHash = Sha256(PreHashWNetwork);
 			byte[] PublicHashHash = Sha256(PublicHash);
 			byte[] Address = ConcatAddress(PreHashWNetwork, PublicHashHash);

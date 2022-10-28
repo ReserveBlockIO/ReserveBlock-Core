@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -19,73 +20,136 @@ namespace ReserveBlockCore.P2P
 {
     public class P2PServer : Hub
     {
-        private static Dictionary<string, string> PeerList = new Dictionary<string, string>();
-        public static Dictionary<string, int> TxRebroadcastDict = new Dictionary<string, int>();
-        public static int PeerConnectedCount = 0;
-
         #region Broadcast methods
         public override async Task OnConnectedAsync()
-        {
+        {            
             var peerIP = GetIP(Context);
+            if(Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+                context.Abort();
+
+            Globals.P2PPeerDict[peerIP] = Context;
+
             //Save Peer here
             var peers = Peers.GetAll();
-            var peerList = peers.FindAll();
-            if (peerList.Count() > 0)
+            var peerExist = peers.Find(x => x.PeerIP == peerIP).FirstOrDefault();
+            if (peerExist == null)
             {
-                var peerExist = peerList.Where(x => x.PeerIP == peerIP).FirstOrDefault();
-                if (peerExist == null)
+                Peers nPeer = new Peers
                 {
-                    Peers nPeer = new Peers
-                    {
-                        FailCount = 0,
-                        IsIncoming = true,
-                        IsOutgoing = false,
-                        PeerIP = peerIP
-                    };
+                    FailCount = 0,
+                    IsIncoming = true,
+                    IsOutgoing = false,
+                    PeerIP = peerIP
+                };
 
-                    peers.InsertSafe(nPeer);
-                }
+                peers.InsertSafe(nPeer);
             }
-
-            var blockHeight = Program.BlockHeight;
-            PeerList.Add(Context.ConnectionId, peerIP);
-            PeerConnectedCount++;
-
-            await SendMessage("IP", peerIP);
+                                    
+            await Clients.Caller.SendAsync("GetMessage", "IP", peerIP);
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
-            string connectionId = Context.ConnectionId;
-            var check = PeerList.ContainsKey(connectionId);
-            PeerConnectedCount--;
-            if (check == true)
-            {
-                var peer = PeerList.FirstOrDefault(x => x.Key == connectionId);
-                var ip = peer.Value;
-                //await SendMessageAllPeers(ip);
-                //do some logic
-            }
-        }
-
-        public async Task SendMessage(string message, string data)
-        {
-            await Clients.Caller.SendAsync("GetMessage", message, data);
-        }
-
-        public async Task SendMessageAllPeers(string message, string data)
-        {
-            await Clients.All.SendAsync("GetMessage", message, data);
+            var peerIP = GetIP(Context);
+            Globals.P2PPeerDict.TryRemove(peerIP, out var test);
         }
 
         #endregion
 
         #region GetConnectedPeerCount
-        public static async Task<int> GetConnectedPeerCount()
+        public static int GetConnectedPeerCount()
         {
-            var peerCount = PeerConnectedCount;
-            return peerCount;
+            return Globals.P2PPeerDict.Count;
+        }
+
+        #endregion
+
+        #region SignalR DOS Protection
+       
+        public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
+        {
+            if (Globals.LastBlock.Height <= Globals.BlockLock)
+                return await func();
+
+            var now = TimeUtil.GetMillisecondTime();
+            var ipAddress = GetIP(context);            
+            if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
+            {                               
+                var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               
+                if (Lock.ConnectionCount > 20)                
+                    Peers.BanPeer(ipAddress, ipAddress + ": Connection count exceeded limit.  Peer failed to wait for responses before sending new requests.", func.Method.Name);                                        
+                
+                if (Lock.BufferCost + sizeCost > 5000000)
+                {
+                    throw new HubException("Too much buffer usage.  Message was dropped.");
+                }
+                if (now - prev < 1000)
+                    Interlocked.Increment(ref Lock.DelayLevel);
+                else
+                {
+                    Interlocked.CompareExchange(ref Lock.DelayLevel, 1, 0);
+                    Interlocked.Decrement(ref Lock.DelayLevel);
+                }
+
+                return await SignalRQueue(Lock, sizeCost, func);
+            }
+            else
+            {
+                var newLock = new MessageLock { BufferCost = sizeCost, LastRequestTime = now, DelayLevel = 0, ConnectionCount = 0 };
+                if (Globals.MessageLocks.TryAdd(ipAddress, newLock))
+                    return await SignalRQueue(newLock, sizeCost, func);
+                else
+                {
+                    Lock = Globals.MessageLocks[ipAddress];                    
+                    var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);
+                    if (now - prev < 1000)
+                        Interlocked.Increment(ref Lock.DelayLevel);
+                    else
+                    {
+                        Interlocked.CompareExchange(ref Lock.DelayLevel, 1, 0);
+                        Interlocked.Decrement(ref Lock.DelayLevel);
+                    }
+
+                    return await SignalRQueue(Lock, sizeCost, func);
+                }
+            }
+        }
+
+        private static async Task<T> SignalRQueue<T>(MessageLock Lock, int sizeCost, Func<Task<T>> func)
+        {
+            Interlocked.Increment(ref Lock.ConnectionCount);
+            Interlocked.Add(ref Lock.BufferCost, sizeCost);
+            await Lock.Semaphore.WaitAsync();
+            try
+            {
+                var task = func();
+                if (Lock.DelayLevel == 0)
+                    return await task;
+
+                var delayTask = Task.Delay(500 * (1 << (Lock.DelayLevel - 1)));                
+                await Task.WhenAll(delayTask, task);
+                return await task;
+            }
+            finally
+            {
+                if (Lock.Semaphore.CurrentCount == 0) // finally can be executed more than once
+                {
+                    Interlocked.Decrement(ref Lock.ConnectionCount);
+                    Interlocked.Add(ref Lock.BufferCost, -sizeCost);
+                    Lock.Semaphore.Release();
+                }
+            }
+        }
+
+        public static async Task SignalRQueue(HubCallerContext context, int sizeCost, Func<Task> func)
+        {
+            var commandWrap = async () =>
+            {
+                await func();
+                return 1;
+            };
+            await SignalRQueue(context, sizeCost, commandWrap);
         }
 
         #endregion
@@ -93,93 +157,41 @@ namespace ReserveBlockCore.P2P
         #region Receive Block
         public async Task ReceiveBlock(Block nextBlock)
         {
-            if (Program.BlocksDownloading == false)
+            try
             {
-                if (nextBlock.ChainRefId == BlockchainData.ChainRef)
+                await SignalRQueue(Context, (int)nextBlock.Size, async () =>
                 {
-                    await BlockQueueService.ProcessBlockQueue();
-
-                    var nextHeight = Program.BlockHeight + 1;
-                    var currentHeight = nextBlock.Height;
-
-                    if (nextHeight == currentHeight)
+                    if (Globals.BlocksDownloading == 0)
                     {
-                        var broadcast = await BlockQueueService.AddBlock(nextBlock);
-
-                        if (broadcast == true)
+                        if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                         {
-                            string data = "";
-                            data = JsonConvert.SerializeObject(nextBlock);
-                            await SendMessageAllPeers("blk", data);
+                            var IP = GetIP(Context);
+                            var nextHeight = Globals.LastBlock.Height + 1;
+                            var currentHeight = nextBlock.Height;
+
+                            var isNewBlock = currentHeight >= nextHeight && !BlockDownloadService.BlockDict.ContainsKey(currentHeight);
+
+                            if (isNewBlock)
+                            {
+                                BlockDownloadService.BlockDict[currentHeight] = (nextBlock, IP);
+                                await BlockValidatorService.ValidateBlocks();
+                            }
+
+                            if (nextHeight == currentHeight && isNewBlock)
+                            {
+                                string data = "";
+                                data = JsonConvert.SerializeObject(nextBlock);
+                                await Clients.All.SendAsync("GetMessage", "blk", data);
+                            }
+
+                            if (nextHeight < currentHeight && isNewBlock)
+                                await BlockDownloadService.GetAllBlocks();
                         }
                     }
-
-                    if (nextHeight < currentHeight)
-                    {
-                        // means we need to download some blocks
-                        Program.BlocksDownloading = true;
-                        var setDownload = await BlockDownloadService.GetAllBlocks(currentHeight);
-                        Program.BlocksDownloading = setDownload;
-                    }
-                }
-                //Console.WriteLine("Found Block: " + nextBlock.Height.ToString());
+                });
             }
-        }
-
-        #endregion
-
-        #region Send list of Validators to peer
-        public async Task<List<Validators>?> SendValidators()
-        {
-            var validators = Validators.Validator.GetAll();
-
-            var validatorList = validators.FindAll().ToList();
-
-            if (validatorList.Count() == 0)
-                return null;
-
-            //Only send 10 as that will be plenty.
-            if (validatorList.Count() > 10)
-                return validatorList.Take(10).ToList();
-
-            return validatorList;
-        }
-
-        #endregion
-
-        #region Get Validator Count
-        public async Task<long?> SendValidatorCount()
-        {
-            var validators = Validators.Validator.GetAll();
-
-            var validatorList = validators.FindAll().ToList();
-
-            if (validatorList.Count() == 0)
-                return null;
-
-            return (long)validatorList.Count();
-        }
-
-        #endregion
-
-        #region Connect Peers
-        //Send hello status to connecting peers from p2p server
-        public async Task ConnectPeers(string node, string message, string time)
-        {
-            long ticks = Convert.ToInt64(time);
-            DateTime timeTicks = new DateTime(ticks);
-
-            var feature = Context.Features.Get<IHttpConnectionFeature>();
-            var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
-
-            if (message == "Hello")
-            {
-                var oNode = "Origin Node";
-                var oMessage = "Connected to IP: " + peerIP;
-                var endTime = DateTime.UtcNow;
-                var totalTime = (endTime - timeTicks).TotalMilliseconds;
-                await Clients.Caller.SendAsync("PeerConnected", oNode, oMessage, totalTime.ToString("0"), BlockchainData.ChainRef);
-            }
+            catch { }
+            
         }
 
         #endregion
@@ -187,32 +199,37 @@ namespace ReserveBlockCore.P2P
         #region Ping Peers
         public async Task<string> PingPeers()
         {
-            var peerIP = GetIP(Context);
+            return await SignalRQueue(Context, 1024, async () => {
+                var peerIP = GetIP(Context);
 
-            var peerDB = Peers.GetAll();
+                var peerDB = Peers.GetAll();
 
-            var peer = peerDB.FindOne(x => x.PeerIP == peerIP);
+                var peer = peerDB.FindOne(x => x.PeerIP == peerIP);
 
-            if (peer == null)
-            {
-                //this does a ping back on the peer to see if it can also be an outgoing node.
-                var result = await P2PClient.PingBackPeer(peerIP);
+                if (peer == null)
+                {
+                    //this does a ping back on the peer to see if it can also be an outgoing node.
+                    var result = await P2PClient.PingBackPeer(peerIP);
 
-                Peers nPeer = new Peers {
-                    FailCount = 0,
-                    IsIncoming = true,
-                    IsOutgoing = result,
-                    PeerIP = peerIP
-                };
+                    Peers nPeer = new Peers
+                    {
+                        FailCount = 0,
+                        IsIncoming = true,
+                        IsOutgoing = result,
+                        PeerIP = peerIP
+                    };
 
-                peerDB.InsertSafe(nPeer);
-            }
-            return "HelloPeer";
+                    peerDB.InsertSafe(nPeer);
+                }
+                return "HelloPeer";
+            });
         }
 
         public async Task<string> PingBackPeer()
         {
-            return "HelloBackPeer";
+            return await SignalRQueue(Context, 128, async () => {
+                return "HelloBackPeer";
+            });
         }
 
         #endregion
@@ -220,14 +237,7 @@ namespace ReserveBlockCore.P2P
         #region Send Block Height
         public async Task<long> SendBlockHeight()
         {
-            if (Program.BlockHeight != -1)
-            {
-                var blockHeight = Program.BlockHeight;
-
-                return blockHeight;
-            }
-            return -1;
-
+            return Globals.LastBlock.Height;
         }
 
         #endregion
@@ -235,16 +245,18 @@ namespace ReserveBlockCore.P2P
         #region Send Beacon Locator Info
         public async Task<string> SendBeaconInfo()
         {
-            var result = "";
+            return await SignalRQueue(Context, 128, async () => {
+                var result = "";
 
-            var beaconInfo = BeaconInfo.GetBeaconInfo();
+                var beaconInfo = BeaconInfo.GetBeaconInfo();
 
-            if (beaconInfo == null)
-                return "NA";
+                if (beaconInfo == null)
+                    return "NA";
 
-            result = beaconInfo.BeaconLocator;
+                result = beaconInfo.BeaconLocator;
 
-            return result;
+                return result;
+            });
         }
 
         #endregion
@@ -252,65 +264,68 @@ namespace ReserveBlockCore.P2P
         #region  ReceiveDownloadRequest
         public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
         {
-            bool result = false;
-            var peerIP = GetIP(Context);
-
-            try
+            return await SignalRQueue(Context, 1024, async () =>
             {
-                if (bdd != null)
+                bool result = false;
+                var peerIP = GetIP(Context);
+
+                try
                 {
-                    var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
-                    if (scState == null)
+                    if (bdd != null)
                     {
-                        return result; //fail
-                    }
-
-                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
-                    if (sigCheck == false)
-                    {
-                        return result; //fail
-                    }
-
-                    var beaconDatas = BeaconData.GetBeacon();
-                    var beaconData = BeaconData.GetBeaconData();
-                    foreach (var fileName in bdd.Assets)
-                    {
-                        if (beaconData != null)
+                        var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
+                        if (scState == null)
                         {
-                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
-                            if (bdCheck != null)
+                            return result; //fail
+                        }
+
+                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
+                        if (sigCheck == false)
+                        {
+                            return result; //fail
+                        }
+
+                        var beaconDatas = BeaconData.GetBeacon();
+                        var beaconData = BeaconData.GetBeaconData();
+                        foreach (var fileName in bdd.Assets)
+                        {
+                            if (beaconData != null)
                             {
-                                if (beaconDatas != null)
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
+                                if (bdCheck != null)
                                 {
-                                    bdCheck.DownloadIPAddress = peerIP;
-                                    beaconDatas.UpdateSafe(bdCheck);
+                                    if (beaconDatas != null)
+                                    {
+                                        bdCheck.DownloadIPAddress = peerIP;
+                                        beaconDatas.UpdateSafe(bdCheck);
+                                    }
+                                    else
+                                    {
+                                        return result;//fail
+                                    }
                                 }
                                 else
                                 {
-                                    return result;//fail
+                                    return result; //fail
                                 }
                             }
                             else
                             {
                                 return result; //fail
                             }
-                        }
-                        else
-                        {
-                            return result; //fail
+
+                            result = true;
                         }
 
-                        result = true;
                     }
-
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
-            }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+                }
 
-            return result;
+                return result;
+            });
         }
 
         #endregion
@@ -318,45 +333,30 @@ namespace ReserveBlockCore.P2P
         #region ReceiveUploadRequest
         public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
         {
-            bool result = false;
-            var peerIP = GetIP(Context);
-            try
+            return await SignalRQueue(Context, 1024, async () =>
             {
-                if (bsd != null)
+                bool result = false;
+                var peerIP = GetIP(Context);
+                try
                 {
-                    var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
-                    if (scState == null)
+                    if (bsd != null)
                     {
-                        return result;
-                    }
-
-                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
-                    if (sigCheck == false)
-                    {
-                        return result;
-                    }
-
-                    var beaconData = BeaconData.GetBeaconData();
-                    foreach (var fileName in bsd.Assets)
-                    {
-                        if (beaconData == null)
+                        var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
+                        if (scState == null)
                         {
-                            var bd = new BeaconData
-                            {
-                                AssetExpireDate = 0,
-                                AssetReceiveDate = 0,
-                                AssetName = fileName,
-                                IPAdress = peerIP,
-                                NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                SmartContractUID = bsd.SmartContractUID
-                            };
-
-                            BeaconData.SaveBeaconData(bd);
+                            return result;
                         }
-                        else
+
+                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
+                        if (sigCheck == false)
                         {
-                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
-                            if (bdCheck == null)
+                            return result;
+                        }
+
+                        var beaconData = BeaconData.GetBeaconData();
+                        foreach (var fileName in bsd.Assets)
+                        {
+                            if (beaconData == null)
                             {
                                 var bd = new BeaconData
                                 {
@@ -370,19 +370,37 @@ namespace ReserveBlockCore.P2P
 
                                 BeaconData.SaveBeaconData(bd);
                             }
+                            else
+                            {
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
+                                if (bdCheck == null)
+                                {
+                                    var bd = new BeaconData
+                                    {
+                                        AssetExpireDate = 0,
+                                        AssetReceiveDate = 0,
+                                        AssetName = fileName,
+                                        IPAdress = peerIP,
+                                        NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+                                        SmartContractUID = bsd.SmartContractUID
+                                    };
+
+                                    BeaconData.SaveBeaconData(bd);
+                                }
+                            }
                         }
+
+                        result = true;
+
                     }
-
-                    result = true;
-
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.Message}", "P2PServer.ReceiveUploadRequest()");
-            }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+                }
 
-            return result;
+                return result;
+            });
         }
 
         #endregion
@@ -390,13 +408,16 @@ namespace ReserveBlockCore.P2P
         #region Send Adjudicator
         public async Task<Adjudicators?> SendLeadAdjudicator()
         {
-            var leadAdj = Program.LeadAdjudicator;
-            if (leadAdj == null)
+            return await SignalRQueue(Context, 128, async () =>
             {
-                leadAdj = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
-            }
+                var leadAdj = Globals.LeadAdjudicator;
+                if (leadAdj == null)
+                {
+                    leadAdj = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
+                }
 
-            return leadAdj;
+                return leadAdj;
+            });
         }
 
         #endregion
@@ -405,20 +426,44 @@ namespace ReserveBlockCore.P2P
         //Send Block to client from p2p server
         public async Task<Block?> SendBlock(long currentBlock)
         {
-            var peerIP = GetIP(Context);
-
-            var message = "";
-            var nextBlockHeight = currentBlock + 1;
-            var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
-
-            if (nextBlock != null)
+            try
             {
-                return nextBlock;
+                //return await SignalRQueue(Context, 1179648, async () =>
+                //{
+                //    var peerIP = GetIP(Context);
+
+                //    var message = "";
+                //    var nextBlockHeight = currentBlock + 1;
+                //    var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
+
+                //    if (nextBlock != null)
+                //    {
+                //        return nextBlock;
+                //    }
+                //    else
+                //    {
+                //        return null;
+                //    }
+                //});
+                var peerIP = GetIP(Context);
+
+                var message = "";
+                var nextBlockHeight = currentBlock + 1;
+                var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
+
+                if (nextBlock != null)
+                {
+                    return nextBlock;
+                }
+                else
+                {
+                    return null;
+                }
             }
-            else
-            {
-                return null;
-            }
+            catch { }
+
+            return null;
+            
         }
 
         #endregion
@@ -426,138 +471,149 @@ namespace ReserveBlockCore.P2P
         #region Send to Mempool
         public async Task<string> SendTxToMempool(Transaction txReceived)
         {
-            var result = "";
-
-            var data = JsonConvert.SerializeObject(txReceived);
-
-            var mempool = TransactionData.GetPool();
-            if (mempool.Count() != 0)
+            try
             {
-                var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
-                if (txFound == null)
+                return await SignalRQueue(Context, (txReceived.Data?.Length ?? 0) + 1024, async () =>
                 {
-                    var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
-                    if (!isTxStale)
-                    {
-                        var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
-                        if (txResult == false)
-                        {
-                            try
-                            {
-                                mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
-                            }
-                            catch (Exception ex)
-                            {
-                                //delete failed
-                            }
-                            return "TFVP";
-                        }
-                        var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
-                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                    var result = "";
 
-                        if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
+                    var data = JsonConvert.SerializeObject(txReceived);
+
+                    var mempool = TransactionData.GetPool();
+                    if (mempool.Count() != 0)
+                    {
+                        var txFound = mempool.FindOne(x => x.Hash == txReceived.Hash);
+                        if (txFound == null)
                         {
-                            mempool.InsertSafe(txReceived);
-                            await P2PClient.SendTXToAdjudicator(txReceived);
-                            return "ATMP";//added to mempool
+                            var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                            if (!isTxStale)
+                            {
+                                var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
+                                if (txResult == false)
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //delete failed
+                                    }
+                                    return "TFVP";
+                                }
+                                var dblspndChk = await TransactionData.DoubleSpendReplayCheck(txReceived);
+                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                                var rating = await TransactionRatingService.GetTransactionRating(txReceived);
+                                txReceived.TransactionRating = rating;
+
+                                if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                                {
+                                    mempool.InsertSafe(txReceived);
+                                    await P2PClient.SendTXToAdjudicator(txReceived);
+                                    if (Globals.Adjudicate)
+                                    {
+                                        //send message to peers
+                                    }
+                                    return "ATMP";//added to mempool
+                                }
+                                else
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //delete failed
+                                    }
+                                    return "TFVP"; //transaction failed verification process
+                                }
+                            }
+
+
                         }
                         else
                         {
-                            try
+                            var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                            if (!isTxStale)
                             {
-                                mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                                if (isCraftedIntoBlock)
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //delete failed
+                                    }
+                                }
+
+                                return "AIMP"; //already in mempool
                             }
-                            catch (Exception ex)
+                            else
                             {
-                                //delete failed
+                                try
+                                {
+                                    mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                }
+                                catch (Exception ex)
+                                {
+                                    //delete failed
+                                }
                             }
-                            return "TFVP"; //transaction failed verification process
+
                         }
-                    }
-
-
-                }
-                else
-                {
-
-                    var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
-                    if (!isTxStale)
-                    {
-                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
-                        if (!isCraftedIntoBlock)
-                        {
-                        }
-                        else
-                        {
-                            try
-                            {
-                                mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
-                            }
-                            catch (Exception ex)
-                            {
-                                //delete failed
-                            }
-                        }
-
-                        return "AIMP"; //already in mempool
                     }
                     else
                     {
-                        try
+                        var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
+                        if (!isTxStale)
                         {
-                            mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                            var txResult = await TransactionValidatorService.VerifyTX(txReceived);
+                            if (!txResult)
+                            {
+                                try
+                                {
+                                    mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                }
+                                catch { }
+
+                                return "TFVP";
+                            }
+                            var dblspndChk = await TransactionData.DoubleSpendReplayCheck(txReceived);
+                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
+                            var rating = await TransactionRatingService.GetTransactionRating(txReceived);
+                            txReceived.TransactionRating = rating;
+
+                            if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                            {
+                                mempool.InsertSafe(txReceived);
+                                if(!Globals.Adjudicate)
+                                    await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
+                                return "ATMP";//added to mempool
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
+                                }
+                                catch { }
+
+                                return "TFVP"; //transaction failed verification process
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            //delete failed
-                        }
+
                     }
 
-                }
+                    return "";
+                });
             }
-            else
-            {
-                var isTxStale = await TransactionData.IsTxTimestampStale(txReceived);
-                if (!isTxStale)
-                {
-                    var txResult = await TransactionValidatorService.VerifyTX(txReceived);
-                    if (txResult == false)
-                    {
-                        try
-                        {
-                            mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
-                        }
-                        catch (Exception ex)
-                        {
-                            //delete failed
-                        }
-                        return "TFVP";
-                    }
-                    var dblspndChk = await TransactionData.DoubleSpendCheck(txReceived);
-                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txReceived);
-                    if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false)
-                    {
-                        mempool.InsertSafe(txReceived);
-                        await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
-                        return "ATMP";//added to mempool
-                    }
-                    else
-                    {
-                        try
-                        {
-                            mempool.DeleteManySafe(x => x.Hash == txReceived.Hash);// tx has been crafted into block. Remove.
-                        }
-                        catch (Exception ex)
-                        {
-                            //delete failed
-                        }
-                        return "TFVP"; //transaction failed verification process
-                    }
-                }
+            catch { }
 
-            }
-
-            return "";
+            return "TFVP";
         }
 
         #endregion
@@ -565,137 +621,20 @@ namespace ReserveBlockCore.P2P
         #region Get Masternodes
         public async Task<List<Validators>?> GetMasternodes(int valCount)
         {
-            var validatorList = Validators.Validator.GetAll();
-            var validatorListCount = validatorList.Count();
-
-            if (validatorListCount == 0)
+            return await SignalRQueue(Context, 65536, async () =>
             {
-                return null;
-            }
-            else
-            {
+                var validatorList = Validators.Validator.GetAll();
+                var validatorListCount = validatorList.Count();
 
-                return validatorList.FindAll().ToList();
-            }
-        }
-
-        #endregion
-
-        #region Send Validator - Receives the new validator
-        public async Task<string> SendValidator(Validators validator)
-        {
-            var peerIP = GetIP(Context);
-            validator.NodeIP = peerIP;
-
-            string data = "";
-
-            if (validator.NodeReferenceId == null)
-            {
-                return "FTAV";
-            }
-
-            if (validator.NodeReferenceId != BlockchainData.ChainRef)
-            {
-                return "FTAV";
-            }
-
-            //if(validator.WalletVersion != Program.CLIVersion)
-            //{
-            //    return "FTAV";
-            //}
-
-            //var updateMasternodes = await P2PClient.GetMasternodes();
-
-            var validatorList = Validators.Validator.GetAll();
-
-            if (validatorList.Count() != 0)
-            {
-                var valFound = validatorList.FindOne(x => x.Address == validator.Address); // basically if a validator stays offline the address because blacklisted
-                if (valFound == null)
+                if (validatorListCount == 0)
                 {
-                    var result = ValidatorService.ValidateTheValidator(validator);
-                    if (result == true)
-                    {
-                        var valPosFound = validatorList.FindOne(x => x.Position == validator.Position);
-                        if (valPosFound != null)
-                        {
-                            validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
-                        }
-                        validatorList.InsertSafe(validator);
-
-                        data = JsonConvert.SerializeObject(validator);
-
-                        await SendMessageAllPeers("val", data);
-                        return "VATN";//added to validator list
-                    }
-                    else
-                    {
-                        return "FTAV"; //validator failed verification process
-                    }
+                    return null;
                 }
                 else
                 {
-                    //Update found record with new information
-                    var result = ValidatorService.ValidateTheValidator(validator);
-                    if (result == true)
-                    {
-                        var valPosFound = validatorList.FindOne(x => x.Position == validator.Position);
-                        if (valPosFound != null)
-                        {
-                            validator.Position = validatorList.FindAll().Count() + 1; //adding just in case positions are off.
-                        }
-
-                        valFound.Amount = validator.Amount;
-                        valFound.Signature = validator.Signature;
-                        valFound.Address = validator.Address;
-                        valFound.IsActive = validator.IsActive;
-                        valFound.EligibleBlockStart = validator.EligibleBlockStart;
-                        valFound.UniqueName = validator.UniqueName;
-                        valFound.FailCount = validator.FailCount;
-                        valFound.Position = validator.Position;
-                        valFound.NodeReferenceId = validator.NodeReferenceId;
-                        valFound.LastChecked = validator.LastChecked;
-                        valFound.WalletVersion = validator.WalletVersion;
-
-                        validatorList.UpdateSafe(valFound);
-
-                        data = JsonConvert.SerializeObject(valFound);
-                        await SendMessageAllPeers("val", data);
-                    }
-                    return "AIVL"; //already in validator list
+                    return validatorList.FindAll().ToList();
                 }
-            }
-            else
-            {
-                var result = ValidatorService.ValidateTheValidator(validator);
-                if (result == true)
-                {
-                    validatorList.InsertSafe(validator);
-                    Validators.Validator.Initialize();
-                    return "VATN";//added to validator list
-                }
-                else
-                {
-                    return "FTAV"; //validator failed verification process
-                }
-            }
-
-        }
-
-        #endregion
-
-        #region Ping Next Validator
-        public async Task<bool> PingNextValidator()
-        {
-            return true;
-        }
-
-        #endregion
-
-        #region Call Crafter
-        public async Task<bool> CallCrafter()
-        {
-            return true;
+            });
         }
 
         #endregion
@@ -703,30 +642,36 @@ namespace ReserveBlockCore.P2P
         #region Send Banned Addresses
         public async Task<List<Validators>?> GetBannedMasternodes()
         {
-            var validatorList = Validators.Validator.GetAll();
-            var validatorListCount = validatorList.Count();
+            return await SignalRQueue(Context, 65536, async () =>
+            {
+                var validatorList = Validators.Validator.GetAll();
+                var validatorListCount = validatorList.Count();
 
-            if (validatorListCount == 0)
-            {
-                return null;
-            }
-            else
-            {
-                var bannedNodes = validatorList.FindAll().Where(x => x.FailCount >= 10).ToList();
-                if (bannedNodes.Count() > 0)
+                if (validatorListCount == 0)
                 {
-                    return bannedNodes;
+                    return null;
                 }
-            }
+                else
+                {
+                    var bannedNodes = validatorList.FindAll().Where(x => x.FailCount >= 10).ToList();
+                    if (bannedNodes.Count() > 0)
+                    {
+                        return bannedNodes;
+                    }
+                }
 
-            return null;
+                return null;
+            });
         }
         #endregion 
 
         #region Check Masternode
         public async Task<bool> MasternodeOnline()
         {
-            return true;
+            return await SignalRQueue(Context, 128, async () =>
+            {
+                return true;
+            });
         }
 
         #endregion
@@ -734,14 +679,17 @@ namespace ReserveBlockCore.P2P
         #region Seed node check
         public async Task<string> SeedNodeCheck()
         {
-            //do check for validator. if yes return val otherwise return Hello.
-            var validators = Validators.Validator.GetAll();
-            var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count(); //revise this to use local account and IsValidating
+            return await SignalRQueue(Context, 1024, async () =>
+            {
+                //do check for validator. if yes return val otherwise return Hello.
+                var validators = Validators.Validator.GetAll();
+                var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count(); //revise this to use local account and IsValidating
 
-            if (hasValidators > 0)
-                return "HelloVal";
+                if (hasValidators > 0)
+                    return "HelloVal";
 
-            return "Hello";
+                return "Hello";
+            });
         }
         #endregion
 
@@ -749,7 +697,7 @@ namespace ReserveBlockCore.P2P
 
         private static string GetIP(HubCallerContext context)
         {
-            var feature = context.Features.Get<IHttpConnectionFeature>();
+            var feature = context.Features.Get<IHttpConnectionFeature>();            
             var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
 
             return peerIP;

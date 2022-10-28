@@ -16,6 +16,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
+using System.Security.Cryptography.Xml;
 
 namespace ReserveBlockCore.Services
 {
@@ -28,7 +29,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    var port = Program.Port;
+                    var port = Globals.Port;
                     tcpClient.Connect("127.0.0.1", port);
                     Console.WriteLine($"Application already running on port {port}. Please verify only one instance is open.");
                     LogUtility.Log($"CLI Already Running on port {port}. Closing new instance.", "StartupService.AnotherInstanceCheck()");
@@ -42,26 +43,23 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static void SetupNodeDictionary()
-        {
-            P2PClient.NodeDict = new Dictionary<int, string>();
-            P2PClient.NodeDict.Add(1, null);
-            P2PClient.NodeDict.Add(2, null);
-            P2PClient.NodeDict.Add(3, null);
-            P2PClient.NodeDict.Add(4, null);
-            P2PClient.NodeDict.Add(5, null);
-            P2PClient.NodeDict.Add(6, null);
-        }
-
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
         }
+
+        internal static void ClearOldValidatorDups()
+        {
+            ValidatorService.ClearOldValidator();
+        }
         internal static void StartupDatabase()
         {
             //Establish block, wallet, ban list, and peers db
-            Console.WriteLine("Initializing Reserve Block Database...");
             DbContext.Initialize();
+            Console.WriteLine("Initializing Reserve Block Database...");
+            var peerDb = Peers.GetAll();
+            Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
+                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
         }
 
         internal static void HDWalletCheck()
@@ -69,7 +67,17 @@ namespace ReserveBlockCore.Services
             var check = HDWallet.HDWalletData.GetHDWallet();
             if(check != null)
             {
-                Program.HDWallet = true;
+                Globals.HDWallet = true;
+            }
+        }
+
+        internal static void EncryptedWalletCheck()
+        {
+            var keystore = Keystore.GetKeystore();
+            if (keystore != null)
+            {
+                if(keystore.FindAll().Count() > 0)
+                    Globals.IsWalletEncrypted = true;
             }
         }
         internal static void SetBlockchainChainRef()
@@ -81,15 +89,10 @@ namespace ReserveBlockCore.Services
             BlockchainData.ChainRef = "m1_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
             LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
 
-            if (Program.IsTestNet)
+            if (Globals.IsTestNet)
             {
                 BlockchainData.ChainRef = "t_testnet1";
             }
-        }
-
-        internal static void SetBlockchainVersion()
-        {
-            //BlockchainData.BlockVersion = BlockVersionUtility.GetBlockVersion();
         }
 
         internal static void CheckBlockRefVerToDb()
@@ -107,21 +110,22 @@ namespace ReserveBlockCore.Services
 
         internal static void SetBlockHeight()
         {
-            Program.BlockHeight = BlockchainData.GetHeight();
-            LogUtility.Log("RBX Height - " + Program.BlockHeight.ToString(), "Main");
+            Globals.LastBlock.Height = BlockchainData.GetHeight();
+            LogUtility.Log("RBX Height - " + Globals.LastBlock.Height.ToString(), "Main");
         }
 
         internal static void SetLastBlock()
         {
-            if(Program.BlockHeight != -1)
+            if(Globals.LastBlock.Height != -1)
             {
-                Program.LastBlock = BlockchainData.GetLastBlock();
+                Globals.LastBlock = BlockchainData.GetLastBlock();
             }
         }
 
         internal static async void RunStateSync()
         {
-            await StateTreiSyncService.SyncAccountStateTrei();
+            if(Globals.LastBlock.Height < Globals.BlockLock && !Globals.Adjudicate)
+                await StateTreiSyncService.SyncAccountStateTrei();
         }
         internal static void RunRules()
         {
@@ -137,10 +141,10 @@ namespace ReserveBlockCore.Services
                 var beaconInfo = BeaconInfo.GetBeaconInfo();
                 if(beaconInfo != null)
                 {
-                    var port = Program.Port + 10000; //23338
-                    if (Program.IsTestNet == true)
+                    var port = Globals.Port + 10000; //23338 - mainnet
+                    if (Globals.IsTestNet == true)
                     {
-                        port = port + 10000; //33338
+                        port = port + 10000; //33338 - testnet
                     }
 
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
@@ -150,7 +154,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
             }
             
         }
@@ -170,13 +174,13 @@ namespace ReserveBlockCore.Services
                     NodeIP = "173.254.253.106",
                     Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
                     UniqueName = "Trillium Adjudicator 1",
-                    WalletVersion = Program.CLIVersion  
+                    WalletVersion = Globals.CLIVersion  
                 };
 
                 adjudicators.InsertSafe(adj1);
             }
 
-            if(Program.IsTestNet == true)
+            if(Globals.IsTestNet == true)
             {
                 var test_adjudicator = adjudicators.FindOne(x => x.Address == "xAZG6Q52Ap4QxiUZVsNUaSYd3ECtoAdvvj");
                 if (test_adjudicator == null)
@@ -187,10 +191,10 @@ namespace ReserveBlockCore.Services
                         IsActive = true,
                         IsLeadAdjuidcator = true,
                         LastChecked = DateTime.UtcNow,
-                        NodeIP = "173.254.253.106",
+                        NodeIP = "162.248.14.123",
                         Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
                         UniqueName = "Trillium Adjudicator TestNet",
-                        WalletVersion = Program.CLIVersion
+                        WalletVersion = Globals.CLIVersion
                     };
 
                     adjudicators.InsertSafe(adjTest);
@@ -204,44 +208,36 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.248.14.123",
-                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 1",
                 BeaconUID = "Foundation Beacon 1"
-
             };
 
-            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
-            var locator1 = beaconLocJson1.ToBase64();
+            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);            
+            Globals.Locators[beaconLoc1.BeaconUID] = beaconLocJson1.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.251.121.150",
-                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 2",
                 BeaconUID = "Foundation Beacon 2"
 
             };
-
-            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);
-            var locator2 = beaconLocJson2.ToBase64();
+            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);            
+            //Globals.Locators[beaconLoc2.BeaconUID] = beaconLocJson2.ToBase64();
 
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "185.199.226.121",
-                Port = Program.IsTestNet != true ? Program.Port + 10000 : Program.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
                 Name = "RBX Beacon 3",
                 BeaconUID = "Foundation Beacon 3"
 
             };
 
             var beaconLocJson3 = JsonConvert.SerializeObject(beaconLoc3);
-            var locator3 = beaconLocJson3.ToBase64();
-
-            locators.Add(locator1);
-            locators.Add(locator2);
-            locators.Add(locator3);
-
-            Program.Locators = locators;
+            //Globals.Locators[beaconLoc3.BeaconUID] = beaconLocJson3.ToBase64();
         }
         internal static void ClearStaleMempool()
         {
@@ -258,6 +254,12 @@ namespace ReserveBlockCore.Services
                     var minuteDiff = timeDiff / 60M;
 
                     if(minuteDiff > 120.0M)
+                    {
+                        pool.DeleteManySafe(x => x.Hash == tx.Hash);
+                        memTxDeleted = true;
+                    }
+
+                    if(tx.TransactionRating == TransactionRating.F)
                     {
                         pool.DeleteManySafe(x => x.Hash == tx.Hash);
                         memTxDeleted = true;
@@ -291,41 +293,41 @@ namespace ReserveBlockCore.Services
         internal static void SetValidator()
         {
             var accounts = AccountData.GetAccounts();
-            if(Program.IsTestNet == true)
+            if(Globals.IsTestNet == true)
             {
                 var myAccountTest = accounts.FindOne(x => x.IsValidating == true);
                 if (myAccountTest != null)
                 {
-                    Program.ValidatorAddress = myAccountTest.Address;
+                    Globals.ValidatorAddress = myAccountTest.Address;
                 }
             }
-            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
             if (myAccount != null)
             {
-                Program.ValidatorAddress = myAccount.Address;
+                Globals.ValidatorAddress = myAccount.Address;
             }
         }
 
         internal static async void SetConfigValidator()
         {
-            var address = Program.ConfigValidator;
-            var uname = Program.ConfigValidatorName;
+            var address = Globals.ConfigValidator;
+            var uname = Globals.ConfigValidatorName;
             var accounts = AccountData.GetAccounts();
             var myAccount = accounts.FindOne(x => x.Address == address);
             if (myAccount != null && myAccount.IsValidating != true)
             {
                 var valResult = await ValidatorService.StartValidating(myAccount, uname);
-                Program.ValidatorAddress = myAccount.Address;
+                Globals.ValidatorAddress = myAccount.Address;
             }
         }
 
         internal static void SetSelfAdjudicator()
         {
-            var leadAdj = Program.LeadAdjudicator;
+            var leadAdj = Globals.LeadAdjudicator;
             var account = AccountData.GetSingleAccount(leadAdj.Address);
             if(account != null)
             {
-                Program.Adjudicate = true;
+                Globals.Adjudicate = true;
             }
         }
 
@@ -334,11 +336,11 @@ namespace ReserveBlockCore.Services
             var adjudicatorLead = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
             if(adjudicatorLead != null)
             {
-                Program.LeadAdjudicator = adjudicatorLead;
+                Globals.LeadAdjudicator = adjudicatorLead;
             }
             else
             {
-                Program.LeadAdjudicator = await P2PClient.GetLeadAdjudicator();
+                Globals.LeadAdjudicator = await P2PClient.GetLeadAdjudicator();
             }
         }
 
@@ -366,12 +368,12 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Program.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
+            Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
         public static async Task ConnectoToAdjudicator()
         {
-            if(Program.ValidatorAddress != null && Program.ValidatorAddress != "")
+            if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
             {
                 var account = AccountData.GetLocalValidator();
                 var validators = Validators.Validator.GetAll();
@@ -379,7 +381,9 @@ namespace ReserveBlockCore.Services
                 if(validator != null)
                 {
 
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                     var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
@@ -387,7 +391,7 @@ namespace ReserveBlockCore.Services
                     var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
                     if(adjudicator != null)
                     {
-                        var url = "http://" + adjudicator.NodeIP + ":" + Program.Port + "/adjudicator";
+                        var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
                         await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
                     }
                     else
@@ -399,43 +403,122 @@ namespace ReserveBlockCore.Services
 
             }
         }
+        public static async Task EstablishBeaconReference()
+        {
+            var beaconRef = BeaconReference.GetBeaconReference();
+            if(beaconRef != null)
+            {
+                var beaconRefRecord = beaconRef.FindAll();
+                if(beaconRefRecord.Count() > 0)
+                {
+                    var rec = beaconRefRecord.First();
+                    Globals.BeaconReference = rec;
+                }
+                else
+                {
+                    string reference = "";
+
+                    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                    var stringChars = new char[16];
+                    var random = new Random();
+
+                    for (int i = 0; i < stringChars.Length; i++)
+                    {
+                        stringChars[i] = chars[random.Next(chars.Length)];
+                    }
+
+                    var finalString = new string(stringChars);
+                    reference = finalString;
+
+                    BeaconReference br = new BeaconReference {
+                        Reference = reference,
+                        CreateDate = DateTime.UtcNow
+                    };
+
+                    var path = GetPathUtility.GetBeaconPath();
+                    var fileExist = File.Exists(path + "beacon_ref.bak");
+                    if (!fileExist)
+                    {
+                        BeaconReference.SaveBeaconReference(br);
+                        File.AppendAllText(path + "beacon_ref.bak", reference);
+                    }
+                    else
+                    {
+                        string text = File.ReadAllText(path + "beacon_ref.bak");
+                        br.Reference = text;
+                        BeaconReference.SaveBeaconReference(br, true);
+                    }
+
+                    Globals.BeaconReference = br;
+                }
+            }
+            
+        }
+
+        public static async Task ConnectoToBeacon()
+        {
+            if(!Globals.Adjudicate)
+            {                
+                if (Globals.Locators.Any())
+                {
+                    var beacon = Globals.Locators.Values.FirstOrDefault();
+                    var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
+                    if (beaconDataJsonDes != null)
+                    {
+                        var port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000;
+                        var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
+                        await P2PClient.ConnectBeacon(url);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("You have no remote beacons.");
+                }
+            }
+        }
 
         internal static async Task DownloadBlocksOnStart()
         {
-            Program.StopAllTimers = true;
+            Globals.StopAllTimers = true;
             var download = true;
             while(download) //this will loop forever till download happens
             {
-                if(Program.IsResyncing == false)
+                if(Globals.IsResyncing == false)
                 {
+                    DateTime startTime = DateTime.UtcNow;
                     var result = await P2PClient.GetCurrentHeight();
                     if (result.Item1 == true)
                     {
-                        ConsoleWriterService.Output("Block downloads started.");
+                        ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
-                        Program.BlocksDownloading = true;
-                        Program.BlocksDownloading = await BlockDownloadService.GetAllBlocks(result.Item2);
+                        await BlockDownloadService.GetAllBlocks();
                     }
                     //This is not being reached on some devices. 
                     else
                     {
-                        ConsoleWriterService.Output("Block downloads finished.");
-                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
-                        Program.BlocksDownloading = false;
-                        download = false; //exit the while.
-                        Program.StopAllTimers = false;
-                        var accounts = AccountData.GetAccounts();
-                        var accountList = accounts.FindAll().ToList();
-                        if (accountList.Count() > 0)
+                        var lastBlock = Globals.LastBlock;
+                        var currentTimestamp = TimeUtil.GetTime(-60);
+
+                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                         {
-                            var stateTrei = StateData.GetAccountStateTrei();
-                            foreach (var account in accountList)
+                            DateTime endTime = DateTime.UtcNow;
+                            ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
+                            LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                            download = false; //exit the while.
+                            Globals.StopAllTimers = false;
+                            var accounts = AccountData.GetAccounts();
+                            var accountList = accounts.FindAll().ToList();
+                            if (accountList.Count() > 0)
                             {
-                                var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                                if (stateRec != null)
+                                var stateTrei = StateData.GetAccountStateTrei();
+                                foreach (var account in accountList)
                                 {
-                                    account.Balance = stateRec.Balance;
-                                    accounts.UpdateSafe(account);//updating local record with synced state trei
+                                    var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                                    if (stateRec != null)
+                                    {
+                                        account.Balance = stateRec.Balance;
+                                        accounts.UpdateSafe(account);//updating local record with synced state trei
+                                    }
                                 }
                             }
                         }
@@ -447,11 +530,11 @@ namespace ReserveBlockCore.Services
                 }
                 
             }
-            if(Program.IsResyncing == false)
+            if(Globals.IsResyncing == false)
             {
-                Program.BlocksDownloading = false;
-                Program.StopAllTimers = false;
-                Program.IsChainSynced = true;
+                Globals.BlocksDownloading = 0;
+                Globals.StopAllTimers = false;
+                Globals.IsChainSynced = true;
             }
             download = false; //exit the while. 
         }
@@ -469,7 +552,7 @@ namespace ReserveBlockCore.Services
                 LogUtility.Log("Duplicate Blocks Found!", "StartupService: dupBlocksList.Count != 0 / meaning dup found!");
                 //Reset blocks and all balances and redownload chain. No exception here.
                 Console.WriteLine("Duplicate Blocks Found!");
-                Program.DatabaseCorruptionDetected = true;
+                Globals.DatabaseCorruptionDetected = true;
             }
         }
 
@@ -700,19 +783,26 @@ namespace ReserveBlockCore.Services
                         Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
                         Thread.Sleep(new TimeSpan(0, 0, 60));
                     }
+                    else if(failCount >120)
+                    {
+                        Console.WriteLine($"Failed to connect to any peers. trying again in 120 seconds.");
+                        Thread.Sleep(new TimeSpan(0, 0, 120));
+                    }
 
-                    Console.WriteLine("Attempting to connect to peers...");
+                    AnsiConsole.MarkupLine("[bold yellow]Attempting to connect to peers...[/]");
                     result = await P2PClient.ConnectToPeers();
 
                     if (result == true)
                     {
                         peersConnected = true;
+                        Console.WriteLine(" ");
+                        AnsiConsole.MarkupLine("[bold green]Connected to Peers...[/]");
                         var accounts = AccountData.GetAccounts();
-                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Program.GenesisAddress);
+                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
                         if (myAccount != null)
                         {
-                            Program.ValidatorAddress = myAccount.Address;
-                            LogUtility.Log("Validator Address set: " + Program.ValidatorAddress, "StartupService:StartupPeers()");
+                            Globals.ValidatorAddress = myAccount.Address;
+                            LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
                         }
                         else
                         {
@@ -728,7 +818,7 @@ namespace ReserveBlockCore.Services
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.ToString());
                 }
             }
             
@@ -750,31 +840,18 @@ namespace ReserveBlockCore.Services
         {
             var peersConnected = await P2PClient.ArePeersConnected();
 
-            if (peersConnected.Item1)
+            if (peersConnected)
             {
-                if(Program.BlockHeight == -1)
+                if(Globals.LastBlock.Height == -1)
                 {
                     //This just gets first few blocks to start chain off.
                     Console.WriteLine("Downloading Blocks First.");
-                    var blockCol = await P2PClient.GetBlock();
-
-                    if(blockCol.Count() > 0)
-                    {
-                        foreach(var block in blockCol)
-                        {
-                            Console.WriteLine("Found Block: " + block.Height.ToString());
-                            var result = await BlockValidatorService.ValidateBlock(block);
-                            if (result == false)
-                            {
-                                Console.WriteLine("Block was rejected from: " + block.Validator);
-                                //Add rejection notice for validator
-                            }
-                        }
-                    }
+                    await BlockDownloadService.GetAllBlocks();         
                 }
             }
             return true;
         }
+
         internal static void StartupMenu()
         {
             Console.WriteLine("Starting up Reserve Block Wallet...");
@@ -791,7 +868,7 @@ namespace ReserveBlockCore.Services
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
-            if(Program.IsTestNet != true)
+            if(Globals.IsTestNet != true)
             {
                 AnsiConsole.Write(
                 new FigletText("RBX Wallet")
@@ -806,7 +883,7 @@ namespace ReserveBlockCore.Services
                 .Color(Color.Green));
             }
             
-            if(Program.IsTestNet != true)
+            if(Globals.IsTestNet != true)
             {
                 Console.WriteLine("ReserveBlock Main Menu");
             }
@@ -823,13 +900,16 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 4. Send Coins                        |");
             Console.WriteLine("| 5. Get Latest Block                  |");
             Console.WriteLine("| 6. Transaction History               |");
-            Console.WriteLine("| 7. Account Info                      |");
+            Console.WriteLine("| 7. Wallet Address(es) Info           |");
             Console.WriteLine("| 8. Startup Masternode                |");
             Console.WriteLine("| 9. Search Block                      |");
             Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
             Console.WriteLine("| 11. Stop Masternode                  |");
-            Console.WriteLine("| 12. Import Smart Contract            |");
+            Console.WriteLine("| 12. Import Smart Contract (disabled) |");
             Console.WriteLine("| 13. Exit                             |");
+            Console.WriteLine("|======================================|");
+            Console.WriteLine("|type /help for menu options           |");
+            Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
         }
     }

@@ -17,13 +17,26 @@
                     var major = Convert.ToInt32(walletVerSplit[0]);
                     var minor = Convert.ToInt32(walletVerSplit[1]);
 
-                    if (major < Program.MajorVer)
+                    if (major < Globals.MajorVer)
                     {
                         return output;
                     }
-                    if(minor < Program.MinorVer)
+                    if (Globals.LastBlock.Height > Globals.BlockLock)
                     {
-                        return output;
+                        if (!Globals.IsTestNet)
+                        {
+                            if (minor < 1)
+                            {
+                                return output;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (minor < 0)
+                        {
+                            return output;
+                        }
                     }
 
                     output = true;
@@ -33,8 +46,6 @@
                     //wallet version either mismatched or malformed
                 }
             }
-
-
 
             return output;
         }

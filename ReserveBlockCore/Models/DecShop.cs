@@ -30,7 +30,8 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "DecShop.GetDecShops()");
+                DbContext.Rollback();
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetDecShops()");
                 return null;
             }
 
@@ -45,7 +46,8 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "DecShop.GetMyDecShop()");
+                DbContext.Rollback();
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetMyDecShop()");
                 return null;
             }
 
@@ -71,7 +73,8 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "DecShop.GetMyDecShopInfo()");
+                DbContext.Rollback();
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetMyDecShopInfo()");
                 return null;
             }
         }
@@ -158,7 +161,9 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
             var signature = SignatureService.CreateSignature(decshop.ShopUID, privateKey, account.PublicKey);
             var hash = GetHash(address, name, signature, timestamp);
@@ -219,7 +224,8 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
+                DbContext.Rollback();
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");

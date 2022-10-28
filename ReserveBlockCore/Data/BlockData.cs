@@ -18,14 +18,13 @@ namespace ReserveBlockCore.Data
         public static LiteDB.ILiteCollection<Models.Block> GetBlocks()
         {
             var coll = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-            coll.EnsureIndexSafe(x => x.Height);
             return coll;
         }
 
         public static Block CreateGenesisBlock(IList<Transaction> gTrxList)
         {
             var startTimer = DateTime.UtcNow;
-            var validatorAccount = AccountData.GetSingleAccount(Program.GenesisAddress);
+            var validatorAccount = AccountData.GetSingleAccount(Globals.GenesisAddress);
 
             var timeStamp = 1643932800; //4 Feb. 2022 | This value is hard coded for the start of the chain.
 

@@ -6,12 +6,12 @@ namespace ReserveBlockCore.Utilities
 {
     public class ValidatorLogUtility
     {
-        public static async void Log(string message, string location, bool firstEntry = false)
+        public static void Log(string message, string location, bool firstEntry = false)
         {
             try
             {
-                var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-                var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+                var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+                var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
                 var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
                 string path = "";
@@ -37,12 +37,12 @@ namespace ReserveBlockCore.Utilities
                 }
                 if (firstEntry == true)
                 {
-                    await File.AppendAllTextAsync(path + "validatorlog.txt", Environment.NewLine + " ");
+                    File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + " ");
 
 
                 }
 
-                await File.AppendAllTextAsync(path + "validatorlog.txt", Environment.NewLine + text);
+                File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {
@@ -52,8 +52,8 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task ClearLog()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
 
@@ -83,8 +83,8 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task<string> ReadLog()
         {
-            var databaseLocation = Program.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Program.IsTestNet != true ? "RBX" : "RBXTest";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             string path = "";
 

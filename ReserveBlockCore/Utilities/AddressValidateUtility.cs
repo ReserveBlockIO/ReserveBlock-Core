@@ -10,7 +10,9 @@ namespace ReserveBlockCore.Utilities
         {
             var result = false;
 
-			if(addr.EndsWith(".rbx"))
+			var adnrCheck = addr.EndsWith(".rbx");
+
+            if (adnrCheck)
             {
 				var adnr = Adnr.GetAdnr();
 				var adnrExist = adnr.FindOne(x => x.Name == addr);

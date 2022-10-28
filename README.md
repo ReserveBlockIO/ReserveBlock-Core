@@ -2,15 +2,33 @@
 [![Generic badge](https://img.shields.io/badge/C%23-10%2E0-blue.svg)](https://shields.io/)
 [![Generic badge](https://img.shields.io/badge/%2ENet%20Core-6%2E0-blue.svg)](https://shields.io/)
 
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/ReserveBlockIO/ReserveBlock-Core)
+![GitHub repo size](https://img.shields.io/github/repo-size/ReserveBlockIO/ReserveBlock-Core)
+
 ![license](https://img.shields.io/github/license/ReserveBlockIO/ReserveBlock-Core)
 ![build](https://img.shields.io/github/workflow/status/ReserveBlockIO/ReserveBlock-Core/.NET)
 ![issues](https://img.shields.io/github/issues/ReserveBlockIO/ReserveBlock-Core)
 ![Discord](https://img.shields.io/discord/917499597692211260?label=discord)
 
+## TestNet Branch 
+![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/m/ReserveBlockIO/ReserveBlock-Core/testnet)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/ReserveBlockIO/ReserveBlock-Core/testnet) 
+
+## Dev Branch
+![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/m/ReserveBlockIO/ReserveBlock-Core/dev)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/ReserveBlockIO/ReserveBlock-Core/dev) 
+
+##  Main Branch 
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ReserveBlockIO/ReserveBlock-Core)
-![GitHub last commit](https://img.shields.io/github/last-commit/ReserveBlockIO/ReserveBlock-Core)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/ReserveBlockIO/ReserveBlock-Core/main)
+
+Last Release
 
 ![GitHub Release Date](https://img.shields.io/github/release-date/ReserveBlockIO/ReserveBlock-Core)
+
+Last Pre-Release
+
+![GitHub (Pre-)Release Date](https://img.shields.io/github/release-date-pre/ReserveBlockIO/ReserveBlock-Core)
 
 # ReserveBlock Core-CLI
 For more information and to follow latest news go to:

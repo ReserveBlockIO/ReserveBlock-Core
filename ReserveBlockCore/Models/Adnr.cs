@@ -12,12 +12,16 @@ namespace ReserveBlockCore.Models
 {
     public class Adnr
     {
-        public int Id { get; set; }
+        #region Variables
+        public long Id { get; set; }
         public string Address { get; set; }
         public string Name { get; set; }
         public string TxHash { get; set; }
         public long Timestamp { get; set; }
 
+        #endregion
+
+        #region GetAdnr()
         public static LiteDB.ILiteCollection<Adnr>? GetAdnr()
         {
             try
@@ -27,19 +31,23 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError(ex.Message, "Adnr.GetAdnr()");
+                DbContext.Rollback();
+                ErrorLogUtility.LogError(ex.ToString(), "Adnr.GetAdnr()");
                 return null;
             }
 
         }
 
-        public static (bool, string) GetAddress(string addr)
+        #endregion
+
+        #region GetAddress(string addr)
+        public static (bool, string) GetAddress(string name)
         {
             bool result = false;
             string strResult = "";
 
             var adnr = GetAdnr();
-            var adnrExist = adnr.FindOne(x => x.Name == addr);
+            var adnrExist = adnr.FindOne(x => x.Name == name.ToLower());
             if (adnrExist != null)
             {
                 strResult = adnrExist.Address;
@@ -48,7 +56,27 @@ namespace ReserveBlockCore.Models
 
             return (result, strResult);
         }
+        #endregion
 
+        #region GetAdnr(string addr)
+        public static string? GetAdnr(string addr)
+        {
+            string? strResult = null;
+
+            var adnr = GetAdnr();
+            if(adnr != null)
+            {
+                var adnrExist = adnr.FindOne(x => x.Address == addr);
+                if (adnrExist != null)
+                {
+                    strResult = adnrExist.Name;
+                }
+            }
+            return strResult;
+        }
+        #endregion
+
+        #region SaveAdnr(Adnr adnrData)
         public static string SaveAdnr(Adnr adnrData)
         {
             var adnr = GetAdnr();
@@ -65,15 +93,18 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
+                    adnrData.Name = adnrData.Name.ToLower();//save as a lower so when we query later
                     adnr.InsertSafe(adnrData);
                 }
             }
 
-            return "Error Saving Beacon Data";
+            return "Error Saving ADNR";
 
         }
-        //need signature check here.
-        public static void DeleteAssets(string name)
+        #endregion
+
+        #region DeleteAdnr(string address)
+        public static void DeleteAdnr(string address)
         {
             var adnr = GetAdnr();
             if (adnr == null)
@@ -82,10 +113,12 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                adnr.DeleteManySafe(x => x.Name == name);
+                adnr.DeleteManySafe(x => x.Address == address);
             }
         }
+        #endregion
 
+        #region CreateAdnrTx(string address, string name)
         public static async Task<(Transaction?, string)> CreateAdnrTx(string address, string name)
         {
             Transaction? adnrTx = null;
@@ -100,7 +133,9 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrCreate()", Name = name });
@@ -133,6 +168,12 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
                 if (result.Item1 == true)
                 {
@@ -149,20 +190,176 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error: {0}", ex.Message);
+                DbContext.Rollback();
+                Console.WriteLine("Error: {0}", ex.ToString());
             }
 
             return (null, "Error. Please see message above.");
         }
 
-        //public static async Task<(Transaction?, string)> TransferAdnrTx(string address, string name)
-        //{
-        //}
+        #endregion
 
-        //public static async Task<(Transaction?, string)> DeleteAdnrTx(string address, string name)
-        //{
-        //}
+        #region TransferAdnrTx(string fromAddress, string toAddress)
+        public static async Task<(Transaction?, string)> TransferAdnrTx(string fromAddress, string toAddress)
+        {
+            Transaction? adnrTx = null;
 
+            var account = AccountData.GetSingleAccount(fromAddress);
+            if (account == null)
+            {
+                ErrorLogUtility.LogError($"Address is not found for : {fromAddress}", "Adnr.CreateAdnrTx(string address, string name)");
+                return (null, $"Address is not found for : {fromAddress}");
+            }
+
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()", Name = account.ADNR });
+
+            adnrTx = new Transaction
+            {
+                Timestamp = timestamp,
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Amount = 1.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(fromAddress),
+                TransactionType = TransactionType.ADNR,
+                Data = txData
+            };
+
+            adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
+
+            adnrTx.Build();
+
+            var txHash = adnrTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for ADNR Request on address {fromAddress}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                return (null, $"Signing TX failed for ADNR Request on address {fromAddress}");
+            }
+
+            adnrTx.Signature = sig;
+
+            try
+            {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                if (result.Item1 == true)
+                {
+                    TransactionData.AddToPool(adnrTx);
+                    AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                    P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    return (adnrTx, "Success");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                DbContext.Rollback();
+                Console.WriteLine("Error: {0}", ex.ToString());
+                ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
+            }
+
+            return (null, "Error. Please see message above.");
+        }
+        #endregion
+
+        #region DeleteAdnrTx(string address)
+        public static async Task<(Transaction?, string)> DeleteAdnrTx(string address)
+        {
+            Transaction? adnrTx = null;
+
+            var account = AccountData.GetSingleAccount(address);
+            if (account == null)
+            {
+                ErrorLogUtility.LogError($"Address is not found for : {address}", "Adnr.CreateAdnrTx(string address, string name)");
+                return (null, $"Address is not found for : {address}");
+            }
+
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()", Name = account.ADNR });
+
+            adnrTx = new Transaction
+            {
+                Timestamp = timestamp,
+                FromAddress = address,
+                ToAddress = "Adnr_Base",
+                Amount = 1.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(address),
+                TransactionType = TransactionType.ADNR,
+                Data = txData
+            };
+
+            adnrTx.Fee = FeeCalcService.CalculateTXFee(adnrTx);
+
+            adnrTx.Build();
+
+            var txHash = adnrTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for ADNR Delete Request on address {address}", "Adnr.DeleteAdnrTx(string address)");
+                return (null, $"Signing TX failed for ADNR Delete Request on address {address}");
+            }
+
+            adnrTx.Signature = sig;
+
+            try
+            {
+                if (adnrTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(adnrTx);
+                    adnrTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                if (result.Item1 == true)
+                {
+                    TransactionData.AddToPool(adnrTx);
+                    AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                    P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    return (adnrTx, "Success");
+                }
+                else
+                {
+                    DbContext.Rollback();
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.DeleteAdnrTx(string address)");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+
+            return (null, "Error. Please see message above.");
+        }
+
+        #endregion
     }
-    
+
 }

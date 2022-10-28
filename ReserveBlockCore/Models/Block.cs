@@ -1,13 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace ReserveBlockCore.Models
 {
@@ -30,6 +24,7 @@ namespace ReserveBlockCore.Models
 		public int NumOfTx { get; set; }
 		public long Size { get; set; }
 		public int BCraftTime { get; set; }
+		public string AdjudicatorSignature { get; set; }
 
 		public IList<Transaction> Transactions { get; set; }
 		//Methods
@@ -38,9 +33,9 @@ namespace ReserveBlockCore.Models
 			Version = BlockVersionUtility.GetBlockVersion(Height); //have this version increase if invalid/malformed block is submitted to auto branch and avoid need for fork.
 			NumOfTx = Transactions.Count;
 			TotalAmount = GetTotalAmount();
-			TotalReward = Program.BlockHeight != -1 ? GetTotalFees() : 0M;
+			TotalReward = Globals.LastBlock.Height != -1 ? GetTotalFees() : 0M;
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = Program.BlockHeight != -1 ? Program.LastBlock.Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
+			PrevHash = Globals.LastBlock.Height != -1 ? Globals.LastBlock.Hash : "Genesis Block"; //This is done because chain starting there won't be a previous hash. 
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
@@ -51,7 +46,7 @@ namespace ReserveBlockCore.Models
 			TotalAmount = GetTotalAmount();
 			TotalReward = GetTotalFees();
 			MerkleRoot = GetMerkleRoot();
-			PrevHash = Program.LastBlock.Hash;
+			PrevHash = Globals.LastBlock.Hash;
 			Hash = GetBlockHash();
 			StateRoot = GetStateRoot();
 		}
@@ -67,7 +62,6 @@ namespace ReserveBlockCore.Models
 		public static LiteDB.ILiteCollection<Block> GetBlocks()
 		{
 			var block = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);
-			block.EnsureIndexSafe(x => x.Height);
 			return block;
 		}
 		private decimal GetTotalAmount()

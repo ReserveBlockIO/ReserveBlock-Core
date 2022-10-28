@@ -8,12 +8,13 @@ namespace ReserveBlockCore.Utilities
         {
             TaskQuestion taskQuestion = new TaskQuestion();
 
-            if(type != null)
+            if(!string.IsNullOrWhiteSpace(type))
             {
                 switch (type)
                 {
                     case "rndNum":
                         taskQuestion.TaskAnswer = GenerateRandomNumber().ToString();
+                        taskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
                         break;
                     case "pickCol":
                         break;
@@ -22,7 +23,7 @@ namespace ReserveBlockCore.Utilities
                 }
                 
                 taskQuestion.TaskType = type;
-                taskQuestion.BlockHeight = Program.BlockHeight + 1;
+                taskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
             }
 
             return taskQuestion;

@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Services
                     var function = (string?)scData["Function"];
                     var scUID = (string?)scData["ContractUID"];
 
-                    if (function != "")
+                    if (!string.IsNullOrWhiteSpace(function))
                     {
                         switch (function)
                         {
@@ -282,9 +282,42 @@ namespace ReserveBlockCore.Services
                                     }
                                 }
                             }
+
+                            if (function == "AdnrDelete()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return txResult;
+                                    }
+                                }
+                            }
+
+                            if (function == "AdnrTransfer()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return txResult;
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
+                                    if (toAddressCheck != null)
+                                    {
+                                        return txResult;
+                                    }
+                                }
+                            }
                         }
                         catch(Exception ex)
                         {
+                            DbContext.Rollback();
                             ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
                             return txResult;
                         }
@@ -349,7 +382,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Program.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
+            var memBlocksTxs = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
             var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
             if (txExist)
             {
@@ -432,7 +465,7 @@ namespace ReserveBlockCore.Services
                     var function = (string?)scData["Function"];
                     var scUID = (string?)scData["ContractUID"];
 
-                    if (function != "")
+                    if (!string.IsNullOrWhiteSpace(function))
                     {
                         switch (function)
                         {
@@ -571,11 +604,44 @@ namespace ReserveBlockCore.Services
                                         return (txResult, "Address is already associated with an active DNR");
                                     }
                                 }
-
                             }
+
+                            if (function == "AdnrDelete()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with a DNR.");
+                                    }
+                                }
+                            }
+
+                            if (function == "AdnrTransfer()")
+                            {
+                                var adnrList = Adnr.GetAdnr();
+                                if (adnrList != null)
+                                {
+                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
+                                    if (addressCheck == null)
+                                    {
+                                        return (txResult, "Address is not associated with a DNR.");
+                                    }
+
+                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
+                                    if (toAddressCheck != null)
+                                    {
+                                        return (txResult, "To Address is already associated with a DNR.");
+                                    }
+                                }
+                            }
+
                         }
                         catch (Exception ex)
                         {
+                            DbContext.Rollback();
                             ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
                             return (txResult, "Failed to deserialized TX Data for ADNR");
                         }

@@ -25,7 +25,7 @@ namespace ReserveBlockCore.Models
         {
             public static List<Validators> ValidatorList { get; set; }
 
-            public static string backupValidator = Program.GenesisAddress;
+            public static string backupValidator = Globals.GenesisAddress;
 
             public static int FailCountLimit = 10;
 
@@ -41,15 +41,32 @@ namespace ReserveBlockCore.Models
             {
                 try
                 {
+                    var validators = DbContext.DB_Wallet.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
+                    return validators;
+                }
+                catch (Exception ex)
+                {
+                    DbContext.Rollback();
+                    ErrorLogUtility.LogError(ex.ToString(), "Validators.GetAll()");
+                    return null;
+                }
+                
+            }
+
+            public static LiteDB.ILiteCollection<Validators> GetOldAll()
+            {
+                try
+                {
                     var validators = DbContext.DB_Peers.GetCollection<Validators>(DbContext.RSRV_VALIDATORS);
                     return validators;
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError(ex.Message, "Validators.GetAll()");
+                    DbContext.Rollback();
+                    ErrorLogUtility.LogError(ex.ToString(), "Validators.GetAll()");
                     return null;
                 }
-                
+
             }
 
             internal static void Initialize()

@@ -8,7 +8,9 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Globalization;
+using System.Net;
 using System.Numerics;
+using System.Security;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -50,17 +52,17 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            if (Program.APIPassword != null)
+            if (!string.IsNullOrWhiteSpace(Globals.APIPassword))
             {
                 if (password != null)
                 {
-                    var passCheck = Program.APIPassword.ToDecrypt(password);
+                    var passCheck = Globals.APIPassword.ToDecrypt(password);
                     if (passCheck == password && passCheck != "Fail")
                     {
-                        Program.APIUnlockTime = DateTime.UtcNow.AddMinutes(Program.WalletUnlockTime);
+                        Globals.APIUnlockTime = DateTime.UtcNow.AddMinutes(Globals.WalletUnlockTime);
                         var successResult = new[]
                         {
-                            new { Result = "Success", Message = $"Wallet has been unlocked for {Program.WalletUnlockTime} mins."}
+                            new { Result = "Success", Message = $"Wallet has been unlocked for {Globals.WalletUnlockTime} mins."}
                         };
 
                         output = JsonConvert.SerializeObject(successResult);
@@ -94,14 +96,14 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            if (Program.APIPassword != null)
+            if (!string.IsNullOrWhiteSpace(Globals.APIPassword))
             {
                 if (password != null)
                 {
-                    var passCheck = Program.APIPassword.ToDecrypt(password);
+                    var passCheck = Globals.APIPassword.ToDecrypt(password);
                     if (passCheck == password && passCheck != "Fail")
                     {
-                        Program.APIUnlockTime = DateTime.UtcNow;
+                        Globals.APIUnlockTime = DateTime.UtcNow;
                         var successResult = new[]
                         {
                             new { Result = "Success", Message = $"Wallet has been locked."}
@@ -133,12 +135,37 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        public static async Task<string> GetCheckEncryptionStatus()
+        {
+            string output = "";
+            if (Globals.IsWalletEncrypted == true)
+            {
+                if (Globals.EncryptPassword.Length != 0)
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is has decryption password." });
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Wallet does not have decryption password." });
+                }
+
+                return output;
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet does not need decryption password." });
+            }
+
+            return output;
+
+        }
+
         [HttpGet("CheckStatus")]
         public async Task<string> CheckStatus()
         {
             //use Id to get specific commands
             var output = "Online"; // this will only display if command not recognized.
-            
+
 
             return output;
         }
@@ -149,7 +176,7 @@ namespace ReserveBlockCore.Controllers
             var output = "";
             var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
 
-            Program.HDWallet = true;
+            Globals.HDWallet = true;
 
             var newHDWalletInfo = new[]
             {
@@ -177,13 +204,56 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        //its recommended that you verify password before submitting to this endpoint.
+        [HttpGet("GetEncryptWallet/{password}")]
+        public async Task<string> GetEncryptWallet(string password)
+        {
+            var output = "";
+            if (Globals.IsWalletEncrypted != true)
+            {
+                try
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    await Keystore.GenerateKeystoreAddresses();
+                    Globals.IsWalletEncrypted = true;
+
+                    password = "0";
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet Encrypted." });
+                }
+                catch (Exception ex)
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"There was an error encrypting your wallet. Error: {ex.ToString()}" });
+                }
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Wallet is already encrypted." });
+            }
+            
+            return output;
+        }
+
+        [HttpGet("GetDecryptWallet/{password}")]
+        public async Task<string> GetDecryptWallet(string password)
+        {
+            var output = "";
+
+            Globals.EncryptPassword = password.ToSecureString();
+            password = "0";
+
+            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
+
+            return output;
+        }
+
+
         [HttpGet("GetNewAddress")]
         public async Task<string> GetNewAddress()
         {
             //use Id to get specific commands
-            Account account = null; 
+            Account account = null;
             var output = "Fail"; // this will only display if command not recognized.
-            if(Program.HDWallet == true)
+            if (Globals.HDWallet == true)
             {
                 account = HDWallet.HDWalletData.GenerateAddress();
             }
@@ -191,7 +261,7 @@ namespace ReserveBlockCore.Controllers
             {
                 account = AccountData.CreateNewAccount();
             }
-            
+
             var newAddressInfo = new[]
             {
                 new { Address = account.Address, PrivateKey = account.PrivateKey}
@@ -210,12 +280,12 @@ namespace ReserveBlockCore.Controllers
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
             var peerCount = "";
-            var blockHeight = Program.BlockHeight.ToString();
+            var blockHeight = Globals.LastBlock.Height.ToString();
 
             var peersConnected = await P2PClient.ArePeersConnected();
-            if (peersConnected.Item1 == true)
+            if (peersConnected)
             {
-                peerCount = peersConnected.Item2.ToString();
+                peerCount = Globals.Nodes.Count.ToString();
             }
             else
             {
@@ -225,13 +295,13 @@ namespace ReserveBlockCore.Controllers
 
             var walletInfo = new[]
             {
-                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Program.BlocksDownloading.ToString(), 
-                    IsResyncing = Program.IsResyncing.ToString(), IsChainSynced =  Program.IsChainSynced.ToString(), ChainCorrupted = Program.DatabaseCorruptionDetected.ToString()}
+                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Globals.BlocksDownloading.ToString(),
+                    IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString()}
             };
 
             output = JsonConvert.SerializeObject(walletInfo);
 
-            //output = blockHeight + ":" + peerCount + ":" + Program.BlocksDownloading.ToString() + ":" + Program.IsResyncing.ToString() + ":" + Program.IsChainSynced.ToString();
+            //output = blockHeight + ":" + peerCount + ":" + Globals.BlocksDownloading.ToString() + ":" + Globals.IsResyncing.ToString() + ":" + Globals.IsChainSynced.ToString();
 
             return output;
         }
@@ -295,10 +365,19 @@ namespace ReserveBlockCore.Controllers
                     var account = AccountData.GetSingleAccount(id);
                     if (account != null)
                     {
-                        account.IsValidating = true;
-                        accounts.UpdateSafe(account);
-                        Program.ValidatorAddress = account.Address;
-                        output = "Success! The requested account has been turned on: " + account.Address;
+                        var stateTreiBalance = AccountStateTrei.GetAccountBalance(account.Address);
+                        if(stateTreiBalance < 1000)
+                        {
+                            output = "The balance for this account is under 1000.";
+                        }
+                        else
+                        {
+                            account.IsValidating = true;
+                            accounts.UpdateSafe(account);
+                            Globals.ValidatorAddress = account.Address;
+                            await StartupService.ConnectoToAdjudicator();
+                            output = "Success! The requested account has been turned on: " + account.Address;
+                        }
                     }
                     else
                     {
@@ -308,7 +387,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                output = "STV";
+                output = "No Validator account has been found. Please create one.";
             }
             
 
@@ -324,9 +403,9 @@ namespace ReserveBlockCore.Controllers
             var presentValidator = accounts.FindOne(x => x.IsValidating == true);
             if (presentValidator != null)
             {
-                presentValidator.IsValidating = false;
-                accounts.UpdateSafe(presentValidator);
-                Program.ValidatorAddress = ""; 
+                
+                await ValidatorService.DoMasterNodeStop();
+                
                 output = "The validator has been turned off: " + presentValidator.Address;
             }
             else
@@ -381,20 +460,48 @@ namespace ReserveBlockCore.Controllers
         {
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
-            var account = AccountData.RestoreAccount(id);
+            if(Globals.IsWalletEncrypted == true)
+            {
+                if(Globals.EncryptPassword.Length > 0)
+                {
+                    var account = await AccountData.RestoreAccount(id);
 
-            if (account == null)
-            {
-                output = "NAC";
-            }
-            else if(account.Address == null || account.Address == "")
-            {
-                output = "NAC";
+                    if (account == null)
+                    {
+                        output = "NAC";
+                    }
+                    else if (account.Address == null || account.Address == "")
+                    {
+                        output = "NAC";
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(account);
+                    }
+                }
+                else
+                {
+                    output = "Please type in wallet encryption password.";
+                }
             }
             else
             {
-                output = JsonConvert.SerializeObject(account);
+                var account = await AccountData.RestoreAccount(id);
+
+                if (account == null)
+                {
+                    output = "NAC";
+                }
+                else if (account.Address == null || account.Address == "")
+                {
+                    output = "NAC";
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(account);
+                }
             }
+            
 
             return output;
         }
@@ -428,7 +535,7 @@ namespace ReserveBlockCore.Controllers
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
 
-            var block = Program.LastBlock;
+            var block = Globals.LastBlock;
 
             if (block == null)
             {
@@ -514,13 +621,25 @@ namespace ReserveBlockCore.Controllers
                 return output;
             }
 
-            var result = WalletService.SendTXOut(fromAddress, toAddress, amount);
-
-            if(result.Contains("Success"))
+            if (Globals.IsWalletEncrypted == true)
             {
+                if(Globals.EncryptPassword.Length > 0 )
+                {
+                    var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
+
+                    output = result;
+                }
+                else
+                {
+                    output = "FAIL. Please type in wallet encryption password first.";
+                }
+            }
+            else
+            {
+                var result = await WalletService.SendTXOut(fromAddress, toAddress, amount);
                 output = result;
             }
-
+            
             return output;
         }
 
@@ -531,34 +650,40 @@ namespace ReserveBlockCore.Controllers
             var result = "No Potential Validator Accounts Found.";
             var address = addr;
             var uniqueName = uname;
-
-            var valAccount = AccountData.GetPossibleValidatorAccounts();
-            if (valAccount.Count() > 0)
+            if(Globals.IsWalletEncrypted == false)
             {
-                var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
-                if(accountCheck != null)
+                var valAccount = AccountData.GetPossibleValidatorAccounts();
+                if (valAccount.Count() > 0)
                 {
-                    if(accountCheck.IsValidating)
+                    var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
+                    if (accountCheck != null)
                     {
-                        result = "Node is already flagged as validator.";
-                        return result;
+                        if (accountCheck.IsValidating)
+                        {
+                            result = "Node is already flagged as validator.";
+                            return result;
+                        }
+                        try
+                        {
+                            var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
+                            result = valResult;
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrorLogUtility.LogError(ex.ToString(), "V1Controller.StartValidating - result: " + result);
+                            result = $"Unknown Error Occured: {ex.ToString()}";
+                        }
+                        output = true;
                     }
-                    try
+                    else
                     {
-                        var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
-                        result = valResult;
+                        result = "Account provided was not found in wallet.";
                     }
-                    catch (Exception ex)
-                    {
-                        ErrorLogUtility.LogError(ex.Message, "V1Controller.StartValidating - result: " + result);
-                        result = $"Unknown Error Occured: {ex.Message}";
-                    }
-                    output = true;
                 }
-                else
-                {
-                    result = "Account provided was not found in wallet.";
-                }
+            }
+            else
+            {
+                result = "Cannot start validating on an encrypted wallet.";
             }
 
             return result;
@@ -569,15 +694,27 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             
-            if(Program.ValidatorAddress != "")
+            if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
             {
                 var validatorTable = Validators.Validator.GetAll();
-                var validator = validatorTable.FindOne(x => x.Address == Program.ValidatorAddress);
+                var validator = validatorTable.FindOne(x => x.Address == Globals.ValidatorAddress);
                 validator.UniqueName = uname;
                 validatorTable.UpdateSafe(validator);
 
                 output = "Validator Unique Name Updated. Please restart wallet.";
             }
+            return output;
+        }
+
+        [HttpGet("ResetValidator")]
+        public async Task<string> ResetValidator()
+        {
+            string output = "Failed!";
+
+            var result = await ValidatorService.ValidatorErrorReset();
+            if (result)
+                output = "Success!";
+            
             return output;
         }
 
@@ -589,7 +726,9 @@ namespace ReserveBlockCore.Controllers
             var account = AccountData.GetSingleAccount(address);
             if(account != null)
             {
-                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 var signature = SignatureService.CreateSignature(message, privateKey, account.PublicKey);
@@ -628,7 +767,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMemBlockCluster()
         {
             string output = "";
-            var blocks = Program.MemBlocks;
+            var blocks = Globals.MemBlocks;
             output = JsonConvert.SerializeObject(blocks);
 
             return output;
@@ -638,7 +777,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetTaskAnswersList()
         {
             string output = "";
-            var taskAnswerList = P2PAdjServer.TaskAnswerList.Select(x => new {
+            var taskAnswerList = Globals.TaskAnswerDict.Values.Select(x => new {
                 Address = x.Address,
                 Answer = x.Answer,
                 BlockHeight = x.Block != null ? x.Block.Height : 0,
@@ -650,12 +789,28 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetTaskAnswersListNew")]
+        public async Task<string> GetTaskAnswersListNew()
+        {
+            string output = "";
+            var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
+                Address = x.Address,
+                Answer = x.Answer,
+                NextBlockHeight = x.NextBlockHeight,
+                SubmitTime = x.SubmitTime
+
+            });
+            output = JsonConvert.SerializeObject(taskAnswerList);
+
+            return output;
+        }
+
         [HttpGet("GetMasternodesSent")]
         public async Task<string> GetMasternodesSent()
         {
             string output = "";
             var currentTime = DateTime.Now.AddMinutes(-15);
-            var fortisPool = P2PAdjServer.FortisPool.Where(x => x.LastAnswerSendDate >= currentTime);
+            var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate >= currentTime);
             output = JsonConvert.SerializeObject(fortisPool);
 
             return output;
@@ -665,9 +820,29 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodes()
         {
             string output = "";
-            var validators = P2PAdjServer.FortisPool.ToList();
+            var validators = Globals.FortisPool.Values.Select(x => new
+            {
+                x.Context.ConnectionId,
+                x.ConnectDate,
+                x.LastAnswerSendDate,
+                x.IpAddress,
+                x.Address,
+                x.UniqueName,
+                x.WalletVersion
+            }).ToList();
 
             output = JsonConvert.SerializeObject(validators);
+
+            return output;
+        }
+
+        [HttpGet("GetBeaconPool")]
+        public async Task<string> GetBeaconPool()
+        {
+            string output = "";
+            var beaconPool = Globals.BeaconPool.Values.ToList();
+
+            output = JsonConvert.SerializeObject(beaconPool);
 
             return output;
         }
@@ -677,7 +852,7 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
             var isConnected = P2PClient.IsAdjConnected1;
-            DateTime? connectDate = P2PClient.AdjudicatorConnectDate != null ? P2PClient.AdjudicatorConnectDate.Value : null;
+            DateTime? connectDate = Globals.AdjudicatorConnectDate != null ? Globals.AdjudicatorConnectDate.Value : null;
 
             var connectedInfo = new[]
             {
@@ -694,12 +869,53 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            var nodeInfoList = Program.Nodes;
+            var nodeInfoList = Globals.Nodes.Select(x => new
+            {
+                x.Value.NodeIP,
+                x.Value.NodeLatency,
+                x.Value.NodeHeight,
+                x.Value.NodeLastChecked
+            })
+            .ToArray();
 
             output = JsonConvert.SerializeObject(nodeInfoList);
 
             return output;
 
+        }
+
+        [HttpGet("ListBannedPeers")]
+        public async Task<string> ListBannedPeers()
+        {
+            var output = "";
+            var bannedPeers = Peers.ListBannedPeers();
+
+            if(bannedPeers.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(bannedPeers);
+            }
+            else
+            {
+                output = "No banned peers";
+            }
+
+            return output;
+        }
+
+        [HttpGet("UnbanPeer/{**ipAddress}")]
+        public async Task<string> UnbanPeer(string ipAddress)
+        {
+            var result = await Peers.UnbanPeer(ipAddress);
+
+            return result;
+        }
+
+        [HttpGet("UnbanAllPeers")]
+        public async Task<string> UnbanAllPeers()
+        {
+            var result = await Peers.UnbanAllPeers();
+
+            return result.ToString();
         }
 
         [HttpGet("GetDebugInfo")]
@@ -710,12 +926,28 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetConnectionHistory")]
+        public async Task<string> GetConnectionHistory()
+        {
+            var output = await ConnectionHistory.Read();
+
+            return output;
+        }
+
+        [HttpGet("GetClientInfo")]
+        public async Task<string> GetClientInfo()
+        {
+            var output = await StaticVariableUtility.GetClientInfo();
+
+            return output;
+        }
+
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()
         {
             string output = "";
 
-            output = Program.CLIVersion;
+            output = Globals.CLIVersion;
 
             return output;
         }
@@ -768,7 +1000,7 @@ namespace ReserveBlockCore.Controllers
             //use Id to get specific commands
             var output = "Starting Stop"; // this will only display if command not recognized.
             LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
-            Program.StopAllTimers = true;
+            Globals.StopAllTimers = true;
             Thread.Sleep(1000);
             Environment.Exit(0);
         }

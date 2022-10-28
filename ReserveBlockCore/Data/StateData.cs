@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Data
 {
@@ -92,28 +93,31 @@ namespace ReserveBlockCore.Data
                 if(x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
                 {
                     var to = GetSpecificAccountStateTrei(x.ToAddress);
-
-                    if (to == null)
+                    if(x.TransactionType == TransactionType.TX)
                     {
-                        var acctStateTreiTo = new AccountStateTrei
+                        if (to == null)
                         {
-                            Key = x.ToAddress,
-                            Nonce = 0,
-                            Balance = x.Amount,
-                            StateRoot = block.StateRoot
-                        };
+                            var acctStateTreiTo = new AccountStateTrei
+                            {
+                                Key = x.ToAddress,
+                                Nonce = 0,
+                                Balance = x.Amount,
+                                StateRoot = block.StateRoot
+                            };
 
-                        accStTrei.InsertSafe(acctStateTreiTo);
-                    }
-                    else
-                    {
-                        to.Balance += x.Amount;
-                        to.StateRoot = block.StateRoot;
+                            accStTrei.InsertSafe(acctStateTreiTo);
+                        }
+                        else
+                        {
+                            to.Balance += x.Amount;
+                            to.StateRoot = block.StateRoot;
 
-                        accStTrei.UpdateSafe(to);
+                            accStTrei.UpdateSafe(to);
+                        }
+
                     }
+                    
                 }
-                
 
                 if (x.TransactionType != TransactionType.TX)
                 {
@@ -125,7 +129,7 @@ namespace ReserveBlockCore.Data
                         var function = (string?)scData["Function"];
                         var scUID = (string?)scData["ContractUID"];
 
-                        if (function != "")
+                        if (!string.IsNullOrWhiteSpace(function))
                         {
                             switch (function)
                             {
@@ -157,11 +161,11 @@ namespace ReserveBlockCore.Data
                     if(x.TransactionType == TransactionType.ADNR)
                     {
                         var txData = x.Data;
-                        if (txData != null)
+                        if (!string.IsNullOrWhiteSpace(txData))
                         {
                             var jobj = JObject.Parse(txData);
                             var function = (string)jobj["Function"];
-                            if (function != "")
+                            if (!string.IsNullOrWhiteSpace(function))
                             {
                                 switch (function)
                                 {
@@ -169,10 +173,10 @@ namespace ReserveBlockCore.Data
                                         AddNewAdnr(x);
                                         break;
                                     case "AdnrTransfer()":
-                                        //AddNewAdnr(x);
+                                        TransferAdnr(x);
                                         break;
                                     case "AdnrDelete()":
-                                        //AddNewAdnr(x);
+                                        DeleteAdnr(x);
                                         break;
                                     default:
                                         break;
@@ -184,11 +188,11 @@ namespace ReserveBlockCore.Data
                     if(x.TransactionType == TransactionType.DSTR)
                     {
                         var txData = x.Data;
-                        if (txData != null)
+                        if (!string.IsNullOrWhiteSpace(txData))
                         {
                             var jobj = JObject.Parse(txData);
                             var function = (string)jobj["Function"];
-                            if (function != "")
+                            if (!string.IsNullOrWhiteSpace(function))
                             {
                                 switch (function)
                                 {
@@ -264,6 +268,40 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {
+                DbContext.Rollback();
+                ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
+            }
+        }
+        private static void TransferAdnr(Transaction tx)
+        {
+            bool complete = false;
+            while(!complete)
+            {
+                var adnrs = Adnr.GetAdnr();
+                if (adnrs != null)
+                {
+                    var adnr = adnrs.FindOne(x => x.Address == tx.FromAddress);
+                    if (adnr != null)
+                    {
+                        adnr.Address = tx.ToAddress;
+                        adnr.TxHash = tx.Hash;
+                        adnrs.UpdateSafe(adnr);
+                        complete = true;
+                    }
+                }
+            }
+            
+        }
+
+        private static void DeleteAdnr(Transaction tx)
+        {
+            try
+            {
+                Adnr.DeleteAdnr(tx.FromAddress);
+            }
+            catch (Exception ex)
+            {
+                DbContext.Rollback();
                 ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
             }
         }
@@ -278,18 +316,42 @@ namespace ReserveBlockCore.Data
                 var function = (string?)scData["Function"];
                 var data = (string?)scData["Data"];
                 var scUID = (string?)scData["ContractUID"];
-                
+                var md5List = (string?)scData["MD5List"];
+
 
                 scST.ContractData = data;
                 scST.MinterAddress = tx.FromAddress;
                 scST.OwnerAddress = tx.FromAddress;
                 scST.SmartContractUID = scUID;
                 scST.Nonce = 0;
+                scST.MD5List = md5List;
 
+                try
+                {
+                    var sc = SmartContractMain.GenerateSmartContractInMemory(data);
+                    if (sc.Features != null)
+                    {
+                        var evoFeatures = sc.Features.Where(x => x.FeatureName == FeatureName.Evolving).Select(x => x.FeatureFeatures).FirstOrDefault();
+                        var isDynamic = false;
+                        if (evoFeatures != null)
+                        {
+                            var evoFeatureList = (List<EvolvingFeature>)evoFeatures;
+                            foreach (var feature in evoFeatureList)
+                            {
+                                var evoFeature = (EvolvingFeature)feature;
+                                if (evoFeature.IsDynamic == true)
+                                    isDynamic = true;
+                            }
+                        }
+
+                        if (!isDynamic)
+                            scST.MinterManaged = true;
+                    }
+                }
+                catch { }
 
                 //Save to state trei
                 SmartContractStateTrei.SaveSmartContract(scST);
-                //SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);
             }
 
         }
@@ -310,7 +372,7 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.OwnerAddress = tx.ToAddress;
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.ContractData = data;
-                scStateTreiRec.Locators = locator != null ? locator : scStateTreiRec.Locators;
+                scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
