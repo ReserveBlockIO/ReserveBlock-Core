@@ -45,11 +45,12 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        //Only needed for bootstrapping
         internal static async Task ConnectToSinglePeer()
         {
             if(Globals.BlockLock >= Globals.LastBlock.Height)
             {
-                var url = @"http://162.248.14.123:" + Globals.Port + "/blockchain";
+                var url = @"http://127.0.0.1:" + Globals.Port + "/blockchain";
                 try
                 {
                     var hubConnection = new HubConnectionBuilder()

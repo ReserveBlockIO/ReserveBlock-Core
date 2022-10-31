@@ -173,9 +173,13 @@ namespace ReserveBlockCore.Trillium
 			{
 				if (result.Value != null)
 				{
-					//Console.ForegroundColor = ConsoleColor.White;
-					//Console.WriteLine(result.Value);
-					Console.ResetColor();
+					if(Globals.ShowTrilliumOutput)
+					{
+						Console.ForegroundColor = ConsoleColor.White;
+						Console.WriteLine(result.Value);
+					}
+
+                    Console.ResetColor();
 				}
 				_previous = compilation;
 
@@ -183,7 +187,8 @@ namespace ReserveBlockCore.Trillium
 			}
 			else
 			{
-				Console.Out.WriteDiagnostics(result.Diagnostics);
+				if(Globals.ShowTrilliumDiagnosticBag)
+					Console.Out.WriteDiagnostics(result.Diagnostics);
 			}
 
 			return result;
