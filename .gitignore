@@ -288,3 +288,4 @@ ReserveBlockCore/AssetsTestNet/
 ReserveBlockCore/DBs/
 ReserveBlockCore/Properties/
 ReserveBlockCore/Properties/launchSettings.json
+.github/workflows/dotnet.yml
