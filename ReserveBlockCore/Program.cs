@@ -130,7 +130,7 @@ namespace ReserveBlockCore
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
 
-            StartupService.RunStateSync();
+            //StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 
@@ -219,7 +219,6 @@ namespace ReserveBlockCore
 
             try
             {
-                await StartupService.ConnectToSinglePeer();
                 await StartupService.StartupPeers();                
             }
             catch (Exception ex)
