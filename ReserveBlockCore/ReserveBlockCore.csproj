@@ -17,6 +17,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Databases\**" />
+    <Content Remove="Databases\**" />
+    <EmbeddedResource Remove="Databases\**" />
+    <None Remove="Databases\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Assets\Images\rbxnew.ico" />
   </ItemGroup>
 
@@ -31,10 +38,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="6.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.3.1" />
     <PackageReference Include="Trillium" Version="1.2.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Databases\" />
   </ItemGroup>
 
   <ItemGroup>
