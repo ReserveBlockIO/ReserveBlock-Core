@@ -17,6 +17,8 @@ using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Security.Cryptography.Xml;
+using Microsoft.AspNetCore.SignalR.Client;
+using ReserveBlockCore.Nodes;
 
 namespace ReserveBlockCore.Services
 {
@@ -43,6 +45,80 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        //Only needed for bootstrapping
+        internal static async Task ConnectToSinglePeer()
+        {
+            if(Globals.BlockLock >= Globals.LastBlock.Height)
+            {
+                var url = @"http://127.0.0.1:" + Globals.Port + "/blockchain";
+                try
+                {
+                    var hubConnection = new HubConnectionBuilder()
+                           .WithUrl(url, options =>
+                           {
+
+                           })
+                           .WithAutomaticReconnect()
+                           .Build();
+
+                    var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
+                    hubConnection.On<string, string>("GetMessage", async (message, data) =>
+                    {
+                        if (message == "blk" || message == "IP")
+                        {
+                            if (data?.Length > 1179648)
+                                return;
+
+                            if (Globals.Nodes.TryGetValue(IPAddress, out var node))
+                            {
+                                var now = TimeUtil.GetMillisecondTime();
+                                var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
+                                if (now - prevPrevTime < 5000)
+                                {
+                                    Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");
+                                    return;
+                                }
+                                Interlocked.Exchange(ref node.PreviousReceiveTime, now);
+                            }
+                            // if someone calls in more often than 2 times in 15 seconds ban them
+
+                            if (message != "IP")
+                            {
+                                await NodeDataProcessor.ProcessData(message, data, IPAddress);
+                            }
+                            else
+                            {
+                                var IP = data.ToString();
+                                if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
+                                    Globals.ReportedIPs[IP]++;
+                                else
+                                    Globals.ReportedIPs[IP] = 1;
+                            }
+                        }
+                    });
+
+                    await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
+
+                    Globals.Nodes[IPAddress] = new NodeInfo
+                    {
+                        Connection = hubConnection,
+                        NodeIP = IPAddress,
+                        NodeHeight = 0,
+                        NodeLastChecked = null,
+                        NodeLatency = 0,
+                        IsSendingBlock = 0,
+                        SendingBlockTime = 0,
+                        TotalDataSent = 0
+                    };
+
+                    var node = Globals.Nodes[IPAddress];
+                    (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
+
+                    
+                }
+                catch { }
+            }
+        }
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();

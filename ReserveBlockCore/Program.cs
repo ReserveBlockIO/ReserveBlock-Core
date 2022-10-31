@@ -444,36 +444,31 @@ namespace ReserveBlockCore
         #region Peer Online Check
         private static async void peerCheckTimer_Elapsed(object sender)
         {
-            if (Globals.StopAllTimers == false)
+            try
             {
-                try
-                {
-                    var peersConnected = await P2PClient.ArePeersConnected();
+                var peersConnected = await P2PClient.ArePeersConnected();
 
-                    if (!peersConnected)
-                    {
-                        Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                        LogUtility.Log("Connection to Peers Lost", "peerCheckTimer_Elapsed()");
-                        await StartupService.StartupPeers();
-                        //potentially no connected nodes.
-                    }
-                    else
-                    {
-                        if (Globals.Nodes.Count < Globals.MaxPeers)
-                        {
-                            bool result = false;
-                            //Get more nodes!
-                            result = await P2PClient.ConnectToPeers(true);
-                        }
-                    }
-                }
-                catch(Exception ex)
+                if (!peersConnected)
                 {
-                    ErrorLogUtility.LogError(ex.ToString(), "Globals.peerCheckTimer_Elapsed()");
+                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
+                    LogUtility.Log("Connection to Peers Lost", "peerCheckTimer_Elapsed()");
+                    await StartupService.StartupPeers();
+                    //potentially no connected nodes.
                 }
-                
+                else
+                {
+                    if (Globals.Nodes.Count < Globals.MaxPeers)
+                    {
+                        bool result = false;
+                        //Get more nodes!
+                        result = await P2PClient.ConnectToPeers(true);
+                    }
+                }
             }
-            
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "Globals.peerCheckTimer_Elapsed()");
+            }
         }
 
         #endregion

@@ -90,6 +90,8 @@ namespace ReserveBlockCore
         public static bool IgnoreIncomingNFTs = false;
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static BeaconReference BeaconReference = new BeaconReference();
+        public static bool ShowTrilliumOutput = false;
+        public static bool ShowTrilliumDiagnosticBag = false;
 
         #endregion
 
