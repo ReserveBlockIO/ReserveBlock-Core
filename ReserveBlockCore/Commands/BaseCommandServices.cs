@@ -248,6 +248,15 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static async void SetTrilliumOutput()
+        {
+            Globals.ShowTrilliumOutput ^= true;
+            Globals.ShowTrilliumDiagnosticBag ^= true;
+
+            Console.WriteLine($"Trillium Output Set to: {Globals.ShowTrilliumOutput}");
+            Console.WriteLine($"Trillium Diagnostic Output Set to: {Globals.ShowTrilliumDiagnosticBag}");
+        }
+
         public static async void ResetValidator()
         {
             Globals.ValidatorAddress = "";
@@ -1338,6 +1347,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/printkeys[/]", "[green]Prints all private keys associated to a wallet.[/]");
             table.AddRow("[blue]/encrypt[/]", "[green]Encrypts the wallets private keys.[/]");
             table.AddRow("[blue]/decrypt[/]", "[green]Decrypts the wallets private keys.[/]");
+            table.AddRow("[blue]/setto[/]", "[green]This will let you set output for trillium to show on screen.[/]");
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
             table.AddRow("[blue]/resetval[/]", "[green]Resets all validator and reconnects them.[/]");
