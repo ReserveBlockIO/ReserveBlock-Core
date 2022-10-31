@@ -123,11 +123,12 @@ This document was adapted from the open-source contribution guidelines for [Face
 - .Net Core 6 is only dependency for this project. Core is available on all platforms (Win, Mac, Linux)
 
 **Deployment instructions**
+- Please refer to the instructions in the RBXBuildInstructions.md. Below is a brief overview of what needs to be done.
 
 - Install .net core 6 on your machine. Install can be found here: https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 - Once .net is installed you can either download a pre-built binary or compile your own. 
 - Deploy the wallet by either opening the ReserveBlockCore.exe or the GUI
-- For Linux you can run the wallet with dotnet run ReserveBlockCore.dll 
+- For Linux you can run the wallet with dotnet ReserveBlockCore.dll 
 
 # Who do I talk to? ###
 
@@ -148,5 +149,5 @@ information or see https://opensource.org/licenses/MIT.
 * Darren Starr for RIPEMD160 Library
 * Brian A. Danielak for Contribution Guidelines
 * dotnetstandard for BIP32/39
-* Alex Williams for In Memory Variables
+* Alex Williams for In Memory Variables and network wide audit
 * Bitcoin source

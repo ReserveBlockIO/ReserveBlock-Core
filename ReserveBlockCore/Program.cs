@@ -219,6 +219,7 @@ namespace ReserveBlockCore
 
             try
             {
+                await StartupService.ConnectToSinglePeer();
                 await StartupService.StartupPeers();                
             }
             catch (Exception ex)
