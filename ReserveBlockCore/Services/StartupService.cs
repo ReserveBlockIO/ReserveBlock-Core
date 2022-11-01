@@ -407,6 +407,14 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static async Task GetAdjudicatorPool()
+        {
+            //add seed nodes
+            SeedNodeService.SeedNodes();
+            await NodeConnector.StartNodeAdjPoolConnecting();
+
+        }
+
         internal static async Task SetLeadAdjudicator()
         {
             var adjudicatorLead = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
@@ -846,7 +854,8 @@ namespace ReserveBlockCore.Services
         internal static async Task StartupPeers()
         {
             //add seed nodes
-            SeedNodeService.SeedNodes();
+            //This is being done for adj pool now. It will already exist
+            //SeedNodeService.SeedNodes();
             bool result = false;
             bool peersConnected = false;
             int failCount = 0;

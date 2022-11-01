@@ -206,6 +206,9 @@ namespace ReserveBlockCore
             
             StartupService.CheckForDuplicateBlocks();
 
+            //Get Adj Pool - Currently Returns dummy list
+            await StartupService.GetAdjudicatorPool();
+
             await StartupService.SetLeadAdjudicator();
 
             if (Globals.DatabaseCorruptionDetected == true)

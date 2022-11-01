@@ -1,5 +1,7 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using System.Net;
 
 namespace ReserveBlockCore.Services
 {
@@ -131,6 +133,38 @@ namespace ReserveBlockCore.Services
                     dbPeers.UpdateSafe(peerExist);
                 }
             }
+        }
+
+        public static async Task GetAdjPoolList(string url)
+        {
+            if (Globals.IsTestNet == false)
+            {
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        string endpoint = url + "/api/V1/GetAdjPool";
+                        using (var Response = await client.GetAsync(endpoint))
+                        {
+                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                            {
+                                string data = await Response.Content.ReadAsStringAsync();
+
+                                var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
+                            }
+                            else
+                            {
+
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+            
         }
 
         public static List<SeedNode> SeedNodes()
