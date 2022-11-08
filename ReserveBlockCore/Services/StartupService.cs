@@ -912,13 +912,15 @@ namespace ReserveBlockCore.Services
             if(result == true)
             {
                 //Connected to peers
-                await BlockchainData.InitializeChain();
+                //Only needed for genesis 
+                //await BlockchainData.InitializeChain();
             }
             else
             {
                 Console.WriteLine("Failed to automatically connect to peers. Please add manually.");
                 //Put StartupInitializeChain();
                 //Here and once chain fails to connect it will create genesis 
+                //await BlockchainData.InitializeChain();
             }
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block

@@ -29,6 +29,8 @@ namespace ReserveBlockCore.Config
 		public int PasswordClearTime { get; set; }
         public bool AutoDownloadNFTAsset { get; set; }
         public bool IgnoreIncomingNFTs { get; set; }
+		public string? MotherAddress { get; set; }
+		public string? MotherPassword { get; set; }
         public List<string> RejectAssetExtensionTypes { get; set; }
 		public List<string> AllowedExtensionsTypes { get; set; }
 
@@ -74,6 +76,7 @@ namespace ReserveBlockCore.Config
 				config.ChainCheckpointLocation = dict.ContainsKey("ChainCheckpointLocation") ? dict["ChainCheckpointLocation"] : GetPathUtility.GetCheckpointPath();
 				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
 
+
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
                 config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
 				config.RejectAssetExtensionTypes = new List<string>();
@@ -92,6 +95,9 @@ namespace ReserveBlockCore.Config
 					".nls", ".ctbl", ".crypt1", ".hsq", ".iws", ".vzr", ".lkh", ".ezt", ".rna", ".aepl", ".hts", ".atm", ".fuj", ".aut", 
 					".fjl", ".delf", ".buk", ".bmw", ".capxml", ".bps", ".cyw", ".iva", ".pid", ".lpaq5", ".dx", ".bqf", ".qit", ".pr", ".lok", 
 					"xnt"};
+
+                config.MotherAddress = dict.ContainsKey("MotherAddress") ? dict["MotherAddress"] : null;
+                config.MotherPassword = dict.ContainsKey("MotherPassword") ? dict["MotherPassword"] : null;
 
                 if (dict.ContainsKey("RejectAssetExtensionTypes"))
 				{
@@ -122,8 +128,6 @@ namespace ReserveBlockCore.Config
 						}
 					}
                 }
-
-
             }
 
 			return config;
@@ -183,6 +187,13 @@ namespace ReserveBlockCore.Config
 				Globals.ConfigValidator = config.ValidatorAddress;
 				Globals.ConfigValidatorName = config.ValidatorName;
             }
+
+			if(!string.IsNullOrEmpty(config.MotherAddress))
+			{
+				Globals.MotherAddress = config.MotherAddress;
+				Globals.MotherPassword = config.MotherPassword != null ? config.MotherPassword.ToSecureString() : null;
+				Globals.ConnectToMother = true;
+			}
         }
 
 		public static async void EstablishConfigFile()

@@ -92,6 +92,9 @@ namespace ReserveBlockCore
         public static BeaconReference BeaconReference = new BeaconReference();
         public static bool ShowTrilliumOutput = false;
         public static bool ShowTrilliumDiagnosticBag = false;
+        public static bool ConnectToMother = false;
+        public static string? MotherAddress = null;
+        public static SecureString? MotherPassword = null;
 
         #endregion
 
