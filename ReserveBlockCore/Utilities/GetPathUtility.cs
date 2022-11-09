@@ -10,24 +10,30 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
             }
             else
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
             }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -40,24 +46,30 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Globals.IsTestNet != true ? "Checkpoint" : "CheckpointTestNet";
+            var checkpointLocation = Globals.IsTestNet != true ? "Checkpoint" : "CheckpointTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + checkpointLocation + Path.DirectorySeparatorChar;
             }
             else
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + checkpointLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + checkpointLocation + Path.DirectorySeparatorChar;
                 }
             }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + checkpointLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -70,24 +82,30 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Globals.IsTestNet != true ? "BeaconAsset" : "BeaconAssetTestNet";
+            var beaconLocation = Globals.IsTestNet != true ? "BeaconAsset" : "BeaconAssetTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + beaconLocation + Path.DirectorySeparatorChar;
             }
             else
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + beaconLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + beaconLocation + Path.DirectorySeparatorChar;
                 }
             }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + beaconLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -100,24 +118,29 @@ namespace ReserveBlockCore.Utilities
         {
             string path = "";
 
-            var assetLocation = Globals.IsTestNet != true ? "Config" : "ConfigTestNet";
+            var configLocation = Globals.IsTestNet != true ? "Config" : "ConfigTestNet";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
             }
             else
             {
                 if (Debugger.IsAttached)
                 {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
                 }
             }
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
