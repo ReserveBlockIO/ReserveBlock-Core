@@ -196,37 +196,39 @@ namespace ReserveBlockCore.Trillium
 
 		private static string GetSubmissionsDirectory()
 		{
-			var databaseLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
+			var trilliumLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
 
 			string path = "";
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 			{
 				string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-				path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
+				path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar +
 						"Submissions" + Path.DirectorySeparatorChar;
 			}
 			else
 			{
 				if (Debugger.IsAttached)
 				{
-					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
+					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar +
 						"Submissions" + Path.DirectorySeparatorChar;
 				}
 				else
 				{
 					path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + 
-						"RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar + 
+						"RBX" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar + 
 						"Submissions" + Path.DirectorySeparatorChar;
 				}
 			}
-			if (!Directory.Exists(path))
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + "RBX" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar;
+            }
+
+            if (!Directory.Exists(path))
 			{
 				Directory.CreateDirectory(path);
 			}
-			//var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-			//var submissionsDirectory = Path.Combine(localAppData, "Trillium", "Submissions");
-			//return submissionsDirectory;
-
 			return path;
 		}
 

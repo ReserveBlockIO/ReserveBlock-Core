@@ -203,6 +203,11 @@ namespace ReserveBlockCore.Utilities
                 }
             }
 
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+
             var networkText = "Current Network: " + network;
             var mostLikelyIPText = "Reported IP: " + mostLikelyIP;
             var osText = "OS Description: " + osDesc;
