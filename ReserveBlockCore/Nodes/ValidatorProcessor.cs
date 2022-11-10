@@ -209,6 +209,8 @@ namespace ReserveBlockCore.Nodes
 
             await P2PClient.SendTaskAnswer_New(taskAnswer);
 
+            Globals.LastTaskBlockHeight = blockHeight;
+
         }
 
         private static async void RandomNumberTask_Deprecated(long blockHeight) 
