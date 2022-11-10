@@ -139,6 +139,11 @@ namespace ReserveBlockCore.Commands
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     ConsoleWriterService.Output($"Beacons found {beacons.Result.Count()}");
                     break;
+                case "/synctrei":
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    await BaseCommandServices.SyncTreis();
+                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
+                    break;
                 case "/setto":
                     BaseCommandServices.SetTrilliumOutput();
                     break;

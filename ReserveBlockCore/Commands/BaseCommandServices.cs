@@ -892,6 +892,13 @@ namespace ReserveBlockCore.Commands
 
         }
 
+        public static async Task SyncTreis()
+        {
+            Console.WriteLine("Beginning Trei Sync");
+            await StateTreiSyncService.SyncAccountStateTrei();
+            Console.WriteLine("Trei Sync has completed. Please check error log for report on balances updated.");
+        }
+
         public static async Task<string> TransferDnr()
         {
             var output = "";
