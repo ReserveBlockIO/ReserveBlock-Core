@@ -263,7 +263,8 @@ namespace ReserveBlockCore.Commands
             var result = await ValidatorService.ValidatorErrorReset();
             if (result)
             {
-                Globals.LastTaskErrorCount = 0;
+                foreach(var node in Globals.AdjNodes.Values)
+                    node.LastTaskErrorCount = 0;
                 ValidatorLogUtility.Log("ValidatorErrorReset() called manually. Results: Success!", "Program.validatorListCheckTimer_Elapsed()");
             }
         }

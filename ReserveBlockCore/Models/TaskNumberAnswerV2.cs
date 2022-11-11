@@ -1,6 +1,6 @@
 ﻿namespace ReserveBlockCore.Models
 {
-    public class TaskNumberAnswer
+    public class TaskNumberAnswerV2
     {
         public string Address { get; set; }
         public string Answer { get; set; }

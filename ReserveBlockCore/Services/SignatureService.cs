@@ -9,7 +9,7 @@ namespace ReserveBlockCore.Services
         public static string CreateSignature(string message, PrivateKey PrivKey, string pubKey)
         {
             try
-            {
+            {                
                 //1. Get signature with message and private key
                 Signature signature = Ecdsa.sign(message, PrivKey);
 
@@ -24,15 +24,13 @@ namespace ReserveBlockCore.Services
 
                 //5. validate new signature
                 var sigScriptArray = sigScript.Split('.', 2);
-                var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
+                var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));               
+                
+                //This is a patch for sigs with 0000 start point.
+                if (pubKeyDecoded.Length / 2 == 63)
                 {
-                    //This is a patch for sigs with 0000 start point.
-                    if (pubKeyDecoded.Length / 2 == 63)
-                    {
-                        pubKeyDecoded = "00" + pubKeyDecoded;
-                    }
-                }
+                    pubKeyDecoded = "00" + pubKeyDecoded;
+                }                
                 
                 var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
                 var publicKey = PublicKey.fromString(pubKeyByte);
@@ -58,14 +56,13 @@ namespace ReserveBlockCore.Services
 
                 var sigScriptArray = sigScript.Split('.', 2);
                 var pubKeyDecoded = HexByteUtility.ByteToHex(Base58Utility.Base58Decode(sigScriptArray[1]));
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
+
+                //This is a patch for sigs with 0000 start point. remove lock after update has been achieved.
+                if (pubKeyDecoded.Length / 2 == 63)
                 {
-                    //This is a patch for sigs with 0000 start point. remove lock after update has been achieved.
-                    if (pubKeyDecoded.Length / 2 == 63)
-                    {
-                        pubKeyDecoded = "00" + pubKeyDecoded;
-                    }
+                    pubKeyDecoded = "00" + pubKeyDecoded;
                 }
+
                 var pubKeyByte = HexByteUtility.HexToByte(pubKeyDecoded);
                 var publicKey = PublicKey.fromString(pubKeyByte);
 

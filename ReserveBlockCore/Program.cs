@@ -125,7 +125,7 @@ namespace ReserveBlockCore
             StartupService.SetLastBlock();
 
             //This is for adjudicator start.
-            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum", Globals.LastBlock.Height + 1);
 
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
@@ -236,7 +236,7 @@ namespace ReserveBlockCore
 
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
-            await StartupService.ConnectoToAdjudicator();
+            await StartupService.ConnectoToAdjudicators();
 
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
@@ -422,7 +422,7 @@ namespace ReserveBlockCore
                                     {
                                         await BlockDownloadService.GetAllBlocks();
                                         Thread.Sleep(1000);
-                                        await StartupService.ConnectoToAdjudicator();
+                                        await StartupService.ConnectoToAdjudicators();
                                     }
                                 }
                             }
@@ -484,8 +484,7 @@ namespace ReserveBlockCore
                 //ValidatorService.ClearDuplicates();
 
                 var peersConnected = await P2PClient.ArePeersConnected();
-                var taskErrorCount = Globals.LastTaskErrorCount;
-
+                
                 if (!peersConnected)
                 {
                     Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
@@ -497,26 +496,29 @@ namespace ReserveBlockCore
                 {
                     if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
                     {
-                        //Check connection to head val and update.
-                        var connection = P2PClient.IsAdjConnected1;
-                        if (connection != true)
+                        await P2PClient.DropDisconnectedAdjudicators();
+                        
+                        var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                        
+                        if (NumAdjudicators < 2)
                         {
                             Console.WriteLine("You have lost connection to the adjudicator. Attempting to reconnect...");
                             LogUtility.Log("Connection to Adj Lost", "Program.validatorListCheckTimer_Elapsed()");
-                            await StartupService.ConnectoToAdjudicator();
+                            await StartupService.ConnectoToAdjudicators();
                         }
                     }
                 }
 
                 if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
                 {
-                    if (taskErrorCount > 3)
+                    if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
                     {
                         //stop connection and reconnct to ADJ plainly. 
                         var result = await ValidatorService.ValidatorErrorReset();
                         if (result)
                         {
-                            Globals.LastTaskErrorCount = 0;
+                            foreach(var node in Globals.AdjNodes.Values)
+                                node.LastTaskErrorCount = 0;
                             ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
                         }
 

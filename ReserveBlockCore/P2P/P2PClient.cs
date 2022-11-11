@@ -27,45 +27,22 @@ namespace ReserveBlockCore.P2P
         /// Below are reserved for adjudicators to open up communications fortis pool participation and block solving.
         /// </summary>
 
-        private static HubConnection? hubAdjConnection1; //reserved for validators
-
-        private static SemaphoreSlim AdjLock = new SemaphoreSlim(1, 1);
-        public static bool IsAdjConnected1 => hubAdjConnection1?.State == HubConnectionState.Connected;
-
-        private static HubConnection? hubAdjConnection2; //reserved for validators
-        public static bool IsAdjConnected2 => hubAdjConnection2?.State == HubConnectionState.Connected;
-
         private static HubConnection? hubBeaconConnection; //reserved for beacon
         public static bool IsBeaconConnected => hubBeaconConnection?.State == HubConnectionState.Connected;
-
-        public static async Task<T> AdjInvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
-        {
-            await AdjLock.WaitAsync();
-            var delay = Task.Delay(1000);
-            try
-            {
-                return await hubAdjConnection1.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
-            }
-            finally
-            {
-                await delay;
-                if (AdjLock.CurrentCount == 0)
-                    AdjLock.Release();
-            }
-        }
 
         #endregion
 
         #region Get Available HubConnections for Peers
-
-        public static bool IsConnected(NodeInfo node)
-        {            
-            return node.Connection.State == HubConnectionState.Connected;            
-        }
         private static async Task RemoveNode(NodeInfo node)
         {
             if(Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
                 await node.Connection.DisposeAsync();            
+        }
+
+        private static async Task RemoveAdjNode(AdjNodeInfo node)
+        {
+            if (Globals.AdjNodes.TryRemove(node.IpAddress, out AdjNodeInfo test))
+                await node.Connection.DisposeAsync();
         }
 
         #endregion
@@ -81,8 +58,17 @@ namespace ReserveBlockCore.P2P
         {
             foreach (var node in Globals.Nodes.Values)
             {
-                if(!IsConnected(node))                
+                if(!node.IsConnected)                
                     await RemoveNode(node);
+            }
+        }
+
+        public static async Task DropDisconnectedAdjudicators()
+        {
+            foreach (var node in Globals.AdjNodes.Values)
+            {
+                if (!node.IsConnected)
+                    await RemoveAdjNode(node);
             }
         }
 
@@ -156,8 +142,9 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Hubconnection Connect Methods 1-6
-        private static async Task<bool> Connect(string url)
+        private static async Task Connect(Peers peer)
         {
+            var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
             try
             {
                 var hubConnection = new HubConnectionBuilder()
@@ -206,24 +193,8 @@ namespace ReserveBlockCore.P2P
 
                 await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,8));
                 if (hubConnection.ConnectionId == null)
-                    return false;
+                    return;
 
-                //var startTimer = DateTime.UtcNow;
-                //long remoteNodeHeight = await hubConnection.InvokeAsync<long>("SendBlockHeight");
-                //var endTimer = DateTime.UtcNow;
-                //var totalMS = (endTimer - startTimer).Milliseconds;
-
-                //Globals.Nodes[IPAddress] = new NodeInfo
-                //{
-                //    Connection = hubConnection,
-                //    NodeIP = IPAddress,
-                //    NodeHeight = remoteNodeHeight,
-                //    NodeLastChecked = startTimer,
-                //    NodeLatency = totalMS,
-                //    IsSendingBlock = 0,
-                //    SendingBlockTime = 0,
-                //    TotalDataSent = 0
-                //};
                 Globals.Nodes[IPAddress] = new NodeInfo
                 {
                     Connection = hubConnection,
@@ -239,21 +210,22 @@ namespace ReserveBlockCore.P2P
                 var node = Globals.Nodes[IPAddress];
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);
 
-                return true;
+                ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                peer.IsOutgoing = true;
+                peer.FailCount = 0; //peer responded. Reset fail count
+                Peers.GetAll().UpdateSafe(peer);
             }
             catch { }
-
-            return false;
         }
 
         #endregion
 
         #region Connect Adjudicator
-        public static async Task ConnectAdjudicator(string url, string address, string uName, string signature)
+        public static async Task<bool> ConnectAdjudicator(string url, string address, string uName, string signature)
         {
             try
             {
-                hubAdjConnection1 = new HubConnectionBuilder()
+                var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
                     options.Headers.Add("address", address);
                     options.Headers.Add("uName", uName);
@@ -267,31 +239,29 @@ namespace ReserveBlockCore.P2P
 
                 LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
 
-                var ipAddress = url.Replace("http://", "").Replace("/blockchain", "");
-                hubAdjConnection1.Reconnecting += (sender) =>
+                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
+                hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
-                hubAdjConnection1.Reconnected += (sender) =>
+                hubConnection.Reconnected += (sender) =>
                 {
                     LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
                     return Task.CompletedTask;
                 };
 
-                hubAdjConnection1.Closed += (sender) =>
+                hubConnection.Closed += (sender) =>
                 {
                     LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
                     return Task.CompletedTask;
                 };
-
-                Globals.AdjudicatorConnectDate = DateTime.UtcNow;
-
-                hubAdjConnection1.On<string, string>("GetAdjMessage", async (message, data) => {
+                
+                hubConnection.On<string, string>("GetAdjMessage", async (message, data) => {
                     if (message == "task" || 
                     message == "taskResult" ||
                     message == "fortisPool" || 
@@ -305,17 +275,17 @@ namespace ReserveBlockCore.P2P
                         switch(message)
                         {
                             case "task":
-                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "taskResult":
-                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "sendWinningBlock":
-                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "fortisPool":
                                 if(Globals.Adjudicate == false)
-                                    await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                    await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "status":
                                 Console.WriteLine(data);
@@ -330,13 +300,13 @@ namespace ReserveBlockCore.P2P
                                 }
                                 break;
                             case "tx":
-                                await ValidatorProcessor.ProcessData(message, data, ipAddress);
+                                await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "badBlock":
                                 //do something
                                 break;
                             case "disconnect":
-                                await DisconnectAdjudicator();
+                                await DisconnectAdjudicators();
                                 break;
                             case "terminate":
                                 await ValidatorService.DoMasterNodeStop();
@@ -345,45 +315,42 @@ namespace ReserveBlockCore.P2P
                     }
                 });
 
-                await hubAdjConnection1.StartAsync();
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
+                if (hubConnection.ConnectionId == null)
+                    return false;
 
+                Globals.AdjNodes[IPAddress] = new AdjNodeInfo
+                {
+                    Connection = hubConnection,
+                    IpAddress = IPAddress,
+                    AdjudicatorConnectDate = DateTime.UtcNow
+                };
+
+                return true;
             }
             catch (Exception ex)
             {
                 ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
+
+            return false;
         }
 
         #endregion
 
         #region Disconnect Adjudicator
-        public static async Task DisconnectAdjudicator()
+        public static async Task DisconnectAdjudicators()
         {
             try
             {
                 Globals.ValidatorAddress = "";
-                if (hubAdjConnection1 != null)
-                {
-                    if(IsAdjConnected1)
-                    {
-                        await hubAdjConnection1.StopAsync();
-                        ConsoleWriterService.Output($"Success! Disconnected from Adjudicator on: {DateTime.Now}");
-                        ValidatorLogUtility.Log($"Success! Disconnected from Adjudicator on: {DateTime.Now}", "DisconnectAdjudicator()");
-                    }
-                }
+                foreach (var node in Globals.AdjNodes.Values)
+                    await P2PClient.RemoveAdjNode(node);
             }
             catch (Exception ex)
             {
                 ValidatorLogUtility.Log("Failed! Did not disconnect from Adjudicator: Reason - " + ex.ToString(), "DisconnectAdjudicator()");
             }
-            finally
-            {
-                if (hubAdjConnection1 != null)
-                {
-                    await hubAdjConnection1.DisposeAsync();
-                }
-            }
-            
         }
 
 
@@ -414,87 +381,23 @@ namespace ReserveBlockCore.P2P
                 .OrderBy(x => rnd.Next()))
                 .ToArray();
 
-            while (Globals.Nodes.Count == 0)
+            while (Globals.Nodes.Count == 0 || addMorePeers)
             {
-                var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
-                await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
+                if (Globals.Nodes.Count != 0)
+                    addMorePeers = false;
+                foreach (var peer in newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count))
                 {
                     try
                     {
-                        var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
-                        var conResult = await Connect(url);
-                        if (conResult != false)
-                        {
-                            ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
-                            peer.IsOutgoing = true;
-                            peer.FailCount = 0; //peer responded. Reset fail count
-                            peerDB.UpdateSafe(peer);
-                        }
+                        _ = Connect(peer);
                     }
                     catch (Exception ex)
                     {
                     }
-                });
+                }
             }
 
-            if(addMorePeers)
-            {
-                do
-                {
-                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
-                    if (newPeers.Count() > 0)
-                    {
-                        await Parallel.ForEachAsync(newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count), options, async (peer, ct) =>
-                        {
-                            try
-                            {
-                                var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
-                                var conResult = await Connect(url);
-                                if (conResult != false)
-                                {
-                                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
-                                    peer.IsOutgoing = true;
-                                    peer.FailCount = 0; //peer responded. Reset fail count
-                                    peerDB.UpdateSafe(peer);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                            }
-                        });
-
-                    }
-                    
-                } while (Globals.Nodes.Count == 0);
-            }
-
-            return Globals.MaxPeers != 0;
-
-            //var NodeCount = Globals.Nodes.Count;
-            //foreach (var peer in newPeers)
-            //{
-            //    if (NodeCount == Globals.MaxPeers)
-            //        break;
-
-            //    var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
-            //    var conResult = await Connect(url);
-            //    if (conResult != false)
-            //    {
-            //        NodeCount++;
-            //        ConsoleWriterService.OutputSameLine($"Connected to {NodeCount}/8");
-            //        peer.IsOutgoing = true;
-            //        peer.FailCount = 0; //peer responded. Reset fail count
-            //        peerDB.UpdateSafe(peer);
-            //    }
-            //    else
-            //    {
-            //        //peer.FailCount += 1;
-            //        //peerDB.UpdateSafe(peer);
-            //    }
-            //}
-
-
-            //return NodeCount != 0;
+            return Globals.MaxPeers != 0;         
         }
         public static async Task<bool> PingBackPeer(string peerIP)
         {
@@ -524,13 +427,128 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Winning Task **NEW
+        #region Send Winning Task V3
+
+        public static async Task SendWinningTaskV3(TaskWinner taskWin)
+        {
+            if (taskWin == null || taskWin.WinningBlock.Height != Globals.LastBlock.Height + 1)
+                return;
+
+            await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendWinningTaskV3(x, taskWin)));
+        }
+
+        private static async Task SendWinningTaskV3(AdjNodeInfo node, TaskWinner taskWin)
+        {
+            for (var i = 1; i < 4; i++)
+            {
+                try
+                {
+                    var result = await node.InvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin });
+                    if (result)
+                    {
+                        node.LastWinningTaskError = false;
+                        node.LastWinningTaskSentTime = DateTime.Now;
+                        node.LastWinningTaskBlockHeight = taskWin.WinningBlock.Height;
+                        break;
+                    }
+                    else
+                    {
+                        node.LastWinningTaskError = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    node.LastTaskError = true;
+
+                    ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+
+                    string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskWin != null ?
+                        DateTime.Now.ToString() : "No Time", ex.ToString());
+                    ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                }
+            }
+            if (node.LastTaskError == true)
+            {
+                ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+            }
+        }
+
+        #endregion
+
+        #region Send Task Answer V3
+
+        public static async Task SendTaskAnswerV3(TaskNumberAnswerV3 taskAnswer)
+        {
+            if (taskAnswer == null || taskAnswer.NextBlockHeight != Globals.LastBlock.Height + 1)
+                return;
+
+            await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendTaskAnswerV3(x, taskAnswer)));
+        }
+
+        private static async Task SendTaskAnswerV3(AdjNodeInfo node, TaskNumberAnswerV3 taskAnswer)
+        {
+            Random rand = new Random();
+            int randNum = (rand.Next(1, 7) * 1000);
+            for (var i = 1; i < 4; i++)
+            {
+                if (i != 1)
+                {
+                    await Task.Delay(1500); // if failed after first attempt waits 1 seconds then tries again.
+                }
+                else
+                {
+                    await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
+                }
+                try
+                {
+                    var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer });
+                    if (result != null)
+                    {
+                        if (result.AnswerAccepted)
+                        {
+                            node.LastTaskError = false;
+                            node.LastTaskSentTime = DateTime.Now;
+                            node.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                            node.LastTaskErrorCount = 0;
+                            break;
+                        }
+                        else
+                        {
+                            var errorCodeDesc = await TaskAnswerCodeUtility.TaskAnswerCodeReason(result.AnswerCode);
+                            ConsoleWriterService.Output($"Task was not accpeted: Error Code: {result.AnswerCode} - Reason: {errorCodeDesc} Attempt: {i}/3.");
+                            ValidatorLogUtility.Log($"Task Answer was not accepted. Error Code: {result.AnswerCode} - Reason: {errorCodeDesc}", "P2PClient.SendTaskAnswer_New()");
+                            node.LastTaskError = true;
+   
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    node.LastTaskError = true;
+
+                    ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
+
+                    string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
+                        taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
+                    ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
+                }
+            }
+
+            if (node.LastTaskError == true)
+            {
+                node.LastTaskErrorCount += 1;
+                ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
+            }
+        }
+
+        #endregion
+
+        #region Send Winning Task V2
 
         public static async Task SendWinningTask_New(TaskWinner taskWin)
         {
-            var adjudicatorConnected = IsAdjConnected1;
-   
-            if (adjudicatorConnected)
+            var hubAdjConnection1 = Globals.AdjNodes.Values.Where(x => x.IsConnected).FirstOrDefault();
+            if (hubAdjConnection1 != null)
             {
                 for (var i = 1; i < 4; i++)
                 {
@@ -548,17 +566,17 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await AdjInvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin });
+                                    var result = await hubAdjConnection1.InvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin });
                                     if (result)
                                     {
-                                        Globals.LastWinningTaskError = false;
-                                        Globals.LastWinningTaskSentTime = DateTime.Now;
-                                        Globals.LastWinningTaskBlockHeight = taskWin.WinningBlock.Height;
+                                        hubAdjConnection1.LastWinningTaskError = false;
+                                        hubAdjConnection1.LastWinningTaskSentTime = DateTime.Now;
+                                        hubAdjConnection1.LastWinningTaskBlockHeight = taskWin.WinningBlock.Height;
                                         break;
                                     }
                                     else
                                     {
-                                        Globals.LastWinningTaskError = true;
+                                        hubAdjConnection1.LastWinningTaskError = true;
                                     }
                                 }
                             }
@@ -566,7 +584,7 @@ namespace ReserveBlockCore.P2P
                     }
                     catch (Exception ex)
                     {
-                        Globals.LastTaskError = true;
+                        hubAdjConnection1.LastTaskError = true;
 
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
@@ -576,7 +594,7 @@ namespace ReserveBlockCore.P2P
                     }
                 }
 
-                if (Globals.LastTaskError == true)
+                if (hubAdjConnection1.LastTaskError == true)
                 {
                     ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
                 }
@@ -586,14 +604,15 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Task Answer **NEW
-        public static async Task SendTaskAnswer_New(TaskNumberAnswer taskAnswer)
+        #region Send Task Answer V2
+
+        public static async Task SendTaskAnswer_New(TaskNumberAnswerV2 taskAnswer)
         {
-            var adjudicatorConnected = IsAdjConnected1;
+            var hubAdjConnection1 = Globals.AdjNodes.Values.Where(x => x.IsConnected).FirstOrDefault();
             Random rand = new Random();
             int randNum = (rand.Next(1, 7) * 1000);
 
-            if (adjudicatorConnected)
+            if (hubAdjConnection1 != null)
             {
                 for (var i = 1; i < 4; i++)
                 {
@@ -614,15 +633,15 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {
 
-                                    var result = await AdjInvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer });
-                                    if(result != null)
+                                    var result = await hubAdjConnection1.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer });
+                                    if (result != null)
                                     {
                                         if (result.AnswerAccepted)
                                         {
-                                            Globals.LastTaskError = false;
-                                            Globals.LastTaskSentTime = DateTime.Now;
-                                            Globals.LastSentBlockHeight = taskAnswer.NextBlockHeight;
-                                            Globals.LastTaskErrorCount = 0;
+                                            hubAdjConnection1.LastTaskError = false;
+                                            hubAdjConnection1.LastTaskSentTime = DateTime.Now;
+                                            hubAdjConnection1.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                                            hubAdjConnection1.LastTaskErrorCount = 0;
                                             break;
                                         }
                                         else
@@ -630,20 +649,20 @@ namespace ReserveBlockCore.P2P
                                             var errorCodeDesc = await TaskAnswerCodeUtility.TaskAnswerCodeReason(result.AnswerCode);
                                             ConsoleWriterService.Output($"Task was not accpeted: Error Code: {result.AnswerCode} - Reason: {errorCodeDesc} Attempt: {i}/3.");
                                             ValidatorLogUtility.Log($"Task Answer was not accepted. Error Code: {result.AnswerCode} - Reason: {errorCodeDesc}", "P2PClient.SendTaskAnswer_New()");
-                                            Globals.LastTaskError = true;
+                                            hubAdjConnection1.LastTaskError = true;
                                         }
                                     }
                                 }
                             }
                             else
                             {
-                                Globals.LastTaskError = true;
+                                hubAdjConnection1.LastTaskError = true;
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Globals.LastTaskError = true;
+                        hubAdjConnection1.LastTaskError = true;
 
                         ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
@@ -653,85 +672,11 @@ namespace ReserveBlockCore.P2P
                     }
                 }
 
-                if (Globals.LastTaskError == true)
+                if (hubAdjConnection1.LastTaskError == true)
                 {
-                    Globals.LastTaskErrorCount += 1;
+                    hubAdjConnection1.LastTaskErrorCount += 1;
                     ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer()");
                 }
-
-            }
-        }
-
-        #endregion
-
-        #region Send Task Answer **Deprecated
-        public static async Task SendTaskAnswer_Deprecated(TaskAnswer taskAnswer)
-        {
-            var adjudicatorConnected = IsAdjConnected1;
-            Random rand = new Random();
-            int randNum = (rand.Next(1, 7) * 1000);
-            
-
-            if(adjudicatorConnected)
-            {
-                for(var i = 1; i < 4; i++)
-                {
-                    if(i == 1)
-                    {
-                        //wait random amount between 1-7 to not overload network all at once.
-                        //Speed does not matter for adj. 
-                        await Task.Delay(randNum);
-                    }
-                    else
-                    {
-                        await Task.Delay(1000);
-                        
-                    }
-                    try
-                    {
-                        if(taskAnswer != null)
-                        {
-                            if (taskAnswer.Block.Height == Globals.LastBlock.Height + 1)
-                            {
-                                if (hubAdjConnection1 != null)
-                                {
-                                    
-                                    var result = await AdjInvokeAsync<bool>("ReceiveTaskAnswer", args: new object?[] { taskAnswer });
-                                    if (result)
-                                    {
-                                        Globals.LastTaskError = false;
-                                        Globals.LastTaskSentTime = DateTime.Now;
-                                        Globals.LastSentBlockHeight = taskAnswer.Block.Height;
-                                        Globals.LastTaskErrorCount = 0;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        
-                                        Globals.LastTaskErrorCount += 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Globals.LastTaskErrorCount += 1;
-
-                        ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer_Deprecated()");
-
-                        string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                            taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
-                        ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer_Deprecated(TaskAnswer taskAnswer)");
-                    }
-                }
-
-                if(Globals.LastTaskError == true)
-                {
-                    Globals.LastTaskErrorCount += 1;
-                    ValidatorLogUtility.Log("Failed to send or receive back from Adjudicator 4 times. Please verify node integrity and crafted blocks.", "P2PClient.SendTaskAnswer_Deprecated()");
-                }
-
             }
         }
 
@@ -740,85 +685,26 @@ namespace ReserveBlockCore.P2P
         #region Send TX To Adjudicators
         public static async Task SendTXToAdjudicator(Transaction tx)
         {
-            var adjudicatorConnected = IsAdjConnected1;
-            if (adjudicatorConnected == true && hubAdjConnection1 != null)
+            if (Globals.Adjudicate)
+                return;
+
+            var SuccessNodes = new HashSet<string>();
+            while (SuccessNodes.Count < 2)
             {
-                try
+                foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address)))
                 {
-                    if(!Globals.Adjudicate)
+                    try
                     {
-                        var result = await AdjInvokeAsync<bool>("ReceiveTX", args: new object?[] { tx });
+                        if (await node.InvokeAsync<bool>("ReceiveTX", args: new object?[] { tx }))
+                            SuccessNodes.Add(node.Address);
+                    }
+                    catch (Exception ex)
+                    {
+
                     }
                 }
-                catch (Exception ex)
-                {
 
-                }
-            }
-            else
-            {
-                //temporary connection to an adj to send transaction to get broadcasted to global pool
-                if(!Globals.Adjudicate)
-                    SendTXToAdj(tx);
-            }
-
-            var adjudicator2Connected = IsAdjConnected2;
-            if (adjudicator2Connected == true && hubAdjConnection2 != null)
-            {
-                try
-                {
-                    var result = await hubAdjConnection2.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { tx });
-                }
-                catch (Exception ex)
-                {
-
-                }
-            }
-            else
-            {
-                //temporary connection to an adj to send transaction to get broadcasted to global pool
-                if (!Globals.Adjudicate)
-                    SendTXToAdj(tx);
-            }
-        }
-
-
-        //This method will need to eventually be modified when the adj is a multi-pool and not a singular-pool
-        private static async void SendTXToAdj(Transaction trx)
-        {
-            try
-            {
-                var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
-                if (adjudicator != null && Globals.Adjudicate == false)
-                {
-                    var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
-                    var _tempHubConnection = new HubConnectionBuilder().WithUrl(url).Build();
-                    var alive = _tempHubConnection.StartAsync();
-                    var response = await _tempHubConnection.InvokeCoreAsync<bool>("ReceiveTX", args: new object?[] { trx });
-                    if(response != true)
-                    {
-                        var errorMsg = string.Format("Failed to send TX to Adjudicator.");
-                        ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - try");
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
-                        {
-                            await _tempHubConnection.DisposeAsync();
-                        }
-                    }
-                    else
-                    {
-                        try { await _tempHubConnection.StopAsync(); }
-                        finally
-                        {
-                            await _tempHubConnection.DisposeAsync();
-                        }
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                var errorMsg = string.Format("Failed to send TX to Adjudicator. Error Message : {0}", ex.ToString());
-                ErrorLogUtility.LogError(errorMsg, "P2PClient.SendTXToAdj(Transaction trx) - catch");
+                await StartupService.ConnectoToAdjudicators();
             }
         }
 

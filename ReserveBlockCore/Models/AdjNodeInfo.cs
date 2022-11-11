@@ -7,28 +7,24 @@ using System.Threading.Tasks;
 
 namespace ReserveBlockCore.Models
 {
-    public class NodeInfo
+    public class AdjNodeInfo
     {
         public HubConnection Connection;
-        public string NodeIP { get; set; } 
-        public long NodeHeight { get; set; }
-        public int NodeLatency { get; set; }
-        public DateTime? NodeLastChecked { get; set; }
-
-        public int IsSendingBlock;
-        
-        public long SendingBlockTime;
-        
-        public long TotalDataSent;
-
-        public long PreviousReceiveTime;
-
-        public long SecondPreviousReceiveTime;
+        public string Address { get; set; }
+        public string IpAddress { get; set; }
+        public bool LastWinningTaskError { get; set; }
+        public DateTime LastWinningTaskSentTime { get; set; }
+        public long LastWinningTaskBlockHeight { get; set; }
+        public long LastSentBlockHeight { get; set; }        
+        public DateTime? AdjudicatorConnectDate { get; set; }
+        public DateTime? LastTaskSentTime { get; set; }        
+        public DateTime? LastTaskResultTime { get; set; }
+        public long LastTaskBlockHeight { get; set; }
+        public bool LastTaskError { get; set; }
+        public int LastTaskErrorCount { get; set; }        
 
         public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
-
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
-
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
             await APILock.WaitAsync();

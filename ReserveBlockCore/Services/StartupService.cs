@@ -48,76 +48,73 @@ namespace ReserveBlockCore.Services
         //Only needed for bootstrapping
         internal static async Task ConnectToSinglePeer()
         {
-            if(Globals.BlockLock >= Globals.LastBlock.Height)
+            var url = @"http://127.0.0.1:" + Globals.Port + "/blockchain";
+            try
             {
-                var url = @"http://127.0.0.1:" + Globals.Port + "/blockchain";
-                try
-                {
-                    var hubConnection = new HubConnectionBuilder()
-                           .WithUrl(url, options =>
-                           {
-
-                           })
-                           .WithAutomaticReconnect()
-                           .Build();
-
-                    var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
-                    hubConnection.On<string, string>("GetMessage", async (message, data) =>
-                    {
-                        if (message == "blk" || message == "IP")
+                var hubConnection = new HubConnectionBuilder()
+                        .WithUrl(url, options =>
                         {
-                            if (data?.Length > 1179648)
-                                return;
 
-                            if (Globals.Nodes.TryGetValue(IPAddress, out var node))
-                            {
-                                var now = TimeUtil.GetMillisecondTime();
-                                var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                                if (now - prevPrevTime < 5000)
-                                {
-                                    Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");
-                                    return;
-                                }
-                                Interlocked.Exchange(ref node.PreviousReceiveTime, now);
-                            }
-                            // if someone calls in more often than 2 times in 15 seconds ban them
+                        })
+                        .WithAutomaticReconnect()
+                        .Build();
 
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data, IPAddress);
-                            }
-                            else
-                            {
-                                var IP = data.ToString();
-                                if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
-                                    Globals.ReportedIPs[IP]++;
-                                else
-                                    Globals.ReportedIPs[IP] = 1;
-                            }
-                        }
-                    });
-
-                    await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
-
-                    Globals.Nodes[IPAddress] = new NodeInfo
+                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
+                hubConnection.On<string, string>("GetMessage", async (message, data) =>
+                {
+                    if (message == "blk" || message == "IP")
                     {
-                        Connection = hubConnection,
-                        NodeIP = IPAddress,
-                        NodeHeight = 0,
-                        NodeLastChecked = null,
-                        NodeLatency = 0,
-                        IsSendingBlock = 0,
-                        SendingBlockTime = 0,
-                        TotalDataSent = 0
-                    };
+                        if (data?.Length > 1179648)
+                            return;
 
-                    var node = Globals.Nodes[IPAddress];
-                    (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
+                        if (Globals.Nodes.TryGetValue(IPAddress, out var node))
+                        {
+                            var now = TimeUtil.GetMillisecondTime();
+                            var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
+                            if (now - prevPrevTime < 5000)
+                            {
+                                Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");
+                                return;
+                            }
+                            Interlocked.Exchange(ref node.PreviousReceiveTime, now);
+                        }
+                        // if someone calls in more often than 2 times in 15 seconds ban them
+
+                        if (message != "IP")
+                        {
+                            await NodeDataProcessor.ProcessData(message, data, IPAddress);
+                        }
+                        else
+                        {
+                            var IP = data.ToString();
+                            if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
+                                Globals.ReportedIPs[IP]++;
+                            else
+                                Globals.ReportedIPs[IP] = 1;
+                        }
+                    }
+                });
+
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
+
+                Globals.Nodes[IPAddress] = new NodeInfo
+                {
+                    Connection = hubConnection,
+                    NodeIP = IPAddress,
+                    NodeHeight = 0,
+                    NodeLastChecked = null,
+                    NodeLatency = 0,
+                    IsSendingBlock = 0,
+                    SendingBlockTime = 0,
+                    TotalDataSent = 0
+                };
+
+                var node = Globals.Nodes[IPAddress];
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
 
                     
-                }
-                catch { }
             }
+            catch { }
         }
         internal static void ClearValidatorDups()
         {
@@ -196,12 +193,6 @@ namespace ReserveBlockCore.Services
             {
                 Globals.LastBlock = BlockchainData.GetLastBlock();
             }
-        }
-
-        internal static async void RunStateSync()
-        {
-            if(Globals.LastBlock.Height < Globals.BlockLock && !Globals.Adjudicate)
-                await StateTreiSyncService.SyncAccountStateTrei();
         }
         internal static void RunRules()
         {
@@ -455,7 +446,7 @@ namespace ReserveBlockCore.Services
             Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
-        public static async Task ConnectoToAdjudicator()
+        public static async Task ConnectoToAdjudicators()
         {
             if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
             {
@@ -472,17 +463,22 @@ namespace ReserveBlockCore.Services
 
                     var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
 
-                    var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
-                    if(adjudicator != null)
+                    var rnd = new Random();
+                    var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
+                    var adjudicators = Adjudicators.AdjudicatorData.GetAdjudicators()
+                        .Where(x => !CurrentAddresses.Contains(x.Address))
+                        .OrderBy(x => rnd.Next())
+                        .Take(2 - CurrentAddresses.Count)
+                        .ToArray();
+                                        
+                    foreach (var adjudicator in adjudicators)
                     {
                         var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
                         await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
                     }
-                    else
-                    {
+
+                    if(!adjudicators.Any())
                         Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
-                    }
-                    
                 }
 
             }

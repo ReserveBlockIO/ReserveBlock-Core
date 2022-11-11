@@ -34,29 +34,24 @@ namespace ReserveBlockCore.Models
 
             }
 
-            public static Adjudicators? GetLeadAdjudicator()
+            public static Adjudicators GetLeadAdjudicator()
             {
                 var adjudicators = GetAll();
-                if (adjudicators.Count() > 0)
-                {
-                    if (Globals.IsTestNet == true)
-                    {
-                        var leaderTest = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true && x.Address.StartsWith("x"));
-                        if(leaderTest != null)
-                        {
-                            return leaderTest;
-                        }
-                    }
+                if (Globals.IsTestNet == true)
+                    return adjudicators.FindOne(x => x.IsLeadAdjuidcator && x.Address.StartsWith("x"));
+
+
+                return adjudicators.FindOne(x => x.IsLeadAdjuidcator);
+            }
+
+            public static Adjudicators[] GetAdjudicators()
+            {
+                var adjudicators = GetAll();
+                if (Globals.IsTestNet == true)                
+                    return adjudicators.Find(x => x.Address.StartsWith("x")).ToArray();
                 
-                    var leader = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
 
-                    if(leader != null)
-                    {
-                        return leader;
-                    }
-                }
-
-                return null;
+                return adjudicators.FindAll().ToArray();
             }
 
             public static Guid GetAdjudicatorKey()
