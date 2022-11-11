@@ -34,7 +34,12 @@ namespace ReserveBlockCore.Extensions
                 }
             }
         }
-        
+
+        public static void AsParamater<T>(this T obj, Action<T> action)
+        {
+            action(obj);
+        }
+
         public static SecureString ToSecureString(this string source)
         {
             var secureStr = new SecureString();

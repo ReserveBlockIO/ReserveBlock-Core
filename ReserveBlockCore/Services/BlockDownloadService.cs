@@ -29,14 +29,12 @@ namespace ReserveBlockCore.Services
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Globals.LastBlock.Height + 1;
-
-                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                    
                     var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i)).ToArray();
                     heightToDownload += heightsFromNodes.Length;
-                    await Parallel.ForEachAsync(heightsFromNodes, options, async (h, ct) => {
+                    foreach (var h in heightsFromNodes)
                         taskDict[h.height] = (P2PClient.GetBlock(h.height, h.node), h.node.NodeIP);
-                    });
-            
+
                     while (taskDict.Any())
                     {                        
                         var completedTask = await Task.WhenAny(taskDict.Values.Select(x => x.task));

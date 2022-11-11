@@ -8,14 +8,12 @@ namespace ReserveBlockCore.Utilities
     {
         public static int GetBlockVersion(long height)
         {
-            int blockVersion = 1;
-
-            if(height > Globals.BlockLock)
-            {
-                blockVersion = 2;
-            }
-
-            return blockVersion;
+            if (height > Globals.BlockLock)
+                return 3;
+            else if (height > 294000)
+                return 2;
+            
+            return 1;                        
         }
 
         public static async Task<bool> Version2Rules(Block block)

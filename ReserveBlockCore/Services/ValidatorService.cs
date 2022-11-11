@@ -3,6 +3,9 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
+using System.Numerics;
+using ReserveBlockCore.EllipticCurve;
+using System.Globalization;
 
 namespace ReserveBlockCore.Services
 {
@@ -101,6 +104,19 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex) { }
         }
+
+        public static string ValidatorSignature(string message)
+        {
+            var validatorAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+            
+            return SignatureService.CreateSignature(message, privateKey, validatorAccount.PublicKey);
+        }
+
         public static async Task<string> StartValidating(Account account, string uName = "")
         {
             string output = "";
@@ -191,7 +207,7 @@ namespace ReserveBlockCore.Services
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                        await StartupService.ConnectoToAdjudicator();
+                        await StartupService.ConnectoToAdjudicators();
                     }
                 }
                 else
@@ -222,7 +238,7 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
                 Console.WriteLine("Validator database records have been reset.");
             }
             catch (Exception ex)
@@ -237,14 +253,14 @@ namespace ReserveBlockCore.Services
             //Disconnect from adj
             try
             {
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
                 Thread.Sleep(2000);
                 //Reset validator variable.
                 StartupService.SetValidator();
                 //Reconnect
-                await StartupService.ConnectoToAdjudicator();
+                await StartupService.ConnectoToAdjudicators();
 
                 return true;
             }
@@ -298,7 +314,7 @@ namespace ReserveBlockCore.Services
             var validators = Validators.Validator.GetAll();
             validators.Delete(validator.Id);
 
-            await P2PClient.DisconnectAdjudicator();
+            await P2PClient.DisconnectAdjudicators();
 
             ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
@@ -329,7 +345,7 @@ namespace ReserveBlockCore.Services
 
                     Globals.ValidatorAddress = "";
 
-                    await P2PClient.DisconnectAdjudicator();
+                    await P2PClient.DisconnectAdjudicators();
                 }
 
             }

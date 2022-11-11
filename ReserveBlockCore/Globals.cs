@@ -11,9 +11,15 @@ namespace ReserveBlockCore
     {
         static Globals()
         {
-            //var peerDb = Peers.GetAll();
-            //BannedIPs = new ConcurrentDictionary<string, bool>(
-            //    peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+            LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
+            ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>
+            {
+                [""] = new ConsensusNodeInfo { Address = "" },
+                [""] = new ConsensusNodeInfo { Address = "" },
+                [""] = new ConsensusNodeInfo { Address = "" },
+                [""] = new ConsensusNodeInfo { Address = "" },
+                [""] = new ConsensusNodeInfo { Address = "" },
+            };
         }
 
         #region Timers
@@ -29,6 +35,8 @@ namespace ReserveBlockCore
         #region Global General Variables
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
 
+        public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address
+        public static ConcurrentDictionary<string, ConsensusNodeInfo> ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>(); // IP Address        
         public static Block LastBlock = new Block { Height = -1 };
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
@@ -110,16 +118,6 @@ namespace ReserveBlockCore
         public const int MaxPeers = 8;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, bool> BannedIPs;
-        public static long LastSentBlockHeight = -1;
-        public static DateTime? AdjudicatorConnectDate = null;
-        public static DateTime? LastTaskSentTime = null;
-        public static DateTime? LastWinningTaskSentTime = null;
-        public static DateTime? LastTaskResultTime = null;
-        public static long LastTaskBlockHeight = 0;
-        public static bool LastTaskError = false;
-        public static int LastTaskErrorCount = 0;
-        public static bool LastWinningTaskError = false;
-        public static long LastWinningTaskBlockHeight = 0;
         public static CancellationTokenSource source = new CancellationTokenSource(10000);
 
         #endregion
@@ -134,22 +132,22 @@ namespace ReserveBlockCore
         #endregion
 
         #region P2P Adj Server Variables
-
-        public static ConcurrentMultiDictionary<string, string, FortisPool> FortisPool = new ConcurrentMultiDictionary<string, string, FortisPool>(); // IP address, RBX address
+        
+        public static ConcurrentMultiDictionary<string, string, FortisPool> FortisPool = new ConcurrentMultiDictionary<string, string, FortisPool>(); // IP address, RBX address        
         public static ConcurrentMultiDictionary<string, string, BeaconPool> BeaconPool = new ConcurrentMultiDictionary<string, string, BeaconPool>(); // IP address, Reference
         public static ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue> ConnectionHistoryDict = new ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue>();
         public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
 
         public static TaskQuestion? CurrentTaskQuestion = null;
-        public static TaskNumberAnswer? CurrentTaskNumberAnswer = null;
+        public static TaskNumberAnswerV2? CurrentTaskNumberAnswer = null;
         public static string VerifySecret = "";
 
         public static ConcurrentDictionary<string, TaskWinner> TaskWinnerDict = new ConcurrentDictionary<string, TaskWinner>(); // RBX address
-        public static ConcurrentDictionary<string, TaskNumberAnswer> TaskSelectedNumbers = new ConcurrentDictionary<string, TaskNumberAnswer>(); // RBX address
-        public static ConcurrentDictionary<string, TaskAnswer> TaskAnswerDict = new ConcurrentDictionary<string, TaskAnswer>(); // RBX address
-        public static ConcurrentDictionary<string, TaskNumberAnswer> TaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswer>(); // RBX address
-        public static ConcurrentDictionary<string, TaskAnswer> RejectedTaskAnswerDict = new ConcurrentDictionary<string, TaskAnswer>(); // RBX address
-        public static ConcurrentDictionary<string, TaskNumberAnswer> RejectedTaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswer>(); // RBX address
+        public static ConcurrentDictionary<string, TaskNumberAnswerV2> TaskSelectedNumbersV2 = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
+        public static ConcurrentDictionary<string, TaskNumberAnswerV3> TaskSelectedNumbersV3 = new ConcurrentDictionary<string, TaskNumberAnswerV3>(); // RBX address        
+        public static ConcurrentDictionary<string, TaskNumberAnswerV2> TaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
+        public static ConcurrentDictionary<string, TaskNumberAnswerV3> TaskAnswerDictV3 = new ConcurrentDictionary<string, TaskNumberAnswerV3>(); // RBX address        
+        public static ConcurrentDictionary<string, TaskNumberAnswerV2> RejectedTaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
         public static ConcurrentDictionary<string, Transaction> BroadcastedTrxDict = new ConcurrentDictionary<string, Transaction>(); // Hash
 
         #endregion

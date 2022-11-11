@@ -4,7 +4,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class TaskQuestionUtility
     {
-        public static async Task<TaskQuestion> CreateTaskQuestion(string type)
+        public static async Task<TaskQuestion> CreateTaskQuestion(string type, long height)
         {
             TaskQuestion taskQuestion = new TaskQuestion();
 
@@ -13,7 +13,7 @@ namespace ReserveBlockCore.Utilities
                 switch (type)
                 {
                     case "rndNum":
-                        taskQuestion.TaskAnswer = GenerateRandomNumber().ToString();
+                        taskQuestion.TaskAnswer = GenerateRandomNumber(height).ToString();
                         taskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
                         break;
                     case "pickCol":
@@ -29,12 +29,14 @@ namespace ReserveBlockCore.Utilities
             return taskQuestion;
         }
 
-        public static int GenerateRandomNumber()
+        public static int GenerateRandomNumber(long height)
         {
             int randomNumber = 0;
             Random rnd = new Random();
-
-            randomNumber = rnd.Next(1, 1000000);
+            if (height >= Globals.BlockLock)
+                randomNumber = rnd.Next();
+            else
+                randomNumber = rnd.Next(1, 1000000);
 
             return randomNumber;
         }

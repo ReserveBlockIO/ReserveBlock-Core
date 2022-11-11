@@ -16,6 +16,8 @@ namespace ReserveBlockCore.Nodes
             {
                 return;
             }
+
+            Globals.AdjNodes.TryGetValue(ipAddress, out var node);
             if (Globals.StopAllTimers == false && Globals.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
             {
                 if(message == "task")
@@ -26,12 +28,11 @@ namespace ReserveBlockCore.Nodes
                         case "rndNum":
                             if(Globals.LastBlock.Height >= Globals.BlockLock)
                             {
-                                RandomNumberTask_New(taskQuestion.BlockHeight);
-                                
+                                RandomNumberTaskV3(taskQuestion.BlockHeight);
                             }
                             else
                             {
-                                RandomNumberTask_Deprecated(taskQuestion.BlockHeight);
+                                RandomNumberTask_New(taskQuestion.BlockHeight);                                
                             }
                             break;
                     }
@@ -52,12 +53,15 @@ namespace ReserveBlockCore.Nodes
                             taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
                             taskWin.Address = currentTaskAns.Address;
                             taskWin.WinningBlock = block;
-                            await P2PClient.SendWinningTask_New(taskWin);
+                            if (block.Height >= Globals.BlockLock)
+                                await P2PClient.SendWinningTaskV3(taskWin);
+                            else
+                                await P2PClient.SendWinningTask_New(taskWin);
                         }
                         else
                         {
                             ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.ProcessData() - sendWinningBlock");
-                            Globals.LastTaskError = true;
+                            node?.AsParamater(x => x.LastTaskError = true);
                         }
                     }
                 }
@@ -65,7 +69,7 @@ namespace ReserveBlockCore.Nodes
                 if(message == "taskResult")
                 {
                     await BlockValidatorService.ValidationDelay();
-                    Globals.LastTaskResultTime = DateTime.Now;
+                    node?.AsParamater(x => x.LastTaskResultTime = DateTime.Now);
                     var nextBlock = JsonConvert.DeserializeObject<Block>(data);
                     var nextHeight = Globals.LastBlock.Height + 1;
                     var currentHeight = nextBlock.Height;
@@ -189,6 +193,24 @@ namespace ReserveBlockCore.Nodes
             }            
         }
 
+        private static async void RandomNumberTaskV3(long blockHeight)
+        {
+            var nextBlock = Globals.LastBlock.Height + 1;
+            if (nextBlock != blockHeight)
+            {
+                //download blocks
+                await BlockDownloadService.GetAllBlocks();
+            }
+
+            var taskAnswer = new TaskNumberAnswerV3();
+            var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);            
+            taskAnswer.Answer = num.ToString();
+            taskAnswer.SubmitTime = DateTime.Now;
+            taskAnswer.NextBlockHeight = blockHeight;
+            taskAnswer.Signature = ValidatorService.ValidatorSignature(blockHeight + ":" + num);
+            await P2PClient.SendTaskAnswerV3(taskAnswer);
+        }
+
         private static async void RandomNumberTask_New(long blockHeight)
         {
             var nextBlock = Globals.LastBlock.Height + 1;
@@ -198,8 +220,8 @@ namespace ReserveBlockCore.Nodes
                 await BlockDownloadService.GetAllBlocks();
             }
 
-            var taskAnswer = new TaskNumberAnswer();
-            var num = TaskQuestionUtility.GenerateRandomNumber();            
+            var taskAnswer = new TaskNumberAnswerV2();
+            var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);            
             taskAnswer.Address = Globals.ValidatorAddress;
             taskAnswer.Answer = num.ToString();
             taskAnswer.SubmitTime = DateTime.Now;
@@ -209,37 +231,6 @@ namespace ReserveBlockCore.Nodes
 
             await P2PClient.SendTaskAnswer_New(taskAnswer);
 
-            Globals.LastTaskBlockHeight = blockHeight;
-
         }
-
-        private static async void RandomNumberTask_Deprecated(long blockHeight) 
-        {
-            var nextBlock = Globals.LastBlock.Height + 1;
-            if(nextBlock != blockHeight)
-            {
-                //download blocks
-                await BlockDownloadService.GetAllBlocks();
-            }
-
-            var taskAnswer = new TaskAnswer();
-            var num = TaskQuestionUtility.GenerateRandomNumber();            
-            taskAnswer.Address = Globals.ValidatorAddress;
-            taskAnswer.Answer = num.ToString();
-            var block = await BlockchainData.CraftNewBlock(Globals.ValidatorAddress, num.ToString());
-            if(block != null)
-            {
-                taskAnswer.Block = block;
-                await P2PClient.SendTaskAnswer_Deprecated(taskAnswer);
-            }
-            else
-            {
-                ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.RandomNumberTask_Deprecated()");
-                Globals.LastTaskError = true;
-            }
-
-        }
-        
-
     }
 }

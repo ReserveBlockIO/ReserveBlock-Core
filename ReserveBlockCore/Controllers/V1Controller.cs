@@ -375,7 +375,7 @@ namespace ReserveBlockCore.Controllers
                             account.IsValidating = true;
                             accounts.UpdateSafe(account);
                             Globals.ValidatorAddress = account.Address;
-                            await StartupService.ConnectoToAdjudicator();
+                            await StartupService.ConnectoToAdjudicators();
                             output = "Success! The requested account has been turned on: " + account.Address;
                         }
                     }
@@ -773,22 +773,6 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetTaskAnswersList")]
-        public async Task<string> GetTaskAnswersList()
-        {
-            string output = "";
-            var taskAnswerList = Globals.TaskAnswerDict.Values.Select(x => new {
-                Address = x.Address,
-                Answer = x.Answer,
-                BlockHeight = x.Block != null ? x.Block.Height : 0,
-                SubmitTime = x.SubmitTime
-                
-            });
-            output = JsonConvert.SerializeObject(taskAnswerList);
-
-            return output;
-        }
-
         [HttpGet("GetTaskAnswersListNew")]
         public async Task<string> GetTaskAnswersListNew()
         {
@@ -851,8 +835,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetValidatorPoolInfo()
         {
             string output = "";
-            var isConnected = P2PClient.IsAdjConnected1;
-            DateTime? connectDate = Globals.AdjudicatorConnectDate != null ? Globals.AdjudicatorConnectDate.Value : null;
+            var isConnected = Globals.AdjNodes.Values.Any(x => x.IsConnected);
+            DateTime? connectDate = Globals.AdjNodes.Values.Select(x => x.AdjudicatorConnectDate).FirstOrDefault();
 
             var connectedInfo = new[]
             {

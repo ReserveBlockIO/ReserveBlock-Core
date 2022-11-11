@@ -97,9 +97,9 @@ namespace ReserveBlockCore.P2P
                     lastArea = "T";
                     conQueue.WasSuccess = true;
                     await SendAdjMessageSingle("status", "Connected");
-                    Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                    ConsoleWriterService.Output("Task Created");
                     var taskQuest = Globals.CurrentTaskQuestion;
+                    Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum", taskQuest.BlockHeight);
+                    ConsoleWriterService.Output("Task Created");                    
                     TaskQuestion nTaskQuestion = new TaskQuestion();
                     nTaskQuestion.TaskType = taskQuest.TaskType;
                     nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
@@ -205,13 +205,13 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Rand Num and Task Answer **NEW
-        public async Task<TaskAnswerResult> ReceiveTaskAnswer_New(TaskNumberAnswer taskResult)
+        #region Receive Rand Num and Task Answer V3
+        public async Task<TaskAnswerResult> ReceiveTaskAnswerV3(TaskNumberAnswerV3 taskResult)
         {
             TaskAnswerResult taskAnsRes = new TaskAnswerResult();
             try
             {
-                if(taskResult != null)
+                if (taskResult != null)
                 {
                     var answerSize = JsonConvert.SerializeObject(taskResult).Length;
                     if (answerSize > 1048576)
@@ -231,13 +231,19 @@ namespace ReserveBlockCore.P2P
                                 var fortisPool = Globals.FortisPool.Values;
                                 if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                 {
-                                    (taskResult.Address, _) = Out;
+                                    (var Address, _) = Out;
                                     if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
-                                    {                                                                                
-                                        if (!Globals.TaskAnswerDict_New.TryGetValue(taskResult.Address, out var Answer))
+                                    {
+                                        taskResult.SubmitTime = DateTime.Now;
+
+                                        if (!SignatureService.VerifySignature(Address, taskResult.NextBlockHeight + ":" + taskResult.Answer, taskResult.Signature))
+                                        {                                            
+                                            taskAnsRes.AnswerCode = 6;
+                                            return taskAnsRes;
+                                        }
+
+                                        if (!Globals.TaskAnswerDictV3.TryAdd(Address, taskResult))
                                         {
-                                            taskResult.SubmitTime = DateTime.Now;
-                                            Globals.TaskAnswerDict_New[taskResult.Address] = taskResult;
                                             taskAnsRes.AnswerAccepted = true;
                                             taskAnsRes.AnswerCode = 0;
                                             return taskAnsRes;
@@ -265,7 +271,7 @@ namespace ReserveBlockCore.P2P
 
                 return taskAnsRes;
             }
-            catch(Exception ex) 
+            catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswer_New()");
             }
@@ -275,7 +281,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Winning Task Block Answer **NEW
+        #region Receive Winning Task Block Answer V2 and V3
         public async Task<bool> ReceiveWinningTaskBlock(TaskWinner winningTask)
         {
             try
@@ -298,7 +304,7 @@ namespace ReserveBlockCore.P2P
                                     if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                     {
                                         (winningTask.Address, _) = Out;                                        
-                                        if (Globals.TaskSelectedNumbers.TryGetValue(winningTask.Address, out var Winner))
+                                        if (Globals.TaskSelectedNumbersV2.TryGetValue(winningTask.Address, out var Winner))
                                         {
                                             if (winningTask.WinningBlock.Height == Globals.LastBlock.Height + 1 &&
                                         winningTask.VerifySecret == Globals.VerifySecret)
@@ -335,68 +341,77 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Block and Task Answer **Deprecated
-        public async Task<bool> ReceiveTaskAnswer(TaskAnswer taskResult)
+        #region Receive Block and Task Answer V2
+
+        public async Task<TaskAnswerResult> ReceiveTaskAnswer_New(TaskNumberAnswerV2 taskResult)
         {
+            TaskAnswerResult taskAnsRes = new TaskAnswerResult();
             try
             {
-                if(taskResult != null)
+                if (taskResult != null)
                 {
-                    if(taskResult.Block != null)
+                    var answerSize = JsonConvert.SerializeObject(taskResult).Length;
+                    if (answerSize > 1048576)
                     {
-                        if (taskResult.Block.Size > 1048576)
-                            return false;
+                        taskAnsRes.AnswerCode = 1; //Answer too large
+                        return taskAnsRes;
+                    }
 
-                        var ipAddress = GetIP(Context);
-                        return await P2PServer.SignalRQueue(Context, (int)taskResult.Block.Size, async () =>
+                    var ipAddress = GetIP(Context);
+                    return await P2PServer.SignalRQueue(Context, answerSize, async () =>
+                    {
+                        if (Globals.BlocksDownloading == 0)
                         {
-                            if (Globals.BlocksDownloading == 0)
+                            if (Globals.Adjudicate)
                             {
-                                if (Globals.Adjudicate)
+                                //This will result in users not getting their answers chosen if they are not in list.
+                                var fortisPool = Globals.FortisPool.Values;
+                                if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                 {
-                                    //This will result in users not getting their answers chosen if they are not in list.                                    
-                                    if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
+                                    (taskResult.Address, _) = Out;
+                                    if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
                                     {
-                                        (taskResult.Address, _) = Out;
-                                        if (taskResult.Block.Height == Globals.LastBlock.Height + 1)
-                                        {                                            
-                                            if (!Globals.TaskAnswerDict.TryGetValue(taskResult.Address, out var Answer))
-                                            {
-                                                taskResult.SubmitTime = DateTime.UtcNow;
-                                                Globals.TaskAnswerDict[taskResult.Address] = taskResult;
-                                                return true;
-                                            }
-                                        }
-                                        else
+                                        if (!Globals.TaskAnswerDict_New.TryGetValue(taskResult.Address, out var Answer))
                                         {
-                                            //RejectedTaskAnswerList.Add(taskResult);
-                                            return false;
+                                            taskResult.SubmitTime = DateTime.Now;
+                                            Globals.TaskAnswerDict_New[taskResult.Address] = taskResult;
+                                            taskAnsRes.AnswerAccepted = true;
+                                            taskAnsRes.AnswerCode = 0;
+                                            return taskAnsRes;
                                         }
                                     }
                                     else
                                     {
-                                        //RejectedTaskAnswerList.Add(taskResult);
-                                        return false;
+                                        var nextBlockHeight = Globals.LastBlock.Height + 1;
+                                        taskAnsRes.AnswerCode = 2; //Answers block height did not match the adjudicators next block height
+                                        return taskAnsRes;
                                     }
                                 }
+                                else
+                                {
+                                    taskAnsRes.AnswerCode = 3; //address is not pressent in the fortis pool
+                                    return taskAnsRes;
+                                }
                             }
-                            return false;
-                        });
-                    }
+                        }
+                        taskAnsRes.AnswerCode = 4; //adjudicator is still booting up
+                        return taskAnsRes;
+                    });
                 }
+                taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
 
-                return false;
-                
+                return taskAnsRes;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return false;
+                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswer_New()");
             }
-            
+            taskAnsRes.AnswerCode = 1337; // Unknown Error
+            return taskAnsRes;
         }
 
         #endregion
-        
+
         #region Receive TX to relay
         public async Task<bool> ReceiveTX(Transaction transaction)
         {
