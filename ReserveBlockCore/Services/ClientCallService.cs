@@ -365,7 +365,7 @@ namespace ReserveBlockCore.Services
             {
                 if (Globals.StopAllTimers == false)
                 {
-                    if (Globals.AdjudicateAccount != null)
+                    if (Globals.AdjudicateAccount?.Address == Globals.LeadAddress)
                     {
                         var fortisPool = Globals.FortisPool.Values;
 

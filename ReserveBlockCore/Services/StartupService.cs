@@ -478,22 +478,35 @@ namespace ReserveBlockCore.Services
 
                     var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
 
-                    var rnd = new Random();
-                    var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
-                    var adjudicators = Adjudicators.AdjudicatorData.GetAdjudicators()
-                        .Where(x => !CurrentAddresses.Contains(x.Address))
-                        .OrderBy(x => rnd.Next())
-                        .Take(2 - CurrentAddresses.Count)
-                        .ToArray();
-                                        
-                    foreach (var adjudicator in adjudicators)
+                    //xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK
+                    if (Globals.LastBlock.Height < Globals.BlockLock)
                     {
-                        var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
-                        await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                        var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();
+                        foreach (var adjudicator in LeadAdjudicators)
+                        {
+                            var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                            await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                        }
                     }
+                    else
+                    {
+                        var rnd = new Random();
+                        var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
+                        var adjudicators = Globals.AdjNodes.Values
+                            .Where(x => !CurrentAddresses.Contains(x.Address))
+                            .OrderBy(x => rnd.Next())
+                            .Take(2 - CurrentAddresses.Count)
+                            .ToArray();
 
-                    if(!adjudicators.Any())
-                        Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                        foreach (var adjudicator in adjudicators)
+                        {
+                            var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                            await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                        }
+
+                        if (!adjudicators.Any())
+                            Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                    }
                 }
 
             }
