@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Services
                                 foreach (var pool in result)
                                     Globals.ConsensusNodes[pool.IPAddress] = new ConsensusNodeInfo
                                     {
-                                        Address = pool.IPAddress,
+                                        Address = pool.RBXAddress,
                                         IpAddress = pool.IPAddress
                                     };                                
                             }
