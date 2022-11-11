@@ -120,6 +120,7 @@ namespace ReserveBlockCore.Services
 
                     UpdateMemBlocks(block);//update mem blocks
                     DbContext.Commit();
+                    Globals.ConsensusTokenSource.Cancel();
                     return result;
                 }
                 if (block.Height != 0)
@@ -150,7 +151,13 @@ namespace ReserveBlockCore.Services
                     return result;
                 }
 
-                if (block.Version > 1)
+                if (block.Version > 2)
+                {                    
+                    var version3Result = await BlockVersionUtility.Version3Rules(block);
+                    if (!version3Result)
+                        return result;
+                }
+                else if (block.Version > 1)
                 {
                     //Run block version 2 rules
                     var version2Result = await BlockVersionUtility.Version2Rules(block);
@@ -283,6 +290,7 @@ namespace ReserveBlockCore.Services
                         }
 
                         result = true;
+                        Globals.ConsensusTokenSource.Cancel();
                         BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                         StateData.UpdateTreis(block); //update treis
@@ -619,6 +627,7 @@ namespace ReserveBlockCore.Services
                 {
                     //Genesis Block
                     result = true;
+                    Globals.ConsensusTokenSource.Cancel();
                     BlockchainData.AddBlock(block);
                     StateData.UpdateTreis(block);
                     DbContext.Commit();

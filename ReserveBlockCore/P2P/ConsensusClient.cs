@@ -23,11 +23,11 @@ namespace ReserveBlockCore.P2P
 {
     public class ConsensusClient : IAsyncDisposable, IDisposable
     {
-        private static async Task RemoveConsensusNode(ConsensusNodeInfo node)
-        {
-            if (Globals.ConsensusNodes.TryRemove(node.IpAddress, out var test))
-                await node.Connection.DisposeAsync();
-        }
+        //private static async Task RemoveConsensusNode(ConsensusNodeInfo node)
+        //{
+        //    if (Globals.ConsensusNodes.TryRemove(node.IpAddress, out var test))
+        //        await node.Connection.DisposeAsync();
+        //}
 
         #region Hub Dispose
         public void Dispose()
@@ -65,9 +65,9 @@ namespace ReserveBlockCore.P2P
 
         #region Consensus Code
 
-        private static int Majority()
+        public static int Majority()
         {
-            return Globals.ConsensusNodes.Count / 2 + 1;
+            return Globals.AdjudicatorAddresses.Count / 2 + 1;
         }
 
         private static bool HasMajorityIntersectionSet()
@@ -78,17 +78,17 @@ namespace ReserveBlockCore.P2P
 
         private static bool BestCase()
         {
-            var NumNodes = Globals.ConsensusNodes.Count;
+            var NumNodes = Globals.AdjudicatorAddresses.Count;
             return ConsensusServer.Histories.Values.Where(x => x.Count == NumNodes).Count() == NumNodes;
         }
-        public static async Task<(string, string)[]> ConsensusRun(long height, int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
+        public static async Task<(string Address, string Message)[]> ConsensusRun(long height, int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
         {
-            var NumNodes = Globals.ConsensusNodes.Count;
+            var NumNodes = Globals.AdjudicatorAddresses.Count;
             var Address = Globals.ValidatorAddress;
             var Peers = Globals.ConsensusNodes.Values.Where(x => x.Address != Address).ToArray();
             var Now = DateTime.Now;
 
-            ConsensusServer.UpdateState(height, (int)ConsensusStatus.Processing, methodCode);
+            ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
 
             var ConsensusSource = new CancellationTokenSource();
             while (!BestCase() && !(HasMajorityIntersectionSet() && DateTime.Now < Now.AddMilliseconds(timeToFinalize)))
@@ -105,7 +105,6 @@ namespace ReserveBlockCore.P2P
             }
             else
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalizing);
-
 
             var FinalizingSource = new CancellationTokenSource();
             await Peers.Select(node =>
@@ -184,33 +183,34 @@ namespace ReserveBlockCore.P2P
             {
                 var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
-                    options.Headers.Add("address", address);                    
-                    options.Headers.Add("signature", signature);                    
+                    options.Headers.Add("address", address);
+                    options.Headers.Add("uName", uName);
+                    options.Headers.Add("signature", signature);
+                    options.Headers.Add("walver", Globals.CLIVersion);
                 })
                 .WithAutomaticReconnect()
                 .Build();
-
 
                 LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");
 
                 var IPAddress = url.Replace("http://", "").Replace("/consensus", "");
                 hubConnection.Reconnecting += (sender) =>
                 {
-                    LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
+                    LogUtility.Log("Reconnecting to Adjudicator", "ConnectConsensusNode()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Reconnected += (sender) =>
                 {
-                    LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
+                    LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectConsensusNode()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Closed += (sender) =>
                 {
-                    LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
+                    LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
                     return Task.CompletedTask;
                 };                
@@ -219,12 +219,7 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return false;
 
-                Globals.AdjNodes[IPAddress] = new AdjNodeInfo
-                {
-                    Connection = hubConnection,
-                    IpAddress = IPAddress,
-                    AdjudicatorConnectDate = DateTime.UtcNow
-                };
+                Globals.ConsensusNodes[IPAddress].Connection = hubConnection;
 
                 return true;
             }

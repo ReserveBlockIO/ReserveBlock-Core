@@ -92,36 +92,15 @@ namespace ReserveBlockCore.P2P
                 UpdateFortisPool(fortisPools);
 
                 await SendAdjMessageSingle("status", $"Authenticated? True");
-                if (Globals.CurrentTaskQuestion == null)
-                {
-                    lastArea = "T";
-                    conQueue.WasSuccess = true;
-                    await SendAdjMessageSingle("status", "Connected");
-                    var taskQuest = Globals.CurrentTaskQuestion;
-                    Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum", taskQuest.BlockHeight);
-                    ConsoleWriterService.Output("Task Created");                    
-                    TaskQuestion nTaskQuestion = new TaskQuestion();
-                    nTaskQuestion.TaskType = taskQuest.TaskType;
-                    nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
-                    string taskQuestionStr = "";
-                    taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                    await SendAdjMessageAll("task", taskQuestionStr);
-                    //Console.WriteLine("Task Sent All");
-                }
-                else
-                {
-                    conQueue.WasSuccess = true;
-                    lastArea = "U";
-                    await SendAdjMessageSingle("status", "Connected");
-                    var taskQuest = Globals.CurrentTaskQuestion;
-                    TaskQuestion nTaskQuestion = new TaskQuestion();
-                    nTaskQuestion.TaskType = taskQuest.TaskType;
-                    nTaskQuestion.BlockHeight = taskQuest.BlockHeight;
-                    string taskQuestionStr = "";
-                    taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                    await SendAdjMessageSingle("task", taskQuestionStr);
-                    //Console.WriteLine("Task Sent Single");
-                }
+                conQueue.WasSuccess = true;
+                lastArea = "U";
+                await SendAdjMessageSingle("status", "Connected");
+                TaskQuestion nTaskQuestion = new TaskQuestion();
+                nTaskQuestion.TaskType = "rndNum";
+                nTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
+                string taskQuestionStr = "";
+                taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
+                await SendAdjMessageSingle("task", taskQuestionStr);
 
                 lastArea = "A";
                 if (Globals.OptionalLogging == true)                
@@ -225,36 +204,26 @@ namespace ReserveBlockCore.P2P
                     {
                         if (Globals.BlocksDownloading == 0)
                         {
-                            if (Globals.Adjudicate)
+                            if (Globals.AdjudicateAccount != null)
                             {
                                 //This will result in users not getting their answers chosen if they are not in list.
                                 var fortisPool = Globals.FortisPool.Values;
                                 if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
                                 {
                                     (var Address, _) = Out;
-                                    if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
-                                    {
-                                        taskResult.SubmitTime = DateTime.Now;
-
-                                        if (!SignatureService.VerifySignature(Address, taskResult.NextBlockHeight + ":" + taskResult.Answer, taskResult.Signature))
-                                        {                                            
-                                            taskAnsRes.AnswerCode = 6;
-                                            return taskAnsRes;
-                                        }
-
-                                        if (!Globals.TaskAnswerDictV3.TryAdd(Address, taskResult))
-                                        {
-                                            taskAnsRes.AnswerAccepted = true;
-                                            taskAnsRes.AnswerCode = 0;
-                                            return taskAnsRes;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        var nextBlockHeight = Globals.LastBlock.Height + 1;
-                                        taskAnsRes.AnswerCode = 2; //Answers block height did not match the adjudicators next block height
+                                    var NextHeight = Globals.LastBlock.Height + 1;
+                                    if (!SignatureService.VerifySignature(Address, NextHeight + ":" + taskResult.Answer, taskResult.Signature))
+                                    {                                            
+                                        taskAnsRes.AnswerCode = 6;
                                         return taskAnsRes;
                                     }
+
+                                    if (!Globals.TaskAnswerDictV3.TryAdd(Address, taskResult))
+                                    {
+                                        taskAnsRes.AnswerAccepted = true;
+                                        taskAnsRes.AnswerCode = 0;
+                                        return taskAnsRes;
+                                    }          
                                 }
                                 else
                                 {
@@ -273,7 +242,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswer_New()");
+                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswerV3()");
             }
             taskAnsRes.AnswerCode = 1337; // Unknown Error
             return taskAnsRes;
@@ -298,7 +267,7 @@ namespace ReserveBlockCore.P2P
                         {
                             if (Globals.BlocksDownloading == 0)
                             {
-                                if (Globals.Adjudicate)
+                                if (Globals.AdjudicateAccount != null)
                                 {
                                     //This will result in users not getting their answers chosen if they are not in list.                                    
                                     if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
@@ -362,7 +331,7 @@ namespace ReserveBlockCore.P2P
                     {
                         if (Globals.BlocksDownloading == 0)
                         {
-                            if (Globals.Adjudicate)
+                            if (Globals.AdjudicateAccount != null)
                             {
                                 //This will result in users not getting their answers chosen if they are not in list.
                                 var fortisPool = Globals.FortisPool.Values;
@@ -422,7 +391,7 @@ namespace ReserveBlockCore.P2P
                     bool output = false;
                     if (Globals.BlocksDownloading == 0)
                     {
-                        if (Globals.Adjudicate)
+                        if (Globals.AdjudicateAccount != null)
                         {
                             if (transaction != null)
                             {

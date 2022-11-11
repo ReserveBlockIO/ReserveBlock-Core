@@ -124,8 +124,13 @@ namespace ReserveBlockCore
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
 
-            //This is for adjudicator start.
-            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum", Globals.LastBlock.Height + 1);
+            //This is for consensus start.
+            await StartupService.GetAdjudicatorPool();
+            await StartupService.ConnectoToConsensusNodes();
+            await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+            var WorkTask = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
+
+
 
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
@@ -207,9 +212,7 @@ namespace ReserveBlockCore
             StartupService.CheckForDuplicateBlocks();
 
             //Get Adj Pool - Currently Returns dummy list
-            await StartupService.GetAdjudicatorPool();
 
-            await StartupService.SetLeadAdjudicator();
 
             if (Globals.DatabaseCorruptionDetected == true)
             {
@@ -228,8 +231,7 @@ namespace ReserveBlockCore
             {
                 Console.WriteLine(ex.ToString());
             }
-
-            StartupService.SetSelfAdjudicator();
+            
             StartupService.StartupMemBlocks();
 
             await StartupService.ConnectoToBeacon();
@@ -249,6 +251,7 @@ namespace ReserveBlockCore
             Thread.Sleep(2000);
 
             var tasks = new Task[] {
+                WorkTask,
                 commandLoopTask, //CLI console
                 commandLoopTask2, //awaiting parameters
                 commandLoopTask3//Beacon client/server
@@ -548,7 +551,7 @@ namespace ReserveBlockCore
         {
             try
             {
-                if(Globals.Adjudicate)
+                if(Globals.AdjudicateAccount != null)
                 {
                     var connectionQueueList = Globals.ConnectionHistoryDict.Values.ToList();
 

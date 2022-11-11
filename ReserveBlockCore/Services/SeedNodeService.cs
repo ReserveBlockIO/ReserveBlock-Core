@@ -151,6 +151,12 @@ namespace ReserveBlockCore.Services
                                 string data = await Response.Content.ReadAsStringAsync();
 
                                 var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
+                                foreach (var pool in result)
+                                    Globals.ConsensusNodes[pool.IPAddress] = new ConsensusNodeInfo
+                                    {
+                                        Address = pool.IPAddress,
+                                        IpAddress = pool.IPAddress
+                                    };                                
                             }
                             else
                             {

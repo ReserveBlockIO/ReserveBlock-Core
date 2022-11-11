@@ -507,10 +507,6 @@ namespace ReserveBlockCore.P2P
                                 {
                                     mempool.InsertSafe(txReceived);
                                     await P2PClient.SendTXToAdjudicator(txReceived);
-                                    if (Globals.Adjudicate)
-                                    {
-                                        //send message to peers
-                                    }
                                     return "ATMP";//added to mempool
                                 }
                                 else
@@ -587,7 +583,7 @@ namespace ReserveBlockCore.P2P
                             if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
-                                if(!Globals.Adjudicate)
+                                if(Globals.AdjudicateAccount == null)
                                     await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
                                 return "ATMP";//added to mempool
                             }

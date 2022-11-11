@@ -104,19 +104,6 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex) { }
         }
-
-        public static string ValidatorSignature(string message)
-        {
-            var validatorAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);
-
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-            
-            return SignatureService.CreateSignature(message, privateKey, validatorAccount.PublicKey);
-        }
-
         public static async Task<string> StartValidating(Account account, string uName = "")
         {
             string output = "";

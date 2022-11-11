@@ -205,9 +205,7 @@ namespace ReserveBlockCore.Nodes
             var taskAnswer = new TaskNumberAnswerV3();
             var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);            
             taskAnswer.Answer = num.ToString();
-            taskAnswer.SubmitTime = DateTime.Now;
-            taskAnswer.NextBlockHeight = blockHeight;
-            taskAnswer.Signature = ValidatorService.ValidatorSignature(blockHeight + ":" + num);
+            taskAnswer.Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
             await P2PClient.SendTaskAnswerV3(taskAnswer);
         }
 
