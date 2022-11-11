@@ -31,6 +31,12 @@ namespace ReserveBlockCore.Utilities
                         path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                     }
                 }
+
+                if (!string.IsNullOrEmpty(Globals.CustomPath))
+                {
+                    path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                }
+
                 if (!Directory.Exists(path))
                 {
                     Directory.CreateDirectory(path);
@@ -73,6 +79,12 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
             }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -104,6 +116,12 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
             }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);

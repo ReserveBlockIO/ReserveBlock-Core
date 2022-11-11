@@ -209,6 +209,8 @@ namespace ReserveBlockCore.Nodes
             taskAnswer.NextBlockHeight = blockHeight;
             taskAnswer.Signature = ValidatorService.ValidatorSignature(blockHeight + ":" + num);
             await P2PClient.SendTaskAnswerV3(taskAnswer);
+            Globals.LastTaskBlockHeight = blockHeight;
+
         }
 
         private static async void RandomNumberTask_New(long blockHeight)

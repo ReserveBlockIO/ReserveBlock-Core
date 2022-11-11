@@ -33,24 +33,64 @@ namespace ReserveBlockCore
         #endregion
 
         #region Global General Variables
+        public static byte AddressPrefix = 0x3C; //address prefix 'R'
 
-        public const int ADNRLimit = 65;
-        public static int BlockLock = 294000;
-        public static string Platform = "";
-        public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
-        public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, ConsensusNodeInfo> ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>(); // IP Address        
-        public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        
-        public static ConcurrentDictionary<string, string> Locators = new ConcurrentDictionary<string, string>(); // BeaconUID
-        public static bool StopConsoleOutput = false;
         public static Block LastBlock = new Block { Height = -1 };
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
-        public static bool Adjudicate = false;
-        public static bool AdjudicateLock = false;
+        public static BeaconReference BeaconReference = new BeaconReference();
+        public static Process proc = new Process();
+
+        public static DateTime? RemoteCraftLockTime = null;
+        public static DateTime? CLIWalletUnlockTime = null;
+        public static DateTime? APIUnlockTime = null;
+
+        public const int ADNRLimit = 65;
+        public static int BlockLock = 294000;
         public static long LastAdjudicateTime = 0;
         public static int BlocksDownloading = 0;
+        public static int WalletUnlockTime = 0;
+        public static int ChainCheckPointInterval = 0;
+        public static int ChainCheckPointRetain = 0;
+        public static int PasswordClearTime = 10;
+        public static int NFTTimeout = 0;
+        public static int Port = 3338;
+        public static int APIPort = 7292;
+        public static int MajorVer = 2;
+        public static int MinorVer = 1; //change this to 1 for main release
+        public static int BuildVer = 0;
+
+        public static string Platform = "";
+        public static string ValidatorAddress = "";
+        public static string? WalletPassword = null;
+        public static string? APIPassword = null;
+        public static string? APICallURL = null;
+        public static string ChainCheckpointLocation = "";
+        public static string ConfigValidator = "";
+        public static string ConfigValidatorName = "";
+        public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
+        public static string CLIVersion = "";
+        public static string? MotherAddress = null;
+        public static string? CustomPath = null;
+
+        public static bool IsTestNet = false;
+        public static bool AlwaysRequireWalletPassword = false;
+        public static bool AlwaysRequireAPIPassword = false;
+        public static bool StopConsoleOutput = false;
+        public static bool Adjudicate = false;
+        public static bool AdjudicateLock = false;
+        public static bool APICallURLLogging = false;
+        public static bool ChainCheckPoint = false;
+        public static bool PrintConsoleErrors = false;
+        public static bool HDWallet = false;
+        public static bool IsWalletEncrypted = false;
+        public static bool AutoDownloadNFTAsset = false;
+        public static bool IgnoreIncomingNFTs = false;
+        public static bool ShowTrilliumOutput = false;
+        public static bool ShowTrilliumDiagnosticBag = false;
+        public static bool ConnectToMother = false;
         public static bool HeightCheckLock = false;
         public static bool InactiveNodeSendLock = false;
         public static bool IsCrafting = false;
@@ -61,45 +101,15 @@ namespace ReserveBlockCore
         public static bool RemoteCraftLock = false;
         public static bool IsChainSynced = false;
         public static bool OptionalLogging = false;
-        public static DateTime? RemoteCraftLockTime = null;
-        public static string ValidatorAddress = "";
-        public static bool IsTestNet = false;
-        public static int NFTTimeout = 0;
-        public static int Port = 3338;
-        public static int APIPort = 7292;
-        public static string? WalletPassword = null;
-        public static bool AlwaysRequireWalletPassword = false;
-        public static string? APIPassword = null;
-        public static bool AlwaysRequireAPIPassword = false;
-        public static DateTime? CLIWalletUnlockTime = null;
-        public static DateTime? APIUnlockTime = null;
-        public static int WalletUnlockTime = 0;
-        public static string? APICallURL = null;
-        public static bool APICallURLLogging = false;
-        public static bool ChainCheckPoint = false;
-        public static int ChainCheckPointInterval = 0;
-        public static int ChainCheckPointRetain = 0;
-        public static string ChainCheckpointLocation = "";
-        public static string ConfigValidator = "";
-        public static string ConfigValidatorName = "";
-        public static string GenesisAddress = "RBdwbhyqwJCTnoNe1n7vTXPJqi5HKc6NTH";
-        public static byte AddressPrefix = 0x3C; //address prefix 'R'
-        public static bool PrintConsoleErrors = false;
-        public static Process proc = new Process();
-        public static int MajorVer = 2;
-        public static int MinorVer = 1; //change this to 1 for main release
-        public static int BuildVer = 0;
-        public static string CLIVersion = "";
-        public static bool HDWallet = false;
-        public static bool IsWalletEncrypted = false;
-        public static SecureString EncryptPassword = new SecureString();
-        public static int PasswordClearTime = 10;
-        public static bool AutoDownloadNFTAsset = false;
-        public static bool IgnoreIncomingNFTs = false;
+
+        public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
+        public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
+        public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        
+        public static ConcurrentDictionary<string, string> Locators = new ConcurrentDictionary<string, string>(); // BeaconUID
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
-        public static BeaconReference BeaconReference = new BeaconReference();
-        public static bool ShowTrilliumOutput = false;
-        public static bool ShowTrilliumDiagnosticBag = false;
+
+        public static SecureString EncryptPassword = new SecureString();
+        public static SecureString? MotherPassword = null;
 
         #endregion
 

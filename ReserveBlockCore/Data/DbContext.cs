@@ -90,30 +90,7 @@ namespace ReserveBlockCore.Data
 
         internal static void Initialize()
         {
-            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
-
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if(Debugger.IsAttached)
-                {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            string path = GetPathUtility.GetDatabasePath();
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -237,30 +214,7 @@ namespace ReserveBlockCore.Data
 
         public static void DeleteCorruptDb()
         {
-            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
-
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if (Debugger.IsAttached)
-                {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            string path = GetPathUtility.GetDatabasePath();
 
             DB.Dispose();
 
@@ -272,30 +226,7 @@ namespace ReserveBlockCore.Data
 
         public static void MigrateDbNewChainRef()
         {
-            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
-
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if (Debugger.IsAttached)
-                {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            string path = GetPathUtility.GetDatabasePath();
 
             DB.Commit();
             DB_Mempool.Commit();
