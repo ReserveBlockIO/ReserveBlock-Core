@@ -28,7 +28,7 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton = state;
                 if (CurrentHeight == state.Height)
                 {
-                    UpdateState(CurrentHeight, (int)state.Status, state.MethodCode);
+                    UpdateState(CurrentHeight, state.MethodCode, (int)state.Status);
 
                     var messages = Consensus.ConsensusData.GetAll().FindAll().ToArray();
                     var histories = ConsensusHistory.ConsensusHistoryData.GetAll().FindAll().ToArray();
@@ -40,13 +40,13 @@ namespace ReserveBlockCore.P2P
                         Histories[history.Key] = new ConcurrentDictionary<string, bool>(history.ToDictionary(x => x.MessageAddress, x => true));
                 }
                 else
-                    UpdateState(CurrentHeight, (int)ConsensusStatus.Processing, 0);                
+                    UpdateState(CurrentHeight, 0, (int)ConsensusStatus.Processing);                
             }
             else
             {
                 ConsensusState.ConsensusStateData.GetAll().InsertSafe(new ConsensusState { Height = CurrentHeight, Status = ConsensusStatus.Processing, MethodCode = 0 });
                 ConsenusStateSingelton = ConsensusState.ConsensusStateData.GetAll().FindOne(x => true);
-                UpdateState(CurrentHeight, (int)ConsensusStatus.Processing, 0);
+                UpdateState(CurrentHeight, 0, (int)ConsensusStatus.Processing);
             }            
         }
 
@@ -119,7 +119,7 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(long height = -1, int status = -1, int methodCode = -1)
+        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1, string salt = null)
         {
             if(height != -1)
                 ConsenusStateSingelton.Height = height;
@@ -127,14 +127,23 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton.Status = (ConsensusStatus)status;
             if (methodCode != -1)
                 ConsenusStateSingelton.MethodCode = methodCode;
-            
+            if (randomNumber != -1)
+                ConsenusStateSingelton.RandomNumber = randomNumber;
+            if (salt != null)
+                ConsenusStateSingelton.Salt = salt;            
+
             var states = ConsensusState.ConsensusStateData.GetAll();
             states.Update(ConsenusStateSingelton);
         }
 
+        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer, string salt) GetState()
+        {
+            if (ConsenusStateSingelton == null)
+                return (-1, 0, ConsensusStatus.Processing, -1, null);
+            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber, ConsenusStateSingelton.Salt);
+        }
 
-
-        public (string address, string signature, string message)[] Message(long height, int methodCode, (string address, string message, string signature)[] request)
+        public (string address, string message, string signature)[] Message(long height, int methodCode, (string address, string message, string signature)[] request)
         {
             try
             {

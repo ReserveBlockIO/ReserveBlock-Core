@@ -126,9 +126,7 @@ namespace ReserveBlockCore.Services
             ValidatorService.ClearOldValidator();
         }
         internal static void StartupDatabase()
-        {
-            //Establish block, wallet, ban list, and peers db
-            DbContext.Initialize();
+        {                        
             Console.WriteLine("Initializing Reserve Block Database...");
             var peerDb = Peers.GetAll();
             Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
@@ -387,17 +385,6 @@ namespace ReserveBlockCore.Services
                 Globals.ValidatorAddress = myAccount.Address;
             }
         }
-
-        internal static void SetSelfAdjudicator()
-        {
-            var leadAdj = Globals.LeadAdjudicator;
-            var account = AccountData.GetSingleAccount(leadAdj.Address);
-            if(account != null)
-            {
-                Globals.Adjudicate = true;
-            }
-        }
-
         internal static async Task GetAdjudicatorPool()
         {
             //add seed nodes
@@ -444,6 +431,34 @@ namespace ReserveBlockCore.Services
         {
             var blockChain = BlockchainData.GetBlocks();
             Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
+        }
+
+        public static async Task ConnectoToConsensusNodes()
+        {
+            if (Globals.AdjudicateAccount == null)
+                return;
+
+            var account = Globals.AdjudicateAccount;
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
+            
+            var CurrentAddresses = Globals.ConsensusNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
+
+            await Globals.ConsensusNodes.Values.Select(adjudicator =>
+            {
+                if (adjudicator.IsConnected)
+                    return Task.FromResult(true);
+                var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/consensus";
+                return ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+            })
+            .WhenAtLeast(x => x, ConsensusClient.Majority());
+          
+            if (!Globals.ConsensusNodes.Values.Any(x => x.IsConnected))
+                Console.WriteLine("You have no consensus nodes.");
         }
 
         public static async Task ConnectoToAdjudicators()
@@ -537,7 +552,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectoToBeacon()
         {
-            if(!Globals.Adjudicate)
+            if(Globals.AdjudicateAccount == null)
             {                
                 if (Globals.Locators.Any())
                 {
@@ -579,7 +594,7 @@ namespace ReserveBlockCore.Services
                         var lastBlock = Globals.LastBlock;
                         var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+                        if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                         {
                             DateTime endTime = DateTime.UtcNow;
                             ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");

@@ -1,13 +1,14 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
 using System.Xml.Linq;
 
 namespace ReserveBlockCore.Utilities
 {
     public class TaskWinnerUtility
     {
-        public static async Task<TaskNumberAnswerV2?> TaskWinner_New(TaskQuestion taskQuestion, IList<TaskNumberAnswerV2> taskAnswerList, List<TaskNumberAnswerV2>? failedTaskAnswerList = null)
-        {
-            var answer = Convert.ToInt32(taskQuestion.TaskAnswer);
+        public static async Task<TaskNumberAnswerV2?> TaskWinner_New(IList<TaskNumberAnswerV2> taskAnswerList, List<TaskNumberAnswerV2>? failedTaskAnswerList = null)
+        {            
+            var answer = ConsensusServer.GetState().Answer;
             var answerList = new List<int>();
             var answerCount = 0;
             if (failedTaskAnswerList == null)

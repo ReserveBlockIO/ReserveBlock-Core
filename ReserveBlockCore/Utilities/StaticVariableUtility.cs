@@ -29,7 +29,7 @@ namespace ReserveBlockCore.Utilities
             var validator = localValidator != null ? localValidator.Address : "No Validator";
             var nodes = Globals.Nodes;            
             var lastBlock = Globals.LastBlock;
-            var adjudicator = Globals.Adjudicate.ToString();
+            var adjudicator = (Globals.AdjudicateAccount != null).ToString();
             var adjudicatorConnection = Globals.AdjNodes.Values.Any(x => x.IsConnected).ToString();
             var beaconConnection = P2PClient.IsBeaconConnected.ToString();            
             var isChainSynced = Globals.IsChainSynced.ToString();

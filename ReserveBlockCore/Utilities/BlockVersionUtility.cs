@@ -18,8 +18,6 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task<bool> Version2Rules(Block block)
         {
-            //1.
-            //Verify Adj Signature
             bool result = false;
             var leadAdj = Globals.LeadAdjudicator;
             var leadAdjAddr = leadAdj.Address;
@@ -30,8 +28,30 @@ namespace ReserveBlockCore.Utilities
                 result = sigResult;
             }
 
-            return result;
-            //////////////////////
+            return result;            
+        }
+
+        public static async Task<bool> Version3Rules(Block block)
+        {
+            if (!string.IsNullOrWhiteSpace(block.AdjudicatorSignature))
+            {
+                var ValidCount = 0;
+                var AddressSignatures = block.AdjudicatorSignature.Split('|');                
+                foreach (var AddressSignature in AddressSignatures)
+                {
+                    var split = AddressSignature.Split(':');
+                    var (Address, Signature) = (split[0], split[1]);
+                    if (!Globals.AdjudicatorAddresses.ContainsKey(Address))
+                        return false;
+                    if(!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
+                        return false;
+                    ValidCount++;
+                }
+                if (ValidCount == Globals.AdjudicatorAddresses.Count / 2 + 1)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

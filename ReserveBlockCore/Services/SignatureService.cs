@@ -1,6 +1,8 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Utilities;
+using System.Globalization;
+using System.Numerics;
 
 namespace ReserveBlockCore.Services
 {
@@ -86,6 +88,30 @@ namespace ReserveBlockCore.Services
         private static string ByteToHex(byte[] pubkey)
         {
             return Convert.ToHexString(pubkey).ToLower();
+        }
+
+        public static string ValidatorSignature(string message)
+        {
+            var validatorAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            return SignatureService.CreateSignature(message, privateKey, validatorAccount.PublicKey);
+        }
+
+        public static string AdjudicatorSignature(string message)
+        {
+            var account = Globals.AdjudicateAccount;
+
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            return SignatureService.CreateSignature(message, privateKey, account.PublicKey);
         }
     }
 }

@@ -284,7 +284,7 @@ namespace ReserveBlockCore.P2P
                                 await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "fortisPool":
-                                if(Globals.Adjudicate == false)
+                                if(Globals.AdjudicateAccount == null)
                                     await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "status":
@@ -479,7 +479,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task SendTaskAnswerV3(TaskNumberAnswerV3 taskAnswer)
         {
-            if (taskAnswer == null || taskAnswer.NextBlockHeight != Globals.LastBlock.Height + 1)
+            if (taskAnswer == null)
                 return;
 
             await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendTaskAnswerV3(x, taskAnswer)));
@@ -501,14 +501,14 @@ namespace ReserveBlockCore.P2P
                 }
                 try
                 {
-                    var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer });
+                    var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswerV3", args: new object[] { taskAnswer });
                     if (result != null)
                     {
                         if (result.AnswerAccepted)
                         {
                             node.LastTaskError = false;
                             node.LastTaskSentTime = DateTime.Now;
-                            node.LastSentBlockHeight = taskAnswer.NextBlockHeight;
+                            node.LastSentBlockHeight = Globals.LastBlock.Height + 1;
                             node.LastTaskErrorCount = 0;
                             break;
                         }
@@ -529,7 +529,7 @@ namespace ReserveBlockCore.P2P
                     ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                     string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                        taskAnswer.SubmitTime.ToString() : "No Time", ex.ToString());
+                        taskAnswer.Address : "No Time", ex.ToString());
                     ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                 }
             }
@@ -685,7 +685,7 @@ namespace ReserveBlockCore.P2P
         #region Send TX To Adjudicators
         public static async Task SendTXToAdjudicator(Transaction tx)
         {
-            if (Globals.Adjudicate)
+            if (Globals.AdjudicateAccount != null)
                 return;
 
             var SuccessNodes = new HashSet<string>();

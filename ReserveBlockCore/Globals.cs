@@ -11,15 +11,20 @@ namespace ReserveBlockCore
     {
         static Globals()
         {
+            DbContext.Initialize();
             LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
-            ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>
+
+            AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
             {
-                [""] = new ConsensusNodeInfo { Address = "" },
-                [""] = new ConsensusNodeInfo { Address = "" },
-                [""] = new ConsensusNodeInfo { Address = "" },
-                [""] = new ConsensusNodeInfo { Address = "" },
-                [""] = new ConsensusNodeInfo { Address = "" },
+                ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
+                ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
+                ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
+                ["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
             };
+            
+            var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+            AdjudicateAccount = Accounts.Where(x => AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
         }
 
         #region Timers
@@ -35,6 +40,7 @@ namespace ReserveBlockCore
         #region Global General Variables
         public static byte AddressPrefix = 0x3C; //address prefix 'R'
 
+        public static ConcurrentDictionary<string, bool> AdjudicatorAddresses;
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, ConsensusNodeInfo> ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>(); // IP Address        
         public static Block LastBlock = new Block { Height = -1 };
@@ -48,7 +54,7 @@ namespace ReserveBlockCore
         public static DateTime? APIUnlockTime = null;
 
         public const int ADNRLimit = 65;
-        public static int BlockLock = 294000;
+        public static int BlockLock = 400000;
         public static long LastAdjudicateTime = 0;
         public static int BlocksDownloading = 0;
         public static int WalletUnlockTime = 0;
@@ -78,9 +84,9 @@ namespace ReserveBlockCore
         public static bool IsTestNet = false;
         public static bool AlwaysRequireWalletPassword = false;
         public static bool AlwaysRequireAPIPassword = false;
-        public static bool StopConsoleOutput = false;
-        public static bool Adjudicate = false;
+        public static bool StopConsoleOutput = false;        
         public static bool AdjudicateLock = false;
+        public static Account AdjudicateAccount;
         public static bool APICallURLLogging = false;
         public static bool ChainCheckPoint = false;
         public static bool PrintConsoleErrors = false;
@@ -131,14 +137,17 @@ namespace ReserveBlockCore
 
         #endregion
 
+        #region Consensus Variables
+        public static CancellationTokenSource ConsensusTokenSource = new CancellationTokenSource();
+        #endregion
+
         #region P2P Adj Server Variables
-        
+
         public static ConcurrentMultiDictionary<string, string, FortisPool> FortisPool = new ConcurrentMultiDictionary<string, string, FortisPool>(); // IP address, RBX address        
         public static ConcurrentMultiDictionary<string, string, BeaconPool> BeaconPool = new ConcurrentMultiDictionary<string, string, BeaconPool>(); // IP address, Reference
         public static ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue> ConnectionHistoryDict = new ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue>();
         public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
-
-        public static TaskQuestion? CurrentTaskQuestion = null;
+        
         public static TaskNumberAnswerV2? CurrentTaskNumberAnswer = null;
         public static string VerifySecret = "";
 
