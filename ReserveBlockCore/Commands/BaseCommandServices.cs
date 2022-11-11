@@ -743,16 +743,16 @@ namespace ReserveBlockCore.Commands
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
-                {
-                    var lastTaskSent = Globals.LastTaskSentTime.ToString();
-                    var lastTaskResult = Globals.LastTaskResultTime.ToString();
-
+                {                    
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
                     Console.WriteLine($"Validating? {account.IsValidating}");
-                    Console.WriteLine($"Last Task Received Time: {lastTaskResult}");
-                    Console.WriteLine($"Last Task Sent Time: {lastTaskSent}");
+                    foreach (var node in Globals.AdjNodes.Values)
+                    {
+                        Console.WriteLine($"Last Task Received Time: {node.LastTaskResultTime} from {node.Address}");
+                        Console.WriteLine($"Last Task Sent Time: {node.LastTaskSentTime} from {node.Address}");
+                    }
                 }
                 else
                 {
