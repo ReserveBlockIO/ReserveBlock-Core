@@ -455,7 +455,7 @@ namespace ReserveBlockCore.Services
                 var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/consensus";
                 return ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
             })
-            .WhenAtLeast(x => x, ConsensusClient.Majority());
+            .WhenAtLeast(x => x, ConsensusClient.Majority() - 1);
           
             if (!Globals.ConsensusNodes.Values.Any(x => x.IsConnected))
                 Console.WriteLine("You have no consensus nodes.");
