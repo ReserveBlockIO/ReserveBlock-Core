@@ -464,7 +464,7 @@ namespace ReserveBlockCore.Services
                                                     {
                                                         //process winners block
                                                         //1. 
-                                                        var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAdjudicator.Address);
+                                                        var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
                                                         winnersBlock.WinningBlock.AdjudicatorSignature = signature;
                                                         var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
                                                         if (result == true)
@@ -539,7 +539,7 @@ namespace ReserveBlockCore.Services
                                                                 {
                                                                     winnersBlock = null;
                                                                     winnersBlock = randomChosen;
-                                                                    var rSignature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAdjudicator.Address);
+                                                                    var rSignature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
                                                                     winnersBlock.WinningBlock.AdjudicatorSignature = rSignature;
                                                                     var nResult = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
                                                                     if (nResult == true)
@@ -624,7 +624,7 @@ namespace ReserveBlockCore.Services
                                                             if (randomChosen != null)
                                                             {
                                                                 winnersBlock = randomChosen;
-                                                                var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAdjudicator.Address);
+                                                                var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
                                                                 winnersBlock.WinningBlock.AdjudicatorSignature = signature;
                                                                 var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
                                                                 if (result == true)

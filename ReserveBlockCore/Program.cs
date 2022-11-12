@@ -131,7 +131,7 @@ namespace ReserveBlockCore
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();
-            if(Globals.LastBlock.Height >= Globals.BlockLock)
+            if(Globals.LastBlock.Height > Globals.BlockLock)
                 await StartupService.ConnectoToConsensusNodes();
             await TaskQuestionUtility.CreateTaskQuestion("rndNum");
             var WorkTask = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;

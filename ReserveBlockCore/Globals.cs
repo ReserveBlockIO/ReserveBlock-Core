@@ -16,7 +16,7 @@ namespace ReserveBlockCore
 
         #region Timers
 
-        public const string LeadAddress = "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK";
+        public static string LeadAddress = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY";
         public static Timer? heightTimer; //timer for getting height from other nodes
         public static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 

@@ -26,7 +26,7 @@ namespace ReserveBlockCore.Nodes
                     switch(taskQuestion.TaskType)
                     {
                         case "rndNum":
-                            if(Globals.LastBlock.Height >= Globals.BlockLock)
+                            if(Globals.LastBlock.Height > Globals.BlockLock)
                             {
                                 RandomNumberTaskV3(taskQuestion.BlockHeight);
                             }
@@ -53,7 +53,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
                             taskWin.Address = currentTaskAns.Address;
                             taskWin.WinningBlock = block;
-                            if (block.Height >= Globals.BlockLock)
+                            if (block.Height > Globals.BlockLock)
                                 await P2PClient.SendWinningTaskV3(taskWin);
                             else
                                 await P2PClient.SendWinningTask_New(taskWin);

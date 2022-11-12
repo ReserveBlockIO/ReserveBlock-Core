@@ -289,7 +289,11 @@ namespace ReserveBlockCore.Services
                 if(Globals.IsTestNet)
                 {
                     if(adj.Address.StartsWith("x"))
+                    {
+                        Globals.LeadAddress = "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK";
                         Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
+                    }
+                        
                 }
                 else
                 {
@@ -511,7 +515,7 @@ namespace ReserveBlockCore.Services
                     var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
 
                     //xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK
-                    if (Globals.LastBlock.Height < Globals.BlockLock)
+                    if (Globals.LastBlock.Height <= Globals.BlockLock)
                     {
                         var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();
                         foreach (var adjudicator in LeadAdjudicators)

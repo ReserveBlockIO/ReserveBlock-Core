@@ -8,6 +8,17 @@ namespace ReserveBlockCore.Utilities
     {
         public static int GetBlockVersion(long height)
         {
+            //testnet
+            if(Globals.IsTestNet)
+            {
+                if (height > Globals.BlockLock)
+                    return 3;
+                if (height < 15)
+                    return 2;
+            }
+           
+
+
             if (height > Globals.BlockLock)
                 return 3;
             else if (height > 294000)
@@ -19,8 +30,7 @@ namespace ReserveBlockCore.Utilities
         public static async Task<bool> Version2Rules(Block block)
         {
             bool result = false;
-            var leadAdj = Globals.LeadAdjudicator;
-            var leadAdjAddr = leadAdj.Address;
+            var leadAdjAddr = Globals.LeadAddress;
 
             if(block.AdjudicatorSignature != null)
             {

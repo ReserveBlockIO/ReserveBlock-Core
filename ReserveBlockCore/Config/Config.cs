@@ -161,7 +161,7 @@ namespace ReserveBlockCore.Config
 				Globals.Port = 13338;
 				Globals.APIPort = 17292;
 				Globals.AddressPrefix = 0x89; //address prefix 'x'
-				Globals.BlockLock = 300;
+				Globals.BlockLock = 15;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))
