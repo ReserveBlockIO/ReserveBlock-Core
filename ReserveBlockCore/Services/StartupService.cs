@@ -286,7 +286,16 @@ namespace ReserveBlockCore.Services
 
             foreach(var adj in adjudicators.FindAll().ToArray())
             {
-                Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
+                if(Globals.IsTestNet)
+                {
+                    if(adj.Address.StartsWith("x"))
+                        Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
+                }
+                else
+                {
+                    if (adj.Address.StartsWith("R"))
+                        Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
+                }
             }
         } 
 
@@ -630,7 +639,7 @@ namespace ReserveBlockCore.Services
                         var lastBlock = Globals.LastBlock;
                         var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        if(true)
+                        if(true)//CHANGE THIS BACK - AARON
                         {
                             DateTime endTime = DateTime.UtcNow;
                             ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
