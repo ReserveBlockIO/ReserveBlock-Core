@@ -188,7 +188,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Globals.CLIVersion);
                 })
-                .WithAutomaticReconnect()
+                .WithAutomaticReconnect(new RetryPolicy())
                 .Build();
 
                 LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");
