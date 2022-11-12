@@ -128,9 +128,27 @@ namespace ReserveBlockCore.Services
         internal static void StartupDatabase()
         {                        
             Console.WriteLine("Initializing Reserve Block Database...");
+            DbContext.Initialize();
             var peerDb = Peers.GetAll();
             Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
                 peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+        }
+
+        internal static void SetAdjudicatorAddresses()
+        {
+            Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
+
+            Globals.AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
+            {
+                ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
+                ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
+                ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
+                ["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+            };
+
+            var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+            Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
         }
 
         internal static void HDWalletCheck()
@@ -607,7 +625,7 @@ namespace ReserveBlockCore.Services
                         var lastBlock = Globals.LastBlock;
                         var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+                        if(true)
                         {
                             DateTime endTime = DateTime.UtcNow;
                             ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");

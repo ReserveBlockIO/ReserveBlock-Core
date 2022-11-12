@@ -56,6 +56,8 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();// initializes databases
 
+            StartupService.SetAdjudicatorAddresses();
+
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet

@@ -11,20 +11,7 @@ namespace ReserveBlockCore
     {
         static Globals()
         {
-            DbContext.Initialize();
-            LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
 
-            AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
-            {
-                ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
-                ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
-                ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
-                ["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
-                ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
-            };
-            
-            var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-            AdjudicateAccount = Accounts.Where(x => AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
         }
 
         #region Timers
