@@ -41,7 +41,7 @@ namespace ReserveBlockCore.P2P
 
         private static async Task RemoveAdjNode(AdjNodeInfo node)
         {
-            if (Globals.AdjNodes.TryRemove(node.IpAddress, out AdjNodeInfo test))
+            if(node.Connection != null)
                 await node.Connection.DisposeAsync();
         }
 

@@ -265,12 +265,12 @@ namespace ReserveBlockCore.Services
 
             if(Globals.IsTestNet == true)
             {
-                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xAZG6Q52Ap4QxiUZVsNUaSYd3ECtoAdvvj");
+                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK");
                 if (test_adjudicator == null)
                 {
                     Adjudicators adjTest = new Adjudicators
                     {
-                        Address = "xAZG6Q52Ap4QxiUZVsNUaSYd3ECtoAdvvj",
+                        Address = "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK",
                         IsActive = true,
                         IsLeadAdjuidcator = true,
                         LastChecked = DateTime.UtcNow,
@@ -282,6 +282,11 @@ namespace ReserveBlockCore.Services
 
                     adjudicators.InsertSafe(adjTest);
                 }
+            }
+
+            foreach(var adj in adjudicators.FindAll().ToArray())
+            {
+                Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
             }
         } 
 
