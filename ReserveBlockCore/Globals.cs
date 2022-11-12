@@ -15,6 +15,7 @@ namespace ReserveBlockCore
         }
 
         #region Timers
+        public static bool IsTestNet = false;
 
         public static string LeadAddress = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY";
         public static Timer? heightTimer; //timer for getting height from other nodes
@@ -69,7 +70,6 @@ namespace ReserveBlockCore
         public static string? MotherAddress = null;
         public static string? CustomPath = null;
 
-        public static bool IsTestNet = false;
         public static bool AlwaysRequireWalletPassword = false;
         public static bool AlwaysRequireAPIPassword = false;
         public static bool StopConsoleOutput = false;        

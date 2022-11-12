@@ -63,7 +63,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 15 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 5000 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -499,22 +499,6 @@ namespace ReserveBlockCore
                     LogUtility.Log("Connection to Peers Lost", "Program.validatorListCheckTimer_Elapsed()");
                     await StartupService.StartupPeers();
                     //potentially no connected nodes.
-                }
-                else
-                {
-                    if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
-                    {
-                        await P2PClient.DropDisconnectedAdjudicators();
-                        
-                        var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                        
-                        if (NumAdjudicators < 2)
-                        {
-                            Console.WriteLine("You have lost connection to the adjudicator. Attempting to reconnect...");
-                            LogUtility.Log("Connection to Adj Lost", "Program.validatorListCheckTimer_Elapsed()");
-                            await StartupService.ConnectoToAdjudicators();
-                        }
-                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))

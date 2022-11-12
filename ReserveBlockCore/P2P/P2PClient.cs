@@ -233,7 +233,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("walver", Globals.CLIVersion);
 
                 })
-                .WithAutomaticReconnect()
+                .WithAutomaticReconnect(new RetryPolicy())
                 .Build();
 
 
