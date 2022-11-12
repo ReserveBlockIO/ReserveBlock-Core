@@ -765,6 +765,7 @@ namespace ReserveBlockCore.Services
             // finish resume functionality
 
             Globals.AdjudicateLock = true;
+            await StartupService.ConnectoToConsensusNodes();
             Console.WriteLine("Doing the work **New**");
             while (true)
             {                
@@ -956,10 +957,14 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height <= Globals.BlockLock)
+            if(Globals.LastBlock.Height < Globals.BlockLock)
             {
                 await DoWork_New();
-            }            
+            }
+            else
+            {
+                await DoWorkV3();
+            }
         }
 
         #endregion
