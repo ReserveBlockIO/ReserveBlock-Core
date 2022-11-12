@@ -129,6 +129,7 @@ namespace ReserveBlockCore
             StartupService.SetLastBlock();
 
             //This is for consensus start.
+            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();
             if(Globals.LastBlock.Height >= Globals.BlockLock)
                 await StartupService.ConnectoToConsensusNodes();
@@ -143,8 +144,7 @@ namespace ReserveBlockCore
             //StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
-
-            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
+            
             StartupService.BootstrapBeacons();
             await StartupService.EstablishBeaconReference();
             
