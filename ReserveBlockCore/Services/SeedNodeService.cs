@@ -170,6 +170,49 @@ namespace ReserveBlockCore.Services
 
                 }
             }
+            else
+            {
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        string endpoint = url + "/api/V1/GetAdjPool";
+                        using (var Response = await client.GetAsync(endpoint))
+                        {
+                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                            {
+                                string data = await Response.Content.ReadAsStringAsync();
+
+                                var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
+
+                                if(result != null)
+                                {
+                                    var testnetList = result.Where(x => x.IPAddress == "38.15.227.199" || x.IPAddress == "162.248.14.123").ToList();
+                                    var oneExtra = result.Where(x => x.IPAddress != "38.15.227.199" && x.IPAddress != "162.248.14.123").Take(1).FirstOrDefault(); ;
+
+                                    if(oneExtra != null)
+                                        testnetList.Add(oneExtra);
+
+                                    foreach (var pool in result)
+                                        Globals.ConsensusNodes[pool.IPAddress] = new ConsensusNodeInfo
+                                        {
+                                            Address = pool.RBXAddress,
+                                            IpAddress = pool.IPAddress
+                                        };
+                                }
+                            }
+                            else
+                            {
+
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
             
         }
 

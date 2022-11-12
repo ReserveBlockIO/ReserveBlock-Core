@@ -503,6 +503,16 @@ namespace ReserveBlockCore
 
                 if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
                 {
+                    var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+
+                    if (NumAdjudicators < 2)
+                    {
+                        await StartupService.ConnectoToAdjudicators();
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+                {
                     if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
                     {
                         //stop connection and reconnct to ADJ plainly. 
