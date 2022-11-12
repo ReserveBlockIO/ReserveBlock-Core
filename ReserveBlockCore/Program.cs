@@ -130,7 +130,8 @@ namespace ReserveBlockCore
 
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();
-            await StartupService.ConnectoToConsensusNodes();
+            if(Globals.LastBlock.Height >= Globals.BlockLock)
+                await StartupService.ConnectoToConsensusNodes();
             await TaskQuestionUtility.CreateTaskQuestion("rndNum");
             var WorkTask = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
 
