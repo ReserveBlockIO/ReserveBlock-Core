@@ -61,7 +61,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 30 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 60 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
