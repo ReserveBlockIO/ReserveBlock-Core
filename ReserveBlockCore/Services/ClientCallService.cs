@@ -777,6 +777,7 @@ namespace ReserveBlockCore.Services
             // finish resume functionality
 
             Globals.AdjudicateLock = true;
+            await StartupService.ConnectoToConsensusNodes();
             Console.WriteLine("Doing the work **New**");
             while (true)
             {                

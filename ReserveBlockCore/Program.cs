@@ -63,7 +63,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 5000 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 78 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -131,8 +131,8 @@ namespace ReserveBlockCore
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();
-            if(Globals.LastBlock.Height > Globals.BlockLock)
-                await StartupService.ConnectoToConsensusNodes();
+            //if(Globals.LastBlock.Height > Globals.BlockLock)
+            //    await StartupService.ConnectoToConsensusNodes();
             await TaskQuestionUtility.CreateTaskQuestion("rndNum");
             var WorkTask = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
 
@@ -499,6 +499,16 @@ namespace ReserveBlockCore
                     LogUtility.Log("Connection to Peers Lost", "Program.validatorListCheckTimer_Elapsed()");
                     await StartupService.StartupPeers();
                     //potentially no connected nodes.
+                }
+
+                if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+                {
+                    var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+
+                    if (NumAdjudicators < 2)
+                    {
+                        await StartupService.ConnectoToAdjudicators();
+                    }
                 }
 
                 if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
