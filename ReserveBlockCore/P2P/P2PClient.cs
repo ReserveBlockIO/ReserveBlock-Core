@@ -363,12 +363,15 @@ namespace ReserveBlockCore.P2P
             var peerDB = Peers.GetAll();
 
             await DropDisconnectedPeers();
-            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", "")))
-                .Union(Globals.BannedIPs.Keys);
 
-            if(Globals.IsTestNet)
-                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":13338", "")))
-                .Union(Globals.BannedIPs.Keys);
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", ""))
+                .Union(Globals.BannedIPs.Keys)
+                .Union(Globals.ReportedIPs.Keys));
+
+            if (Globals.IsTestNet)
+                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":13338", ""))
+                .Union(Globals.BannedIPs.Keys)
+                .Union(Globals.ReportedIPs.Keys));
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
@@ -761,7 +764,7 @@ namespace ReserveBlockCore.P2P
                 return (remoteNodeHeight, startTimer, totalMS); 
             }
             catch { }
-            return default;
+            return (-1, DateTime.UtcNow, 0);
         }
         public static async Task UpdateNodeHeights()
         {
@@ -775,7 +778,7 @@ namespace ReserveBlockCore.P2P
         public static async Task<(bool, long)> GetCurrentHeight()
         {
             bool newHeightFound = false;
-            long height = 0;
+            long height = -1;
 
             var peersConnected = await P2PClient.ArePeersConnected();
 

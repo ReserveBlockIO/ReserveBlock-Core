@@ -758,7 +758,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task DoWorkV3()
         {
-            if (Globals.AdjudicateLock || Globals.AdjudicateAccount == null || Globals.FortisPool.Count == 0 || Globals.StopAllTimers)
+            if (Globals.AdjudicateLock || Globals.AdjudicateAccount == null  || Globals.StopAllTimers)
                 return;
 
             //var Nodes = Globals.ConsensusNodes.Values.ToArray();
