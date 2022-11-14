@@ -149,10 +149,12 @@ namespace ReserveBlockCore.Services
 
             var Accounts = AccountData.GetAccounts().FindAll().ToArray();
             Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
-
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+            if(Globals.AdjudicateAccount != null)
+            {
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+            }
         }
 
         internal static void HDWalletCheck()
