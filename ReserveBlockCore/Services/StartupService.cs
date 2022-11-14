@@ -490,12 +490,14 @@ namespace ReserveBlockCore.Services
 
                 var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
 
+                var Source = new CancellationTokenSource();
                 await Globals.ConsensusNodes.Values.Select(adjudicator =>
                 {
                     if (adjudicator.IsConnected || adjudicator.Address == Globals.AdjudicateAccount.Address)
                         return Task.FromResult(true);
                     var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/consensus";
-                    return ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+                    var ConnectFunc = () => ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+                    return ConnectFunc.RetryUntilSuccessOrCancel(x => true, 100, Source.Token);
                 })
                 .WhenAtLeast(x => x, ConsensusClient.Majority());
 
