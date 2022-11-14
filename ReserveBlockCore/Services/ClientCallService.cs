@@ -761,6 +761,18 @@ namespace ReserveBlockCore.Services
             if (Globals.AdjudicateLock || Globals.AdjudicateAccount == null || Globals.FortisPool.Count == 0 || Globals.StopAllTimers)
                 return;
 
+            //var Nodes = Globals.ConsensusNodes.Values.ToArray();
+            //var HeightTasks = Nodes.Select(x => ConsensusClient.GetNodeHeight(x)).ToArray();
+            //await Task.WhenAll(HeightTasks);
+            //var Heights = HeightTasks.Select(x => x.IsCompletedSuccessfully ? x.Result : 0).ToArray();
+            //var Height = await HeightTasks?.Max(async x => await x);
+            //var DownloadTasks = new List<Task>();
+
+            //for(var height = Globals.LastBlock.Height + 1; height <= Height; height++)
+            //{
+            //    DownloadTasks.Add(ConsensusClient.GetBlock());
+            //}            
+
             // do peer height check
             // finish resume functionality
 
@@ -771,6 +783,9 @@ namespace ReserveBlockCore.Services
                 var BlockDelay = Task.Delay(20000);
                 try
                 {
+                    await StartupService.ConnectoToConsensusNodes();
+                    Globals.ConsensusTokenSource?.Dispose();
+                    Globals.ConsensusTokenSource = new CancellationTokenSource();
                     var fortisPool = Globals.FortisPool.Values;
                     var State = ConsensusServer.GetState();
                     var Token = Globals.ConsensusTokenSource.Token;
@@ -887,8 +902,7 @@ namespace ReserveBlockCore.Services
                         winner.WinningBlock.AdjudicatorSignature = signature;
                         var result = await BlockValidatorService.ValidateBlock(winner.WinningBlock);
                         if (result)
-                        {
-                            Globals.ConsensusTokenSource = new CancellationTokenSource();
+                        {                            
                             var nextBlock = winner.WinningBlock;
                             ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
                             ConsoleWriterService.Output(DateTime.Now.ToString());
@@ -934,9 +948,16 @@ namespace ReserveBlockCore.Services
                         }
                         else
                             ConsoleWriterService.Output($"Block failed validation for {winner.Address}");
-                }
+                    }
 
-                ConsoleWriterService.Output($"Task Winner was Not Found! There were {PotentialWinners.Length} potential winners" +
+                    DbContext.DB_Consensus.BeginTrans();
+                    var db = Consensus.ConsensusData.GetAll();
+                    var history = ConsensusHistory.ConsensusHistoryData.GetAll();
+                    db.DeleteManySafe(x => x.Height <= Globals.LastBlock.Height);
+                    history.DeleteManySafe(x => x.Height <= Globals.LastBlock.Height);
+                    DbContext.DB_Consensus.Commit();
+
+                    ConsoleWriterService.Output($"Task Winner was Not Found! There were {PotentialWinners.Length} potential winners" +
                     $" and {SubmittedWinners.Length} submitted answers.");
                     
                 }
@@ -944,6 +965,11 @@ namespace ReserveBlockCore.Services
                 {
                     Console.WriteLine("Error: " + ex.ToString());
                     Console.WriteLine("Client Call Service");
+                    try
+                    {
+                        DbContext.DB_Consensus.Rollback();
+                    }
+                    catch { }
                 }
 
                 await BlockDelay;
@@ -956,10 +982,14 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height <= Globals.BlockLock)
+            if(Globals.LastBlock.Height < Globals.BlockLock)
             {
                 await DoWork_New();
-            }            
+            }
+            else
+            {
+                await DoWorkV3();
+            }
         }
 
         #endregion

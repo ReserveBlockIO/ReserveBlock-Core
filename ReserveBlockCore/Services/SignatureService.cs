@@ -104,14 +104,8 @@ namespace ReserveBlockCore.Services
 
         public static string AdjudicatorSignature(string message)
         {
-            var account = Globals.AdjudicateAccount;
-
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-            return SignatureService.CreateSignature(message, privateKey, account.PublicKey);
+            var account = Globals.AdjudicateAccount;            
+            return SignatureService.CreateSignature(message, Globals.AdjudicatePrivateKey, account.PublicKey);
         }
     }
 }

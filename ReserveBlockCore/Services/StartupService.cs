@@ -149,6 +149,10 @@ namespace ReserveBlockCore.Services
 
             var Accounts = AccountData.GetAccounts().FindAll().ToArray();
             Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
+
+            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
+            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
         }
 
         internal static void HDWalletCheck()
@@ -474,27 +478,31 @@ namespace ReserveBlockCore.Services
             if (Globals.AdjudicateAccount == null)
                 return;
 
-            var account = Globals.AdjudicateAccount;
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-            var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
-            
-            var CurrentAddresses = Globals.ConsensusNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
-
-            await Globals.ConsensusNodes.Values.Select(adjudicator =>
+            try
             {
-                if (adjudicator.IsConnected)
-                    return Task.FromResult(true);
-                var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/consensus";
-                return ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
-            })
-            .WhenAtLeast(x => x, ConsensusClient.Majority() - 1);
-          
-            if (!Globals.ConsensusNodes.Values.Any(x => x.IsConnected))
-                Console.WriteLine("You have no consensus nodes.");
+                var account = Globals.AdjudicateAccount;
+                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
+
+                await Globals.ConsensusNodes.Values.Select(adjudicator =>
+                {
+                    if (adjudicator.IsConnected || adjudicator.Address == Globals.AdjudicateAccount.Address)
+                        return Task.FromResult(true);
+                    var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/consensus";
+                    return ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+                })
+                .WhenAtLeast(x => x, ConsensusClient.Majority());
+
+                if (!Globals.ConsensusNodes.Values.Any(x => x.IsConnected))
+                    Console.WriteLine("You have no consensus nodes.");
+            }
+            catch(Exception ex)
+            {
+            }
         }
 
         public static async Task ConnectoToAdjudicators()

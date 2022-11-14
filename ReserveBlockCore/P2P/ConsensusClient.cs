@@ -89,8 +89,8 @@ namespace ReserveBlockCore.P2P
             var Now = DateTime.Now;
 
             ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
-
-            var ConsensusSource = new CancellationTokenSource();
+            
+            var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             while (!BestCase() && !(HasMajorityIntersectionSet() && DateTime.Now < Now.AddMilliseconds(timeToFinalize)))
             {
                 await ConsensusIteration(height, methodCode, Peers, ConsensusSource.Token);
@@ -106,7 +106,7 @@ namespace ReserveBlockCore.P2P
             else
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalizing);
 
-            var FinalizingSource = new CancellationTokenSource();
+            var FinalizingSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             await Peers.Select(node =>
             {
                 var IsFinalizingOrDoneFunc = () => node.Connection.InvokeCoreAsync<bool>("IsFinalizingOrDone", args: new object?[] { height, methodCode }, ct);
@@ -115,7 +115,7 @@ namespace ReserveBlockCore.P2P
             .WhenAtLeast(x => x, Majority() - 1);            
             FinalizingSource.Cancel();
 
-            var FinalSource = new CancellationTokenSource();            
+            var FinalSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             await ConsensusIteration(height, methodCode, Peers, FinalSource.Token);
             FinalSource.Cancel();
 
@@ -233,68 +233,41 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        public static async Task<bool> GetBlock(long height, ConsensusNodeInfo node)
+        {
+            var startTime = DateTime.Now;
+            long blockSize = 0;
+            Block Block = null;
+            try
+            {
+                var source = new CancellationTokenSource(10000);
+                Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
+                if (Block != null)
+                {
+                    blockSize = Block.Size;
+                    if (Block.Height == height)
+                    {
+                        BlockDownloadService.BlockDict[height] = (Block, node.IpAddress);
+                        return true;
+                    }                        
+                }
+            }
+            catch { }
 
+            return false;
+        }
 
-
-
-        #region Get Height of Nodes for Timed Events
-
-        public static async Task<(long, DateTime, int)> GetNodeHeight(NodeInfo node)
+        public static async Task<long> GetNodeHeight(ConsensusNodeInfo node)
         {
             try
             {
-                var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
-                var endTimer = DateTime.UtcNow;
-                var totalMS = (endTimer - startTimer).Milliseconds;
-
-                return (remoteNodeHeight, startTimer, totalMS); 
+                if (!node.IsConnected)
+                    return default;
+                using (var Source = new CancellationTokenSource(2000))
+                    return await node.Connection.InvokeAsync<long>("SendBlockHeight", Source.Token);
             }
             catch { }
             return default;
         }
-        public static async Task UpdateNodeHeights()
-        {
-            foreach (var node in Globals.Nodes.Values)                
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);           
-        }
-
-        #endregion
-
-        #region Get Current Height of Nodes
-        public static async Task<(bool, long)> GetCurrentHeight()
-        {
-            bool newHeightFound = false;
-            long height = 0;
-
-            var peersConnected = await P2PClient.ArePeersConnected();
-
-            if (!peersConnected)
-            {                
-                return (newHeightFound, height);
-            }
-            else
-            {
-                var myHeight = Globals.LastBlock.Height;
-                await UpdateNodeHeights();
-
-                foreach (var node in Globals.Nodes.Values)
-                {
-                    var remoteNodeHeight = node.NodeHeight;
-                    if (myHeight < remoteNodeHeight)
-                    {
-                        newHeightFound = true;
-                        if (remoteNodeHeight > height)
-                        {
-                            height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                        }
-                    }
-                }
-            }
-            return (newHeightFound, height);
-        }
-
-        #endregion
-
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -75,6 +76,7 @@ namespace ReserveBlockCore
         public static bool StopConsoleOutput = false;        
         public static bool AdjudicateLock = false;
         public static Account AdjudicateAccount;
+        public static PrivateKey AdjudicatePrivateKey;
         public static bool APICallURLLogging = false;
         public static bool ChainCheckPoint = false;
         public static bool PrintConsoleErrors = false;

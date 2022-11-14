@@ -50,7 +50,7 @@ namespace ReserveBlockCore.P2P
             }            
         }
 
-        private static ConcurrentDictionary<string, AdjPool> AdjPool;
+        public static ConcurrentDictionary<string, AdjPool> AdjPool;
         public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>> Messages;
         public static ConcurrentDictionary<(long Height, int MethodCode, string SendingAddress), ConcurrentDictionary<string, bool>> Histories;
         private static ConsensusState ConsenusStateSingelton;
@@ -60,7 +60,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var peerIP = GetIP(Context);
-                if(!AdjPool.TryGetValue(peerIP, out var Pool))
+                if(!Globals.ConsensusNodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
                     return;
@@ -93,6 +93,15 @@ namespace ReserveBlockCore.P2P
                         "Connected, but your address signature failed to verify. You are being disconnected.",
                         "Connected, but your address signature failed to verify with Consensus: " + address);
                     return;
+                }
+
+                if(!AdjPool.TryGetValue(peerIP, out var Pool))
+                {
+                    Pool = new AdjPool
+                    {
+                        Address = address,
+                    };
+                    AdjPool[peerIP] = Pool;
                 }
 
                 if (Pool.Context?.ConnectionId != Context.ConnectionId)
