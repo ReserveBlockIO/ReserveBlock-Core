@@ -239,7 +239,7 @@ namespace ReserveBlockCore.P2P
 
                 LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
 
-                var IPAddress = url.Replace("http://", "").Replace("/adjudicator", "").Replace(Globals.Port.ToString(), "");
+                var IPAddress = url.Replace("http://", "").Replace("/adjudicator", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
