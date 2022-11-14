@@ -61,7 +61,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 60 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 70 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -241,7 +241,7 @@ namespace ReserveBlockCore
 
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
-            await StartupService.ConnectoToAdjudicators();
+            await StartupService.ConnectToAdjudicators();
 
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
@@ -428,7 +428,7 @@ namespace ReserveBlockCore
                                     {
                                         await BlockDownloadService.GetAllBlocks();
                                         Thread.Sleep(1000);
-                                        await StartupService.ConnectoToAdjudicators();
+                                        await StartupService.ConnectToAdjudicators();
                                     }
                                 }
                             }
@@ -505,7 +505,7 @@ namespace ReserveBlockCore
 
                     if (NumAdjudicators < 2)
                     {
-                        await StartupService.ConnectoToAdjudicators();
+                        await StartupService.ConnectToAdjudicators();
                     }
                 }
 

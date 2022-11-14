@@ -193,7 +193,7 @@ namespace ReserveBlockCore.Services
                                     if(oneExtra != null)
                                         testnetList.Add(oneExtra);
 
-                                    foreach (var pool in result)
+                                    foreach (var pool in testnetList)
                                         Globals.ConsensusNodes[pool.IPAddress] = new ConsensusNodeInfo
                                         {
                                             Address = pool.RBXAddress,

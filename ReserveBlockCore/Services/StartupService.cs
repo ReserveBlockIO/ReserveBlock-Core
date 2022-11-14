@@ -507,7 +507,7 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        public static async Task ConnectoToAdjudicators()
+        public static async Task ConnectToAdjudicators()
         {
             if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
             {

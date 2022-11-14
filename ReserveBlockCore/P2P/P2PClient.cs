@@ -707,7 +707,7 @@ namespace ReserveBlockCore.P2P
                     }
                 }
 
-                await StartupService.ConnectoToAdjudicators();
+                await StartupService.ConnectToAdjudicators();
             }
         }
 

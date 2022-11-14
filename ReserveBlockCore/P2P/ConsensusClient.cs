@@ -193,7 +193,7 @@ namespace ReserveBlockCore.P2P
 
                 LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");
 
-                var IPAddress = url.Replace("http://", "").Replace("/consensus", "");
+                var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectConsensusNode()");

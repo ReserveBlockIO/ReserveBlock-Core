@@ -194,7 +194,7 @@ namespace ReserveBlockCore.Services
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                        await StartupService.ConnectoToAdjudicators();
+                        await StartupService.ConnectToAdjudicators();
                     }
                 }
                 else
@@ -247,7 +247,7 @@ namespace ReserveBlockCore.Services
                 //Reset validator variable.
                 StartupService.SetValidator();
                 //Reconnect
-                await StartupService.ConnectoToAdjudicators();
+                await StartupService.ConnectToAdjudicators();
 
                 return true;
             }
