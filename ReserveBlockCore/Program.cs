@@ -56,14 +56,12 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();// initializes databases
 
-            StartupService.SetAdjudicatorAddresses();
-
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 78 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 30 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -117,7 +115,7 @@ namespace ReserveBlockCore
                 });
             }
 
-            
+            StartupService.SetAdjudicatorAddresses();
 
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();
