@@ -155,7 +155,7 @@ namespace ReserveBlockCore.P2P
                        .WithAutomaticReconnect()
                        .Build();
                 
-                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
+                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "").Replace(Globals.Port.ToString(), "");
                 hubConnection.On<string, string>("GetMessage", async (message, data) =>
                 {                    
                     if (message == "blk" || message == "IP")
@@ -233,13 +233,13 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("walver", Globals.CLIVersion);
 
                 })
-                .WithAutomaticReconnect(new RetryPolicy())
+                .WithAutomaticReconnect()
                 .Build();
 
 
                 LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
 
-                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
+                var IPAddress = url.Replace("http://", "").Replace("/adjudicator", "").Replace(Globals.Port.ToString(), "");
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
