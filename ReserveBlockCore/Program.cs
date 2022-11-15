@@ -173,7 +173,7 @@ namespace ReserveBlockCore
             if(Globals.AdjudicateAccount != null)
             {
                 Globals.AdjPoolConCheckTimer = new Timer(adjPoolConnectionCheckTimer_Elapsed);
-                Globals.ConnectionHistoryTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds
+                Globals.AdjPoolConCheckTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds
             }
 
             string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
