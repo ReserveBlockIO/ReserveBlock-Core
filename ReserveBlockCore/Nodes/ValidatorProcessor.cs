@@ -43,26 +43,41 @@ namespace ReserveBlockCore.Nodes
                     var verifySecret = data;
                     var taskWin = new TaskWinner();
                     var fortisPool = Globals.FortisPool.Values;
-                    var currentTaskAns = Globals.CurrentTaskNumberAnswer;
+                    var answer = Globals.CurrentTaskNumberAnswerV3.Item2?.Answer ?? Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
 
-                    if(currentTaskAns != null)
+                    if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height)
                     {
-                        var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), currentTaskAns.Answer.ToString());
-                        if (block != null)
+                        if (answer != null)
                         {
-                            taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
-                            taskWin.Address = currentTaskAns.Address;
-                            taskWin.WinningBlock = block;
-                            if (block.Height > Globals.BlockLock)
-                                await P2PClient.SendWinningTaskV3(taskWin);
+                            var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), answer);
+                            if (block != null)
+                            {
+                                taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
+                                taskWin.Address = Globals.ValidatorAddress;
+                                taskWin.WinningBlock = block;
+                                Globals.CurrentWinner = (taskWin, DateTime.Now);
+                                if (block.Height > Globals.BlockLock)
+                                    await P2PClient.SendWinningTaskV3(taskWin);
+                                else
+                                    await P2PClient.SendWinningTask_New(taskWin);
+                            }
                             else
-                                await P2PClient.SendWinningTask_New(taskWin);
+                            {
+                                ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.ProcessData() - sendWinningBlock");
+                                node?.AsParamater(x => x.LastTaskError = true);
+                            }
                         }
+                    }
+                    else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8000)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
+                            await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1);
                         else
-                        {
-                            ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.ProcessData() - sendWinningBlock");
-                            node?.AsParamater(x => x.LastTaskError = true);
-                        }
+                            await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);
                     }
                 }
 
@@ -203,9 +218,19 @@ namespace ReserveBlockCore.Nodes
             }
 
             var taskAnswer = new TaskNumberAnswerV3();
-            var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);            
-            taskAnswer.Answer = num.ToString();
-            taskAnswer.Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
+            if (Globals.CurrentTaskNumberAnswerV3.Item1 != blockHeight)
+            {
+                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);
+                taskAnswer.Answer = num.ToString();
+                taskAnswer.Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
+                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, taskAnswer, DateTime.Now);
+            }
+            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Item3).Seconds < 5000)
+            {
+                return;
+            }
+            else
+                taskAnswer = Globals.CurrentTaskNumberAnswerV3.Item2;
             await P2PClient.SendTaskAnswerV3(taskAnswer);
         }
 
@@ -219,14 +244,21 @@ namespace ReserveBlockCore.Nodes
             }
 
             var taskAnswer = new TaskNumberAnswerV2();
-            var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);            
-            taskAnswer.Address = Globals.ValidatorAddress;
-            taskAnswer.Answer = num.ToString();
-            taskAnswer.SubmitTime = DateTime.Now;
-            taskAnswer.NextBlockHeight = blockHeight;
-
-            Globals.CurrentTaskNumberAnswer = taskAnswer;
-
+            if (Globals.CurrentTaskNumberAnswerV2.Item1 != blockHeight)
+            {
+                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);
+                taskAnswer.Address = Globals.ValidatorAddress;
+                taskAnswer.Answer = num.ToString();
+                taskAnswer.SubmitTime = DateTime.Now;
+                taskAnswer.NextBlockHeight = blockHeight;
+                Globals.CurrentTaskNumberAnswerV2 = (blockHeight, taskAnswer, DateTime.Now);
+            }
+            else if((DateTime.Now - Globals.CurrentTaskNumberAnswerV2.Item3).Seconds < 5000)
+            {
+                return;
+            }
+            else
+                taskAnswer = Globals.CurrentTaskNumberAnswerV2.Item2;
             await P2PClient.SendTaskAnswer_New(taskAnswer);
 
         }

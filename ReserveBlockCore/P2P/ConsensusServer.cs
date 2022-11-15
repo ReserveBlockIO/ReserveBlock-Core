@@ -18,17 +18,13 @@ namespace ReserveBlockCore.P2P
 
             var state = ConsensusState.ConsensusStateData.GetAll().FindOne(x => true);
 
-            //byte[] SaltBytes = new byte[16];
-            //RandomNumberGenerator.Fill(SaltBytes);
-            // select random number
-
             var CurrentHeight = Globals.LastBlock.Height + 1;
             if (state != null)
             {
                 ConsenusStateSingelton = state;
                 if (CurrentHeight == state.Height)
                 {
-                    UpdateState(CurrentHeight, state.MethodCode, (int)state.Status);
+                    UpdateState(CurrentHeight, state.MethodCode, (int)state.Status, state.RandomNumber, state.Salt);
 
                     var messages = Consensus.ConsensusData.GetAll().FindAll().ToArray();
                     var histories = ConsensusHistory.ConsensusHistoryData.GetAll().FindAll().ToArray();

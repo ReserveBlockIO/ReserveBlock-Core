@@ -137,8 +137,10 @@ namespace ReserveBlockCore
         public static ConcurrentMultiDictionary<string, string, BeaconPool> BeaconPool = new ConcurrentMultiDictionary<string, string, BeaconPool>(); // IP address, Reference
         public static ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue> ConnectionHistoryDict = new ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue>();
         public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
-        
-        public static TaskNumberAnswerV2? CurrentTaskNumberAnswer = null;
+
+        public static (long, TaskNumberAnswerV2?, DateTime) CurrentTaskNumberAnswerV2;
+        public static (long, TaskNumberAnswerV3?, DateTime) CurrentTaskNumberAnswerV3;
+        public static (TaskWinner, DateTime) CurrentWinner;
         public static string VerifySecret = "";
 
         public static ConcurrentDictionary<string, TaskWinner> TaskWinnerDict = new ConcurrentDictionary<string, TaskWinner>(); // RBX address
