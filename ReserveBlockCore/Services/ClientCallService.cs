@@ -782,7 +782,7 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("Doing the work **New**");
             while (true)
             {                
-                var BlockDelay = Task.Delay(20000);
+                var BlockDelay = Task.Delay(25000);
                 try
                 {                    
                     await StartupService.ConnectoToConsensusNodes();
