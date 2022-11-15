@@ -89,7 +89,22 @@ namespace ReserveBlockCore.P2P
             var Now = DateTime.Now;
 
             ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
-            
+            if(!ConsensusServer.Messages.TryGetValue((height, methodCode), out var Message))
+            {
+                Message = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                ConsensusServer.Messages[(height, methodCode)] = Message;
+            }
+
+            Message[Globals.AdjudicateAccount.Address] = (message, signature);
+
+            if (!ConsensusServer.Histories.TryGetValue((height, methodCode, Globals.AdjudicateAccount.Address), out var History))
+            {
+                History = new ConcurrentDictionary<string, bool>();
+                ConsensusServer.Histories[(height, methodCode, Globals.AdjudicateAccount.Address)] = History;
+            }
+
+            History[Globals.AdjudicateAccount.Address] = true;            
+
             var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             while (!BestCase() && !(HasMajorityIntersectionSet() && DateTime.Now < Now.AddMilliseconds(timeToFinalize)))
             {
