@@ -765,6 +765,71 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static async Task AdjudicatorInfo()
+        {
+            var consensusNodes = Globals.ConsensusNodes.Values.ToList();
+            var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
+
+            if(consensusNodes.Count() > 0)
+            {
+                ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
+                foreach (var cNode in consensusNodes)
+                {
+                    var line = $"IP: {cNode.IpAddress} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
+                    ConsoleWriterService.Output(line);
+                }
+                ConsoleWriterService.Output("******************************************************************************");
+            }
+            else
+            {
+                ConsoleWriterService.Output("Empty");
+            }
+
+            if(taskSelectedNumbersV3.Count() > 0)
+            {
+                ConsoleWriterService.Output("*******************************Task Answers V3********************************");
+                foreach (var taskNum in taskSelectedNumbersV3)
+                {
+                    var taskLine = $"Address: {taskNum.Address} | Answer: {taskNum.Answer} | Signature: {taskNum.Signature.Substring(0,10)}";
+                    ConsoleWriterService.Output(taskLine);
+                }
+                ConsoleWriterService.Output("******************************************************************************");
+            }
+            else
+            {
+                ConsoleWriterService.Output("Empty 2");
+            }
+        }
+        public static async Task ConsensusNodeInfo()
+        {
+            var conState = ConsensusServer.GetState();
+            ConsoleWriterService.Output("*******************************Consensus State********************************");
+            
+            var conStateLine = $"Height: {conState.Height} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode} | Salt: {conState.salt}";
+            ConsoleWriterService.Output(conStateLine);
+            
+            ConsoleWriterService.Output("******************************************************************************");
+
+            var conMessage = string.Join("\r\n", ConsensusServer.Messages.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Message + " " + y.Value.Signature))
+                .SelectMany(x => x));
+
+            ConsoleWriterService.Output("*****************************Consensus Messages*******************************");
+
+            ConsoleWriterService.Output(conMessage);
+
+            ConsoleWriterService.Output("******************************************************************************");
+
+            var conHistories = string.Join("\r\n", ConsensusServer.Histories.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + x.Key.SendingAddress + " " + y.Key))
+                .SelectMany(x => x));
+
+            ConsoleWriterService.Output("*****************************Consensus Histories*******************************");
+
+            ConsoleWriterService.Output(conHistories);
+
+            ConsoleWriterService.Output("******************************************************************************");
+        }
+
+
         public static async Task<string> CreateDnr()
         {
             var output = "";
