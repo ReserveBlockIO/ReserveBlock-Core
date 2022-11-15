@@ -136,25 +136,50 @@ namespace ReserveBlockCore.Services
 
         internal static void SetAdjudicatorAddresses()
         {
-            Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
-
-            Globals.AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
+            if(!Globals.IsTestNet)
             {
-                ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
-                ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
-                ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
-                ["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
-                ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
-            };
+                Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
 
-            var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-            Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
-            if(Globals.AdjudicateAccount != null)
-            {
-                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
-                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+                //These need to be main net addresses.
+                Globals.AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
+                {
+                    ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
+                    ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
+                    ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
+                    ["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                    ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                };
+
+                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+                Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
+                if (Globals.AdjudicateAccount != null)
+                {
+                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
+                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+                }
             }
+            else
+            {
+                Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
+
+                Globals.AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
+                {
+                    ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
+                    ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
+                    ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                };
+
+                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+                Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
+                if (Globals.AdjudicateAccount != null)
+                {
+                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
+                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+                }
+            }
+            
         }
 
         internal static void HDWalletCheck()
