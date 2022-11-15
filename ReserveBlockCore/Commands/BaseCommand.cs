@@ -51,6 +51,12 @@ namespace ReserveBlockCore.Commands
                 case "/resetval":
                     BaseCommandServices.ResetValidator();
                     break;
+                case "/adjinfo":
+                    await BaseCommandServices.AdjudicatorInfo();
+                    break;
+                case "/cinfo":
+                    await BaseCommandServices.ConsensusNodeInfo();
+                    break;
                 case "/encrypt":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.EncryptWallet();

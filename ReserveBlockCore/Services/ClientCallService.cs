@@ -777,13 +777,14 @@ namespace ReserveBlockCore.Services
             // finish resume functionality
 
             Globals.AdjudicateLock = true;
+            await TaskQuestionUtility.CreateTaskQuestion("rndNum");
             await StartupService.ConnectoToConsensusNodes();
             Console.WriteLine("Doing the work **New**");
             while (true)
             {                
-                var BlockDelay = Task.Delay(20000);
+                var BlockDelay = Task.Delay(25000);
                 try
-                {
+                {                    
                     await StartupService.ConnectoToConsensusNodes();
                     Globals.ConsensusTokenSource?.Dispose();
                     Globals.ConsensusTokenSource = new CancellationTokenSource();
@@ -795,14 +796,12 @@ namespace ReserveBlockCore.Services
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
-
-                    ConsensusServer.UpdateState(methodCode: 1, status: (int)ConsensusStatus.Processing);
+                    
                     var MySubmissions = Globals.TaskAnswerDictV3.Values.ToArray();
                     var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
                     var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
                     var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
-
-                    ConsensusServer.UpdateState(methodCode: 2, status: (int)ConsensusStatus.Processing);
+                    
                     var DecryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 2, MyDecryptedAnswer, MyEncryptedAnswer, 1000, Token);
                     var Answers = DecryptedAnswers.Select(x =>
                     {
@@ -861,8 +860,7 @@ namespace ReserveBlockCore.Services
                     })
                     .Where(x => x != null)
                     .ToArray();
-
-                    ConsensusServer.UpdateState(methodCode: 3, status: (int)ConsensusStatus.Processing);
+                    
                     var MySubmittedWinnersString = JsonConvert.SerializeObject(MySubmittedWinners);
                     var MySubmittedWinnersSignature = SignatureService.AdjudicatorSignature(MySubmittedWinnersString);
                     var SubmittedWinners = await ConsensusClient.ConsensusRun(State.Height, 3, MySubmittedWinnersString, MySubmittedWinnersSignature, 7000, Token);
@@ -878,8 +876,7 @@ namespace ReserveBlockCore.Services
 
                     var WinnerHasheSignatures = WinnerDict.Values.Select(x => x.WinningBlock.Hash).Select(x => x + ":" + SignatureService.AdjudicatorSignature(x)).ToArray();
                     var WinnerHasheSignaturesString = JsonConvert.SerializeObject(WinnerHasheSignatures);
-                    var WinnerHasheSignaturesSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignaturesString);
-                    ConsensusServer.UpdateState(methodCode: 4, status: (int)ConsensusStatus.Processing);
+                    var WinnerHasheSignaturesSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignaturesString);                    
 
                     var Majority = ConsensusClient.Majority();
                     var Hashes = await ConsensusClient.ConsensusRun(State.Height, 4, WinnerHasheSignaturesString, WinnerHasheSignaturesSignature, 1000, Token);                    
