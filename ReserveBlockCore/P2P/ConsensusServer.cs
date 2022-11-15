@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
@@ -148,7 +149,7 @@ namespace ReserveBlockCore.P2P
             return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber, ConsenusStateSingelton.Salt);
         }
 
-        public (string address, string message, string signature)[] Message(long height, int methodCode, (string address, string message, string signature)[] request)
+        public (string address, string message, string signature)[] Message(long height, int methodCode, string stringRequest)
         {
             try
             {
@@ -158,6 +159,8 @@ namespace ReserveBlockCore.P2P
                     Context?.Abort();
                     return default;
                 }
+
+                var request = JsonConvert.DeserializeObject<(string address, string message, string signature)[]>(stringRequest);
 
                 var currentHeight = ConsenusStateSingelton.Height;
                 if (height < currentHeight)

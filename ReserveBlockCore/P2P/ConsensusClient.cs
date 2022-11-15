@@ -150,7 +150,8 @@ namespace ReserveBlockCore.P2P
                 var NodeHistory = ConsensusServer.Histories.TryGetValue((height, methodCode, node.Address), out var history) ?
                     history.Keys.ToHashSet() : new HashSet<string>();
                 var MessagesToSend = CurrentMessages.Where(x => !NodeHistory.Contains(x.Item1)).ToArray();
-                var MessageFunc = () => node.Connection.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSend }, ct);
+                var MessagesToSendString = JsonConvert.SerializeObject(MessagesToSend);
+                var MessageFunc = () => node.Connection.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSendString }, ct);
                 return (node, MessageFunc.RetryUntilSuccessOrCancel(x => x != null, 100, ct));
             })
             .ToArray();
