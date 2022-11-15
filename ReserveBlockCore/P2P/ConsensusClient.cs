@@ -211,22 +211,22 @@ namespace ReserveBlockCore.P2P
                 var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
                 hubConnection.Reconnecting += (sender) =>
                 {
-                    LogUtility.Log("Reconnecting to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
+                    //LogUtility.Log("Reconnecting to Adjudicator", "ConnectConsensusNode()");
+                    //Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Reconnected += (sender) =>
                 {
-                    LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
+                    //LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectConsensusNode()");
+                    //Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Closed += (sender) =>
                 {
-                    LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
+                    //LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
+                    //Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
                     return Task.CompletedTask;
                 };                
 
