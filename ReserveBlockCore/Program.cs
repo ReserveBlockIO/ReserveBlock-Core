@@ -595,10 +595,13 @@ namespace ReserveBlockCore
 
                             foreach (var adj in adjPool)
                             {
-                                if(!adj.IsConnected)
+                                if(adj.Address != account.Address)
                                 {
-                                    var url = "http://" + adj.IpAddress + ":" + Globals.Port + "/consensus";
-                                    await ConsensusClient.ConnectConsensusNode(url, adj.Address, adj.Address, signature);
+                                    if (!adj.IsConnected)
+                                    {
+                                        var url = "http://" + adj.IpAddress + ":" + Globals.Port + "/consensus";
+                                        await ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+                                    }
                                 }
                             }
                         }
