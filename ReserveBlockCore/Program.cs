@@ -2,11 +2,14 @@
 
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
 
 namespace ReserveBlockCore
 {
@@ -61,7 +64,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 88 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 90 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -166,9 +169,12 @@ namespace ReserveBlockCore
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
-
-            //add method to remove stale state trei records and stale validator records too
-
+            //This is for adjudicators connecting to adj pool. Not needed if you aren't part of the consensus pool.
+            if(Globals.AdjudicateAccount != null)
+            {
+                Globals.AdjPoolConCheckTimer = new Timer(adjPoolConnectionCheckTimer_Elapsed);
+                Globals.ConnectionHistoryTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds
+            }
 
             string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:" + Globals.Port; //this is port for signalr connect and all p2p functions
@@ -562,6 +568,47 @@ namespace ReserveBlockCore
             }
             catch { }
             
+        }
+
+        #endregion
+
+        #region Adj Pool Connection Check Timer
+        private static async void adjPoolConnectionCheckTimer_Elapsed(object sender)
+        {
+            try
+            {
+                if (Globals.AdjudicateAccount != null)
+                {
+                    if(!Globals.AdjPoolCheckLock)
+                    {
+                        Globals.AdjPoolCheckLock = true;
+                        var adjPool = Globals.ConsensusNodes.Values.ToList();
+                        if (adjPool.Count() > 0)
+                        {
+                            var account = Globals.AdjudicateAccount;
+                            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
+
+                            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                            var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
+
+                            foreach (var adj in adjPool)
+                            {
+                                if(!adj.IsConnected)
+                                {
+                                    var url = "http://" + adj.IpAddress + ":" + Globals.Port + "/consensus";
+                                    await ConsensusClient.ConnectConsensusNode(url, adj.Address, adj.Address, signature);
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+            }
+            catch { }
+
+            Globals.AdjPoolCheckLock = false;
         }
 
         #endregion

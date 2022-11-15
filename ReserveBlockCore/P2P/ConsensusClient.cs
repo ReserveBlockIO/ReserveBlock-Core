@@ -188,7 +188,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Globals.CLIVersion);
                 })
-                .WithAutomaticReconnect(new RetryPolicy())
+                .WithAutomaticReconnect()
                 .Build();
 
                 LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");
@@ -216,7 +216,7 @@ namespace ReserveBlockCore.P2P
                 };                
 
                 await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
-                if (hubConnection.ConnectionId == null)
+                if (hubConnection?.State != HubConnectionState.Connected)
                     return false;
 
                 Globals.ConsensusNodes[IPAddress].Connection = hubConnection;

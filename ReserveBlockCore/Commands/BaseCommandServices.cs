@@ -805,7 +805,7 @@ namespace ReserveBlockCore.Commands
             var conState = ConsensusServer.GetState();
             ConsoleWriterService.Output("*******************************Consensus State********************************");
             
-            var conStateLine = $"Height: {conState.Height} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode} | Salt: {conState.salt}";
+            var conStateLine = $"Next Height: {conState.Height} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode} | Salt: {conState.salt}";
             ConsoleWriterService.Output(conStateLine);
             
             ConsoleWriterService.Output("******************************************************************************");

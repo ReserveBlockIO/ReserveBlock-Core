@@ -24,6 +24,7 @@ namespace ReserveBlockCore
         public static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? DBCommitTimer;//checks dbs and commits log files. 
         public static Timer? ConnectionHistoryTimer;//process connections and history of them
+        public static Timer? AdjPoolConCheckTimer;//process connections and history of them
 
         #endregion
 
@@ -97,6 +98,7 @@ namespace ReserveBlockCore
         public static bool RemoteCraftLock = false;
         public static bool IsChainSynced = false;
         public static bool OptionalLogging = false;
+        public static bool AdjPoolCheckLock = false;
 
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
