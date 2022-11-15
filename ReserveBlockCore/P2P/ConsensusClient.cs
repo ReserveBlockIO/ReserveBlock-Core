@@ -84,7 +84,7 @@ namespace ReserveBlockCore.P2P
         public static async Task<(string Address, string Message)[]> ConsensusRun(long height, int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
         {
             var NumNodes = Globals.AdjudicatorAddresses.Count;
-            var Address = Globals.ValidatorAddress;
+            var Address = Globals.AdjudicateAccount.Address;
             var Peers = Globals.ConsensusNodes.Values.Where(x => x.Address != Address).ToArray();
             var Now = DateTime.Now;
 
