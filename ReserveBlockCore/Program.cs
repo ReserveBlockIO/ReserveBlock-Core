@@ -586,13 +586,8 @@ namespace ReserveBlockCore
                         if (adjPool.Count() > 0)
                         {
                             var account = Globals.AdjudicateAccount;
-                            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-                            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                            var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
-
+                            var time = TimeUtil.GetTime().ToString();
+                            var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
                             foreach (var adj in adjPool)
                             {
                                 if(adj.Address != account.Address)
@@ -600,7 +595,7 @@ namespace ReserveBlockCore
                                     if (!adj.IsConnected)
                                     {
                                         var url = "http://" + adj.IpAddress + ":" + Globals.Port + "/consensus";
-                                        await ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+                                        await ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature);
                                     }
                                 }
                             }
