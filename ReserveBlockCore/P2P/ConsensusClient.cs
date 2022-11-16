@@ -195,19 +195,14 @@ namespace ReserveBlockCore.P2P
 
 
         #region Connect Adjudicator
-        public static int IsConnecting = 0;
+        public static ConcurrentDictionary<string, bool> IsConnectingDict = new ConcurrentDictionary<string, bool>();
         public static async Task<bool> ConnectConsensusNode(string url, string address, string time, string uName, string signature)
         {
+            var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
             try
-            {
-                var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
-                if (Interlocked.Exchange(ref IsConnecting, 1) == 1)
-                {
-                    if (Globals.ConsensusNodes.TryGetValue(IPAddress, out var node))
-                        return node.Connection?.State == HubConnectionState.Connected;
-                    else
-                        return false;
-                }
+            {               
+                if (!IsConnectingDict.TryAdd(IPAddress, true))
+                    return Globals.ConsensusNodes[IPAddress].IsConnected;
 
                 var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
@@ -258,7 +253,7 @@ namespace ReserveBlockCore.P2P
             }
             finally
             {
-                Interlocked.Exchange(ref IsConnecting, 0);
+                IsConnectingDict.TryRemove(IPAddress, out _);
             }
 
             return false;

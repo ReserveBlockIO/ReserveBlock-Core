@@ -8,6 +8,8 @@ namespace ReserveBlockCore.Services
     public class SeedNodeService
     {
         public static List<SeedNode> SeedNodeList { get; set; }
+
+        public static HashSet<string> TestNetIPs = new HashSet<string> { "66.94.124.3", "144.126.156.101", "44.126.156.102" };
         public static async Task<string> PingSeedNode()
         {
             bool nodeFound = false;
@@ -34,7 +36,7 @@ namespace ReserveBlockCore.Services
 
                                 var _response = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
                                 var status = _response[1];
-                                if(status == "Online")
+                                if (status == "Online")
                                 {
                                     nodeFound = true;
                                     url = node.NodeUrl;
@@ -56,7 +58,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task GetSeedNodePeers(string url)
         {
-            if(Globals.IsTestNet == false)
+            if (Globals.IsTestNet == false)
             {
                 try
                 {
@@ -110,7 +112,7 @@ namespace ReserveBlockCore.Services
 
                 }
             }
-            if(Globals.IsTestNet == true)
+            if (Globals.IsTestNet == true)
             {
                 //manually add testnet IPs
                 Peers nPeer = new Peers
@@ -156,7 +158,7 @@ namespace ReserveBlockCore.Services
                                     {
                                         Address = pool.RBXAddress,
                                         IpAddress = pool.IPAddress
-                                    };                                
+                                    };
                             }
                             else
                             {
@@ -185,25 +187,39 @@ namespace ReserveBlockCore.Services
 
                                 var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
 
-                                if(result != null)
+                                if (result != null)
                                 {
-                                    var testnetList = result.Where(x => x.IPAddress == "144.126.156.102" || x.IPAddress == "162.248.14.123").ToList();
-                                    var oneExtra = result.Where(x => x.RBXAddress == "xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr").FirstOrDefault(); 
-
-                                    if(oneExtra != null)
-                                        testnetList.Add(oneExtra);
+                                    var testnetList = result.Where(x => TestNetIPs.Contains(x.IPAddress));
+                                    var dbPeers = Peers.GetAll();
 
                                     foreach (var pool in testnetList)
+                                    {
                                         Globals.ConsensusNodes[pool.IPAddress] = new ConsensusNodeInfo
                                         {
                                             Address = pool.RBXAddress,
                                             IpAddress = pool.IPAddress
                                         };
-                                }
-                            }
-                            else
-                            {
 
+                                        var nPeer = new Peers
+                                        {
+                                            IsIncoming = false,
+                                            IsOutgoing = true,
+                                            PeerIP = pool.IPAddress,
+                                            FailCount = 0
+                                        };
+
+                                        var peerExist = dbPeers.FindOne(x => x.PeerIP == nPeer.PeerIP);
+                                        if (peerExist == null)
+                                        {
+                                            dbPeers.InsertSafe(nPeer);
+                                        }
+                                        else
+                                        {
+                                            peerExist.FailCount = 0;
+                                            dbPeers.UpdateSafe(peerExist);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -213,7 +229,7 @@ namespace ReserveBlockCore.Services
 
                 }
             }
-            
+
         }
 
         public static List<SeedNode> SeedNodes()

@@ -519,7 +519,7 @@ namespace ReserveBlockCore.Services
                             return Task.FromResult(true);
                         return ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature);
                     };
-                    return ConnectFunc.RetryUntilSuccessOrCancel(x => true, 100, Source.Token);
+                    return ConnectFunc.RetryUntilSuccessOrCancel(x => x, 100, Source.Token);
                 })
                 .WhenAtLeast(x => x, ConsensusClient.Majority());
 
