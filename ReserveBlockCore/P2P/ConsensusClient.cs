@@ -124,7 +124,8 @@ namespace ReserveBlockCore.P2P
             var FinalizingSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             await Peers.Select(node =>
             {
-                var IsFinalizingOrDoneFunc = () => node.Connection.InvokeCoreAsync<bool>("IsFinalizingOrDone", args: new object?[] { height, methodCode }, ct);
+                var IsFinalizingOrDoneFunc = () => Globals.ConsensusNodes[node.IpAddress].Connection?.InvokeCoreAsync<bool>("IsFinalizingOrDone", args: new object?[] { height, methodCode }, ct)
+                    ?? Task.FromResult(false);
                 return IsFinalizingOrDoneFunc.RetryUntilSuccessOrCancel(x => x, 100, FinalizingSource.Token);
             })
             .WhenAtLeast(x => x, Majority() - 1);            
@@ -151,7 +152,8 @@ namespace ReserveBlockCore.P2P
                     history.Keys.ToHashSet() : new HashSet<string>();
                 var MessagesToSend = CurrentMessages.Where(x => !NodeHistory.Contains(x.Item1)).ToArray();
                 var MessagesToSendString = JsonConvert.SerializeObject(MessagesToSend);
-                var MessageFunc = () => node.Connection.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSendString }, ct);
+                var MessageFunc = () => Globals.ConsensusNodes[node.IpAddress].Connection?.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSendString }, ct)
+                    ?? Task.FromResult(((string address, string message, string signature)[])null);
                 return (node, MessageFunc.RetryUntilSuccessOrCancel(x => x != null, 100, ct));
             })
             .ToArray();

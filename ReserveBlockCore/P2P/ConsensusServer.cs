@@ -25,7 +25,7 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton = state;
                 if (CurrentHeight == state.Height)
                 {
-                    UpdateState(CurrentHeight, state.MethodCode, (int)state.Status, state.RandomNumber, state.Salt);
+                    UpdateState(CurrentHeight, state.MethodCode, (int)state.Status, state.RandomNumber);
 
                     var messages = Consensus.ConsensusData.GetAll().FindAll().ToArray();
                     var histories = ConsensusHistory.ConsensusHistoryData.GetAll().FindAll().ToArray();
@@ -70,9 +70,17 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                var address = httpContext.Request.Headers["address"].ToString();                
-                var signature = httpContext.Request.Headers["signature"].ToString();                
 
+                var addressHeader = httpContext.Request.Headers["address"].ToString();                
+                var time = long.Parse(addressHeader?.Split(':')[1]);
+                if (TimeUtil.GetTime() - time > 300)
+                {
+                    EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
+                    return;
+                }
+
+                var address = addressHeader?.Split(':')[0];                
+                var signature = httpContext.Request.Headers["signature"].ToString();                
                 
                 var fortisPool = Globals.FortisPool.Values;
                 if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(signature))
@@ -83,7 +91,7 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                var verifySig = SignatureService.VerifySignature(address, address, signature);
+                var verifySig = SignatureService.VerifySignature(address, addressHeader, signature);
                 if (!verifySig)
                 {
                     EndOnConnect(peerIP,
@@ -125,7 +133,7 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1, string salt = null)
+        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1)
         {
             if(height != -1)
                 ConsenusStateSingelton.Height = height;
@@ -135,18 +143,16 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton.MethodCode = methodCode;
             if (randomNumber != -1)
                 ConsenusStateSingelton.RandomNumber = randomNumber;
-            if (salt != null)
-                ConsenusStateSingelton.Salt = salt;            
 
             var states = ConsensusState.ConsensusStateData.GetAll();
             states.Update(ConsenusStateSingelton);
         }
 
-        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer, string salt) GetState()
+        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
         {
             if (ConsenusStateSingelton == null)
-                return (-1, 0, ConsensusStatus.Processing, -1, null);
-            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber, ConsenusStateSingelton.Salt);
+                return (-1, 0, ConsensusStatus.Processing, -1);
+            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
         }
 
         public (string address, string message, string signature)[] Message(long height, int methodCode, string stringRequest)

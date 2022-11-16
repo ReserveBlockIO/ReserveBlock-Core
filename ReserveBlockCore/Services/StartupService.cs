@@ -513,8 +513,7 @@ namespace ReserveBlockCore.Services
                 BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-                var signature = SignatureService.CreateSignature(account.Address, privateKey, account.PublicKey);
-
+                var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + TimeUtil.GetTime());
                 var Source = new CancellationTokenSource();
                 await Globals.ConsensusNodes.Values.Select(adjudicator =>
                 {
@@ -545,15 +544,7 @@ namespace ReserveBlockCore.Services
                 var validator = validators.FindOne(x => x.Address == account.Address);
                 if(validator != null)
                 {
-
-                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                    var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
-
-                    //xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK
+                    var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
                     if (Globals.LastBlock.Height <= Globals.BlockLock)
                     {
                         var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();

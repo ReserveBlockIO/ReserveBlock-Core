@@ -35,8 +35,20 @@ namespace ReserveBlockCore.P2P
                     await EndOnConnect(peerIP, "1", startTime, conQueue, "httpcontext was null", "httpcontext was null");
                     return;
                 }
-                
-                var address = httpContext.Request.Headers["address"].ToString();
+
+                var BlockLocked = Globals.LastBlock.Height > Globals.BlockLock;
+                var addressHeader = httpContext.Request.Headers["address"].ToString();
+                if(BlockLocked)
+                {
+                    var time = long.Parse(addressHeader?.Split(':')[1]);
+                    if (TimeUtil.GetTime() - time > 300)
+                    {
+                        await EndOnConnect(peerIP, "20", startTime, conQueue, "Signature Bad time.", "Signature Bad time.");
+                        return;
+                    }
+                }
+
+                var address = BlockLocked ? addressHeader?.Split(':')[0] : addressHeader;                
                 var uName = httpContext.Request.Headers["uName"].ToString();
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
@@ -72,7 +84,7 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                var verifySig = SignatureService.VerifySignature(address, address, signature);
+                var verifySig = SignatureService.VerifySignature(address, addressHeader, signature);
                 if(!verifySig)
                 {
                     await EndOnConnect(peerIP, "V", startTime, conQueue,

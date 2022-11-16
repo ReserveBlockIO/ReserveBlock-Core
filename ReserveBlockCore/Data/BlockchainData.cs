@@ -145,13 +145,9 @@ namespace ReserveBlockCore.Data
                     ValidatorAnswer = valAnswer
                 };
                 block.Build();
-                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(validatorAccount.PrivateKey, validatorAccount.Address);
-
-                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 //Add validator signature
-                block.ValidatorSignature = SignatureService.CreateSignature(block.Hash, privateKey, validatorAccount.PublicKey);
+                block.ValidatorSignature = SignatureService.ValidatorSignature(block.Hash);
 
                 //block size
                 var str = JsonConvert.SerializeObject(block);

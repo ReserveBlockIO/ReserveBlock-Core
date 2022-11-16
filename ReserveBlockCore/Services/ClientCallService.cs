@@ -792,7 +792,7 @@ namespace ReserveBlockCore.Services
                     var State = ConsensusServer.GetState();
                     var Token = Globals.ConsensusTokenSource.Token;
 
-                    var MyDecryptedAnswer = State.Height + ":" + State.Answer + ":" + State.salt;
+                    var MyDecryptedAnswer = State.Height + ":" + State.Answer;
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
