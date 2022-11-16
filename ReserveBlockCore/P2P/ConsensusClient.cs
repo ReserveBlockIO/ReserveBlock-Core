@@ -195,10 +195,20 @@ namespace ReserveBlockCore.P2P
 
 
         #region Connect Adjudicator
+        public static int IsConnecting = 0;
         public static async Task<bool> ConnectConsensusNode(string url, string address, string time, string uName, string signature)
         {
             try
             {
+                var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
+                if (Interlocked.Exchange(ref IsConnecting, 1) == 1)
+                {
+                    if (Globals.ConsensusNodes.TryGetValue(IPAddress, out var node))
+                        return node.Connection?.State == HubConnectionState.Connected;
+                    else
+                        return false;
+                }
+
                 var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
                     options.Headers.Add("address", address);
@@ -212,7 +222,7 @@ namespace ReserveBlockCore.P2P
 
                 LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");
 
-                var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
+                
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectConsensusNode()");
@@ -245,6 +255,10 @@ namespace ReserveBlockCore.P2P
             catch (Exception ex)
             {
                 ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref IsConnecting, 0);
             }
 
             return false;
