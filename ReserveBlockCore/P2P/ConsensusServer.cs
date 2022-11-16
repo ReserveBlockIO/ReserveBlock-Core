@@ -70,18 +70,16 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
+                var address = httpContext.Request.Headers["address"].ToString();
+                var time = httpContext.Request.Headers["time"].ToString();
+                var signature = httpContext.Request.Headers["signature"].ToString();
 
-                var addressHeader = httpContext.Request.Headers["address"].ToString();                
-                var time = long.Parse(addressHeader?.Split(':')[1]);
-                if (TimeUtil.GetTime() - time > 300)
+                if (TimeUtil.GetTime() - long.Parse(time) > 30000000)
                 {
                     EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
                     return;
                 }
 
-                var address = addressHeader?.Split(':')[0];                
-                var signature = httpContext.Request.Headers["signature"].ToString();                
-                
                 var fortisPool = Globals.FortisPool.Values;
                 if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(signature))
                 {
@@ -91,7 +89,7 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                var verifySig = SignatureService.VerifySignature(address, addressHeader, signature);
+                var verifySig = SignatureService.VerifySignature(address, address + ":" + time, signature);
                 if (!verifySig)
                 {
                     EndOnConnect(peerIP,

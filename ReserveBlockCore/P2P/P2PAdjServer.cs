@@ -36,22 +36,22 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                var BlockLocked = Globals.LastBlock.Height > Globals.BlockLock;
-                var addressHeader = httpContext.Request.Headers["address"].ToString();
-                if(BlockLocked)
+                var address = httpContext.Request.Headers["address"].ToString();
+                var time = httpContext.Request.Headers["time"].ToString();
+                var uName = httpContext.Request.Headers["uName"].ToString();
+                var signature = httpContext.Request.Headers["signature"].ToString();
+                var walletVersion = httpContext.Request.Headers["walver"].ToString();
+
+                var SignedMessage = address;
+                if (Globals.LastBlock.Height > Globals.BlockLock)
                 {
-                    var time = long.Parse(addressHeader?.Split(':')[1]);
-                    if (TimeUtil.GetTime() - time > 300)
+                    SignedMessage = address + ":" + time;
+                    if (TimeUtil.GetTime() - long.Parse(time) > 30000000)
                     {
                         await EndOnConnect(peerIP, "20", startTime, conQueue, "Signature Bad time.", "Signature Bad time.");
                         return;
                     }
                 }
-
-                var address = BlockLocked ? addressHeader?.Split(':')[0] : addressHeader;                
-                var uName = httpContext.Request.Headers["uName"].ToString();
-                var signature = httpContext.Request.Headers["signature"].ToString();
-                var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
                 conQueue.Address = address;
                 conQueue.IPAddress = peerIP;
@@ -84,7 +84,7 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
-                var verifySig = SignatureService.VerifySignature(address, addressHeader, signature);
+                var verifySig = SignatureService.VerifySignature(address, SignedMessage, signature);
                 if(!verifySig)
                 {
                     await EndOnConnect(peerIP, "V", startTime, conQueue,

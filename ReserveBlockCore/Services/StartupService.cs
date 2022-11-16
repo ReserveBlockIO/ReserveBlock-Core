@@ -508,12 +508,8 @@ namespace ReserveBlockCore.Services
             try
             {
                 var account = Globals.AdjudicateAccount;
-                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + TimeUtil.GetTime());
+                var time = TimeUtil.GetTime().ToString();
+                var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
                 var Source = new CancellationTokenSource();
                 await Globals.ConsensusNodes.Values.Select(adjudicator =>
                 {
@@ -521,7 +517,7 @@ namespace ReserveBlockCore.Services
                     var ConnectFunc = () => {
                         if (adjudicator.IsConnected || adjudicator.Address == Globals.AdjudicateAccount.Address)
                             return Task.FromResult(true);
-                        return ConsensusClient.ConnectConsensusNode(url, account.Address, account.Address, signature);
+                        return ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature);
                     };
                     return ConnectFunc.RetryUntilSuccessOrCancel(x => true, 100, Source.Token);
                 })
@@ -544,6 +540,7 @@ namespace ReserveBlockCore.Services
                 var validator = validators.FindOne(x => x.Address == account.Address);
                 if(validator != null)
                 {
+                    var time = TimeUtil.GetTime().ToString();
                     var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
                     if (Globals.LastBlock.Height <= Globals.BlockLock)
                     {
@@ -551,7 +548,7 @@ namespace ReserveBlockCore.Services
                         foreach (var adjudicator in LeadAdjudicators)
                         {
                             var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
-                            await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                            await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                         }
                     }
                     else
@@ -563,11 +560,11 @@ namespace ReserveBlockCore.Services
                             .OrderBy(x => rnd.Next())
                             .Take(2 - CurrentAddresses.Count)
                             .ToArray();
-
+                        
                         foreach (var adjudicator in adjudicators)
                         {
                             var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
-                            await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                            await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                         }
 
                         if (!adjudicators.Any())

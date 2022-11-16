@@ -195,13 +195,14 @@ namespace ReserveBlockCore.P2P
 
 
         #region Connect Adjudicator
-        public static async Task<bool> ConnectConsensusNode(string url, string address, string uName, string signature)
+        public static async Task<bool> ConnectConsensusNode(string url, string address, string time, string uName, string signature)
         {
             try
             {
                 var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
                     options.Headers.Add("address", address);
+                    options.Headers.Add("time", time);
                     options.Headers.Add("uName", uName);
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Globals.CLIVersion);
