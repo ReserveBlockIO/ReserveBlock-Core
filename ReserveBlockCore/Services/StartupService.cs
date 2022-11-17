@@ -146,8 +146,8 @@ namespace ReserveBlockCore.Services
                     ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
                     ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
                     ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
-                    ["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
-                    ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                    //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                    //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
                 };
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
@@ -167,7 +167,7 @@ namespace ReserveBlockCore.Services
                 {
                     ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
                     ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
-                    ["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                    ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
                 };
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
@@ -500,79 +500,123 @@ namespace ReserveBlockCore.Services
             Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
-        public static async Task ConnectoToConsensusNodes()
+        public static async Task ConnectToConsensusNodes()
         {
             if (Globals.AdjudicateAccount == null)
                 return;
 
-            try
+            while(true)
             {
-                var account = Globals.AdjudicateAccount;
-                var time = TimeUtil.GetTime().ToString();
-                var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
-                var Source = new CancellationTokenSource();
-                await Globals.ConsensusNodes.Values.Select(adjudicator =>
+                try
                 {
-                    var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/consensus";
-                    var ConnectFunc = () => {
-                        if (adjudicator.IsConnected || adjudicator.Address == Globals.AdjudicateAccount.Address)
-                            return Task.FromResult(true);
-                        return ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature);
-                    };
-                    return ConnectFunc.RetryUntilSuccessOrCancel(x => x, 100, Source.Token);
-                })
-                .WhenAtLeast(x => x, ConsensusClient.Majority());
+                    var DisconnectedPeers = Globals.ConsensusNodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address && !x.IsConnected).ToArray();
+                    if(DisconnectedPeers.Any())
+                    {
+                        var account = Globals.AdjudicateAccount;
+                        var time = TimeUtil.GetTime().ToString();
+                        var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
+                        var ConnectTasks = new List<Task>();
+                        foreach(var peer in DisconnectedPeers)
+                        {
+                            var url = "http://" + peer.IpAddress + ":" + Globals.Port + "/consensus";
+                            ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
+                        }
 
-                if (!Globals.ConsensusNodes.Values.Any(x => x.IsConnected))
-                    Console.WriteLine("You have no consensus nodes.");
-            }
-            catch(Exception ex)
-            {
+                        await Task.WhenAll(ConnectTasks);
+                    }
+                }
+                catch (Exception ex)
+                {
+                }
+
+                await Task.Delay(1000);
             }
         }
 
         public static async Task ConnectToAdjudicators()
         {
-            if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+            while(true)
             {
-                var account = AccountData.GetLocalValidator();
-                var validators = Validators.Validator.GetAll();
-                var validator = validators.FindOne(x => x.Address == account.Address);
-                if(validator != null)
+                var delay = Task.Delay(10000);
+                try
                 {
-                    var time = TimeUtil.GetTime().ToString();
-                    var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
-                    if (Globals.LastBlock.Height <= Globals.BlockLock)
+                    if (Globals.LastBlock.Height == Globals.BlockLock + 1)
                     {
-                        var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();
-                        foreach (var adjudicator in LeadAdjudicators)
-                        {
-                            var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
-                            await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
-                        }
+                        var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => x.Address == Globals.LeadAddress).FirstOrDefault();
+                        Globals.AdjNodes.TryRemove(LeadAdjudicator.IpAddress, out _);
+                        if(LeadAdjudicator.Connection != null)
+                            await LeadAdjudicator.Connection.DisposeAsync();
                     }
-                    else
-                    {
-                        var rnd = new Random();
-                        var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
-                        var adjudicators = Globals.AdjNodes.Values
-                            .Where(x => !CurrentAddresses.Contains(x.Address))
-                            .OrderBy(x => rnd.Next())
-                            .Take(2 - CurrentAddresses.Count)
-                            .ToArray();
-                        
-                        foreach (var adjudicator in adjudicators)
-                        {
-                            var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
-                            await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
-                        }
 
-                        if (!adjudicators.Any())
-                            Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                    var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                    if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress) || NumAdjudicators == 2)
+                    {
+                        await delay;
+                        continue;
                     }
+
+                    if (NumAdjudicators < 2)
+                    {
+                        await StartupService.ConnectToAdjudicators();
+
+                        var account = AccountData.GetLocalValidator();
+                        var validators = Validators.Validator.GetAll();
+                        var validator = validators.FindOne(x => x.Address == account.Address);
+                        if (validator != null)
+                        {
+                            var time = TimeUtil.GetTime().ToString();
+                            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+                            if (Globals.LastBlock.Height <= Globals.BlockLock)
+                            {
+                                var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();
+                                foreach (var adjudicator in LeadAdjudicators)
+                                {
+                                    var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                    await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
+                                }
+                            }
+                            else
+                            {
+                                var rnd = new Random();
+                                var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
+                                var adjudicators = Globals.AdjNodes.Values
+                                    .Where(x => !CurrentAddresses.Contains(x.Address))
+                                    .OrderBy(x => rnd.Next())
+                                    .Take(2 - CurrentAddresses.Count)
+                                    .ToArray();
+
+                                foreach (var adjudicator in adjudicators)
+                                {
+                                    var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                    await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
+                                }
+
+                                if (!adjudicators.Any())
+                                    Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                            }
+                        }
+                    }
+
+                    if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
+                    {                        
+                        var result = await ValidatorService.ValidatorErrorReset();
+                        if (result)
+                        {
+                            foreach (var node in Globals.AdjNodes.Values)
+                                node.LastTaskErrorCount = 0;
+                            ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
+                        }
+                    }
+
+
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("Error: {0}", ex.ToString());
                 }
 
-            }
+                await delay;
+            }            
         }
         public static async Task EstablishBeaconReference()
         {
@@ -938,76 +982,37 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
+
+        internal static void DisplayValidatorAddress()
+        {
+            var accounts = AccountData.GetAccounts();
+            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
+            if (myAccount != null)
+            {
+                Globals.ValidatorAddress = myAccount.Address;
+                LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
+            }
+        }
+
         internal static async Task StartupPeers()
         {
-            //add seed nodes
-            //This is being done for adj pool now. It will already exist
-            //SeedNodeService.SeedNodes();
-            bool result = false;
-            bool peersConnected = false;
-            int failCount = 0;
-            while (!peersConnected)
+            while (true)
             {
+                var delay = Task.Delay(10000);
                 try
                 {
-                    if(failCount > 60)
-                    {
-                        Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
-                        Thread.Sleep(new TimeSpan(0, 0, 60));
-                    }
-                    else if(failCount >120)
-                    {
-                        Console.WriteLine($"Failed to connect to any peers. trying again in 120 seconds.");
-                        Thread.Sleep(new TimeSpan(0, 0, 120));
-                    }
-
-                    AnsiConsole.MarkupLine("[bold yellow]Attempting to connect to peers...[/]");
-                    result = await P2PClient.ConnectToPeers();
-
-                    if (result == true)
-                    {
-                        peersConnected = true;
-                        Console.WriteLine(" ");
-                        AnsiConsole.MarkupLine("[bold green]Connected to Peers...[/]");
-                        var accounts = AccountData.GetAccounts();
-                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
-                        if (myAccount != null)
-                        {
-                            Globals.ValidatorAddress = myAccount.Address;
-                            LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
-                        }
-                        else
-                        {
-                            //No validator account on start up
-                        }
-                        failCount = 0;
-                    }
-                    else
-                    {
-                        failCount += 1;
+                    var ConnectedCount = Globals.Nodes.Values.Where(x => x.IsConnected).Count();
+                    if(ConnectedCount < Globals.MaxPeers)
+                        await P2PClient.ConnectToPeers();
+                    if(!Globals.Nodes.Values.Where(x => x.IsConnected).Any())
                         Console.WriteLine($"Failed to connect to any peers. trying again.");
-                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
-            }
-            
-            
 
-            if(result == true)
-            {
-                //Connected to peers
-                //Only needed for genesis 
-                //await BlockchainData.InitializeChain();
-            }
-            else
-            {
-                Console.WriteLine("Failed to automatically connect to peers. Please add manually.");
-                //Put StartupInitializeChain();
-                //Here and once chain fails to connect it will create genesis 
-                //await BlockchainData.InitializeChain();
+                await delay;
             }
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block

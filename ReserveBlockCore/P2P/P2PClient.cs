@@ -151,8 +151,7 @@ namespace ReserveBlockCore.P2P
                        .WithUrl(url, options =>
                        {
 
-                       })
-                       .WithAutomaticReconnect()
+                       })                       
                        .Build();
                 
                 var IPAddress = url.Replace("http://", "").Replace("/blockchain", "").Replace(Globals.Port.ToString(), "");
@@ -233,8 +232,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Globals.CLIVersion);
 
-                })
-                .WithAutomaticReconnect()
+                })                
                 .Build();
 
 
@@ -358,7 +356,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Connect to Peers
-        public static async Task<bool> ConnectToPeers(bool addMorePeers = false)
+        public static async Task<bool> ConnectToPeers()
         {
             await NodeConnector.StartNodeConnecting();
             var peerDB = Peers.GetAll();
@@ -385,19 +383,14 @@ namespace ReserveBlockCore.P2P
                 .OrderBy(x => rnd.Next()))
                 .ToArray();
 
-            while (Globals.Nodes.Count == 0 || addMorePeers)
+            foreach (var peer in newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count))
             {
-                if (Globals.Nodes.Count != 0)
-                    addMorePeers = false;
-                foreach (var peer in newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count))
+                try
                 {
-                    try
-                    {
-                        _ = Connect(peer);
-                    }
-                    catch (Exception ex)
-                    {
-                    }
+                    _ = Connect(peer);
+                }
+                catch (Exception ex)
+                {
                 }
             }
 
@@ -706,9 +699,7 @@ namespace ReserveBlockCore.P2P
                     {
 
                     }
-                }
-
-                await StartupService.ConnectToAdjudicators();
+                }                
             }
         }
 

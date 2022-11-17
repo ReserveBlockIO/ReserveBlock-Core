@@ -19,12 +19,10 @@ namespace ReserveBlockCore
         public static bool IsTestNet = false;
 
         public static string LeadAddress = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY";
-        public static Timer? heightTimer; //timer for getting height from other nodes
-        public static Timer? PeerCheckTimer;//checks currents peers and old peers and will request others to try. 
+        public static Timer? heightTimer; //timer for getting height from other nodes        
         public static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? DBCommitTimer;//checks dbs and commits log files. 
-        public static Timer? ConnectionHistoryTimer;//process connections and history of them
-        public static Timer? AdjPoolConCheckTimer;//process connections and history of them
+        public static Timer? ConnectionHistoryTimer;//process connections and history of them        
 
         #endregion
 
@@ -75,7 +73,8 @@ namespace ReserveBlockCore
         public static bool AlwaysRequireWalletPassword = false;
         public static bool AlwaysRequireAPIPassword = false;
         public static bool StopConsoleOutput = false;        
-        public static bool AdjudicateLock = false;
+        public static int AdjudicateLock = 0;
+        public static bool AdjudicateLockV2 = false;
         public static Account AdjudicateAccount;
         public static PrivateKey AdjudicatePrivateKey;
         public static bool APICallURLLogging = false;

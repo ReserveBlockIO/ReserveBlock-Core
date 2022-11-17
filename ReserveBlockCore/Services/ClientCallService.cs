@@ -383,9 +383,9 @@ namespace ReserveBlockCore.Services
                             var timeDiff = (currentUnixTime - lastBlockSubmitUnixTime);
                             if (timeDiff > 20)
                             {
-                                if (Globals.AdjudicateLock == false)
+                                if (Globals.AdjudicateLockV2 == false)
                                 {
-                                    Globals.AdjudicateLock = true;
+                                    Globals.AdjudicateLockV2 = true;
 
                                     var taskAnswerList = Globals.TaskAnswerDict_New.Values.ToList();                                    
                                     List<TaskNumberAnswerV2>? failedTaskAnswersList = null;
@@ -513,7 +513,7 @@ namespace ReserveBlockCore.Services
 
                                                             findWinner = false;
                                                             taskFindCount = 0;
-                                                            Globals.AdjudicateLock = false;
+                                                            Globals.AdjudicateLockV2 = false;
                                                             Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
                                                             Globals.BroadcastedTrxDict.Clear();
@@ -586,7 +586,7 @@ namespace ReserveBlockCore.Services
 
                                                                         findWinner = false;
                                                                         taskFindCount = 0;
-                                                                        Globals.AdjudicateLock = false;
+                                                                        Globals.AdjudicateLockV2 = false;
                                                                         Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
                                                                         Globals.BroadcastedTrxDict.Clear();
@@ -671,7 +671,7 @@ namespace ReserveBlockCore.Services
 
                                                                     findWinner = false;
                                                                     taskFindCount = 0;
-                                                                    Globals.AdjudicateLock = false;
+                                                                    Globals.AdjudicateLockV2 = false;
                                                                     Globals.LastAdjudicateTime = TimeUtil.GetTime();
 
                                                                     Globals.BroadcastedTrxDict.Clear();
@@ -708,7 +708,7 @@ namespace ReserveBlockCore.Services
                                                         //If this happens that means not a single task answer yielded a validatable block.
                                                         //If this happens chain must be corrupt or zero validators are online.
                                                         findWinner = false;
-                                                        Globals.AdjudicateLock = false;
+                                                        Globals.AdjudicateLockV2 = false;
                                                     }
                                                 }
                                                 else
@@ -721,7 +721,7 @@ namespace ReserveBlockCore.Services
                                     }
                                     else
                                     {
-                                        Globals.AdjudicateLock = false;
+                                        Globals.AdjudicateLockV2 = false;
                                     }
                                 }
                             }
@@ -737,7 +737,7 @@ namespace ReserveBlockCore.Services
             {
                 Console.WriteLine("Error: " + ex.ToString());
                 Console.WriteLine("Client Call Service");
-                Globals.AdjudicateLock = false;
+                Globals.AdjudicateLockV2 = false;
             }
         }
 
@@ -758,8 +758,8 @@ namespace ReserveBlockCore.Services
 
         public static async Task DoWorkV3()
         {
-            if (Globals.AdjudicateLock || Globals.AdjudicateAccount == null  || Globals.StopAllTimers)
-                return;
+            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null  || Globals.StopAllTimers)
+                return;            
 
             //var Nodes = Globals.ConsensusNodes.Values.ToArray();
             //var HeightTasks = Nodes.Select(x => ConsensusClient.GetNodeHeight(x)).ToArray();
@@ -776,16 +776,15 @@ namespace ReserveBlockCore.Services
             // do peer height check
             // finish resume functionality
 
-            Globals.AdjudicateLock = true;
-            await TaskQuestionUtility.CreateTaskQuestion("rndNum");
-            await StartupService.ConnectoToConsensusNodes();
+
+            _ = StartupService.ConnectToConsensusNodes();
+            await TaskQuestionUtility.CreateTaskQuestion("rndNum");            
             Console.WriteLine("Doing the work **New**");
             while (true)
-            {                
+            {
                 var BlockDelay = Task.Delay(25000);
                 try
-                {                    
-                    await StartupService.ConnectoToConsensusNodes();
+                {                                        
                     Globals.ConsensusTokenSource?.Dispose();
                     Globals.ConsensusTokenSource = new CancellationTokenSource();
                     var fortisPool = Globals.FortisPool.Values;

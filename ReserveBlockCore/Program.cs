@@ -132,9 +132,9 @@ namespace ReserveBlockCore
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();            
-            var WorkTask = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
-
-
+            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
+            StartupService.DisplayValidatorAddress();
+            _ = StartupService.StartupPeers();
 
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
@@ -157,24 +157,11 @@ namespace ReserveBlockCore
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
 
-            Globals.PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 1 minutes
-
-            Globals.ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.ValidatorListTimer.Change(70000, 1 * 10 * 6000); //waits 1 minute, then runs every 1 minutes
-
             Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
-
-            //This is for adjudicators connecting to adj pool. Not needed if you aren't part of the consensus pool.
-            if(Globals.AdjudicateAccount != null)
-            {
-                Globals.AdjPoolConCheckTimer = new Timer(adjPoolConnectionCheckTimer_Elapsed);
-                Globals.AdjPoolConCheckTimer.Change(60000, 5000); //waits 1 minute, then runs every 5 seconds
-            }
 
             string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:" + Globals.Port; //this is port for signalr connect and all p2p functions
@@ -228,15 +215,6 @@ namespace ReserveBlockCore
                     var read = Console.ReadLine();
                 }
             }
-
-            try
-            {
-                await StartupService.StartupPeers();                
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
             
             StartupService.StartupMemBlocks();
 
@@ -244,7 +222,7 @@ namespace ReserveBlockCore
 
             await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
 
-            await StartupService.ConnectToAdjudicators();
+            _ = StartupService.ConnectToAdjudicators();
 
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
@@ -256,8 +234,7 @@ namespace ReserveBlockCore
 
             Thread.Sleep(2000);
 
-            var tasks = new Task[] {
-                WorkTask,
+            var tasks = new Task[] {                
                 commandLoopTask, //CLI console
                 commandLoopTask2, //awaiting parameters
                 commandLoopTask3//Beacon client/server
@@ -429,9 +406,7 @@ namespace ReserveBlockCore
                                     var myMaxHeight = Globals.LastBlock.Height + 2;
                                     if (maxHeight > myMaxHeight)
                                     {
-                                        await BlockDownloadService.GetAllBlocks();
-                                        Thread.Sleep(1000);
-                                        await StartupService.ConnectToAdjudicators();
+                                        await BlockDownloadService.GetAllBlocks();                                        
                                     }
                                 }
                             }
@@ -447,87 +422,6 @@ namespace ReserveBlockCore
             catch (Exception ex)
             {
 
-            }
-            
-        }
-
-        #endregion
-
-        #region Peer Online Check
-        private static async void peerCheckTimer_Elapsed(object sender)
-        {
-            try
-            {
-                var peersConnected = await P2PClient.ArePeersConnected();
-
-                if (!peersConnected)
-                {
-                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    LogUtility.Log("Connection to Peers Lost", "peerCheckTimer_Elapsed()");
-                    await StartupService.StartupPeers();
-                    //potentially no connected nodes.
-                }
-                else
-                {
-                    if (Globals.Nodes.Count < Globals.MaxPeers)
-                    {
-                        bool result = false;
-                        //Get more nodes!
-                        result = await P2PClient.ConnectToPeers(true);
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                ErrorLogUtility.LogError(ex.ToString(), "Globals.peerCheckTimer_Elapsed()");
-            }
-        }
-
-        #endregion
-
-        #region Validator Checks
-        private static async void validatorListCheckTimer_Elapsed(object sender)
-        {
-            if (Globals.StopAllTimers == false)
-            {
-                //ValidatorService.ClearDuplicates();
-
-                var peersConnected = await P2PClient.ArePeersConnected();
-                
-                if (!peersConnected)
-                {
-                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    LogUtility.Log("Connection to Peers Lost", "Program.validatorListCheckTimer_Elapsed()");
-                    await StartupService.StartupPeers();
-                    //potentially no connected nodes.
-                }
-
-                if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
-                {
-                    var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-
-                    if (NumAdjudicators < 2)
-                    {
-                        await StartupService.ConnectToAdjudicators();
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
-                {
-                    if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
-                    {
-                        //stop connection and reconnct to ADJ plainly. 
-                        var result = await ValidatorService.ValidatorErrorReset();
-                        if (result)
-                        {
-                            foreach(var node in Globals.AdjNodes.Values)
-                                node.LastTaskErrorCount = 0;
-                            ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
-                        }
-
-
-                    }
-                }
             }
             
         }
@@ -568,45 +462,6 @@ namespace ReserveBlockCore
             }
             catch { }
             
-        }
-
-        #endregion
-
-        #region Adj Pool Connection Check Timer
-        private static async void adjPoolConnectionCheckTimer_Elapsed(object sender)
-        {
-            try
-            {
-                if (Globals.AdjudicateAccount != null)
-                {
-                    if(!Globals.AdjPoolCheckLock)
-                    {
-                        Globals.AdjPoolCheckLock = true;
-                        var adjPool = Globals.ConsensusNodes.Values.ToList();
-                        if (adjPool.Count() > 0)
-                        {
-                            var account = Globals.AdjudicateAccount;
-                            var time = TimeUtil.GetTime().ToString();
-                            var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
-                            foreach (var adj in adjPool)
-                            {
-                                if(adj.Address != account.Address)
-                                {
-                                    if (!adj.IsConnected)
-                                    {
-                                        var url = "http://" + adj.IpAddress + ":" + Globals.Port + "/consensus";
-                                        await ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                }
-            }
-            catch { }
-
-            Globals.AdjPoolCheckLock = false;
         }
 
         #endregion

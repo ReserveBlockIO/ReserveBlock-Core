@@ -75,11 +75,6 @@ namespace ReserveBlockCore.Commands
                     Console.WriteLine("Printing Mempool Results: ");
                     TransactionData.PrintMemPool();
                     break;
-                case "/recp":
-                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
-                    BaseCommandServices.ReconnectPeers();
-                    Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
-                    break;
                 case "/resblocks":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     await BaseCommandServices.ResyncBlocks();

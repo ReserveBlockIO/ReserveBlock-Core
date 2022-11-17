@@ -452,22 +452,6 @@ namespace ReserveBlockCore.Commands
                 }
             }
         }
-        public static async void ReconnectPeers()
-        {
-            Console.WriteLine("Re-establish Peers? y/n");
-            var reconnect = Console.ReadLine();
-            if (!string.IsNullOrWhiteSpace(reconnect))
-            {
-                if (reconnect == "y")
-                {
-                    var result = await P2PClient.ConnectToPeers(true);
-                }
-                else
-                {
-                    MainMenuReturn();
-                }
-            }
-        }
 
         public static async Task ResyncBlocks()
         {

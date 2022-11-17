@@ -374,8 +374,7 @@ namespace ReserveBlockCore.Controllers
                         {
                             account.IsValidating = true;
                             accounts.UpdateSafe(account);
-                            Globals.ValidatorAddress = account.Address;
-                            await StartupService.ConnectToAdjudicators();
+                            Globals.ValidatorAddress = account.Address;                            
                             output = "Success! The requested account has been turned on: " + account.Address;
                         }
                     }
