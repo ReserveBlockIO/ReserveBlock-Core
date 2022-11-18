@@ -202,6 +202,43 @@ namespace ReserveBlockCore.P2P
             return ConsenusStateSingelton.Status != ConsensusStatus.Processing;
         }
 
+        #region Send Block Height
+        public async Task<long> SendBlockHeight()
+        {
+            return Globals.LastBlock.Height;
+        }
+
+        #endregion
+
+        #region Send Block
+        //Send Block to client from p2p server
+        public async Task<Block?> SendBlock(long currentBlock)
+        {
+            try
+            {
+                var peerIP = GetIP(Context);
+
+                var message = "";
+                var nextBlockHeight = currentBlock + 1;
+                var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
+
+                if (nextBlock != null)
+                {
+                    return nextBlock;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch { }
+
+            return null;
+
+        }
+
+        #endregion
+
         private static string GetIP(HubCallerContext context)
         {
             try
