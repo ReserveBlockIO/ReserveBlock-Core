@@ -27,11 +27,10 @@ namespace ReserveBlockCore
         #endregion
 
         #region Global General Variables
-        public static byte AddressPrefix = 0x3C; //address prefix 'R'
-
-        public static ConcurrentDictionary<string, bool> AdjudicatorAddresses;
+        public static byte AddressPrefix = 0x3C; //address prefix 'R'        
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, ConsensusNodeInfo> ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>(); // IP Address        
+        public static ConcurrentDictionary<(string Address, long StartHeight), long?> Signers;
         public static Block LastBlock = new Block { Height = -1 };
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
@@ -106,7 +105,7 @@ namespace ReserveBlockCore
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
 
         public static SecureString EncryptPassword = new SecureString();
-        public static SecureString? MotherPassword = null;
+        public static SecureString? MotherPassword = null;        
 
         #endregion
 

@@ -16,35 +16,7 @@ namespace ReserveBlockCore.P2P
             AdjPool = new ConcurrentDictionary<string, AdjPool>();
             Messages = new ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>>();
             Histories = new ConcurrentDictionary<(long Height, int MethodCode, string SendingAddress), ConcurrentDictionary<string, bool>>();
-
-            var state = ConsensusState.ConsensusStateData.GetAll().FindOne(x => true);
-
-            var CurrentHeight = Globals.LastBlock.Height + 1;
-            if (state != null)
-            {
-                ConsenusStateSingelton = state;
-                if (CurrentHeight == state.Height)
-                {
-                    UpdateState(CurrentHeight, state.MethodCode, (int)state.Status, state.RandomNumber);
-
-                    var messages = Consensus.ConsensusData.GetAll().FindAll().ToArray();
-                    var histories = ConsensusHistory.ConsensusHistoryData.GetAll().FindAll().ToArray();
-
-                    foreach (var message in messages.GroupBy(x => (x.Height, x.MethodCode)))
-                        Messages[message.Key] = new ConcurrentDictionary<string, (string Message, string Signature)>(message.ToDictionary(x => x.Address, x => (x.Message, x.Signature)));                                                        
-
-                    foreach (var history in histories.GroupBy(x => (x.Height, x.MethodCode, x.SendingAddress)))
-                        Histories[history.Key] = new ConcurrentDictionary<string, bool>(history.ToDictionary(x => x.MessageAddress, x => true));
-                }
-                else
-                    UpdateState(CurrentHeight, 0, (int)ConsensusStatus.Processing);                
-            }
-            else
-            {
-                ConsensusState.ConsensusStateData.GetAll().InsertSafe(new ConsensusState { Height = CurrentHeight, Status = ConsensusStatus.Processing, MethodCode = 0 });
-                ConsenusStateSingelton = ConsensusState.ConsensusStateData.GetAll().FindOne(x => true);
-                UpdateState(CurrentHeight, 0, (int)ConsensusStatus.Processing);
-            }            
+            ConsenusStateSingelton = new ConsensusState();
         }
 
         public static ConcurrentDictionary<string, AdjPool> AdjPool;
@@ -141,9 +113,6 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton.MethodCode = methodCode;
             if (randomNumber != -1)
                 ConsenusStateSingelton.RandomNumber = randomNumber;
-
-            var states = ConsensusState.ConsensusStateData.GetAll();
-            states.Update(ConsenusStateSingelton);
         }
 
         public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
@@ -169,43 +138,34 @@ namespace ReserveBlockCore.P2P
                 var currentHeight = ConsenusStateSingelton.Height;
                 if (height < currentHeight)
                     return default;
-                
-                var db = Consensus.ConsensusData.GetAll();
-                var history = ConsensusHistory.ConsensusHistoryData.GetAll();
+                                                
                 var FilteredRequest = request.Where(x => SignatureService.VerifySignature(x.address, x.message, x.signature)).ToArray();
                 lock (MessageLock)
-                {
-                    DbContext.DB_Consensus.BeginTrans();
+                {                    
                     foreach (var message in FilteredRequest)
                     {
                         if(Messages.TryGetValue((height, methodCode), out var Message))
                         {
-                            if(Message.TryAdd(message.address, (message.message, message.signature)))
-                                db.InsertSafe(new Consensus { Address = message.address, Height = height, Message = message.message, MethodCode = methodCode, Signature = message.signature });
+                            Message[message.address] = (message.message, message.signature);                                
                         }
                         else
                         {
                             Messages[(height, methodCode)] = new ConcurrentDictionary<string, (string Message, string Signature)> { 
                                 [message.address] = (message.message, message.signature)
                             };                            
-                            db.InsertSafe(new Consensus { Address = message.address, Height = height, Message = message.message, MethodCode = methodCode, Signature = message.signature });
                         }
                         
                         if(Histories.TryGetValue((height, methodCode, Pool.Address), out var History))
                         {
-                            if(History.TryAdd(message.address, true))
-                                history.InsertSafe(new ConsensusHistory { Height = height, MethodCode = methodCode, MessageAddress = message.address, SendingAddress = Pool.Address });
+                            History[message.address] = true;                            
                         }
                         else
                         {
                             Histories[(height, methodCode, Pool.Address)] = new ConcurrentDictionary<string, bool> { 
                                 [message.address] = true
-                            };
-                            history.InsertSafe(new ConsensusHistory { Height = height, MethodCode = methodCode, MessageAddress = message.address, SendingAddress = Pool.Address });
+                            };                            
                         }                                                    
-                    }
-
-                    DbContext.DB_Consensus.Commit();
+                    }                    
                 }
 
                 if (height > currentHeight)
@@ -218,8 +178,7 @@ namespace ReserveBlockCore.P2P
             catch(Exception ex)
             {
                 try
-                {
-                    DbContext.DB_Consensus.Rollback();
+                {                    
                     ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.Message()");
                 }
                 catch { }

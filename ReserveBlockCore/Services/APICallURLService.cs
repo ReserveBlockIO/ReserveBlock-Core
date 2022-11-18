@@ -11,16 +11,18 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                var url = Globals.APICallURL;
-                HttpClient client = new HttpClient();
+                var url = Globals.APICallURL;                
                 string json = JsonConvert.SerializeObject(transaction);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
-                var httpResponse = await client.PostAsync(url, httpContent);
-                if (Globals.APICallURLLogging == true)
+                using (var client = HTTP.Client())
                 {
-                    //Will only accept a string response. 
-                    var httpResult = await httpResponse.Content.ReadAsStringAsync();
-                    LogUtility.Log($"Transaction was sent. Here is response: {httpResult}", "BlockValidatorService.ValidateBlock()");
+                    var httpResponse = await client.PostAsync(url, httpContent);
+                    if (Globals.APICallURLLogging == true)
+                    {
+                        //Will only accept a string response. 
+                        var httpResult = await httpResponse.Content.ReadAsStringAsync();
+                        LogUtility.Log($"Transaction was sent. Here is response: {httpResult}", "BlockValidatorService.ValidateBlock()");
+                    }
                 }
             }
             catch (Exception ex)

@@ -64,26 +64,20 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Consensus Code
-
-        public static int Majority()
-        {
-            return Globals.AdjudicatorAddresses.Count / 2 + 1;
-        }
-
         private static bool HasMajorityIntersectionSet()
         {
-            var majority = Majority();
+            var majority = Signer.Majority();
             return ConsensusServer.Histories.Values.Where(x => x.Count >= majority).Count() >= majority;
         }
 
         private static bool BestCase()
         {
-            var NumNodes = Globals.AdjudicatorAddresses.Count;
+            var NumNodes = Signer.NumSigners();
             return ConsensusServer.Histories.Values.Where(x => x.Count == NumNodes).Count() == NumNodes;
         }
         public static async Task<(string Address, string Message)[]> ConsensusRun(long height, int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
         {
-            var NumNodes = Globals.AdjudicatorAddresses.Count;
+            var NumNodes = Signer.NumSigners;
             var Address = Globals.AdjudicateAccount.Address;
             var Peers = Globals.ConsensusNodes.Values.Where(x => x.Address != Address).ToArray();
             var Now = DateTime.Now;
@@ -126,9 +120,10 @@ namespace ReserveBlockCore.P2P
             {
                 var IsFinalizingOrDoneFunc = () => Globals.ConsensusNodes[node.IpAddress].Connection?.InvokeCoreAsync<bool>("IsFinalizingOrDone", args: new object?[] { height, methodCode }, ct)
                     ?? Task.FromResult(false);
-                return IsFinalizingOrDoneFunc.RetryUntilSuccessOrCancel(x => x, 100, FinalizingSource.Token);
+                return IsFinalizingOrDoneFunc.RetryUntilSuccessOrCancel(x => x, 5000, FinalizingSource.Token);
             })
-            .WhenAtLeast(x => x, Majority() - 1);            
+            .ToArray()
+            .WhenAtLeast(x => x, Signer.Majority() - 1);            
             FinalizingSource.Cancel();
 
             var FinalSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
@@ -154,14 +149,12 @@ namespace ReserveBlockCore.P2P
                 var MessagesToSendString = JsonConvert.SerializeObject(MessagesToSend);
                 var MessageFunc = () => Globals.ConsensusNodes[node.IpAddress].Connection?.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSendString }, ct)
                     ?? Task.FromResult(((string address, string message, string signature)[])null);
-                return (node, MessageFunc.RetryUntilSuccessOrCancel(x => x != null, 100, ct));
+                return (node, MessageFunc.RetryUntilSuccessOrCancel(x => x != null, 5000, ct));
             })
             .ToArray();
 
-            await Requests.Select(x => x.Item2).WhenAtLeast(x => x != null, Majority() - 1);
-
-            var db = Consensus.ConsensusData.GetAll();
-            var history = ConsensusHistory.ConsensusHistoryData.GetAll();
+            await Requests.Select(x => x.Item2).ToArray().WhenAtLeast(x => x != null, Signer.Majority() - 1);
+            
             foreach (var request in Requests)
             {
                 if (request.Item2.IsCompleted)
@@ -182,11 +175,8 @@ namespace ReserveBlockCore.P2P
 
                     foreach (var item in result)
                     {
-                        if(Messages.TryAdd(item.address, (item.message, item.signature)))                        
-                            db.InsertSafe(new Consensus { Address = item.address, Height = height, Message = item.message, MethodCode = methodCode, Signature = item.signature });
-                        
-                        if(History.TryAdd(item.address, true))
-                            history.InsertSafe(new ConsensusHistory { Height = height, MethodCode = methodCode, MessageAddress = item.address, SendingAddress = request.node.Address });
+                        Messages[item.address] =  (item.message, item.signature);
+                        History[item.address] = true;
                     }
                 }
             }
@@ -211,8 +201,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("uName", uName);
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Globals.CLIVersion);
-                })
-                .WithAutomaticReconnect()
+                })                
                 .Build();
 
                 LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");

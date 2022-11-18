@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography.Xml;
 using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Nodes;
+using System.Net;
 
 namespace ReserveBlockCore.Services
 {
@@ -140,18 +141,33 @@ namespace ReserveBlockCore.Services
             {
                 Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
 
-                //These need to be main net addresses.
-                Globals.AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
+                var signerDB = Signer.GetSigners();
+                var Signers = signerDB.FindAll().ToArray();
+
+                if(Signers.Any())
                 {
-                    ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
-                    ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
-                    ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
-                    //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
-                    //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
-                };
+                    Globals.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
+                        Signers.ToDictionary(x => (x.Address, x.StartHeight), x => x.EndHeight));
+                }
+                else
+                {
+                    Globals.Signers = new ConcurrentDictionary<(string, long), long?>
+                    {
+                        [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
+                        [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
+                        [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
+                        //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                        //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                    };
+
+                    foreach(var signer in Globals.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
+                        signerDB.InsertSafe(signer);                    
+                }
+                
+
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-                Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
+                Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
                 {
                     var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
@@ -163,15 +179,17 @@ namespace ReserveBlockCore.Services
             {
                 Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
 
-                Globals.AdjudicatorAddresses = new ConcurrentDictionary<string, bool>
+                Globals.Signers = new ConcurrentDictionary<(string, long), long?>
                 {
-                    ["xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj"] = true,
-                    ["xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr"] = true,
-                    ["xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC"] = true,
+                    [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
+                    [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
+                    [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
+                    //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                    //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
                 };
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-                Globals.AdjudicateAccount = Accounts.Where(x => Globals.AdjudicatorAddresses.ContainsKey(x.Address)).FirstOrDefault();
+                Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
                 {
                     var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(Globals.AdjudicateAccount.PrivateKey, Globals.AdjudicateAccount.Address);
@@ -417,9 +435,7 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
-            }
-            
-
+            }           
         }
 
         internal static void SetValidator()
@@ -509,6 +525,23 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
+                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var ConsensusAddresses = Globals.ConsensusNodes.Values.Select(x => x.Address).ToHashSet();
+                                        
+                    if(SigningAddresses.Except(ConsensusAddresses).Any())
+                    {
+                        await StartupService.GetAdjudicatorPool();
+                        ConsensusAddresses = Globals.ConsensusNodes.Values.Select(x => x.Address).ToHashSet();
+                    }
+                                        
+                    var NodesToRemove = ConsensusAddresses.Except(SigningAddresses).ToArray();
+                    foreach (var address in NodesToRemove)
+                    {
+                        var ip = Globals.ConsensusNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                        if (Globals.ConsensusNodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                    }
+
                     var DisconnectedPeers = Globals.ConsensusNodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address && !x.IsConnected).ToArray();
                     if(DisconnectedPeers.Any())
                     {
@@ -524,6 +557,22 @@ namespace ReserveBlockCore.Services
 
                         await Task.WhenAll(ConnectTasks);
                     }
+
+                    foreach(var node in Globals.ConsensusNodes.Values)
+                    {
+                        if(node.IsConnected && !Globals.Nodes.ContainsKey(node.IpAddress))
+                        {
+                            Globals.Nodes[node.IpAddress] = new NodeInfo
+                            {
+                                Connection = node.Connection,
+                                NodeIP = node.IpAddress,
+                                IsSendingBlock = 0,
+                                SendingBlockTime = 0,
+                                TotalDataSent = 0
+                            };
+                        }
+                    }
+
                 }
                 catch (Exception ex)
                 {
@@ -548,7 +597,26 @@ namespace ReserveBlockCore.Services
                             await LeadAdjudicator.Connection.DisposeAsync();
                     }
 
+                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
+                    var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
+                    foreach (var address in NodesToRemove)
+                    {
+                        var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                    }
+
+                    var rnd = new Random();
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                    if (NumAdjudicators == 2 && Globals.LastBlock.Height % 50 == 0 && Globals.LastBlock.Height > Globals.BlockLock + 10)
+                    {
+                        var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
+                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                        NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                    }
+                    
                     if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress) || NumAdjudicators == 2)
                     {
                         await delay;
@@ -576,8 +644,7 @@ namespace ReserveBlockCore.Services
                                 }
                             }
                             else
-                            {
-                                var rnd = new Random();
+                            {                                
                                 var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
                                 var adjudicators = Globals.AdjNodes.Values
                                     .Where(x => !CurrentAddresses.Contains(x.Address))
@@ -756,13 +823,9 @@ namespace ReserveBlockCore.Services
 
         internal static void CheckForDuplicateBlocks()
         {
-            //ClearSelfValidator();
-
             var blockChain = BlockchainData.GetBlocks();
-            var blocks = blockChain.FindAll().ToList();
-            var dupBlocksList = blocks.GroupBy(x => x.Height).Where(y => y.Count() > 1).Select(z => z.Key).ToList();
-
-            if(dupBlocksList.Count != 0)
+            var HeightIsOkay = (blockChain.Count() - blockChain.Max("Height").AsInt64) == 1;
+            if(!HeightIsOkay)
             {
                 LogUtility.Log("Duplicate Blocks Found!", "StartupService: dupBlocksList.Count != 0 / meaning dup found!");
                 //Reset blocks and all balances and redownload chain. No exception here.

@@ -130,11 +130,11 @@ namespace ReserveBlockCore
             StartupService.SetLastBlock();
 
             //This is for consensus start.
-            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
-            await StartupService.GetAdjudicatorPool();            
+            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.                     
             _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
+            _ = StartupService.DownloadBlocksOnStart();
 
             StartupService.ClearStaleMempool();
             StartupService.SetValidator();
@@ -195,17 +195,21 @@ namespace ReserveBlockCore
                     });
                 });
 
-            builder.RunConsoleAsync();
-            builder2.RunConsoleAsync();
+            var builder3 = Host.CreateDefaultBuilder(args)
+                     .ConfigureServices(services =>
+                     {
+                         services.AddHttpClient();
+                         services.AddTransient<HTTP>();
+                     });
 
+            _ = builder.RunConsoleAsync();
+            _ = builder2.RunConsoleAsync();
+            _ = builder3.RunConsoleAsync();
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
             
             StartupService.CheckForDuplicateBlocks();
-
-            //Get Adj Pool - Currently Returns dummy list
-
 
             if (Globals.DatabaseCorruptionDetected == true)
             {
@@ -220,10 +224,7 @@ namespace ReserveBlockCore
 
             await StartupService.ConnectoToBeacon();
 
-            await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
-
             _ = StartupService.ConnectToAdjudicators();
-
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {

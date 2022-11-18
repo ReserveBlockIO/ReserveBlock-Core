@@ -392,7 +392,7 @@ namespace ReserveBlockCore.Services
 
                                     if (taskAnswerList.Count() > 0)
                                     {
-                                        await ProcessFortisPool(taskAnswerList);
+                                        await ProcessFortisPoolV2(taskAnswerList);
                                         ConsoleWriterService.Output("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
                                         bool findWinner = true;
                                         int taskFindCount = 0;
@@ -489,7 +489,7 @@ namespace ReserveBlockCore.Services
 
                                                             taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
 
-                                                            await ProcessFortisPool(taskAnswerList);
+                                                            await ProcessFortisPoolV2(taskAnswerList);
                                                             ConsoleWriterService.Output("Fortis Pool Processed");
 
                                                             foreach (var answer in Globals.TaskAnswerDict_New.Values)
@@ -758,24 +758,8 @@ namespace ReserveBlockCore.Services
 
         public static async Task DoWorkV3()
         {
-            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null  || Globals.StopAllTimers)
+            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null)
                 return;            
-
-            //var Nodes = Globals.ConsensusNodes.Values.ToArray();
-            //var HeightTasks = Nodes.Select(x => ConsensusClient.GetNodeHeight(x)).ToArray();
-            //await Task.WhenAll(HeightTasks);
-            //var Heights = HeightTasks.Select(x => x.IsCompletedSuccessfully ? x.Result : 0).ToArray();
-            //var Height = await HeightTasks?.Max(async x => await x);
-            //var DownloadTasks = new List<Task>();
-
-            //for(var height = Globals.LastBlock.Height + 1; height <= Height; height++)
-            //{
-            //    DownloadTasks.Add(ConsensusClient.GetBlock());
-            //}            
-
-            // do peer height check
-            // finish resume functionality
-
 
             _ = StartupService.ConnectToConsensusNodes();
             await TaskQuestionUtility.CreateTaskQuestion("rndNum");            
@@ -786,7 +770,7 @@ namespace ReserveBlockCore.Services
                 try
                 {                                        
                     Globals.ConsensusTokenSource?.Dispose();
-                    Globals.ConsensusTokenSource = new CancellationTokenSource();
+                    Globals.ConsensusTokenSource = new CancellationTokenSource(30000);
                     var fortisPool = Globals.FortisPool.Values;
                     var State = ConsensusServer.GetState();
                     var Token = Globals.ConsensusTokenSource.Token;
@@ -877,7 +861,7 @@ namespace ReserveBlockCore.Services
                     var WinnerHasheSignaturesString = JsonConvert.SerializeObject(WinnerHasheSignatures);
                     var WinnerHasheSignaturesSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignaturesString);                    
 
-                    var Majority = ConsensusClient.Majority();
+                    var Majority = Signer.Majority();
                     var Hashes = await ConsensusClient.ConsensusRun(State.Height, 4, WinnerHasheSignaturesString, WinnerHasheSignaturesSignature, 1000, Token);                    
                     var HashDictionary = Hashes.Select(x =>
                     {
@@ -917,7 +901,8 @@ namespace ReserveBlockCore.Services
                             nSTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
 
                             var taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                            ConsoleWriterService.Output("Fortis Pool Processed");
+                            await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Values.ToArray());
+                            ConsoleWriterService.Output("Fortis Pool Processed");                                                                              
 
                             foreach (var answer in Globals.TaskAnswerDict_New.Values)
                                 if (answer.NextBlockHeight <= nextBlock.Height)
@@ -947,12 +932,12 @@ namespace ReserveBlockCore.Services
                             ConsoleWriterService.Output($"Block failed validation for {winner.Address}");
                     }
 
-                    DbContext.DB_Consensus.BeginTrans();
-                    var db = Consensus.ConsensusData.GetAll();
-                    var history = ConsensusHistory.ConsensusHistoryData.GetAll();
-                    db.DeleteManySafe(x => x.Height <= Globals.LastBlock.Height);
-                    history.DeleteManySafe(x => x.Height <= Globals.LastBlock.Height);
-                    DbContext.DB_Consensus.Commit();
+                    var PreviousMessages = ConsensusServer.Messages.Where(x => x.Key.Height <= Globals.LastBlock.Height);
+                    var PreviousHistories = ConsensusServer.Histories.Where(x => x.Key.Height <= Globals.LastBlock.Height);
+                    foreach (var message in PreviousMessages)
+                        ConsensusServer.Messages.TryRemove(message.Key, out _);
+                    foreach (var history in PreviousHistories)
+                        ConsensusServer.Histories.TryRemove(history.Key, out _);
 
                     ConsoleWriterService.Output($"Task Winner was Not Found! There were {PotentialWinners.Length} potential winners" +
                     $" and {SubmittedWinners.Length} submitted answers.");
@@ -962,11 +947,6 @@ namespace ReserveBlockCore.Services
                 {
                     Console.WriteLine("Error: " + ex.ToString());
                     Console.WriteLine("Client Call Service");
-                    try
-                    {
-                        DbContext.DB_Consensus.Rollback();
-                    }
-                    catch { }
                 }
 
                 await BlockDelay;
@@ -1010,13 +990,40 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region Process Fortis Pool
-        public async Task ProcessFortisPool(IList<TaskNumberAnswerV2> taskAnswerList)
+        public async Task ProcessFortisPoolV2(IList<TaskNumberAnswerV2> taskAnswerList)
         {
             try
             {
                 if (taskAnswerList != null)
                 {
                     foreach (TaskNumberAnswerV2 taskAnswer in taskAnswerList)
+                    {
+                        if (Globals.FortisPool.TryGetFromKey2(taskAnswer.Address, out var validator))
+                            validator.Value.LastAnswerSendDate = DateTime.Now;
+                    }
+                }
+
+                var nodeWithAnswer = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).ToList();
+                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
+                foreach (var deadNode in deadNodes)
+                {
+                    Globals.FortisPool.TryRemoveFromKey1(deadNode.IpAddress, out var test);
+                    deadNode.Context.Abort();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: ClientCallService.ProcessFortisPool: " + ex.ToString());
+            }
+        }
+
+        public static async Task ProcessFortisPoolV3(IList<TaskNumberAnswerV3> taskAnswerList)
+        {
+            try
+            {
+                if (taskAnswerList != null)
+                {
+                    foreach (var taskAnswer in taskAnswerList)
                     {
                         if (Globals.FortisPool.TryGetFromKey2(taskAnswer.Address, out var validator))
                             validator.Value.LastAnswerSendDate = DateTime.Now;

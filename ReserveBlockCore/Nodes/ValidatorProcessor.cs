@@ -18,172 +18,135 @@ namespace ReserveBlockCore.Nodes
             }
 
             Globals.AdjNodes.TryGetValue(ipAddress, out var node);
-            if (Globals.StopAllTimers == false && Globals.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
+            if(message == "task")
             {
-                if(message == "task")
+                var taskQuestion = JsonConvert.DeserializeObject<TaskQuestion>(data);
+                switch(taskQuestion.TaskType)
                 {
-                    var taskQuestion = JsonConvert.DeserializeObject<TaskQuestion>(data);
-                    switch(taskQuestion.TaskType)
-                    {
-                        case "rndNum":
-                            if(Globals.LastBlock.Height > Globals.BlockLock)
-                            {
-                                RandomNumberTaskV3(taskQuestion.BlockHeight);
-                            }
-                            else
-                            {
-                                RandomNumberTask_New(taskQuestion.BlockHeight);                                
-                            }
-                            break;
-                    }
-                }
-
-                if(message == "sendWinningBlock")
-                {
-                    var verifySecret = data;
-                    var taskWin = new TaskWinner();
-                    var fortisPool = Globals.FortisPool.Values;
-                    var answer = Globals.CurrentTaskNumberAnswerV3.Item2?.Answer ?? Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
-
-                    if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height)
-                    {
-                        if (answer != null)
+                    case "rndNum":
+                        if(Globals.LastBlock.Height > Globals.BlockLock)
                         {
-                            var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), answer);
-                            if (block != null)
-                            {
-                                taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
-                                taskWin.Address = Globals.ValidatorAddress;
-                                taskWin.WinningBlock = block;
-                                Globals.CurrentWinner = (taskWin, DateTime.Now);
-                                if (block.Height > Globals.BlockLock)
-                                    await P2PClient.SendWinningTaskV3(taskWin);
-                                else
-                                    await P2PClient.SendWinningTask_New(taskWin);
-                            }
-                            else
-                            {
-                                ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.ProcessData() - sendWinningBlock");
-                                node?.AsParamater(x => x.LastTaskError = true);
-                            }
+                            RandomNumberTaskV3(taskQuestion.BlockHeight);
                         }
-                    }
-                    else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8000)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
-                            await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1);
                         else
-                            await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);
-                    }
-                }
-
-                if(message == "taskResult")
-                {
-                    await BlockValidatorService.ValidationDelay();
-                    node?.AsParamater(x => x.LastTaskResultTime = DateTime.Now);
-                    var nextBlock = JsonConvert.DeserializeObject<Block>(data);
-                    var nextHeight = Globals.LastBlock.Height + 1;
-                    var currentHeight = nextBlock.Height;
-
-                    if (currentHeight < nextHeight)
-                    {
-                        //already have block
-                        var checkBlock = BlockchainData.GetBlockByHeight(currentHeight);
-
-                        if (checkBlock != null)
                         {
-                            var localHash = checkBlock.Hash;
-                            var remoteHash = nextBlock.Hash;
-
-                            if (localHash != remoteHash)
-                            {
-                                Console.WriteLine("Possible block differ");
-                            }
+                            RandomNumberTask_New(taskQuestion.BlockHeight);                                
                         }
-                    }
-                    else
-                    {
-                        if (Globals.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
-                        {
-                            BlockDownloadService.BlockDict[currentHeight] = (nextBlock, ipAddress);
-                            if (nextHeight == currentHeight)
-                                await BlockValidatorService.ValidateBlocks();
-                            if (nextHeight < currentHeight)
-                                await BlockDownloadService.GetAllBlocks();
-                        }    
-                    }
-
-                    await BlockValidatorService.ValidationDelay();
+                        break;
                 }
-                if(message == "fortisPool")
+            }
+
+            if(message == "sendWinningBlock")
+            {
+                var verifySecret = data;
+                var taskWin = new TaskWinner();
+                var fortisPool = Globals.FortisPool.Values;
+                var answer = Globals.CurrentTaskNumberAnswerV3.Item2?.Answer ?? Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
+
+                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height)
                 {
-                    try
+                    if (answer != null)
                     {
-                        var fortisPool = JsonConvert.DeserializeObject<List<FortisPool>>(data);
-                        if (fortisPool != null)
+                        var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), answer);
+                        if (block != null)
                         {
-                            foreach (var pool in fortisPool)
-                                Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-                        ErrorLogUtility.LogError($"Error getting Masternodes (Fortis Pool). Error: {ex.ToString}", "ValidatorProcessor.ProcessData()");
-                    }
-                }
-
-                if(message == "tx")
-                {
-                    var transaction = JsonConvert.DeserializeObject<Transaction>(data);
-                    if (transaction != null)
-                    {
-                        var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
-                        if (!isTxStale)
-                        {
-                            var mempool = TransactionData.GetPool();
-                            if (mempool.Count() != 0)
-                            {
-                                var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
-                                if (txFound == null)
-                                {
-
-                                    var txResult = await TransactionValidatorService.VerifyTX(transaction);
-                                    if (txResult == true)
-                                    {
-                                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
-                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-                                        var rating = await TransactionRatingService.GetTransactionRating(transaction);
-                                        transaction.TransactionRating = rating;
-
-                                        if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
-                                        {
-                                            mempool.InsertSafe(transaction);
-                                        }
-                                    }
-
-                                }
-                                else
-                                {
-                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
-                                    if (isCraftedIntoBlock)
-                                    {
-                                        try
-                                        {
-                                            mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            DbContext.Rollback();
-                                            //delete failed
-                                        }
-                                    }
-                                }
-                            }
+                            taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
+                            taskWin.Address = Globals.ValidatorAddress;
+                            taskWin.WinningBlock = block;
+                            Globals.CurrentWinner = (taskWin, DateTime.Now);
+                            if (block.Height > Globals.BlockLock)
+                                await P2PClient.SendWinningTaskV3(taskWin);
                             else
+                                await P2PClient.SendWinningTask_New(taskWin);
+                        }
+                        else
+                        {
+                            ValidatorLogUtility.Log("Failed to add block. Block was null", "ValidatorProcessor.ProcessData() - sendWinningBlock");
+                            node?.AsParamater(x => x.LastTaskError = true);
+                        }
+                    }
+                }
+                else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8000)
+                {
+                    return;
+                }
+                else
+                {
+                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
+                        await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1);
+                    else
+                        await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);
+                }
+            }
+
+            if(message == "taskResult")
+            {
+                await BlockValidatorService.ValidationDelay();
+                node?.AsParamater(x => x.LastTaskResultTime = DateTime.Now);
+                var nextBlock = JsonConvert.DeserializeObject<Block>(data);
+                var nextHeight = Globals.LastBlock.Height + 1;
+                var currentHeight = nextBlock.Height;
+
+                if (currentHeight < nextHeight)
+                {
+                    //already have block
+                    var checkBlock = BlockchainData.GetBlockByHeight(currentHeight);
+
+                    if (checkBlock != null)
+                    {
+                        var localHash = checkBlock.Hash;
+                        var remoteHash = nextBlock.Hash;
+
+                        if (localHash != remoteHash)
+                        {
+                            Console.WriteLine("Possible block differ");
+                        }
+                    }
+                }
+                else
+                {
+                    if (Globals.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
+                    {
+                        BlockDownloadService.BlockDict[currentHeight] = (nextBlock, ipAddress);
+                        if (nextHeight == currentHeight)
+                            await BlockValidatorService.ValidateBlocks();
+                        if (nextHeight < currentHeight)
+                            await BlockDownloadService.GetAllBlocks();
+                    }    
+                }
+
+                await BlockValidatorService.ValidationDelay();
+            }
+            if(message == "fortisPool")
+            {
+                try
+                {
+                    var fortisPool = JsonConvert.DeserializeObject<List<FortisPool>>(data);
+                    if (fortisPool != null)
+                    {
+                        foreach (var pool in fortisPool)
+                            Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Error getting Masternodes (Fortis Pool). Error: {ex.ToString}", "ValidatorProcessor.ProcessData()");
+                }
+            }
+
+            if(message == "tx")
+            {
+                var transaction = JsonConvert.DeserializeObject<Transaction>(data);
+                if (transaction != null)
+                {
+                    var isTxStale = await TransactionData.IsTxTimestampStale(transaction);
+                    if (!isTxStale)
+                    {
+                        var mempool = TransactionData.GetPool();
+                        if (mempool.Count() != 0)
+                        {
+                            var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
+                            if (txFound == null)
                             {
 
                                 var txResult = await TransactionValidatorService.VerifyTX(transaction);
@@ -199,13 +162,46 @@ namespace ReserveBlockCore.Nodes
                                         mempool.InsertSafe(transaction);
                                     }
                                 }
+
+                            }
+                            else
+                            {
+                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                if (isCraftedIntoBlock)
+                                {
+                                    try
+                                    {
+                                        mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        DbContext.Rollback();
+                                        //delete failed
+                                    }
+                                }
                             }
                         }
+                        else
+                        {
 
+                            var txResult = await TransactionValidatorService.VerifyTX(transaction);
+                            if (txResult == true)
+                            {
+                                var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
+                                var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
+                                var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                                transaction.TransactionRating = rating;
+
+                                if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                                {
+                                    mempool.InsertSafe(transaction);
+                                }
+                            }
+                        }
                     }
-                }
 
-            }            
+                }
+            }                       
         }
 
         private static async void RandomNumberTaskV3(long blockHeight)

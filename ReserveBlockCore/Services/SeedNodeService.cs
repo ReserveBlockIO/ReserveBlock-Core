@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = HTTP.Client())
                     {
 
                         string endpoint = node.NodeUrl + @"/api/V1";
@@ -62,7 +62,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = HTTP.Client())
                     {
                         string endpoint = url + "/api/V1/GetNodes";
                         using (var Response = await client.GetAsync(endpoint))
@@ -143,7 +143,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = HTTP.Client())
                     {
                         string endpoint = url + "/api/V1/GetAdjPool";
                         using (var Response = await client.GetAsync(endpoint))
@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = HTTP.Client())
                     {
                         string endpoint = url + "/api/V1/GetAdjPool";
                         using (var Response = await client.GetAsync(endpoint))

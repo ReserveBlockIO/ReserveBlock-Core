@@ -46,18 +46,21 @@ namespace ReserveBlockCore.Utilities
             if (!string.IsNullOrWhiteSpace(block.AdjudicatorSignature))
             {
                 var ValidCount = 0;
-                var AddressSignatures = block.AdjudicatorSignature.Split('|');                
+                var AddressSignatures = block.AdjudicatorSignature.Split('|');
+                var Addresses = new HashSet<string>();
+                var SignerAddresses = Signer.CurrentSigningAddresses();
                 foreach (var AddressSignature in AddressSignatures)
                 {
                     var split = AddressSignature.Split(':');
                     var (Address, Signature) = (split[0], split[1]);
-                    if (!Globals.AdjudicatorAddresses.ContainsKey(Address))
+                    if (!SignerAddresses.Contains(Address))
                         return false;
                     if(!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
                         return false;
                     ValidCount++;
+                    Addresses.Add(Address);
                 }
-                if (ValidCount == Globals.AdjudicatorAddresses.Count / 2 + 1)
+                if (ValidCount == Addresses.Count && ValidCount == Signer.Majority())
                     return true;
             }
 
