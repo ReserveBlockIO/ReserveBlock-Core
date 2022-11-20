@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ReserveBlockCore.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,20 +9,14 @@ namespace ReserveBlockCore.Utilities
 {
     internal class TimeUtil
     {
-        public static long GetTime(int addTime = 0)
+        public static long GetTime(int addSeconds = 0)
         {
-            long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddSeconds(addTime).Ticks;
-            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerSecond);
-            return timeStamp;//returns time in ticks from Epoch Time
+            return DateTimeOffset.UtcNow.AddSeconds(addSeconds).ToUnixTimeSeconds();
         }
 
-        public static long GetMillisecondTime(int addTime = 0)
+        public static long GetMillisecondTime()
         {
-            long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddSeconds(addTime).Ticks;
-            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerMillisecond);
-            return timeStamp;//returns time in ticks from Epoch Time
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();            
         }
 
         public static long GetTimeForBeaconRelease()

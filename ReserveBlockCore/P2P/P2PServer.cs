@@ -52,7 +52,7 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            Globals.P2PPeerDict.TryRemove(peerIP, out var test);
+            Globals.P2PPeerDict.TryRemove(peerIP, out _);
         }
 
         #endregion

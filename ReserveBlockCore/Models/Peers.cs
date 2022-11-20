@@ -112,6 +112,8 @@ namespace ReserveBlockCore.Models
 
         public static void BanPeer(string ipAddress, string message, string location)
         {
+            if (Globals.AdjNodes.ContainsKey(ipAddress))
+                return;
             //Globals.BannedIPs[ipAddress] = true;
             //var peerDb = Peers.GetAll();
             //var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);

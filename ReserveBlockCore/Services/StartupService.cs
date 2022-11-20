@@ -518,9 +518,6 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectToConsensusNodes()
         {
-            if (Globals.AdjudicateAccount == null)
-                return;
-
             while(true)
             {
                 try
@@ -540,6 +537,12 @@ namespace ReserveBlockCore.Services
                         var ip = Globals.ConsensusNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
                         if (Globals.ConsensusNodes.TryRemove(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
+                    }
+
+                    if (Globals.AdjudicateAccount == null)
+                    {
+                        await Task.Delay(10000);
+                        continue;
                     }
 
                     var DisconnectedPeers = Globals.ConsensusNodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address && !x.IsConnected).ToArray();
@@ -646,19 +649,20 @@ namespace ReserveBlockCore.Services
                             else
                             {                                
                                 var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
-                                var adjudicators = Globals.AdjNodes.Values
-                                    .Where(x => !CurrentAddresses.Contains(x.Address))
+                                var NewAdjudicators = Signer.CurrentSigningAddresses()
+                                    .Select(x => Globals.ConsensusNodes.Values.Where(y => y.Address == x).FirstOrDefault())                                    
+                                    .Where(x => x != null && !CurrentAddresses.Contains(x.Address))
                                     .OrderBy(x => rnd.Next())
-                                    .Take(2 - CurrentAddresses.Count)
+                                    .Take(2 - CurrentAddresses.Count)        
                                     .ToArray();
 
-                                foreach (var adjudicator in adjudicators)
+                                foreach (var adjudicator in NewAdjudicators)
                                 {
                                     var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
                                     await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                                 }
 
-                                if (!adjudicators.Any())
+                                if (!Globals.AdjNodes.Any())
                                     Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
                             }
                         }

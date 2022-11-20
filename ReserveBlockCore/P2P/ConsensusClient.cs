@@ -23,12 +23,6 @@ namespace ReserveBlockCore.P2P
 {
     public class ConsensusClient : IAsyncDisposable, IDisposable
     {
-        //private static async Task RemoveConsensusNode(ConsensusNodeInfo node)
-        //{
-        //    if (Globals.ConsensusNodes.TryRemove(node.IpAddress, out var test))
-        //        await node.Connection.DisposeAsync();
-        //}
-
         #region Hub Dispose
         public void Dispose()
         {

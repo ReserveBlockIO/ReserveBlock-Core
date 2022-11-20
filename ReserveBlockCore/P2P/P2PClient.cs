@@ -426,26 +426,26 @@ namespace ReserveBlockCore.P2P
 
         #region Send Winning Task V3
 
-        public static async Task SendWinningTaskV3(TaskWinner taskWin)
+        public static async Task SendWinningTaskV3(Block block)
         {
-            if (taskWin == null || taskWin.WinningBlock.Height != Globals.LastBlock.Height + 1)
+            if (block == null || block.Height != Globals.LastBlock.Height + 1)
                 return;
 
-            await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendWinningTaskV3(x, taskWin)));
+            await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendWinningTaskV3(x, block)));
         }
 
-        private static async Task SendWinningTaskV3(AdjNodeInfo node, TaskWinner taskWin)
+        private static async Task SendWinningTaskV3(AdjNodeInfo node, Block block)
         {
             for (var i = 1; i < 4; i++)
             {
                 try
                 {
-                    var result = await node.InvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin });
+                    var result = await node.InvokeAsync<bool>("ReceiveWinningBlockV3", new object[] { block });
                     if (result)
                     {
                         node.LastWinningTaskError = false;
                         node.LastWinningTaskSentTime = DateTime.Now;
-                        node.LastWinningTaskBlockHeight = taskWin.WinningBlock.Height;
+                        node.LastWinningTaskBlockHeight = block.Height;
                         break;
                     }
                     else
@@ -459,7 +459,7 @@ namespace ReserveBlockCore.P2P
 
                     ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
-                    string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskWin != null ?
+                    string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", block != null ?
                         DateTime.Now.ToString() : "No Time", ex.ToString());
                     ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                 }
@@ -526,7 +526,7 @@ namespace ReserveBlockCore.P2P
                     ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                     string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                        taskAnswer.Address : "No Time", ex.ToString());
+                        taskAnswer.Answer : "No Time", ex.ToString());
                     ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                 }
             }

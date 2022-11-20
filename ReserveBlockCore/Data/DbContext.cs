@@ -83,6 +83,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DECSHOPSTATE_TREI = "rsrv_decshopstate_trei";
         public const string RSRV_KEYSTORE = "rsrv_keystore";
         public const string RSRV_SIGNER = "rsrv_signer";
+        public const string RSRV_LOCAL_TIMES = "rsrv_local_time";
 
         internal static void Initialize()
         {
@@ -115,6 +116,8 @@ namespace ReserveBlockCore.Data
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
+            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
+            localTimeDb.EnsureIndexSafe(x => x.Height, true);
 
             var transactionPool = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
             transactionPool.EnsureIndexSafe(x => x.Hash, false);

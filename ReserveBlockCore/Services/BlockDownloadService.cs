@@ -46,7 +46,7 @@ namespace ReserveBlockCore.Services
                                 x.Value.task.IsCompleted).ToArray();
 
                             foreach (var badTask in badTasks)
-                                taskDict.TryRemove(badTask.Key, out var test);
+                                taskDict.TryRemove(badTask.Key, out _);
 
                             heightToDownload = Math.Min(heightToDownload, badTasks.Min(x => x.Key));                            
                         }
@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Services
                             var resultHeight = result.Height;
                             var (_, ipAddress) = taskDict[resultHeight];
                             BlockDict[resultHeight] = (result, ipAddress);
-                            taskDict.TryRemove(resultHeight, out var test2);
+                            taskDict.TryRemove(resultHeight, out _);
                             _ = BlockValidatorService.ValidateBlocks();                            
                         }
 
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Services
                                     var staleTask = taskDict[staleHeight];
                                     if(Globals.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
                                         _ = staleNode.Connection.DisposeAsync();
-                                    taskDict.TryRemove(staleHeight, out var test4);
+                                    taskDict.TryRemove(staleHeight, out _);
                                     staleTask.task.Dispose();
                                     heightToDownload = Math.Min(heightToDownload, staleHeight);                                                                        
                                     coolDownTime = DateTime.Now;                                    

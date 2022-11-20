@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Services
                 var url = Globals.APICallURL;                
                 string json = JsonConvert.SerializeObject(transaction);
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
-                using (var client = HTTP.Client())
+                using (var client = Globals.HttpClientFactory.CreateClient())
                 {
                     var httpResponse = await client.PostAsync(url, httpContent);
                     if (Globals.APICallURLLogging == true)

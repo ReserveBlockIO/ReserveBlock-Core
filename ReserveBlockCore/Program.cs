@@ -129,6 +129,17 @@ namespace ReserveBlockCore
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
 
+            var httpClientBuilder = Host.CreateDefaultBuilder(args)
+                     .ConfigureServices(services =>
+                     {
+                         services.AddHttpClient();
+                         services.AddTransient<HttpService>();
+                     })
+                     .Build();
+
+            await httpClientBuilder.StartAsync();
+            Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
+
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.                     
             _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
@@ -142,10 +153,10 @@ namespace ReserveBlockCore
             //StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
-            
+
             StartupService.BootstrapBeacons();
             await StartupService.EstablishBeaconReference();
-            
+
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
 
@@ -165,8 +176,8 @@ namespace ReserveBlockCore
 
             string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:" + Globals.Port; //this is port for signalr connect and all p2p functions
-            //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
-            
+                                                      //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
+
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
             var commandLoopTask3 = Task.Run(() => CommandLoop3());
@@ -189,26 +200,19 @@ namespace ReserveBlockCore
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
-                    webBuilder.ConfigureKestrel(options => { 
-                        
-                        
+                    webBuilder.ConfigureKestrel(options => {
+
+
                     });
                 });
 
-            var builder3 = Host.CreateDefaultBuilder(args)
-                     .ConfigureServices(services =>
-                     {
-                         services.AddHttpClient();
-                         services.AddTransient<HTTP>();
-                     });
-
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
-            _ = builder3.RunConsoleAsync();
+
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
-            
+
             StartupService.CheckForDuplicateBlocks();
 
             if (Globals.DatabaseCorruptionDetected == true)
@@ -219,7 +223,7 @@ namespace ReserveBlockCore
                     var read = Console.ReadLine();
                 }
             }
-            
+
             StartupService.StartupMemBlocks();
 
             await StartupService.ConnectoToBeacon();
@@ -231,11 +235,11 @@ namespace ReserveBlockCore
                 StartupService.SetConfigValidator();
             }
 
-            
+
 
             Thread.Sleep(2000);
 
-            var tasks = new Task[] {                
+            var tasks = new Task[] {
                 commandLoopTask, //CLI console
                 commandLoopTask2, //awaiting parameters
                 commandLoopTask3//Beacon client/server
@@ -261,7 +265,7 @@ namespace ReserveBlockCore
             while (true)
             {
                 var command = Console.ReadLine();
-                if(command == "/help" || 
+                if (command == "/help" ||
                     command == "/menu" ||
                     command == "/info" ||
                     command == "/stopco" ||
@@ -275,15 +279,15 @@ namespace ReserveBlockCore
                     command == "6" ||
                     command == "7" ||
                     command == "/exit" ||
-                    command == "/clear" || 
+                    command == "/clear" ||
                     command == "/trillium")
                 {
                     RunCommand(command);
                 }
-                else if(!string.IsNullOrWhiteSpace(Globals.WalletPassword))
+                else if (!string.IsNullOrWhiteSpace(Globals.WalletPassword))
                 {
                     var now = DateTime.UtcNow;
-                    if(Globals.AlwaysRequireWalletPassword == true)
+                    if (Globals.AlwaysRequireWalletPassword == true)
                     {
                         Console.WriteLine("Please enter your wallet password");
                         var walletPass = Console.ReadLine();
@@ -297,9 +301,9 @@ namespace ReserveBlockCore
                         {
                             Console.WriteLine("Incorrect password was entered.");
                         }
-                         
+
                     }
-                    else if(now > Globals.CLIWalletUnlockTime && Globals.AlwaysRequireWalletPassword == false)
+                    else if (now > Globals.CLIWalletUnlockTime && Globals.AlwaysRequireWalletPassword == false)
                     {
                         Console.WriteLine("Please enter your wallet password");
                         var walletPass = Console.ReadLine();
@@ -325,7 +329,7 @@ namespace ReserveBlockCore
                 }
 
             }
-            
+
         }
 
         private static async void RunCommand(string? command)
@@ -379,16 +383,16 @@ namespace ReserveBlockCore
                 //if blocks are currently downloading this will stop it from running again.
                 if (Globals.BlocksDownloading != 1)
                 {
-                    if(Globals.HeightCheckLock == false)
+                    if (Globals.HeightCheckLock == false)
                     {
-                        Globals.HeightCheckLock = true;                        
+                        Globals.HeightCheckLock = true;
                         await P2PClient.UpdateNodeHeights();
-                        if(Globals.Nodes.Any())                        
+                        if (Globals.Nodes.Any())
                         {
                             var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
                             if (Globals.ValidatorAddress == "")
-                            {                                
-                                
+                            {
+
                                 if (maxHeightNode != null)
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
@@ -401,13 +405,13 @@ namespace ReserveBlockCore
                             }
                             else
                             {
-                                if(maxHeightNode != null)
+                                if (maxHeightNode != null)
                                 {
                                     var maxHeight = maxHeightNode.NodeHeight;
                                     var myMaxHeight = Globals.LastBlock.Height + 2;
                                     if (maxHeight > myMaxHeight)
                                     {
-                                        await BlockDownloadService.GetAllBlocks();                                        
+                                        await BlockDownloadService.GetAllBlocks();
                                     }
                                 }
                             }
@@ -424,7 +428,7 @@ namespace ReserveBlockCore
             {
 
             }
-            
+
         }
 
         #endregion
@@ -436,7 +440,7 @@ namespace ReserveBlockCore
             {
                 await DbContext.CheckPoint();
             }
-            
+
         }
 
         #endregion
@@ -446,14 +450,14 @@ namespace ReserveBlockCore
         {
             try
             {
-                if(Globals.AdjudicateAccount != null)
+                if (Globals.AdjudicateAccount != null)
                 {
                     var connectionQueueList = Globals.ConnectionHistoryDict.Values.ToList();
 
                     foreach (var cq in connectionQueueList)
                     {
                         new ConnectionHistory().Process(cq.IPAddress, cq.Address, cq.ConnectionTime, cq.WasSuccess);
-                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out var test);
+                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out _);
                     }
 
                     var conList = await ConnectionHistory.Read();
@@ -462,7 +466,7 @@ namespace ReserveBlockCore
                 }
             }
             catch { }
-            
+
         }
 
         #endregion
@@ -470,6 +474,3 @@ namespace ReserveBlockCore
 
 
 }
-
-
-

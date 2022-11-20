@@ -43,7 +43,7 @@ namespace ReserveBlockCore.Services
                     {
                         heightOffset = heights[offsetIndex];
                         if (heightOffset < nextHeight)
-                            BlockDownloadService.BlockDict.TryRemove(heightOffset, out var test);
+                            BlockDownloadService.BlockDict.TryRemove(heightOffset, out _);
                         else                        
                             break;
                     }
@@ -306,7 +306,7 @@ namespace ReserveBlockCore.Services
                                     if (mempoolTx.Count() > 0)
                                     {
                                         mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
-                                        Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out var test);
+                                        Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out _);
                                     }
                                 }
 

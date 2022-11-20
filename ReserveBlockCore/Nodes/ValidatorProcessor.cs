@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = (taskWin, DateTime.Now);
                             if (block.Height > Globals.BlockLock)
-                                await P2PClient.SendWinningTaskV3(taskWin);
+                                await P2PClient.SendWinningTaskV3(block);
                             else
                                 await P2PClient.SendWinningTask_New(taskWin);
                         }
@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Nodes
                 else
                 {
                     if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
-                        await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1);
+                        await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1.WinningBlock);
                     else
                         await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);
                 }
@@ -205,11 +205,9 @@ namespace ReserveBlockCore.Nodes
         }
 
         private static async void RandomNumberTaskV3(long blockHeight)
-        {
-            var nextBlock = Globals.LastBlock.Height + 1;
-            if (nextBlock != blockHeight)
-            {
-                //download blocks
+        {            
+            while (Globals.LastBlock.Height + 1 != blockHeight)
+            {                
                 await BlockDownloadService.GetAllBlocks();
             }
 

@@ -774,7 +774,7 @@ namespace ReserveBlockCore.Commands
                 ConsoleWriterService.Output("*******************************Task Answers V3********************************");
                 foreach (var taskNum in taskSelectedNumbersV3)
                 {
-                    var taskLine = $"Address: {taskNum.Address} | Answer: {taskNum.Answer} | Signature: {taskNum.Signature.Substring(0,10)}";
+                    var taskLine = $"Address: {taskNum.RBXAddress} |  IP Address: {taskNum.IPAddress} | Answer: {taskNum.Answer} | Signature: {taskNum.Signature.Substring(0,10)}";
                     ConsoleWriterService.Output(taskLine);
                 }
                 ConsoleWriterService.Output("******************************************************************************");
