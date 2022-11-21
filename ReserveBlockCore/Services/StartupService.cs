@@ -133,6 +133,8 @@ namespace ReserveBlockCore.Services
             var peerDb = Peers.GetAll();
             Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
                 peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+            var localBlockTime = BlockLocalTime.GetBlockLocalTimes();
+            localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
         }
 
         internal static void SetAdjudicatorAddresses()
@@ -1063,6 +1065,9 @@ namespace ReserveBlockCore.Services
 
         internal static async Task StartupPeers()
         {
+            if (Globals.AdjudicateAccount != null)
+                return;
+
             while (true)
             {
                 var delay = Task.Delay(10000);

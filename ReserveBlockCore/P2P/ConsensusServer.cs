@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.P2P
 {
-    public class ConsensusServer : Hub
+    public class ConsensusServer : P2PServer
     {
         static ConsensusServer()
         {
@@ -87,11 +87,8 @@ namespace ReserveBlockCore.P2P
             catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.OnConnectedAsync()");
-            }
-
-            await base.OnConnectedAsync();
+            }            
         }
-
         private void EndOnConnect(string ipAddress, string adjMessage, string loggMessage)
         {            
             if (Globals.OptionalLogging == true)
@@ -201,43 +198,6 @@ namespace ReserveBlockCore.P2P
 
             return ConsenusStateSingelton.Status != ConsensusStatus.Processing;
         }
-
-        #region Send Block Height
-        public async Task<long> SendBlockHeight()
-        {
-            return Globals.LastBlock.Height;
-        }
-
-        #endregion
-
-        #region Send Block
-        //Send Block to client from p2p server
-        public async Task<Block?> SendBlock(long currentBlock)
-        {
-            try
-            {
-                var peerIP = GetIP(Context);
-
-                var message = "";
-                var nextBlockHeight = currentBlock + 1;
-                var nextBlock = BlockchainData.GetBlockByHeight(nextBlockHeight);
-
-                if (nextBlock != null)
-                {
-                    return nextBlock;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            catch { }
-
-            return null;
-
-        }
-
-        #endregion
 
         private static string GetIP(HubCallerContext context)
         {
