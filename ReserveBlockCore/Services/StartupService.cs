@@ -273,7 +273,7 @@ namespace ReserveBlockCore.Services
                 var beaconInfo = BeaconInfo.GetBeaconInfo();
                 if(beaconInfo != null)
                 {
-                    var port = Globals.Port + 10000; //23338 - mainnet
+                    var port = Globals.Port + 20000; //23338 - mainnet
                     if (Globals.IsTestNet == true)
                     {
                         port = port + 10000; //33338 - testnet
