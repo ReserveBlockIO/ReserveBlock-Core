@@ -11,6 +11,9 @@ namespace ReserveBlockCore.Models
     {
         public HubConnection Connection;
         public string NodeIP { get; set; } 
+
+        public string Address { get; set; }
+
         public long NodeHeight { get; set; }
         public int NodeLatency { get; set; }
         public DateTime? NodeLastChecked { get; set; }

@@ -759,7 +759,7 @@ namespace ReserveBlockCore.Commands
                 ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
                 foreach (var cNode in consensusNodes)
                 {
-                    var line = $"IP: {cNode.IpAddress} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
+                    var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
                     ConsoleWriterService.Output(line);
                 }
                 ConsoleWriterService.Output("******************************************************************************");

@@ -84,14 +84,19 @@ namespace ReserveBlockCore.Services
                                 if (!BlockDict.ContainsKey(nextHeightToValidate) && !taskDict.ContainsKey(nextHeightToValidate))
                                     heightToDownload = nextHeightToValidate;
                                 while (taskDict.ContainsKey(heightToDownload))
-                                    heightToDownload++;                                
+                                    heightToDownload++;
                                 if (heightToDownload > MaxHeight)
+                                {                                    
+                                    (_, MaxHeight) = await P2PClient.GetCurrentHeight();
                                     continue;
+                                }
                                 taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, AvailableNode),
                                     AvailableNode.NodeIP);                                
                             }
                         }
-                    }                    
+                    }
+                    if (Globals.LastBlock.Height >= MaxHeight)
+                        (_, MaxHeight) = await P2PClient.GetCurrentHeight();
                 }
             }
             catch (Exception ex)

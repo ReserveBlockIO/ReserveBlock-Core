@@ -112,7 +112,7 @@ namespace ReserveBlockCore.P2P
             var FinalizingSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             await Peers.Select(node =>
             {
-                var IsFinalizingOrDoneFunc = () => Globals.ConsensusNodes[node.IpAddress].Connection?.InvokeCoreAsync<bool>("IsFinalizingOrDone", args: new object?[] { height, methodCode }, ct)
+                var IsFinalizingOrDoneFunc = () => Globals.ConsensusNodes[node.NodeIP].Connection?.InvokeCoreAsync<bool>("IsFinalizingOrDone", args: new object?[] { height, methodCode }, ct)
                     ?? Task.FromResult(false);
                 return IsFinalizingOrDoneFunc.RetryUntilSuccessOrCancel(x => x, 5000, FinalizingSource.Token);
             })
@@ -130,7 +130,7 @@ namespace ReserveBlockCore.P2P
             return default;
         }
 
-        public static async Task ConsensusIteration(long height, int methodCode, ConsensusNodeInfo[] peers, CancellationToken ct)
+        public static async Task ConsensusIteration(long height, int methodCode, NodeInfo[] peers, CancellationToken ct)
         {
             var CurrentMessages = ConsensusServer.Messages.TryGetValue((height, methodCode), out var messages) ?
                 messages.Select(x => (x.Key, x.Value.Message, x.Value.Signature)).ToArray() : new (string, string, string)[] { };
@@ -141,7 +141,7 @@ namespace ReserveBlockCore.P2P
                     history.Keys.ToHashSet() : new HashSet<string>();
                 var MessagesToSend = CurrentMessages.Where(x => !NodeHistory.Contains(x.Item1)).ToArray();
                 var MessagesToSendString = JsonConvert.SerializeObject(MessagesToSend);
-                var MessageFunc = () => Globals.ConsensusNodes[node.IpAddress].Connection?.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSendString }, ct)
+                var MessageFunc = () => Globals.ConsensusNodes[node.NodeIP].Connection?.InvokeCoreAsync<(string address, string message, string signature)[]>("Message", args: new object?[] { height, methodCode, MessagesToSendString }, ct)
                     ?? Task.FromResult(((string address, string message, string signature)[])null);
                 return (node, MessageFunc.RetryUntilSuccessOrCancel(x => x != null, 5000, ct));
             })
@@ -244,7 +244,7 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        public static async Task<bool> GetBlock(long height, ConsensusNodeInfo node)
+        public static async Task<bool> GetBlock(long height, NodeInfo node)
         {
             var startTime = DateTime.Now;
             long blockSize = 0;
@@ -258,7 +258,7 @@ namespace ReserveBlockCore.P2P
                     blockSize = Block.Size;
                     if (Block.Height == height)
                     {
-                        BlockDownloadService.BlockDict[height] = (Block, node.IpAddress);
+                        BlockDownloadService.BlockDict[height] = (Block, node.NodeIP);
                         return true;
                     }                        
                 }
@@ -268,7 +268,7 @@ namespace ReserveBlockCore.P2P
             return false;
         }
 
-        public static async Task<long> GetNodeHeight(ConsensusNodeInfo node)
+        public static async Task<long> GetNodeHeight(NodeInfo node)
         {
             try
             {

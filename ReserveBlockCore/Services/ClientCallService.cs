@@ -762,6 +762,9 @@ namespace ReserveBlockCore.Services
                 return;            
 
             _ = StartupService.ConnectToConsensusNodes();
+            var NumSigners = Signer.NumSigners();
+            while (Globals.ConsensusNodes.Count != NumSigners)
+                await Task.Delay(4);
             await TaskQuestionUtility.CreateTaskQuestion("rndNum");            
             Console.WriteLine("Doing the work **New**");
             while (true)
