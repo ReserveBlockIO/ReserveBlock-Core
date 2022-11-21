@@ -772,30 +772,25 @@ namespace ReserveBlockCore.P2P
             bool newHeightFound = false;
             long height = -1;
 
-            var peersConnected = await P2PClient.ArePeersConnected();
+            while (!await P2PClient.ArePeersConnected())
+                await Task.Delay(4);
 
-            if (!peersConnected)
-            {                
-                return (newHeightFound, height);
-            }
-            else
+            var myHeight = Globals.LastBlock.Height;
+            await UpdateNodeHeights();
+
+            foreach (var node in Globals.Nodes.Values)
             {
-                var myHeight = Globals.LastBlock.Height;
-                await UpdateNodeHeights();
-
-                foreach (var node in Globals.Nodes.Values)
+                var remoteNodeHeight = node.NodeHeight;
+                if (myHeight < remoteNodeHeight)
                 {
-                    var remoteNodeHeight = node.NodeHeight;
-                    if (myHeight < remoteNodeHeight)
+                    newHeightFound = true;
+                    if (remoteNodeHeight > height)
                     {
-                        newHeightFound = true;
-                        if (remoteNodeHeight > height)
-                        {
-                            height = remoteNodeHeight > height ? remoteNodeHeight : height;
-                        }
+                        height = remoteNodeHeight > height ? remoteNodeHeight : height;
                     }
                 }
             }
+
             return (newHeightFound, height);
         }
 

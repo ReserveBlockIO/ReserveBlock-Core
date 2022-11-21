@@ -29,7 +29,7 @@ namespace ReserveBlockCore
         #region Global General Variables
         public static byte AddressPrefix = 0x3C; //address prefix 'R'        
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address
-        public static ConcurrentDictionary<string, ConsensusNodeInfo> ConsensusNodes = new ConcurrentDictionary<string, ConsensusNodeInfo>(); // IP Address        
+        public static ConcurrentDictionary<string, NodeInfo> ConsensusNodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address        
         public static ConcurrentDictionary<(string Address, long StartHeight), long?> Signers;
         public static Block LastBlock = new Block { Height = -1 };
         public static Adjudicators? LeadAdjudicator = null;

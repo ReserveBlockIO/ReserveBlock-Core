@@ -536,7 +536,7 @@ namespace ReserveBlockCore.Services
                     var NodesToRemove = ConsensusAddresses.Except(SigningAddresses).ToArray();
                     foreach (var address in NodesToRemove)
                     {
-                        var ip = Globals.ConsensusNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                        var ip = Globals.ConsensusNodes.Values.Where(x => x.Address == address).Select(x => x.NodeIP).First();
                         if (Globals.ConsensusNodes.TryRemove(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                     }
@@ -556,7 +556,7 @@ namespace ReserveBlockCore.Services
                         var ConnectTasks = new List<Task>();
                         foreach(var peer in DisconnectedPeers)
                         {
-                            var url = "http://" + peer.IpAddress + ":" + Globals.Port + "/consensus";
+                            var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
                             ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
                         }
 
@@ -565,16 +565,18 @@ namespace ReserveBlockCore.Services
 
                     foreach(var node in Globals.ConsensusNodes.Values)
                     {
-                        if(node.IsConnected && !Globals.Nodes.ContainsKey(node.IpAddress))
+                        if(node.IsConnected && !Globals.Nodes.ContainsKey(node.NodeIP))
                         {
-                            Globals.Nodes[node.IpAddress] = new NodeInfo
+                            Globals.Nodes[node.NodeIP] = new NodeInfo
                             {
                                 Connection = node.Connection,
-                                NodeIP = node.IpAddress,
+                                NodeIP = node.NodeIP,
                                 IsSendingBlock = 0,
                                 SendingBlockTime = 0,
                                 TotalDataSent = 0
                             };
+
+                            (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
                         }
                     }
 
@@ -660,7 +662,7 @@ namespace ReserveBlockCore.Services
 
                                 foreach (var adjudicator in NewAdjudicators)
                                 {
-                                    var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                    var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
                                     await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                                 }
 
@@ -771,54 +773,44 @@ namespace ReserveBlockCore.Services
             var download = true;
             while(download) //this will loop forever till download happens
             {
-                if(Globals.IsResyncing == false)
-                {
-                    DateTime startTime = DateTime.UtcNow;
-                    var result = await P2PClient.GetCurrentHeight();
-                    if (result.Item1 == true)
-                    {
-                        ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
-                        LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
-                        await BlockDownloadService.GetAllBlocks();
-                    }
-                    //This is not being reached on some devices. 
-                    else
-                    {
-                        var lastBlock = Globals.LastBlock;
-                        var currentTimestamp = TimeUtil.GetTime(-60);
+                if (Globals.IsResyncing)
+                    break;
 
-                        if(true)//CHANGE THIS BACK - AARON
+                DateTime startTime = DateTime.UtcNow;
+                var result = await P2PClient.GetCurrentHeight();
+                if (result.Item1)
+                {
+                    ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
+                    LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
+                    await BlockDownloadService.GetAllBlocks();
+                }
+                //This is not being reached on some devices. 
+
+                var lastBlock = Globals.LastBlock;
+                var currentTimestamp = TimeUtil.GetTime(-60);
+ 
+                DateTime endTime = DateTime.UtcNow;
+                ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
+                LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                download = false; //exit the while.
+                Globals.StopAllTimers = false;
+                var accounts = AccountData.GetAccounts();
+                var accountList = accounts.FindAll().ToList();
+                if (accountList.Count() > 0)
+                {
+                    var stateTrei = StateData.GetAccountStateTrei();
+                    foreach (var account in accountList)
+                    {
+                        var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                        if (stateRec != null)
                         {
-                            DateTime endTime = DateTime.UtcNow;
-                            ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
-                            LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
-                            download = false; //exit the while.
-                            Globals.StopAllTimers = false;
-                            var accounts = AccountData.GetAccounts();
-                            var accountList = accounts.FindAll().ToList();
-                            if (accountList.Count() > 0)
-                            {
-                                var stateTrei = StateData.GetAccountStateTrei();
-                                foreach (var account in accountList)
-                                {
-                                    var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                                    if (stateRec != null)
-                                    {
-                                        account.Balance = stateRec.Balance;
-                                        accounts.UpdateSafe(account);//updating local record with synced state trei
-                                    }
-                                }
-                            }
+                            account.Balance = stateRec.Balance;
+                            accounts.UpdateSafe(account);//updating local record with synced state trei
                         }
                     }
-                }
-                else
-                {
-                    download = false;
-                }
-                
+                }                
             }
-            if(Globals.IsResyncing == false)
+            if(!Globals.IsResyncing)
             {
                 Globals.BlocksDownloading = 0;
                 Globals.StopAllTimers = false;
