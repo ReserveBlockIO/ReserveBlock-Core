@@ -1284,7 +1284,7 @@ namespace ReserveBlockCore.Commands
         {
             try
             {
-                ConsoleWriterService.Output("Please enter the block height");
+                Console.WriteLine("Please enter the block height");
                 var blockHeightStr = Console.ReadLine();
                 if (!string.IsNullOrWhiteSpace(blockHeightStr))
                 {

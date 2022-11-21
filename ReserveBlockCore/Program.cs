@@ -59,6 +59,8 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();// initializes databases
 
+            await DbContext.CheckPoint();
+
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
@@ -168,8 +170,8 @@ namespace ReserveBlockCore
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
 
-            Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
+            //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
