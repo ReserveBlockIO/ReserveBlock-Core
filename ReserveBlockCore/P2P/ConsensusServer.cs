@@ -136,7 +136,7 @@ namespace ReserveBlockCore.P2P
                 foreach (var address in addresses)
                 {
                     if (messages.TryGetValue(address, out var Value))
-                        return Value.Message + ":" + Value.Signature;
+                        return address + ":" + Value.Message + ":" + Value.Signature;
                 }               
             }
             catch(Exception ex)

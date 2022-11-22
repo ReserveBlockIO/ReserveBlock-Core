@@ -977,7 +977,11 @@ namespace ReserveBlockCore.Services
             string data = "";
             data = JsonConvert.SerializeObject(block);
 
-            await initialDelay;
+            try
+            {
+                await initialDelay;
+            }
+            catch { }
             var Result = Task.Delay(5000);
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();

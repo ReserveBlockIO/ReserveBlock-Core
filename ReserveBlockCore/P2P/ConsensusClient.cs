@@ -77,17 +77,24 @@ namespace ReserveBlockCore.P2P
 
             Message[Globals.AdjudicateAccount.Address] = (message, signature);
 
-            var messages = ConsensusServer.Messages[(height, methodCode)];            
+            var messages = ConsensusServer.Messages[(height, methodCode)];
+                        
             var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);            
             foreach (var peer in Peers)
             {
                 _ = PeerRequestLoop(height, methodCode, peer, CurrentAddresses, ConsensusSource);
             }
-            await Task.Delay(timeToFinalize, ConsensusSource.Token);
+            try
+            {
+                await Task.Delay(timeToFinalize, ConsensusSource.Token);
+            }
+            catch { }
+            while (messages.Count < Majority && !Globals.ConsensusTokenSource.IsCancellationRequested)
+            {
+                await Task.Delay(4);
+            }
+            
             ConsensusSource.Cancel();
-
-            if (messages.Count < Majority)
-                return null;
 
             var SignatureSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
             var SignatureTasks = Peers.Select(node =>
@@ -102,7 +109,7 @@ namespace ReserveBlockCore.P2P
             SignatureSource.Cancel();
 
             var PeerSignatures = (await Task.WhenAll(SignatureTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
-            if (PeerSignatures.Length < Majority)
+            if (PeerSignatures.Length < Majority - 1)
                 return null;
 
             var MySignatures = messages.Select(x => x.Key + ":" + x.Value.Signature).ToHashSet();
@@ -138,7 +145,8 @@ namespace ReserveBlockCore.P2P
                     }
                     MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
                 }
-                catch { }
+                catch(Exception ex) {                    
+                }
                 await delay;
             }
             if (!MissingAddresses.Any())
