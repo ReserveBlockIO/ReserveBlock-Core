@@ -762,9 +762,6 @@ namespace ReserveBlockCore.Services
                 return;            
 
             _ = StartupService.ConnectToConsensusNodes();
-            var NumSigners = Signer.NumSigners();
-            while (Globals.ConsensusNodes.Count != NumSigners)
-                await Task.Delay(4);
             await TaskQuestionUtility.CreateTaskQuestion("rndNum");            
             Console.WriteLine("Doing the work **New**");
             while (true)
@@ -782,6 +779,11 @@ namespace ReserveBlockCore.Services
                     Globals.ConsensusTokenSource = new CancellationTokenSource(28000);                    
                     var fortisPool = Globals.FortisPool.Values;                    
                     var Token = Globals.ConsensusTokenSource.Token;
+
+                    var Signers = Signer.CurrentSigningAddresses();
+                    var Majority = Signers.Count / 2 + 1;
+                    while (Globals.Nodes.Values.Where(x => x.IsConnected).Count() < Majority - 1)
+                        await Task.Delay(4);
 
                     var MyDecryptedAnswer = State.Height + ":" + State.Answer;
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
@@ -910,8 +912,7 @@ namespace ReserveBlockCore.Services
                     var WinnerHasheSignatures = WinnerDict.Values.Select(x => x.WinningBlock.Hash).Select(x => x + ":" + SignatureService.AdjudicatorSignature(x)).ToArray();
                     var WinnerHasheSignaturesString = JsonConvert.SerializeObject(WinnerHasheSignatures);
                     var WinnerHasheSignaturesSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignaturesString);                    
-
-                    var Majority = Signer.Majority();
+                    
                     var Hashes = await ConsensusClient.ConsensusRun(State.Height, 4, WinnerHasheSignaturesString, WinnerHasheSignaturesSignature, 1000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested)
@@ -976,7 +977,11 @@ namespace ReserveBlockCore.Services
             string data = "";
             data = JsonConvert.SerializeObject(block);
 
-            await initialDelay;
+            try
+            {
+                await initialDelay;
+            }
+            catch { }
             var Result = Task.Delay(5000);
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();

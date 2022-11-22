@@ -98,7 +98,7 @@ namespace ReserveBlockCore.Services
 
                 await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
 
-                Globals.Nodes[IPAddress] = new NodeInfo
+                var node = new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
@@ -110,10 +110,8 @@ namespace ReserveBlockCore.Services
                     TotalDataSent = 0
                 };
 
-                var node = Globals.Nodes[IPAddress];
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
-
-                    
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(hubConnection);
+                Globals.Nodes[IPAddress] = node;
             }
             catch { }
         }
@@ -525,19 +523,19 @@ namespace ReserveBlockCore.Services
                 try
                 {
                     var SigningAddresses = Signer.CurrentSigningAddresses();
-                    var ConsensusAddresses = Globals.ConsensusNodes.Values.Select(x => x.Address).ToHashSet();
+                    var ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
                                         
                     if(SigningAddresses.Except(ConsensusAddresses).Any())
                     {
                         await StartupService.GetAdjudicatorPool();
-                        ConsensusAddresses = Globals.ConsensusNodes.Values.Select(x => x.Address).ToHashSet();
+                        ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
                     }
                                         
                     var NodesToRemove = ConsensusAddresses.Except(SigningAddresses).ToArray();
                     foreach (var address in NodesToRemove)
                     {
-                        var ip = Globals.ConsensusNodes.Values.Where(x => x.Address == address).Select(x => x.NodeIP).First();
-                        if (Globals.ConsensusNodes.TryRemove(ip, out var node) && node.Connection != null)
+                        var ip = Globals.Nodes.Values.Where(x => x.Address == address).Select(x => x.NodeIP).First();
+                        if (Globals.Nodes.TryRemove(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                     }
 
@@ -547,7 +545,7 @@ namespace ReserveBlockCore.Services
                         continue;
                     }
 
-                    var DisconnectedPeers = Globals.ConsensusNodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address && !x.IsConnected).ToArray();
+                    var DisconnectedPeers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address && !x.IsConnected).ToArray();
                     if(DisconnectedPeers.Any())
                     {
                         var account = Globals.AdjudicateAccount;
@@ -562,24 +560,6 @@ namespace ReserveBlockCore.Services
 
                         await Task.WhenAll(ConnectTasks);
                     }
-
-                    foreach(var node in Globals.ConsensusNodes.Values)
-                    {
-                        if(node.IsConnected && !Globals.Nodes.ContainsKey(node.NodeIP))
-                        {
-                            Globals.Nodes[node.NodeIP] = new NodeInfo
-                            {
-                                Connection = node.Connection,
-                                NodeIP = node.NodeIP,
-                                IsSendingBlock = 0,
-                                SendingBlockTime = 0,
-                                TotalDataSent = 0
-                            };
-
-                            (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
-                        }
-                    }
-
                 }
                 catch (Exception ex)
                 {
@@ -654,7 +634,7 @@ namespace ReserveBlockCore.Services
                             {                                
                                 var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
                                 var NewAdjudicators = Signer.CurrentSigningAddresses()
-                                    .Select(x => Globals.ConsensusNodes.Values.Where(y => y.Address == x).FirstOrDefault())                                    
+                                    .Select(x => Globals.Nodes.Values.Where(y => y.Address == x).FirstOrDefault())                                    
                                     .Where(x => x != null && !CurrentAddresses.Contains(x.Address))
                                     .OrderBy(x => rnd.Next())
                                     .Take(2 - CurrentAddresses.Count)        

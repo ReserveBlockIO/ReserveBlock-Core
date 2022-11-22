@@ -168,7 +168,7 @@ namespace ReserveBlockCore
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
+            Globals.heightTimer.Change(18000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
 
             //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
@@ -380,47 +380,40 @@ namespace ReserveBlockCore
         #region Block Height Check
         private static async void blockHeightCheck_Elapsed(object sender)
         {
-            if (Globals.StopAllTimers == false)
+            if (Globals.HeightCheckLock == false)
             {
-                //if blocks are currently downloading this will stop it from running again.
-                if (Globals.BlocksDownloading != 1)
+                Globals.HeightCheckLock = true;
+                await P2PClient.UpdateNodeHeights();
+                if (Globals.Nodes.Any())
                 {
-                    if (Globals.HeightCheckLock == false)
+                    var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
+                    if (Globals.ValidatorAddress == "")
                     {
-                        Globals.HeightCheckLock = true;
-                        await P2PClient.UpdateNodeHeights();
-                        if (Globals.Nodes.Any())
+
+                        if (maxHeightNode != null)
                         {
-                            var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
-                            if (Globals.ValidatorAddress == "")
-                            {
+                            var maxHeight = maxHeightNode.NodeHeight;
 
-                                if (maxHeightNode != null)
-                                {
-                                    var maxHeight = maxHeightNode.NodeHeight;
-
-                                    if (maxHeight > Globals.LastBlock.Height)
-                                    {
-                                        await BlockDownloadService.GetAllBlocks();
-                                    }
-                                }
-                            }
-                            else
+                            if (maxHeight > Globals.LastBlock.Height)
                             {
-                                if (maxHeightNode != null)
-                                {
-                                    var maxHeight = maxHeightNode.NodeHeight;
-                                    var myMaxHeight = Globals.LastBlock.Height + 2;
-                                    if (maxHeight > myMaxHeight)
-                                    {
-                                        await BlockDownloadService.GetAllBlocks();
-                                    }
-                                }
+                                await BlockDownloadService.GetAllBlocks();
                             }
                         }
-                        Globals.HeightCheckLock = false;
+                    }
+                    else
+                    {
+                        if (maxHeightNode != null)
+                        {
+                            var maxHeight = maxHeightNode.NodeHeight;
+                            var myMaxHeight = Globals.LastBlock.Height + 2;
+                            if (maxHeight > myMaxHeight)
+                            {
+                                await BlockDownloadService.GetAllBlocks();
+                            }
+                        }
                     }
                 }
+                Globals.HeightCheckLock = false;
             }
             try
             {

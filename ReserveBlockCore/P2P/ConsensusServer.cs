@@ -29,7 +29,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var peerIP = GetIP(Context);
-                if(!Globals.ConsensusNodes.ContainsKey(peerIP))
+                if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
                     return;
@@ -119,58 +119,25 @@ namespace ReserveBlockCore.P2P
             return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
         }
 
-        public (string address, string message, string signature)[] Message(long height, int methodCode, string stringRequest)
+        public string Message(long height, int methodCode, string[] addresses)
         {
             try
             {
                 var ip = GetIP(Context);
-                if (!Globals.ConsensusNodes.TryGetValue(ip, out var Pool))
+                if (!Globals.Nodes.TryGetValue(ip, out var Pool))
                 {
                     Context?.Abort();
-                    return default;
+                    return null;
                 }
 
-                var request = JsonConvert.DeserializeObject<(string address, string message, string signature)[]>(stringRequest);
+                if (!Messages.TryGetValue((height, methodCode), out var messages))
+                    return null;
 
-                var currentHeight = ConsenusStateSingelton.Height;
-                if (height < currentHeight)
-                    return default;
-                                                
-                var FilteredRequest = request.Where(x => SignatureService.VerifySignature(x.address, x.message, x.signature)).ToArray();
-                lock (MessageLock)
-                {                    
-                    foreach (var message in FilteredRequest)
-                    {
-                        if(Messages.TryGetValue((height, methodCode), out var Message))
-                        {
-                            Message[message.address] = (message.message, message.signature);                                
-                        }
-                        else
-                        {
-                            Messages[(height, methodCode)] = new ConcurrentDictionary<string, (string Message, string Signature)> { 
-                                [message.address] = (message.message, message.signature)
-                            };                            
-                        }
-                        
-                        if(Histories.TryGetValue((height, methodCode, Pool.Address), out var History))
-                        {
-                            History[message.address] = true;                            
-                        }
-                        else
-                        {
-                            Histories[(height, methodCode, Pool.Address)] = new ConcurrentDictionary<string, bool> { 
-                                [message.address] = true
-                            };                            
-                        }                                                    
-                    }                    
-                }
-
-                if (height > currentHeight)
-                    return default;
-
-                if(!Histories.TryGetValue((height, methodCode, Pool.Address), out var UpdatedHistory))
-                    UpdatedHistory = new ConcurrentDictionary<string, bool>();
-                return Messages[(currentHeight, methodCode)].Select(x => (x.Key, x.Value.Message, x.Value.Signature)).ToArray();
+                foreach (var address in addresses)
+                {
+                    if (messages.TryGetValue(address, out var Value))
+                        return address + ":" + Value.Message + ":" + Value.Signature;
+                }               
             }
             catch(Exception ex)
             {
@@ -181,22 +148,35 @@ namespace ReserveBlockCore.P2P
                 catch { }
             }
                        
-            return default;
+            return null;
         }
 
-        public bool IsFinalizingOrDone(long height, int methodCode)
+        public string[] Signatures(long height, int methodCode)
         {
-            var Height = ConsenusStateSingelton.Height;
-            if (height > Height)
-                return false;
-            if (height < Height)
-                return true;
-            if (methodCode > ConsenusStateSingelton.MethodCode)
-                return false;
-            if (methodCode < ConsenusStateSingelton.MethodCode)
-                return true;
+            try
+            {
+                var ip = GetIP(Context);
+                if (!Globals.Nodes.TryGetValue(ip, out var Pool))
+                {
+                    Context?.Abort();
+                    return null;
+                }
 
-            return ConsenusStateSingelton.Status != ConsensusStatus.Processing;
+                if (!Messages.TryGetValue((height, methodCode), out var messages))
+                    return null;
+
+                return messages.Select(x => x.Key + ":" + x.Value.Signature).ToArray();
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.Message()");
+                }
+                catch { }
+            }
+
+            return null;
         }
 
         private static string GetIP(HubCallerContext context)

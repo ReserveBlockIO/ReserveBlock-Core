@@ -24,13 +24,19 @@ namespace ReserveBlockCore.Services
                     return false;
                 }
                 var (_, MaxHeight) = await P2PClient.GetCurrentHeight();
-                while (Globals.LastBlock.Height < MaxHeight)
+                while (Globals.LastBlock.Height < MaxHeight || MaxHeight == -1)
                 {                                                   
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Globals.LastBlock.Height + 1;
                     
                     var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i)).ToArray();
+                    if (!heightsFromNodes.Any())
+                    {
+                        await Task.Delay(4);
+                        MaxHeight = Globals.Nodes.Values.Max(x => (long?)x.NodeHeight) ?? -1;
+                        continue;
+                    }
                     heightToDownload += heightsFromNodes.Length;
                     foreach (var h in heightsFromNodes)
                         taskDict[h.height] = (P2PClient.GetBlock(h.height, h.node), h.node.NodeIP);
