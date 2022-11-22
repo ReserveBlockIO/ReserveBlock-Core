@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Extensions;
 using System.Xml.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace ReserveBlockCore.P2P
 {
@@ -62,61 +63,70 @@ namespace ReserveBlockCore.P2P
 
         public static async Task<(string Address, string Message)[]> ConsensusRun(long height, int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
         {
-            var CurrentAddresses = Signer.CurrentSigningAddresses();
-            var NumNodes = CurrentAddresses.Count;
-            var Majority = NumNodes / 2 + 1;
-            var Address = Globals.AdjudicateAccount.Address;
-            var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
-
-            ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
-            if(!ConsensusServer.Messages.TryGetValue((height, methodCode), out var Message))
-            {
-                Message = new ConcurrentDictionary<string, (string Message, string Signature)>();
-                ConsensusServer.Messages[(height, methodCode)] = Message;
-            }
-
-            Message[Globals.AdjudicateAccount.Address] = (message, signature);
-
-            var messages = ConsensusServer.Messages[(height, methodCode)];
-                        
-            var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);            
-            foreach (var peer in Peers)
-            {
-                _ = PeerRequestLoop(height, methodCode, peer, CurrentAddresses, ConsensusSource);
-            }
             try
             {
-                await Task.Delay(timeToFinalize, ConsensusSource.Token);
+                var CurrentAddresses = Signer.CurrentSigningAddresses();
+                var NumNodes = CurrentAddresses.Count;
+                var Majority = NumNodes / 2 + 1;
+                var Address = Globals.AdjudicateAccount.Address;
+                var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
+
+                ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
+                if (!ConsensusServer.Messages.TryGetValue((height, methodCode), out var Message))
+                {
+                    Message = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                    ConsensusServer.Messages[(height, methodCode)] = Message;
+                }
+
+                Message[Globals.AdjudicateAccount.Address] = (message, signature);
+
+                var messages = ConsensusServer.Messages[(height, methodCode)];
+
+                var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                foreach (var peer in Peers)
+                {
+                    _ = PeerRequestLoop(height, methodCode, peer, CurrentAddresses, ConsensusSource);
+                }
+                try
+                {
+                    await Task.Delay(timeToFinalize, ConsensusSource.Token);
+                }
+                catch { }
+                while (messages.Count < Majority && !Globals.ConsensusTokenSource.IsCancellationRequested)
+                {
+                    await Task.Delay(4);
+                }
+
+                ConsensusSource.Cancel();
+                if (messages.Count < Majority)
+                    return null;
+
+                var SignatureSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                var SignatureTasks = Peers.Select(node =>
+                {
+                    var SignatureRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Signatures", args: new object?[] { height, methodCode }, ct)
+                        ?? Task.FromResult((string[])null);
+                    return SignatureRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, SignatureSource.Token);
+                })
+                .ToArray();
+
+                await SignatureTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);
+                SignatureSource.Cancel();
+
+                var PeerSignatures = (await Task.WhenAll(SignatureTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
+                if (PeerSignatures.Length < Majority - 1)
+                    return null;
+
+                var MySignatures = messages.Select(x => x.Key + ":" + x.Value.Signature).ToHashSet();
+                if (PeerSignatures.Any(x => !MySignatures.SetEquals(x)))
+                    return null;
+
+                return messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
-            catch { }
-            while (messages.Count < Majority && !Globals.ConsensusTokenSource.IsCancellationRequested)
-            {
-                await Task.Delay(4);
+            catch(Exception ex)
+            {                
             }
-            
-            ConsensusSource.Cancel();
-
-            var SignatureSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
-            var SignatureTasks = Peers.Select(node =>
-            {
-                var SignatureRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Signatures", args: new object?[] { height, methodCode }, ct)
-                    ?? Task.FromResult((string[])null);
-                return SignatureRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, SignatureSource.Token);
-            })
-            .ToArray();
-
-            await SignatureTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);
-            SignatureSource.Cancel();
-
-            var PeerSignatures = (await Task.WhenAll(SignatureTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
-            if (PeerSignatures.Length < Majority - 1)
-                return null;
-
-            var MySignatures = messages.Select(x => x.Key + ":" + x.Value.Signature).ToHashSet();
-            if (PeerSignatures.Any(x => !MySignatures.SetEquals(x)))
-                return null;
-
-            return messages.Select(x => (x.Key, x.Value.Message)).ToArray();
+            return null;
         }
 
         public static async Task PeerRequestLoop(long height, int methodCode, NodeInfo peer, HashSet<string> addresses, CancellationTokenSource cts)
@@ -137,9 +147,9 @@ namespace ReserveBlockCore.P2P
                     
                     var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { height, methodCode, MissingAddresses }, cts.Token);
                     if(Response != null)
-                    {
-                        var arr = Response.Split(':');
-                        var (address, message, signature) = (arr[0], arr[1], arr[2]);
+                    {                        
+                        var arr = Response.Split(";:;");
+                        var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
                         if(MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, message, signature))
                             messages[address] = (message, signature);
                     }
