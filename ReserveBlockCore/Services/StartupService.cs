@@ -358,7 +358,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.248.14.123",
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
                 Name = "RBX Beacon 1",
                 BeaconUID = "Foundation Beacon 1"
             };
@@ -369,7 +369,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.251.121.150",
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
                 Name = "RBX Beacon 2",
                 BeaconUID = "Foundation Beacon 2"
 
@@ -380,7 +380,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "185.199.226.121",
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
                 Name = "RBX Beacon 3",
                 BeaconUID = "Foundation Beacon 3"
 

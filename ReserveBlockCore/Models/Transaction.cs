@@ -32,6 +32,7 @@ namespace ReserveBlockCore.Models
         public long Height { get; set; }
         public TransactionType TransactionType { get; set; }
         public TransactionRating? TransactionRating { get; set; }
+        public TransactionStatus? TransactionStatus { get; set; }
 
         public void Build()
         {
@@ -65,6 +66,13 @@ namespace ReserveBlockCore.Models
         DSTR, //DST shop registration
         VOTE_TOPIC, //voting topic for validators to vote on
         VOTE //cast vote for topic
+    }
+
+    public enum TransactionStatus
+    {
+        Pending,
+        Success,
+        Failed
     }
 
     public enum TransactionRating

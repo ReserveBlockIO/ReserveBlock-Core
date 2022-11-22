@@ -318,8 +318,8 @@ namespace ReserveBlockCore.Services
                                     if (localTransaction.TransactionType == TransactionType.TX)
                                     {
                                         AccountData.UpdateLocalBalanceAdd(localTransaction.ToAddress, localTransaction.Amount);
-                                        var txdata = TransactionData.GetAll();
-                                        txdata.InsertSafe(localTransaction);
+
+                                        TransactionData.UpdateTxStatus(localTransaction, TransactionStatus.Success);
                                     }
                                     if(localTransaction.TransactionType == TransactionType.NFT_TX || localTransaction.TransactionType == TransactionType.NFT_SALE)
                                     {
@@ -501,11 +501,11 @@ namespace ReserveBlockCore.Services
                                 var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.FromAddress);
                                 if (fromAccount != null)
                                 {
-                                    var txData = TransactionData.GetAll();
                                     var fromTx = localTransaction;
                                     fromTx.Amount = localTransaction.Amount * -1M;
                                     fromTx.Fee = localTransaction.Fee * -1M;
-                                    txData.InsertSafe(fromTx);
+
+                                    TransactionData.UpdateTxStatus(fromTx, TransactionStatus.Success);
 
                                     if (localTransaction.TransactionType != TransactionType.TX)
                                     {
@@ -620,6 +620,7 @@ namespace ReserveBlockCore.Services
                         }
 
                     }
+                    await TransactionData.UpdateWalletTXTask();
                     DbContext.Commit();
                     return result;//block accepted
                 }

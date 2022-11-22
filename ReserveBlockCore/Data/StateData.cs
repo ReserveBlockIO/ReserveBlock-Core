@@ -74,7 +74,7 @@ namespace ReserveBlockCore.Data
                             Nonce = from.Nonce,
                             Address = from.Key,
                             StateRoot = block.StateRoot,
-                            StateRecordType = StateTreiAuditData.StateRecordStatus.Update
+                            StateRecordStatus = StateRecordStatus.Update
                         };
 
                         var stAD = StateTreiAuditDict.TryGet(from.Key);
@@ -129,7 +129,7 @@ namespace ReserveBlockCore.Data
                                 Nonce = 0,
                                 Address = x.ToAddress,
                                 StateRoot = block.StateRoot,
-                                StateRecordType = StateTreiAuditData.StateRecordStatus.Insert
+                                StateRecordStatus = StateRecordStatus.Insert
                             };
 
                             var stAD = StateTreiAuditDict.TryGet(x.ToAddress);
@@ -157,7 +157,7 @@ namespace ReserveBlockCore.Data
                                 Nonce = to.Nonce,
                                 Address = to.Key,
                                 StateRoot = block.StateRoot,
-                                StateRecordType = StateTreiAuditData.StateRecordStatus.Update
+                                StateRecordStatus = StateRecordStatus.Update
                             };
 
                             var stAD = StateTreiAuditDict.TryGet(to.Key);

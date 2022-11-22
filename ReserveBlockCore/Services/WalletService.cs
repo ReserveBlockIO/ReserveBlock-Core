@@ -243,6 +243,8 @@ namespace ReserveBlockCore.Services
                 txRequest.TransactionRating = rating;
             }
 
+            txRequest.TransactionStatus = TransactionStatus.Pending;
+
             if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
@@ -258,6 +260,7 @@ namespace ReserveBlockCore.Services
             else
             {
                 TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                 P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
