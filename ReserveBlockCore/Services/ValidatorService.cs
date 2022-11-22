@@ -63,7 +63,7 @@ namespace ReserveBlockCore.Services
                     else if (confirmChoice.ToLower() == "y")
                     {
                         Console.Clear();
-                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                         var nodeName = await ReadLineUtility.ReadLine();
 
                         if (!string.IsNullOrWhiteSpace(nodeName))
@@ -72,7 +72,7 @@ namespace ReserveBlockCore.Services
 
                             while (nodeNameCheck == false)
                             {
-                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                                 nodeName = await ReadLineUtility.ReadLine();
                                 nodeNameCheck = UniqueNameCheck(nodeName);
                             }
