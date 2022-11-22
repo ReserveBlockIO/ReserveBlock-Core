@@ -29,7 +29,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var peerIP = GetIP(Context);
-                if(!Globals.ConsensusNodes.ContainsKey(peerIP))
+                if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
                     return;
@@ -124,7 +124,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                if (!Globals.ConsensusNodes.TryGetValue(ip, out var Pool))
+                if (!Globals.Nodes.TryGetValue(ip, out var Pool))
                 {
                     Context?.Abort();
                     return null;
@@ -156,7 +156,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                if (!Globals.ConsensusNodes.TryGetValue(ip, out var Pool))
+                if (!Globals.Nodes.TryGetValue(ip, out var Pool))
                 {
                     Context?.Abort();
                     return null;

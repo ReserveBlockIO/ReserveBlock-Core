@@ -154,7 +154,7 @@ namespace ReserveBlockCore.Services
 
                                 var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
                                 foreach (var pool in result)
-                                    Globals.ConsensusNodes[pool.IPAddress] = new NodeInfo
+                                    Globals.Nodes[pool.IPAddress] = new NodeInfo
                                     {
                                         Address = pool.RBXAddress,
                                         NodeIP = pool.IPAddress
@@ -194,7 +194,7 @@ namespace ReserveBlockCore.Services
 
                                     foreach (var pool in testnetList)
                                     {
-                                        Globals.ConsensusNodes[pool.IPAddress] = new NodeInfo
+                                        Globals.Nodes[pool.IPAddress] = new NodeInfo
                                         {
                                             Address = pool.RBXAddress,
                                             NodeIP = pool.IPAddress

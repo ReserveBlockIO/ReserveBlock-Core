@@ -751,7 +751,7 @@ namespace ReserveBlockCore.Commands
 
         public static async Task AdjudicatorInfo()
         {
-            var consensusNodes = Globals.ConsensusNodes.Values.ToList();
+            var consensusNodes = Globals.Nodes.Values.ToList();
             var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
 
             if(consensusNodes.Count() > 0)

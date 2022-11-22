@@ -35,7 +35,7 @@ namespace ReserveBlockCore.P2P
         #region Get Available HubConnections for Peers
         private static async Task RemoveNode(NodeInfo node)
         {
-            if(Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
+            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
                 await node.Connection.DisposeAsync();            
         }
 
@@ -205,7 +205,7 @@ namespace ReserveBlockCore.P2P
                     SendingBlockTime = 0,
                     TotalDataSent = 0
                 };
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
                 Globals.Nodes[IPAddress] = node;
                             
                 ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
@@ -743,12 +743,12 @@ namespace ReserveBlockCore.P2P
 
         #region Get Height of Nodes for Timed Events
 
-        public static async Task<(long, DateTime, int)> GetNodeHeight(NodeInfo node)
+        public static async Task<(long, DateTime, int)> GetNodeHeight(HubConnection conn)
         {
             try
             {
                 var startTimer = DateTime.UtcNow;
-                long remoteNodeHeight = await node.Connection.InvokeAsync<long>("SendBlockHeight");
+                long remoteNodeHeight = await conn.InvokeAsync<long>("SendBlockHeight");
                 var endTimer = DateTime.UtcNow;
                 var totalMS = (endTimer - startTimer).Milliseconds;
 
@@ -760,7 +760,7 @@ namespace ReserveBlockCore.P2P
         public static async Task UpdateNodeHeights()
         {
             foreach (var node in Globals.Nodes.Values)                
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);           
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);           
         }
 
         #endregion

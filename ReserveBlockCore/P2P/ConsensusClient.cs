@@ -66,7 +66,7 @@ namespace ReserveBlockCore.P2P
             var NumNodes = CurrentAddresses.Count;
             var Majority = NumNodes / 2 + 1;
             var Address = Globals.AdjudicateAccount.Address;
-            var Peers = Globals.ConsensusNodes.Values.Where(x => x.Address != Address).ToArray();
+            var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
 
             ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
             if(!ConsensusServer.Messages.TryGetValue((height, methodCode), out var Message))
@@ -156,7 +156,7 @@ namespace ReserveBlockCore.P2P
             try
             {               
                 if (!IsConnectingDict.TryAdd(IPAddress, true))
-                    return Globals.ConsensusNodes[IPAddress].IsConnected;
+                    return Globals.Nodes[IPAddress].IsConnected;
 
                 var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
@@ -196,7 +196,9 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection?.State != HubConnectionState.Connected)
                     return false;
 
-                Globals.ConsensusNodes[IPAddress].Connection = hubConnection;
+                var node = Globals.Nodes[IPAddress];
+                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(hubConnection);
+                Globals.Nodes[IPAddress].Connection = hubConnection;
 
                 return true;
             }
