@@ -49,17 +49,17 @@ namespace ReserveBlockCore.Extensions
 		{
 			while (!ct.IsCancellationRequested)
 			{
-				try
-				{
-					var delay = retryDelay > 0 ? Task.Delay(retryDelay) : null;
+                var delay = retryDelay > 0 ? Task.Delay(retryDelay) : null;
+                try
+				{					
 					var Result = await func();
 					if (success(Result))
 						return Result;
-					if (delay != null)
-						await delay;
 				}
 				catch { }
-			}
+                if (delay != null)
+                    await delay;
+            }
 
 			return default;
 		}

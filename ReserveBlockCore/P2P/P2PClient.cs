@@ -194,7 +194,7 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return;
 
-                Globals.Nodes[IPAddress] = new NodeInfo
+                var node = new NodeInfo
                 {
                     Connection = hubConnection,
                     NodeIP = IPAddress,
@@ -205,10 +205,9 @@ namespace ReserveBlockCore.P2P
                     SendingBlockTime = 0,
                     TotalDataSent = 0
                 };
-
-                var node = Globals.Nodes[IPAddress];
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node);
-
+                Globals.Nodes[IPAddress] = node;
+                            
                 ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
                 peer.IsOutgoing = true;
                 peer.FailCount = 0; //peer responded. Reset fail count

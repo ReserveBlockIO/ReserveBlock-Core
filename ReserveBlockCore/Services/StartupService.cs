@@ -566,17 +566,10 @@ namespace ReserveBlockCore.Services
                     foreach(var node in Globals.ConsensusNodes.Values)
                     {
                         if(node.IsConnected && !Globals.Nodes.ContainsKey(node.NodeIP))
-                        {
-                            Globals.Nodes[node.NodeIP] = new NodeInfo
-                            {
-                                Connection = node.Connection,
-                                NodeIP = node.NodeIP,
-                                IsSendingBlock = 0,
-                                SendingBlockTime = 0,
-                                TotalDataSent = 0
-                            };
-
+                        {                            
                             (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
+
+                            Globals.Nodes[node.NodeIP] = node;
                         }
                     }
 
