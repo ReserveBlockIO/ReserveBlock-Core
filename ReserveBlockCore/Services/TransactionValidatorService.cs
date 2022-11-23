@@ -647,6 +647,14 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
+
+                if(txRequest.TransactionType == TransactionType.VOTE_TOPIC)
+                {
+                    //can only have 1 active topic at a time.
+                    //Must be a validator for validator type
+                    //must be adj for adj type
+                    //signature must be good.
+                }
             }
 
             //Signature Check - Final Check to return true.
