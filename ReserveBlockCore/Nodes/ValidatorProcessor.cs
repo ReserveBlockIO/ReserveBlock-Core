@@ -41,7 +41,8 @@ namespace ReserveBlockCore.Nodes
                 var verifySecret = data;
                 var taskWin = new TaskWinner();
                 var fortisPool = Globals.FortisPool.Values;
-                var answer = Globals.CurrentTaskNumberAnswerV3.Item2?.Answer ?? Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
+                var answer = Globals.CurrentTaskNumberAnswerV3.Signature != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
+                    : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
 
                 if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height)
                 {
@@ -211,21 +212,18 @@ namespace ReserveBlockCore.Nodes
                 await BlockDownloadService.GetAllBlocks();
             }
 
-            var taskAnswer = new TaskNumberAnswerV3();
-            if (Globals.CurrentTaskNumberAnswerV3.Item1 != blockHeight)
+            if (Globals.CurrentTaskNumberAnswerV3.Height != blockHeight)
             {
-                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);
-                taskAnswer.Answer = num.ToString();
-                taskAnswer.Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
-                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, taskAnswer, DateTime.Now);
+                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);                
+                var Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
+                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, Signature, DateTime.Now);
             }
-            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Item3).Seconds < 5000)
+            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 5000)
             {
                 return;
             }
-            else
-                taskAnswer = Globals.CurrentTaskNumberAnswerV3.Item2;
-            await P2PClient.SendTaskAnswerV3(taskAnswer);
+
+            await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Signature);
         }
 
         private static async void RandomNumberTask_New(long blockHeight)

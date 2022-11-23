@@ -774,7 +774,7 @@ namespace ReserveBlockCore.Commands
                 ConsoleWriterService.Output("*******************************Task Answers V3********************************");
                 foreach (var taskNum in taskSelectedNumbersV3)
                 {
-                    var taskLine = $"Address: {taskNum.RBXAddress} |  IP Address: {taskNum.IPAddress} | Answer: {taskNum.Answer} | Signature: {taskNum.Signature.Substring(0,10)}";
+                    var taskLine = $"Address: {taskNum.RBXAddress} |  IP Address: {taskNum.IPAddress} | Answer: {taskNum.Answer}";
                     ConsoleWriterService.Output(taskLine);
                 }
                 ConsoleWriterService.Output("******************************************************************************");
@@ -799,16 +799,7 @@ namespace ReserveBlockCore.Commands
 
             ConsoleWriterService.Output("*****************************Consensus Messages*******************************");
 
-            ConsoleWriterService.Output(conMessage);
-
-            ConsoleWriterService.Output("******************************************************************************");
-
-            var conHistories = string.Join("\r\n", ConsensusServer.Histories.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + x.Key.SendingAddress + " " + y.Key))
-                .SelectMany(x => x));
-
-            ConsoleWriterService.Output("*****************************Consensus Histories*******************************");
-
-            ConsoleWriterService.Output(conHistories);
+            ConsoleWriterService.Output(conMessage);            
 
             ConsoleWriterService.Output("******************************************************************************");
         }

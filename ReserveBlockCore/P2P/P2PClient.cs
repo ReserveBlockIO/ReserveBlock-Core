@@ -473,7 +473,7 @@ namespace ReserveBlockCore.P2P
 
         #region Send Task Answer V3
 
-        public static async Task SendTaskAnswerV3(TaskNumberAnswerV3 taskAnswer)
+        public static async Task SendTaskAnswerV3(string taskAnswer)
         {
             if (taskAnswer == null)
                 return;
@@ -481,15 +481,15 @@ namespace ReserveBlockCore.P2P
             await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendTaskAnswerV3(x, taskAnswer)));
         }
 
-        private static async Task SendTaskAnswerV3(AdjNodeInfo node, TaskNumberAnswerV3 taskAnswer)
+        private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
         {
             Random rand = new Random();
-            int randNum = (rand.Next(1, 7) * 1000);
+            int randNum = rand.Next(1000, 4500);
             for (var i = 1; i < 4; i++)
             {
                 if (i != 1)
                 {
-                    await Task.Delay(1500); // if failed after first attempt waits 1 seconds then tries again.
+                    await Task.Delay(1000); // if failed after first attempt waits 1 seconds then tries again.
                 }
                 else
                 {
@@ -525,7 +525,7 @@ namespace ReserveBlockCore.P2P
                     ValidatorLogUtility.Log("Unhandled Error Sending Task. Check Error Log for more details.", "P2PClient.SendTaskAnswer()");
 
                     string errorMsg = string.Format("Error Sending Task - {0}. Error Message : {1}", taskAnswer != null ?
-                        taskAnswer.Answer : "No Time", ex.ToString());
+                        taskAnswer : "No Time", ex.ToString());
                     ErrorLogUtility.LogError(errorMsg, "SendTaskAnswer(TaskAnswer taskAnswer)");
                 }
             }

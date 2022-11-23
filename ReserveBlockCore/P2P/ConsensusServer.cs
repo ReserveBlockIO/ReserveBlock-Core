@@ -14,14 +14,12 @@ namespace ReserveBlockCore.P2P
         static ConsensusServer()
         {
             AdjPool = new ConcurrentDictionary<string, AdjPool>();
-            Messages = new ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>>();
-            Histories = new ConcurrentDictionary<(long Height, int MethodCode, string SendingAddress), ConcurrentDictionary<string, bool>>();
+            Messages = new ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>>();            
             ConsenusStateSingelton = new ConsensusState();
         }
 
         public static ConcurrentDictionary<string, AdjPool> AdjPool;
         public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>> Messages;
-        public static ConcurrentDictionary<(long Height, int MethodCode, string SendingAddress), ConcurrentDictionary<string, bool>> Histories;
         private static ConsensusState ConsenusStateSingelton;
         private static object MessageLock = new object();
         public override async Task OnConnectedAsync()

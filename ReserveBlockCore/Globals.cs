@@ -140,16 +140,16 @@ namespace ReserveBlockCore
         public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
 
         public static (long, TaskNumberAnswerV2?, DateTime) CurrentTaskNumberAnswerV2;
-        public static (long, TaskNumberAnswerV3?, DateTime) CurrentTaskNumberAnswerV3;
+        public static (long Height, int Answer, string Signature, DateTime Time) CurrentTaskNumberAnswerV3;
         public static (TaskWinner, DateTime) CurrentWinner;
         public static string VerifySecret = "";
 
         public static ConcurrentDictionary<string, TaskWinner> TaskWinnerDictV2 = new ConcurrentDictionary<string, TaskWinner>(); // RBX address
-        public static ConcurrentDictionary<string, Block> TaskWinnerDictV3 = new ConcurrentDictionary<string, Block>(); // RBX address
+        public static ConcurrentDictionary<(string RBXAddress, long Height), Block> TaskWinnerDictV3 = new ConcurrentDictionary<(string RBXAddress, long Height), Block>(); // RBX address
         public static ConcurrentDictionary<string, TaskNumberAnswerV2> TaskSelectedNumbersV2 = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
-        public static ConcurrentDictionary<string, (string IPAddress, string RBXAddress, int Answer, string Signature, long height)> TaskSelectedNumbersV3 = new ConcurrentDictionary<string, (string IPAddress, string RBXAddress, int Answer, string Signatur, long heighte)>();
+        public static ConcurrentDictionary<(string RBXAddress, long Height), (string IPAddress, string RBXAddress, int Answer)> TaskSelectedNumbersV3 = new ConcurrentDictionary<(string RBXAddres, long height), (string IPAddress, string RBXAddress, int Answer)>();
         public static ConcurrentDictionary<string, TaskNumberAnswerV2> TaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
-        public static ConcurrentDictionary<string, (string IPAddress, string RBXAddress, int Answer, string Signature, long height)> TaskAnswerDictV3 = new ConcurrentDictionary<string, (string IPAddress, string RBXAddress, int Answer, string Signature, long height)>();
+        public static ConcurrentDictionary<(string RBXAddress, long Height), (string IPAddress, string RBXAddress, int Answer, string Signature)> TaskAnswerDictV3 = new ConcurrentDictionary<(string RBXAddres, long height), (string IPAddress, string RBXAddress, int Answer, string Signature)>();
         public static ConcurrentDictionary<string, TaskNumberAnswerV2> RejectedTaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
         public static ConcurrentDictionary<string, Transaction> BroadcastedTrxDict = new ConcurrentDictionary<string, Transaction>(); // Hash
 

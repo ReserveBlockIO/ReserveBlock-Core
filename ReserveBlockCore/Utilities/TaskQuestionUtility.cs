@@ -7,7 +7,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class TaskQuestionUtility
     {
-        public static async Task CreateTaskQuestion(string type)
+        public static void CreateTaskQuestion(string type)
         {            
             if(!string.IsNullOrWhiteSpace(type))
             {

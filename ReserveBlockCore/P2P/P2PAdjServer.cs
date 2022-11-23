@@ -197,10 +197,11 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Receive Rand Num and Task Answer V3
-        public async Task<TaskAnswerResult> ReceiveTaskAnswerV3(TaskNumberAnswerV3 taskResult)
+        public async Task<TaskAnswerResult> ReceiveTaskAnswerV3(string request)
         {
             var taskAnsRes = new TaskAnswerResult();
-            if (taskResult == null)
+            var taskResult = request?.Split(':');
+            if (taskResult == null || taskResult.Length != 2)
             {
                 taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
                 return taskAnsRes;
@@ -214,8 +215,8 @@ namespace ReserveBlockCore.P2P
 
             try
             {
-
-                var answerSize = taskResult.Answer.Length + taskResult.Signature.Length;
+                var (Answer, Signature) = (taskResult[0], taskResult[1]);
+                var answerSize = Answer.Length + Signature.Length;
                 var ipAddress = GetIP(Context);
                 return  await P2PServer.SignalRQueue(Context, answerSize, async () =>
                 {
@@ -224,13 +225,13 @@ namespace ReserveBlockCore.P2P
                     if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
                     {                            
                         var NextHeight = Globals.LastBlock.Height + 1;
-                        if (!SignatureService.VerifySignature(Pool.Key2, NextHeight + ":" + taskResult.Answer, taskResult.Signature))
+                        if (!SignatureService.VerifySignature(Pool.Key2, NextHeight + ":" + Answer, Signature))
                         {                                            
                             taskAnsRes.AnswerCode = 6;
                             return taskAnsRes;
                         }
 
-                        if (!Globals.TaskAnswerDictV3.TryAdd(Pool.Key2, (ipAddress, Pool.Key2, int.Parse(taskResult.Answer), taskResult.Signature, NextHeight)))
+                        if (!Globals.TaskAnswerDictV3.TryAdd((Pool.Key2, NextHeight), (ipAddress, Pool.Key2, int.Parse(Answer), Signature)))
                         {
                             taskAnsRes.AnswerAccepted = true;
                             taskAnsRes.AnswerCode = 0;
@@ -332,7 +333,7 @@ namespace ReserveBlockCore.P2P
                         return false;
 
                     var RBXAddress = Pool.Key2;
-                    if(Globals.TaskAnswerDictV3.ContainsKey(RBXAddress))
+                    if(!Globals.TaskSelectedNumbersV3.ContainsKey((RBXAddress, block.Height)))
                     {
                         Globals.FortisPool.TryRemoveFromKey2(RBXAddress, out _);
                         Pool.Value.Context.Abort();
@@ -340,7 +341,7 @@ namespace ReserveBlockCore.P2P
                     }                    
 
                     if (SignatureService.VerifySignature(RBXAddress, block.Hash, block.ValidatorSignature)
-                        && RBXAddress == block.Validator&& Globals.TaskWinnerDictV3.TryAdd(RBXAddress, block))
+                        && RBXAddress == block.Validator && Globals.TaskWinnerDictV3.TryAdd((RBXAddress, block.Height), block))
                     {
                         return true;
                     }
