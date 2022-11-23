@@ -819,7 +819,7 @@ namespace ReserveBlockCore.Services
                     {
                         var split = x.Message.Split(':');
                         var encryptedAnswer = EncryptedAnswers.Where(y => y.Address == x.Address).FirstOrDefault();
-                        if (split.Length != 3 || long.Parse(split[0]) != State.Height || encryptedAnswer.Address == null ||
+                        if (split.Length != 2 || long.Parse(split[0]) != State.Height || encryptedAnswer.Address == null ||
                             !SignatureService.VerifySignature(x.Address, x.Message, encryptedAnswer.Message))
                             return -1;
                         return int.Parse(split[1]);

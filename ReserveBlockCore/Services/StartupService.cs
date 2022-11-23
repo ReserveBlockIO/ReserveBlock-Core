@@ -576,7 +576,8 @@ namespace ReserveBlockCore.Services
                 var delay = Task.Delay(10000);
                 try
                 {
-                    if (Globals.LastBlock.Height == Globals.BlockLock + 1)
+                    var rnd = new Random();
+                    if (Globals.LastBlock.Height == Globals.BlockLock + 1 && rnd.Next(1, 6) != 1)
                     {
                         var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => x.Address == Globals.LeadAddress).FirstOrDefault();
                         Globals.AdjNodes.TryRemove(LeadAdjudicator.IpAddress, out _);
@@ -593,10 +594,9 @@ namespace ReserveBlockCore.Services
                         if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                     }
-
-                    var rnd = new Random();
+                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                    if (NumAdjudicators == 2 && Globals.LastBlock.Height % 50 == 0 && Globals.LastBlock.Height > Globals.BlockLock + 10)
+                    if (NumAdjudicators == 2 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(1, 100) == 1)
                     {
                         var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
