@@ -12,6 +12,7 @@ namespace ReserveBlockCore.Models
 {
     public class TopicTrei
     {
+        #region Variables
         public int Id { get; set; }
         public string TopicUID { get; set; }
         public string TopicName { get; set; }
@@ -19,7 +20,7 @@ namespace ReserveBlockCore.Models
         public string TopicOwnerAddress { get; set; }
         public string TopicOwnerSignature { get; set; }
         public string? AdjudicatorAddress { get; set; }
-        public string? AdjudicatorSignature { get; set; }
+        public string? AdjudicatorSignature { get; set; } //must receive endorsement from adj
         public DateTime TopicCreateDate { get; set; }
         public DateTime VotingEndDate { get; set; }
         public TopicVoterType VoterType { get; set; }
@@ -30,6 +31,8 @@ namespace ReserveBlockCore.Models
         public decimal TotalVotes { get { return VoteYes + VoteNo;  } }
         public decimal PercentVotesYes { get { return TotalVotes != 0M ? ((VoteYes / TotalVotes) * 100M) : 0M; } }
         public decimal PercentVotesNo { get { return TotalVotes != 0M ? ((VoteNo / TotalVotes) * 100M) : 0M; } }
+
+        #endregion
 
         #region Get Topics DB
         public static LiteDB.ILiteCollection<TopicTrei>? GetTopics()
@@ -60,6 +63,69 @@ namespace ReserveBlockCore.Models
                 if (topic != null)
                 {
                     return topic;
+                }
+            }
+            return null;
+        }
+        #endregion
+
+        #region Get Specific Topic by Address
+        public static List<TopicTrei>? GetSpecificTopicByAddress(string address, bool isActiveOnly = false)
+        {
+            var topics = GetTopics();
+            if (topics != null)
+            {
+                var currentDate = DateTime.UtcNow;
+                if (isActiveOnly)
+                {
+                    var topicList = topics.Find(x => x.TopicOwnerAddress == address && x.VotingEndDate >= currentDate).ToList();
+                    if (topicList.Count() > 0)
+                    {
+                        return topicList;
+                    }
+                }
+                else
+                {
+                    var topicList = topics.Find(x => x.TopicOwnerAddress == address).ToList();
+                    if (topicList.Count() > 0)
+                    {
+                        return topicList;
+                    }
+                }
+                
+            }
+            return null;
+        }
+        #endregion
+
+        #region Get Active Topics
+        public static List<TopicTrei>? GetActiveTopics()
+        {
+            var topics = GetTopics();
+            var currentDate = DateTime.UtcNow;
+            if (topics != null)
+            {
+                var topicList = topics.Find(x => x.VotingEndDate >= currentDate).ToList();
+                if (topicList.Count() > 0)
+                {
+                    return topicList;
+                }
+            }
+            return null;
+        }
+        #endregion
+
+        #region Get Inactive Topics
+        public static List<TopicTrei>? GetInactiveTopics()
+        {
+            var topics = GetTopics();
+            var currentDate = DateTime.UtcNow;
+            if (topics != null)
+            {
+                var topicList = topics.Find(x => x.VotingEndDate < currentDate).ToList();
+                if (topicList.Count() > 0)
+                {
+                    return topicList;
                 }
             }
             return null;
@@ -247,6 +313,7 @@ namespace ReserveBlockCore.Models
         #endregion
     }
 
+    #region Topic/Vote Enums
     public enum TopicVoterType
     {
         Adjudicator,
@@ -268,10 +335,18 @@ namespace ReserveBlockCore.Models
     {
         General,
         CodeChange,
+        AddDeveloper,
+        RemoveDeveloper,
         NetworkChange,
         AdjVoteIn,
         AdjVoteOut,
+        ValidatorChange,
+        BlockModify,
+        TransactionModify,
+        BalanceCorrection,
+        HackOrExploitCorrection,
+        Other = 999,
     }
+    #endregion
 
-    
 }

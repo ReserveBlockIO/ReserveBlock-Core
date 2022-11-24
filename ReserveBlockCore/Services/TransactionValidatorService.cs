@@ -652,6 +652,7 @@ namespace ReserveBlockCore.Services
                 {
                     //can only have 1 active topic at a time.
                     //Must be a validator for validator type
+                    //If validator check for 1000 RBX
                     //must be adj for adj type
                     //signature must be good.
                 }
