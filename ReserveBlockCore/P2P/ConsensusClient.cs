@@ -47,14 +47,16 @@ namespace ReserveBlockCore.P2P
             if (disposing)
             {
                 foreach(var node in Globals.Nodes.Values)
-                    node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();                
+                    if(node.Connection != null)
+                        node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();                
             }
         }
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
             foreach (var node in Globals.Nodes.Values)
-                await node.Connection.DisposeAsync();
+                if(node.Connection != null)
+                    await node.Connection.DisposeAsync();
         }
 
         #endregion

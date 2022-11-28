@@ -575,6 +575,29 @@ namespace ReserveBlockCore.Services
                 var delay = Task.Delay(10000);
                 try
                 {
+                    if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+                    {
+                        await delay;
+                        continue;
+                    }
+
+                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
+
+                    if (SigningAddresses.Except(AdjAddresses).Any())
+                    {
+                        await StartupService.GetAdjudicatorPool();
+                        AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
+                    }
+
+                    var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
+                    foreach (var address in NodesToRemove)
+                    {
+                        var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                    }
+
                     var rnd = new Random();
                     if (Globals.LastBlock.Height == Globals.BlockLock + 1 && rnd.Next(1, 6) != 1)
                     {
@@ -582,16 +605,6 @@ namespace ReserveBlockCore.Services
                         Globals.AdjNodes.TryRemove(LeadAdjudicator.IpAddress, out _);
                         if(LeadAdjudicator.Connection != null)
                             await LeadAdjudicator.Connection.DisposeAsync();
-                    }
-
-                    var SigningAddresses = Signer.CurrentSigningAddresses();
-                    var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
-                    var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
-                    foreach (var address in NodesToRemove)
-                    {
-                        var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
-                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
-                            await node.Connection.DisposeAsync();
                     }
                     
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
@@ -602,8 +615,8 @@ namespace ReserveBlockCore.Services
                             await node.Connection.DisposeAsync();
                         NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
                     }
-                    
-                    if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress) || NumAdjudicators == 2)
+
+                    if (NumAdjudicators == 2)
                     {
                         await delay;
                         continue;
@@ -611,8 +624,6 @@ namespace ReserveBlockCore.Services
 
                     if (NumAdjudicators < 2)
                     {
-                        await StartupService.ConnectToAdjudicators();
-
                         var account = AccountData.GetLocalValidator();
                         var validators = Validators.Validator.GetAll();
                         var validator = validators.FindOne(x => x.Address == account.Address);
@@ -861,9 +872,6 @@ namespace ReserveBlockCore.Services
                     {
                         //error saving from db cache
                     }
-
-                    //re-add bootstrap validators
-                    SetBootstrapAdjudicator();
                 }
             }
 

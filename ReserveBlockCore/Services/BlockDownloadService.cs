@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     var staleHeight = taskDict.Keys.Min();
                                     var staleTask = taskDict[staleHeight];
-                                    if(Globals.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
+                                    if(Globals.Nodes.TryRemove(staleTask.ipAddress, out var staleNode) && staleNode.Connection != null)
                                         _ = staleNode.Connection.DisposeAsync();
                                     taskDict.TryRemove(staleHeight, out _);
                                     staleTask.task.Dispose();

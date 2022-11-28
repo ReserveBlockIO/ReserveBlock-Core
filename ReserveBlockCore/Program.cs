@@ -66,7 +66,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 90 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 92 : 4000000;
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -143,7 +143,7 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //This is for consensus start.
-            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.                     
+            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.            
             _ = Globals.LastBlock.Height > Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
@@ -228,17 +228,13 @@ namespace ReserveBlockCore
 
             StartupService.StartupMemBlocks();
 
-            await StartupService.ConnectoToBeacon();
-
             _ = StartupService.ConnectToAdjudicators();
+            _ = StartupService.ConnectoToBeacon();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
                 StartupService.SetConfigValidator();
             }
-
-
-
             Thread.Sleep(2000);
 
             var tasks = new Task[] {
