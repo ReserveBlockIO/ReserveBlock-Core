@@ -292,7 +292,7 @@ namespace ReserveBlockCore.Models
                     TransactionData.AddToPool(topicTx);
                     TransactionData.AddTxToWallet(topicTx);
                     AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
-                    P2PClient.SendTXMempool(topicTx);//send out to mempool
+                    await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
                     return (topicTx, "Success");
                 }
                 else

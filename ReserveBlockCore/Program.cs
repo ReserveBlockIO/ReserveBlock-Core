@@ -228,6 +228,8 @@ namespace ReserveBlockCore
 
             StartupService.StartupMemBlocks();
 
+            await TransactionData.UpdateWalletTXTask();
+
             _ = StartupService.ConnectToAdjudicators();
             _ = StartupService.ConnectoToBeacon();
 

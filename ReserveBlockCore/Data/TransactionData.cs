@@ -84,22 +84,26 @@ namespace ReserveBlockCore.Data
             var txList = txs.Find(x => x.TransactionStatus == TransactionStatus.Pending).ToList();
             foreach(var tx in txList)
             {
-                var isTXCrafted = await HasTxBeenCraftedIntoBlock(tx);
-                if(isTXCrafted)
+                try
                 {
-                    tx.TransactionStatus = TransactionStatus.Success;
-                    txs.UpdateSafe(tx);
-                }
-                else
-                {
-                    var isStale = await IsTxTimestampStale(tx);
-                    if(isStale)
+                    var isTXCrafted = await HasTxBeenCraftedIntoBlock(tx);
+                    if (isTXCrafted)
                     {
-                        tx.TransactionStatus = TransactionStatus.Failed;
+                        tx.TransactionStatus = TransactionStatus.Success;
                         txs.UpdateSafe(tx);
                     }
+                    else
+                    {
+                        var isStale = await IsTxTimestampStale(tx);
+                        if (isStale)
+                        {
+                            tx.TransactionStatus = TransactionStatus.Failed;
+                            txs.UpdateSafe(tx);
+                        }
 
+                    }
                 }
+                catch { }
             }
         }
 

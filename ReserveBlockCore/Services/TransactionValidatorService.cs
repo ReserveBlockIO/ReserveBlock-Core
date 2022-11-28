@@ -324,7 +324,96 @@ namespace ReserveBlockCore.Services
                     }
                 }
 
-                if(txRequest.TransactionType == TransactionType.DSTR)
+                if (txRequest.TransactionType == TransactionType.VOTE_TOPIC)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                TopicTrei topic = jobj["Topic"].ToObject<TopicTrei>();//review this to ensure deserialization works.
+                                if (function == "TopicAdd()")
+                                {
+                                    if (topic == null)
+                                        return txResult;
+
+                                    var topicSig = topic.TopicOwnerSignature;
+                                    if (!string.IsNullOrEmpty(topicSig))
+                                    {
+                                        var isTopicSigValid = SignatureService.VerifySignature(txRequest.FromAddress, topic.TopicUID, topicSig);
+                                        if (isTopicSigValid)
+                                        {
+                                            if (topic.VoterType == TopicVoterType.Validator)
+                                            {
+                                                var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
+                                                if (stAcct != null)
+                                                {
+                                                    var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
+                                                    if (balance < 1000)
+                                                    {
+                                                        return txResult;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    return txResult;
+                                                }
+                                            }
+                                            if (topic.VoterType == TopicVoterType.Adjudicator)
+                                            {
+                                                var adjs = Globals.AdjNodes.Values.ToList();
+                                                var isAdj = adjs.Exists(x => x.Address == txRequest.FromAddress);
+                                                if (!isAdj)
+                                                {
+                                                    return txResult;
+                                                }
+                                            }
+
+                                            var activeTopics = TopicTrei.GetSpecificTopicByAddress(txRequest.FromAddress, true);
+                                            if (activeTopics != null)
+                                                return txResult;
+
+                                            if (txRequest.Amount < 1M)
+                                                return txResult;
+                                            //can only have 1 active topic at a time.
+                                            //Must be a validator for validator type
+                                            //If validator check for 1000 RBX
+                                            //must be adj for adj type
+                                            //signature must be good.
+                                        }
+                                        else
+                                        {
+                                            return txResult;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return txResult;
+                                    }
+
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            DbContext.Rollback();
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for Topic", "TransactionValidatorService.VerifyTx()");
+                            return txResult;
+                        }
+                    }
+                    else
+                    {
+                        return txResult;
+                    }
+
+                }
+
+                if (txRequest.TransactionType == TransactionType.DSTR)
                 {
                     //PERFORM DSTR HERE
                 }
