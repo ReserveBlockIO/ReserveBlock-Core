@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Utilities
         {
             int randomNumber = 0;
             Random rnd = new Random();
-            if (height >= Globals.BlockLock)
+            if (height > Globals.BlockLock)
                 randomNumber = rnd.Next();
             else
                 randomNumber = rnd.Next(1, 1000000);

@@ -23,8 +23,8 @@ namespace ReserveBlockCore.Services
                     await Task.Delay(1000);
                     return false;
                 }
-                var (_, MaxHeight) = await P2PClient.GetCurrentHeight();
-                while (Globals.LastBlock.Height < MaxHeight || MaxHeight == -1)
+                
+                while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
                 {                                                   
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Services
                     if (!heightsFromNodes.Any())
                     {
                         await Task.Delay(4);
-                        MaxHeight = Globals.Nodes.Values.Max(x => (long?)x.NodeHeight) ?? -1;
+                        P2PClient.UpdateMaxHeight(Globals.Nodes.Values.Max(x => (long?)x.NodeHeight) ?? -1);                        
                         continue;
                     }
                     heightToDownload += heightsFromNodes.Length;
@@ -91,18 +91,13 @@ namespace ReserveBlockCore.Services
                                     heightToDownload = nextHeightToValidate;
                                 while (taskDict.ContainsKey(heightToDownload))
                                     heightToDownload++;
-                                if (heightToDownload > MaxHeight)
-                                {                                    
-                                    (_, MaxHeight) = await P2PClient.GetCurrentHeight();
-                                    continue;
-                                }
+                                if (heightToDownload > P2PClient.MaxHeight())                               
+                                    continue;                                
                                 taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, AvailableNode),
                                     AvailableNode.NodeIP);                                
                             }
                         }
                     }
-                    if (Globals.LastBlock.Height >= MaxHeight)
-                        (_, MaxHeight) = await P2PClient.GetCurrentHeight();
                 }
             }
             catch (Exception ex)

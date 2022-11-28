@@ -997,12 +997,6 @@ namespace ReserveBlockCore.Services
             ConsoleWriterService.Output("Done sending - Height: " + block.Height.ToString());
 
             TaskQuestionUtility.CreateTaskQuestion("rndNum");
-            ConsoleWriterService.Output("New Task Created.");
-            TaskQuestion nSTaskQuestion = new TaskQuestion();
-            nSTaskQuestion.TaskType = "rndNum";
-            nSTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
-
-            var taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
             await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
             ConsoleWriterService.Output("Fortis Pool Processed");
 
@@ -1011,9 +1005,6 @@ namespace ReserveBlockCore.Services
                     Globals.TaskAnswerDictV3.TryRemove(key, out _);
 
             ClearRoundDicts(block.Height);
-
-            await HubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-            ConsoleWriterService.Output("Task Sent.");
 
             Globals.LastAdjudicateTime = TimeUtil.GetTime();
             Globals.BroadcastedTrxDict.Clear();
@@ -1042,7 +1033,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height < Globals.BlockLock)
+            if(Globals.LastBlock.Height <= Globals.BlockLock)
             {
                 await DoWork_New();
             }

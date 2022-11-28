@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Nodes;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System;
@@ -622,6 +624,17 @@ namespace ReserveBlockCore.Services
                     }
                     await TransactionData.UpdateWalletTXTask();
                     DbContext.Commit();
+                    if (P2PClient.MaxHeight() <= block.Height)
+                    {
+                        if (Globals.LastBlock.Height > Globals.BlockLock)
+                        {
+                            ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
+                        }
+                        else
+                        {
+                            ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
+                        }
+                    }
                     return result;//block accepted
                 }
                 else

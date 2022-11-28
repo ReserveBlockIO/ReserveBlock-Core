@@ -205,7 +205,7 @@ namespace ReserveBlockCore.Nodes
             }                       
         }
 
-        private static async void RandomNumberTaskV3(long blockHeight)
+        public static async void RandomNumberTaskV3(long blockHeight)
         {            
             while (Globals.LastBlock.Height + 1 != blockHeight)
             {                
@@ -226,7 +226,7 @@ namespace ReserveBlockCore.Nodes
             await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Signature);
         }
 
-        private static async void RandomNumberTask_New(long blockHeight)
+        public static async void RandomNumberTask_New(long blockHeight)
         {
             var nextBlock = Globals.LastBlock.Height + 1;
             if (nextBlock != blockHeight)

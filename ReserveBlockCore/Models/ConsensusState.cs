@@ -7,8 +7,7 @@ namespace ReserveBlockCore.Models
     public enum ConsensusStatus : byte
     {
         Processing,
-        Finalizing,
-        Done
+        Finalized        
     }
 
     public class ConsensusState

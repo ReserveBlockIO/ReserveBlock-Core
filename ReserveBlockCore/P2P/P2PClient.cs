@@ -28,6 +28,8 @@ namespace ReserveBlockCore.P2P
         /// </summary>
 
         private static HubConnection? hubBeaconConnection; //reserved for beacon
+
+        private static long _MaxHeight = -1;
         public static bool IsBeaconConnected => hubBeaconConnection?.State == HubConnectionState.Connected;
 
         #endregion
@@ -80,6 +82,9 @@ namespace ReserveBlockCore.P2P
 
         public static async Task DropLowBandwidthPeers()
         {
+            if (Globals.AdjudicateAccount != null)
+                return;
+
             await DropDisconnectedPeers();
 
             var PeersWithSamples = Globals.Nodes.Where(x => x.Value.SendingBlockTime > 60000)
@@ -103,6 +108,16 @@ namespace ReserveBlockCore.P2P
                 if(Globals.Nodes.TryRemove(peer.IPAddress, out var node))
                     await node.Connection.DisposeAsync();                
             }            
+        }
+
+        public static void UpdateMaxHeight(long height)
+        {
+            _MaxHeight = height;
+        }
+
+        public static long MaxHeight()
+        {
+            return Math.Max(Globals.LastBlock.Height, _MaxHeight);
         }
 
         #endregion
@@ -484,7 +499,7 @@ namespace ReserveBlockCore.P2P
         private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
         {
             Random rand = new Random();
-            int randNum = rand.Next(1000, 4500);
+            int randNum = rand.Next(0, 4500);
             for (var i = 1; i < 4; i++)
             {
                 if (i != 1)

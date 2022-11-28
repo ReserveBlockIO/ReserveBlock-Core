@@ -149,6 +149,21 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
+        public bool IsFinalized(long height, int methodCode)
+        {
+            var Height = ConsenusStateSingelton.Height;
+            if (height > Height)
+                return false;
+            if (height < Height)
+                return true;
+            if (methodCode > ConsenusStateSingelton.MethodCode)
+                return false;
+            if (methodCode < ConsenusStateSingelton.MethodCode)
+                return true;
+
+            return ConsenusStateSingelton.Status == ConsensusStatus.Finalized;
+        }
+
         public string[] Signatures(long height, int methodCode)
         {
             try

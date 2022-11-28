@@ -101,6 +101,19 @@ namespace ReserveBlockCore.P2P
                 if (messages.Count < Majority)
                     return null;
 
+                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
+                var FinalizingSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                var FinalizingTasks = Peers.Select(node =>
+                {
+                    var FinalizingRequestFunc = () => node.Connection?.InvokeCoreAsync<bool>("IsFinalized", args: new object?[] { height, methodCode }, ct)
+                        ?? Task.FromResult(false);
+                    return FinalizingRequestFunc.RetryUntilSuccessOrCancel(x => x, 100, FinalizingSource.Token);
+                })
+                .ToArray();
+
+                await FinalizingTasks.WhenAtLeast(x => x, Signer.Majority() - 1);
+                FinalizingSource.Cancel();
+
                 var SignatureSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 var SignatureTasks = Peers.Select(node =>
                 {

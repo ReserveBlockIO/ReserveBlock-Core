@@ -144,7 +144,7 @@ namespace ReserveBlockCore
 
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.                     
-            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
+            _ = Globals.LastBlock.Height > Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
             _ = StartupService.DownloadBlocksOnStart();
@@ -168,7 +168,7 @@ namespace ReserveBlockCore
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(18000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
+            Globals.heightTimer.Change(0, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
 
             //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
@@ -383,36 +383,20 @@ namespace ReserveBlockCore
             if (Globals.HeightCheckLock == false)
             {
                 Globals.HeightCheckLock = true;
+                while (!Globals.Nodes.Any())                                   
+                    await Task.Delay(4);                
+
                 await P2PClient.UpdateNodeHeights();
-                if (Globals.Nodes.Any())
+
+                var maxHeight = Globals.Nodes.Values.Select(x => x.NodeHeight).OrderByDescending(x => x).FirstOrDefault();
+                if (maxHeight > Globals.LastBlock.Height)
                 {
-                    var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
-                    if (Globals.ValidatorAddress == "")
-                    {
-
-                        if (maxHeightNode != null)
-                        {
-                            var maxHeight = maxHeightNode.NodeHeight;
-
-                            if (maxHeight > Globals.LastBlock.Height)
-                            {
-                                await BlockDownloadService.GetAllBlocks();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (maxHeightNode != null)
-                        {
-                            var maxHeight = maxHeightNode.NodeHeight;
-                            var myMaxHeight = Globals.LastBlock.Height + 2;
-                            if (maxHeight > myMaxHeight)
-                            {
-                                await BlockDownloadService.GetAllBlocks();
-                            }
-                        }
-                    }
+                    P2PClient.UpdateMaxHeight(maxHeight);
+                    await BlockDownloadService.GetAllBlocks();
                 }
+                else
+                    P2PClient.UpdateMaxHeight(maxHeight);                
+
                 Globals.HeightCheckLock = false;
             }
             try
