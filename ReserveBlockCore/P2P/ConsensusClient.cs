@@ -114,24 +114,24 @@ namespace ReserveBlockCore.P2P
                 await FinalizingTasks.WhenAtLeast(x => x, Signer.Majority() - 1);
                 FinalizingSource.Cancel();
 
-                var SignatureSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
-                var SignatureTasks = Peers.Select(node =>
+                var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                var HashTasks = Peers.Select(node =>
                 {
-                    var SignatureRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Signatures", args: new object?[] { height, methodCode }, ct)
+                    var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { height, methodCode }, ct)
                         ?? Task.FromResult((string[])null);
-                    return SignatureRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, SignatureSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, HashSource.Token);
                 })
                 .ToArray();
 
-                await SignatureTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);
-                SignatureSource.Cancel();
+                await HashTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);
+                HashSource.Cancel();
 
-                var PeerSignatures = (await Task.WhenAll(SignatureTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
-                if (PeerSignatures.Length < Majority - 1)
+                var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
+                if (PeerHashes.Length < Majority - 1)
                     return null;
 
-                var MySignatures = messages.Select(x => x.Key + ":" + x.Value.Signature).ToHashSet();
-                if (PeerSignatures.Any(x => !MySignatures.SetEquals(x)))
+                var MyHashes = messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
+                if (PeerHashes.Any(x => !MyHashes.SetEquals(x)))
                     return null;
 
                 return messages.Select(x => (x.Key, x.Value.Message)).ToArray();

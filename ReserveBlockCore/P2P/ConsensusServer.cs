@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -164,10 +165,10 @@ namespace ReserveBlockCore.P2P
             return ConsenusStateSingelton.Status == ConsensusStatus.Finalized;
         }
 
-        public string[] Signatures(long height, int methodCode)
+        public string[] Hashes(long height, int methodCode)
         {
             try
-            {
+            {               
                 var ip = GetIP(Context);
                 if (!Globals.Nodes.TryGetValue(ip, out var Pool))
                 {
@@ -178,7 +179,7 @@ namespace ReserveBlockCore.P2P
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
                     return null;
 
-                return messages.Select(x => x.Key + ":" + x.Value.Signature).ToArray();
+                return messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToArray();
             }
             catch (Exception ex)
             {
