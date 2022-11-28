@@ -17,6 +17,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.P2P
 {
@@ -223,6 +224,8 @@ namespace ReserveBlockCore.P2P
                     TotalDataSent = 0
                 };
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
+
+                node.IsValidator = await GetValidatorStatus(node.Connection);
                 Globals.Nodes[IPAddress] = node;
                             
                 ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
@@ -1406,6 +1409,21 @@ namespace ReserveBlockCore.P2P
                 }
             }
         }
+        #endregion
+
+        #region Get Validator Status
+        private static async Task<bool> GetValidatorStatus(HubConnection hubConnection)
+        {
+            var result = false;
+            try
+            {
+                result = await hubConnection.InvokeAsync<bool>("GetValidatorStatus");
+            }
+            catch { }
+
+            return result;
+        }
+
         #endregion
     }
 }

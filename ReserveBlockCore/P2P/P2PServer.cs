@@ -44,7 +44,7 @@ namespace ReserveBlockCore.P2P
 
                 peers.InsertSafe(nPeer);
             }
-                                    
+
             await Clients.Caller.SendAsync("GetMessage", "IP", peerIP);
             await base.OnConnectedAsync();
         }
@@ -694,6 +694,19 @@ namespace ReserveBlockCore.P2P
             var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
 
             return peerIP;
+        }
+
+        #endregion
+
+        #region Get Validator Status
+        public async Task<bool> GetValidatorStatus()
+        {
+            var result = false;
+
+            if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                result = true;
+
+            return result;
         }
 
         #endregion

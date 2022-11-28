@@ -679,9 +679,10 @@ namespace ReserveBlockCore.Services
                                                 var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
                                                 if (stAcct != null)
                                                 {
-                                                    if (stAcct.Balance < 1000)
+                                                    var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
+                                                    if (balance < 1000)
                                                     {
-                                                        return (txResult, "Balance is under 1000.");
+                                                        return (txResult, "Balance is under 1000. Topic will not be allowed.");
                                                     }
                                                 }
                                                 else

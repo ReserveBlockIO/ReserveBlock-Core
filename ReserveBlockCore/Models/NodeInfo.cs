@@ -31,6 +31,7 @@ namespace ReserveBlockCore.Models
         public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
 
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
+        public bool IsValidator { get; set; }
 
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
