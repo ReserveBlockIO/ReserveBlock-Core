@@ -787,21 +787,29 @@ namespace ReserveBlockCore.Services
                     while (Globals.Nodes.Values.Where(x => x.IsConnected).Count() < Majority - 1)
                         await Task.Delay(4);
 
+                    ConsensusServer.UpdateState(status: (int)ConsensusStatus.Processing);
+
                     var MyDecryptedAnswer = State.Height + ":" + State.Answer;
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)                    
-                        continue;                    
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)
+                    {
+                        ClearRoundDicts(State.Height);
+                        continue;
+                    }
                     
                     var MySubmissions = Globals.TaskAnswerDictV3.Where(x => x.Key.Height == State.Height).Select(x => x.Value).ToArray();
                     var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
                     var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
                     var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || Submissions == null)                                            
-                        continue;                    
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested || Submissions == null)
+                    {
+                        ClearRoundDicts(State.Height);
+                        continue;
+                    }
 
                     var ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
                         .SelectMany(x => x)
@@ -828,7 +836,10 @@ namespace ReserveBlockCore.Services
                     catch { }
 
                     if (!ValidSubmissions.Any())
+                    {
+                        ClearRoundDicts(State.Height);
                         continue;
+                    }
 
                     var DecryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 2, MyDecryptedAnswer, MyEncryptedAnswer, 1000, Token);
 

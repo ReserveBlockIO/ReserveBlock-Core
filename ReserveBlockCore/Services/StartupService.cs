@@ -314,17 +314,16 @@ namespace ReserveBlockCore.Services
 
             if(Globals.IsTestNet == true)
             {
-                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK");
+                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj");
                 if (test_adjudicator == null)
                 {
                     Adjudicators adjTest = new Adjudicators
                     {
-                        Address = "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK",
+                        Address = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj",
                         IsActive = true,
                         IsLeadAdjuidcator = true,
                         LastChecked = DateTime.UtcNow,
-                        NodeIP = "162.248.14.123",
-                        Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
+                        NodeIP = "144.126.156.102",                        
                         UniqueName = "Trillium Adjudicator TestNet",
                         WalletVersion = Globals.CLIVersion
                     };
@@ -339,7 +338,7 @@ namespace ReserveBlockCore.Services
                 {
                     if(adj.Address.StartsWith("x"))
                     {
-                        Globals.LeadAddress = "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK";
+                        Globals.LeadAddress = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj";
                         Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
                     }
                         
