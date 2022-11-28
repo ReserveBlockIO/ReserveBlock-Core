@@ -18,6 +18,8 @@ namespace ReserveBlockCore.Services
             Random rnd = new Random();
 
             //randomizes seed list so not one is always the one being called.
+            if(SeedNodeList == null)
+                SeedNodes();
             var randomizedSeedNostList = SeedNodeList.OrderBy(x => rnd.Next()).ToList();
 
             foreach (var node in randomizedSeedNostList)
@@ -119,7 +121,7 @@ namespace ReserveBlockCore.Services
                 {
                     IsIncoming = false,
                     IsOutgoing = true,
-                    PeerIP = "162.248.14.123",
+                    PeerIP = "144.126.156.102",
                     FailCount = 0
                 };
 
@@ -153,12 +155,25 @@ namespace ReserveBlockCore.Services
                                 string data = await Response.Content.ReadAsStringAsync();
 
                                 var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
-                                foreach (var pool in result)
-                                    Globals.Nodes[pool.IPAddress] = new NodeInfo
-                                    {
-                                        Address = pool.RBXAddress,
-                                        NodeIP = pool.IPAddress
-                                    };
+                                if(Globals.AdjudicateAccount != null)
+                                {
+                                    foreach (var pool in result)
+                                        Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                        {
+                                            Address = pool.RBXAddress,
+                                            NodeIP = pool.IPAddress
+                                        };
+                                }
+                                else
+                                {
+                                    foreach (var pool in result)
+                                        Globals.AdjNodes[pool.IPAddress] = new AdjNodeInfo
+                                        {
+                                            Address = pool.RBXAddress,
+                                            IpAddress = pool.IPAddress
+                                        };
+                                }
+
                             }
                             else
                             {

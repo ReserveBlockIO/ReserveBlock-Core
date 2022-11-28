@@ -37,7 +37,7 @@ namespace ReserveBlockCore.P2P
         #region Get Available HubConnections for Peers
         private static async Task RemoveNode(NodeInfo node)
         {
-            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test))
+            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test) && node.Connection != null)
                 await node.Connection.DisposeAsync();            
         }
 
@@ -105,7 +105,7 @@ namespace ReserveBlockCore.P2P
 
             foreach (var peer in PeersWithSamples.Where(x => x.BandWidth < .5 * MedianBandWidth))
             {
-                if(Globals.Nodes.TryRemove(peer.IPAddress, out var node))
+                if(Globals.Nodes.TryRemove(peer.IPAddress, out var node) && node.Connection != null)
                     await node.Connection.DisposeAsync();                
             }            
         }
@@ -144,14 +144,16 @@ namespace ReserveBlockCore.P2P
             if (disposing)
             {
                 foreach(var node in Globals.Nodes.Values)
-                    node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();                
+                    if(node.Connection != null)
+                        node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();                
             }
         }
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
             foreach (var node in Globals.Nodes.Values)
-                await node.Connection.DisposeAsync();
+                if(node.Connection != null)
+                    await node.Connection.DisposeAsync();
         }
 
         #endregion
