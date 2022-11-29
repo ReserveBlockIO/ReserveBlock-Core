@@ -225,8 +225,8 @@ namespace ReserveBlockCore.P2P
                 node.IsValidator = await GetValidatorStatus(node.Connection);
                 if(Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
                 {
-                    if (currentNode.Connection != null)
-                        await currentNode.Connection.DisposeAsync();
+                    //if (currentNode.Connection != null)
+                    //    await currentNode.Connection.DisposeAsync();
                     currentNode.Connection = hubConnection;
                     currentNode.NodeIP = IPAddress;
                     currentNode.NodeHeight = node.NodeHeight;
@@ -347,8 +347,8 @@ namespace ReserveBlockCore.P2P
 
                 if (Globals.AdjNodes.TryGetValue(IPAddress, out var node))
                 {
-                    if (node.Connection != null)
-                        await node.Connection.DisposeAsync();
+                    //if (node.Connection != null)
+                    //    await node.Connection.DisposeAsync();
                     node.Connection = hubConnection;
                     node.IpAddress = IPAddress;
                     node.AdjudicatorConnectDate = DateTime.UtcNow;

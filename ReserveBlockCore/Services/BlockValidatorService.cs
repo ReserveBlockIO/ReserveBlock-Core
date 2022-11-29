@@ -59,7 +59,7 @@ namespace ReserveBlockCore.Services
                         if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
                             continue;
                         var (block, ipAddress) = blockInfo;
-                        var result = await ValidateBlock(block, true);                        
+                        var result = await ValidateBlock(block, false);                        
                         if (!result)
                         {                            
                             Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Services
                 Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 0);
             }
         }
-        public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
+        public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
             try
             {
@@ -153,7 +153,7 @@ namespace ReserveBlockCore.Services
                     return result;
                 }
 
-                if (block.Version > 2)
+                if (block.Version > 2 && !ignoreAdjSignatures)
                 {                    
                     var version3Result = await BlockVersionUtility.Version3Rules(block);
                     if (!version3Result)
@@ -335,7 +335,7 @@ namespace ReserveBlockCore.Services
                     DbContext.Commit();
                     if (P2PClient.MaxHeight() <= block.Height)
                     {
-                        if (Globals.LastBlock.Height > Globals.BlockLock)
+                        if (Globals.LastBlock.Height >= Globals.BlockLock)
                         {
                             ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
                         }
@@ -366,7 +366,7 @@ namespace ReserveBlockCore.Services
         }
 
         //This method does not add block or update any treis
-        public static async Task<bool> ValidateBlockForTask(Block block, bool blockDownloads = false)
+        public static async Task<bool> ValidateBlockForTask(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
             bool result = false;
 

@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Nodes
                 switch(taskQuestion.TaskType)
                 {
                     case "rndNum":
-                        if(Globals.LastBlock.Height > Globals.BlockLock)
+                        if(Globals.LastBlock.Height >= Globals.BlockLock)
                         {
                             RandomNumberTaskV3(taskQuestion.BlockHeight);
                         }
@@ -38,24 +38,24 @@ namespace ReserveBlockCore.Nodes
 
             if(message == "sendWinningBlock")
             {
-                var verifySecret = data;
+                var verifySecret = data != null ? data : "Empty";
                 var taskWin = new TaskWinner();
                 var fortisPool = Globals.FortisPool.Values;
                 var answer = Globals.CurrentTaskNumberAnswerV3.Signature != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
                     : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
 
-                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height)
+                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height || verifySecret != Globals.CurrentWinner.Item1?.VerifySecret)
                 {
                     if (answer != null)
                     {
                         var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), answer);
                         if (block != null)
                         {
-                            taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
+                            taskWin.VerifySecret = verifySecret;
                             taskWin.Address = Globals.ValidatorAddress;
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = (taskWin, DateTime.Now);
-                            if (block.Height > Globals.BlockLock + 1)
+                            if (block.Height > Globals.BlockLock)
                                 await P2PClient.SendWinningTaskV3(block);
                             else
                                 await P2PClient.SendWinningTask_New(taskWin);
@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Nodes
                 }
                 else
                 {
-                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock + 1)
+                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
                         await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1.WinningBlock);
                     else
                         await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);

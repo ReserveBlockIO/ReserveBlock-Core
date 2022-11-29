@@ -446,7 +446,7 @@ namespace ReserveBlockCore.Services
                                                         try
                                                         {
                                                             _ = _hubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
-                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 3000));
+                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 10000));
                                                         }
                                                         catch (Exception ex)
                                                         {
@@ -458,14 +458,17 @@ namespace ReserveBlockCore.Services
                                                     //Give users time for responses to complete. They have 100ms + 3 secs here. Max 30 responses coming
                                                     await Task.Delay(3000);
 
+                                                    while (!Globals.TaskWinnerDictV2.Any())
+                                                        await Task.Delay(4);
+
                                                     var winningBlocks = Globals.TaskWinnerDictV2;
                                                     if (winningBlocks.TryGetValue(taskWinner.Address, out var winnersBlock))
                                                     {
                                                         //process winners block
-                                                        //1. 
+                                                        //1.                                                         
                                                         var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
                                                         winnersBlock.WinningBlock.AdjudicatorSignature = signature;
-                                                        var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
+                                                        var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock, true);
                                                         if (result == true)
                                                         {
                                                             var nextBlock = winnersBlock.WinningBlock;
@@ -540,7 +543,7 @@ namespace ReserveBlockCore.Services
                                                                     winnersBlock = randomChosen;
                                                                     var rSignature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
                                                                     winnersBlock.WinningBlock.AdjudicatorSignature = rSignature;
-                                                                    var nResult = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
+                                                                    var nResult = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock, true);
                                                                     if (nResult == true)
                                                                     {
                                                                         var nextBlock = winnersBlock.WinningBlock;
@@ -625,7 +628,7 @@ namespace ReserveBlockCore.Services
                                                                 winnersBlock = randomChosen;
                                                                 var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
                                                                 winnersBlock.WinningBlock.AdjudicatorSignature = signature;
-                                                                var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock);
+                                                                var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock, true);
                                                                 if (result == true)
                                                                 {
                                                                     var nextBlock = winnersBlock.WinningBlock;
@@ -928,7 +931,7 @@ namespace ReserveBlockCore.Services
                     
                     Block Winner = null;
                     foreach(var winner in OrderedWinners)
-                        if(await BlockValidatorService.ValidateBlockForTask(winner))
+                        if(await BlockValidatorService.ValidateBlockForTask(winner, true))
                         {
                             Winner = winner;
                             break;
@@ -970,8 +973,8 @@ namespace ReserveBlockCore.Services
                   
                     var signature = string.Join("|", Hashes.Select(x => x.Address + ":" + x.Signature));
                     Winner.AdjudicatorSignature = signature;
-                    await BlockValidatorService.ValidateBlock(Winner);                                        
-                    RemainingDelay = await FinalizeWork(Globals.LastBlock, InitialBlockDelay);
+                    if(await BlockValidatorService.ValidateBlock(Winner, false))
+                        RemainingDelay = await FinalizeWork(Globals.LastBlock, InitialBlockDelay);
                     ClearRoundDicts(State.Height);
                 }
                 catch(Exception ex)
@@ -1041,7 +1044,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height <= Globals.BlockLock)
+            if(Globals.LastBlock.Height < Globals.BlockLock)
             {
                 await DoWork_New();
             }
