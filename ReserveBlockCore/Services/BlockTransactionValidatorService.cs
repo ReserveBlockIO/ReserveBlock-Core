@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Services
 {
     public class BlockTransactionValidatorService
     {
-        #region Process To Transactions
+        #region Process Incoming (to) Transactions
         public static async Task ProcessIncomingTransactions(Transaction tx, Account account)
         {
             if (tx.TransactionType == TransactionType.TX)
@@ -198,7 +198,7 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region Process From Transactions
+        #region Process Outgoing (from) Transactions
 
         public static async Task ProcessOutgoingTransaction(Transaction tx, Account account)
         {
