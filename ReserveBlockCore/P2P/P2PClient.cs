@@ -36,15 +36,15 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Available HubConnections for Peers
-        private static async Task RemoveNode(NodeInfo node)
+        public static async Task RemoveNode(NodeInfo node)
         {
-            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test) && node.Connection != null)
+            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out _) && node.Connection != null)
                 await node.Connection.DisposeAsync();            
         }
 
         private static async Task RemoveAdjNode(AdjNodeInfo node)
         {
-            if(node.Connection != null)
+            if(Globals.AdjNodes.TryRemove(node.IpAddress, out _) && node.Connection != null)
                 await node.Connection.DisposeAsync();
         }
 
@@ -91,7 +91,7 @@ namespace ReserveBlockCore.P2P
             var PeersWithSamples = Globals.Nodes.Where(x => x.Value.SendingBlockTime > 60000)
                 .Select(x => new
                 {
-                    IPAddress = x.Key,
+                    Node = x.Value,
                     BandWidth = x.Value.TotalDataSent / ((double)x.Value.SendingBlockTime)
                 })
                 .OrderBy(x => x.BandWidth)
@@ -105,10 +105,7 @@ namespace ReserveBlockCore.P2P
                 PeersWithSamples[Length / 2 - 1].BandWidth;
 
             foreach (var peer in PeersWithSamples.Where(x => x.BandWidth < .5 * MedianBandWidth))
-            {
-                if(Globals.Nodes.TryRemove(peer.IPAddress, out var node) && node.Connection != null)
-                    await node.Connection.DisposeAsync();                
-            }            
+                await RemoveNode(peer.Node);                        
         }
 
         public static void UpdateMaxHeight(long height)
@@ -226,7 +223,18 @@ namespace ReserveBlockCore.P2P
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
 
                 node.IsValidator = await GetValidatorStatus(node.Connection);
-                Globals.Nodes[IPAddress] = node;
+                if(Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                {
+                    if (currentNode.Connection != null)
+                        await currentNode.Connection.DisposeAsync();
+                    currentNode.Connection = hubConnection;
+                    currentNode.NodeIP = IPAddress;
+                    currentNode.NodeHeight = node.NodeHeight;
+                    currentNode.NodeLastChecked = node.NodeLastChecked;
+                    currentNode.NodeLatency = node.NodeLatency;
+                }
+                else
+                    Globals.Nodes[IPAddress] = node;
                             
                 ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
                 peer.IsOutgoing = true;
@@ -337,12 +345,23 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return false;
 
-                Globals.AdjNodes[IPAddress] = new AdjNodeInfo
+                if (Globals.AdjNodes.TryGetValue(IPAddress, out var node))
                 {
-                    Connection = hubConnection,
-                    IpAddress = IPAddress,
-                    AdjudicatorConnectDate = DateTime.UtcNow
-                };
+                    if (node.Connection != null)
+                        await node.Connection.DisposeAsync();
+                    node.Connection = hubConnection;
+                    node.IpAddress = IPAddress;
+                    node.AdjudicatorConnectDate = DateTime.UtcNow;
+                }
+                else
+                {
+                    Globals.AdjNodes[IPAddress] = new AdjNodeInfo
+                    {
+                        Connection = hubConnection,
+                        IpAddress = IPAddress,
+                        AdjudicatorConnectDate = DateTime.UtcNow
+                    };
+                }
 
                 return true;
             }

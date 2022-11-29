@@ -150,7 +150,8 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //This is for consensus start.
-            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.            
+            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
+            await StartupService.GetAdjudicatorPool();
             _ = Globals.LastBlock.Height > Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
@@ -167,8 +168,6 @@ namespace ReserveBlockCore
 
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
-
-            Globals.StopAllTimers = true;
 
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
@@ -399,7 +398,14 @@ namespace ReserveBlockCore
                     await BlockDownloadService.GetAllBlocks();
                 }
                 else
-                    P2PClient.UpdateMaxHeight(maxHeight);                
+                    P2PClient.UpdateMaxHeight(maxHeight);
+
+                var MaxHeight = P2PClient.MaxHeight();
+                foreach(var node in Globals.Nodes.Values)
+                {
+                    if(node.NodeHeight < MaxHeight - 3)                    
+                        await P2PClient.RemoveNode(node);                    
+                }
 
                 Globals.HeightCheckLock = false;
             }

@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.Address = Globals.ValidatorAddress;
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = (taskWin, DateTime.Now);
-                            if (block.Height > Globals.BlockLock)
+                            if (block.Height > Globals.BlockLock + 1)
                                 await P2PClient.SendWinningTaskV3(block);
                             else
                                 await P2PClient.SendWinningTask_New(taskWin);
@@ -67,13 +67,13 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
                 }
-                else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8000)
+                else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8)
                 {
                     return;
                 }
                 else
                 {
-                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
+                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock + 1)
                         await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1.WinningBlock);
                     else
                         await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);
@@ -218,7 +218,7 @@ namespace ReserveBlockCore.Nodes
                 var Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
                 Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, Signature, DateTime.Now);
             }
-            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 5000)
+            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 5)
             {
                 return;
             }
@@ -245,7 +245,7 @@ namespace ReserveBlockCore.Nodes
                 taskAnswer.NextBlockHeight = blockHeight;
                 Globals.CurrentTaskNumberAnswerV2 = (blockHeight, taskAnswer, DateTime.Now);
             }
-            else if((DateTime.Now - Globals.CurrentTaskNumberAnswerV2.Item3).Seconds < 5000)
+            else if((DateTime.Now - Globals.CurrentTaskNumberAnswerV2.Item3).Seconds < 5)
             {
                 return;
             }
