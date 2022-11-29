@@ -36,15 +36,15 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Get Available HubConnections for Peers
-        private static async Task RemoveNode(NodeInfo node)
+        public static async Task RemoveNode(NodeInfo node)
         {
-            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out NodeInfo test) && node.Connection != null)
+            if(Globals.AdjudicateAccount == null && Globals.Nodes.TryRemove(node.NodeIP, out _) && node.Connection != null)
                 await node.Connection.DisposeAsync();            
         }
 
         private static async Task RemoveAdjNode(AdjNodeInfo node)
         {
-            if(node.Connection != null)
+            if(Globals.AdjNodes.TryRemove(node.IpAddress, out _) && node.Connection != null)
                 await node.Connection.DisposeAsync();
         }
 
@@ -91,7 +91,7 @@ namespace ReserveBlockCore.P2P
             var PeersWithSamples = Globals.Nodes.Where(x => x.Value.SendingBlockTime > 60000)
                 .Select(x => new
                 {
-                    IPAddress = x.Key,
+                    Node = x.Value,
                     BandWidth = x.Value.TotalDataSent / ((double)x.Value.SendingBlockTime)
                 })
                 .OrderBy(x => x.BandWidth)
@@ -105,10 +105,7 @@ namespace ReserveBlockCore.P2P
                 PeersWithSamples[Length / 2 - 1].BandWidth;
 
             foreach (var peer in PeersWithSamples.Where(x => x.BandWidth < .5 * MedianBandWidth))
-            {
-                if(Globals.Nodes.TryRemove(peer.IPAddress, out var node) && node.Connection != null)
-                    await node.Connection.DisposeAsync();                
-            }            
+                await RemoveNode(peer.Node);                        
         }
 
         public static void UpdateMaxHeight(long height)

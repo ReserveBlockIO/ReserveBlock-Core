@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.Address = Globals.ValidatorAddress;
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = (taskWin, DateTime.Now);
-                            if (block.Height > Globals.BlockLock)
+                            if (block.Height > Globals.BlockLock + 1)
                                 await P2PClient.SendWinningTaskV3(block);
                             else
                                 await P2PClient.SendWinningTask_New(taskWin);
@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Nodes
                 }
                 else
                 {
-                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
+                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock + 1)
                         await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1.WinningBlock);
                     else
                         await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);

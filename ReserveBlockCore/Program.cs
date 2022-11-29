@@ -392,7 +392,14 @@ namespace ReserveBlockCore
                     await BlockDownloadService.GetAllBlocks();
                 }
                 else
-                    P2PClient.UpdateMaxHeight(maxHeight);                
+                    P2PClient.UpdateMaxHeight(maxHeight);
+
+                var MaxHeight = P2PClient.MaxHeight();
+                foreach(var node in Globals.Nodes.Values)
+                {
+                    if(node.NodeHeight < MaxHeight - 3)                    
+                        await P2PClient.RemoveNode(node);                    
+                }
 
                 Globals.HeightCheckLock = false;
             }

@@ -50,9 +50,6 @@ namespace ReserveBlockCore.Services
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
                 TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 180));
 
-            //_blockStateSyncTimer = new Timer(DoBlockStateSyncWork, null, TimeSpan.FromSeconds(100),
-            //    TimeSpan.FromHours(8));
-
             if (Globals.ChainCheckPoint == true)
             {
                 var interval = Globals.ChainCheckPointInterval;
@@ -1044,7 +1041,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoWork(object? state)
         {
-            if(Globals.LastBlock.Height < Globals.BlockLock)
+            if(Globals.LastBlock.Height <= Globals.BlockLock)
             {
                 await DoWork_New();
             }
