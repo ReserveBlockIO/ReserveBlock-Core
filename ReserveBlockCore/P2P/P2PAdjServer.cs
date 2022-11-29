@@ -43,7 +43,7 @@ namespace ReserveBlockCore.P2P
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
                 var SignedMessage = address;
-                if (Globals.LastBlock.Height > Globals.BlockLock)
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
                     SignedMessage = address + ":" + time;
                     if (TimeUtil.GetTime() - long.Parse(time) > 30000000)

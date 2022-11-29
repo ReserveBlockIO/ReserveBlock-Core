@@ -529,7 +529,7 @@ namespace ReserveBlockCore.Services
                     }
 
                     var rnd = new Random();
-                    if (Globals.LastBlock.Height == Globals.BlockLock + 1 && rnd.Next(1, 6) != 1)
+                    if (Globals.LastBlock.Height == Globals.BlockLock && rnd.Next(1, 6) != 1)
                     {
                         var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => x.Address == Globals.LeadAddress).FirstOrDefault();
                         Globals.AdjNodes.TryRemove(LeadAdjudicator.IpAddress, out _);
@@ -560,7 +560,7 @@ namespace ReserveBlockCore.Services
                         if (validator != null)
                         {
                             var time = TimeUtil.GetTime().ToString();                            
-                            if (Globals.LastBlock.Height <= Globals.BlockLock)
+                            if (Globals.LastBlock.Height < Globals.BlockLock)
                             {
                                 var signature = SignatureService.ValidatorSignature(validator.Address);
                                 var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();
