@@ -164,7 +164,7 @@ namespace ReserveBlockCore.Data
                     block.BCraftTime = buildTime.Milliseconds;
 
                 
-                    blockCrafted = await BlockValidatorService.ValidateBlockForTask(block);
+                    blockCrafted = await BlockValidatorService.ValidateBlockForTask(block, true);
                     if (blockCrafted == true)
                     {
                         break;
