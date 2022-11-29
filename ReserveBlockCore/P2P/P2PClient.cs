@@ -226,7 +226,18 @@ namespace ReserveBlockCore.P2P
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
 
                 node.IsValidator = await GetValidatorStatus(node.Connection);
-                Globals.Nodes[IPAddress] = node;
+                if(Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                {
+                    if (currentNode.Connection != null)
+                        await currentNode.Connection.DisposeAsync();
+                    currentNode.Connection = hubConnection;
+                    currentNode.NodeIP = IPAddress;
+                    currentNode.NodeHeight = node.NodeHeight;
+                    currentNode.NodeLastChecked = node.NodeLastChecked;
+                    currentNode.NodeLatency = node.NodeLatency;
+                }
+                else
+                    Globals.Nodes[IPAddress] = node;
                             
                 ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
                 peer.IsOutgoing = true;
@@ -337,12 +348,23 @@ namespace ReserveBlockCore.P2P
                 if (hubConnection.ConnectionId == null)
                     return false;
 
-                Globals.AdjNodes[IPAddress] = new AdjNodeInfo
+                if (Globals.AdjNodes.TryGetValue(IPAddress, out var node))
                 {
-                    Connection = hubConnection,
-                    IpAddress = IPAddress,
-                    AdjudicatorConnectDate = DateTime.UtcNow
-                };
+                    if (node.Connection != null)
+                        await node.Connection.DisposeAsync();
+                    node.Connection = hubConnection;
+                    node.IpAddress = IPAddress;
+                    node.AdjudicatorConnectDate = DateTime.UtcNow;
+                }
+                else
+                {
+                    Globals.AdjNodes[IPAddress] = new AdjNodeInfo
+                    {
+                        Connection = hubConnection,
+                        IpAddress = IPAddress,
+                        AdjudicatorConnectDate = DateTime.UtcNow
+                    };
+                }
 
                 return true;
             }

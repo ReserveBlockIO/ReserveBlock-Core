@@ -209,11 +209,22 @@ namespace ReserveBlockCore.Services
 
                                     foreach (var pool in testnetList)
                                     {
-                                        Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                        if (Globals.AdjudicateAccount != null)
                                         {
-                                            Address = pool.RBXAddress,
-                                            NodeIP = pool.IPAddress
-                                        };
+                                            Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                            {
+                                                Address = pool.RBXAddress,
+                                                NodeIP = pool.IPAddress
+                                            };
+                                        }
+                                        else
+                                        {
+                                            Globals.AdjNodes[pool.IPAddress] = new AdjNodeInfo
+                                            {
+                                                Address = pool.RBXAddress,
+                                                IpAddress = pool.IPAddress
+                                            };
+                                        }
 
                                         var nPeer = new Peers
                                         {

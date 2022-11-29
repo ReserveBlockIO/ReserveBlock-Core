@@ -67,7 +67,7 @@ namespace ReserveBlockCore.Nodes
                         }
                     }
                 }
-                else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8000)
+                else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8)
                 {
                     return;
                 }
@@ -218,7 +218,7 @@ namespace ReserveBlockCore.Nodes
                 var Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
                 Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, Signature, DateTime.Now);
             }
-            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 5000)
+            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 5)
             {
                 return;
             }
@@ -245,7 +245,7 @@ namespace ReserveBlockCore.Nodes
                 taskAnswer.NextBlockHeight = blockHeight;
                 Globals.CurrentTaskNumberAnswerV2 = (blockHeight, taskAnswer, DateTime.Now);
             }
-            else if((DateTime.Now - Globals.CurrentTaskNumberAnswerV2.Item3).Seconds < 5000)
+            else if((DateTime.Now - Globals.CurrentTaskNumberAnswerV2.Item3).Seconds < 5)
             {
                 return;
             }

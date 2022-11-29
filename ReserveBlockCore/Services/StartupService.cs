@@ -45,76 +45,6 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
-
-        //Only needed for bootstrapping
-        internal static async Task ConnectToSinglePeer()
-        {
-            var url = @"http://127.0.0.1:" + Globals.Port + "/blockchain";
-            try
-            {
-                var hubConnection = new HubConnectionBuilder()
-                        .WithUrl(url, options =>
-                        {
-
-                        })
-                        .WithAutomaticReconnect()
-                        .Build();
-
-                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
-                hubConnection.On<string, string>("GetMessage", async (message, data) =>
-                {
-                    if (message == "blk" || message == "IP")
-                    {
-                        if (data?.Length > 1179648)
-                            return;
-
-                        if (Globals.Nodes.TryGetValue(IPAddress, out var node))
-                        {
-                            var now = TimeUtil.GetMillisecondTime();
-                            var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                            if (now - prevPrevTime < 5000)
-                            {
-                                Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");
-                                return;
-                            }
-                            Interlocked.Exchange(ref node.PreviousReceiveTime, now);
-                        }
-                        // if someone calls in more often than 2 times in 15 seconds ban them
-
-                        if (message != "IP")
-                        {
-                            await NodeDataProcessor.ProcessData(message, data, IPAddress);
-                        }
-                        else
-                        {
-                            var IP = data.ToString();
-                            if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
-                                Globals.ReportedIPs[IP]++;
-                            else
-                                Globals.ReportedIPs[IP] = 1;
-                        }
-                    }
-                });
-
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
-
-                var node = new NodeInfo
-                {
-                    Connection = hubConnection,
-                    NodeIP = IPAddress,
-                    NodeHeight = 0,
-                    NodeLastChecked = null,
-                    NodeLatency = 0,
-                    IsSendingBlock = 0,
-                    SendingBlockTime = 0,
-                    TotalDataSent = 0
-                };
-
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(hubConnection);
-                Globals.Nodes[IPAddress] = node;
-            }
-            catch { }
-        }
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
@@ -629,10 +559,10 @@ namespace ReserveBlockCore.Services
                         var validator = validators.FindOne(x => x.Address == account.Address);
                         if (validator != null)
                         {
-                            var time = TimeUtil.GetTime().ToString();
-                            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+                            var time = TimeUtil.GetTime().ToString();                            
                             if (Globals.LastBlock.Height <= Globals.BlockLock)
                             {
+                                var signature = SignatureService.ValidatorSignature(validator.Address);
                                 var LeadAdjudicators = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).ToArray();
                                 foreach (var adjudicator in LeadAdjudicators)
                                 {
@@ -641,7 +571,8 @@ namespace ReserveBlockCore.Services
                                 }
                             }
                             else
-                            {                                
+                            {
+                                var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
                                 var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
                                 var NewAdjudicators = Signer.CurrentSigningAddresses()
                                     .Select(x => Globals.Nodes.Values.Where(y => y.Address == x).FirstOrDefault())                                    
