@@ -344,9 +344,23 @@ namespace ReserveBlockCore.Services
                                     var topicSig = topic.TopicOwnerSignature;
                                     if (!string.IsNullOrEmpty(topicSig))
                                     {
+                                        //checks for valid signature
                                         var isTopicSigValid = SignatureService.VerifySignature(txRequest.FromAddress, topic.TopicUID, topicSig);
                                         if (isTopicSigValid)
                                         {
+                                            //checks if topic height is within realm of mem blocks
+                                            if(!Globals.MemBlocks.Where(x => x.Height == topic.BlockHeight).Any())
+                                            {
+                                                return txResult;
+                                            }
+
+                                            //checks if validator has solved block in past 30 days
+                                            var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
+                                            var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToList().Distinct();
+                                            var valExist = validatorList.Where(x => x == txRequest.FromAddress).Any();
+                                            if(!valExist)
+                                                return txResult;
+
                                             if (topic.VoterType == TopicVoterType.Validator)
                                             {
                                                 var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);

@@ -20,6 +20,8 @@ namespace ReserveBlockCore.Models
         public string TopicOwnerAddress { get; set; }
         public string TopicOwnerSignature { get; set; }
         public string? AdjudicatorAddress { get; set; }
+        public long BlockHeight { get; set; }
+        public int ValidatorCount { get; set; }
         public string? AdjudicatorSignature { get; set; } //must receive endorsement from adj
         public DateTime TopicCreateDate { get; set; }
         public DateTime VotingEndDate { get; set; }
@@ -31,6 +33,8 @@ namespace ReserveBlockCore.Models
         public decimal TotalVotes { get { return VoteYes + VoteNo;  } }
         public decimal PercentVotesYes { get { return TotalVotes != 0M ? ((VoteYes / TotalVotes) * 100M) : 0M; } }
         public decimal PercentVotesNo { get { return TotalVotes != 0M ? ((VoteNo / TotalVotes) * 100M) : 0M; } }
+        public decimal PercentInFavor { get { return ((VoteYes / ValidatorCount) * 100M); } }
+        public decimal PercentAgainst { get { return ((VoteNo / ValidatorCount) * 100M); } }
 
         #endregion
 
@@ -181,11 +185,23 @@ namespace ReserveBlockCore.Models
         public bool Build(VotingDays voteDays, VoteTopicCategories voteTopicCat)
         {
             var result = false;
+
+            var startDate = DateTimeOffset.UtcNow.AddDays(-14).ToUnixTimeSeconds();
+            var adjCount = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToList().Distinct().Count();
+            var daysToEnd = ((int)voteDays);
+
             TopicUID = GetTopicUID();
             VoteTopicCategory = voteTopicCat;
-            var daysToEnd = ((int)voteDays);
             TopicCreateDate = DateTime.UtcNow;
             VotingEndDate = DateTime.UtcNow.AddDays(daysToEnd);
+            ValidatorCount = adjCount;
+            BlockHeight = Globals.LastBlock.Height;
+
+            if (TopicName.Length > 128)
+                return result;
+
+            if (TopicDescription.Length > 1600)
+                return result;
 
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {

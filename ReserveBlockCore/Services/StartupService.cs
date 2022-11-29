@@ -65,6 +65,21 @@ namespace ReserveBlockCore.Services
             localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
         }
 
+        public static void EncryptedPasswordEntry()
+        {
+            bool exit = false;
+            while (!exit)
+            {
+                Console.WriteLine("Please enter validator password.");
+                var password = Console.ReadLine();
+                if (!string.IsNullOrEmpty(password))
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    exit = true;
+                }
+            }
+        }
+
         internal static void SetAdjudicatorAddresses()
         {
             if(!Globals.IsTestNet)
