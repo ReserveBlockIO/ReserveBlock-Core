@@ -207,7 +207,7 @@ namespace ReserveBlockCore.P2P
                 return taskAnsRes;
             }
 
-            if (Globals.StopAllTimers || Globals.AdjudicateAccount == null)
+            if (Globals.AdjudicateAccount == null)
             {
                 taskAnsRes.AnswerCode = 4; //adjudicator is still booting up
                 return taskAnsRes;

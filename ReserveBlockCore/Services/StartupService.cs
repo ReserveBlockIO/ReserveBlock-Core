@@ -761,52 +761,60 @@ namespace ReserveBlockCore.Services
         {
             Globals.StopAllTimers = true;
             var download = true;
-            while(download) //this will loop forever till download happens
+            try
             {
-                if (Globals.IsResyncing)
-                    break;
-
-                DateTime startTime = DateTime.UtcNow;
-                var result = await P2PClient.GetCurrentHeight();
-                if (result.Item1)
+                while (download) //this will loop forever till download happens
                 {
-                    ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
-                    LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
-                    await BlockDownloadService.GetAllBlocks();
-                }
-                //This is not being reached on some devices. 
+                    if (Globals.IsResyncing)
+                        break;
 
-                var lastBlock = Globals.LastBlock;
-                var currentTimestamp = TimeUtil.GetTime(-60);
- 
-                DateTime endTime = DateTime.UtcNow;
-                ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
-                LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
-                download = false; //exit the while.
-                Globals.StopAllTimers = false;
-                var accounts = AccountData.GetAccounts();
-                var accountList = accounts.FindAll().ToList();
-                if (accountList.Count() > 0)
-                {
-                    var stateTrei = StateData.GetAccountStateTrei();
-                    foreach (var account in accountList)
+                    DateTime startTime = DateTime.UtcNow;
+                    var result = await P2PClient.GetCurrentHeight();
+                    if (result.Item1)
                     {
-                        var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                        if (stateRec != null)
+                        ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
+                        LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
+                        await BlockDownloadService.GetAllBlocks();
+                    }
+                    //This is not being reached on some devices. 
+
+                    var lastBlock = Globals.LastBlock;
+                    var currentTimestamp = TimeUtil.GetTime(-60);
+
+                    DateTime endTime = DateTime.UtcNow;
+                    ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
+                    LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                    download = false; //exit the while.                
+                    var accounts = AccountData.GetAccounts();
+                    var accountList = accounts.FindAll().ToList();
+                    if (accountList.Count() > 0)
+                    {
+                        var stateTrei = StateData.GetAccountStateTrei();
+                        foreach (var account in accountList)
                         {
-                            account.Balance = stateRec.Balance;
-                            accounts.UpdateSafe(account);//updating local record with synced state trei
+                            var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                            if (stateRec != null)
+                            {
+                                account.Balance = stateRec.Balance;
+                                accounts.UpdateSafe(account);//updating local record with synced state trei
+                            }
                         }
                     }
-                }                
+
+
+                }
+                if (!Globals.IsResyncing)
+                {
+                    Globals.BlocksDownloading = 0;
+                    Globals.StopAllTimers = false;
+                    Globals.IsChainSynced = true;
+                }
+                download = false; //exit the while.
             }
-            if(!Globals.IsResyncing)
+            finally
             {
-                Globals.BlocksDownloading = 0;
                 Globals.StopAllTimers = false;
-                Globals.IsChainSynced = true;
             }
-            download = false; //exit the while. 
         }
 
         internal static void CheckForDuplicateBlocks()

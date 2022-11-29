@@ -44,7 +44,7 @@ namespace ReserveBlockCore.Services
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(60),
+            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(40),
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
@@ -448,8 +448,8 @@ namespace ReserveBlockCore.Services
                                                         //Give winners time to respond - exactly 3 seconds in total with 100ms response times per.
                                                         try
                                                         {
-                                                            await _hubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
-                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 100));
+                                                            _ = _hubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
+                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 3000));
                                                         }
                                                         catch (Exception ex)
                                                         {
