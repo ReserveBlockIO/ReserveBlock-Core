@@ -38,20 +38,20 @@ namespace ReserveBlockCore.Nodes
 
             if(message == "sendWinningBlock")
             {
-                var verifySecret = data;
+                var verifySecret = data != null ? data : "Empty";
                 var taskWin = new TaskWinner();
                 var fortisPool = Globals.FortisPool.Values;
                 var answer = Globals.CurrentTaskNumberAnswerV3.Signature != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
                     : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
 
-                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height)
+                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height || verifySecret != Globals.CurrentWinner.Item1?.VerifySecret)
                 {
                     if (answer != null)
                     {
                         var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), answer);
                         if (block != null)
                         {
-                            taskWin.VerifySecret = verifySecret != null ? verifySecret : "Empty";
+                            taskWin.VerifySecret = verifySecret;
                             taskWin.Address = Globals.ValidatorAddress;
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = (taskWin, DateTime.Now);
