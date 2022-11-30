@@ -800,8 +800,9 @@ namespace ReserveBlockCore.Services
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)                    
-                        continue;                    
+                        continue;
 
+                    ConsoleWriterService.Output("EncryptedAnswer Consensus at height " + State.Height);
                     (string IPAddress, string RBXAddress, int Answer)[] ValidSubmissions = null;
                     while (ValidSubmissions == null || !ValidSubmissions.Any())
                     {
@@ -810,6 +811,7 @@ namespace ReserveBlockCore.Services
                         var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
                         var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
 
+                        ConsoleWriterService.Output("Submission Consensus at height " + State.Height + ". Number of submissions: " + (Submissions?.Length ?? 0));
                         if (Globals.ConsensusTokenSource.IsCancellationRequested)
                             break;
 
@@ -844,12 +846,6 @@ namespace ReserveBlockCore.Services
                     }
                     catch { }
 
-                    if (!ValidSubmissions.Any())
-                    {
-                        ClearRoundDicts(State.Height);
-                        continue;
-                    }
-
                     var DecryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 2, MyDecryptedAnswer, MyEncryptedAnswer, 1000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || DecryptedAnswers == null)
@@ -858,6 +854,8 @@ namespace ReserveBlockCore.Services
                         ClearRoundDicts(State.Height);
                         continue;
                     }
+
+                    ConsoleWriterService.Output("DecryptedAnswer Consensus at height " + State.Height);
 
                     var Answers = DecryptedAnswers.Select(x =>
                     {
@@ -896,6 +894,7 @@ namespace ReserveBlockCore.Services
                         .Where(x => x != null)
                         .ToArray();
 
+                    ConsoleWriterService.Output("Requesting winners. Total: " + WinnerPool.Length);
                     foreach (var fortis in WinnerPool)
                     {
                         try
@@ -917,7 +916,9 @@ namespace ReserveBlockCore.Services
                     })
                     .Where(x => x != null)
                     .ToArray();
-                    
+
+                    ConsoleWriterService.Output("Received winners. Total: " + MySubmittedWinners.Length);
+
                     var MySubmittedWinnersString = JsonConvert.SerializeObject(MySubmittedWinners);
                     var MySubmittedWinnersSignature = SignatureService.AdjudicatorSignature(MySubmittedWinnersString);
                     var SubmittedWinners = await ConsensusClient.ConsensusRun(State.Height, 3, MySubmittedWinnersString, MySubmittedWinnersSignature, 7000, Token);
@@ -928,6 +929,8 @@ namespace ReserveBlockCore.Services
                         ClearRoundDicts(State.Height);
                         continue;
                     }
+
+                    ConsoleWriterService.Output("SubmittedWinner consensus. Total: " + SubmittedWinners.Length);
 
                     var WinnerDict = SubmittedWinners.Select(x => JsonConvert.DeserializeObject<Block[]>(x.Message))
                         .SelectMany(x => x)
@@ -954,6 +957,8 @@ namespace ReserveBlockCore.Services
                         continue;
                     }
 
+                    ConsoleWriterService.Output("Winner fournd. Hash: " + Winner.Hash);
+
                     var WinnerHasheSignature = Winner.Hash + ":" + SignatureService.AdjudicatorSignature(Winner.Hash);                    
                     var WinnerHashSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignature);                    
                                         
@@ -965,6 +970,8 @@ namespace ReserveBlockCore.Services
                         ClearRoundDicts(State.Height);
                         continue;
                     }
+
+                    ConsoleWriterService.Output("WinnerHashSignature consensus");
 
                     var Hashes = HashResult.Select(x => {
                         var split = x.Message.Split(':');
