@@ -11,7 +11,7 @@ namespace ReserveBlockCore.Utilities
         public static string IPFromURL(string url)
         {
             var matches = Regex.Matches(url, @"[.:\d]+").Cast<System.Text.RegularExpressions.Match>().Select(match => match.Value).ToArray();
-            var ipPart = matches.Where(x => x.Split(':').Length == 4).FirstOrDefault();
+            var ipPart = matches.Where(x => x.Split('.').Length == 4).FirstOrDefault();
             return ipPart.Split(':')[0];
         }
 

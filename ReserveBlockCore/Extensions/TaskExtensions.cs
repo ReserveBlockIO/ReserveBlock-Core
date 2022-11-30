@@ -16,7 +16,7 @@ namespace ReserveBlockCore.Extensions
 			foreach (var task in tasks)
 				_ = task.ContinueWith(async x =>
 				{
-					if (successPredicate(await x))
+					if (successPredicate(await x) || !x.IsCompletedSuccessfully)
 						Interlocked.Increment(ref NumOfTasksCompleted);
 
 					if (NumOfTasksCompleted >= atLeast)

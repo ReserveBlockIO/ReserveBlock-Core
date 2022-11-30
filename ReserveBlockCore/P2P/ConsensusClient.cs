@@ -115,6 +115,8 @@ namespace ReserveBlockCore.P2P
 
                 await FinalizingTasks.WhenAtLeast(x => x, Signer.Majority() - 1);
                 FinalizingSource.Cancel();
+                if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                    return null;
 
                 var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 var HashTasks = Peers.Select(node =>
@@ -125,8 +127,10 @@ namespace ReserveBlockCore.P2P
                 })
                 .ToArray();
 
-                await HashTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);
+                await HashTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);                
                 HashSource.Cancel();
+                if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                    return null;
 
                 var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
                 if (PeerHashes.Length < Majority - 1)
