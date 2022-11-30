@@ -75,7 +75,7 @@ namespace ReserveBlockCore
 
             Globals.BlockLock = Globals.IsTestNet == true ? 3 : 4000000;
 
-            BlockchainData.InitializeChain();
+            // BlockchainData.InitializeChain();
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -413,7 +413,7 @@ namespace ReserveBlockCore
             }
             try
             {
-                DebugUtility.WriteToDebugFile();
+                DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
             }
             catch (Exception ex)
             {
