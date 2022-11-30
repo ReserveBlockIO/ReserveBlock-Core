@@ -71,8 +71,18 @@ namespace ReserveBlockCore.Services
             bool exit = false;
             while (!exit)
             {
-                Console.WriteLine("Please enter validator password.");
-                var password = Console.ReadLine();
+                var password = "";
+                if(Globals.EncryptPassword.Length > 0)
+                {
+                    Console.WriteLine("Password loaded from args...");
+                    password = Globals.EncryptPassword.ToUnsecureString();
+                }
+                else
+                {
+                    Console.WriteLine("Please enter validator password.");
+                    password = Console.ReadLine();
+                }
+                
                 if (!string.IsNullOrEmpty(password))
                 {
                     Globals.EncryptPassword = password.ToSecureString();
@@ -117,8 +127,17 @@ namespace ReserveBlockCore.Services
             bool exit = false;
             while (!exit)
             {
-                Console.WriteLine("Please enter Adjudicator password.");
-                var password = Console.ReadLine();
+                var password = "";
+                if (Globals.EncryptPassword.Length > 0)
+                {
+                    Console.WriteLine("Password loaded from args...");
+                    password = Globals.EncryptPassword.ToUnsecureString();
+                }
+                else
+                {
+                    Console.WriteLine("Please enter validator password.");
+                    password = Console.ReadLine();
+                }
                 if (!string.IsNullOrEmpty(password))
                 {
                     Globals.EncryptPassword = password.ToSecureString();
