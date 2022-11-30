@@ -20,6 +20,7 @@ using System.Security.Cryptography.Xml;
 using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Nodes;
 using System.Net;
+using System.Security;
 
 namespace ReserveBlockCore.Services
 {
@@ -65,7 +66,7 @@ namespace ReserveBlockCore.Services
             localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
         }
 
-        public static void EncryptedPasswordEntry()
+        public static async void EncryptedPasswordEntry()
         {
             bool exit = false;
             while (!exit)
@@ -75,7 +76,38 @@ namespace ReserveBlockCore.Services
                 if (!string.IsNullOrEmpty(password))
                 {
                     Globals.EncryptPassword = password.ToSecureString();
-                    exit = true;
+                    var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var randString = RandomStringUtility.GetRandomString(8);
+
+                    var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                    var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                    if(sigVerify)
+                    {
+                        password = "";
+                        exit = true;
+                    }
+                    else
+                    {
+                        password = "";
+                        Globals.EncryptPassword.Dispose();
+                        Globals.EncryptPassword = new SecureString();
+                        Console.WriteLine("Password was incorrect. Please attempt again");
+                        Console.WriteLine("If you would like to turn off validating to proceed please type 'y' and press enter. To try again type 'n'.");
+                        var response = Console.ReadLine();
+                        if(!string.IsNullOrEmpty(response))
+                        {
+                            if(response.ToLower() == "y")
+                            {
+                                await ValidatorService.DoMasterNodeStop();
+                                exit = true;
+                            }
+                        }
+                        
+                    }
                 }
             }
         }

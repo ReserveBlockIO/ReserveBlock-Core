@@ -69,7 +69,7 @@ namespace ReserveBlockCore
 
             if(Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
-                //StartupService.EncryptedPasswordEntry();
+                StartupService.EncryptedPasswordEntry();
             }
 
 
