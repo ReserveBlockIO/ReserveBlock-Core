@@ -173,7 +173,7 @@ namespace ReserveBlockCore
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(0, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
+            Globals.heightTimer.Change(0, 10000); //waits 1 minute, then runs every 18 seconds for new blocks
 
             //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes

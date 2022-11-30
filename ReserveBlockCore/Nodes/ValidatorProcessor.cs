@@ -206,7 +206,10 @@ namespace ReserveBlockCore.Nodes
         }
 
         public static async void RandomNumberTaskV3(long blockHeight)
-        {            
+        {
+            if (string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+                return;
+
             while (Globals.LastBlock.Height + 1 != blockHeight)
             {                
                 await BlockDownloadService.GetAllBlocks();
@@ -228,6 +231,9 @@ namespace ReserveBlockCore.Nodes
 
         public static async void RandomNumberTask_New(long blockHeight)
         {
+            if (string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+                return;
+
             var nextBlock = Globals.LastBlock.Height + 1;
             if (nextBlock != blockHeight)
             {
