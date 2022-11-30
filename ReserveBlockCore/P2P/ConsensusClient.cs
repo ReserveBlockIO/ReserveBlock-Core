@@ -74,15 +74,9 @@ namespace ReserveBlockCore.P2P
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
 
                 ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
-                if (!ConsensusServer.Messages.TryGetValue((height, methodCode), out var Message))
-                {
-                    Message = new ConcurrentDictionary<string, (string Message, string Signature)>();
-                    ConsensusServer.Messages[(height, methodCode)] = Message;
-                }
-
-                Message[Globals.AdjudicateAccount.Address] = (message, signature);
-
-                var messages = ConsensusServer.Messages[(height, methodCode)];
+                var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                ConsensusServer.Messages[(height, methodCode)] = Messages;
+                Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
                 var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 foreach (var peer in Peers)
@@ -94,13 +88,13 @@ namespace ReserveBlockCore.P2P
                     await Task.Delay(timeToFinalize, ConsensusSource.Token);
                 }
                 catch { }
-                while (messages.Count < Majority && !Globals.ConsensusTokenSource.IsCancellationRequested)
+                while (Messages.Count < Majority && !Globals.ConsensusTokenSource.IsCancellationRequested)
                 {
                     await Task.Delay(4);
                 }
 
                 ConsensusSource.Cancel();
-                if (messages.Count < Majority)
+                if (Messages.Count < Majority)
                     return null;
 
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
@@ -136,14 +130,15 @@ namespace ReserveBlockCore.P2P
                 if (PeerHashes.Length < Majority - 1)
                     return null;
 
-                var MyHashes = messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
+                var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
+
                 if (PeerHashes.Any(x => !MyHashes.SetEquals(x)))
                     return null;
 
-                return messages.Select(x => (x.Key, x.Value.Message)).ToArray();
+                return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
             catch(Exception ex)
-            {                
+            {
             }
             return null;
         }

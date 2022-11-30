@@ -758,6 +758,7 @@ namespace ReserveBlockCore.Services
             return mod < 0 ? (int)mod + n : (int)mod;
         }
 
+        private static ConcurrentDictionary<long, string> EncryptedNumberDict = new ConcurrentDictionary<long, string>();
         public static async Task DoWorkV3()
         {
             if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null)
@@ -790,33 +791,41 @@ namespace ReserveBlockCore.Services
                     ConsensusServer.UpdateState(status: (int)ConsensusStatus.Processing);
 
                     var MyDecryptedAnswer = State.Height + ":" + State.Answer;
-                    var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
+                    if (!EncryptedNumberDict.TryGetValue(State.Height, out var MyEncryptedAnswer))
+                    {
+                        MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
+                        EncryptedNumberDict[State.Height] = MyEncryptedAnswer;
+                    }                    
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)
-                    {
-                        ClearRoundDicts(State.Height);
-                        continue;
-                    }
-                    
-                    var MySubmissions = Globals.TaskAnswerDictV3.Where(x => x.Key.Height == State.Height).Select(x => x.Value).ToArray();
-                    var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
-                    var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
-                    var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)                    
+                        continue;                    
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || Submissions == null)
+                    (string IPAddress, string RBXAddress, int Answer)[] ValidSubmissions = null;
+                    while (ValidSubmissions == null || !ValidSubmissions.Any())
                     {
-                        ClearRoundDicts(State.Height);
-                        continue;
+                        var MySubmissions = Globals.TaskAnswerDictV3.Where(x => x.Key.Height == State.Height).Select(x => x.Value).ToArray();
+                        var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
+                        var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
+                        var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
+
+                        if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                            break;
+
+                        if (Submissions == null)
+                            continue;
+
+                        ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
+                            .SelectMany(x => x)
+                            .Where(x => SignatureService.VerifySignature(x.RBXAddress, State.Height + ":" + x.Answer, x.Signature))
+                            .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
+                            .Distinct()
+                            .ToArray();
                     }
 
-                    var ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
-                        .SelectMany(x => x)
-                        .Where(x => SignatureService.VerifySignature(x.RBXAddress, State.Height + ":" + x.Answer, x.Signature))
-                        .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
-                        .Distinct()
-                        .ToArray();
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                        continue;
 
                     var BadIPs = ValidSubmissions.Select(x => x.IPAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();
@@ -1026,6 +1035,10 @@ namespace ReserveBlockCore.Services
 
         public static void ClearRoundDicts(long height)
         {
+            //foreach (var key in EncryptedNumberDict.Keys)
+            //    if (key <= height)
+            //        EncryptedNumberDict.TryRemove(key, out _);
+
             foreach (var key in Globals.TaskSelectedNumbersV3.Keys)
                 if (key.Height <= height)
                     Globals.TaskSelectedNumbersV3.TryRemove(key, out _);
