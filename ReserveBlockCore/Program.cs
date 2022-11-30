@@ -33,6 +33,16 @@ namespace ReserveBlockCore
                         //Launch testnet
                         Globals.IsTestNet = true;
                     }
+                    if (argC == "gui")
+                    {
+                        Globals.GUI = true;
+                    }
+                    if(argC.Contains("encpass"))
+                    {
+                        var encPassSplit = argC.Split(new char[] { '=' });
+                        var encPassword = encPassSplit[1];
+                        Globals.EncryptPassword = encPassword.ToSecureString();
+                    }
                 });
             }
 
@@ -67,11 +77,10 @@ namespace ReserveBlockCore
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
             StartupService.SetValidator();
 
-            if(Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress))
+            if(Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
             {
-                //StartupService.EncryptedPasswordEntry();
+                StartupService.EncryptedPasswordEntry();
             }
-
 
             Globals.BlockLock = Globals.IsTestNet == true ? 3 : 4000000;
 
@@ -98,10 +107,6 @@ namespace ReserveBlockCore
                         Globals.proc.Start();
 
                         Environment.Exit(0);
-                    }
-                    if (argC == "gui")
-                    {
-                        //launch gui
                     }
                     if (argC == "testurl")
                     {
@@ -130,6 +135,16 @@ namespace ReserveBlockCore
             }
 
             StartupService.SetAdjudicatorAddresses();
+
+            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
+            {
+                StartupService.EncryptedPasswordEntryAdj();
+            }
+
+            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
+            {
+                Globals.GUIPasswordNeeded = true;
+            }
 
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();

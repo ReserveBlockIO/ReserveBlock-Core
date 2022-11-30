@@ -96,6 +96,8 @@ namespace ReserveBlockCore
         public static bool IsChainSynced = false;
         public static bool OptionalLogging = false;
         public static bool AdjPoolCheckLock = false;
+        public static bool GUI = false;
+        public static bool GUIPasswordNeeded = false;
 
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address

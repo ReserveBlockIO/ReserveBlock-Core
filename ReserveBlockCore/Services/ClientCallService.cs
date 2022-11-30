@@ -105,8 +105,13 @@ namespace ReserveBlockCore.Services
         {
             if(Globals.IsWalletEncrypted == true)
             {
-                Globals.EncryptPassword.Dispose();
-                Globals.EncryptPassword = new SecureString();
+                if(string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.AdjudicateAccount == null)
+                {
+                    Globals.EncryptPassword.Dispose();
+                    Globals.EncryptPassword = new SecureString();
+                }
+                //Password must remain in order to continue validating. It is not recommend to have your validator be your main source of funds wallet.
+                //Recommend transferring funds out to a secure offline wallet. 
             }
         }
         #endregion
