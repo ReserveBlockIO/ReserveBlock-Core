@@ -133,9 +133,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrCreate()", Name = name });
@@ -237,9 +235,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()", Name = account.ADNR });
@@ -341,9 +337,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()", Name = account.ADNR });

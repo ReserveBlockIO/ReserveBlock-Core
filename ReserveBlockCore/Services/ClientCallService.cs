@@ -1063,9 +1063,7 @@ namespace ReserveBlockCore.Services
         {            
             var account = AccountData.GetSingleAccount(address);
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var sig = SignatureService.CreateSignature(message, privateKey, account.PublicKey);
