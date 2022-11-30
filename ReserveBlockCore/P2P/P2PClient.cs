@@ -168,8 +168,8 @@ namespace ReserveBlockCore.P2P
 
                        })                       
                        .Build();
-                
-                var IPAddress = url.Replace("http://", "").Replace("/blockchain", "").Replace(Globals.Port.ToString(), "");
+
+                var IPAddress = GetPathUtility.IPFromURL(url);
                 hubConnection.On<string, string>("GetMessage", async (message, data) =>
                 {                    
                     if (message == "blk" || message == "IP")
@@ -265,7 +265,7 @@ namespace ReserveBlockCore.P2P
 
                 LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
 
-                var IPAddress = url.Replace("http://", "").Replace("/adjudicator", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
+                var IPAddress = GetPathUtility.IPFromURL(url);
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
@@ -857,7 +857,7 @@ namespace ReserveBlockCore.P2P
 
                 LogUtility.Log("Connecting to Beacon", "ConnectBeacon()");
 
-                var ipAddress = url.Replace("http://", "").Replace("/beacon", "");
+                var ipAddress = GetPathUtility.IPFromURL(url);
                 hubBeaconConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Beacon", "ConnectBeacon()");

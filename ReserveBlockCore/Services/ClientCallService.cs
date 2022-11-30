@@ -813,7 +813,7 @@ namespace ReserveBlockCore.Services
 
                     var ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
                         .SelectMany(x => x)
-                        .Where(x => SignatureService.VerifySignature(x.RBXAddress, x.IPAddress + ":" + State.Height + ":" + x.Answer, x.Signature))
+                        .Where(x => SignatureService.VerifySignature(x.RBXAddress, State.Height + ":" + x.Answer, x.Signature))
                         .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
                         .Distinct()
                         .ToArray();
@@ -869,6 +869,7 @@ namespace ReserveBlockCore.Services
                         .Where(x => x.Count() == 1)
                         .Select(x => x.First())
                         .OrderBy(x => Math.Abs(x.Answer - ChosenAnswer))
+                        .ThenBy(x => x.Answer)
                         .Where(x => AccountStateTrei.GetAccountBalance(x.RBXAddress) >= 1000M)
                         .Take(30)
                         .ToArray();

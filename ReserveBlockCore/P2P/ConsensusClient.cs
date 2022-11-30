@@ -185,7 +185,7 @@ namespace ReserveBlockCore.P2P
         public static ConcurrentDictionary<string, bool> IsConnectingDict = new ConcurrentDictionary<string, bool>();
         public static async Task<bool> ConnectConsensusNode(string url, string address, string time, string uName, string signature)
         {
-            var IPAddress = url.Replace("http://", "").Replace("/consensus", "").Replace(Globals.Port.ToString(), "").Replace(":", "");
+            var IPAddress = GetPathUtility.IPFromURL(url);
             try
             {               
                 if (!IsConnectingDict.TryAdd(IPAddress, true))
@@ -226,8 +226,6 @@ namespace ReserveBlockCore.P2P
                 };                
 
                 await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
-                if (hubConnection?.State != HubConnectionState.Connected)
-                    return false;
 
                 var node = Globals.Nodes[IPAddress];
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(hubConnection);
