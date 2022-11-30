@@ -141,7 +141,7 @@ namespace ReserveBlockCore.Services
                 if (!string.IsNullOrEmpty(password))
                 {
                     Globals.EncryptPassword = password.ToSecureString();
-                    var account = AccountData.GetSingleAccount(Globals.AdjudicateAccount.Address);
+                    var account = Globals.AdjudicateAccount;
                     BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
@@ -605,7 +605,7 @@ namespace ReserveBlockCore.Services
                 var delay = Task.Delay(10000);
                 try
                 {
-                    if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+                    if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress) || Globals.GUIPasswordNeeded)
                     {
                         await delay;
                         continue;
