@@ -112,6 +112,42 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static async void EncryptedPasswordEntryAdj()
+        {
+            bool exit = false;
+            while (!exit)
+            {
+                Console.WriteLine("Please enter Adjudicator password.");
+                var password = Console.ReadLine();
+                if (!string.IsNullOrEmpty(password))
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var account = AccountData.GetSingleAccount(Globals.AdjudicateAccount.Address);
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var randString = RandomStringUtility.GetRandomString(8);
+
+                    var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                    var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                    if (sigVerify)
+                    {
+                        Globals.AdjudicatePrivateKey = privateKey;
+                        password = "";
+                        exit = true;
+                    }
+                    else
+                    {
+                        password = "";
+                        Globals.EncryptPassword.Dispose();
+                        Globals.EncryptPassword = new SecureString();
+                        Console.WriteLine("Password was incorrect. Please attempt again");
+                    }
+                }
+            }
+        }
+
         internal static void SetAdjudicatorAddresses()
         {
             if(!Globals.IsTestNet)

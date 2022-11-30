@@ -72,7 +72,6 @@ namespace ReserveBlockCore
                 StartupService.EncryptedPasswordEntry();
             }
 
-
             Globals.BlockLock = Globals.IsTestNet == true ? 3 : 4000000;
 
             // BlockchainData.InitializeChain();
@@ -130,6 +129,11 @@ namespace ReserveBlockCore
             }
 
             StartupService.SetAdjudicatorAddresses();
+
+            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null)
+            {
+                StartupService.EncryptedPasswordEntryAdj();
+            }
 
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();

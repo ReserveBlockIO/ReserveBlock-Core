@@ -105,7 +105,7 @@ namespace ReserveBlockCore.Services
         {
             if(Globals.IsWalletEncrypted == true)
             {
-                if(string.IsNullOrEmpty(Globals.ValidatorAddress))
+                if(string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.AdjudicateAccount == null)
                 {
                     Globals.EncryptPassword.Dispose();
                     Globals.EncryptPassword = new SecureString();
