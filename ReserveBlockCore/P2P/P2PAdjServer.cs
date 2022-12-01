@@ -241,7 +241,8 @@ namespace ReserveBlockCore.P2P
                         taskAnsRes.AnswerCode = 7; // Answer was already submitted
                         return taskAnsRes;
                     }
- 
+
+                    Context.Abort();
                     taskAnsRes.AnswerCode = 3; //address is not pressent in the fortis pool
                     return taskAnsRes;
                 });
