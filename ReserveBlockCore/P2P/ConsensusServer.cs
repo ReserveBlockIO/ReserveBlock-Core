@@ -112,6 +112,12 @@ namespace ReserveBlockCore.P2P
                     ConsenusStateSingelton.RandomNumber = randomNumber;
             }
         }
+        public static (int MethodCode, ConsensusStatus Status, int Answer) GetState()
+        {
+            if (ConsenusStateSingelton == null)
+                return (0, ConsensusStatus.Processing, -1);
+            return (ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
+        }
 
         public bool StartRuns(long height)
         {
@@ -120,11 +126,11 @@ namespace ReserveBlockCore.P2P
             return true;
         }
 
-        public static (int MethodCode, ConsensusStatus Status, int Answer) GetState()
+        public bool SuccessHash(long height, int methodCode)
         {
-            if (ConsenusStateSingelton == null)
-                return (0, ConsensusStatus.Processing, -1);
-            return (ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
+            if (Globals.LastBlock.Height + 1 == height && (int)ConsenusStateSingelton.MethodCode == methodCode)
+                UpdateState(methodCode: methodCode + 1);
+            return true;
         }
 
         public int MethodCode(long height)

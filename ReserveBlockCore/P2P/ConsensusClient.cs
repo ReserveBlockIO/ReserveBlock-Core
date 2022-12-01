@@ -67,6 +67,7 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
+                var Height = Globals.LastBlock.Height + 1;
                 ConsensusServer.UpdateState(methodCode, (int)ConsensusStatus.Processing);
 
                 var CurrentAddresses = Signer.CurrentSigningAddresses();
@@ -77,7 +78,7 @@ namespace ReserveBlockCore.P2P
                 
                 var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
                 ConsensusServer.Messages.Clear();
-                ConsensusServer.Messages[(Globals.LastBlock.Height + 1, methodCode)] = Messages;
+                ConsensusServer.Messages[(Height, methodCode)] = Messages;
                 Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
                 var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
@@ -100,16 +101,19 @@ namespace ReserveBlockCore.P2P
                 var Now = TimeUtil.GetMillisecondTime();
                 var HashTasks = Peers.Select(node =>
                 {
-                    var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Globals.LastBlock.Height + 1, methodCode }, HashSource.Token)
+                    var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000, 100, HashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000 || ConsensusServer.GetState().MethodCode != methodCode, 100, HashSource.Token);
                 })
                 .ToArray();
 
-                await HashTasks.WhenAtLeast(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000, Signer.Majority() - 1);                
+                await HashTasks.WhenAtLeast(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000 || ConsensusServer.GetState().MethodCode != methodCode, Signer.Majority() - 1);                
                 HashSource.Cancel();
                 if (Globals.ConsensusTokenSource.IsCancellationRequested)
                     return null;
+
+                if(ConsensusServer.GetState().MethodCode != methodCode)
+                    return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
 
                 var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
                 if (PeerHashes.Length < Majority - 1)
@@ -119,6 +123,14 @@ namespace ReserveBlockCore.P2P
 
                 if (PeerHashes.Any(x => !MyHashes.SetEquals(x)))
                     return null;
+
+                Now = TimeUtil.GetMillisecondTime();
+                _ = Task.WhenAll(Peers.Select(node =>
+                {
+                    var SuccessHashFunc = () => node.Connection?.InvokeCoreAsync<bool>("SuccessHash", args: new object?[] { Height, methodCode }, ct)
+                        ?? Task.FromResult(false);
+                    return SuccessHashFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, ct);
+                }));
 
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
