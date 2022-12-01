@@ -285,7 +285,8 @@ namespace ReserveBlockCore
         {
             StartupService.StartupMenu();
             Thread.Sleep(1000);
-            StartupService.MainMenu();
+            if(Globals.AdjudicateAccount == null)
+                StartupService.MainMenu();
 
             while (true)
             {

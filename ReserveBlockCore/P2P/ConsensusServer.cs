@@ -23,7 +23,7 @@ namespace ReserveBlockCore.P2P
         public static ConcurrentDictionary<string, AdjPool> AdjPool;
         public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>> Messages;
         private static ConsensusState ConsenusStateSingelton;
-        private static object MessageLock = new object();
+        private static object UpdateLock = new object();
         public override async Task OnConnectedAsync()
         {                       
             try
@@ -102,14 +102,17 @@ namespace ReserveBlockCore.P2P
 
         public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1)
         {
-            if(height != -1)
-                ConsenusStateSingelton.Height = height;
-            if (status != -1)
-                ConsenusStateSingelton.Status = (ConsensusStatus)status;
-            if (methodCode != -1)
-                ConsenusStateSingelton.MethodCode = methodCode;
-            if (randomNumber != -1)
-                ConsenusStateSingelton.RandomNumber = randomNumber;
+            lock (UpdateLock)
+            {
+                if (height != -1)
+                    ConsenusStateSingelton.Height = height;
+                if (status != -1)
+                    ConsenusStateSingelton.Status = (ConsensusStatus)status;
+                if (methodCode != -1)
+                    ConsenusStateSingelton.MethodCode = methodCode;
+                if (randomNumber != -1)
+                    ConsenusStateSingelton.RandomNumber = randomNumber;
+            }
         }
 
         public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
@@ -166,21 +169,6 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public bool IsFinalized(long height, int methodCode)
-        {
-            var Height = ConsenusStateSingelton.Height;
-            if (height > Height)
-                return false;
-            if (height < Height)
-                return true;
-            if (methodCode > ConsenusStateSingelton.MethodCode)
-                return false;
-            if (methodCode < ConsenusStateSingelton.MethodCode)
-                return true;
-
-            return ConsenusStateSingelton.Status == ConsensusStatus.Finalized;
-        }
-
         public string[] Hashes(long height, int methodCode)
         {
             try
@@ -192,9 +180,13 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
-                if (!Messages.TryGetValue((height, methodCode), out var messages))
+                if (ConsenusStateSingelton.Height != height || ConsenusStateSingelton.MethodCode != methodCode ||
+                    ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
                     return null;
 
+                if (!Messages.TryGetValue((height, methodCode), out var messages))
+                    return null;
+                
                 return messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToArray();
             }
             catch (Exception ex)

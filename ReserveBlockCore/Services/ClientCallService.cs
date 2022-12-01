@@ -796,19 +796,22 @@ namespace ReserveBlockCore.Services
                         await Task.Delay(4);
 
                     ConsoleWriterService.Output("Waiting for a majority of peers to begin consensus.");
-                    ConsensusServer.UpdateState(methodCode: -100);
+                    ConsensusServer.UpdateState(methodCode: 0);
                     var Peers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address).ToArray();
                     var InitialWaitSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                     var InitialWaitTasks = Peers.Select(node =>
                     {
                         var InitialWaitFunc = () => node.Connection?.InvokeCoreAsync<int>("MethodCode", args: new object?[] { State.Height }, Token)
                             ?? Task.FromResult(-1);
-                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == -100, 100, InitialWaitSource.Token);
+                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == 0, 100, InitialWaitSource.Token);
                     })
                     .ToArray();
 
-                    await InitialWaitTasks.WhenAtLeast(x => x == -100, Signer.Majority() - 1);
+                    await InitialWaitTasks.WhenAtLeast(x => x == 0, Signer.Majority() - 1);
                     InitialWaitSource.Cancel();
+
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                        continue;
 
                     ConsoleWriterService.Output("Majority of peers are ready.");
                     var MyDecryptedAnswer = State.Height + ":" + State.Answer;                    
@@ -1020,9 +1023,9 @@ namespace ReserveBlockCore.Services
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
             localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = TimeUtil.GetMillisecondTime() });
-            ConsoleWriterService.Output("Sending Blocks Now - Height: " + block.Height.ToString());
+            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString());
             await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-            ConsoleWriterService.Output("Done sending - Height: " + block.Height.ToString());
+            Console.WriteLine("Done sending - Height: " + block.Height.ToString());
             
             await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
             ConsoleWriterService.Output("Fortis Pool Processed");
