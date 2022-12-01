@@ -75,6 +75,7 @@ namespace ReserveBlockCore.P2P
 
                 ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
                 var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                ConsensusServer.Messages.Clear();
                 ConsensusServer.Messages[(height, methodCode)] = Messages;
                 Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 

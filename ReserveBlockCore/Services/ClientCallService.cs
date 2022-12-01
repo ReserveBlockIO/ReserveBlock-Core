@@ -777,13 +777,13 @@ namespace ReserveBlockCore.Services
                 var RemainingDelay = Task.CompletedTask;                
                 try
                 {
+                    TaskQuestionUtility.CreateTaskQuestion("rndNum");
                     var State = ConsensusServer.GetState();
                     var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(State.Height - 24000, (State.Height + Globals.BlockLock) / 2));
                     var CurrentTime = TimeUtil.GetMillisecondTime();                    
                     var InitialDelayTime = LocalTime != null ? 15000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (State.Height - LocalTime.Height) : 15000;
                     InitialDelayTime = Math.Max(InitialDelayTime, 0);
-                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime, Globals.ConsensusTokenSource.Token);                    
-                    TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime, Globals.ConsensusTokenSource.Token);                                        
                     ClearRoundDicts(State.Height);
                     Globals.ConsensusTokenSource?.Dispose();
                     Globals.ConsensusTokenSource = new CancellationTokenSource();

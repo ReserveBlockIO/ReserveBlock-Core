@@ -100,7 +100,7 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1, int version = -1)
+        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1)
         {
             if(height != -1)
                 ConsenusStateSingelton.Height = height;
@@ -134,7 +134,7 @@ namespace ReserveBlockCore.P2P
             return ConsenusStateSingelton.MethodCode;
         }
 
-        public string Message(long height, int methodCode, int version, string[] addresses)
+        public string Message(long height, int methodCode, string[] addresses)
         {
             try
             {
@@ -166,7 +166,7 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public bool IsFinalized(long height, int methodCode, int version)
+        public bool IsFinalized(long height, int methodCode)
         {
             var Height = ConsenusStateSingelton.Height;
             if (height > Height)
@@ -181,7 +181,7 @@ namespace ReserveBlockCore.P2P
             return ConsenusStateSingelton.Status == ConsensusStatus.Finalized;
         }
 
-        public string[] Hashes(long height, int methodCode, int version)
+        public string[] Hashes(long height, int methodCode)
         {
             try
             {               
