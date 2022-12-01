@@ -6,6 +6,7 @@ using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.P2P
@@ -99,7 +100,7 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1)
+        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1, int version = -1)
         {
             if(height != -1)
                 ConsenusStateSingelton.Height = height;
@@ -109,16 +110,18 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton.MethodCode = methodCode;
             if (randomNumber != -1)
                 ConsenusStateSingelton.RandomNumber = randomNumber;
+            if (version != -1)
+                ConsenusStateSingelton.Version = version;
         }
 
-        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
+        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer, int Version) GetState()
         {
             if (ConsenusStateSingelton == null)
-                return (-1, 0, ConsensusStatus.Processing, -1);
-            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
+                return (-1, 0, ConsensusStatus.Processing, -1, 1);
+            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber, ConsenusStateSingelton.Version);
         }
 
-        public string Message(long height, int methodCode, string[] addresses)
+        public string Message(long height, int methodCode, int version, string[] addresses)
         {
             try
             {
@@ -128,6 +131,9 @@ namespace ReserveBlockCore.P2P
                     Context?.Abort();
                     return null;
                 }
+
+                if (ConsenusStateSingelton.Version > version)
+                    return null;
 
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
                     return null;
@@ -150,9 +156,11 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public bool IsFinalized(long height, int methodCode)
+        public bool IsFinalized(long height, int methodCode, int version)
         {
             var Height = ConsenusStateSingelton.Height;
+            if (ConsenusStateSingelton.Version > version)
+                return false;
             if (height > Height)
                 return false;
             if (height < Height)
@@ -165,7 +173,7 @@ namespace ReserveBlockCore.P2P
             return ConsenusStateSingelton.Status == ConsensusStatus.Finalized;
         }
 
-        public string[] Hashes(long height, int methodCode)
+        public string[] Hashes(long height, int methodCode, int version)
         {
             try
             {               
@@ -175,6 +183,9 @@ namespace ReserveBlockCore.P2P
                     Context?.Abort();
                     return null;
                 }
+
+                if (ConsenusStateSingelton.Version > version)
+                    return null;
 
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
                     return null;

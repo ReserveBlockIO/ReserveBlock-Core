@@ -523,17 +523,11 @@ namespace ReserveBlockCore.P2P
         private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
         {
             Random rand = new Random();
-            int randNum = rand.Next(0, 4500);
+            int randNum = rand.Next(0, 3000);
             for (var i = 1; i < 4; i++)
             {
-                if (i != 1)
-                {
-                    await Task.Delay(1000); // if failed after first attempt waits 1 seconds then tries again.
-                }
-                else
-                {
-                    await Task.Delay(randNum);//wait random amount between 1-7 to not overload network all at once.
-                }
+                if (i == 1)                
+                    await Task.Delay(randNum);                                
                 try
                 {
                     var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswerV3", args: new object[] { taskAnswer });

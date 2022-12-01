@@ -63,7 +63,7 @@ namespace ReserveBlockCore.P2P
 
         #region Consensus Code
 
-        public static async Task<(string Address, string Message)[]> ConsensusRun(long height, int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
+        public static async Task<(string Address, string Message)[]> ConsensusRun(long height, int methodCode, int version, string message, string signature, int timeToFinalize, CancellationToken ct)
         {
             try
             {
@@ -81,7 +81,7 @@ namespace ReserveBlockCore.P2P
                 var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 foreach (var peer in Peers)
                 {
-                    _ = PeerRequestLoop(height, methodCode, peer, CurrentAddresses, ConsensusSource);
+                    _ = PeerRequestLoop(height, methodCode, version, peer, CurrentAddresses, ConsensusSource);
                 }
                 try
                 {
@@ -101,7 +101,7 @@ namespace ReserveBlockCore.P2P
                 var FinalizingSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 var FinalizingTasks = Peers.Select(node =>
                 {
-                    var FinalizingRequestFunc = () => node.Connection?.InvokeCoreAsync<bool>("IsFinalized", args: new object?[] { height, methodCode }, ct)
+                    var FinalizingRequestFunc = () => node.Connection?.InvokeCoreAsync<bool>("IsFinalized", args: new object?[] { height, methodCode, version }, ct)
                         ?? Task.FromResult(false);
                     return FinalizingRequestFunc.RetryUntilSuccessOrCancel(x => x, 100, FinalizingSource.Token);
                 })
@@ -115,7 +115,7 @@ namespace ReserveBlockCore.P2P
                 var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 var HashTasks = Peers.Select(node =>
                 {
-                    var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { height, methodCode }, ct)
+                    var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { height, methodCode, version }, ct)
                         ?? Task.FromResult((string[])null);
                     return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, HashSource.Token);
                 })
@@ -143,7 +143,7 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public static async Task PeerRequestLoop(long height, int methodCode, NodeInfo peer, HashSet<string> addresses, CancellationTokenSource cts)
+        public static async Task PeerRequestLoop(long height, int methodCode, int version, NodeInfo peer, HashSet<string> addresses, CancellationTokenSource cts)
         {
             var messages = ConsensusServer.Messages[(height, methodCode)];
             var rnd = new Random();
@@ -159,7 +159,7 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
                     
-                    var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { height, methodCode, MissingAddresses }, cts.Token);
+                    var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { height, methodCode, version, MissingAddresses }, cts.Token);
                     if(Response != null)
                     {                        
                         var arr = Response.Split(";:;");
