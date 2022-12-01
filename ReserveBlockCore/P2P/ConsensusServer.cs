@@ -100,12 +100,10 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(long height = -1, int methodCode = -1, int status = -1, int randomNumber = -1)
+        public static void UpdateState(int methodCode = -1, int status = -1, int randomNumber = -1)
         {
             lock (UpdateLock)
             {
-                if (height != -1)
-                    ConsenusStateSingelton.Height = height;
                 if (status != -1)
                     ConsenusStateSingelton.Status = (ConsensusStatus)status;
                 if (methodCode != -1)
@@ -117,16 +115,16 @@ namespace ReserveBlockCore.P2P
 
         public bool StartRuns(long height)
         {
-            if (ConsenusStateSingelton.Height == height && (int)ConsenusStateSingelton.MethodCode == -100)
+            if (Globals.LastBlock.Height + 1 == height && (int)ConsenusStateSingelton.MethodCode == -100)
                 UpdateState(methodCode: 0);
             return true;
         }
 
-        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
+        public static (int MethodCode, ConsensusStatus Status, int Answer) GetState()
         {
             if (ConsenusStateSingelton == null)
-                return (-1, 0, ConsensusStatus.Processing, -1);
-            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
+                return (0, ConsensusStatus.Processing, -1);
+            return (ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
         }
 
         public int MethodCode(long height)
@@ -138,7 +136,7 @@ namespace ReserveBlockCore.P2P
                 return -1;
             }
 
-            if (height != ConsenusStateSingelton.Height)
+            if (height != Globals.LastBlock.Height + 1)
                 return -1;
 
             return ConsenusStateSingelton.MethodCode;
@@ -187,7 +185,7 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
-                if (ConsenusStateSingelton.Height != height || ConsenusStateSingelton.MethodCode != methodCode ||
+                if (Globals.LastBlock.Height + 1 != height || ConsenusStateSingelton.MethodCode != methodCode ||
                     ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
                     return null;
 

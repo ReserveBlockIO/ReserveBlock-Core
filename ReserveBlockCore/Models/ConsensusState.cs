@@ -12,8 +12,7 @@ namespace ReserveBlockCore.Models
 
     public class ConsensusState
     {
-        public long Id { get; set; }
-        public long Height { get; set; }
+        public long Id { get; set; }        
         public int MethodCode { get; set; }
         public ConsensusStatus Status { get; set; }                
         public int RandomNumber { get; set; }       
