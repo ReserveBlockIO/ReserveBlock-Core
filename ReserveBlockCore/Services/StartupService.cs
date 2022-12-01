@@ -797,6 +797,8 @@ namespace ReserveBlockCore.Services
                     var lastBlock = Globals.LastBlock;
                     var currentTimestamp = TimeUtil.GetTime(-60);
 
+                    //This needs to come back for mainnet**
+                    //if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                     DateTime endTime = DateTime.UtcNow;
                     ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
                     LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
