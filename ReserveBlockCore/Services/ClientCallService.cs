@@ -796,17 +796,18 @@ namespace ReserveBlockCore.Services
                         await Task.Delay(4);
 
                     ConsoleWriterService.Output("Waiting for a majority of peers to begin consensus.");
+                    ConsensusServer.UpdateState(methodCode: -100);
                     var Peers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address).ToArray();
                     var InitialWaitSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                     var InitialWaitTasks = Peers.Select(node =>
                     {
                         var InitialWaitFunc = () => node.Connection?.InvokeCoreAsync<int>("MethodCode", args: new object?[] { State.Height }, Token)
                             ?? Task.FromResult(-1);
-                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == 0, 100, InitialWaitSource.Token);
+                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == -100, 100, InitialWaitSource.Token);
                     })
                     .ToArray();
 
-                    await InitialWaitTasks.WhenAtLeast(x => x == 0, Signer.Majority() - 1);
+                    await InitialWaitTasks.WhenAtLeast(x => x == -100, Signer.Majority() - 1);
                     InitialWaitSource.Cancel();
 
                     ConsoleWriterService.Output("Majority of peers are ready.");
@@ -841,7 +842,7 @@ namespace ReserveBlockCore.Services
                     if (!ValidSubmissions.Any())
                         continue;
 
-                    ConsoleWriterService.Output("Number of valid submissions: " + ValidSubmissions);                    
+                    ConsoleWriterService.Output("Number of valid submissions: " + ValidSubmissions.Length);                    
 
                     var BadIPs = ValidSubmissions.Select(x => x.IPAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();

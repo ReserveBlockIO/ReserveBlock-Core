@@ -67,13 +67,14 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
+                ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
+
                 var CurrentAddresses = Signer.CurrentSigningAddresses();
                 var NumNodes = CurrentAddresses.Count;
                 var Majority = NumNodes / 2 + 1;
                 var Address = Globals.AdjudicateAccount.Address;
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
-
-                ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
+                
                 var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
                 ConsensusServer.Messages.Clear();
                 ConsensusServer.Messages[(height, methodCode)] = Messages;
