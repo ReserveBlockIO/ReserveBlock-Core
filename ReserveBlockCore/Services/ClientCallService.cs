@@ -781,7 +781,7 @@ namespace ReserveBlockCore.Services
                     var State = ConsensusServer.GetState();
                     var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(State.Height - 24000, (State.Height + Globals.BlockLock) / 2));
                     var CurrentTime = TimeUtil.GetMillisecondTime();                    
-                    var InitialDelayTime = LocalTime != null ? 15000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (State.Height - LocalTime.Height) : 15000;
+                    var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (State.Height - LocalTime.Height) : 19000;
                     InitialDelayTime = Math.Max(InitialDelayTime, 0);
                     var InitialBlockDelay = Task.Delay((int)InitialDelayTime, Globals.ConsensusTokenSource.Token);                                        
                     ClearRoundDicts(State.Height);
@@ -796,18 +796,18 @@ namespace ReserveBlockCore.Services
                         await Task.Delay(4);
 
                     ConsoleWriterService.Output("Waiting for a majority of peers to begin consensus.");
-                    ConsensusServer.UpdateState(methodCode: 0);
+                    ConsensusServer.UpdateState(methodCode: -100);
                     var Peers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address).ToArray();
                     var InitialWaitSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                     var InitialWaitTasks = Peers.Select(node =>
                     {
                         var InitialWaitFunc = () => node.Connection?.InvokeCoreAsync<int>("MethodCode", args: new object?[] { State.Height }, Token)
                             ?? Task.FromResult(-1);
-                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == 0, 100, InitialWaitSource.Token);
+                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == -100, 100, InitialWaitSource.Token);
                     })
                     .ToArray();
 
-                    await InitialWaitTasks.WhenAtLeast(x => x == 0, Signer.Majority() - 1);
+                    await InitialWaitTasks.WhenAtLeast(x => x == -100, Signer.Majority() - 1);
                     InitialWaitSource.Cancel();
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested)
@@ -817,7 +817,7 @@ namespace ReserveBlockCore.Services
                     var MyDecryptedAnswer = State.Height + ":" + State.Answer;                    
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
-                    var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
+                    var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)                    
                         continue;
@@ -828,7 +828,7 @@ namespace ReserveBlockCore.Services
                     ConsoleWriterService.Output("My submission count " + MySubmissions.Length);
                     var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
                     var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
-                    var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
+                    var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 2000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || Submissions == null)
                         continue;
@@ -864,7 +864,7 @@ namespace ReserveBlockCore.Services
                     }
                     catch { }
 
-                    var DecryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 2, MyDecryptedAnswer, MyEncryptedAnswer, 1000, Token);
+                    var DecryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 2, MyDecryptedAnswer, MyEncryptedAnswer, 2000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || DecryptedAnswers == null)
                         continue;
@@ -916,14 +916,14 @@ namespace ReserveBlockCore.Services
                         try
                         {
                             _ = HubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", "")
-                                                                    .WaitAsync(new TimeSpan(0, 0, 0, 0, 7000));
+                                                                    .WaitAsync(new TimeSpan(0, 0, 0, 0, 3000));
                         }
                         catch (Exception ex)
                         {
                         }
                     }
                     
-                    await Task.Delay(7000);
+                    await Task.Delay(3000);
                     var MySubmittedWinners = PotentialWinners.Select(x =>
                     {
                         if (Globals.TaskWinnerDictV3.TryGetValue((x.RBXAddress, State.Height), out var block))
@@ -937,7 +937,7 @@ namespace ReserveBlockCore.Services
 
                     var MySubmittedWinnersString = JsonConvert.SerializeObject(MySubmittedWinners);
                     var MySubmittedWinnersSignature = SignatureService.AdjudicatorSignature(MySubmittedWinnersString);
-                    var SubmittedWinners = await ConsensusClient.ConsensusRun(State.Height, 3, MySubmittedWinnersString, MySubmittedWinnersSignature, 7000, Token);
+                    var SubmittedWinners = await ConsensusClient.ConsensusRun(State.Height, 3, MySubmittedWinnersString, MySubmittedWinnersSignature, 2000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || SubmittedWinners == null)
                         continue;
@@ -972,7 +972,7 @@ namespace ReserveBlockCore.Services
                     var WinnerHasheSignature = Winner.Hash + ":" + SignatureService.AdjudicatorSignature(Winner.Hash);                    
                     var WinnerHashSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignature);                    
                                         
-                    var HashResult = await ConsensusClient.ConsensusRun(State.Height, 4, WinnerHasheSignature, WinnerHashSignature, 1000, Token);
+                    var HashResult = await ConsensusClient.ConsensusRun(State.Height, 4, WinnerHasheSignature, WinnerHashSignature, 2000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || HashResult == null)
                         continue;
