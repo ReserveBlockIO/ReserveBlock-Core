@@ -75,12 +75,7 @@ namespace ReserveBlockCore
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
-            StartupService.SetValidator();
-
-            if(Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
-            {
-                StartupService.EncryptedPasswordEntry();
-            }
+            
 
             Globals.BlockLock = Globals.IsTestNet == true ? 3 : 4000000;
 
@@ -132,6 +127,13 @@ namespace ReserveBlockCore
                         }
                     }
                 });
+            }
+
+            StartupService.SetValidator();
+
+            if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
+            {
+                StartupService.EncryptedPasswordEntry();
             }
 
             StartupService.SetAdjudicatorAddresses();

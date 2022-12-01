@@ -142,7 +142,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if (Globals.EncryptPassword.Length != 0)
                 {
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is has decryption password." });
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet has decryption password." });
                 }
                 else
                 {
