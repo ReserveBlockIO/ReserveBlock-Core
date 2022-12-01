@@ -110,15 +110,28 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton.MethodCode = methodCode;
             if (randomNumber != -1)
                 ConsenusStateSingelton.RandomNumber = randomNumber;
-            if (version != -1)
-                ConsenusStateSingelton.Version = version;
         }
 
-        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer, int Version) GetState()
+        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
         {
             if (ConsenusStateSingelton == null)
-                return (-1, 0, ConsensusStatus.Processing, -1, 1);
-            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber, ConsenusStateSingelton.Version);
+                return (-1, 0, ConsensusStatus.Processing, -1);
+            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
+        }
+
+        public int MethodCode(long height)
+        {
+            var ip = GetIP(Context);
+            if (!Globals.Nodes.TryGetValue(ip, out var Pool))
+            {
+                Context?.Abort();
+                return -1;
+            }
+
+            if (height != ConsenusStateSingelton.Height)
+                return -1;
+
+            return ConsenusStateSingelton.MethodCode;
         }
 
         public string Message(long height, int methodCode, int version, string[] addresses)
@@ -131,9 +144,6 @@ namespace ReserveBlockCore.P2P
                     Context?.Abort();
                     return null;
                 }
-
-                if (ConsenusStateSingelton.Version > version)
-                    return null;
 
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
                     return null;
@@ -159,8 +169,6 @@ namespace ReserveBlockCore.P2P
         public bool IsFinalized(long height, int methodCode, int version)
         {
             var Height = ConsenusStateSingelton.Height;
-            if (ConsenusStateSingelton.Version > version)
-                return false;
             if (height > Height)
                 return false;
             if (height < Height)
@@ -183,9 +191,6 @@ namespace ReserveBlockCore.P2P
                     Context?.Abort();
                     return null;
                 }
-
-                if (ConsenusStateSingelton.Version > version)
-                    return null;
 
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
                     return null;

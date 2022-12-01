@@ -170,11 +170,12 @@ namespace ReserveBlockCore
 
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
-            await StartupService.GetAdjudicatorPool();
-            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
+            await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
+            Globals.StopAllTimers = true;
             _ = StartupService.DownloadBlocksOnStart();
+            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
 
             StartupService.ClearStaleMempool();
 

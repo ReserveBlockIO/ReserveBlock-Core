@@ -776,7 +776,6 @@ namespace ReserveBlockCore.Services
 
         internal static async Task DownloadBlocksOnStart()
         {
-            Globals.StopAllTimers = true;
             var download = true;
             try
             {
