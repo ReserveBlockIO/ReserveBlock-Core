@@ -653,9 +653,12 @@ namespace ReserveBlockCore.Services
                         if (Globals.LastBlock.Height < Globals.BlockLock)
                         {
                             var signature = SignatureService.ValidatorSignature(validator.Address);
-                            var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).First();
-                            var url = "http://" + LeadAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
-                            await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);                            
+                            var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
+                            if (LeadAdjudicator != null)
+                            {
+                                var url = "http://" + LeadAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
+                            }
                         }
                         else
                         {
