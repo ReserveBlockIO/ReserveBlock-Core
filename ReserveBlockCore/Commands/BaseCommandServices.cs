@@ -104,6 +104,7 @@ namespace ReserveBlockCore.Commands
                 Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
                 Console.WriteLine("If you forget this password there is no way to recover your keys. Please use this feature fully understanding this.");
                 Console.WriteLine("This is a new wallet feature. It is recommended a non-encrypted version or private keys be backed up before starting this process.");
+                Console.WriteLine("Please do not use the equal sign ('=') in your password.");
                 AnsiConsole.MarkupLine("Are you sure you want to do this? ('[bold green]y[/]' for yes and '[bold red]n[/]' for no).");
                 var confirmation = Console.ReadLine();
                 if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "y")
@@ -138,6 +139,12 @@ namespace ReserveBlockCore.Commands
                             MainMenuReturn();
                             Console.WriteLine("Passwords cannot be larger than 32 characters.");
                         }
+                        if(password.ToUnsecureString().Contains("="))
+                        {
+                            MainMenuReturn();
+                            Console.WriteLine("Passwords may not contain an equal sign '='.");
+                        }
+                            
                         else
                         {
                             Console.WriteLine("------------------------------------------------");

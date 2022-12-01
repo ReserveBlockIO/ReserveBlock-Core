@@ -142,7 +142,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if (Globals.EncryptPassword.Length != 0)
                 {
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is has decryption password." });
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet has decryption password." });
                 }
                 else
                 {
@@ -158,6 +158,54 @@ namespace ReserveBlockCore.Controllers
 
             return output;
 
+        }
+
+        [HttpGet("CheckPasswordNeeded")]
+        public async Task<string> CheckPasswordNeeded()
+        {
+            //use Id to get specific commands
+            var output = "False"; // this will only display if command not recognized.
+
+            if (Globals.GUIPasswordNeeded)
+                output = "true";
+
+            return output;
+        }
+
+        [HttpGet("GetEncryptedPassword/{password}")]
+        public async Task<string> GetEncryptedPassword(string password)
+        {
+            //use Id to get specific commands
+            var output = "False"; // this will only display if command not recognized.
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                Globals.EncryptPassword = password.ToSecureString();
+                var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                var randString = RandomStringUtility.GetRandomString(8);
+
+                var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                if (sigVerify)
+                {
+                    password = "";
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = ""});
+
+                }
+                else
+                {
+                    password = "";
+                    Globals.EncryptPassword.Dispose();
+                    Globals.EncryptPassword = new SecureString();
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
+                }
+            }
+
+            return output;
         }
 
         [HttpGet("CheckStatus")]
