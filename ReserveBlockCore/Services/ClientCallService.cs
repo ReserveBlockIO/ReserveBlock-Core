@@ -18,6 +18,7 @@ using System.Net;
 using System.Numerics;
 using System.Security;
 using System.Transactions;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Services
 {
@@ -803,12 +804,20 @@ namespace ReserveBlockCore.Services
                     {
                         var InitialWaitFunc = () => node.Connection?.InvokeCoreAsync<int>("MethodCode", args: new object?[] { State.Height }, Token)
                             ?? Task.FromResult(-1);
-                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == -100, 100, InitialWaitSource.Token);
+                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == -100 || ConsensusServer.GetState().MethodCode == 0, 100, InitialWaitSource.Token);
                     })
                     .ToArray();
 
-                    await InitialWaitTasks.WhenAtLeast(x => x == -100, Signer.Majority() - 1);
+                    await InitialWaitTasks.WhenAtLeast(x => x == -100 || ConsensusServer.GetState().MethodCode == 0, Signer.Majority() - 1);
                     InitialWaitSource.Cancel();
+
+                    _ = Peers.Select(node =>
+                    {
+                        var StartRunsFunc = () => node.Connection?.InvokeCoreAsync<bool>("StartRuns", args: new object?[] { State.Height }, Token)
+                            ?? Task.FromResult(false);
+                        return StartRunsFunc.RetryUntilSuccessOrCancel(x => x, 100, InitialWaitSource.Token);
+                    })
+                    .ToArray();
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested)
                         continue;

@@ -115,6 +115,13 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        public bool StartRuns(long height)
+        {
+            if (ConsenusStateSingelton.Height == height && (int)ConsenusStateSingelton.MethodCode == -100)
+                UpdateState(methodCode: 0);
+            return true;
+        }
+
         public static (long Height, int MethodCode, ConsensusStatus Status, int Answer) GetState()
         {
             if (ConsenusStateSingelton == null)
