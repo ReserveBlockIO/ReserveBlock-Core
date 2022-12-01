@@ -335,8 +335,7 @@ namespace ReserveBlockCore.P2P
                     var RBXAddress = Pool.Key2;
                     if(!Globals.TaskSelectedNumbersV3.ContainsKey((RBXAddress, block.Height)))
                     {
-                        Globals.FortisPool.TryRemoveFromKey2(RBXAddress, out _);
-                        Pool.Value.Context.Abort();
+                        Globals.FortisPool.TryRemoveFromKey2(RBXAddress, out _);                        
                         return false;
                     }                    
 

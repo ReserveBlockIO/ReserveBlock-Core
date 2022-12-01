@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Data;
@@ -7,11 +8,13 @@ using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Data.Common;
 using System.Globalization;
 using System.IO.Compression;
+using System.Net;
 using System.Numerics;
 using System.Security;
 using System.Transactions;
@@ -761,46 +764,58 @@ namespace ReserveBlockCore.Services
         {
             var mod = k % n;
             return mod < 0 ? (int)mod + n : (int)mod;
-        }
-
-        private static ConcurrentDictionary<long, string> EncryptedNumberDict = new ConcurrentDictionary<long, string>();
+        }        
         public static async Task DoWorkV3()
         {
-            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null)
+            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null || Globals.StopAllTimers)
                 return;            
 
             _ = StartupService.ConnectToConsensusNodes();
-            TaskQuestionUtility.CreateTaskQuestion("rndNum");            
-            Console.WriteLine("Doing the work **New**");
+            ConsoleWriterService.Output("Booting up consensus loop");            
             while (true)
             {
                 var RemainingDelay = Task.CompletedTask;                
                 try
                 {
-                    var CurrentTime = TimeUtil.GetMillisecondTime();
+                    TaskQuestionUtility.CreateTaskQuestion("rndNum");
                     var State = ConsensusServer.GetState();
                     var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(State.Height - 24000, (State.Height + Globals.BlockLock) / 2));
-                    var InitialDelayTime = LocalTime != null ? 20000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (State.Height - LocalTime.Height) : 20000;
-                    InitialDelayTime = Math.Min(Math.Max(InitialDelayTime, 17000), 23000);
-                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime, Globals.ConsensusTokenSource.Token);
+                    var CurrentTime = TimeUtil.GetMillisecondTime();                    
+                    var InitialDelayTime = LocalTime != null ? 15000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (State.Height - LocalTime.Height) : 15000;
+                    InitialDelayTime = Math.Max(InitialDelayTime, 0);
+                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime, Globals.ConsensusTokenSource.Token);                                        
+                    ClearRoundDicts(State.Height);
                     Globals.ConsensusTokenSource?.Dispose();
-                    Globals.ConsensusTokenSource = new CancellationTokenSource(28000);                    
+                    Globals.ConsensusTokenSource = new CancellationTokenSource();
                     var fortisPool = Globals.FortisPool.Values;                    
                     var Token = Globals.ConsensusTokenSource.Token;
-
                     var Signers = Signer.CurrentSigningAddresses();
-                    var Majority = Signers.Count / 2 + 1;
-                    while (Globals.Nodes.Values.Where(x => x.IsConnected).Count() < Majority - 1)
+                    var Majority = Signers.Count / 2 + 1;                    
+                                        
+                    while (Globals.Nodes.Count != Signers.Count && !Globals.ConsensusTokenSource.IsCancellationRequested)
                         await Task.Delay(4);
 
-                    ConsensusServer.UpdateState(status: (int)ConsensusStatus.Processing);
-
-                    var MyDecryptedAnswer = State.Height + ":" + State.Answer;
-                    if (!EncryptedNumberDict.TryGetValue(State.Height, out var MyEncryptedAnswer))
+                    ConsoleWriterService.Output("Waiting for a majority of peers to begin consensus.");
+                    ConsensusServer.UpdateState(methodCode: 0);
+                    var Peers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address).ToArray();
+                    var InitialWaitSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                    var InitialWaitTasks = Peers.Select(node =>
                     {
-                        MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
-                        EncryptedNumberDict[State.Height] = MyEncryptedAnswer;
-                    }                    
+                        var InitialWaitFunc = () => node.Connection?.InvokeCoreAsync<int>("MethodCode", args: new object?[] { State.Height }, Token)
+                            ?? Task.FromResult(-1);
+                        return InitialWaitFunc.RetryUntilSuccessOrCancel(x => x == 0, 100, InitialWaitSource.Token);
+                    })
+                    .ToArray();
+
+                    await InitialWaitTasks.WhenAtLeast(x => x == 0, Signer.Majority() - 1);
+                    InitialWaitSource.Cancel();
+
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                        continue;
+
+                    ConsoleWriterService.Output("Majority of peers are ready.");
+                    var MyDecryptedAnswer = State.Height + ":" + State.Answer;                    
+                    var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 1000, Token);
 
@@ -808,31 +823,29 @@ namespace ReserveBlockCore.Services
                         continue;
 
                     ConsoleWriterService.Output("EncryptedAnswer Consensus at height " + State.Height);
-                    (string IPAddress, string RBXAddress, int Answer)[] ValidSubmissions = null;
-                    while (ValidSubmissions == null || !ValidSubmissions.Any())
-                    {
-                        var MySubmissions = Globals.TaskAnswerDictV3.Where(x => x.Key.Height == State.Height).Select(x => x.Value).ToArray();
-                        var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
-                        var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
-                        var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
+                                        
+                    var MySubmissions = Globals.TaskAnswerDictV3.Where(x => x.Key.Height == State.Height).Select(x => x.Value).ToArray();
+                    ConsoleWriterService.Output("My submission count " + MySubmissions.Length);
+                    var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
+                    var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
+                    var Submissions = await ConsensusClient.ConsensusRun(State.Height, 1, MySubmissionsString, MySubmissionsSignature, 1000, Token);
 
-                        ConsoleWriterService.Output("Submission Consensus at height " + State.Height + ". Number of submissions: " + (Submissions?.Length ?? 0));
-                        if (Globals.ConsensusTokenSource.IsCancellationRequested)
-                            break;
-
-                        if (Submissions == null)
-                            continue;
-
-                        ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
-                            .SelectMany(x => x)
-                            .Where(x => SignatureService.VerifySignature(x.RBXAddress, State.Height + ":" + x.Answer, x.Signature))
-                            .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
-                            .Distinct()
-                            .ToArray();
-                    }
-
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                    if (Globals.ConsensusTokenSource.IsCancellationRequested || Submissions == null)
                         continue;
+
+                    ConsoleWriterService.Output("Submissions Consensus at height " + State.Height);
+
+                    var ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
+                        .SelectMany(x => x)
+                        .Where(x => SignatureService.VerifySignature(x.RBXAddress, State.Height + ":" + x.Answer, x.Signature))
+                        .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
+                        .Distinct()
+                        .ToArray();
+
+                    if (!ValidSubmissions.Any())
+                        continue;
+
+                    ConsoleWriterService.Output("Number of valid submissions: " + ValidSubmissions.Length);                    
 
                     var BadIPs = ValidSubmissions.Select(x => x.IPAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();
@@ -854,11 +867,7 @@ namespace ReserveBlockCore.Services
                     var DecryptedAnswers = await ConsensusClient.ConsensusRun(State.Height, 2, MyDecryptedAnswer, MyEncryptedAnswer, 1000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || DecryptedAnswers == null)
-                    {
-                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                        ClearRoundDicts(State.Height);
                         continue;
-                    }
 
                     ConsoleWriterService.Output("DecryptedAnswer Consensus at height " + State.Height);
 
@@ -874,6 +883,7 @@ namespace ReserveBlockCore.Services
                     .Where(x => x != -1)
                     .ToArray();
                     var ChosenAnswer = CombineRandoms(Answers, 0, int.MaxValue);
+                    ConsoleWriterService.Output("Chosen answer: " + ChosenAnswer);
 
                     var PotentialWinners = ValidSubmissions
                         .Where(x => !BadIPs.Contains(x.IPAddress) && !BadAddresses.Contains(x.RBXAddress))
@@ -899,7 +909,8 @@ namespace ReserveBlockCore.Services
                         .Where(x => x != null)
                         .ToArray();
 
-                    ConsoleWriterService.Output("Requesting winners. Total: " + WinnerPool.Length);
+                    ConsoleWriterService.Output("Potential winners total: " + PotentialWinners.Length + 
+                        ". Requesting total: " + WinnerPool.Length);
                     foreach (var fortis in WinnerPool)
                     {
                         try
@@ -922,20 +933,16 @@ namespace ReserveBlockCore.Services
                     .Where(x => x != null)
                     .ToArray();
 
-                    ConsoleWriterService.Output("Received winners. Total: " + MySubmittedWinners.Length);
+                    ConsoleWriterService.Output("Received winners total: " + MySubmittedWinners.Length);
 
                     var MySubmittedWinnersString = JsonConvert.SerializeObject(MySubmittedWinners);
                     var MySubmittedWinnersSignature = SignatureService.AdjudicatorSignature(MySubmittedWinnersString);
                     var SubmittedWinners = await ConsensusClient.ConsensusRun(State.Height, 3, MySubmittedWinnersString, MySubmittedWinnersSignature, 7000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || SubmittedWinners == null)
-                    {
-                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                        ClearRoundDicts(State.Height);
                         continue;
-                    }
 
-                    ConsoleWriterService.Output("SubmittedWinner consensus. Total: " + SubmittedWinners.Length);
+                    ConsoleWriterService.Output("SubmittedWinner Consensus at height " + State.Height);                    
 
                     var WinnerDict = SubmittedWinners.Select(x => JsonConvert.DeserializeObject<Block[]>(x.Message))
                         .SelectMany(x => x)
@@ -946,7 +953,9 @@ namespace ReserveBlockCore.Services
                         .ToDictionary(x => x.Validator, x => x);
 
                     var OrderedWinners = PotentialWinners.Select(x => WinnerDict.GetValueOrDefault(x.RBXAddress)).Where(x => x != null).ToArray();
-                    
+
+                    ConsoleWriterService.Output("Winner collected total: " + OrderedWinners.Length);
+
                     Block Winner = null;
                     foreach(var winner in OrderedWinners)
                         if(await BlockValidatorService.ValidateBlockForTask(winner, true))
@@ -956,11 +965,7 @@ namespace ReserveBlockCore.Services
                         }
 
                     if(Winner == null)
-                    {
-                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                        ClearRoundDicts(State.Height);
                         continue;
-                    }
 
                     ConsoleWriterService.Output("Winner fournd. Hash: " + Winner.Hash);
 
@@ -970,13 +975,9 @@ namespace ReserveBlockCore.Services
                     var HashResult = await ConsensusClient.ConsensusRun(State.Height, 4, WinnerHasheSignature, WinnerHashSignature, 1000, Token);
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested || HashResult == null)
-                    {
-                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                        ClearRoundDicts(State.Height);
                         continue;
-                    }
 
-                    ConsoleWriterService.Output("WinnerHashSignature consensus");
+                    ConsoleWriterService.Output("WinnerHashSignature Consensus at height " + State.Height);                    
 
                     var Hashes = HashResult.Select(x => {
                         var split = x.Message.Split(':');
@@ -987,17 +988,14 @@ namespace ReserveBlockCore.Services
                     .ToArray();
 
                     if(Hashes.Length != Majority)
-                    {
-                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                        ClearRoundDicts(State.Height);
                         continue;
-                    }
                   
                     var signature = string.Join("|", Hashes.Select(x => x.Address + ":" + x.Signature));
                     Winner.AdjudicatorSignature = signature;
-                    if(await BlockValidatorService.ValidateBlock(Winner, false))
-                        RemainingDelay = await FinalizeWork(Globals.LastBlock, InitialBlockDelay);
-                    ClearRoundDicts(State.Height);
+                    if (await BlockValidatorService.ValidateBlock(Winner, false))                                            
+                        RemainingDelay = await FinalizeWork(Globals.LastBlock, InitialBlockDelay);                    
+                    else
+                        continue;
                 }
                 catch(Exception ex)
                 {
@@ -1021,15 +1019,14 @@ namespace ReserveBlockCore.Services
                 await initialDelay;
             }
             catch { }
-            var Result = Task.Delay(5000);
+            var Result = Task.Delay(10000);
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
             localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = TimeUtil.GetMillisecondTime() });
-            ConsoleWriterService.Output("Sending Blocks Now - Height: " + block.Height.ToString());
+            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString());
             await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-            ConsoleWriterService.Output("Done sending - Height: " + block.Height.ToString());
-
-            TaskQuestionUtility.CreateTaskQuestion("rndNum");
+            Console.WriteLine("Done sending - Height: " + block.Height.ToString());
+            
             await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
             ConsoleWriterService.Output("Fortis Pool Processed");
 

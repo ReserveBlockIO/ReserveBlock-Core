@@ -79,7 +79,7 @@ namespace ReserveBlockCore
 
             Globals.BlockLock = Globals.IsTestNet == true ? 3 : 4000000;
 
-            // BlockchainData.InitializeChain();
+             BlockchainData.InitializeChain();
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -170,11 +170,12 @@ namespace ReserveBlockCore
 
             //This is for consensus start.
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
-            await StartupService.GetAdjudicatorPool();
-            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
+            await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
+            Globals.StopAllTimers = true;
             _ = StartupService.DownloadBlocksOnStart();
+            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
 
             StartupService.ClearStaleMempool();
 
@@ -284,7 +285,8 @@ namespace ReserveBlockCore
         {
             StartupService.StartupMenu();
             Thread.Sleep(1000);
-            StartupService.MainMenu();
+            if(Globals.AdjudicateAccount == null)
+                StartupService.MainMenu();
 
             while (true)
             {

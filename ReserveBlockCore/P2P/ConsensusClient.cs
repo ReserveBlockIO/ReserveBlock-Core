@@ -67,14 +67,16 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
+                ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
+
                 var CurrentAddresses = Signer.CurrentSigningAddresses();
                 var NumNodes = CurrentAddresses.Count;
                 var Majority = NumNodes / 2 + 1;
                 var Address = Globals.AdjudicateAccount.Address;
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
-
-                ConsensusServer.UpdateState(height, methodCode, (int)ConsensusStatus.Processing);
+                
                 var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                ConsensusServer.Messages.Clear();
                 ConsensusServer.Messages[(height, methodCode)] = Messages;
                 Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
@@ -88,40 +90,23 @@ namespace ReserveBlockCore.P2P
                     await Task.Delay(timeToFinalize, ConsensusSource.Token);
                 }
                 catch { }
-                while (Messages.Count < Majority && !Globals.ConsensusTokenSource.IsCancellationRequested)
-                {
-                    await Task.Delay(4);
-                }
 
                 ConsensusSource.Cancel();
                 if (Messages.Count < Majority)
                     return null;
-
+                
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
-                var FinalizingSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
-                var FinalizingTasks = Peers.Select(node =>
-                {
-                    var FinalizingRequestFunc = () => node.Connection?.InvokeCoreAsync<bool>("IsFinalized", args: new object?[] { height, methodCode }, ct)
-                        ?? Task.FromResult(false);
-                    return FinalizingRequestFunc.RetryUntilSuccessOrCancel(x => x, 100, FinalizingSource.Token);
-                })
-                .ToArray();
-
-                await FinalizingTasks.WhenAtLeast(x => x, Signer.Majority() - 1);
-                FinalizingSource.Cancel();
-                if (Globals.ConsensusTokenSource.IsCancellationRequested)
-                    return null;
-
                 var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                var Now = TimeUtil.GetMillisecondTime();
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { height, methodCode }, ct)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, HashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000, 100, HashSource.Token);
                 })
                 .ToArray();
 
-                await HashTasks.WhenAtLeast(x => x != null, Signer.Majority() - 1);                
+                await HashTasks.WhenAtLeast(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000, Signer.Majority() - 1);                
                 HashSource.Cancel();
                 if (Globals.ConsensusTokenSource.IsCancellationRequested)
                     return null;
