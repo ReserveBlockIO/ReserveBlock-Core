@@ -42,12 +42,6 @@ namespace ReserveBlockCore.P2P
                 await node.Connection.DisposeAsync();            
         }
 
-        private static async Task RemoveAdjNode(AdjNodeInfo node)
-        {
-            if(Globals.AdjNodes.TryRemove(node.IpAddress, out _) && node.Connection != null)
-                await node.Connection.DisposeAsync();
-        }
-
         #endregion
 
         #region Check which HubConnections are actively connected
@@ -65,16 +59,6 @@ namespace ReserveBlockCore.P2P
                     await RemoveNode(node);
             }
         }
-
-        public static async Task DropDisconnectedAdjudicators()
-        {
-            foreach (var node in Globals.AdjNodes.Values)
-            {
-                if (!node.IsConnected)
-                    await RemoveAdjNode(node);
-            }
-        }
-
         public static string MostLikelyIP()
         {
             return Globals.ReportedIPs.Count != 0 ?
@@ -157,11 +141,15 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Hubconnection Connect Methods 1-6
+
+        private static ConcurrentDictionary<string, bool> ConnectLock = new ConcurrentDictionary<string, bool>();
         private static async Task Connect(Peers peer)
         {
             var url = "http://" + peer.PeerIP + ":" + Globals.Port + "/blockchain";
             try
             {
+                if (!ConnectLock.TryAdd(url, true))
+                    return;
                 var hubConnection = new HubConnectionBuilder()
                        .WithUrl(url, options =>
                        {
@@ -242,15 +230,23 @@ namespace ReserveBlockCore.P2P
                 Peers.GetAll().UpdateSafe(peer);
             }
             catch { }
+            finally
+            {
+                ConnectLock.TryRemove(url, out _);
+            }
         }
 
         #endregion
 
         #region Connect Adjudicator
+
+        private static ConcurrentDictionary<string, bool> ConnectAdjudicatorLock = new ConcurrentDictionary<string, bool>();
         public static async Task<bool> ConnectAdjudicator(string url, string address, string time, string uName, string signature)
         {
             try
             {
+                if (!ConnectAdjudicatorLock.TryAdd(url, true))
+                    return false; 
                 var hubConnection = new HubConnectionBuilder()
                 .WithUrl(url, options => {
                     options.Headers.Add("address", address);
@@ -369,6 +365,10 @@ namespace ReserveBlockCore.P2P
             {
                 ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
+            finally
+            {
+                ConnectAdjudicatorLock.TryRemove(url, out _);
+            }
 
             return false;
         }
@@ -382,7 +382,8 @@ namespace ReserveBlockCore.P2P
             {
                 Globals.ValidatorAddress = "";
                 foreach (var node in Globals.AdjNodes.Values)
-                    await P2PClient.RemoveAdjNode(node);
+                    if (node.Connection != null)
+                        await node.Connection.DisposeAsync();                    
             }
             catch (Exception ex)
             {

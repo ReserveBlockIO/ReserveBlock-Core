@@ -27,8 +27,6 @@ namespace ReserveBlockCore.Data
         #region Initialize Chain
         internal static async Task InitializeChain()
         {
-            await StartupService.DownloadBlocks();
-
             var blocks = BlockData.GetBlocks();
             
             if (blocks.FindOne(x => true) == null)
