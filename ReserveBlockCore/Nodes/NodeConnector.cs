@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Nodes
             }
 
             peers = Peers.GetAll().FindAll().ToList();
-            if(peers.Count <= 8)
+            if(peers.Count <= 8 && !Globals.IsTestNet)
             {
                 //request peers from other nodes
                 //Then request from seeds

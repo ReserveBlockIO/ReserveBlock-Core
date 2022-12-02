@@ -2,11 +2,14 @@
 
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
 
 namespace ReserveBlockCore
 {
@@ -19,7 +22,7 @@ namespace ReserveBlockCore
             DateTime currentDate = DateTime.Now;
 
             //Forced Testnet
-            //Globals.IsTestNet = true;
+            Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {
@@ -29,6 +32,16 @@ namespace ReserveBlockCore
                     {
                         //Launch testnet
                         Globals.IsTestNet = true;
+                    }
+                    if (argC == "gui")
+                    {
+                        Globals.GUI = true;
+                    }
+                    if(argC.Contains("encpass"))
+                    {
+                        var encPassSplit = argC.Split(new char[] { '=' });
+                        var encPassword = encPassSplit[1];
+                        Globals.EncryptPassword = encPassword.ToSecureString();
                     }
                 });
             }
@@ -56,10 +69,17 @@ namespace ReserveBlockCore
 
             StartupService.StartupDatabase();// initializes databases
 
+            await DbContext.CheckPoint();
+
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
+            
+
+            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 4000000;
+
+            //BlockchainData.InitializeChain();
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -82,10 +102,6 @@ namespace ReserveBlockCore
                         Globals.proc.Start();
 
                         Environment.Exit(0);
-                    }
-                    if (argC == "gui")
-                    {
-                        //launch gui
                     }
                     if (argC == "testurl")
                     {
@@ -113,7 +129,24 @@ namespace ReserveBlockCore
                 });
             }
 
-            
+            StartupService.SetValidator();
+
+            if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
+            {
+                StartupService.EncryptedPasswordEntry();
+            }
+
+            StartupService.SetAdjudicatorAddresses();
+
+            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
+            {
+                StartupService.EncryptedPasswordEntryAdj();
+            }
+
+            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
+            {
+                Globals.GUIPasswordNeeded = true;
+            }
 
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();
@@ -124,51 +157,54 @@ namespace ReserveBlockCore
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
 
-            //This is for adjudicator start.
-            Globals.CurrentTaskQuestion = await TaskQuestionUtility.CreateTaskQuestion("rndNum");
+            var httpClientBuilder = Host.CreateDefaultBuilder(args)
+                     .ConfigureServices(services =>
+                     {
+                         services.AddHttpClient();
+                         services.AddTransient<HttpService>();
+                     })
+                     .Build();
+
+            await httpClientBuilder.StartAsync();
+            Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
+
+            //This is for consensus start.
+            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
+            await StartupService.GetAdjudicatorPool();            
+            StartupService.DisplayValidatorAddress();
+            _ = StartupService.StartupPeers();
+            Globals.StopAllTimers = true;
+            _ = StartupService.DownloadBlocksOnStart();
+            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
 
             StartupService.ClearStaleMempool();
-            StartupService.SetValidator();
 
             //StartupService.RunStateSync();
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 
-            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             StartupService.BootstrapBeacons();
             await StartupService.EstablishBeaconReference();
-            
+
             //Removes validator record from DB_Peers as its now within the wallet.
             StartupService.ClearOldValidatorDups();
-
-            Globals.StopAllTimers = true;
 
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
 
             Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(60000, 18000); //waits 1 minute, then runs every 18 seconds for new blocks
+            Globals.heightTimer.Change(0, 10000); //waits 1 minute, then runs every 18 seconds for new blocks
 
-            Globals.PeerCheckTimer = new Timer(peerCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.PeerCheckTimer.Change(90000, 1 * 10 * 6000); //waits 1.5 minute, then runs every 1 minutes
-
-            Globals.ValidatorListTimer = new Timer(validatorListCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.ValidatorListTimer.Change(70000, 1 * 10 * 6000); //waits 1 minute, then runs every 1 minutes
-
-            Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
+            //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
+            //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
-
-            //add method to remove stale state trei records and stale validator records too
-
-
             string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
             string url2 = "http://*:" + Globals.Port; //this is port for signalr connect and all p2p functions
-            //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
-            
+                                                      //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
+
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
             var commandLoopTask3 = Task.Run(() => CommandLoop3());
@@ -191,25 +227,20 @@ namespace ReserveBlockCore
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
-                    webBuilder.ConfigureKestrel(options => { 
-                        
-                        
+                    webBuilder.ConfigureKestrel(options => {
+
+
                     });
                 });
 
-            builder.RunConsoleAsync();
-            builder2.RunConsoleAsync();
+            _ = builder.RunConsoleAsync();
+            _ = builder2.RunConsoleAsync();
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
             StartupService.CheckLastBlock();
-            
+
             StartupService.CheckForDuplicateBlocks();
-
-            //Get Adj Pool - Currently Returns dummy list
-            await StartupService.GetAdjudicatorPool();
-
-            await StartupService.SetLeadAdjudicator();
 
             if (Globals.DatabaseCorruptionDetected == true)
             {
@@ -220,32 +251,17 @@ namespace ReserveBlockCore
                 }
             }
 
-            try
-            {
-                await StartupService.StartupPeers();                
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-
-            StartupService.SetSelfAdjudicator();
             StartupService.StartupMemBlocks();
 
-            await StartupService.ConnectoToBeacon();
+            await TransactionData.UpdateWalletTXTask();
 
-            await StartupService.DownloadBlocksOnStart(); //download blocks from peers on start.
-
-            await StartupService.ConnectoToAdjudicator();
-
+            _ = StartupService.ConnectToAdjudicators();
+            _ = StartupService.ConnectoToBeacon();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
                 StartupService.SetConfigValidator();
             }
-
-            
-
             Thread.Sleep(2000);
 
             var tasks = new Task[] {
@@ -269,12 +285,13 @@ namespace ReserveBlockCore
         {
             StartupService.StartupMenu();
             Thread.Sleep(1000);
-            StartupService.MainMenu();
+            if(Globals.AdjudicateAccount == null)
+                StartupService.MainMenu();
 
             while (true)
             {
                 var command = Console.ReadLine();
-                if(command == "/help" || 
+                if (command == "/help" ||
                     command == "/menu" ||
                     command == "/info" ||
                     command == "/stopco" ||
@@ -288,15 +305,15 @@ namespace ReserveBlockCore
                     command == "6" ||
                     command == "7" ||
                     command == "/exit" ||
-                    command == "/clear" || 
+                    command == "/clear" ||
                     command == "/trillium")
                 {
                     RunCommand(command);
                 }
-                else if(!string.IsNullOrWhiteSpace(Globals.WalletPassword))
+                else if (!string.IsNullOrWhiteSpace(Globals.WalletPassword))
                 {
                     var now = DateTime.UtcNow;
-                    if(Globals.AlwaysRequireWalletPassword == true)
+                    if (Globals.AlwaysRequireWalletPassword == true)
                     {
                         Console.WriteLine("Please enter your wallet password");
                         var walletPass = Console.ReadLine();
@@ -310,9 +327,9 @@ namespace ReserveBlockCore
                         {
                             Console.WriteLine("Incorrect password was entered.");
                         }
-                         
+
                     }
-                    else if(now > Globals.CLIWalletUnlockTime && Globals.AlwaysRequireWalletPassword == false)
+                    else if (now > Globals.CLIWalletUnlockTime && Globals.AlwaysRequireWalletPassword == false)
                     {
                         Console.WriteLine("Please enter your wallet password");
                         var walletPass = Console.ReadLine();
@@ -338,7 +355,7 @@ namespace ReserveBlockCore
                 }
 
             }
-            
+
         }
 
         private static async void RunCommand(string? command)
@@ -387,144 +404,41 @@ namespace ReserveBlockCore
         #region Block Height Check
         private static async void blockHeightCheck_Elapsed(object sender)
         {
-            if (Globals.StopAllTimers == false)
+            if (Globals.HeightCheckLock == false)
             {
-                //if blocks are currently downloading this will stop it from running again.
-                if (Globals.BlocksDownloading != 1)
-                {
-                    if(Globals.HeightCheckLock == false)
-                    {
-                        Globals.HeightCheckLock = true;                        
-                        await P2PClient.UpdateNodeHeights();
-                        if(Globals.Nodes.Any())                        
-                        {
-                            var maxHeightNode = Globals.Nodes.Values.OrderByDescending(x => x.NodeHeight).FirstOrDefault();
-                            if (Globals.ValidatorAddress == "")
-                            {                                
-                                
-                                if (maxHeightNode != null)
-                                {
-                                    var maxHeight = maxHeightNode.NodeHeight;
+                Globals.HeightCheckLock = true;
+                while (!Globals.Nodes.Any())                                   
+                    await Task.Delay(4);                
 
-                                    if (maxHeight > Globals.LastBlock.Height)
-                                    {
-                                        await BlockDownloadService.GetAllBlocks();
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if(maxHeightNode != null)
-                                {
-                                    var maxHeight = maxHeightNode.NodeHeight;
-                                    var myMaxHeight = Globals.LastBlock.Height + 2;
-                                    if (maxHeight > myMaxHeight)
-                                    {
-                                        await BlockDownloadService.GetAllBlocks();
-                                        Thread.Sleep(1000);
-                                        await StartupService.ConnectoToAdjudicator();
-                                    }
-                                }
-                            }
-                        }
-                        Globals.HeightCheckLock = false;
-                    }
+                await P2PClient.UpdateNodeHeights();
+
+                var maxHeight = Globals.Nodes.Values.Select(x => x.NodeHeight).OrderByDescending(x => x).FirstOrDefault();
+                if (maxHeight > Globals.LastBlock.Height)
+                {
+                    P2PClient.UpdateMaxHeight(maxHeight);
+                    await BlockDownloadService.GetAllBlocks();
                 }
+                else
+                    P2PClient.UpdateMaxHeight(maxHeight);
+
+                var MaxHeight = P2PClient.MaxHeight();
+                foreach(var node in Globals.Nodes.Values)
+                {
+                    if(node.NodeHeight < MaxHeight - 3)                    
+                        await P2PClient.RemoveNode(node);                    
+                }
+
+                Globals.HeightCheckLock = false;
             }
             try
             {
-                DebugUtility.WriteToDebugFile();
+                DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
             }
             catch (Exception ex)
             {
 
             }
-            
-        }
 
-        #endregion
-
-        #region Peer Online Check
-        private static async void peerCheckTimer_Elapsed(object sender)
-        {
-            try
-            {
-                var peersConnected = await P2PClient.ArePeersConnected();
-
-                if (!peersConnected)
-                {
-                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    LogUtility.Log("Connection to Peers Lost", "peerCheckTimer_Elapsed()");
-                    await StartupService.StartupPeers();
-                    //potentially no connected nodes.
-                }
-                else
-                {
-                    if (Globals.Nodes.Count < Globals.MaxPeers)
-                    {
-                        bool result = false;
-                        //Get more nodes!
-                        result = await P2PClient.ConnectToPeers(true);
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                ErrorLogUtility.LogError(ex.ToString(), "Globals.peerCheckTimer_Elapsed()");
-            }
-        }
-
-        #endregion
-
-        #region Validator Checks
-        private static async void validatorListCheckTimer_Elapsed(object sender)
-        {
-            if (Globals.StopAllTimers == false)
-            {
-                //ValidatorService.ClearDuplicates();
-
-                var peersConnected = await P2PClient.ArePeersConnected();
-                var taskErrorCount = Globals.LastTaskErrorCount;
-
-                if (!peersConnected)
-                {
-                    Console.WriteLine("You have lost connection to all peers. Attempting to reconnect...");
-                    LogUtility.Log("Connection to Peers Lost", "Program.validatorListCheckTimer_Elapsed()");
-                    await StartupService.StartupPeers();
-                    //potentially no connected nodes.
-                }
-                else
-                {
-                    if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
-                    {
-                        //Check connection to head val and update.
-                        var connection = P2PClient.IsAdjConnected1;
-                        if (connection != true)
-                        {
-                            Console.WriteLine("You have lost connection to the adjudicator. Attempting to reconnect...");
-                            LogUtility.Log("Connection to Adj Lost", "Program.validatorListCheckTimer_Elapsed()");
-                            await StartupService.ConnectoToAdjudicator();
-                        }
-                    }
-                }
-
-                if (!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
-                {
-                    if (taskErrorCount > 3)
-                    {
-                        //stop connection and reconnct to ADJ plainly. 
-                        var result = await ValidatorService.ValidatorErrorReset();
-                        if (result)
-                        {
-                            Globals.LastTaskErrorCount = 0;
-                            ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
-                        }
-
-
-                    }
-                }
-            }
-            
         }
 
         #endregion
@@ -536,7 +450,7 @@ namespace ReserveBlockCore
             {
                 await DbContext.CheckPoint();
             }
-            
+
         }
 
         #endregion
@@ -546,14 +460,14 @@ namespace ReserveBlockCore
         {
             try
             {
-                if(Globals.Adjudicate)
+                if (Globals.AdjudicateAccount != null)
                 {
                     var connectionQueueList = Globals.ConnectionHistoryDict.Values.ToList();
 
                     foreach (var cq in connectionQueueList)
                     {
                         new ConnectionHistory().Process(cq.IPAddress, cq.Address, cq.ConnectionTime, cq.WasSuccess);
-                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out var test);
+                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out _);
                     }
 
                     var conList = await ConnectionHistory.Read();
@@ -562,7 +476,7 @@ namespace ReserveBlockCore
                 }
             }
             catch { }
-            
+
         }
 
         #endregion
@@ -570,6 +484,3 @@ namespace ReserveBlockCore
 
 
 }
-
-
-

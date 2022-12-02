@@ -22,6 +22,9 @@
                                 {"xQShKiDE1UaicFf5x89zYSqAAeDhsx73V9", 10000M },
                                 {"xCgihDgCmyhvirNsARphAj5BQWNcW5eg9c", 10000M },
                                 {"xRD1eQKkL8UCQK1MKGDkn1o7JPvM9fKreu", 10000M },
+                                {"xSCu3ginjut9goJAoEGJ7bTiyAxXBppCXL", 10000M },
+                                {"xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 10000M },
+                                {"xUnA7XyUcb9yDpL7LprtFiBncStvdYKqwN", 10000M }
                 }; // Address, Amount in Decimal
             }
 

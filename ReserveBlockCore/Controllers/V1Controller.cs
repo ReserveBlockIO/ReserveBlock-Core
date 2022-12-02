@@ -142,7 +142,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if (Globals.EncryptPassword.Length != 0)
                 {
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is has decryption password." });
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet has decryption password." });
                 }
                 else
                 {
@@ -158,6 +158,53 @@ namespace ReserveBlockCore.Controllers
 
             return output;
 
+        }
+
+        [HttpGet("CheckPasswordNeeded")]
+        public async Task<string> CheckPasswordNeeded()
+        {
+            var output = "false";
+
+            if (Globals.GUIPasswordNeeded)
+                output = "true";
+
+            return output;
+        }
+
+        [HttpGet("GetEncryptedPassword/{**password}")]
+        public async Task<string> GetEncryptedPassword(string password)
+        {
+            //use Id to get specific commands
+            var output = "False"; // this will only display if command not recognized.
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                Globals.EncryptPassword = password.ToSecureString();
+                var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                var randString = RandomStringUtility.GetRandomString(8);
+
+                var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                if (sigVerify)
+                {
+                    password = "";
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = ""});
+
+                }
+                else
+                {
+                    password = "";
+                    Globals.EncryptPassword.Dispose();
+                    Globals.EncryptPassword = new SecureString();
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
+                }
+            }
+
+            return output;
         }
 
         [HttpGet("CheckStatus")]
@@ -374,8 +421,7 @@ namespace ReserveBlockCore.Controllers
                         {
                             account.IsValidating = true;
                             accounts.UpdateSafe(account);
-                            Globals.ValidatorAddress = account.Address;
-                            await StartupService.ConnectoToAdjudicator();
+                            Globals.ValidatorAddress = account.Address;                            
                             output = "Success! The requested account has been turned on: " + account.Address;
                         }
                     }
@@ -726,9 +772,7 @@ namespace ReserveBlockCore.Controllers
             var account = AccountData.GetSingleAccount(address);
             if(account != null)
             {
-                var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-                BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 var signature = SignatureService.CreateSignature(message, privateKey, account.PublicKey);
@@ -769,22 +813,6 @@ namespace ReserveBlockCore.Controllers
             string output = "";
             var blocks = Globals.MemBlocks;
             output = JsonConvert.SerializeObject(blocks);
-
-            return output;
-        }
-
-        [HttpGet("GetTaskAnswersList")]
-        public async Task<string> GetTaskAnswersList()
-        {
-            string output = "";
-            var taskAnswerList = Globals.TaskAnswerDict.Values.Select(x => new {
-                Address = x.Address,
-                Answer = x.Answer,
-                BlockHeight = x.Block != null ? x.Block.Height : 0,
-                SubmitTime = x.SubmitTime
-                
-            });
-            output = JsonConvert.SerializeObject(taskAnswerList);
 
             return output;
         }
@@ -851,8 +879,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetValidatorPoolInfo()
         {
             string output = "";
-            var isConnected = P2PClient.IsAdjConnected1;
-            DateTime? connectDate = Globals.AdjudicatorConnectDate != null ? Globals.AdjudicatorConnectDate.Value : null;
+            var isConnected = Globals.AdjNodes.Values.Any(x => x.IsConnected);
+            DateTime? connectDate = Globals.AdjNodes.Values.Select(x => x.AdjudicatorConnectDate).FirstOrDefault();
 
             var connectedInfo = new[]
             {

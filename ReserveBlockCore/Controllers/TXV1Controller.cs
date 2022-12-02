@@ -405,7 +405,7 @@ namespace ReserveBlockCore.Controllers
                     if (result == true)
                     {
                         TransactionData.AddToPool(transaction);
-                        P2PClient.SendTXMempool(transaction);//send out to mempool
+                        await P2PClient.SendTXMempool(transaction);//send out to mempool
 
                         output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = transaction.Hash });
                     }

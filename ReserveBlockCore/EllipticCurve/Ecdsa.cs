@@ -66,7 +66,7 @@ namespace ReserveBlockCore.EllipticCurve
             return Integer.modulo(v.x, curve.N) == sigR;
         }
 
-        private static string sha256(string message)
+        public static string sha256(string message)
         {
             byte[] bytes;
 

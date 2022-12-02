@@ -9,19 +9,22 @@ namespace ReserveBlockCore.Utilities
         {
             Globals.IsResyncing = true;
             Globals.StopAllTimers = true;
-            var height = Globals.LastBlock.Height;
-            var newHeight = height - (long)numBlocksRollback;
+            try
+            {
+                var height = Globals.LastBlock.Height;
+                var newHeight = height - (long)numBlocksRollback;
 
-            var blocks = Block.GetBlocks();
-            blocks.DeleteManySafe(x => x.Height > newHeight);
-            DbContext.DB.Checkpoint();
+                var blocks = Block.GetBlocks();
+                blocks.DeleteManySafe(x => x.Height > newHeight);
+                DbContext.DB.Checkpoint();
 
-            var result = await ResetTreis();
-
-            Globals.IsResyncing = false;
-            Globals.StopAllTimers = false;
-
-            return result;
+                return await ResetTreis();
+            }
+            finally
+            {
+                Globals.IsResyncing = false;
+                Globals.StopAllTimers = false;
+            }
         }
 
         public static async Task<bool> ResetTreis()

@@ -23,20 +23,24 @@ namespace ReserveBlockCore.Services
                     await Task.Delay(1000);
                     return false;
                 }
-                var (_, MaxHeight) = await P2PClient.GetCurrentHeight();
-                while (Globals.LastBlock.Height < MaxHeight)
+                
+                while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
                 {                                                   
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Globals.LastBlock.Height + 1;
-
-                    var options = new ParallelOptions { MaxDegreeOfParallelism = Globals.MaxPeers };
+                    
                     var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i)).ToArray();
+                    if (!heightsFromNodes.Any())
+                    {
+                        await Task.Delay(4);
+                        P2PClient.UpdateMaxHeight(Globals.Nodes.Values.Max(x => (long?)x.NodeHeight) ?? -1);                        
+                        continue;
+                    }
                     heightToDownload += heightsFromNodes.Length;
-                    await Parallel.ForEachAsync(heightsFromNodes, options, async (h, ct) => {
+                    foreach (var h in heightsFromNodes)
                         taskDict[h.height] = (P2PClient.GetBlock(h.height, h.node), h.node.NodeIP);
-                    });
-            
+
                     while (taskDict.Any())
                     {                        
                         var completedTask = await Task.WhenAny(taskDict.Values.Select(x => x.task));
@@ -48,7 +52,7 @@ namespace ReserveBlockCore.Services
                                 x.Value.task.IsCompleted).ToArray();
 
                             foreach (var badTask in badTasks)
-                                taskDict.TryRemove(badTask.Key, out var test);
+                                taskDict.TryRemove(badTask.Key, out _);
 
                             heightToDownload = Math.Min(heightToDownload, badTasks.Min(x => x.Key));                            
                         }
@@ -57,7 +61,7 @@ namespace ReserveBlockCore.Services
                             var resultHeight = result.Height;
                             var (_, ipAddress) = taskDict[resultHeight];
                             BlockDict[resultHeight] = (result, ipAddress);
-                            taskDict.TryRemove(resultHeight, out var test2);
+                            taskDict.TryRemove(resultHeight, out _);
                             _ = BlockValidatorService.ValidateBlocks();                            
                         }
 
@@ -72,9 +76,9 @@ namespace ReserveBlockCore.Services
                                 {
                                     var staleHeight = taskDict.Keys.Min();
                                     var staleTask = taskDict[staleHeight];
-                                    if(Globals.Nodes.TryRemove(staleTask.ipAddress, out var staleNode))
+                                    if(Globals.Nodes.TryRemove(staleTask.ipAddress, out var staleNode) && staleNode.Connection != null)
                                         _ = staleNode.Connection.DisposeAsync();
-                                    taskDict.TryRemove(staleHeight, out var test4);
+                                    taskDict.TryRemove(staleHeight, out _);
                                     staleTask.task.Dispose();
                                     heightToDownload = Math.Min(heightToDownload, staleHeight);                                                                        
                                     coolDownTime = DateTime.Now;                                    
@@ -86,14 +90,14 @@ namespace ReserveBlockCore.Services
                                 if (!BlockDict.ContainsKey(nextHeightToValidate) && !taskDict.ContainsKey(nextHeightToValidate))
                                     heightToDownload = nextHeightToValidate;
                                 while (taskDict.ContainsKey(heightToDownload))
-                                    heightToDownload++;                                
-                                if (heightToDownload > MaxHeight)
-                                    continue;
+                                    heightToDownload++;
+                                if (heightToDownload > P2PClient.MaxHeight())                               
+                                    continue;                                
                                 taskDict[heightToDownload] = (P2PClient.GetBlock(heightToDownload, AvailableNode),
                                     AvailableNode.NodeIP);                                
                             }
                         }
-                    }                    
+                    }
                 }
             }
             catch (Exception ex)

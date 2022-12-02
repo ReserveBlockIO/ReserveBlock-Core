@@ -5,14 +5,13 @@ namespace ReserveBlockCore.Utilities
 {
     public class DebugUtility
     {
-        public static async void WriteToDebugFile()
+        public static async void WriteToDebugFile(string filename, string text)
         {
             try
             {
                 var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
                 var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
-                var text = await StaticVariableUtility.GetStaticVars();
                 string path = "";
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
@@ -41,7 +40,7 @@ namespace ReserveBlockCore.Utilities
                     Directory.CreateDirectory(path);
                 }
 
-                await File.WriteAllTextAsync(path + "debug.txt", text);
+                await File.WriteAllTextAsync(path + filename, text);
             }
             catch(Exception ex)
             {

@@ -29,23 +29,16 @@ namespace ReserveBlockCore.Utilities
             var validator = localValidator != null ? localValidator.Address : "No Validator";
             var nodes = Globals.Nodes;            
             var lastBlock = Globals.LastBlock;
-            var adjudicator = Globals.Adjudicate.ToString();
-            var adjudicatorConnection = P2PClient.IsAdjConnected1.ToString();
+            var adjudicator = (Globals.AdjudicateAccount != null).ToString();
+            var adjudicatorConnection = Globals.AdjNodes.Values.Any(x => x.IsConnected).ToString();
             var beaconConnection = P2PClient.IsBeaconConnected.ToString();            
             var isChainSynced = Globals.IsChainSynced.ToString();
             var peerCount = P2PServer.GetConnectedPeerCount();
-            var valCount = await P2PAdjServer.GetConnectedValCount();
-            var lastTaskSent = Globals.LastTaskSentTime.ToString();
-            var lastTaskResult = Globals.LastTaskResultTime.ToString();
-            var lastTaskBlockHeight = Globals.LastTaskBlockHeight.ToString();
-            var lastTaskError = Globals.LastTaskError.ToString();
-            var lastTaskErrorCount = Globals.LastTaskErrorCount.ToString();
+            var valCount = await P2PAdjServer.GetConnectedValCount();            
             var hdWallet = Globals.HDWallet.ToString();
             var reportedIPs = string.Join("<-->", Globals.ReportedIPs.Select(x => new { IP = x.Key, Occurrences = x.Value }));
             var mostLikelyIP = P2PClient.MostLikelyIP();
-            var isWalletEncrypted = Globals.IsWalletEncrypted;
-            var lastWinningTaskError = Globals.LastWinningTaskError.ToString();
-            var lastWinningTaskSentTime = Globals.LastWinningTaskSentTime.ToString();
+            var isWalletEncrypted = Globals.IsWalletEncrypted;            
             var beaconReference = Globals.BeaconReference.Reference;
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
@@ -68,13 +61,20 @@ namespace ReserveBlockCore.Utilities
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + Globals.FortisPool.Count.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
-            var lastWinningTaskErrorText = "*Only for Validators* Last Winning task Error?: " + lastWinningTaskError;
-            var lastWinningTaskSentTimeText = "*Only for Validators* Last Winng Task Sent Time: " + lastWinningTaskSentTime;
-            var lastTaskSentText = "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + lastTaskSent;
-            var lastTaskResultText = "*Only for Validators* Latest Task (Solved) Result Received at: " + lastTaskResult;
-            var lastTaskBlockHeightText = "*Only for Validators* Last Task Block Height : " + lastTaskBlockHeight;
-            var lastTaskErrorText = "*Only for Validators* Last Task Error : " + lastTaskError;
-            var lastTaskErrorCountText = "*Only for Validators* Last Task Error Count: " + lastTaskErrorCount;
+            var lastWinningTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x => 
+                "*Only for Validators* Last Winning task Error?: " + x.LastWinningTaskError));
+            var lastWinningTaskSentTimeText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
+                "*Only for Validators* Last Winng Task Sent Time: " + x.LastWinningTaskSentTime));             
+            var lastTaskSentText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
+                "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + x.LastTaskSentTime));           
+            var lastTaskResultText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
+                "*Only for Validators* Latest Task (Solved) Result Received at: " + x.LastTaskResultTime));            
+            var lastTaskBlockHeightText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
+                "*Only for Validators* Last Task Block Height : " + x.LastTaskBlockHeight));                                     
+            var lastTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
+                "*Only for Validators* Last Task Error : " + x.LastTaskError));                                                                      
+            var lastTaskErrorCountText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
+                "*Only for Validators* Last Task Error Count: " + x.LastTaskErrorCount));                                     
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";

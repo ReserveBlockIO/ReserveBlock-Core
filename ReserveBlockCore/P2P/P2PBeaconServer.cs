@@ -154,8 +154,8 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            Globals.BeaconPeerDict.TryRemove(peerIP, out var test);
-            Globals.BeaconPool.TryGetFromKey1(peerIP, out var test2);
+            Globals.BeaconPeerDict.TryRemove(peerIP, out _);
+            Globals.BeaconPool.TryGetFromKey1(peerIP, out _);
         }
         private async Task SendMessageClient(string clientId, string method, string message)
         {

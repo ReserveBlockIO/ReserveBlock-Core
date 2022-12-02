@@ -104,6 +104,7 @@ namespace ReserveBlockCore.Commands
                 Console.WriteLine("You are about to encrypt your wallet. Please note this will encrypt ALL private keys currently in wallet and all future keys.");
                 Console.WriteLine("If you forget this password there is no way to recover your keys. Please use this feature fully understanding this.");
                 Console.WriteLine("This is a new wallet feature. It is recommended a non-encrypted version or private keys be backed up before starting this process.");
+                Console.WriteLine("Please do not use the equal sign ('=') in your password.");
                 AnsiConsole.MarkupLine("Are you sure you want to do this? ('[bold green]y[/]' for yes and '[bold red]n[/]' for no).");
                 var confirmation = Console.ReadLine();
                 if (!string.IsNullOrWhiteSpace(confirmation) && confirmation.ToLower() == "y")
@@ -138,6 +139,12 @@ namespace ReserveBlockCore.Commands
                             MainMenuReturn();
                             Console.WriteLine("Passwords cannot be larger than 32 characters.");
                         }
+                        if(password.ToUnsecureString().Contains("="))
+                        {
+                            MainMenuReturn();
+                            Console.WriteLine("Passwords may not contain an equal sign '='.");
+                        }
+                            
                         else
                         {
                             Console.WriteLine("------------------------------------------------");
@@ -263,7 +270,8 @@ namespace ReserveBlockCore.Commands
             var result = await ValidatorService.ValidatorErrorReset();
             if (result)
             {
-                Globals.LastTaskErrorCount = 0;
+                foreach(var node in Globals.AdjNodes.Values)
+                    node.LastTaskErrorCount = 0;
                 ValidatorLogUtility.Log("ValidatorErrorReset() called manually. Results: Success!", "Program.validatorListCheckTimer_Elapsed()");
             }
         }
@@ -448,22 +456,6 @@ namespace ReserveBlockCore.Commands
                 {
                     Console.WriteLine($"Unexpected Error. Error Message: {ex.ToString()}");
                     Console.WriteLine("Type /menu to return to main menu.");
-                }
-            }
-        }
-        public static async void ReconnectPeers()
-        {
-            Console.WriteLine("Re-establish Peers? y/n");
-            var reconnect = Console.ReadLine();
-            if (!string.IsNullOrWhiteSpace(reconnect))
-            {
-                if (reconnect == "y")
-                {
-                    var result = await P2PClient.ConnectToPeers(true);
-                }
-                else
-                {
-                    MainMenuReturn();
                 }
             }
         }
@@ -742,16 +734,16 @@ namespace ReserveBlockCore.Commands
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
-                {
-                    var lastTaskSent = Globals.LastTaskSentTime.ToString();
-                    var lastTaskResult = Globals.LastTaskResultTime.ToString();
-
+                {                    
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
                     Console.WriteLine($"Validating? {account.IsValidating}");
-                    Console.WriteLine($"Last Task Received Time: {lastTaskResult}");
-                    Console.WriteLine($"Last Task Sent Time: {lastTaskSent}");
+                    foreach (var node in Globals.AdjNodes.Values)
+                    {
+                        Console.WriteLine($"Last Task Received Time: {node.LastTaskResultTime} from {node.Address}");
+                        Console.WriteLine($"Last Task Sent Time: {node.LastTaskSentTime} from {node.Address}");
+                    }
                 }
                 else
                 {
@@ -763,6 +755,62 @@ namespace ReserveBlockCore.Commands
                 Console.WriteLine("No accounts detected as validators.");
             }
         }
+
+        public static async Task AdjudicatorInfo()
+        {
+            var consensusNodes = Globals.Nodes.Values.ToList();
+            var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
+
+            if(consensusNodes.Count() > 0)
+            {
+                ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
+                foreach (var cNode in consensusNodes)
+                {
+                    var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
+                    ConsoleWriterService.Output(line);
+                }
+                ConsoleWriterService.Output("******************************************************************************");
+            }
+            else
+            {
+                ConsoleWriterService.Output("Empty");
+            }
+
+            if(taskSelectedNumbersV3.Count() > 0)
+            {
+                ConsoleWriterService.Output("*******************************Task Answers V3********************************");
+                foreach (var taskNum in taskSelectedNumbersV3)
+                {
+                    var taskLine = $"Address: {taskNum.RBXAddress} |  IP Address: {taskNum.IPAddress} | Answer: {taskNum.Answer}";
+                    ConsoleWriterService.Output(taskLine);
+                }
+                ConsoleWriterService.Output("******************************************************************************");
+            }
+            else
+            {
+                ConsoleWriterService.Output("Empty 2");
+            }
+        }
+        public static async Task ConsensusNodeInfo()
+        {
+            var conState = ConsensusServer.GetState();
+            ConsoleWriterService.Output("*******************************Consensus State********************************");
+            
+            var conStateLine = $"Next Height: {Globals.LastBlock.Height + 1} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode}";
+            ConsoleWriterService.Output(conStateLine);
+            
+            ConsoleWriterService.Output("******************************************************************************");
+
+            var conMessage = string.Join("\r\n", ConsensusServer.Messages.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Message + " " + y.Value.Signature))
+                .SelectMany(x => x));
+
+            ConsoleWriterService.Output("*****************************Consensus Messages*******************************");
+
+            ConsoleWriterService.Output(conMessage);            
+
+            ConsoleWriterService.Output("******************************************************************************");
+        }
+
 
         public static async Task<string> CreateDnr()
         {
@@ -1234,7 +1282,7 @@ namespace ReserveBlockCore.Commands
         {
             try
             {
-                ConsoleWriterService.Output("Please enter the block height");
+                Console.WriteLine("Please enter the block height");
                 var blockHeightStr = Console.ReadLine();
                 if (!string.IsNullOrWhiteSpace(blockHeightStr))
                 {

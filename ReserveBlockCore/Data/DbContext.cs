@@ -33,6 +33,8 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_Config { get; set; }
         public static LiteDatabase DB_DNR { get; set; }
         public static LiteDatabase DB_Keystore { get; set; }
+        public static LiteDatabase DB_TopicTrei { set; get; }
+
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
@@ -51,6 +53,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_CONFIG = @"rsrvconfig.db";
         public const string RSRV_DB_DNR = @"rsrvdnr.db";
         public const string RSRV_DB_KEYSTORE = @"rsrvkeystore.db";
+        public const string RSRV_DB_TOPIC_TREI = @"rsrvtopictrei.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -81,6 +84,9 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DECSHOP = "rsrv_decshop";
         public const string RSRV_DECSHOPSTATE_TREI = "rsrv_decshopstate_trei";
         public const string RSRV_KEYSTORE = "rsrv_keystore";
+        public const string RSRV_SIGNER = "rsrv_signer";
+        public const string RSRV_LOCAL_TIMES = "rsrv_local_time";
+        public const string RSRV_TOPIC_TREI = "rsrv_topic_trei";
 
         internal static void Initialize()
         {
@@ -110,9 +116,12 @@ namespace ReserveBlockCore.Data
             DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_TopicTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_TOPIC_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
+            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
+            localTimeDb.EnsureIndexSafe(x => x.Height, true);
 
             var transactionPool = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
             transactionPool.EnsureIndexSafe(x => x.Hash, false);
@@ -133,6 +142,7 @@ namespace ReserveBlockCore.Data
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
+            DB_TopicTrei.Pragma("UTC_DATE", true);
         }        
         public static void BeginTrans()
         {
@@ -156,6 +166,7 @@ namespace ReserveBlockCore.Data
             DB_Config.BeginTrans();
             DB_DNR.BeginTrans();
             DB_Keystore.BeginTrans();
+            DB_TopicTrei.BeginTrans();
         }
         public static void Commit()
         {
@@ -179,6 +190,7 @@ namespace ReserveBlockCore.Data
             DB_Config.Commit();
             DB_DNR.Commit();
             DB_Keystore.Commit();
+            DB_TopicTrei.Commit();
         }
 
         public static void Rollback()
@@ -203,6 +215,7 @@ namespace ReserveBlockCore.Data
             DB_Config.Rollback();
             DB_DNR.Rollback();
             DB_Keystore.Rollback();
+            DB_TopicTrei.Rollback();
         }
 
         public static void DeleteCorruptDb()
@@ -237,6 +250,7 @@ namespace ReserveBlockCore.Data
             DB_Config.Commit();
             DB_DNR.Commit();
             DB_Keystore.Commit();
+            DB_TopicTrei.Commit();
 
             //dispose connection to DB
             CloseDB();
@@ -276,6 +290,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_DNR);
             File.Delete(path + RSRV_DB_DECSHOPSTATE_TREI);
             File.Delete(path + RSRV_DB_KEYSTORE);
+            File.Delete(path + RSRV_DB_TOPIC_TREI);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -302,10 +317,12 @@ namespace ReserveBlockCore.Data
             DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_TopicTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_TOPIC_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
+            DB_TopicTrei.Pragma("UTC_DATE", true);
         }
 
         public static void CloseDB()
@@ -326,6 +343,7 @@ namespace ReserveBlockCore.Data
             DB_DNR.Dispose();
             DB_DecShopStateTrei.Dispose();
             DB_Keystore.Dispose();
+            DB_TopicTrei.Dispose();
         }
 
         public static async Task CheckPoint()
@@ -403,6 +421,11 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB_Keystore.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_TopicTrei.Checkpoint();
             }
             catch { }
         }

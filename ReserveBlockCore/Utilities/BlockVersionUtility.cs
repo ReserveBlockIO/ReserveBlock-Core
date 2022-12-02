@@ -8,23 +8,29 @@ namespace ReserveBlockCore.Utilities
     {
         public static int GetBlockVersion(long height)
         {
-            int blockVersion = 1;
-
-            if(height > Globals.BlockLock)
+            //testnet
+            if(Globals.IsTestNet)
             {
-                blockVersion = 2;
+                if (height > Globals.BlockLock)
+                    return 3;
+                if (height < 15)
+                    return 2;
             }
+           
 
-            return blockVersion;
+
+            if (height > Globals.BlockLock)
+                return 3;
+            else if (height > 294000)
+                return 2;
+            
+            return 1;                        
         }
 
         public static async Task<bool> Version2Rules(Block block)
         {
-            //1.
-            //Verify Adj Signature
             bool result = false;
-            var leadAdj = Globals.LeadAdjudicator;
-            var leadAdjAddr = leadAdj.Address;
+            var leadAdjAddr = Globals.LeadAddress;
 
             if(block.AdjudicatorSignature != null)
             {
@@ -32,8 +38,33 @@ namespace ReserveBlockCore.Utilities
                 result = sigResult;
             }
 
-            return result;
-            //////////////////////
+            return result;            
+        }
+
+        public static async Task<bool> Version3Rules(Block block)
+        {
+            if (!string.IsNullOrWhiteSpace(block.AdjudicatorSignature))
+            {
+                var ValidCount = 0;
+                var AddressSignatures = block.AdjudicatorSignature.Split('|');
+                var Addresses = new HashSet<string>();
+                var SignerAddresses = Signer.CurrentSigningAddresses();
+                foreach (var AddressSignature in AddressSignatures)
+                {
+                    var split = AddressSignature.Split(':');
+                    var (Address, Signature) = (split[0], split[1]);
+                    if (!SignerAddresses.Contains(Address))
+                        return false;
+                    if(!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
+                        return false;
+                    ValidCount++;
+                    Addresses.Add(Address);
+                }
+                if (ValidCount == Addresses.Count && ValidCount == Signer.Majority())
+                    return true;
+            }
+
+            return false;
         }
     }
 }

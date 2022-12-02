@@ -3,6 +3,9 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
+using System.Numerics;
+using ReserveBlockCore.EllipticCurve;
+using System.Globalization;
 
 namespace ReserveBlockCore.Services
 {
@@ -60,7 +63,7 @@ namespace ReserveBlockCore.Services
                     else if (confirmChoice.ToLower() == "y")
                     {
                         Console.Clear();
-                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                         var nodeName = await ReadLineUtility.ReadLine();
 
                         if (!string.IsNullOrWhiteSpace(nodeName))
@@ -69,7 +72,7 @@ namespace ReserveBlockCore.Services
 
                             while (nodeNameCheck == false)
                             {
-                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                                 nodeName = await ReadLineUtility.ReadLine();
                                 nodeNameCheck = UniqueNameCheck(nodeName);
                             }
@@ -189,9 +192,7 @@ namespace ReserveBlockCore.Services
 
                         Globals.ValidatorAddress = validator.Address;
 
-                        output = "Account found and activated as a validator! Thank you for service to the network!";
-
-                        await StartupService.ConnectoToAdjudicator();
+                        output = "Account found and activated as a validator! Thank you for service to the network!";                        
                     }
                 }
                 else
@@ -222,7 +223,7 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
                 Console.WriteLine("Validator database records have been reset.");
             }
             catch (Exception ex)
@@ -237,14 +238,12 @@ namespace ReserveBlockCore.Services
             //Disconnect from adj
             try
             {
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
                 Thread.Sleep(2000);
                 //Reset validator variable.
                 StartupService.SetValidator();
-                //Reconnect
-                await StartupService.ConnectoToAdjudicator();
 
                 return true;
             }
@@ -298,7 +297,7 @@ namespace ReserveBlockCore.Services
             var validators = Validators.Validator.GetAll();
             validators.Delete(validator.Id);
 
-            await P2PClient.DisconnectAdjudicator();
+            await P2PClient.DisconnectAdjudicators();
 
             ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
@@ -329,7 +328,7 @@ namespace ReserveBlockCore.Services
 
                     Globals.ValidatorAddress = "";
 
-                    await P2PClient.DisconnectAdjudicator();
+                    await P2PClient.DisconnectAdjudicators();
                 }
 
             }

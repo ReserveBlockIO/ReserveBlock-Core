@@ -44,7 +44,7 @@ namespace ReserveBlockCore.P2P
 
                 peers.InsertSafe(nPeer);
             }
-                                    
+
             await Clients.Caller.SendAsync("GetMessage", "IP", peerIP);
             await base.OnConnectedAsync();
         }
@@ -52,7 +52,7 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            Globals.P2PPeerDict.TryRemove(peerIP, out var test);
+            Globals.P2PPeerDict.TryRemove(peerIP, out _);
         }
 
         #endregion
@@ -69,9 +69,6 @@ namespace ReserveBlockCore.P2P
        
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
         {
-            if (Globals.LastBlock.Height <= Globals.BlockLock)
-                return await func();
-
             var now = TimeUtil.GetMillisecondTime();
             var ipAddress = GetIP(context);            
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
@@ -510,10 +507,6 @@ namespace ReserveBlockCore.P2P
                                 {
                                     mempool.InsertSafe(txReceived);
                                     await P2PClient.SendTXToAdjudicator(txReceived);
-                                    if (Globals.Adjudicate)
-                                    {
-                                        //send message to peers
-                                    }
                                     return "ATMP";//added to mempool
                                 }
                                 else
@@ -590,7 +583,7 @@ namespace ReserveBlockCore.P2P
                             if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
-                                if(!Globals.Adjudicate)
+                                if(Globals.AdjudicateAccount == null)
                                     await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
                                 return "ATMP";//added to mempool
                             }
@@ -701,6 +694,19 @@ namespace ReserveBlockCore.P2P
             var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
 
             return peerIP;
+        }
+
+        #endregion
+
+        #region Get Validator Status
+        public async Task<bool> GetValidatorStatus()
+        {
+            var result = false;
+
+            if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                result = true;
+
+            return result;
         }
 
         #endregion

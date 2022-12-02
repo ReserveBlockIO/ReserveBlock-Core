@@ -8,6 +8,8 @@ namespace ReserveBlockCore.Services
     public class SeedNodeService
     {
         public static List<SeedNode> SeedNodeList { get; set; }
+
+        public static HashSet<string> TestNetIPs = new HashSet<string> { "66.94.124.3", "144.126.156.101", "144.126.156.102" };
         public static async Task<string> PingSeedNode()
         {
             bool nodeFound = false;
@@ -16,13 +18,15 @@ namespace ReserveBlockCore.Services
             Random rnd = new Random();
 
             //randomizes seed list so not one is always the one being called.
+            if(SeedNodeList == null)
+                SeedNodes();
             var randomizedSeedNostList = SeedNodeList.OrderBy(x => rnd.Next()).ToList();
 
             foreach (var node in randomizedSeedNostList)
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = Globals.HttpClientFactory.CreateClient())
                     {
 
                         string endpoint = node.NodeUrl + @"/api/V1";
@@ -34,7 +38,7 @@ namespace ReserveBlockCore.Services
 
                                 var _response = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
                                 var status = _response[1];
-                                if(status == "Online")
+                                if (status == "Online")
                                 {
                                     nodeFound = true;
                                     url = node.NodeUrl;
@@ -56,11 +60,11 @@ namespace ReserveBlockCore.Services
 
         public static async Task GetSeedNodePeers(string url)
         {
-            if(Globals.IsTestNet == false)
+            if (Globals.IsTestNet == false)
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = Globals.HttpClientFactory.CreateClient())
                     {
                         string endpoint = url + "/api/V1/GetNodes";
                         using (var Response = await client.GetAsync(endpoint))
@@ -110,14 +114,14 @@ namespace ReserveBlockCore.Services
 
                 }
             }
-            if(Globals.IsTestNet == true)
+            if (Globals.IsTestNet == true)
             {
                 //manually add testnet IPs
                 Peers nPeer = new Peers
                 {
                     IsIncoming = false,
                     IsOutgoing = true,
-                    PeerIP = "162.248.14.123",
+                    PeerIP = "144.126.156.102",
                     FailCount = 0
                 };
 
@@ -141,7 +145,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (var client = Globals.HttpClientFactory.CreateClient())
                     {
                         string endpoint = url + "/api/V1/GetAdjPool";
                         using (var Response = await client.GetAsync(endpoint))
@@ -151,6 +155,25 @@ namespace ReserveBlockCore.Services
                                 string data = await Response.Content.ReadAsStringAsync();
 
                                 var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
+                                if(Globals.AdjudicateAccount != null)
+                                {
+                                    foreach (var pool in result)
+                                        Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                        {
+                                            Address = pool.RBXAddress,
+                                            NodeIP = pool.IPAddress
+                                        };
+                                }
+                                else
+                                {
+                                    foreach (var pool in result)
+                                        Globals.AdjNodes[pool.IPAddress] = new AdjNodeInfo
+                                        {
+                                            Address = pool.RBXAddress,
+                                            IpAddress = pool.IPAddress
+                                        };
+                                }
+
                             }
                             else
                             {
@@ -164,7 +187,75 @@ namespace ReserveBlockCore.Services
 
                 }
             }
-            
+            else
+            {
+                try
+                {
+                    using (var client = Globals.HttpClientFactory.CreateClient())
+                    {
+                        string endpoint = url + "/api/V1/GetAdjPool";
+                        using (var Response = await client.GetAsync(endpoint))
+                        {
+                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                            {
+                                string data = await Response.Content.ReadAsStringAsync();
+
+                                var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
+
+                                if (result != null)
+                                {
+                                    var testnetList = result.Where(x => TestNetIPs.Contains(x.IPAddress));
+                                    var dbPeers = Peers.GetAll();
+
+                                    foreach (var pool in testnetList)
+                                    {
+                                        if (Globals.AdjudicateAccount != null)
+                                        {
+                                            Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                            {
+                                                Address = pool.RBXAddress,
+                                                NodeIP = pool.IPAddress
+                                            };
+                                        }
+                                        else
+                                        {
+                                            Globals.AdjNodes[pool.IPAddress] = new AdjNodeInfo
+                                            {
+                                                Address = pool.RBXAddress,
+                                                IpAddress = pool.IPAddress
+                                            };
+                                        }
+
+                                        var nPeer = new Peers
+                                        {
+                                            IsIncoming = false,
+                                            IsOutgoing = true,
+                                            PeerIP = pool.IPAddress,
+                                            FailCount = 0
+                                        };
+
+                                        var peerExist = dbPeers.FindOne(x => x.PeerIP == nPeer.PeerIP);
+                                        if (peerExist == null)
+                                        {
+                                            dbPeers.InsertSafe(nPeer);
+                                        }
+                                        else
+                                        {
+                                            peerExist.FailCount = 0;
+                                            dbPeers.UpdateSafe(peerExist);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+
         }
 
         public static List<SeedNode> SeedNodes()

@@ -19,6 +19,8 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography.Xml;
 using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Nodes;
+using System.Net;
+using System.Security;
 
 namespace ReserveBlockCore.Services
 {
@@ -44,81 +46,6 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
-
-        //Only needed for bootstrapping
-        internal static async Task ConnectToSinglePeer()
-        {
-            if(Globals.BlockLock >= Globals.LastBlock.Height)
-            {
-                var url = @"http://127.0.0.1:" + Globals.Port + "/blockchain";
-                try
-                {
-                    var hubConnection = new HubConnectionBuilder()
-                           .WithUrl(url, options =>
-                           {
-
-                           })
-                           .WithAutomaticReconnect()
-                           .Build();
-
-                    var IPAddress = url.Replace("http://", "").Replace("/blockchain", "");
-                    hubConnection.On<string, string>("GetMessage", async (message, data) =>
-                    {
-                        if (message == "blk" || message == "IP")
-                        {
-                            if (data?.Length > 1179648)
-                                return;
-
-                            if (Globals.Nodes.TryGetValue(IPAddress, out var node))
-                            {
-                                var now = TimeUtil.GetMillisecondTime();
-                                var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                                if (now - prevPrevTime < 5000)
-                                {
-                                    Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");
-                                    return;
-                                }
-                                Interlocked.Exchange(ref node.PreviousReceiveTime, now);
-                            }
-                            // if someone calls in more often than 2 times in 15 seconds ban them
-
-                            if (message != "IP")
-                            {
-                                await NodeDataProcessor.ProcessData(message, data, IPAddress);
-                            }
-                            else
-                            {
-                                var IP = data.ToString();
-                                if (Globals.ReportedIPs.TryGetValue(IP, out int Occurrences))
-                                    Globals.ReportedIPs[IP]++;
-                                else
-                                    Globals.ReportedIPs[IP] = 1;
-                            }
-                        }
-                    });
-
-                    await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
-
-                    Globals.Nodes[IPAddress] = new NodeInfo
-                    {
-                        Connection = hubConnection,
-                        NodeIP = IPAddress,
-                        NodeHeight = 0,
-                        NodeLastChecked = null,
-                        NodeLatency = 0,
-                        IsSendingBlock = 0,
-                        SendingBlockTime = 0,
-                        TotalDataSent = 0
-                    };
-
-                    var node = Globals.Nodes[IPAddress];
-                    (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(node);
-
-                    
-                }
-                catch { }
-            }
-        }
         internal static void ClearValidatorDups()
         {
             ValidatorService.ClearDuplicates();
@@ -129,13 +56,178 @@ namespace ReserveBlockCore.Services
             ValidatorService.ClearOldValidator();
         }
         internal static void StartupDatabase()
-        {
-            //Establish block, wallet, ban list, and peers db
-            DbContext.Initialize();
+        {                        
             Console.WriteLine("Initializing Reserve Block Database...");
+            DbContext.Initialize();
             var peerDb = Peers.GetAll();
             Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
                 peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+            var localBlockTime = BlockLocalTime.GetBlockLocalTimes();
+            localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
+        }
+
+        public static async void EncryptedPasswordEntry()
+        {
+            bool exit = false;
+            while (!exit)
+            {
+                var password = "";
+                if(Globals.EncryptPassword.Length > 0)
+                {
+                    Console.WriteLine("Password loaded from args...");
+                    password = Globals.EncryptPassword.ToUnsecureString();
+                }
+                else
+                {
+                    Console.WriteLine("Please enter validator password.");
+                    password = Console.ReadLine();
+                }
+                
+                if (!string.IsNullOrEmpty(password))
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var randString = RandomStringUtility.GetRandomString(8);
+
+                    var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                    var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                    if(sigVerify)
+                    {
+                        password = "";
+                        exit = true;
+                    }
+                    else
+                    {
+                        password = "";
+                        Globals.EncryptPassword.Dispose();
+                        Globals.EncryptPassword = new SecureString();
+                        Console.WriteLine("Password was incorrect. Please attempt again");
+                        Console.WriteLine("If you would like to turn off validating to proceed please type 'y' and press enter. To try again type 'n'.");
+                        var response = Console.ReadLine();
+                        if(!string.IsNullOrEmpty(response))
+                        {
+                            if(response.ToLower() == "y")
+                            {
+                                await ValidatorService.DoMasterNodeStop();
+                                exit = true;
+                            }
+                        }
+                        
+                    }
+                }
+            }
+        }
+
+        public static async void EncryptedPasswordEntryAdj()
+        {
+            bool exit = false;
+            while (!exit)
+            {
+                var password = "";
+                if (Globals.EncryptPassword.Length > 0)
+                {
+                    Console.WriteLine("Password loaded from args...");
+                    password = Globals.EncryptPassword.ToUnsecureString();
+                }
+                else
+                {
+                    Console.WriteLine("Please enter validator password.");
+                    password = Console.ReadLine();
+                }
+                if (!string.IsNullOrEmpty(password))
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var account = Globals.AdjudicateAccount;
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var randString = RandomStringUtility.GetRandomString(8);
+
+                    var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                    var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                    if (sigVerify)
+                    {
+                        Globals.AdjudicatePrivateKey = privateKey;
+                        password = "";
+                        exit = true;
+                    }
+                    else
+                    {
+                        password = "";
+                        Globals.EncryptPassword.Dispose();
+                        Globals.EncryptPassword = new SecureString();
+                        Console.WriteLine("Password was incorrect. Please attempt again");
+                    }
+                }
+            }
+        }
+
+        internal static void SetAdjudicatorAddresses()
+        {
+            if(!Globals.IsTestNet)
+            {
+                Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
+
+                var signerDB = Signer.GetSigners();
+                var Signers = signerDB.FindAll().ToArray();
+
+                if(Signers.Any())
+                {
+                    Globals.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
+                        Signers.ToDictionary(x => (x.Address, x.StartHeight), x => x.EndHeight));
+                }
+                else
+                {
+                    Globals.Signers = new ConcurrentDictionary<(string, long), long?>
+                    {
+                        [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
+                        [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
+                        [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
+                        //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                        //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                    };
+
+                    foreach(var signer in Globals.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
+                        signerDB.InsertSafe(signer);                    
+                }
+                
+
+
+                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+                Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
+                if (Globals.AdjudicateAccount != null)
+                {
+                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+                }
+            }
+            else
+            {
+                Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
+
+                Globals.Signers = new ConcurrentDictionary<(string, long), long?>
+                {
+                    [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
+                    [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
+                    [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
+                    //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
+                    //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                };
+
+                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+                Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
+                if (Globals.AdjudicateAccount != null)
+                {
+                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+                }
+            }
+            
         }
 
         internal static void HDWalletCheck()
@@ -197,12 +289,6 @@ namespace ReserveBlockCore.Services
                 Globals.LastBlock = BlockchainData.GetLastBlock();
             }
         }
-
-        internal static async void RunStateSync()
-        {
-            if(Globals.LastBlock.Height < Globals.BlockLock && !Globals.Adjudicate)
-                await StateTreiSyncService.SyncAccountStateTrei();
-        }
         internal static void RunRules()
         {
             //RuleService.ResetValidators();
@@ -217,7 +303,7 @@ namespace ReserveBlockCore.Services
                 var beaconInfo = BeaconInfo.GetBeaconInfo();
                 if(beaconInfo != null)
                 {
-                    var port = Globals.Port + 10000; //23338 - mainnet
+                    var port = Globals.Port + 20000; //23338 - mainnet
                     if (Globals.IsTestNet == true)
                     {
                         port = port + 10000; //33338 - testnet
@@ -258,22 +344,39 @@ namespace ReserveBlockCore.Services
 
             if(Globals.IsTestNet == true)
             {
-                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xAZG6Q52Ap4QxiUZVsNUaSYd3ECtoAdvvj");
+                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj");
                 if (test_adjudicator == null)
                 {
                     Adjudicators adjTest = new Adjudicators
                     {
-                        Address = "xAZG6Q52Ap4QxiUZVsNUaSYd3ECtoAdvvj",
+                        Address = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj",
                         IsActive = true,
                         IsLeadAdjuidcator = true,
                         LastChecked = DateTime.UtcNow,
-                        NodeIP = "162.248.14.123",
-                        Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
+                        NodeIP = "144.126.156.102",                        
                         UniqueName = "Trillium Adjudicator TestNet",
                         WalletVersion = Globals.CLIVersion
                     };
 
                     adjudicators.InsertSafe(adjTest);
+                }
+            }
+
+            foreach(var adj in adjudicators.FindAll().ToArray())
+            {
+                if(Globals.IsTestNet)
+                {
+                    if(adj.Address.StartsWith("x"))
+                    {
+                        Globals.LeadAddress = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj";
+                        Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
+                    }
+                        
+                }
+                else
+                {
+                    if (adj.Address.StartsWith("R"))
+                        Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
                 }
             }
         } 
@@ -284,7 +387,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.248.14.123",
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
                 Name = "RBX Beacon 1",
                 BeaconUID = "Foundation Beacon 1"
             };
@@ -295,7 +398,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.251.121.150",
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
                 Name = "RBX Beacon 2",
                 BeaconUID = "Foundation Beacon 2"
 
@@ -306,7 +409,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "185.199.226.121",
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
                 Name = "RBX Beacon 3",
                 BeaconUID = "Foundation Beacon 3"
 
@@ -361,9 +464,7 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
-            }
-            
-
+            }           
         }
 
         internal static void SetValidator()
@@ -396,17 +497,6 @@ namespace ReserveBlockCore.Services
                 Globals.ValidatorAddress = myAccount.Address;
             }
         }
-
-        internal static void SetSelfAdjudicator()
-        {
-            var leadAdj = Globals.LeadAdjudicator;
-            var account = AccountData.GetSingleAccount(leadAdj.Address);
-            if(account != null)
-            {
-                Globals.Adjudicate = true;
-            }
-        }
-
         internal static async Task GetAdjudicatorPool()
         {
             //add seed nodes
@@ -455,37 +545,163 @@ namespace ReserveBlockCore.Services
             Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 300));
         }
 
-        public static async Task ConnectoToAdjudicator()
+        public static async Task ConnectToConsensusNodes()
         {
-            if(!string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
+            while(true)
             {
-                var account = AccountData.GetLocalValidator();
-                var validators = Validators.Validator.GetAll();
-                var validator = validators.FindOne(x => x.Address == account.Address);
-                if(validator != null)
+                try
                 {
-
-                    var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-                    BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                    var signature = SignatureService.CreateSignature(validator.Address, privateKey, account.PublicKey);
-
-                    var adjudicator = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
-                    if(adjudicator != null)
+                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
+                                        
+                    if(SigningAddresses.Except(ConsensusAddresses).Any())
                     {
-                        var url = "http://" + adjudicator.NodeIP + ":" + Globals.Port + "/adjudicator";
-                        await P2PClient.ConnectAdjudicator(url, validator.Address, validator.UniqueName, signature);
+                        await StartupService.GetAdjudicatorPool();
+                        ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
                     }
-                    else
+                                        
+                    var NodesToRemove = ConsensusAddresses.Except(SigningAddresses).ToArray();
+                    foreach (var address in NodesToRemove)
                     {
-                        Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                        var ip = Globals.Nodes.Values.Where(x => x.Address == address).Select(x => x.NodeIP).First();
+                        if (Globals.Nodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
                     }
-                    
+
+                    if (Globals.AdjudicateAccount == null)
+                    {
+                        await Task.Delay(10000);
+                        continue;
+                    }
+
+                    var DisconnectedPeers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address && !x.IsConnected).ToArray();
+                    if(DisconnectedPeers.Any())
+                    {
+                        var account = Globals.AdjudicateAccount;
+                        var time = TimeUtil.GetTime().ToString();
+                        var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
+                        var ConnectTasks = new List<Task>();
+                        foreach(var peer in DisconnectedPeers)
+                        {
+                            var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
+                            ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
+                        }
+
+                        await Task.WhenAll(ConnectTasks);
+                    }
+                }
+                catch (Exception ex)
+                {
                 }
 
+                await Task.Delay(1000);
             }
+        }
+
+        public static async Task ConnectToAdjudicators()
+        {
+            while(true)
+            {
+                var delay = Task.Delay(10000);
+                try
+                {
+                    if (Globals.StopAllTimers || string.IsNullOrWhiteSpace(Globals.ValidatorAddress) || Globals.GUIPasswordNeeded)
+                    {
+                        await delay;
+                        continue;
+                    }
+
+                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
+
+                    if (SigningAddresses.Except(AdjAddresses).Any())
+                    {
+                        await StartupService.GetAdjudicatorPool();
+                        AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
+                    }
+
+                    var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
+                    foreach (var address in NodesToRemove)
+                    {
+                        var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                    }
+
+                    var rnd = new Random();                    
+                    var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                    if (NumAdjudicators >= 2 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(1, 100) == 1)
+                    {
+                        var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
+                        if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                        NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                    }
+
+                    if (NumAdjudicators >= 2)
+                    {
+                        await delay;
+                        continue;
+                    }
+
+                    var account = AccountData.GetLocalValidator();
+                    var validators = Validators.Validator.GetAll();
+                    var validator = validators.FindOne(x => x.Address == account.Address);
+                    if (validator != null)
+                    {
+                        var time = TimeUtil.GetTime().ToString();                            
+                        if (Globals.LastBlock.Height < Globals.BlockLock)
+                        {
+                            var signature = SignatureService.ValidatorSignature(validator.Address);
+                            var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
+                            if (LeadAdjudicator != null)
+                            {
+                                var url = "http://" + LeadAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
+                            }
+                        }
+                        else
+                        {
+                            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+                            var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
+                            var NewAdjudicators = Signer.CurrentSigningAddresses()
+                                .Select(x => Globals.AdjNodes.Values.Where(y => y.Address == x).FirstOrDefault())                                    
+                                .Where(x => x != null && !CurrentAddresses.Contains(x.Address))
+                                .OrderBy(x => rnd.Next())
+                                .Take(2 - CurrentAddresses.Count)        
+                                .ToArray();
+
+                            foreach (var adjudicator in NewAdjudicators)
+                            {
+                                var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
+                            }
+
+                            if (!Globals.AdjNodes.Any())
+                                Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                        }
+                    }
+
+                    if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
+                    {                        
+                        var result = await ValidatorService.ValidatorErrorReset();
+                        if (result)
+                        {
+                            foreach (var node in Globals.AdjNodes.Values)
+                                node.LastTaskErrorCount = 0;
+                            ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
+                        }
+                    }
+
+
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("Error: {0}", ex.ToString());
+                }
+
+                await delay;
+            }            
         }
         public static async Task EstablishBeaconReference()
         {
@@ -541,7 +757,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectoToBeacon()
         {
-            if(!Globals.Adjudicate)
+            if(Globals.AdjudicateAccount == null)
             {                
                 if (Globals.Locators.Any())
                 {
@@ -563,75 +779,71 @@ namespace ReserveBlockCore.Services
 
         internal static async Task DownloadBlocksOnStart()
         {
-            Globals.StopAllTimers = true;
             var download = true;
-            while(download) //this will loop forever till download happens
+            try
             {
-                if(Globals.IsResyncing == false)
+                while (download) //this will loop forever till download happens
                 {
+                    if (Globals.IsResyncing)
+                        break;
+
                     DateTime startTime = DateTime.UtcNow;
                     var result = await P2PClient.GetCurrentHeight();
-                    if (result.Item1 == true)
+                    if (result.Item1)
                     {
                         ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
                         await BlockDownloadService.GetAllBlocks();
                     }
                     //This is not being reached on some devices. 
-                    else
-                    {
-                        var lastBlock = Globals.LastBlock;
-                        var currentTimestamp = TimeUtil.GetTime(-60);
 
-                        if(lastBlock.Timestamp >= currentTimestamp || Globals.Adjudicate || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+                    var lastBlock = Globals.LastBlock;
+                    var currentTimestamp = TimeUtil.GetTime(-60);
+
+                    //This needs to come back for mainnet**
+                    //if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+                    DateTime endTime = DateTime.UtcNow;
+                    ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
+                    LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                    download = false; //exit the while.                
+                    var accounts = AccountData.GetAccounts();
+                    var accountList = accounts.FindAll().ToList();
+                    if (accountList.Count() > 0)
+                    {
+                        var stateTrei = StateData.GetAccountStateTrei();
+                        foreach (var account in accountList)
                         {
-                            DateTime endTime = DateTime.UtcNow;
-                            ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
-                            LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
-                            download = false; //exit the while.
-                            Globals.StopAllTimers = false;
-                            var accounts = AccountData.GetAccounts();
-                            var accountList = accounts.FindAll().ToList();
-                            if (accountList.Count() > 0)
+                            var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                            if (stateRec != null)
                             {
-                                var stateTrei = StateData.GetAccountStateTrei();
-                                foreach (var account in accountList)
-                                {
-                                    var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                                    if (stateRec != null)
-                                    {
-                                        account.Balance = stateRec.Balance;
-                                        accounts.UpdateSafe(account);//updating local record with synced state trei
-                                    }
-                                }
+                                account.Balance = stateRec.Balance;
+                                accounts.UpdateSafe(account);//updating local record with synced state trei
                             }
                         }
                     }
+
+
                 }
-                else
+                if (!Globals.IsResyncing)
                 {
-                    download = false;
+                    Globals.BlocksDownloading = 0;
+                    Globals.StopAllTimers = false;
+                    Globals.IsChainSynced = true;
                 }
-                
+                download = false; //exit the while.
             }
-            if(Globals.IsResyncing == false)
+            finally
             {
-                Globals.BlocksDownloading = 0;
                 Globals.StopAllTimers = false;
-                Globals.IsChainSynced = true;
             }
-            download = false; //exit the while. 
         }
 
         internal static void CheckForDuplicateBlocks()
         {
-            //ClearSelfValidator();
-
             var blockChain = BlockchainData.GetBlocks();
-            var blocks = blockChain.FindAll().ToList();
-            var dupBlocksList = blocks.GroupBy(x => x.Height).Where(y => y.Count() > 1).Select(z => z.Key).ToList();
-
-            if(dupBlocksList.Count != 0)
+            var count = blockChain.Count();
+            var HeightIsOkay = count > 0 ? (count - blockChain.Max("Height").AsInt64) == 1 : true;
+            if(!HeightIsOkay)
             {
                 LogUtility.Log("Duplicate Blocks Found!", "StartupService: dupBlocksList.Count != 0 / meaning dup found!");
                 //Reset blocks and all balances and redownload chain. No exception here.
@@ -690,9 +902,6 @@ namespace ReserveBlockCore.Services
                     {
                         //error saving from db cache
                     }
-
-                    //re-add bootstrap validators
-                    SetBootstrapAdjudicator();
                 }
             }
 
@@ -851,76 +1060,40 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
+
+        internal static void DisplayValidatorAddress()
+        {
+            var accounts = AccountData.GetAccounts();
+            var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
+            if (myAccount != null)
+            {
+                Globals.ValidatorAddress = myAccount.Address;
+                LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
+            }
+        }
+
         internal static async Task StartupPeers()
         {
-            //add seed nodes
-            //This is being done for adj pool now. It will already exist
-            //SeedNodeService.SeedNodes();
-            bool result = false;
-            bool peersConnected = false;
-            int failCount = 0;
-            while (!peersConnected)
+            if (Globals.AdjudicateAccount != null)
+                return;
+
+            while (true)
             {
+                var delay = Task.Delay(10000);
                 try
                 {
-                    if(failCount > 60)
-                    {
-                        Console.WriteLine($"Failed to connect to any peers. trying again in 60 seconds.");
-                        Thread.Sleep(new TimeSpan(0, 0, 60));
-                    }
-                    else if(failCount >120)
-                    {
-                        Console.WriteLine($"Failed to connect to any peers. trying again in 120 seconds.");
-                        Thread.Sleep(new TimeSpan(0, 0, 120));
-                    }
-
-                    AnsiConsole.MarkupLine("[bold yellow]Attempting to connect to peers...[/]");
-                    result = await P2PClient.ConnectToPeers();
-
-                    if (result == true)
-                    {
-                        peersConnected = true;
-                        Console.WriteLine(" ");
-                        AnsiConsole.MarkupLine("[bold green]Connected to Peers...[/]");
-                        var accounts = AccountData.GetAccounts();
-                        var myAccount = accounts.FindOne(x => x.IsValidating == true && x.Address != Globals.GenesisAddress);
-                        if (myAccount != null)
-                        {
-                            Globals.ValidatorAddress = myAccount.Address;
-                            LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
-                        }
-                        else
-                        {
-                            //No validator account on start up
-                        }
-                        failCount = 0;
-                    }
-                    else
-                    {
-                        failCount += 1;
+                    var ConnectedCount = Globals.Nodes.Values.Where(x => x.IsConnected).Count();
+                    if(ConnectedCount < Globals.MaxPeers)
+                        await P2PClient.ConnectToPeers();
+                    if(!Globals.Nodes.Values.Where(x => x.IsConnected).Any())
                         Console.WriteLine($"Failed to connect to any peers. trying again.");
-                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
-            }
-            
-            
 
-            if(result == true)
-            {
-                //Connected to peers
-                //Only needed for genesis 
-                //await BlockchainData.InitializeChain();
-            }
-            else
-            {
-                Console.WriteLine("Failed to automatically connect to peers. Please add manually.");
-                //Put StartupInitializeChain();
-                //Here and once chain fails to connect it will create genesis 
-                //await BlockchainData.InitializeChain();
+                await delay;
             }
         }
         internal static async Task<bool> DownloadBlocks() //download genesis block

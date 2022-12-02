@@ -62,6 +62,51 @@ namespace ReserveBlockCore.Data
             }
         }
 
+        public static void UpdateTxStatus(Transaction transaction, TransactionStatus txStatus)
+        {
+            var txs = GetAll();
+            var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
+            if(txCheck==null)
+            {
+                transaction.TransactionStatus = txStatus;
+                txs.InsertSafe(transaction);
+            }
+            else
+            {
+                txCheck.TransactionStatus = txStatus;
+                txs.UpdateSafe(txCheck);
+            }
+        }
+
+        public static async Task UpdateWalletTXTask()
+        {
+            var txs = GetAll();
+            var txList = txs.Find(x => x.TransactionStatus == TransactionStatus.Pending).ToList();
+            foreach(var tx in txList)
+            {
+                try
+                {
+                    var isTXCrafted = await HasTxBeenCraftedIntoBlock(tx);
+                    if (isTXCrafted)
+                    {
+                        tx.TransactionStatus = TransactionStatus.Success;
+                        txs.UpdateSafe(tx);
+                    }
+                    else
+                    {
+                        var isStale = await IsTxTimestampStale(tx);
+                        if (isStale)
+                        {
+                            tx.TransactionStatus = TransactionStatus.Failed;
+                            txs.UpdateSafe(tx);
+                        }
+
+                    }
+                }
+                catch { }
+            }
+        }
+
         public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
         {
             var result = false;
@@ -72,7 +117,7 @@ namespace ReserveBlockCore.Data
                 var txExist = transactions.Any(x => x.Hash == tx.Hash);
                 if (txExist == true)
                 {
-                    result = true;//douple spend has occured
+                    result = true;
                 }
             }
             return result;

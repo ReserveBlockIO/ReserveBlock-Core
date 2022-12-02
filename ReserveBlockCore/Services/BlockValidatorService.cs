@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Nodes;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System;
@@ -43,7 +45,7 @@ namespace ReserveBlockCore.Services
                     {
                         heightOffset = heights[offsetIndex];
                         if (heightOffset < nextHeight)
-                            BlockDownloadService.BlockDict.TryRemove(heightOffset, out var test);
+                            BlockDownloadService.BlockDict.TryRemove(heightOffset, out _);
                         else                        
                             break;
                     }
@@ -57,12 +59,12 @@ namespace ReserveBlockCore.Services
                         if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
                             continue;
                         var (block, ipAddress) = blockInfo;
-                        var result = await ValidateBlock(block, true);                        
+                        var result = await ValidateBlock(block, false);                        
                         if (!result)
                         {                            
                             Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
-                            ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
-                            if(Globals.Nodes.TryRemove(ipAddress, out var node))
+                            ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");                            
+                            if(Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
                                 await node.Connection.DisposeAsync();                            
                             Console.WriteLine("Block was rejected from: " + block.Validator);
                         }
@@ -81,7 +83,7 @@ namespace ReserveBlockCore.Services
                 Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 0);
             }
         }
-        public static async Task<bool> ValidateBlock(Block block, bool blockDownloads = false)
+        public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
             try
             {
@@ -120,6 +122,7 @@ namespace ReserveBlockCore.Services
 
                     UpdateMemBlocks(block);//update mem blocks
                     DbContext.Commit();
+                    Globals.ConsensusTokenSource.Cancel();
                     return result;
                 }
                 if (block.Height != 0)
@@ -150,7 +153,13 @@ namespace ReserveBlockCore.Services
                     return result;
                 }
 
-                if (block.Version > 1)
+                if (block.Version > 2 && !ignoreAdjSignatures)
+                {                    
+                    var version3Result = await BlockVersionUtility.Version3Rules(block);
+                    if (!version3Result)
+                        return result;
+                }
+                else if (block.Version > 1)
                 {
                     //Run block version 2 rules
                     var version2Result = await BlockVersionUtility.Version2Rules(block);
@@ -283,6 +292,7 @@ namespace ReserveBlockCore.Services
                         }
 
                         result = true;
+                        Globals.ConsensusTokenSource.Cancel();
                         BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                         StateData.UpdateTreis(block); //update treis
@@ -298,327 +308,49 @@ namespace ReserveBlockCore.Services
                                     if (mempoolTx.Count() > 0)
                                     {
                                         mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
-                                        Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out var test);
+                                        Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out _);
                                     }
                                 }
 
 
-                                //Adds receiving TX to wallet
+                                //Process transactions sent ->To<- wallet
                                 var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
                                 if (account != null)
                                 {
-                                    if (localTransaction.TransactionType == TransactionType.TX)
-                                    {
-                                        AccountData.UpdateLocalBalanceAdd(localTransaction.ToAddress, localTransaction.Amount);
-                                        var txdata = TransactionData.GetAll();
-                                        txdata.InsertSafe(localTransaction);
-                                    }
-                                    if(localTransaction.TransactionType == TransactionType.NFT_TX || localTransaction.TransactionType == TransactionType.NFT_SALE)
-                                    {
-                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
-                                        if(scDataArray != null)
-                                        {
-                                            var scData = scDataArray[0];
-                                            if (scData != null)
-                                            {
-                                                var function = (string?)scData["Function"];
-                                                if(!string.IsNullOrWhiteSpace(function))
-                                                {
-                                                    if(function == "Transfer()")
-                                                    {
-                                                        var txdata = TransactionData.GetAll();
-                                                        txdata.InsertSafe(localTransaction);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        
-                                    }
-                                    if (Globals.IsChainSynced == true)//this is here so someone doesn't get spammed with API calls when starting wallet or syncing
-                                    {
-                                        //Call out to custom URL from config file with TX details
-                                        if (!string.IsNullOrWhiteSpace(Globals.APICallURL))
-                                        {
-                                            APICallURLService.CallURL(localTransaction);
-                                        }
-                                    }
-                                    if (localTransaction.TransactionType != TransactionType.TX)
-                                    {
-
-
-                                        if (localTransaction.TransactionType == TransactionType.NFT_MINT)
-                                        {
-                                            var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
-                                            var scData = scDataArray[0];
-
-                                            if (scData != null)
-                                            {
-                                                var function = (string?)scData["Function"];
-                                                if (!string.IsNullOrWhiteSpace(function))
-                                                {
-                                                    if (function == "Mint()")
-                                                    {
-                                                        var scUID = (string?)scData["ContractUID"];
-                                                        if (!string.IsNullOrWhiteSpace(scUID))
-                                                        {
-                                                            SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        if (localTransaction.TransactionType == TransactionType.NFT_TX)
-                                        {
-                                            var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
-                                            var scData = scDataArray[0];
-
-                                            var data = (string?)scData["Data"];
-                                            var function = (string?)scData["Function"];
-                                            if (!string.IsNullOrWhiteSpace(function))
-                                            {
-                                                switch (function)
-                                                {
-                                                    case "Transfer()":
-                                                        if (!string.IsNullOrWhiteSpace(data))
-                                                        {
-                                                            var localFromAddress = AccountData.GetSingleAccount(localTransaction.FromAddress);
-
-                                                            var locators = (string?)scData["Locators"];
-                                                            var md5List = (string?)scData["MD5List"];
-                                                            var scUID = (string?)scData["ContractUID"];
-
-                                                            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-
-                                                            if(sc != null)
-                                                            {
-                                                                if (localFromAddress == null)
-                                                                {
-                                                                    if (locators != "NA")
-                                                                    {
-                                                                        var assetList = await MD5Utility.GetAssetList(md5List);
-                                                                        var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
-                                                                        //await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
-                                                                    }
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-                                                                //testing
-                                                                //bool isCompletedSuccessfully = true;
-                                                                //transferTask.Wait();
-                                                                if (!isCompletedSuccessfully)
-                                                                {
-                                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
-                                                                }
-                                                                else
-                                                                {
-                                                                    //download files here.
-                                                                    if (localFromAddress == null)
-                                                                    {
-                                                                        if (locators != "NA")
-                                                                        {
-                                                                            var assetList = await MD5Utility.GetAssetList(md5List);
-                                                                            var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
-                                                                            //await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
-                                                                        }
-
-                                                                    }
-                                                                }
-                                                            }
-                                                            
-                                                        }
-                                                        break;
-                                                    case "Evolve()":
-                                                        if (!string.IsNullOrWhiteSpace(data))
-                                                        {
-                                                            var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(localTransaction); });
-                                                            bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-                                                            if (!isCompletedSuccessfully)
-                                                            {
-                                                                NFTLogUtility.Log("Failed to decompile smart contract for evolve in time.", "BlockValidatorService.ValidateBlock() - line 224");
-                                                            }
-                                                        }
-                                                        break;
-                                                    case "Devolve()":
-                                                        if (!string.IsNullOrWhiteSpace(data))
-                                                        {
-                                                            var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(localTransaction); });
-                                                            bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-                                                            if (!isCompletedSuccessfully)
-                                                            {
-                                                                NFTLogUtility.Log("Failed to decompile smart contract for devolve in time.", "BlockValidatorService.ValidateBlock() - line 235");
-                                                            }
-                                                        }
-                                                        break;
-                                                    case "ChangeEvolveStateSpecific()":
-                                                        if (!string.IsNullOrWhiteSpace(data))
-                                                        {
-                                                            var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(localTransaction); });
-                                                            bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-                                                            if (!isCompletedSuccessfully)
-                                                            {
-                                                                NFTLogUtility.Log("Failed to decompile smart contract for evo/devo specific in time.", "BlockValidatorService.ValidateBlock() - line 246");
-                                                            }
-                                                        }
-                                                        break;
-                                                    default:
-                                                        break;
-                                                }
-                                            }
-                                        }
-
-                                        if (localTransaction.TransactionType == TransactionType.ADNR)
-                                        {
-                                            var scData = JObject.Parse(localTransaction.Data);
-
-                                            if (scData != null)
-                                            {
-                                                var function = (string?)scData["Function"];
-                                                if (!string.IsNullOrWhiteSpace(function))
-                                                {
-                                                    if (function == "AdnrTransfer()")
-                                                    {
-                                                        await Account.TransferAdnrToAccount(localTransaction.FromAddress, localTransaction.ToAddress);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    await BlockTransactionValidatorService.ProcessIncomingTransactions(localTransaction, account);
                                 }
 
-                                //Adds sent TX to wallet
+                                //Process transactions sent ->From<- wallet
                                 var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.FromAddress);
                                 if (fromAccount != null)
                                 {
-                                    var txData = TransactionData.GetAll();
-                                    var fromTx = localTransaction;
-                                    fromTx.Amount = localTransaction.Amount * -1M;
-                                    fromTx.Fee = localTransaction.Fee * -1M;
-                                    txData.InsertSafe(fromTx);
-
-                                    if (localTransaction.TransactionType != TransactionType.TX)
-                                    {
-                                        if (localTransaction.TransactionType == TransactionType.NFT_TX)
-                                        {
-                                            var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
-                                            var scData = scDataArray[0];
-
-                                            //do transfer logic here! This is for person giving away or feature actions
-                                            var scUID = (string?)scData["ContractUID"];
-                                            var function = (string?)scData["Function"];
-                                            
-                                            if (!string.IsNullOrWhiteSpace(function))
-                                            {
-                                                if (function == "Transfer()")
-                                                {
-                                                    if (!string.IsNullOrWhiteSpace(scUID))
-                                                    {
-                                                        var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                                        var scs = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-
-                                                        if(scs != null)
-                                                        {
-                                                            if (scs.Features != null)
-                                                            {
-                                                                if (scs.Features.Exists(x => x.FeatureName == FeatureName.Evolving))
-                                                                {
-                                                                    if (scStateTreiRec != null)
-                                                                    {
-                                                                        if (scStateTreiRec.MinterAddress != null)
-                                                                        {
-                                                                            var evoOwner = AccountData.GetAccounts().FindOne(x => x.Address == scStateTreiRec.MinterAddress);
-                                                                            if (evoOwner == null)
-                                                                            {
-                                                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
-                                                                            }
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
-                                                                        }
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
-                                                                    }
-                                                                }
-                                                                else
-                                                                {
-                                                                    SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
-                                                                }
-                                                            }
-                                                            else
-                                                            {
-                                                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they transfer it.
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        if (localTransaction.TransactionType == TransactionType.NFT_BURN)
-                                        {
-                                            var scDataArray = JsonConvert.DeserializeObject<JArray>(localTransaction.Data);
-                                            var scData = scDataArray[0];
-                                            //do burn logic here! This is for person giving away or feature actions
-                                            var scUID = (string?)scData["ContractUID"];
-                                            var function = (string?)scData["Function"];
-                                            if (!string.IsNullOrWhiteSpace(function))
-                                            {
-                                                if (function == "Burn()")
-                                                {
-                                                    if (!string.IsNullOrWhiteSpace(scUID))
-                                                    {
-                                                        SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
-                                                    }
-                                                }
-                                            }
-
-                                        }
-
-                                        if (localTransaction.TransactionType == TransactionType.ADNR)
-                                        {
-                                            var scData = JObject.Parse(localTransaction.Data);
-
-                                            var function = (string?)scData["Function"];
-                                            var name = (string?)scData["Name"];
-                                            if (!string.IsNullOrWhiteSpace(function))
-                                            {
-                                                if (function == "AdnrCreate()")
-                                                {
-                                                    if (!string.IsNullOrWhiteSpace(name))
-                                                    {
-                                                        if (!name.Contains(".rbx"))
-                                                            name = name + ".rbx";
-                                                        await Account.AddAdnrToAccount(localTransaction.FromAddress, name);
-                                                    }
-                                                }
-                                                if (function == "AdnrDelete()")
-                                                {
-                                                    await Account.DeleteAdnrFromAccount(localTransaction.FromAddress);
-                                                }
-                                                if (function == "AdnrTransfer()")
-                                                {
-                                                    await Account.DeleteAdnrFromAccount(localTransaction.FromAddress);
-                                                }
-                                            }
-                                        }
-                                    }
+                                    await BlockTransactionValidatorService.ProcessOutgoingTransaction(localTransaction, fromAccount);
                                 }
                             }
                         }
 
                     }
+
+                    await TransactionData.UpdateWalletTXTask();
                     DbContext.Commit();
+                    if (P2PClient.MaxHeight() <= block.Height)
+                    {
+                        if (Globals.LastBlock.Height >= Globals.BlockLock)
+                        {
+                            ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
+                        }
+                        else
+                        {
+                            ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
+                        }
+                    }
                     return result;//block accepted
                 }
                 else
                 {
                     //Genesis Block
                     result = true;
+                    Globals.ConsensusTokenSource.Cancel();
                     BlockchainData.AddBlock(block);
                     StateData.UpdateTreis(block);
                     DbContext.Commit();
@@ -634,7 +366,7 @@ namespace ReserveBlockCore.Services
         }
 
         //This method does not add block or update any treis
-        public static async Task<bool> ValidateBlockForTask(Block block, bool blockDownloads = false)
+        public static async Task<bool> ValidateBlockForTask(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
             bool result = false;
 

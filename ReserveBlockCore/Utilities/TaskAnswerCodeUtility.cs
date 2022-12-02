@@ -26,6 +26,12 @@
                 case 5:
                     reason = "Task answer was null. Should not be possible. Never send null Task Answer.";
                     break;
+                case 6:
+                    reason = "The signature was invalid.";
+                    break;
+                case 7:
+                    reason = "Answer was already submitted.";
+                    break;
                 case 1337:
                     reason = "Unknown Error.";
                     break;

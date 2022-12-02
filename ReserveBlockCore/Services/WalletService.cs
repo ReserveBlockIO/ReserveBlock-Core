@@ -153,9 +153,7 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-            
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = nTx.Hash;
@@ -174,7 +172,6 @@ namespace ReserveBlockCore.Services
                 if(result == true)
                 {
                     output = "Success! TxId: " + txHash;
-                    accPrivateKey = "0";
                 }
                 else
                 {
@@ -243,6 +240,8 @@ namespace ReserveBlockCore.Services
                 txRequest.TransactionRating = rating;
             }
 
+            txRequest.TransactionStatus = TransactionStatus.Pending;
+
             if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
@@ -250,16 +249,21 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                //P2PClient.SendTXMempool(txRequest);//send out to mempool
-                await P2PClient.SendTXToAdjudicator(txRequest);
-                //add method to send to nearest validators too
-                //}
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+            else if(account.IsValidating)
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest);
+                AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
             }
             else
             {
                 TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
-                P2PClient.SendTXMempool(txRequest);//send out to mempool
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
 
             

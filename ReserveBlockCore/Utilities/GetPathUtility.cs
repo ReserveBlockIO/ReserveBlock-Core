@@ -1,11 +1,20 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace ReserveBlockCore.Utilities
 {
     public class GetPathUtility
     {
         private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+
+        public static string IPFromURL(string url)
+        {
+            var matches = Regex.Matches(url, @"[.:\d]+").Cast<System.Text.RegularExpressions.Match>().Select(match => match.Value).ToArray();
+            var ipPart = matches.Where(x => x.Split('.').Length == 4).FirstOrDefault();
+            return ipPart.Split(':')[0];
+        }
+
         public static string GetDatabasePath()
         {
             string path = "";

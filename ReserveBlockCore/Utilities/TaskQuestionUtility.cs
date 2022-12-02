@@ -1,40 +1,37 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.P2P;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ReserveBlockCore.Utilities
 {
     public class TaskQuestionUtility
     {
-        public static async Task<TaskQuestion> CreateTaskQuestion(string type)
-        {
-            TaskQuestion taskQuestion = new TaskQuestion();
-
+        public static void CreateTaskQuestion(string type)
+        {            
             if(!string.IsNullOrWhiteSpace(type))
             {
                 switch (type)
                 {
-                    case "rndNum":
-                        taskQuestion.TaskAnswer = GenerateRandomNumber().ToString();
-                        taskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
+                    case "rndNum":                        
+                        ConsensusServer.UpdateState(-1, (int)ConsensusStatus.Processing, GenerateRandomNumber(Globals.LastBlock.Height + 1));
                         break;
                     case "pickCol":
                         break;
                     default:
                         break;
                 }
-                
-                taskQuestion.TaskType = type;
-                taskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
             }
-
-            return taskQuestion;
         }
 
-        public static int GenerateRandomNumber()
+        public static int GenerateRandomNumber(long height)
         {
             int randomNumber = 0;
             Random rnd = new Random();
-
-            randomNumber = rnd.Next(1, 1000000);
+            if (height >= Globals.BlockLock)
+                randomNumber = rnd.Next();
+            else
+                randomNumber = rnd.Next(1, 1000000);
 
             return randomNumber;
         }

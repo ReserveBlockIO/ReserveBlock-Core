@@ -11,6 +11,9 @@ namespace ReserveBlockCore.Models
     {
         public HubConnection Connection;
         public string NodeIP { get; set; } 
+
+        public string Address { get; set; }
+
         public long NodeHeight { get; set; }
         public int NodeLatency { get; set; }
         public DateTime? NodeLastChecked { get; set; }
@@ -26,6 +29,9 @@ namespace ReserveBlockCore.Models
         public long SecondPreviousReceiveTime;
 
         public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
+
+        public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
+        public bool IsValidator { get; set; }
 
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
