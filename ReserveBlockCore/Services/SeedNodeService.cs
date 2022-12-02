@@ -9,7 +9,7 @@ namespace ReserveBlockCore.Services
     {
         public static List<SeedNode> SeedNodeList { get; set; }
 
-        public static HashSet<string> TestNetIPs = new HashSet<string> { "66.94.124.3", "144.126.156.101", "144.126.156.102" };
+        public static HashSet<string> TestNetIPs = new HashSet<string> { "144.126.156.102", "144.126.156.101", "66.94.124.3", "66.94.124.2", "185.199.226.121" };
         public static async Task<string> PingSeedNode()
         {
             bool nodeFound = false;

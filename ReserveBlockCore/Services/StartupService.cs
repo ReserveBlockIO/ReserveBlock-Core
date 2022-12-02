@@ -188,8 +188,8 @@ namespace ReserveBlockCore.Services
                         [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
                         [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
                         [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
-                        //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
-                        //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                        [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
+                        [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
                     };
 
                     foreach(var signer in Globals.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
@@ -215,8 +215,8 @@ namespace ReserveBlockCore.Services
                     [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
                     [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
                     [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
-                    //["xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq"] = true,
-                    //["xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK"] = true,
+                    [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
+                    [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
                 };
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
