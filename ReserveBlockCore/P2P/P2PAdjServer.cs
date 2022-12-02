@@ -24,11 +24,12 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {
             string lastArea = "";
+            string peerIP = "";
             var startTime = DateTime.UtcNow;
             ConnectionHistory.ConnectionHistoryQueue conQueue = new ConnectionHistory.ConnectionHistoryQueue();
             try
             {
-                var peerIP = GetIP(Context);
+                peerIP = GetIP(Context);
                 var httpContext = Context.GetHttpContext();
                 if(httpContext == null)
                 {                    
@@ -123,6 +124,8 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
+                Globals.FortisPool.TryRemoveFromKey1(peerIP, out _);
+                Context?.Abort();
                 ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "P2PAdjServer.OnConnectedAsync()");
             }
 
@@ -134,6 +137,7 @@ namespace ReserveBlockCore.P2P
             var peerIP = GetIP(Context);
             Globals.P2PPeerDict.TryRemove(peerIP, out _);
             Globals.FortisPool.TryRemoveFromKey1(peerIP, out _);
+            Context?.Abort();
 
             await base.OnDisconnectedAsync(ex);
         }
@@ -339,8 +343,7 @@ namespace ReserveBlockCore.P2P
 
                     var RBXAddress = Pool.Key2;
                     if(!Globals.TaskSelectedNumbersV3.ContainsKey((RBXAddress, block.Height)))
-                    {
-                        Globals.FortisPool.TryRemoveFromKey2(RBXAddress, out _);                        
+                    {                       
                         return false;
                     }                    
 

@@ -542,6 +542,10 @@ namespace ReserveBlockCore.P2P
                             node.LastTaskErrorCount = 0;
                             break;
                         }
+                        else if(result.AnswerCode == 7)
+                        {
+                            return;
+                        }
                         else
                         {
                             var errorCodeDesc = await TaskAnswerCodeUtility.TaskAnswerCodeReason(result.AnswerCode);
