@@ -77,7 +77,7 @@ namespace ReserveBlockCore
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
             
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 3 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 4000000;
 
             //BlockchainData.InitializeChain();
 

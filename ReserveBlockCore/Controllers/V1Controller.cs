@@ -163,8 +163,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("CheckPasswordNeeded")]
         public async Task<string> CheckPasswordNeeded()
         {
-            //use Id to get specific commands
-            var output = "False"; // this will only display if command not recognized.
+            var output = "false";
 
             if (Globals.GUIPasswordNeeded)
                 output = "true";
@@ -172,7 +171,7 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetEncryptedPassword/{password}")]
+        [HttpGet("GetEncryptedPassword/{**password}")]
         public async Task<string> GetEncryptedPassword(string password)
         {
             //use Id to get specific commands

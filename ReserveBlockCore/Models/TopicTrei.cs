@@ -13,30 +13,38 @@ namespace ReserveBlockCore.Models
     public class TopicTrei
     {
         #region Variables
-        public int Id { get; set; }
-        public string TopicUID { get; set; }
-        public string TopicName { get; set; }
-        public string TopicDescription { get; set; }
-        public string TopicOwnerAddress { get; set; }
-        public string TopicOwnerSignature { get; set; }
-        public string? AdjudicatorAddress { get; set; }
-        public long BlockHeight { get; set; }
-        public int ValidatorCount { get; set; }
+        public int Id { get; set; } //system defined
+        public string TopicUID { get; set; } //system defined
+        public string TopicName { get; set; } //user defined - max length of 128 chars
+        public string TopicDescription { get; set; }  //user defined - max length of 1600 chars
+        public string TopicOwnerAddress { get; set; }  //system defined
+        public string TopicOwnerSignature { get; set; } //system defined
+        public string? AdjudicatorAddress { get; set; } //system defined
+        public long BlockHeight { get; set; }  //system defined
+        public int ValidatorCount { get; set; }  //system defined
         public string? AdjudicatorSignature { get; set; } //must receive endorsement from adj
-        public DateTime TopicCreateDate { get; set; }
-        public DateTime VotingEndDate { get; set; }
-        public TopicVoterType VoterType { get; set; }
-        public VoteTopicCategories VoteTopicCategory { get; set; }
-        public int VoteYes { get; set; }
-        public int VoteNo { get; set; }
-        
-        public decimal TotalVotes { get { return VoteYes + VoteNo;  } }
-        public decimal PercentVotesYes { get { return TotalVotes != 0M ? ((VoteYes / TotalVotes) * 100M) : 0M; } }
-        public decimal PercentVotesNo { get { return TotalVotes != 0M ? ((VoteNo / TotalVotes) * 100M) : 0M; } }
-        public decimal PercentInFavor { get { return ((VoteYes / ValidatorCount) * 100M); } }
-        public decimal PercentAgainst { get { return ((VoteNo / ValidatorCount) * 100M); } }
+        public DateTime TopicCreateDate { get; set; }  //system defined
+        public DateTime VotingEndDate { get; set; } //user defined
+        public TopicVoterType VoterType { get; set; } //system defined
+        public VoteTopicCategories VoteTopicCategory { get; set; }//user defined
+        public int VoteYes { get; set; }  //system defined
+        public int VoteNo { get; set; }  //system defined
+
+        public decimal TotalVotes { get { return VoteYes + VoteNo;  } }  //system defined
+        public decimal PercentVotesYes { get { return TotalVotes != 0M ? ((VoteYes / TotalVotes) * 100M) : 0M; } }  //system defined
+        public decimal PercentVotesNo { get { return TotalVotes != 0M ? ((VoteNo / TotalVotes) * 100M) : 0M; } }  //system defined
+        public decimal PercentInFavor { get { return ((VoteYes / ValidatorCount) * 100M); } }  //system defined 
+        public decimal PercentAgainst { get { return ((VoteNo / ValidatorCount) * 100M); } }  //system defined
 
         #endregion
+
+        public class TopicCreate
+        {
+            public string TopicName { get; set; }
+            public string TopicDescription { get; set; }
+            public VotingDays VotingEndDays { get; set; }
+            public VoteTopicCategories VoteTopicCategory { get; set; }
+        }
 
         #region Get Topics DB
         public static LiteDB.ILiteCollection<TopicTrei>? GetTopics()
@@ -196,6 +204,10 @@ namespace ReserveBlockCore.Models
             VotingEndDate = DateTime.UtcNow.AddDays(daysToEnd);
             ValidatorCount = adjCount;
             BlockHeight = Globals.LastBlock.Height;
+            TopicOwnerAddress = Globals.ValidatorAddress;
+
+            if (Globals.ValidatorAddress == null)
+                return result;
 
             if (TopicName.Length > 128)
                 return result;
@@ -302,10 +314,10 @@ namespace ReserveBlockCore.Models
                 if (result.Item1 == true)
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
-                    TransactionData.AddToPool(topicTx);
+                    //TransactionData.AddToPool(topicTx);
                     TransactionData.AddTxToWallet(topicTx);
                     AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
-                    await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
+                    //await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
                     return (topicTx, "Success");
                 }
                 else
