@@ -770,8 +770,7 @@ namespace ReserveBlockCore.Services
         {
             if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null || Globals.StopAllTimers)
                 return;            
-
-            _ = StartupService.ConnectToConsensusNodes();
+            
             ConsoleWriterService.Output("Booting up consensus loop");            
             while (true)
             {

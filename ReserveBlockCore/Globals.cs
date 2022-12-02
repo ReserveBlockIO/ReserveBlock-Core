@@ -84,8 +84,7 @@ namespace ReserveBlockCore
         public static bool IgnoreIncomingNFTs = false;
         public static bool ShowTrilliumOutput = false;
         public static bool ShowTrilliumDiagnosticBag = false;
-        public static bool ConnectToMother = false;
-        public static bool HeightCheckLock = false;
+        public static bool ConnectToMother = false;        
         public static bool InactiveNodeSendLock = false;
         public static bool IsCrafting = false;
         public static bool IsResyncing = false;

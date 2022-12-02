@@ -226,9 +226,13 @@ namespace ReserveBlockCore.P2P
                     {                            
                         var NextHeight = Globals.LastBlock.Height + 1;
                         if (!SignatureService.VerifySignature(Pool.Key2, NextHeight + ":" + Answer, Signature))
-                        {                                            
-                            taskAnsRes.AnswerCode = 6;
-                            return taskAnsRes;
+                        {
+                            NextHeight++;
+                            if (!SignatureService.VerifySignature(Pool.Key2, NextHeight + ":" + Answer, Signature))
+                            {
+                                taskAnsRes.AnswerCode = 6;
+                                return taskAnsRes;
+                            }
                         }
 
                         if (!Globals.TaskAnswerDictV3.TryAdd((Pool.Key2, NextHeight), (ipAddress, Pool.Key2, int.Parse(Answer), Signature)))

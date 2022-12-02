@@ -137,8 +137,9 @@ namespace ReserveBlockCore
             }
 
             StartupService.SetAdjudicatorAddresses();
+            _ = StartupService.ConnectToConsensusNodes();
 
-            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
+            if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
             {
                 StartupService.EncryptedPasswordEntryAdj();
             }
@@ -174,9 +175,10 @@ namespace ReserveBlockCore
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
             Globals.StopAllTimers = true;
+            _ = BlockHeightCheckLoop();
             _ = StartupService.DownloadBlocksOnStart();
             _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
-
+            
             StartupService.ClearStaleMempool();
 
             //StartupService.RunStateSync();
@@ -191,9 +193,6 @@ namespace ReserveBlockCore
 
             //blockTimer = new Timer(blockBuilder_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //blockTimer.Change(60000, 10000); //waits 1 minute, then runs every 10 seconds for new blocks
-
-            Globals.heightTimer = new Timer(blockHeightCheck_Elapsed); // 1 sec = 1000, 60 sec = 60000
-            Globals.heightTimer.Change(0, 10000); //waits 1 minute, then runs every 18 seconds for new blocks
 
             //Globals.DBCommitTimer = new Timer(dbCommitCheckTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             //Globals.DBCommitTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
@@ -402,43 +401,42 @@ namespace ReserveBlockCore
         #endregion
 
         #region Block Height Check
-        private static async void blockHeightCheck_Elapsed(object sender)
+        private static async Task BlockHeightCheckLoop()
         {
-            if (Globals.HeightCheckLock == false)
+            while(true)
             {
-                Globals.HeightCheckLock = true;
-                while (!Globals.Nodes.Any())                                   
-                    await Task.Delay(4);                
-
-                await P2PClient.UpdateNodeHeights();
-
-                var maxHeight = Globals.Nodes.Values.Select(x => x.NodeHeight).OrderByDescending(x => x).FirstOrDefault();
-                if (maxHeight > Globals.LastBlock.Height)
+                try
                 {
-                    P2PClient.UpdateMaxHeight(maxHeight);
-                    await BlockDownloadService.GetAllBlocks();
+                    while (!Globals.Nodes.Any())
+                        await Task.Delay(4);
+
+                    await P2PClient.UpdateNodeHeights();
+
+                    var maxHeight = Globals.Nodes.Values.Select(x => x.NodeHeight).OrderByDescending(x => x).FirstOrDefault();
+                    if (maxHeight > Globals.LastBlock.Height)
+                    {
+                        P2PClient.UpdateMaxHeight(maxHeight);
+                        await BlockDownloadService.GetAllBlocks();
+                    }
+                    else
+                        P2PClient.UpdateMaxHeight(maxHeight);
+
+                    var MaxHeight = P2PClient.MaxHeight();
+                    foreach (var node in Globals.Nodes.Values)
+                    {
+                        if (node.NodeHeight < MaxHeight - 3)
+                            await P2PClient.RemoveNode(node);
+                    }
+
+                    DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
                 }
+                catch { }
+
+                if (Globals.AdjudicateAccount != null)
+                    await Task.Delay(1000);
                 else
-                    P2PClient.UpdateMaxHeight(maxHeight);
-
-                var MaxHeight = P2PClient.MaxHeight();
-                foreach(var node in Globals.Nodes.Values)
-                {
-                    if(node.NodeHeight < MaxHeight - 3)                    
-                        await P2PClient.RemoveNode(node);                    
-                }
-
-                Globals.HeightCheckLock = false;
-            }
-            try
-            {
-                DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
-            }
-            catch (Exception ex)
-            {
-
-            }
-
+                    await Task.Delay(10000);
+            }           
         }
 
         #endregion

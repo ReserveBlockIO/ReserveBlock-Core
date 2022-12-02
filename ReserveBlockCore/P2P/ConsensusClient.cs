@@ -112,32 +112,39 @@ namespace ReserveBlockCore.P2P
                 if (Globals.ConsensusTokenSource.IsCancellationRequested)
                     return null;
 
-                if(ConsensusServer.GetState().MethodCode != methodCode)
+                if (ConsensusServer.GetState().MethodCode != methodCode)
+                {
+                    SendSuccessHash(Peers, methodCode, ct);
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
+                }
 
                 var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
                 if (PeerHashes.Length < Majority - 1)
                     return null;
 
                 var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
-
                 if (PeerHashes.Any(x => !MyHashes.SetEquals(x)))
                     return null;
 
-                Now = TimeUtil.GetMillisecondTime();
-                _ = Task.WhenAll(Peers.Select(node =>
-                {
-                    var SuccessHashFunc = () => node.Connection?.InvokeCoreAsync<bool>("SuccessHash", args: new object?[] { Height, methodCode }, ct)
-                        ?? Task.FromResult(false);
-                    return SuccessHashFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, ct);
-                }));
-
+                SendSuccessHash(Peers, methodCode, ct);
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
             catch(Exception ex)
             {
             }
             return null;
+        }
+
+        public static void SendSuccessHash(NodeInfo[] peers, int methodCode, CancellationToken ct)
+        {
+            var Now = TimeUtil.GetMillisecondTime();
+            var Height = Globals.LastBlock.Height + 1;
+            _ = Task.WhenAll(peers.Select(node =>
+            {
+                var SuccessHashFunc = () => node.Connection?.InvokeCoreAsync<bool>("SuccessHash", args: new object?[] { Height, methodCode }, ct)
+                    ?? Task.FromResult(false);
+                return SuccessHashFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, ct);
+            }));
         }
 
         public static async Task PeerRequestLoop(int methodCode, NodeInfo peer, HashSet<string> addresses, CancellationTokenSource cts)
@@ -170,8 +177,6 @@ namespace ReserveBlockCore.P2P
                 }
                 await delay;
             }
-            if (!MissingAddresses.Any())
-                cts.Cancel();
         }
 
         #endregion

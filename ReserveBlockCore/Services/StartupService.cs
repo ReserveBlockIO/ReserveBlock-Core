@@ -630,7 +630,7 @@ namespace ReserveBlockCore.Services
 
                     var rnd = new Random();                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                    if (NumAdjudicators >= 2 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(1, 100) == 1)
+                    if (NumAdjudicators >= 2 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(5, 10000) <= 5)
                     {
                         var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
