@@ -581,7 +581,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task SendWinningTask_New(TaskWinner taskWin)
         {
-            var hubAdjConnection1 = Globals.AdjNodes.Values.Where(x => x.IsConnected).FirstOrDefault();
+            var hubAdjConnection1 = Globals.AdjNodes.Values.Where(x => x.Address == Globals.LeadAddress).FirstOrDefault();
             if (hubAdjConnection1 != null)
             {
                 for (var i = 1; i < 4; i++)
@@ -642,7 +642,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task SendTaskAnswer_New(TaskNumberAnswerV2 taskAnswer)
         {
-            var hubAdjConnection1 = Globals.AdjNodes.Values.Where(x => x.IsConnected).FirstOrDefault();
+            var hubAdjConnection1 = Globals.AdjNodes.Values.Where(x => x.Address == Globals.LeadAddress).FirstOrDefault();
             Random rand = new Random();
             int randNum = (rand.Next(1, 7) * 1000);
 

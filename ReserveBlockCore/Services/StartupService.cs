@@ -547,6 +547,9 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectToConsensusNodes()
         {
+            if (Globals.AdjudicateAccount == null)
+                return;
+
             while(true)
             {
                 try
