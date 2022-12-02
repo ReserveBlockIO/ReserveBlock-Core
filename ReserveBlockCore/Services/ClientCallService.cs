@@ -1000,10 +1000,17 @@ namespace ReserveBlockCore.Services
                   
                     var signature = string.Join("|", Hashes.Select(x => x.Address + ":" + x.Signature));
                     Winner.AdjudicatorSignature = signature;
-                    if (await BlockValidatorService.ValidateBlock(Winner, false))                                            
-                        RemainingDelay = await FinalizeWork(Globals.LastBlock, InitialBlockDelay);                    
-                    else
+                    
+                    try
+                    {
+                        await InitialBlockDelay;
+                    }
+                    catch { }
+                    RemainingDelay = Task.Delay(6000);
+                    if (!await BlockValidatorService.ValidateBlock(Winner, false))
                         continue;
+                    else
+                        await FinalizeWork(Winner);
                 }
                 catch(Exception ex)
                 {
@@ -1015,19 +1022,13 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        private static async Task<Task> FinalizeWork(Block block, Task initialDelay)
+        private static async Task FinalizeWork(Block block)
         {
             ConsoleWriterService.Output("Task Completed and Block Found: " + block.Height.ToString());
             ConsoleWriterService.Output(DateTime.Now.ToString());
             string data = "";
             data = JsonConvert.SerializeObject(block);
 
-            try
-            {
-                await initialDelay;
-            }
-            catch { }
-            var Result = Task.Delay(10000);
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
             localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = TimeUtil.GetMillisecondTime() });
@@ -1045,9 +1046,7 @@ namespace ReserveBlockCore.Services
             ClearRoundDicts(block.Height);
 
             Globals.LastAdjudicateTime = TimeUtil.GetTime();
-            Globals.BroadcastedTrxDict.Clear();
-
-            return Result;
+            Globals.BroadcastedTrxDict.Clear();            
         }
 
         public static void ClearRoundDicts(long height)

@@ -662,18 +662,21 @@ namespace ReserveBlockCore.Services
                         }
                         else
                         {
-                            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
-                            var CurrentAddresses = Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => x.Address).ToHashSet();
-                            var NewAdjudicators = Signer.CurrentSigningAddresses()
-                                .Select(x => Globals.AdjNodes.Values.Where(y => y.Address == x).FirstOrDefault())                                    
-                                .Where(x => x != null && !CurrentAddresses.Contains(x.Address))
-                                .OrderBy(x => rnd.Next())
-                                .Take(2 - CurrentAddresses.Count)        
+                            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());                            
+                            var NewAdjudicators = Globals.AdjNodes.Values
+                                .OrderBy(x => rnd.Next())                                
                                 .ToArray();
 
-                            foreach (var adjudicator in NewAdjudicators)
+                            for(var i = 0; i < NewAdjudicators.Length; i++)
                             {
-                                var url = "http://" + adjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                var NewAdjudicator = NewAdjudicators[i];
+                                if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= 2)
+                                    break;
+
+                                if (NewAdjudicator.IsConnected)
+                                    continue;
+
+                                var url = "http://" + NewAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
                                 await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                             }
 
