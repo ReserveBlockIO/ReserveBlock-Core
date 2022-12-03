@@ -819,7 +819,10 @@ namespace ReserveBlockCore.Services
                     }));                    
 
                     if (Globals.ConsensusTokenSource.IsCancellationRequested)
-                        continue;
+                    {
+                        Globals.ConsensusTokenSource?.Dispose();
+                        Globals.ConsensusTokenSource = new CancellationTokenSource();
+                    }
 
                     ConsoleWriterService.Output("Majority of peers are ready.");
                     var MyDecryptedAnswer = Height + ":" + State.Answer;                    

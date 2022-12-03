@@ -121,7 +121,7 @@ namespace ReserveBlockCore.P2P
 
         public bool StartRuns(long height)
         {
-            if (Globals.LastBlock.Height + 1 == height && (int)ConsenusStateSingelton.MethodCode == -100)
+            if ((int)ConsenusStateSingelton.MethodCode == -100)
                 UpdateState(methodCode: 0);
             return true;
         }
@@ -144,8 +144,8 @@ namespace ReserveBlockCore.P2P
                 return -1;
             }
 
-            if (height != Globals.LastBlock.Height + 1)
-                return -1;
+            //if (height != Globals.LastBlock.Height + 1)
+            //    return -1;
 
             return ConsenusStateSingelton.MethodCode;
         }
