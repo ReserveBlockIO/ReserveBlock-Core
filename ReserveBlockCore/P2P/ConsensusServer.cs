@@ -128,6 +128,8 @@ namespace ReserveBlockCore.P2P
 
         public bool SuccessHash(long height, int methodCode)
         {
+            if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
+                return false;
             if (Globals.LastBlock.Height + 1 == height && (int)ConsenusStateSingelton.MethodCode == methodCode)
                 UpdateState(methodCode: methodCode + 1);
             return true;
