@@ -101,11 +101,6 @@ namespace ReserveBlockCore.P2P
                 var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 var Now = TimeUtil.GetMillisecondTime();
 
-                var HasPeerRecentlyStarted = Peers.Where(x => x.NodeHeight == Height && x.MethodCode == methodCode + 1 &&
-                    Now - x.LastMethodCodeTime < 1000).Any();
-                var MajorityIsReady = Peers.Where(x => x.NodeHeight == Height && x.MethodCode == methodCode).Count() > Majority - 1;
-
-
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)

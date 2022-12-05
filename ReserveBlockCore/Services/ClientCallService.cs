@@ -790,21 +790,22 @@ namespace ReserveBlockCore.Services
                     var Signers = Signer.CurrentSigningAddresses();
                     var Majority = Signers.Count / 2 + 1;
                     var Peers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address).ToArray();
-                    var HasPeerRecentlyStarted = Peers.Where(x => x.NodeHeight == Height && x.MethodCode == 0 &&
-                        Now - x.LastMethodCodeTime < 1000).Any();
                     var MajorityIsReady = Peers.Where(x => x.NodeHeight == Height && x.MethodCode == -1).Count() > Majority - 1;
 
                     ConsoleWriterService.Output("Waiting for a majority of peers to begin consensus.");
-                    if (!HasPeerRecentlyStarted && !MajorityIsReady)
+                    var IntialWaitSource = new CancellationTokenSource();
+                    _ = Task.WhenAll(Peers.Select(node =>
                     {
-                        _ = Task.WhenAll(Peers.Select(node =>
-                        {
-                            var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height + 1, -1 })
-                                ?? Task.FromResult(false);
-                            return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
-                        }));
-                        await Globals.InitialCompletionSource.Task;
+                        var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height + 1, -1 }, IntialWaitSource.Token)
+                            ?? Task.FromResult(false);
+                        return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x, 100, IntialWaitSource.Token);
+                    }));
+
+                    if (!MajorityIsReady)
+                    {
+                        await Globals.InitialCompletionSource.Task;                        
                     }
+                    IntialWaitSource.Cancel();
 
                     Peers = Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address).ToArray();
                     ConsensusServer.IncrementMethodCode(-1);
