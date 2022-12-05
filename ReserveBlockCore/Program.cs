@@ -416,7 +416,7 @@ namespace ReserveBlockCore
                     if (maxHeight > Globals.LastBlock.Height)
                     {
                         P2PClient.UpdateMaxHeight(maxHeight);
-                        await BlockDownloadService.GetAllBlocks();
+                        _ = BlockDownloadService.GetAllBlocks();
                     }
                     else
                         P2PClient.UpdateMaxHeight(maxHeight);

@@ -30,7 +30,9 @@ namespace ReserveBlockCore.Services
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Globals.LastBlock.Height + 1;
                     
-                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i)).ToArray();
+                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i))
+                        .Where(x => x.node.NodeHeight >= x.height).ToArray();
+
                     if (!heightsFromNodes.Any())
                     {
                         await Task.Delay(4);
