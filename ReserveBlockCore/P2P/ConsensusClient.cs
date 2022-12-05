@@ -63,19 +63,20 @@ namespace ReserveBlockCore.P2P
 
         #region Consensus Code
 
-        public static async Task<(string Address, string Message)[]> ConsensusRun(int methodCode, string message, string signature, int timeToFinalize, CancellationToken ct)
+        public static async Task<(string Address, string Message)[]> ConsensusRun(string message, string signature, int timeToFinalize, CancellationToken ct)
         {
             try
             {
                 var Height = Globals.LastBlock.Height + 1;
-                ConsensusServer.UpdateState(methodCode, (int)ConsensusStatus.Processing);
+                var methodCode = ConsensusServer.GetState().MethodCode;                
+                var Address = Globals.AdjudicateAccount.Address;
+                var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
+                var CurrentTime = TimeUtil.GetMillisecondTime();
 
                 var CurrentAddresses = Signer.CurrentSigningAddresses();
                 var NumNodes = CurrentAddresses.Count;
                 var Majority = NumNodes / 2 + 1;
-                var Address = Globals.AdjudicateAccount.Address;
-                var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
-                
+                               
                 var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
                 ConsensusServer.Messages.Clear();
                 ConsensusServer.Messages[(Height, methodCode)] = Messages;
@@ -99,6 +100,12 @@ namespace ReserveBlockCore.P2P
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
                 var Now = TimeUtil.GetMillisecondTime();
+
+                var HasPeerRecentlyStarted = Peers.Where(x => x.NodeHeight == Height && x.MethodCode == methodCode + 1 &&
+                    Now - x.LastMethodCodeTime < 1000).Any();
+                var MajorityIsReady = Peers.Where(x => x.NodeHeight == Height && x.MethodCode == methodCode).Count() > Majority - 1;
+
+
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
@@ -114,7 +121,7 @@ namespace ReserveBlockCore.P2P
 
                 if (ConsensusServer.GetState().MethodCode != methodCode)
                 {
-                    SendSuccessHash(Peers, methodCode, ct);
+                    SendMethodCode(Peers, methodCode);
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                 }
 
@@ -126,7 +133,8 @@ namespace ReserveBlockCore.P2P
                 if (PeerHashes.Any(x => !MyHashes.SetEquals(x)))
                     return null;
 
-                SendSuccessHash(Peers, methodCode, ct);
+                ConsensusServer.IncrementMethodCode(methodCode);
+                SendMethodCode(Peers, methodCode + 1);
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
             catch(Exception ex)
@@ -135,15 +143,15 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public static void SendSuccessHash(NodeInfo[] peers, int methodCode, CancellationToken ct)
+        public static void SendMethodCode(NodeInfo[] peers, int methodCode)
         {
             var Now = TimeUtil.GetMillisecondTime();
             var Height = Globals.LastBlock.Height + 1;
             _ = Task.WhenAll(peers.Select(node =>
             {
-                var SuccessHashFunc = () => node.Connection?.InvokeCoreAsync<bool>("SuccessHash", args: new object?[] { Height, methodCode }, ct)
+                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Height, methodCode }, default)
                     ?? Task.FromResult(false);
-                return SuccessHashFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, ct);
+                return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
         }
 

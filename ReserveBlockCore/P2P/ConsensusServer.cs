@@ -112,6 +112,15 @@ namespace ReserveBlockCore.P2P
                     ConsenusStateSingelton.RandomNumber = randomNumber;
             }
         }
+
+        public static void IncrementMethodCode(int methodCode)
+        {
+            lock (UpdateLock)
+            {
+                ConsenusStateSingelton.MethodCode = methodCode + 1;
+                ConsenusStateSingelton.Status = ConsensusStatus.Processing;
+            }
+        }
         public static (int MethodCode, ConsensusStatus Status, int Answer) GetState()
         {
             if (ConsenusStateSingelton == null)
@@ -119,35 +128,38 @@ namespace ReserveBlockCore.P2P
             return (ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber);
         }
 
-        public bool StartRuns(long height)
-        {
-            if ((int)ConsenusStateSingelton.MethodCode == -100)
-                UpdateState(methodCode: 0);
-            return true;
-        }
-
-        public bool SuccessHash(long height, int methodCode)
-        {
-            if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
-                return false;
-            if (Globals.LastBlock.Height + 1 == height && (int)ConsenusStateSingelton.MethodCode == methodCode)
-                UpdateState(methodCode: methodCode + 1);
-            return true;
-        }
-
-        public int MethodCode(long height)
+        public bool SendMethodCode(long height, int methodCode)
         {
             var ip = GetIP(Context);
-            if (!Globals.Nodes.TryGetValue(ip, out var Pool))
+            if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
-                return -1;
+                return false;
             }
 
-            //if (height != Globals.LastBlock.Height + 1)
-            //    return -1;
+            node.NodeHeight = height;
+            node.MethodCode = methodCode;
+            node.LastMethodCodeTime = TimeUtil.GetMillisecondTime();
 
-            return ConsenusStateSingelton.MethodCode;
+            if (height == Globals.LastBlock.Height + 1)
+            {
+                if (methodCode == 0)
+                    Globals.InitialCompletionSource.TrySetResult();
+
+                if(methodCode == -1 && ConsenusStateSingelton.MethodCode == -1)
+                {
+                    var InitialCount = Globals.Nodes.Values.Where(x => x.NodeHeight == height && x.MethodCode == -1 && 
+                        x.Address != Globals.AdjudicateAccount.Address).Count();
+
+                    if(InitialCount >= Signer.CurrentSigningAddresses().Count / 2)                    
+                        Globals.InitialCompletionSource.TrySetResult();
+                }
+
+                if (ConsenusStateSingelton.MethodCode + 1 == methodCode)
+                    IncrementMethodCode(methodCode);
+            }
+
+            return true;
         }
 
         public string Message(long height, int methodCode, string[] addresses)

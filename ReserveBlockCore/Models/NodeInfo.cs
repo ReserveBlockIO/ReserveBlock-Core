@@ -15,6 +15,10 @@ namespace ReserveBlockCore.Models
         public string Address { get; set; }
 
         public long NodeHeight { get; set; }
+
+        public int MethodCode = -100;
+
+        public long LastMethodCodeTime { get; set; }
         public int NodeLatency { get; set; }
         public DateTime? NodeLastChecked { get; set; }
 

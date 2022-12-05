@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Extensions
     {
 		public static async Task WhenAtLeast<T>(this IEnumerable<Task<T>> tasks, Func<T, bool> successPredicate, int atLeast)
 		{
-			var TaskSource = new TaskCompletionSource<object>();
+			var TaskSource = new TaskCompletionSource();
 
 			var NumOfTasksCompleted = 0;
 			foreach (var task in tasks)
@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Extensions
 						Interlocked.Increment(ref NumOfTasksCompleted);
 
 					if (NumOfTasksCompleted >= atLeast)
-						TaskSource.TrySetResult(null);
+						TaskSource.TrySetResult();
 
 				});
 

@@ -131,6 +131,7 @@ namespace ReserveBlockCore
 
         #region Consensus Variables
         public static CancellationTokenSource ConsensusTokenSource = new CancellationTokenSource();
+        public static TaskCompletionSource InitialCompletionSource = new TaskCompletionSource();        
         #endregion
 
         #region P2P Adj Server Variables
