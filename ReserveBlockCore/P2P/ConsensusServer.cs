@@ -100,13 +100,13 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(int methodCode = -1, int status = -1, int randomNumber = -1)
+        public static void UpdateState(int methodCode = -100, int status = -1, int randomNumber = -1)
         {
             lock (UpdateLock)
             {
                 if (status != -1)
                     ConsenusStateSingelton.Status = (ConsensusStatus)status;
-                if (methodCode != -1)
+                if (methodCode != -100)
                     ConsenusStateSingelton.MethodCode = methodCode;
                 if (randomNumber != -1)
                     ConsenusStateSingelton.RandomNumber = randomNumber;
