@@ -795,10 +795,38 @@ namespace ReserveBlockCore.P2P
             catch { }
             return (-1, DateTime.UtcNow, 0);
         }
+
+        public static async Task<bool> UpdateNodeMethodCode(NodeInfo node)
+        {
+            try
+            {
+                var Now = TimeUtil.GetMillisecondTime();
+                var remoteMethodCode = (await node.Connection.InvokeAsync<string>("RequestMethodCode")).Split(':');
+                if(Now > node.LastMethodCodeTime)
+                {
+                    node.LastMethodCodeTime = Now;
+                    node.NodeHeight = long.Parse(remoteMethodCode[0]);
+                    node.MethodCode = int.Parse(remoteMethodCode[1]);
+                    ConsensusServer.UpdateLocalState(node.NodeHeight, node.MethodCode);
+                }
+                return true;
+            }
+            catch { }
+            return false;
+        }
+
         public static async Task UpdateNodeHeights()
         {
-            foreach (var node in Globals.Nodes.Values)                
-                (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);           
+            if (Globals.AdjudicateAccount != null)
+            {
+                foreach (var node in Globals.Nodes.Values)
+                    await UpdateNodeMethodCode(node);
+            }
+            else
+            {
+                foreach (var node in Globals.Nodes.Values)
+                    (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);
+            }
         }
 
         #endregion

@@ -18,8 +18,7 @@ namespace ReserveBlockCore
         #region Timers
         public static bool IsTestNet = false;
 
-        public static string LeadAddress = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY";
-        public static Timer? heightTimer; //timer for getting height from other nodes        
+        public static string LeadAddress = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY";      
         public static Timer? ValidatorListTimer;//checks currents peers and old peers and will request others to try. 
         public static Timer? DBCommitTimer;//checks dbs and commits log files. 
         public static Timer? ConnectionHistoryTimer;//process connections and history of them        
