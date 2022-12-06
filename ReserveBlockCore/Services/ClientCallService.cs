@@ -781,9 +781,6 @@ namespace ReserveBlockCore.Services
             {                               
                 try
                 {
-                    Globals.ConsensusTokenSource?.Dispose();
-                    Globals.ConsensusTokenSource = new CancellationTokenSource();
-
                     var Height = Globals.LastBlock.Height + 1;
                     ClearRoundDicts(Height);
                     TaskQuestionUtility.CreateTaskQuestion("rndNum");
@@ -791,24 +788,25 @@ namespace ReserveBlockCore.Services
                     var Signers = Signer.CurrentSigningAddresses();
                     var Majority = Signers.Count / 2 + 1;
                                                         
-                    var fortisPool = Globals.FortisPool.Values;                    
-                    var Token = Globals.ConsensusTokenSource.Token;
+                    var fortisPool = Globals.FortisPool.Values;
                                                          
                     ConsoleWriterService.Output("Majority of peers are ready.");
                     var MyDecryptedAnswer = Height + ":" + Answer;                    
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
-                    var EncryptedAnswers = await ConsensusClient.ConsensusRun(MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, Token, RunType.Initial);
-
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || EncryptedAnswers == null)                    
+                    var EncryptedAnswers = await ConsensusClient.ConsensusRun(MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, RunType.Initial);
+                    
+                    if (EncryptedAnswers == null)                    
                         continue;
-
+                   
                     await RemainingDelay;
                     var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
                     var CurrentTime = TimeUtil.GetMillisecondTime();
                     var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 19000;
                     InitialDelayTime = Math.Max(InitialDelayTime, 0);
-                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime, Globals.ConsensusTokenSource.Token);
+                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime);
+
+                    Height = Globals.LastBlock.Height + 1;
 
                     ConsoleWriterService.Output("EncryptedAnswer Consensus at height " + Height);
                                         
@@ -816,9 +814,9 @@ namespace ReserveBlockCore.Services
                     ConsoleWriterService.Output("My submission count " + MySubmissions.Length);
                     var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
                     var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
-                    var Submissions = await ConsensusClient.ConsensusRun(MySubmissionsString, MySubmissionsSignature, 2000, Token, RunType.Middle);
+                    var Submissions = await ConsensusClient.ConsensusRun(MySubmissionsString, MySubmissionsSignature, 2000, RunType.Middle);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || Submissions == null)
+                    if (Globals.LastBlock.Height + 1 != Height || Submissions == null)
                         continue;
 
                     ConsoleWriterService.Output("Submissions Consensus at height " + Height);
@@ -853,9 +851,9 @@ namespace ReserveBlockCore.Services
                     catch { }
 
                     ConsensusServer.UpdateState(isUsed: true);
-                    var DecryptedAnswers = await ConsensusClient.ConsensusRun(MyDecryptedAnswer, MyEncryptedAnswer, 2000, Token, RunType.Middle);
+                    var DecryptedAnswers = await ConsensusClient.ConsensusRun(MyDecryptedAnswer, MyEncryptedAnswer, 2000, RunType.Middle);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || DecryptedAnswers == null)
+                    if (Globals.LastBlock.Height + 1 != Height || DecryptedAnswers == null)
                         continue;
 
                     ConsoleWriterService.Output("DecryptedAnswer Consensus at height " + Height);
@@ -926,9 +924,9 @@ namespace ReserveBlockCore.Services
 
                     var MySubmittedWinnersString = JsonConvert.SerializeObject(MySubmittedWinners);
                     var MySubmittedWinnersSignature = SignatureService.AdjudicatorSignature(MySubmittedWinnersString);
-                    var SubmittedWinners = await ConsensusClient.ConsensusRun(MySubmittedWinnersString, MySubmittedWinnersSignature, 2000, Token, RunType.Middle);
+                    var SubmittedWinners = await ConsensusClient.ConsensusRun(MySubmittedWinnersString, MySubmittedWinnersSignature, 2000, RunType.Middle);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || SubmittedWinners == null)
+                    if (Globals.LastBlock.Height + 1 != Height || SubmittedWinners == null)
                         continue;
 
                     ConsoleWriterService.Output("SubmittedWinner Consensus at height " + Height);                    
@@ -961,9 +959,9 @@ namespace ReserveBlockCore.Services
                     var WinnerHasheSignature = Winner.Hash + ":" + SignatureService.AdjudicatorSignature(Winner.Hash);                    
                     var WinnerHashSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignature);                    
                                         
-                    var HashResult = await ConsensusClient.ConsensusRun(WinnerHasheSignature, WinnerHashSignature, 2000, Token, RunType.Last);
+                    var HashResult = await ConsensusClient.ConsensusRun(WinnerHasheSignature, WinnerHashSignature, 2000, RunType.Last);
 
-                    if (Globals.ConsensusTokenSource.IsCancellationRequested || HashResult == null)
+                    if (Globals.LastBlock.Height + 1 != Height || HashResult == null)
                         continue;
 
                     ConsoleWriterService.Output("WinnerHashSignature Consensus at height " + Height);                    

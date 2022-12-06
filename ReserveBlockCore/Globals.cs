@@ -128,11 +128,6 @@ namespace ReserveBlockCore
 
         #endregion
 
-        #region Consensus Variables
-        public static CancellationTokenSource ConsensusTokenSource = new CancellationTokenSource();
-        public static TaskCompletionSource InitialCompletionSource = new TaskCompletionSource();        
-        #endregion
-
         #region P2P Adj Server Variables
 
         public static ConcurrentMultiDictionary<string, string, FortisPool> FortisPool = new ConcurrentMultiDictionary<string, string, FortisPool>(); // IP address, RBX address        

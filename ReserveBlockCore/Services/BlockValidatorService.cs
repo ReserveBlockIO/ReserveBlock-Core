@@ -120,8 +120,7 @@ namespace ReserveBlockCore.Services
                     }
 
                     UpdateMemBlocks(block);//update mem blocks
-                    DbContext.Commit();
-                    Globals.ConsensusTokenSource.Cancel();
+                    DbContext.Commit();                    
                     return result;
                 }
                 if (block.Height != 0)
@@ -290,8 +289,7 @@ namespace ReserveBlockCore.Services
                             return result;//block rejected due to bad transaction(s)
                         }
 
-                        result = true;
-                        Globals.ConsensusTokenSource.Cancel();
+                        result = true;                        
                         BlockchainData.AddBlock(block);//add block to chain.
                         UpdateMemBlocks(block);//update mem blocks
                         StateData.UpdateTreis(block); //update treis
@@ -348,8 +346,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     //Genesis Block
-                    result = true;
-                    Globals.ConsensusTokenSource.Cancel();
+                    result = true;                    
                     BlockchainData.AddBlock(block);
                     StateData.UpdateTreis(block);
                     DbContext.Commit();

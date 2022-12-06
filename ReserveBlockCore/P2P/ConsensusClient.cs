@@ -70,7 +70,7 @@ namespace ReserveBlockCore.P2P
             Last
         }
 
-        public static async Task<(string Address, string Message)[]> ConsensusRun(string message, string signature, int timeToFinalize, CancellationToken ct, RunType runType)
+        public static async Task<(string Address, string Message)[]> ConsensusRun(string message, string signature, int timeToFinalize, RunType runType)
         {
             try
             {
@@ -96,7 +96,7 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Messages[(Height, methodCode)] = Messages;
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
-                    var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                    var ConsensusSource = new CancellationTokenSource();
                     foreach (var peer in Peers)
                     {
                         _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
@@ -108,7 +108,7 @@ namespace ReserveBlockCore.P2P
                         {
                             try
                             {
-                                await Task.Delay(4, Globals.ConsensusTokenSource.Token);
+                                await Task.Delay(4);
                             }
                             catch { }
                         }
@@ -132,7 +132,7 @@ namespace ReserveBlockCore.P2P
                 }
                 
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
-                var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                var HashSource = new CancellationTokenSource();
                 var Now = TimeUtil.GetMillisecondTime();
 
                 var HashTasks = Peers.Select(node =>
@@ -145,7 +145,7 @@ namespace ReserveBlockCore.P2P
 
                 await HashTasks.WhenAtLeast(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000 || ConsensusServer.GetState().MethodCode != methodCode, Signer.Majority() - 1);                
                 HashSource.Cancel();
-                if (Globals.ConsensusTokenSource.IsCancellationRequested)
+                if (Height != Globals.LastBlock.Height + 1)
                     return null;
 
                 if (runType != RunType.Last && ConsensusServer.GetState().MethodCode != methodCode)
