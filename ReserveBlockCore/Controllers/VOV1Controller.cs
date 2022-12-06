@@ -145,6 +145,18 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetAuditTopic/{topicUID}")]
+        public async Task<string> GetAuditTopic(string topicUID)
+        {
+            var output = "";
+
+            TopicTrei.AuditTopic(topicUID);
+
+            output = $"Audit started for topic: {topicUID}";
+            
+            return output;
+        }
+
         [HttpGet("CastTopicVote/{topicUID}/{vote}")]
         public async Task<string> CastTopicVote(string topicUID, VoteType voteType)
         {

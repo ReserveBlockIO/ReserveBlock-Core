@@ -229,7 +229,7 @@ namespace ReserveBlockCore.Data
         public static Block GetBlockByHeight(long height)
         {
             var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
-            var block = blocks.FindOne(x => x.Height == height);
+            var block = blocks.Query().Where(x => x.Height == height).FirstOrDefault();
             return block;
         }
 

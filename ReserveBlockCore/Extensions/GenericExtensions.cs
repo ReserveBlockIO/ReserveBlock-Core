@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -14,6 +15,12 @@ namespace ReserveBlockCore.Extensions
             {
                 foreach (var x in source) yield return x;
             }
+        }
+
+        public static long ToUnixTimeSeconds(this DateTime obj)
+        {
+            long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();
+            return unixTime;
         }
         public static int ToInt32(this string obj)
         {
