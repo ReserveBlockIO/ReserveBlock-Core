@@ -15,6 +15,7 @@ namespace ReserveBlockCore.Models
         public long Id { get; set; }        
         public int MethodCode { get; set; }
         public ConsensusStatus Status { get; set; }                
-        public int RandomNumber { get; set; }       
+        public int RandomNumber { get; set; }           
+        public bool IsUsed { get; set; }
     }
 }

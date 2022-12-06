@@ -63,7 +63,14 @@ namespace ReserveBlockCore.P2P
 
         #region Consensus Code
 
-        public static async Task<(string Address, string Message)[]> ConsensusRun(string message, string signature, int timeToFinalize, CancellationToken ct)
+        public enum RunType
+        {
+            Initial,
+            Middle,
+            Last
+        }
+
+        public static async Task<(string Address, string Message)[]> ConsensusRun(string message, string signature, int timeToFinalize, CancellationToken ct, RunType runType)
         {
             try
             {
@@ -87,6 +94,19 @@ namespace ReserveBlockCore.P2P
                 {
                     _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
                 }
+
+                if(runType == RunType.Initial)
+                {
+                    while (Messages.Count < Majority)
+                    {
+                        try
+                        {
+                            await Task.Delay(4, Globals.ConsensusTokenSource.Token);
+                        }
+                        catch { }
+                    }
+                }
+
                 try
                 {
                     await Task.Delay(timeToFinalize, ConsensusSource.Token);
@@ -114,7 +134,7 @@ namespace ReserveBlockCore.P2P
                 if (Globals.ConsensusTokenSource.IsCancellationRequested)
                     return null;
 
-                if (ConsensusServer.GetState().MethodCode != methodCode)
+                if (runType != RunType.Last && ConsensusServer.GetState().MethodCode != methodCode)
                 {
                     SendMethodCode(Peers, methodCode);
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
@@ -128,8 +148,11 @@ namespace ReserveBlockCore.P2P
                 if (PeerHashes.Any(x => !MyHashes.SetEquals(x)))
                     return null;
 
-                ConsensusServer.IncrementMethodCode(methodCode);
-                SendMethodCode(Peers, methodCode + 1);
+                if (runType != RunType.Last)
+                {
+                    ConsensusServer.IncrementMethodCode(methodCode);
+                    SendMethodCode(Peers, methodCode + 1);
+                }
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
             catch(Exception ex)
