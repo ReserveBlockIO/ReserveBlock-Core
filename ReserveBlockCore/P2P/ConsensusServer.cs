@@ -100,10 +100,11 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(int methodCode = -100, int status = -1, int randomNumber = -1, bool? isUsed = null)
+        public static void UpdateState(long height = -1, int methodCode = -100, int status = -1, int randomNumber = -1, bool? isUsed = null)
         {
             lock (UpdateLock)
             {
+                ConsenusStateSingelton.Height = height;
                 if (status != -1)
                     ConsenusStateSingelton.Status = (ConsensusStatus)status;
                 if (methodCode != -100)
@@ -114,11 +115,11 @@ namespace ReserveBlockCore.P2P
                     ConsenusStateSingelton.IsUsed = isUsed.Value;
             }
         }
-        public static (int MethodCode, ConsensusStatus Status, int Answer, bool IsUsed) GetState()
+        public static (long Height, int MethodCode, ConsensusStatus Status, int Answer, bool IsUsed) GetState()
         {
             if (ConsenusStateSingelton == null)
-                return (0, ConsensusStatus.Processing, -1, false);
-            return (ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber,
+                return (-1, 0, ConsensusStatus.Processing, -1, false);
+            return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber,
                 ConsenusStateSingelton.IsUsed);
         }
 

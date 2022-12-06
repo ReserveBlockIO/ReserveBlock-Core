@@ -170,7 +170,7 @@ namespace ReserveBlockCore.P2P
 
         public static bool ForceSuccess(RunType type, long Height, int methodCode, int minPass)
         {
-            return Globals.LastBlock.Height + 1 != Height || (type == RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0))
+            return Globals.LastBlock.Height + 1 != Height || (type != RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0))
                     || Globals.Nodes.Values.Where(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode).Count() < minPass;
         }
 
