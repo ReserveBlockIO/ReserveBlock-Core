@@ -134,16 +134,17 @@ namespace ReserveBlockCore.P2P
                 
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 var HashSource = new CancellationTokenSource();
-                
+
+                var MinPass = Signer.Majority() - 1;
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || Globals.LastBlock.Height + 1 != Height || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1), 100, HashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || ForceSuccess(runType, Height, methodCode, MinPass), 100, HashSource.Token);
                 })
                 .ToArray();
-
-                await HashTasks.WhenAtLeast(x => x != null || Globals.LastBlock.Height + 1 != Height || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1), Signer.Majority() - 1);                
+                
+                await HashTasks.WhenAtLeast(x => x != null || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);                
                 HashSource.Cancel();
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
@@ -166,6 +167,13 @@ namespace ReserveBlockCore.P2P
             }
             return null;
         }
+
+        public static bool ForceSuccess(RunType type, long Height, int methodCode, int minPass)
+        {
+            return Globals.LastBlock.Height + 1 != Height || (type == RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0))
+                    || Globals.Nodes.Values.Where(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode).Count() < minPass;
+        }
+
 
         public static void SendMethodCode(NodeInfo[] peers, int methodCode)
         {
