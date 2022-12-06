@@ -154,7 +154,7 @@ namespace ReserveBlockCore.P2P
                 var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
                 var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
                 if (PeerHashes.Where(x => MyHashes.SetEquals(x)).Count() < Majority - 1 && 
-                    !Globals.Nodes.Values.Any(x => x.NodeHeight == Height && x.MethodCode == methodCode + 1))
+                    !Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
                     return null;
 
                 if (runType != RunType.Last)

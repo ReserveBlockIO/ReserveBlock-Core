@@ -161,7 +161,7 @@ namespace ReserveBlockCore.P2P
                 return null;
             }
 
-            return (Globals.LastBlock.Height + 1).ToString() + ":" + ConsenusStateSingelton.MethodCode;
+            return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode;
         }
 
         public bool SendMethodCode(long height, int methodCode)
