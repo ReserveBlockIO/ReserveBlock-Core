@@ -114,15 +114,6 @@ namespace ReserveBlockCore.P2P
                     ConsenusStateSingelton.IsUsed = isUsed.Value;
             }
         }
-
-        public static void IncrementMethodCode(int methodCode)
-        {
-            lock (UpdateLock)
-            {
-                ConsenusStateSingelton.MethodCode = methodCode + 1;
-                ConsenusStateSingelton.Status = ConsensusStatus.Processing;
-            }
-        }
         public static (int MethodCode, ConsensusStatus Status, int Answer, bool IsUsed) GetState()
         {
             if (ConsenusStateSingelton == null)

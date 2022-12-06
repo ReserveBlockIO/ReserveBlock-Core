@@ -794,7 +794,7 @@ namespace ReserveBlockCore.Services
                     var MyDecryptedAnswer = Height + ":" + Answer;                    
                     var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
-                    var EncryptedAnswers = await ConsensusClient.ConsensusRun(MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, RunType.Initial);
+                    var EncryptedAnswers = await ConsensusClient.ConsensusRun(0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, RunType.Initial);
                     
                     if (EncryptedAnswers == null)                    
                         continue;
@@ -814,7 +814,7 @@ namespace ReserveBlockCore.Services
                     ConsoleWriterService.Output("My submission count " + MySubmissions.Length);
                     var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
                     var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
-                    var Submissions = await ConsensusClient.ConsensusRun(MySubmissionsString, MySubmissionsSignature, 2000, RunType.Middle);
+                    var Submissions = await ConsensusClient.ConsensusRun(1, MySubmissionsString, MySubmissionsSignature, 2000, RunType.Middle);
 
                     if (Globals.LastBlock.Height + 1 != Height || Submissions == null)
                         continue;
@@ -851,7 +851,7 @@ namespace ReserveBlockCore.Services
                     catch { }
 
                     ConsensusServer.UpdateState(isUsed: true);
-                    var DecryptedAnswers = await ConsensusClient.ConsensusRun(MyDecryptedAnswer, MyEncryptedAnswer, 2000, RunType.Middle);
+                    var DecryptedAnswers = await ConsensusClient.ConsensusRun(2, MyDecryptedAnswer, MyEncryptedAnswer, 2000, RunType.Middle);
 
                     if (Globals.LastBlock.Height + 1 != Height || DecryptedAnswers == null)
                         continue;
@@ -924,7 +924,7 @@ namespace ReserveBlockCore.Services
 
                     var MySubmittedWinnersString = JsonConvert.SerializeObject(MySubmittedWinners);
                     var MySubmittedWinnersSignature = SignatureService.AdjudicatorSignature(MySubmittedWinnersString);
-                    var SubmittedWinners = await ConsensusClient.ConsensusRun(MySubmittedWinnersString, MySubmittedWinnersSignature, 2000, RunType.Middle);
+                    var SubmittedWinners = await ConsensusClient.ConsensusRun(3, MySubmittedWinnersString, MySubmittedWinnersSignature, 2000, RunType.Middle);
 
                     if (Globals.LastBlock.Height + 1 != Height || SubmittedWinners == null)
                         continue;
@@ -959,7 +959,7 @@ namespace ReserveBlockCore.Services
                     var WinnerHasheSignature = Winner.Hash + ":" + SignatureService.AdjudicatorSignature(Winner.Hash);                    
                     var WinnerHashSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignature);                    
                                         
-                    var HashResult = await ConsensusClient.ConsensusRun(WinnerHasheSignature, WinnerHashSignature, 2000, RunType.Last);
+                    var HashResult = await ConsensusClient.ConsensusRun(4, WinnerHasheSignature, WinnerHashSignature, 2000, RunType.Last);
 
                     if (Globals.LastBlock.Height + 1 != Height || HashResult == null)
                         continue;

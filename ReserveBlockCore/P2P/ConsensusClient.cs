@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Extensions;
 using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace ReserveBlockCore.P2P
 {
@@ -70,20 +71,20 @@ namespace ReserveBlockCore.P2P
             Last
         }
 
-        public static async Task<(string Address, string Message)[]> ConsensusRun(string message, string signature, int timeToFinalize, RunType runType)
+        public static async Task<(string Address, string Message)[]> ConsensusRun(int methodCode, string message, string signature, int timeToFinalize, RunType runType)
         {
             try
             {
-                NodeInfo[] Peers = null;
-                long Height = -1;
-                int methodCode = -1;
+                ConsensusServer.UpdateState(methodCode: methodCode);
+                var Address = Globals.AdjudicateAccount.Address;
+                var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
+                long Height = -1;                
                 int Majority = -1;
                 ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
+                SendMethodCode(Peers, methodCode);
                 while (true)
                 {
-                    Height = Globals.LastBlock.Height + 1;
-                    methodCode = ConsensusServer.GetState().MethodCode;
-                    var Address = Globals.AdjudicateAccount.Address;
+                    Height = Globals.LastBlock.Height + 1;                                    
                     Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
                     var CurrentTime = TimeUtil.GetMillisecondTime();
 
@@ -149,8 +150,7 @@ namespace ReserveBlockCore.P2P
                     return null;
 
                 if (runType != RunType.Last && Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
-                {
-                    SendMethodCode(Peers, methodCode);
+                {                    
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                 }
 
@@ -160,11 +160,6 @@ namespace ReserveBlockCore.P2P
                     !Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
                     return null;
 
-                if (runType != RunType.Last)
-                {
-                    ConsensusServer.IncrementMethodCode(methodCode);
-                    SendMethodCode(Peers, methodCode + 1);
-                }
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
             }
             catch(Exception ex)
