@@ -125,7 +125,7 @@ namespace ReserveBlockCore.Services
 
         private async void DoAssetWork(object? state)
         {
-            if (!AssetLock)
+            if (!AssetLock && Globals.AutoDownloadNFTAsset)
             {
                 AssetLock = true;
                 {

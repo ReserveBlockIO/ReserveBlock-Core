@@ -65,39 +65,42 @@ namespace ReserveBlockCore.Nodes
                 {
                     try
                     {
-                        var payload = JsonConvert.DeserializeObject<string[]>(data);
-                        if (payload != null)
+                        if(Globals.AutoDownloadNFTAsset)
                         {
-                            var scUID = payload[0];
-                            var assetName = payload[1];
-
-                            var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
-                            var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
-
-                            if(beacon != null)
+                            var payload = JsonConvert.DeserializeObject<string[]>(data);
+                            if (payload != null)
                             {
-                                BeaconResponse rsp = BeaconClient.Receive(assetName, beacon.IPAddress, beacon.Port, scUID);
-                                if (rsp.Status == 1)
-                                {
-                                    //success
-                                    NFTLogUtility.Log($"File was received - {assetName}", "BeaconProcessor.ProcessData() - receive");
+                                var scUID = payload[0];
+                                var assetName = payload[1];
 
+                                var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
+                                var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+                                if (beacon != null)
+                                {
+                                    BeaconResponse rsp = BeaconClient.Receive(assetName, beacon.IPAddress, beacon.Port, scUID);
+                                    if (rsp.Status == 1)
+                                    {
+                                        //success
+                                        NFTLogUtility.Log($"File was received - {assetName}", "BeaconProcessor.ProcessData() - receive");
+
+                                    }
+                                    else
+                                    {
+                                        //failed
+                                        NFTLogUtility.Log($"Failed to get rsp.Status = 1. Status was {rsp.Status}", "BeaconProcessor.ProcessData() - receive");
+                                    }
                                 }
                                 else
                                 {
-                                    //failed
-                                    NFTLogUtility.Log($"Failed to get rsp.Status = 1. Status was {rsp.Status}", "BeaconProcessor.ProcessData() - receive");
+                                    NFTLogUtility.Log($"Beacon was null.", "BeaconProcessor.ProcessData() - receive");
                                 }
+
                             }
                             else
                             {
-                                NFTLogUtility.Log($"Beacon was null.", "BeaconProcessor.ProcessData() - receive");
+                                NFTLogUtility.Log($"Payload was null.", "BeaconProcessor.ProcessData() - receive");
                             }
-                            
-                        }
-                        else
-                        {
-                            NFTLogUtility.Log($"Payload was null.", "BeaconProcessor.ProcessData() - receive");
                         }
                     }
                     catch(Exception ex)
