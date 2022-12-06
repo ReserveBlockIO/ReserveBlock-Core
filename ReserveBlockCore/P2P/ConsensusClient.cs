@@ -104,7 +104,7 @@ namespace ReserveBlockCore.P2P
 
                     if (runType == RunType.Initial)
                     {
-                        while (Messages.Count < Majority)
+                        while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
                         {
                             try
                             {
@@ -121,6 +121,9 @@ namespace ReserveBlockCore.P2P
                     catch { }
 
                     ConsensusSource.Cancel();
+
+                    if (Height != Globals.LastBlock.Height + 1)
+                        continue;
 
                     if (Messages.Count >= Majority)
                         break;
