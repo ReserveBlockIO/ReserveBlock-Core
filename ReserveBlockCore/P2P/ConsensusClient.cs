@@ -148,7 +148,7 @@ namespace ReserveBlockCore.P2P
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
 
-                if (runType != RunType.Last && ConsensusServer.GetState().MethodCode != methodCode)
+                if (runType != RunType.Last && Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
                 {
                     SendMethodCode(Peers, methodCode);
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
