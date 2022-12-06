@@ -1,12 +1,16 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
+using System.Formats.Asn1;
 using System.Globalization;
 using System.Net;
 using System.Numerics;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Models
 {
@@ -166,6 +170,30 @@ namespace ReserveBlockCore.Models
                 }
             }
 
+        }
+        #endregion
+
+        #region Update Topic
+        public static bool UpdateTopic(TopicTrei topic)
+        {
+            var topics = GetTopics();
+            if (topics == null)
+            {
+                ErrorLogUtility.LogError("GetTopics() returned a null value.", "TopicTrei.SaveTopic()");
+                return false;
+            }
+            else
+            {
+                var topicRecData = topics.FindOne(x => x.TopicUID == topic.TopicUID);
+                if (topicRecData != null)
+                {
+                    topicRecData = topic;
+                    topics.UpdateSafe(topicRecData);
+                    return true;
+                }
+            }
+
+            return false;
         }
         #endregion
 
@@ -332,6 +360,73 @@ namespace ReserveBlockCore.Models
             }
 
             return (null, "Error. Please see message above.");
+        }
+
+        #endregion
+
+        #region Audit Topic Votes
+        public static async Task AuditTopic(string topicUID)
+        {
+            try
+            {
+                var topic = GetSpecificTopic(topicUID);
+                ConcurrentBag<Vote> topicVotes = new ConcurrentBag<Vote>();
+                if (topic != null)
+                {
+                    var startBlock = topic.BlockHeight;
+                    var endDate = topic.VotingEndDate.ToUnixTimeSeconds();
+
+                    var endBlock = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp <= endDate).OrderByDescending(x => x.Height).FirstOrDefault().Height;
+                    bool audit = true;
+                    bool updateTopic = false;
+
+                    while (audit)
+                    {
+                        var block = BlockchainData.GetBlockByHeight(startBlock);
+                        if (block != null)
+                        {
+                            var transactions = block.Transactions.Where(x => x.TransactionType == TransactionType.VOTE).ToList();
+                            if (transactions.Any())
+                            {
+                                foreach (var tx in transactions)
+                                {
+                                    var jobj = JObject.Parse(tx.Data);
+                                    var function = (string)jobj["Function"];
+                                    Vote vote = jobj["Vote"].ToObject<Vote>();
+
+                                    if(vote.TopicUID == topic.TopicUID)
+                                    {
+                                        topicVotes.Add(vote);
+                                    }
+                                }
+                            }
+
+                            startBlock += 1;
+
+                            if (startBlock > endBlock)
+                                audit = false;
+                        }
+                    }
+
+                    var countYes = topicVotes.Where(x => x.VoteType == VoteType.Yes).Count();
+                    var countNo = topicVotes.Where(x => x.VoteType == VoteType.No).Count();
+
+                    if(countYes != topic.VoteYes)
+                    {
+                        topic.VoteYes = countYes;
+                        updateTopic = true;
+                    }
+                    if(countNo != topic.VoteNo)
+                    {
+                        topic.VoteNo = countNo;
+                        updateTopic = true;
+                    }
+
+                    if(updateTopic)
+                        UpdateTopic(topic);
+                }
+            }
+            catch { }
         }
 
         #endregion
