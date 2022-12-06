@@ -309,7 +309,6 @@ namespace ReserveBlockCore.Services
                                     }
                                 }
 
-
                                 //Process transactions sent ->To<- wallet
                                 var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
                                 if (account != null)
