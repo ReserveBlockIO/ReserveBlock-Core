@@ -134,17 +134,16 @@ namespace ReserveBlockCore.P2P
                 
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 var HashSource = new CancellationTokenSource();
-                var Now = TimeUtil.GetMillisecondTime();
-
+                
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000 || ConsensusServer.GetState().MethodCode != methodCode, 100, HashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || Globals.LastBlock.Height + 1 != Height || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1), 100, HashSource.Token);
                 })
                 .ToArray();
 
-                await HashTasks.WhenAtLeast(x => x != null || (TimeUtil.GetMillisecondTime() - Now) > 1000 || ConsensusServer.GetState().MethodCode != methodCode, Signer.Majority() - 1);                
+                await HashTasks.WhenAtLeast(x => x != null || Globals.LastBlock.Height + 1 != Height || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1), Signer.Majority() - 1);                
                 HashSource.Cancel();
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
