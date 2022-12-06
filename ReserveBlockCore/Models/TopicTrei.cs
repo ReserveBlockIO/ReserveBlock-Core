@@ -36,8 +36,6 @@ namespace ReserveBlockCore.Models
         public decimal PercentInFavor { get { return ((VoteYes / ValidatorCount) * 100M); } }  //system defined 
         public decimal PercentAgainst { get { return ((VoteNo / ValidatorCount) * 100M); } }  //system defined
 
-        #endregion
-
         public class TopicCreate
         {
             public string TopicName { get; set; }
@@ -45,6 +43,7 @@ namespace ReserveBlockCore.Models
             public VotingDays VotingEndDays { get; set; }
             public VoteTopicCategories VoteTopicCategory { get; set; }
         }
+        #endregion
 
         #region Get Topics DB
         public static LiteDB.ILiteCollection<TopicTrei>? GetTopics()
@@ -145,12 +144,12 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Save Topic
-        public static bool SaveAdnr(TopicTrei topic)
+        public static bool SaveTopic(TopicTrei topic)
         {
             var topics = GetTopics();
             if (topics == null)
             {
-                ErrorLogUtility.LogError("GetTopics() returned a null value.", "TopicTrei.SaveAdnr()");
+                ErrorLogUtility.LogError("GetTopics() returned a null value.", "TopicTrei.SaveTopic()");
                 return false;
             }
             else
@@ -315,8 +314,8 @@ namespace ReserveBlockCore.Models
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
                     //TransactionData.AddToPool(topicTx);
-                    TransactionData.AddTxToWallet(topicTx);
-                    AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
+                    //TransactionData.AddTxToWallet(topicTx);
+                    //AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
                     //await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
                     return (topicTx, "Success");
                 }
@@ -344,11 +343,7 @@ namespace ReserveBlockCore.Models
         Adjudicator,
         Validator
     }
-    public enum VoteType
-    {
-        No,
-        Yes
-    }
+
     public enum VotingDays
     {
         Thirty = 30,

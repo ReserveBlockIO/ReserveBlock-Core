@@ -106,7 +106,7 @@ namespace ReserveBlockCore.Data
                     
                 }
 
-                if(x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
+                if(x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base" && x.ToAddress != "Topic_Base" && x.ToAddress != "Vote_Base")
                 {
                     var to = GetSpecificAccountStateTrei(x.ToAddress);
                     if(x.TransactionType == TransactionType.TX)
@@ -249,7 +249,59 @@ namespace ReserveBlockCore.Data
                         }
                     }
 
-                    if(x.TransactionType == TransactionType.DSTR)
+                    if(x.TransactionType == TransactionType.VOTE_TOPIC)
+                    {
+                        var txData = x.Data;
+                        if (!string.IsNullOrWhiteSpace(txData))
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                TopicTrei topic = jobj["Topic"].ToObject<TopicTrei>();
+                                if(topic != null)
+                                {
+                                    topic.Id = 0;//save new
+                                    topic.BlockHeight = x.Height;
+                                    TopicTrei.SaveTopic(topic);
+                                }
+                            }
+                        }
+                    }
+
+                    if (x.TransactionType == TransactionType.VOTE)
+                    {
+                        var txData = x.Data;
+                        if (!string.IsNullOrWhiteSpace(txData))
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                Vote vote = jobj["Vote"].ToObject<Vote>();
+                                if(vote != null)
+                                {
+                                    vote.Id = 0;
+                                    vote.TransactionHash = x.Hash;
+                                    vote.BlockHeight = x.Height;
+                                    var result = Vote.SaveVote(vote);
+                                    if(result)
+                                    {
+                                        var topic = TopicTrei.GetSpecificTopic(vote.TopicUID);
+                                        if(topic != null)
+                                        {
+                                            if (vote.VoteType == VoteType.Yes)
+                                                topic.VoteYes += 1;
+                                            if (vote.VoteType == VoteType.No)
+                                                topic.VoteNo += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (x.TransactionType == TransactionType.DSTR)
                     {
                         var txData = x.Data;
                         if (!string.IsNullOrWhiteSpace(txData))

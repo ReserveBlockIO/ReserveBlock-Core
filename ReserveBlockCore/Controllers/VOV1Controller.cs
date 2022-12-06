@@ -95,8 +95,58 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetMyTopics")]
+        public async Task<string> GetMyTopics()
+        {
+            var output = "";
+            var address = Globals.ValidatorAddress;
+
+            var topics = TopicTrei.GetSpecificTopicByAddress(address);
+            if (topics != null)
+            {
+                if (topics.Count() > 0)
+                {
+                    output = JsonConvert.SerializeObject(topics);
+                }
+            }
+            return output;
+        }
+
+        [HttpGet("GetMyVotes")]
+        public async Task<string> GetMyVotes()
+        {
+            var output = "";
+            var address = Globals.ValidatorAddress;
+
+            var myVotes = Vote.GetSpecificAddressVotes(address);
+            if(myVotes != null)
+            {
+                if (myVotes.Count() > 0)
+                {
+                    output = JsonConvert.SerializeObject(myVotes);
+                }
+            }
+            return output;
+        }
+
+        [HttpGet("GetTopicVotes/{topicUID}")]
+        public async Task<string> GetTopicVotes(string topicUID)
+        {
+            var output = "";
+
+            var topicVotes = Vote.GetSpecificTopicVotes(topicUID);
+            if (topicVotes != null)
+            {
+                if (topicVotes.Count() > 0)
+                {
+                    output = JsonConvert.SerializeObject(topicVotes);
+                }
+            }
+            return output;
+        }
+
         [HttpGet("CastTopicVote/{topicUID}/{vote}")]
-        public async Task<string> CastTopicVote(string topicUID, VoteType vote)
+        public async Task<string> CastTopicVote(string topicUID, VoteType voteType)
         {
             var output = "";
 
@@ -104,7 +154,25 @@ namespace ReserveBlockCore.Controllers
 
             if (topic != null)
             {
-                output = JsonConvert.SerializeObject(topic);
+                Vote.VoteCreate voteC = new Vote.VoteCreate {
+                    TopicUID = topicUID,
+                    VoteType = voteType 
+                };
+
+                Vote vote = new Vote();
+
+                vote.Build(voteC);
+
+                var result = await Vote.CreateVoteTx(vote);
+
+                if(result.Item1 != null)
+                {
+                    return result.Item1.Hash;
+                }
+                else
+                {
+                    return result.Item2;
+                }
             }
 
             return output;
