@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
-        public static int IsValidatingBlocks = 0;
+        public static SemaphoreSlim ValidatingSemaphore = new SemaphoreSlim(1, 1);
 
         public static void UpdateMemBlocks(Block block)
         {
@@ -25,14 +25,12 @@ namespace ReserveBlockCore.Services
         public static async Task ValidationDelay()
         {
             await ValidateBlocks();
-            while (IsValidatingBlocks == 1 || Globals.BlocksDownloading == 1)
+            while (ValidatingSemaphore.CurrentCount == 0 || Globals.BlocksDownloading == 1)
                 await Task.Delay(4);
         }
         public static async Task ValidateBlocks()
         {
-            if (Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 1) != 0)            
-                return;
-
+            await ValidatingSemaphore.WaitAsync();
             try
             {
                 while (BlockDownloadService.BlockDict.Any())
@@ -80,7 +78,8 @@ namespace ReserveBlockCore.Services
             }
             finally
             {
-                Interlocked.Exchange(ref BlockValidatorService.IsValidatingBlocks, 0);
+                if (ValidatingSemaphore.CurrentCount == 0)
+                    ValidatingSemaphore.Release();                
             }
         }
         public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
