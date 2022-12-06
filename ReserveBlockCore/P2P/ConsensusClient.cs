@@ -74,48 +74,55 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                var Height = Globals.LastBlock.Height + 1;
-                var methodCode = ConsensusServer.GetState().MethodCode;                
-                var Address = Globals.AdjudicateAccount.Address;
-                var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
-                var CurrentTime = TimeUtil.GetMillisecondTime();
-
-                var CurrentAddresses = Signer.CurrentSigningAddresses();
-                var NumNodes = CurrentAddresses.Count;
-                var Majority = NumNodes / 2 + 1;
-                               
-                var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
-                ConsensusServer.Messages.Clear();
-                ConsensusServer.Messages[(Height, methodCode)] = Messages;
-                Messages[Globals.AdjudicateAccount.Address] = (message, signature);
-
-                var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
-                foreach (var peer in Peers)
+                NodeInfo[] Peers = null;
+                while (true)
                 {
-                    _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
-                }
+                    var Height = Globals.LastBlock.Height + 1;
+                    var methodCode = ConsensusServer.GetState().MethodCode;
+                    var Address = Globals.AdjudicateAccount.Address;
+                    Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
+                    var CurrentTime = TimeUtil.GetMillisecondTime();
 
-                if(runType == RunType.Initial)
-                {
-                    while (Messages.Count < Majority)
+                    var CurrentAddresses = Signer.CurrentSigningAddresses();
+                    var NumNodes = CurrentAddresses.Count;
+                    var Majority = NumNodes / 2 + 1;
+
+                    var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                    ConsensusServer.Messages.Clear();
+                    ConsensusServer.Messages[(Height, methodCode)] = Messages;
+                    Messages[Globals.AdjudicateAccount.Address] = (message, signature);
+
+                    var ConsensusSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);
+                    foreach (var peer in Peers)
                     {
-                        try
-                        {
-                            await Task.Delay(4, Globals.ConsensusTokenSource.Token);
-                        }
-                        catch { }
+                        _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
                     }
-                }
 
-                try
-                {
-                    await Task.Delay(timeToFinalize, ConsensusSource.Token);
-                }
-                catch { }
+                    if (runType == RunType.Initial)
+                    {
+                        while (Messages.Count < Majority)
+                        {
+                            try
+                            {
+                                await Task.Delay(4, Globals.ConsensusTokenSource.Token);
+                            }
+                            catch { }
+                        }
+                    }
 
-                ConsensusSource.Cancel();
-                if (Messages.Count < Majority)
-                    return null;
+                    try
+                    {
+                        await Task.Delay(timeToFinalize, ConsensusSource.Token);
+                    }
+                    catch { }
+
+                    ConsensusSource.Cancel();
+
+                    if (Messages.Count >= Majority)
+                        break;
+                    if (runType != RunType.Initial)
+                        return null;
+                }
                 
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 var HashSource = CancellationTokenSource.CreateLinkedTokenSource(Globals.ConsensusTokenSource.Token);

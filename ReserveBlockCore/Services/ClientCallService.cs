@@ -786,8 +786,7 @@ namespace ReserveBlockCore.Services
 
                     var Height = Globals.LastBlock.Height + 1;
                     ClearRoundDicts(Height);
-                    if(ConsensusServer.GetState().IsUsed)
-                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
+                    TaskQuestionUtility.CreateTaskQuestion("rndNum");
                     var Answer = ConsensusServer.GetState().Answer;
                     var Signers = Signer.CurrentSigningAddresses();
                     var Majority = Signers.Count / 2 + 1;
@@ -1012,7 +1011,6 @@ namespace ReserveBlockCore.Services
             localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = TimeUtil.GetMillisecondTime() });
             Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString());
 
-            TaskQuestionUtility.CreateTaskQuestion("rndNum");
             var data = JsonConvert.SerializeObject(block);
             await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
             Console.WriteLine("Done sending - Height: " + block.Height.ToString());
