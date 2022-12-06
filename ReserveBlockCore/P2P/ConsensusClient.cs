@@ -75,19 +75,23 @@ namespace ReserveBlockCore.P2P
             try
             {
                 NodeInfo[] Peers = null;
+                long Height = -1;
+                int methodCode = -1;
+                int Majority = -1;
+                ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
                 while (true)
                 {
-                    var Height = Globals.LastBlock.Height + 1;
-                    var methodCode = ConsensusServer.GetState().MethodCode;
+                    Height = Globals.LastBlock.Height + 1;
+                    methodCode = ConsensusServer.GetState().MethodCode;
                     var Address = Globals.AdjudicateAccount.Address;
                     Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
                     var CurrentTime = TimeUtil.GetMillisecondTime();
 
                     var CurrentAddresses = Signer.CurrentSigningAddresses();
                     var NumNodes = CurrentAddresses.Count;
-                    var Majority = NumNodes / 2 + 1;
+                    Majority = NumNodes / 2 + 1;
 
-                    var Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                    Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
                     ConsensusServer.Messages.Clear();
                     ConsensusServer.Messages[(Height, methodCode)] = Messages;
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
