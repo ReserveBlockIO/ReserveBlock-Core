@@ -1092,7 +1092,7 @@ namespace ReserveBlockCore.Services
                     if(ConnectedCount < Globals.MaxPeers)
                         await P2PClient.ConnectToPeers();
                     if(!Globals.Nodes.Values.Where(x => x.IsConnected).Any())
-                        Console.WriteLine($"Failed to connect to any peers. trying again.");
+                        ConsoleWriterService.Output($"Failed to connect to any peers. trying again.");
                 }
                 catch (Exception ex)
                 {

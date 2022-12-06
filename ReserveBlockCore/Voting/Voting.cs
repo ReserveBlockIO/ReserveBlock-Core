@@ -1,6 +1,9 @@
-﻿using ReserveBlockCore.Models;
+﻿using Microsoft.AspNetCore.HttpOverrides;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System.IO;
 
 namespace ReserveBlockCore.Voting
 {
@@ -42,7 +45,7 @@ namespace ReserveBlockCore.Voting
                     result = CommandResult.MainMenu;
                     break;
                 case "1":
-                    
+                    CreateTopic();
                     break;
                 case "2":
                     GetActiveTopics();
@@ -54,10 +57,10 @@ namespace ReserveBlockCore.Voting
                     SearchTopic();
                     break;
                 case "5":
-                    
+                    VoteOnTopic();
                     break;
                 case "6":
-
+                    GetTopicDetails();
                     break;
                 case "7":
                     result = CommandResult.MainMenu;
@@ -74,6 +77,286 @@ namespace ReserveBlockCore.Voting
             Nothing
         }
 
+        private static void GetTopicDetails()
+        {
+            Console.WriteLine("Please enter the topic ID");
+            var topicUID = Console.ReadLine();
+            if (!string.IsNullOrEmpty(topicUID))
+            {
+                var topic = TopicTrei.GetSpecificTopic(topicUID);
+                if (topic != null)
+                {
+                    Console.Clear();
+                    Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+                    var table = new Table();
+
+                    table.Title("[yellow]Topic Info[/]").Centered();
+                    table.AddColumn(new TableColumn(new Panel("Title")));
+                    table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
+
+                    table.AddRow("[blue]Topic UID[/]", $"[green]{topic.TopicUID}[/]");
+                    table.AddRow("[blue]Name[/]", $"[green]{topic.TopicName}[/]");
+                    table.AddRow("[blue]Description[/]", $"[green]{topic.TopicDescription}[/]");
+                    table.AddRow("[blue]Topic Creator[/]", $"[green]{topic.TopicOwnerAddress}[/]");
+                    table.AddRow("[blue]Block Height[/]", $"[green]{topic.BlockHeight}[/]");
+                    table.AddRow("[blue]Create Date[/]", $"[green]{topic.TopicCreateDate.ToLocalTime()}[/]");
+                    table.AddRow("[blue]End Date[/]", $"[green]{topic.VotingEndDate.ToLocalTime()}[/]");
+                    table.AddRow("[blue]Category[/]", $"[green]{topic.VoteTopicCategory}[/]");
+
+                    table.AddRow("[blue]Total Votes[/]", $"[green]{topic.TotalVotes}[/]");
+                    table.AddRow("[blue]Votes Yes[/]", $"[green]{topic.VoteYes}[/]");
+                    table.AddRow("[blue]Votes No[/]", $"[green]{topic.VoteNo}[/]");
+
+                    table.AddRow("[blue]Percent Votes Yes[/]", $"[green]{topic.PercentVotesYes}%[/]");
+                    table.AddRow("[blue]Percent Votes No[/]", $"[green]{topic.PercentVotesNo}%[/]");
+                    table.AddRow("[blue]Percent In Favor[/]", $"[green]{topic.PercentInFavor}%[/]");
+                    table.AddRow("[blue]Percent Against[/]", $"[green]{topic.PercentAgainst}%[/]");
+
+
+                    table.Border(TableBorder.Rounded);
+
+                    AnsiConsole.Write(table);
+                }
+                else
+                {
+                    Console.WriteLine("Could not find topic. Returning you to vote menu.");
+                    Thread.Sleep(4000);
+                    VoteMenu();
+                }
+            }
+        }
+        private static async void VoteOnTopic()
+        {
+            Console.WriteLine("Please enter the topic ID");
+            var topicUID = Console.ReadLine();
+
+            if (!string.IsNullOrEmpty(topicUID))
+            {
+                var topic = TopicTrei.GetSpecificTopic(topicUID);
+                if (topic != null)
+                {
+                    var currentTime = DateTime.UtcNow;
+                    if (currentTime < topic.VotingEndDate)
+                    {
+                        Console.WriteLine($"Topic UID: {topic.TopicUID}");
+                        Console.WriteLine($"Topic Name: {topic.TopicName}");
+                        Console.WriteLine($"Please choose vote. ('y' for yes and 'n' for no.");
+                        var voteChoice = Console.ReadLine();
+
+                        if(!string.IsNullOrEmpty(voteChoice))
+                        {
+                            if(voteChoice == "y")
+                            {
+                                Vote.VoteCreate voteC = new Vote.VoteCreate
+                                {
+                                    TopicUID = topicUID,
+                                    VoteType = VoteType.Yes
+                                };
+
+                                Vote vote = new Vote();
+
+                                vote.Build(voteC);
+
+                                var result = await Vote.CreateVoteTx(vote);
+
+                                if (result.Item1 != null)
+                                {
+                                    Console.WriteLine(result.Item1.Hash);
+                                }
+                                else
+                                {
+                                    Console.WriteLine(result.Item2);
+                                }
+                            }
+
+                            if(voteChoice == "n")
+                            {
+                                Vote.VoteCreate voteC = new Vote.VoteCreate
+                                {
+                                    TopicUID = topicUID,
+                                    VoteType = VoteType.No
+                                };
+
+                                Vote vote = new Vote();
+
+                                vote.Build(voteC);
+
+                                var result = await Vote.CreateVoteTx(vote);
+
+                                if (result.Item1 != null)
+                                {
+                                    Console.WriteLine(result.Item1.Hash);
+                                }
+                                else
+                                {
+                                    Console.WriteLine(result.Item2);
+                                }
+                            }
+
+                            
+                        }
+                        else
+                        {
+                            Console.WriteLine("You must choose yes or no. Returning you to main menu.");
+                            Thread.Sleep(4000);
+                            VoteMenu();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Voting for this topic has ended. Returning you to vote menu.");
+                        Thread.Sleep(4000);
+                        VoteMenu();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Could not find topic. Returning you to vote menu.");
+                    Thread.Sleep(4000);
+                    VoteMenu();
+                }
+            }
+            else
+            {
+                Console.WriteLine("You must enter a topic.");
+                Thread.Sleep(4000);
+                VoteMenu();
+            }
+        }
+        private static async void CreateTopic()
+        {
+            try
+            {
+                bool fail = false;
+                Console.WriteLine("Enter name for Topic:");
+                var topicName = Console.ReadLine();
+
+                Console.WriteLine("Enter description for Topic:");
+                var topicDescription = Console.ReadLine();
+
+                Console.WriteLine("Please Choose a topic category:");
+                Console.WriteLine("0. General");
+                Console.WriteLine("1. Coding Changes");
+                Console.WriteLine("2. Add Developer(s)");
+                Console.WriteLine("3. Remove Developer(s)");
+                Console.WriteLine("4. Network Change");
+                Console.WriteLine("5. Adjudicator Vote In");
+                Console.WriteLine("6. Adjudicator Vote Out");
+                Console.WriteLine("7. Validating Change");
+                Console.WriteLine("8. Block Modify");
+                Console.WriteLine("9. Transaction Modify");
+                Console.WriteLine("10. Balance Correction");
+                Console.WriteLine("11. Hack or Exploitation Correction");
+
+                Console.WriteLine("12. Other");
+
+                var topicCat = Console.ReadLine();
+
+                Console.WriteLine("Please choose voting days for Topic:");
+                Console.WriteLine("1. Thirty Days (30)");
+                Console.WriteLine("2. Sixty Days (60)");
+                Console.WriteLine("3. Ninety Days (90)");
+                Console.WriteLine("4. One-Hundred and Eighty Days (180)");
+                var topicEndDays = Console.ReadLine();
+
+                if (!string.IsNullOrEmpty(topicName) && !string.IsNullOrEmpty(topicDescription) && !string.IsNullOrEmpty(topicCat) && !string.IsNullOrEmpty(topicEndDays))
+                {
+                    var topicCreate = new TopicTrei.TopicCreate();
+
+                    if (topicCat == "12")
+                    {
+                        topicCreate.VoteTopicCategory = VoteTopicCategories.Other;
+                    }
+                    else
+                    {
+                        int topicCatNum;
+                        var topicCatNumTry = int.TryParse(topicCat, out topicCatNum);
+
+                        if (topicCatNumTry)
+                        {
+                            if (topicCatNum >= 0 && topicCatNum <= 11)
+                                topicCreate.VoteTopicCategory = (VoteTopicCategories)topicCatNum;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error. Incorrect number chosen for topic category.");
+                            fail = true;
+                        }
+                    }
+
+                    int topicDaysNum;
+                    var topicDaysNumTry = int.TryParse(topicEndDays, out topicDaysNum);
+
+                    if (topicDaysNumTry)
+                    {
+                        if(topicDaysNum == 1 || topicDaysNum == 2 || topicDaysNum == 3 || topicDaysNum == 4)
+                        {
+                            if(topicDaysNum == 1)
+                            {
+                                topicCreate.VotingEndDays = VotingDays.Thirty;
+                            }
+                            if (topicDaysNum == 2)
+                            {
+                                topicCreate.VotingEndDays = VotingDays.Sixty;
+                            }
+                            if (topicDaysNum == 3)
+                            {
+                                topicCreate.VotingEndDays = VotingDays.Ninety;
+                            }
+                            if (topicDaysNum == 4)
+                            {
+                                topicCreate.VotingEndDays = VotingDays.OneHundredEighty;
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error. Incorrect number chosen for topic days.");
+                            fail = true;
+                        }
+
+                    }
+
+                    topicCreate.TopicName = topicName;
+                    topicCreate.TopicDescription = topicDescription;
+
+                    if(!fail)
+                    {
+                        var topic = new TopicTrei
+                        {
+                            TopicName = topicCreate.TopicName,
+                            TopicDescription = topicCreate.TopicDescription,
+                        };
+
+                        topic.Build(topicCreate.VotingEndDays, topicCreate.VoteTopicCategory);
+
+                        var result = await TopicTrei.CreateTopicTx(topic);
+
+                        if(result.Item1 == null)
+                        {
+                            Console.WriteLine($"Topic Create Failed. Reason: {result.Item2}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Success (TX ID): {result.Item1.Hash}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Returning you to vote menu...");
+                        Thread.Sleep(4000);
+                        await VoteMenu();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Error. You cannot leave any of these fields blank.");
+                    Thread.Sleep(4000);
+                    await VoteMenu();
+                }
+            }
+            catch { }
+        }
         private static void SearchTopic()
         {
             Console.WriteLine("Please enter a search term (Topic UID, Name, or Owner Address)...");
@@ -277,8 +560,8 @@ namespace ReserveBlockCore.Voting
             Console.WriteLine("| 3. Show Inactive Topics              |");
             Console.WriteLine("| 4. Search For Topic                  |");
             Console.WriteLine("| 5. Vote On Topic                     |");
-            Console.WriteLine("| 7. Topic Details                     |");
-            Console.WriteLine("| 8. Exit Voting Program               |");
+            Console.WriteLine("| 6. Topic Details                     |");
+            Console.WriteLine("| 7. Exit Voting Program               |");
             Console.WriteLine("|======================================|");
             Console.WriteLine("|type /vote to come back to main area  |");
             Console.WriteLine("|type /menu to come back to main area  |");

@@ -66,14 +66,14 @@ namespace ReserveBlockCore.Services
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");                            
                             if(Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
                                 await node.Connection.DisposeAsync();                            
-                            Console.WriteLine("Block was rejected from: " + block.Validator);
+                            ConsoleWriterService.Output("Block was rejected from: " + block.Validator);
                         }
                         else
                         {
                             if(Globals.IsChainSynced)
                                 ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] was added from: [purple]{block.Validator}[/] "));
                             else
-                                Console.Write($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
+                                ConsoleWriterService.Output($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
                         }                        
                     }
                 }

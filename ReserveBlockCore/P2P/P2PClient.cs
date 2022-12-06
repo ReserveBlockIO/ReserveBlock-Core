@@ -265,21 +265,21 @@ namespace ReserveBlockCore.P2P
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
+                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Reconnected += (sender) =>
                 {
                     LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
+                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Closed += (sender) =>
                 {
                     LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
+                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
                     return Task.CompletedTask;
                 };
                 
@@ -310,7 +310,7 @@ namespace ReserveBlockCore.P2P
                                     await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "status":
-                                Console.WriteLine(data);
+                                ConsoleWriterService.Output(data);
                                 if (data == "Connected")
                                 {
                                     ValidatorLogUtility.Log("Connected to Validator Pool.", "P2PClient.ConnectAdjudicator()", true);

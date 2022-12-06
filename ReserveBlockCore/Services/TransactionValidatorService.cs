@@ -439,6 +439,14 @@ namespace ReserveBlockCore.Services
                                     if (vote == null)
                                         return txResult;
 
+                                    var topic = TopicTrei.GetSpecificTopic(vote.TopicUID);
+                                    if (topic == null)
+                                        return txResult;
+
+                                    var currentTime = DateTime.UtcNow;
+                                    if (currentTime > topic.VotingEndDate)
+                                        return txResult;
+
                                     //from address must equal vote address
                                     //validator address must equal vote address
                                     if (txRequest.FromAddress != vote.Address)
@@ -898,9 +906,17 @@ namespace ReserveBlockCore.Services
                                     if (vote == null)
                                         return (txResult, "Vote record cannot be null.");
 
+                                    var topic = TopicTrei.GetSpecificTopic(vote.TopicUID);
+                                    if(topic == null)
+                                        return (txResult, "Topic does not exist.");
+
+                                    var currentTime = DateTime.UtcNow;
+                                    if(currentTime > topic.VotingEndDate)
+                                        return (txResult, "Voting for this topic has ended.");
+
                                     //from address must equal vote address
                                     //validator address must equal vote address
-                                    if(txRequest.FromAddress != vote.Address)
+                                    if (txRequest.FromAddress != vote.Address)
                                         return (txResult, "Vote address must match the transactions From Address.");
 
                                     if (vote.Address != Globals.ValidatorAddress)
