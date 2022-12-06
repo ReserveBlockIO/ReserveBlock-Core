@@ -393,11 +393,6 @@ namespace ReserveBlockCore.Services
 
                                             if (txRequest.Amount < 1M)
                                                 return txResult;
-                                            //can only have 1 active topic at a time.
-                                            //Must be a validator for validator type
-                                            //If validator check for 1000 RBX
-                                            //must be adj for adj type
-                                            //signature must be good.
                                         }
                                         else
                                         {
@@ -409,6 +404,53 @@ namespace ReserveBlockCore.Services
                                         return txResult;
                                     }
 
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            DbContext.Rollback();
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for Topic", "TransactionValidatorService.VerifyTx()");
+                            return txResult;
+                        }
+                    }
+                    else
+                    {
+                        return txResult;
+                    }
+
+                }
+
+                if (txRequest.TransactionType == TransactionType.VOTE)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                Vote vote = jobj["Vote"].ToObject<Vote>();//review this to ensure deserialization works.
+                                if (function == "TopicVote()")
+                                {
+                                    if (vote == null)
+                                        return txResult;
+
+                                    //from address must equal vote address
+                                    //validator address must equal vote address
+                                    if (txRequest.FromAddress != vote.Address)
+                                        return txResult;
+
+                                    if (vote.Address != Globals.ValidatorAddress)
+                                        return txResult;
+
+                                    var voteExixt = Vote.CheckSpecificAddressVoteOnTopic(vote.Address, vote.TopicUID);
+
+                                    if (voteExixt)
+                                        return txResult;
                                 }
                             }
 
@@ -809,11 +851,7 @@ namespace ReserveBlockCore.Services
 
                                             if (txRequest.Amount < 1M)
                                                 return (txResult, "There must be at least 1 RBX to create a Topic.");
-                                            //can only have 1 active topic at a time.
-                                            //Must be a validator for validator type
-                                            //If validator check for 1000 RBX
-                                            //must be adj for adj type
-                                            //signature must be good.
+             
                                         }
                                         else
                                         {
@@ -841,6 +879,67 @@ namespace ReserveBlockCore.Services
                         return (txResult, "TX Data cannot be null on a vote Topic.");
                     }
                     
+                }
+
+                if (txRequest.TransactionType == TransactionType.VOTE)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                Vote vote = jobj["Vote"].ToObject<Vote>();//review this to ensure deserialization works.
+                                if (function == "TopicVote()")
+                                {
+                                    if (vote == null)
+                                        return (txResult, "Vote record cannot be null.");
+
+                                    //from address must equal vote address
+                                    //validator address must equal vote address
+                                    if(txRequest.FromAddress != vote.Address)
+                                        return (txResult, "Vote address must match the transactions From Address.");
+
+                                    if (vote.Address != Globals.ValidatorAddress)
+                                        return (txResult, "Vote address must match the local Validator Address");
+
+                                    var voteExixt = Vote.CheckSpecificAddressVoteOnTopic(vote.Address, vote.TopicUID);
+
+                                    if(voteExixt)
+                                        return (txResult, "You have already voted on this topic and may not do so again.");
+
+                                    var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
+                                    if (stAcct != null)
+                                    {
+                                        var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
+                                        if (balance < 1000)
+                                        {
+                                            return (txResult, "Balance is under 1000. Vote will not be allowed.");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (txResult, "Could not locate account in state trei.");
+                                    }
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            DbContext.Rollback();
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for Topic", "TransactionValidatorService.VerifyTx()");
+                            return (txResult, "Failed to deserialized TX Data for Topic");
+                        }
+                    }
+                    else
+                    {
+                        return (txResult, "TX Data cannot be null on a vote Topic.");
+                    }
+
                 }
             }
 

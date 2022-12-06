@@ -514,39 +514,100 @@ namespace ReserveBlockCore.Data
             return collection;
         }
 
-        //Use this to see if any address has transactions against it. 
-        public static Transaction GetTxByAddress(string address)
+        public static List<Transaction> GetLocalTransactions(bool showFailed = false)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var tx = transactions.FindOne(x => x.FromAddress == address || x.ToAddress == address);
-            return tx;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus != TransactionStatus.Failed).ToList();
+
+            if (showFailed)
+                transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
         }
 
-        public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
+        public static List<Transaction> GetLocalTransactionsSinceBlock(long blockHeight)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var query = transactions.Query()
-                .OrderByDescending(x => x.Timestamp)
-                .Where(x => x.FromAddress == address || x.ToAddress == address)
-                .Limit(limit).ToList();
-            return query;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Height >= blockHeight).ToList();
+
+            return transactions;
         }
 
-        public static Transaction GetTxByHash(string hash)
+        public static List<Transaction> GetLocalTransactionsBeforeBlock(long blockHeight)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var tx = transactions.FindOne(x => x.Hash == hash);
-            return tx;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Height < blockHeight).ToList();
+
+            return transactions;
         }
-        public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
+
+        public static List<Transaction> GetLocalTransactionsSinceDate(long timestamp)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var query = transactions.Query()
-                .OrderByDescending(x => x.Timestamp)
-                .Offset((pageNumber - 1) * resultPerPage)
-                .Limit(resultPerPage).ToList();
-            return query;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Timestamp >= timestamp).ToList();
+
+            return transactions;
         }
+
+        public static List<Transaction> GetLocalTransactionsBeforeDate(long timestamp)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Timestamp < timestamp).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalVoteTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalVoteTopics()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE_TOPIC).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalAdnrTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.ADNR).ToList();
+
+            return transactions;
+        }
+
+        //public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
+        //{
+        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
+        //    var query = transactions.Query()
+        //        .OrderByDescending(x => x.Timestamp)
+        //        .Where(x => x.FromAddress == address || x.ToAddress == address)
+        //        .Limit(limit).ToList();
+        //    return query;
+        //}
+
+        //public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
+        //{
+        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
+        //    var query = transactions.Query()
+        //        .OrderByDescending(x => x.Timestamp)
+        //        .Offset((pageNumber - 1) * resultPerPage)
+        //        .Limit(resultPerPage).ToList();
+        //    return query;
+        //}
 
     }
 
