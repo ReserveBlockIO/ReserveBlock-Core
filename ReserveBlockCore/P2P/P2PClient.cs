@@ -806,8 +806,7 @@ namespace ReserveBlockCore.P2P
                 {
                     node.LastMethodCodeTime = Now;
                     node.NodeHeight = long.Parse(remoteMethodCode[0]);
-                    node.MethodCode = int.Parse(remoteMethodCode[1]);
-                    ConsensusServer.UpdateLocalState(node.NodeHeight, node.MethodCode);
+                    node.MethodCode = int.Parse(remoteMethodCode[1]);                    
                 }
                 return true;
             }
