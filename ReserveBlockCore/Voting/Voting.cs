@@ -131,7 +131,11 @@ namespace ReserveBlockCore.Voting
             Console.WriteLine("Please enter the topic ID");
             var topicUID = Console.ReadLine();
 
-            if (!string.IsNullOrEmpty(topicUID))
+            if (string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                Console.WriteLine("You must be a validator to vote on a topic.");
+            }
+            else if (!string.IsNullOrEmpty(topicUID))
             {
                 var topic = TopicTrei.GetSpecificTopic(topicUID);
                 if (topic != null)
@@ -144,9 +148,9 @@ namespace ReserveBlockCore.Voting
                         Console.WriteLine($"Please choose vote. ('y' for yes and 'n' for no.");
                         var voteChoice = Console.ReadLine();
 
-                        if(!string.IsNullOrEmpty(voteChoice))
+                        if (!string.IsNullOrEmpty(voteChoice))
                         {
-                            if(voteChoice == "y")
+                            if (voteChoice == "y")
                             {
                                 Vote.VoteCreate voteC = new Vote.VoteCreate
                                 {
@@ -170,7 +174,7 @@ namespace ReserveBlockCore.Voting
                                 }
                             }
 
-                            if(voteChoice == "n")
+                            if (voteChoice == "n")
                             {
                                 Vote.VoteCreate voteC = new Vote.VoteCreate
                                 {
@@ -194,7 +198,7 @@ namespace ReserveBlockCore.Voting
                                 }
                             }
 
-                            
+
                         }
                         else
                         {
@@ -229,131 +233,139 @@ namespace ReserveBlockCore.Voting
             try
             {
                 bool fail = false;
-                Console.WriteLine("Enter name for Topic:");
-                var topicName = Console.ReadLine();
-
-                Console.WriteLine("Enter description for Topic:");
-                var topicDescription = Console.ReadLine();
-
-                Console.WriteLine("Please Choose a topic category:");
-                Console.WriteLine("0. General");
-                Console.WriteLine("1. Coding Changes");
-                Console.WriteLine("2. Add Developer(s)");
-                Console.WriteLine("3. Remove Developer(s)");
-                Console.WriteLine("4. Network Change");
-                Console.WriteLine("5. Adjudicator Vote In");
-                Console.WriteLine("6. Adjudicator Vote Out");
-                Console.WriteLine("7. Validating Change");
-                Console.WriteLine("8. Block Modify");
-                Console.WriteLine("9. Transaction Modify");
-                Console.WriteLine("10. Balance Correction");
-                Console.WriteLine("11. Hack or Exploitation Correction");
-
-                Console.WriteLine("12. Other");
-
-                var topicCat = Console.ReadLine();
-
-                Console.WriteLine("Please choose voting days for Topic:");
-                Console.WriteLine("1. Thirty Days (30)");
-                Console.WriteLine("2. Sixty Days (60)");
-                Console.WriteLine("3. Ninety Days (90)");
-                Console.WriteLine("4. One-Hundred and Eighty Days (180)");
-                var topicEndDays = Console.ReadLine();
-
-                if (!string.IsNullOrEmpty(topicName) && !string.IsNullOrEmpty(topicDescription) && !string.IsNullOrEmpty(topicCat) && !string.IsNullOrEmpty(topicEndDays))
+                if (string.IsNullOrEmpty(Globals.ValidatorAddress))
                 {
-                    var topicCreate = new TopicTrei.TopicCreate();
-
-                    if (topicCat == "12")
-                    {
-                        topicCreate.VoteTopicCategory = VoteTopicCategories.Other;
-                    }
-                    else
-                    {
-                        int topicCatNum;
-                        var topicCatNumTry = int.TryParse(topicCat, out topicCatNum);
-
-                        if (topicCatNumTry)
-                        {
-                            if (topicCatNum >= 0 && topicCatNum <= 11)
-                                topicCreate.VoteTopicCategory = (VoteTopicCategories)topicCatNum;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error. Incorrect number chosen for topic category.");
-                            fail = true;
-                        }
-                    }
-
-                    int topicDaysNum;
-                    var topicDaysNumTry = int.TryParse(topicEndDays, out topicDaysNum);
-
-                    if (topicDaysNumTry)
-                    {
-                        if(topicDaysNum == 1 || topicDaysNum == 2 || topicDaysNum == 3 || topicDaysNum == 4)
-                        {
-                            if(topicDaysNum == 1)
-                            {
-                                topicCreate.VotingEndDays = VotingDays.Thirty;
-                            }
-                            if (topicDaysNum == 2)
-                            {
-                                topicCreate.VotingEndDays = VotingDays.Sixty;
-                            }
-                            if (topicDaysNum == 3)
-                            {
-                                topicCreate.VotingEndDays = VotingDays.Ninety;
-                            }
-                            if (topicDaysNum == 4)
-                            {
-                                topicCreate.VotingEndDays = VotingDays.OneHundredEighty;
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error. Incorrect number chosen for topic days.");
-                            fail = true;
-                        }
-
-                    }
-
-                    topicCreate.TopicName = topicName;
-                    topicCreate.TopicDescription = topicDescription;
-
-                    if(!fail)
-                    {
-                        var topic = new TopicTrei
-                        {
-                            TopicName = topicCreate.TopicName,
-                            TopicDescription = topicCreate.TopicDescription,
-                        };
-
-                        topic.Build(topicCreate.VotingEndDays, topicCreate.VoteTopicCategory);
-
-                        var result = await TopicTrei.CreateTopicTx(topic);
-
-                        if(result.Item1 == null)
-                        {
-                            Console.WriteLine($"Topic Create Failed. Reason: {result.Item2}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Success (TX ID): {result.Item1.Hash}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Returning you to vote menu...");
-                        Thread.Sleep(4000);
-                        await VoteMenu();
-                    }
+                    fail = true;
+                    Console.WriteLine("You must be a validator to vote on a topic.");
                 }
                 else
                 {
-                    Console.WriteLine("Error. You cannot leave any of these fields blank.");
-                    Thread.Sleep(4000);
-                    await VoteMenu();
-                }
+                    Console.WriteLine("Enter name for Topic:");
+                    var topicName = Console.ReadLine();
+
+                    Console.WriteLine("Enter description for Topic:");
+                    var topicDescription = Console.ReadLine();
+
+                    Console.WriteLine("Please Choose a topic category:");
+                    Console.WriteLine("0. General");
+                    Console.WriteLine("1. Coding Changes");
+                    Console.WriteLine("2. Add Developer(s)");
+                    Console.WriteLine("3. Remove Developer(s)");
+                    Console.WriteLine("4. Network Change");
+                    Console.WriteLine("5. Adjudicator Vote In");
+                    Console.WriteLine("6. Adjudicator Vote Out");
+                    Console.WriteLine("7. Validating Change");
+                    Console.WriteLine("8. Block Modify");
+                    Console.WriteLine("9. Transaction Modify");
+                    Console.WriteLine("10. Balance Correction");
+                    Console.WriteLine("11. Hack or Exploitation Correction");
+
+                    Console.WriteLine("12. Other");
+
+                    var topicCat = Console.ReadLine();
+
+                    Console.WriteLine("Please choose voting days for Topic:");
+                    Console.WriteLine("1. Thirty Days (30)");
+                    Console.WriteLine("2. Sixty Days (60)");
+                    Console.WriteLine("3. Ninety Days (90)");
+                    Console.WriteLine("4. One-Hundred and Eighty Days (180)");
+                    var topicEndDays = Console.ReadLine();
+
+                    if (!string.IsNullOrEmpty(topicName) && !string.IsNullOrEmpty(topicDescription) && !string.IsNullOrEmpty(topicCat) && !string.IsNullOrEmpty(topicEndDays))
+                    {
+                        var topicCreate = new TopicTrei.TopicCreate();
+
+                        if (topicCat == "12")
+                        {
+                            topicCreate.VoteTopicCategory = VoteTopicCategories.Other;
+                        }
+                        else
+                        {
+                            int topicCatNum;
+                            var topicCatNumTry = int.TryParse(topicCat, out topicCatNum);
+
+                            if (topicCatNumTry)
+                            {
+                                if (topicCatNum >= 0 && topicCatNum <= 11)
+                                    topicCreate.VoteTopicCategory = (VoteTopicCategories)topicCatNum;
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error. Incorrect number chosen for topic category.");
+                                fail = true;
+                            }
+                        }
+
+                        int topicDaysNum;
+                        var topicDaysNumTry = int.TryParse(topicEndDays, out topicDaysNum);
+
+                        if (topicDaysNumTry)
+                        {
+                            if (topicDaysNum == 1 || topicDaysNum == 2 || topicDaysNum == 3 || topicDaysNum == 4)
+                            {
+                                if (topicDaysNum == 1)
+                                {
+                                    topicCreate.VotingEndDays = VotingDays.Thirty;
+                                }
+                                if (topicDaysNum == 2)
+                                {
+                                    topicCreate.VotingEndDays = VotingDays.Sixty;
+                                }
+                                if (topicDaysNum == 3)
+                                {
+                                    topicCreate.VotingEndDays = VotingDays.Ninety;
+                                }
+                                if (topicDaysNum == 4)
+                                {
+                                    topicCreate.VotingEndDays = VotingDays.OneHundredEighty;
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error. Incorrect number chosen for topic days.");
+                                fail = true;
+                            }
+
+                        }
+
+                        topicCreate.TopicName = topicName;
+                        topicCreate.TopicDescription = topicDescription;
+
+                        if (!fail)
+                        {
+                            var topic = new TopicTrei
+                            {
+                                TopicName = topicCreate.TopicName,
+                                TopicDescription = topicCreate.TopicDescription,
+                            };
+
+                            topic.Build(topicCreate.VotingEndDays, topicCreate.VoteTopicCategory);
+
+                            var result = await TopicTrei.CreateTopicTx(topic);
+
+                            if (result.Item1 == null)
+                            {
+                                Console.WriteLine($"Topic Create Failed. Reason: {result.Item2}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Success (TX ID): {result.Item1.Hash}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Returning you to vote menu...");
+                            Thread.Sleep(4000);
+                            await VoteMenu();
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error. You cannot leave any of these fields blank.");
+                        Thread.Sleep(4000);
+                        await VoteMenu();
+                    }
+                }    
             }
             catch { }
         }
