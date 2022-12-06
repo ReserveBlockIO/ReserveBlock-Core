@@ -29,9 +29,10 @@ namespace ReserveBlockCore.Services
                     var coolDownTime = DateTime.Now;
                     var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                     var heightToDownload = Globals.LastBlock.Height + 1;
-                    
-                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload).OrderBy(x => x.NodeHeight).Select((x, i) => (node: x, height: heightToDownload + i))
-                        .Where(x => x.node.NodeHeight >= x.height).ToArray();
+
+                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload && x.IsConnected).GroupBy(x => x.NodeHeight)
+                        .OrderBy(x => x.Key).Select((x, i) => (node: x.First(), height: heightToDownload + i))
+                         .Where(x => x.node.NodeHeight >= x.height).ToArray();
 
                     if (!heightsFromNodes.Any())
                     {
