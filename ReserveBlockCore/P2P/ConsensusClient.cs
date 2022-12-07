@@ -108,7 +108,7 @@ namespace ReserveBlockCore.P2P
                     }
 
                     while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
-                        Peers.Where(x => x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() < Majority - 1))
+                        Peers.Where(x => x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() >= Majority - 1))
                     {
                         await Task.Delay(4);
                     }
