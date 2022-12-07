@@ -872,6 +872,9 @@ namespace ReserveBlockCore.Services
                     var ChosenAnswer = CombineRandoms(Answers, 0, int.MaxValue);
                     ConsoleWriterService.Output("Chosen answer: " + ChosenAnswer);
 
+                    if (Answers.Length < Majority)
+                        continue;
+
                     var PotentialWinners = ValidSubmissions
                         .Where(x => !BadIPs.Contains(x.IPAddress) && !BadAddresses.Contains(x.RBXAddress))
                         .GroupBy(x => x.Answer)

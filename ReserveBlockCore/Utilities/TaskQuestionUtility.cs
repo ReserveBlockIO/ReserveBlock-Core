@@ -15,7 +15,7 @@ namespace ReserveBlockCore.Utilities
                 {
                     case "rndNum":
                         var state = ConsensusServer.GetState();
-                        if (Globals.LastBlock.Height == state.Height && !state.IsUsed)
+                        if (Globals.LastBlock.Height != state.Height || state.IsUsed)
                             ConsensusServer.UpdateState(Globals.LastBlock.Height, 0, (int)ConsensusStatus.Processing, GenerateRandomNumber(Globals.LastBlock.Height + 1), false);
                         break;
                     case "pickCol":
