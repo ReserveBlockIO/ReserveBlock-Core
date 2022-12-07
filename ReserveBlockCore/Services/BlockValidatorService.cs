@@ -14,7 +14,8 @@ namespace ReserveBlockCore.Services
 {
     public class BlockValidatorService
     {
-        public static SemaphoreSlim ValidatingSemaphore = new SemaphoreSlim(1, 1);
+        public static SemaphoreSlim ValidateBlocksSemaphore = new SemaphoreSlim(1, 1);
+        public static SemaphoreSlim ValidateBlockSemaphore = new SemaphoreSlim(1, 1);
 
         public static void UpdateMemBlocks(Block block)
         {
@@ -25,12 +26,12 @@ namespace ReserveBlockCore.Services
         public static async Task ValidationDelay()
         {
             await ValidateBlocks();
-            while (ValidatingSemaphore.CurrentCount == 0 || Globals.BlocksDownloading == 1)
+            while (ValidateBlocksSemaphore.CurrentCount == 0 || Globals.BlocksDownloading == 1)
                 await Task.Delay(4);
         }
         public static async Task ValidateBlocks()
         {
-            await ValidatingSemaphore.WaitAsync();
+            await ValidateBlocksSemaphore.WaitAsync();
             try
             {
                 while (BlockDownloadService.BlockDict.Any())
@@ -78,12 +79,13 @@ namespace ReserveBlockCore.Services
             }
             finally
             {
-                if (ValidatingSemaphore.CurrentCount == 0)
-                    ValidatingSemaphore.Release();                
+                if (ValidateBlocksSemaphore.CurrentCount == 0)
+                    ValidateBlocksSemaphore.Release();                
             }
         }
         public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
+            await ValidateBlockSemaphore.WaitAsync();
             try
             {
                 DbContext.BeginTrans();
@@ -356,6 +358,11 @@ namespace ReserveBlockCore.Services
             {
                 DbContext.Rollback();
                 Console.WriteLine($"Error: {ex.ToString()}");
+            }
+            finally
+            {
+                if (ValidateBlockSemaphore.CurrentCount == 0)
+                    ValidateBlockSemaphore.Release();
             }
             return false;
         }
