@@ -108,7 +108,7 @@ namespace ReserveBlockCore.P2P
                     }
 
                     var Delay1 = Task.Delay(1000);
-                    while (!Delay1.IsCanceled && Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
+                    while (!Delay1.IsCompleted && Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
                         Peers.Where(x => x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() >= Majority - 1))
                     {
                         await Task.Delay(4);
