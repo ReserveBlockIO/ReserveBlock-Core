@@ -171,12 +171,11 @@ namespace ReserveBlockCore.P2P
 
         public static void SendMethodCode(NodeInfo[] peers, int methodCode)
         {
-            var Now = TimeUtil.GetMillisecondTime();
-            var Height = Globals.LastBlock.Height + 1;
+            var Now = TimeUtil.GetMillisecondTime();            
             _ = Task.WhenAll(peers.Select(node =>
             {
                 var Source = new CancellationTokenSource(1000);
-                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Height, methodCode }, Source.Token)
+                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height, methodCode }, Source.Token)
                     ?? Task.FromResult(false);
                 return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
