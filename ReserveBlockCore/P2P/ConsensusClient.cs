@@ -192,7 +192,7 @@ namespace ReserveBlockCore.P2P
                 var delay = Task.Delay(100);
                 try
                 {
-                    if (!peer.IsConnected)
+                    if (!peer.IsConnected || TimeUtil.GetMillisecondTime() - peer.LastMethodCodeTime > 2000)
                     {
                         await delay;
                         continue;
