@@ -176,7 +176,7 @@ namespace ReserveBlockCore.P2P
             _ = Task.WhenAll(peers.Select(node =>
             {
                 var Source = new CancellationTokenSource(1000);
-                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Height, methodCode }, Source.Token);
+                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Height, methodCode }, Source.Token)
                     ?? Task.FromResult(false);
                 return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
