@@ -125,14 +125,13 @@ namespace ReserveBlockCore.P2P
                         return null;
                 }                                
                                 
-                var MinPass = Signer.Majority() - 1;                
-                var OuterHashSource = new CancellationTokenSource(2000);
+                var MinPass = Signer.Majority() - 1;
+                var HashSource = runType != RunType.Initial ? new CancellationTokenSource(1000) : new CancellationTokenSource();
                 var HashTasks = Peers.Select(node =>
-                {
-                    var HashSource = new CancellationTokenSource(1000);
+                {                    
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, OuterHashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, HashSource.Token);
                 })
                 .ToArray();
 
@@ -142,18 +141,11 @@ namespace ReserveBlockCore.P2P
                 }
 
                 var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
-                await HashTasks.WhenAtLeast(x => (x != null && MyHashes.SetEquals(x)) || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);                
+                var SuccessTask = HashTasks.WhenAtLeast(x => (x != null && MyHashes.SetEquals(x)) || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
+                var FailTask = HashTasks.WhenAtLeast(x => x == null || (x != null && !MyHashes.SetEquals(x)) || Globals.LastBlock.Height + 1 != Height, Majority);
+                await Task.WhenAny(SuccessTask, FailTask);
 
-                if (Height != Globals.LastBlock.Height + 1)
-                    return null;
-
-                if (runType != RunType.Last && Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
-                {                    
-                    return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
-                }
-
-                var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();                                
-                if (PeerHashes.Where(x => MyHashes.SetEquals(x)).Count() < Majority - 1)
+                if (FailTask.IsCompleted)
                     return null;
 
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
@@ -166,7 +158,7 @@ namespace ReserveBlockCore.P2P
 
         public static bool ForceSuccess(RunType type, long Height, int methodCode, int minPass)
         {
-            return Globals.LastBlock.Height + 1 != Height || (type != RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0));                    
+            return  (type != RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0));                    
         }
 
 
