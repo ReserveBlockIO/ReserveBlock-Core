@@ -131,7 +131,8 @@ namespace ReserveBlockCore.P2P
                 {                    
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, HashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || Globals.LastBlock.Height + 1 != Height || 
+                        node.MethodCode > methodCode || node.MethodCode < methodCode - 1 || node.NodeHeight + 1 != Height, 100, HashSource.Token);
                 })
                 .ToArray();
 
