@@ -71,10 +71,13 @@ namespace ReserveBlockCore.P2P
             Last
         }
 
+        private static int ReadyToFinalize = 0;
+
         public static async Task<(string Address, string Message)[]> ConsensusRun(int methodCode, string message, string signature, int timeToFinalize, RunType runType)
         {
             try
             {
+                Interlocked.Exchange(ref ReadyToFinalize, 0);
                 ConsensusServer.UpdateState(methodCode: methodCode);
                 var Address = Globals.AdjudicateAccount.Address;
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
@@ -104,25 +107,28 @@ namespace ReserveBlockCore.P2P
                         _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
                     }
 
-                    if (runType == RunType.Initial)
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
+                        Peers.Where(x => x.NodeHeight + 1 != Height || (x.MethodCode != methodCode && x.MethodCode != methodCode - 1)).Count() < Majority - 1))
                     {
-                        while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
-                        {
-                            await Task.Delay(4);
-                        }
+                        await Task.Delay(4);
                     }
 
-                    await DelayTask;
-
-                    ConsensusSource.Cancel();
-
                     if (Height != Globals.LastBlock.Height + 1)
+                    {
+                        ConsensusSource.Cancel();
                         continue;
+                    }
 
                     if (Messages.Count >= Majority)
+                    {
+                        await DelayTask;
+                        Interlocked.Exchange(ref ReadyToFinalize, 1);
+                        ConsensusSource.Cancel();
                         break;
-                    if (runType != RunType.Initial)
-                        return null;
+                    }
+
+                    ConsensusSource.Cancel();
+                    return null;                    
                 }                                
                                 
                 var MinPass = Signer.Majority() - 1;
@@ -208,7 +214,8 @@ namespace ReserveBlockCore.P2P
                 await delay;
             }
 
-            ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
+            if(ReadyToFinalize == 1)
+                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
         }
 
         #endregion
