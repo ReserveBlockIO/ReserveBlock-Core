@@ -107,7 +107,7 @@ namespace ReserveBlockCore.P2P
                         _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
                     }
 
-                    var Delay1 = Task.Delay(1000);
+                    var Delay1 = Task.Delay(2000);
                     while ((runType == RunType.Initial || !Delay1.IsCompleted) && Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
                         Peers.Where(x => x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() >= Majority - 1))
                     {
