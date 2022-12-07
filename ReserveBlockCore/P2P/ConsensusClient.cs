@@ -82,6 +82,7 @@ namespace ReserveBlockCore.P2P
                 int Majority = -1;
                 ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
                 SendMethodCode(Peers, methodCode);
+                var DelayTask = Task.Delay(timeToFinalize);
                 while (true)
                 {
                     Height = Globals.LastBlock.Height + 1;                                    
@@ -102,24 +103,13 @@ namespace ReserveBlockCore.P2P
                     {
                         _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
                     }
-
-                    if (runType == RunType.Initial)
-                    {
-                        while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
-                        {
-                            try
-                            {
-                                await Task.Delay(4);
-                            }
-                            catch { }
-                        }
+                    
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
+                    {                        
+                        await Task.Delay(4);
                     }
 
-                    try
-                    {
-                        await Task.Delay(timeToFinalize, ConsensusSource.Token);
-                    }
-                    catch { }
+                    await DelayTask;
 
                     ConsensusSource.Cancel();
 
@@ -135,10 +125,10 @@ namespace ReserveBlockCore.P2P
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 
                 var HashDone = false;
-                var MinPass = Signer.Majority() - 1;
-                var HashSource = new CancellationTokenSource(1000);
+                var MinPass = Signer.Majority() - 1;                
                 var HashTasks = Peers.Select(node =>
                 {
+                    var HashSource = new CancellationTokenSource(1000);
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
                     return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || HashDone || ForceSuccess(runType, Height, methodCode, MinPass), 100, default);
@@ -147,6 +137,8 @@ namespace ReserveBlockCore.P2P
                 
                 await HashTasks.WhenAtLeast(x => x != null || HashDone || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
                 HashDone = true;
+
+
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
 
@@ -203,8 +195,9 @@ namespace ReserveBlockCore.P2P
                         await delay;
                         continue;
                     }
-                    
-                    var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses }, cts.Token);
+
+                    var Source = new CancellationTokenSource(1000);
+                    var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses }, Source.Token);
                     if(Response != null)
                     {                        
                         var arr = Response.Split(";:;");
