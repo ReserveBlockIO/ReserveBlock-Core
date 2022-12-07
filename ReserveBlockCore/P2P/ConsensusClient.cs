@@ -123,13 +123,9 @@ namespace ReserveBlockCore.P2P
                         break;
                     if (runType != RunType.Initial)
                         return null;
-                }
-                
-                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
-                
-                var HashDone = false;
-                var MinPass = Signer.Majority() - 1;
-                var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
+                }                                
+                                
+                var MinPass = Signer.Majority() - 1;                
                 var OuterHashSource = new CancellationTokenSource(2000);
                 var HashTasks = Peers.Select(node =>
                 {
@@ -139,9 +135,14 @@ namespace ReserveBlockCore.P2P
                     return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, OuterHashSource.Token);
                 })
                 .ToArray();
-                
-                await HashTasks.WhenAtLeast(x => (x != null && MyHashes.SetEquals(x)) || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
-                HashDone = true;
+
+                while(ConsensusServer.GetState().Status == ConsensusStatus.Processing)
+                {
+                    await Task.Delay(4);
+                }
+
+                var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
+                await HashTasks.WhenAtLeast(x => (x != null && MyHashes.SetEquals(x)) || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);                
 
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
@@ -151,7 +152,7 @@ namespace ReserveBlockCore.P2P
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                 }
 
-                var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();                
+                var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();                                
                 if (PeerHashes.Where(x => MyHashes.SetEquals(x)).Count() < Majority - 1)
                     return null;
 
@@ -213,6 +214,8 @@ namespace ReserveBlockCore.P2P
                 }
                 await delay;
             }
+
+            ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
         }
 
         #endregion
