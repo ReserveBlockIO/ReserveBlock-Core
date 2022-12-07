@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Services;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -15,8 +16,14 @@ namespace ReserveBlockCore.Utilities
                 {
                     case "rndNum":
                         var state = ConsensusServer.GetState();
-                        if (Globals.LastBlock.Height != state.Height || state.IsUsed)
-                            ConsensusServer.UpdateState(Globals.LastBlock.Height, 0, (int)ConsensusStatus.Processing, GenerateRandomNumber(Globals.LastBlock.Height + 1), false);
+                        var nextHeight = Globals.LastBlock.Height + 1;
+                        if (nextHeight != state.Height || state.IsUsed)
+                        {
+                            var Answer = GenerateRandomNumber(nextHeight);
+                            var MyDecryptedAnswer = nextHeight + ":" + Answer;
+                            var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
+                            ConsensusServer.UpdateState(nextHeight, 0, (int)ConsensusStatus.Processing, Answer, MyEncryptedAnswer, false);
+                        }
                         break;
                     case "pickCol":
                         break;

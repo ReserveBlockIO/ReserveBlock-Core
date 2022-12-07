@@ -784,15 +784,16 @@ namespace ReserveBlockCore.Services
                     var Height = Globals.LastBlock.Height + 1;
                     ClearRoundDicts(Height);
                     TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                    var Answer = ConsensusServer.GetState().Answer;
+                    var State = ConsensusServer.GetState();
+                    var Answer = State.Answer;
                     var Signers = Signer.CurrentSigningAddresses();
                     var Majority = Signers.Count / 2 + 1;
                                                         
                     var fortisPool = Globals.FortisPool.Values;
                                                          
                     ConsoleWriterService.Output("Majority of peers are ready.");
-                    var MyDecryptedAnswer = Height + ":" + Answer;                    
-                    var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
+                    var MyDecryptedAnswer = Height + ":" + Answer;
+                    var MyEncryptedAnswer = State.EncryptedAnswer;
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, RunType.Initial);
                     

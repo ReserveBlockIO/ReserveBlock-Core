@@ -103,10 +103,13 @@ namespace ReserveBlockCore.P2P
                     {
                         _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
                     }
-                    
-                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
-                    {                        
-                        await Task.Delay(4);
+
+                    if (runType == RunType.Initial)
+                    {
+                        while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
+                        {
+                            await Task.Delay(4);
+                        }
                     }
 
                     await DelayTask;
