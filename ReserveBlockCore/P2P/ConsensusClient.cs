@@ -128,19 +128,20 @@ namespace ReserveBlockCore.P2P
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 
                 var HashDone = false;
-                var MinPass = Signer.Majority() - 1;                
+                var MinPass = Signer.Majority() - 1;
+                var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
+                var OuterHashSource = new CancellationTokenSource(2000);
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashSource = new CancellationTokenSource(1000);
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || HashDone || ForceSuccess(runType, Height, methodCode, MinPass), 100, default);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null, 100, OuterHashSource.Token);
                 })
                 .ToArray();
                 
-                await HashTasks.WhenAtLeast(x => x != null || HashDone || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
+                await HashTasks.WhenAtLeast(x => (x != null && MyHashes.SetEquals(x)) || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
                 HashDone = true;
-
 
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
@@ -150,10 +151,8 @@ namespace ReserveBlockCore.P2P
                     return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                 }
 
-                var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();
-                var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
-                if (PeerHashes.Where(x => MyHashes.SetEquals(x)).Count() < Majority - 1 && 
-                    !Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
+                var PeerHashes = (await Task.WhenAll(HashTasks.Where(x => x.IsCompleted))).Where(x => x != null).ToArray();                
+                if (PeerHashes.Where(x => MyHashes.SetEquals(x)).Count() < Majority - 1)
                     return null;
 
                 return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
@@ -166,8 +165,7 @@ namespace ReserveBlockCore.P2P
 
         public static bool ForceSuccess(RunType type, long Height, int methodCode, int minPass)
         {
-            return Globals.LastBlock.Height + 1 != Height || (type != RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0))
-                    || Globals.Nodes.Values.Where(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode).Count() < minPass;
+            return Globals.LastBlock.Height + 1 != Height || (type != RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0));                    
         }
 
 
@@ -177,7 +175,8 @@ namespace ReserveBlockCore.P2P
             var Height = Globals.LastBlock.Height + 1;
             _ = Task.WhenAll(peers.Select(node =>
             {
-                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Height, methodCode }, default)
+                var Source = new CancellationTokenSource(1000);
+                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Height, methodCode }, Source.Token);
                     ?? Task.FromResult(false);
                 return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
