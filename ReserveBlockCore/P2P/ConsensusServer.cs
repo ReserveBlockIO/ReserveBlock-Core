@@ -100,11 +100,12 @@ namespace ReserveBlockCore.P2P
             Context?.Abort();
         }
 
-        public static void UpdateState(long height = -1, int methodCode = -100, int status = -1, int randomNumber = -1, bool? isUsed = null)
+        public static void UpdateState(long height = -100, int methodCode = -100, int status = -1, int randomNumber = -1, bool? isUsed = null)
         {
             lock (UpdateLock)
             {
-                ConsenusStateSingelton.Height = height;
+                if(height != -100)
+                    ConsenusStateSingelton.Height = height;
                 if (status != -1)
                     ConsenusStateSingelton.Status = (ConsensusStatus)status;
                 if (methodCode != -100)

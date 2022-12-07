@@ -133,19 +133,20 @@ namespace ReserveBlockCore.P2P
                 }
                 
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
-                var HashSource = new CancellationTokenSource();
-
+                
+                var HashDone = false;
                 var MinPass = Signer.Majority() - 1;
+                var HashSource = new CancellationTokenSource(1000);
                 var HashTasks = Peers.Select(node =>
                 {
                     var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
                         ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || ForceSuccess(runType, Height, methodCode, MinPass), 100, HashSource.Token);
+                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || HashDone || ForceSuccess(runType, Height, methodCode, MinPass), 100, default);
                 })
                 .ToArray();
                 
-                await HashTasks.WhenAtLeast(x => x != null || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);                
-                HashSource.Cancel();
+                await HashTasks.WhenAtLeast(x => x != null || HashDone || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
+                HashDone = true;
                 if (Height != Globals.LastBlock.Height + 1)
                     return null;
 
