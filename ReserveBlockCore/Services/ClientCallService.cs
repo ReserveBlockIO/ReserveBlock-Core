@@ -769,10 +769,10 @@ namespace ReserveBlockCore.Services
         }        
         public static async Task DoWorkV3()
         {
-            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null || Globals.StopAllTimers)
+            if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null)
                 return;
 
-            while (Globals.Nodes.Count == 0)
+            while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(4);
 
             var RemainingDelay = Task.CompletedTask;
@@ -801,7 +801,7 @@ namespace ReserveBlockCore.Services
 
                     Height = Globals.LastBlock.Height + 1;
 
-                    ConsoleWriterService.Output("Majority of peers are ready.");
+                    ConsoleWriterService.Output("Start of Consensus at height " + Height);
                     var MyDecryptedAnswer = Height + ":" + Answer;
                     var MyEncryptedAnswer = State.EncryptedAnswer;
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
