@@ -24,6 +24,8 @@ namespace ReserveBlockCore.Utilities
                             var MyEncryptedAnswer = SignatureService.AdjudicatorSignature(MyDecryptedAnswer);
                             ConsensusServer.UpdateState(nextHeight, 0, (int)ConsensusStatus.Processing, Answer, MyEncryptedAnswer, false);
                         }
+                        else
+                            ConsensusServer.UpdateState(methodCode: 0, status: (int)ConsensusStatus.Processing);
                         break;
                     case "pickCol":
                         break;
