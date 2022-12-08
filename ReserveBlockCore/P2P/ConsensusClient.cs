@@ -102,13 +102,14 @@ namespace ReserveBlockCore.P2P
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
                     Hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
-                    ConsensusServer.Hashes.Clear();                    
+                    ConsensusServer.Hashes.Clear();
+                    ConsensusServer.Hashes[(Height, methodCode)] = Hashes;
 
                     var ConsensusSource = new CancellationTokenSource();                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                                                             
                     while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
-                        Peers.Where(x => x.NodeHeight + 1 == Height && TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1))
+                        Peers.Where(x => x.NodeHeight + 1 == Height && (x.IsConnected || TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 3000) && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1))
                     {
                         await Task.Delay(4);
                     }
@@ -139,8 +140,8 @@ namespace ReserveBlockCore.P2P
                 (string Hash, string Signature) MyHash;
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                     await Task.Delay(4);
-
-                while (Peers.Where(x => x.NodeHeight + 1 == Height && TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1)
+                
+                while (Peers.Where(x => x.NodeHeight + 1 == Height && (x.IsConnected || TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 3000) && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1)
                 {
                     var CurrentHashes = Hashes.Values.ToArray();
                     var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
