@@ -805,7 +805,7 @@ namespace ReserveBlockCore.P2P
                     node.LastMethodCodeTime = Now;
                     node.NodeHeight = long.Parse(remoteMethodCode[0]);
                     node.MethodCode = int.Parse(remoteMethodCode[1]);
-                    node.IsFinalized = Convert.ToBoolean(remoteMethodCode[2]);
+                    node.IsFinalized = remoteMethodCode[2] == "1";
                 }
                 return true;
             }
