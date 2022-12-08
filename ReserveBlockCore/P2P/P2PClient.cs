@@ -337,10 +337,8 @@ namespace ReserveBlockCore.P2P
                     }
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
-                while (hubConnection.State != HubConnectionState.Connecting)
-                    await Task.Delay(4);
-                if (hubConnection.State != HubConnectionState.Connected)
+                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));                
+                if (string.IsNullOrEmpty(hubConnection.ConnectionId))
                     return false;
 
                 if (Globals.AdjNodes.TryGetValue(IPAddress, out var node))
