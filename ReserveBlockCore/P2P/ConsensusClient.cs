@@ -222,6 +222,8 @@ namespace ReserveBlockCore.P2P
 
                         taskDict.TryRemove(completedTask.Key, out _);
                     }
+
+                    await Task.Delay(10);
                 }
                 catch { }
             } while (!cts.IsCancellationRequested && MissingAddresses.Any());
@@ -282,6 +284,8 @@ namespace ReserveBlockCore.P2P
 
                         taskDict.TryRemove(completedTask.Key, out _);
                     }
+
+                    await Task.Delay(10);
                 }
                 catch { }
             } while (!cts.IsCancellationRequested && MissingAddresses.Any());            
