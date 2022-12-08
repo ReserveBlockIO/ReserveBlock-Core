@@ -107,11 +107,9 @@ namespace ReserveBlockCore.P2P
 
                     var ConsensusSource = new CancellationTokenSource();                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
-
-                    //while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
-                    //                        Peers.Where(x => x.NodeHeight + 1 == Height && (x.IsConnected || TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 3000) && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1))
-
-                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
+                    
+                    var Delay = Task.Delay(2000);
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial || !Delay.IsCompleted))
                     {
                         await Task.Delay(4);
                     }
@@ -142,8 +140,9 @@ namespace ReserveBlockCore.P2P
                 (string Hash, string Signature) MyHash;
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                     await Task.Delay(4);
-                
-                while (true) //Peers.Where(x => x.NodeHeight + 1 == Height && (x.IsConnected || TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 3000) && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1)
+
+                var HashDelay = Task.Delay(1000);
+                while (!HashDelay.IsCompleted)
                 {
                     var CurrentHashes = Hashes.Values.ToArray();
                     var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
