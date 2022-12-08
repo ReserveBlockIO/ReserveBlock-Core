@@ -16,12 +16,15 @@ namespace ReserveBlockCore.P2P
         static ConsensusServer()
         {
             AdjPool = new ConcurrentDictionary<string, AdjPool>();
-            Messages = new ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>>();            
+            Messages = new ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>>();
+            Hashes = new ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Hash, string Signature)>>();
             ConsenusStateSingelton = new ConsensusState();
         }
 
         public static ConcurrentDictionary<string, AdjPool> AdjPool;
         public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>> Messages;
+        public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Hash, string Signature)>> Hashes;
+
         private static ConsensusState ConsenusStateSingelton;
         private static object UpdateLock = new object();
         public override async Task OnConnectedAsync()
@@ -156,10 +159,11 @@ namespace ReserveBlockCore.P2P
                 return null;
             }
 
-            return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode;
+            return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" + 
+                (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
         }
 
-        public bool SendMethodCode(long height, int methodCode)
+        public bool SendMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
             if (!Globals.Nodes.TryGetValue(ip, out var node))
@@ -170,6 +174,7 @@ namespace ReserveBlockCore.P2P
 
             node.NodeHeight = height;
             node.MethodCode = methodCode;
+            node.IsFinalized = isFinalized;
             node.LastMethodCodeTime = TimeUtil.GetMillisecondTime();
 
             return true;
@@ -207,10 +212,10 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public string[] Hashes(long height, int methodCode)
+        public string Hash(long height, int methodCode, string[] addresses)
         {
             try
-            {               
+            {
                 var ip = GetIP(Context);
                 if (!Globals.Nodes.TryGetValue(ip, out var Pool))
                 {
@@ -218,14 +223,17 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
-                if (Globals.LastBlock.Height + 1 != height || ConsenusStateSingelton.MethodCode != methodCode ||
-                    ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
+                if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
                     return null;
 
-                if (!Messages.TryGetValue((height, methodCode), out var messages))
+                if (!Hashes.TryGetValue((height, methodCode), out var hashes))
                     return null;
-                
-                return messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToArray();
+
+                foreach (var address in addresses)
+                {
+                    if (hashes.TryGetValue(address, out var Value))
+                        return address + ":" + Value.Hash + ":" + Value.Signature;
+                }
             }
             catch (Exception ex)
             {

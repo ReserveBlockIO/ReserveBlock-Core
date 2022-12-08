@@ -790,7 +790,17 @@ namespace ReserveBlockCore.Services
                     var Majority = Signers.Count / 2 + 1;
                                                         
                     var fortisPool = Globals.FortisPool.Values;
-                                                         
+
+                    await RemainingDelay;
+                    var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
+                    var CurrentTime = TimeUtil.GetMillisecondTime();
+                    var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 19000;
+                    InitialDelayTime = Math.Max(InitialDelayTime, 0);
+                    //var InitialBlockDelay = Task.Delay((int)InitialDelayTime);
+                    var InitialBlockDelay = Task.Delay(19000);
+
+                    Height = Globals.LastBlock.Height + 1;
+
                     ConsoleWriterService.Output("Majority of peers are ready.");
                     var MyDecryptedAnswer = Height + ":" + Answer;
                     var MyEncryptedAnswer = State.EncryptedAnswer;
@@ -798,16 +808,7 @@ namespace ReserveBlockCore.Services
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, RunType.Initial);
                     
                     if (EncryptedAnswers == null)                    
-                        continue;
-                   
-                    await RemainingDelay;
-                    var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
-                    var CurrentTime = TimeUtil.GetMillisecondTime();
-                    var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 19000;
-                    InitialDelayTime = Math.Max(InitialDelayTime, 0);
-                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime);
-
-                    Height = Globals.LastBlock.Height + 1;
+                        continue;                   
 
                     ConsoleWriterService.Output("EncryptedAnswer Consensus at height " + Height);
                                         

@@ -84,13 +84,13 @@ namespace ReserveBlockCore.P2P
                 long Height = -1;                
                 int Majority = -1;
                 ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
-                SendMethodCode(Peers, methodCode);
+                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;
+                SendMethodCode(Peers, methodCode, false);
                 var DelayTask = Task.Delay(timeToFinalize);
                 while (true)
                 {
                     Height = Globals.LastBlock.Height + 1;                                    
-                    Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
-                    var CurrentTime = TimeUtil.GetMillisecondTime();
+                    Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();                    
 
                     var CurrentAddresses = Signer.CurrentSigningAddresses();
                     var NumNodes = CurrentAddresses.Count;
@@ -101,15 +101,14 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Messages[(Height, methodCode)] = Messages;
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
-                    var ConsensusSource = new CancellationTokenSource();
-                    foreach (var peer in Peers)
-                    {
-                        _ = PeerRequestLoop(methodCode, peer, CurrentAddresses, ConsensusSource);
-                    }
+                    Hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
+                    ConsensusServer.Hashes.Clear();                    
 
-                    var Delay1 = Task.Delay(2000);
-                    while ((runType == RunType.Initial || !Delay1.IsCompleted) && Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
-                        Peers.Where(x => x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() >= Majority - 1))
+                    var ConsensusSource = new CancellationTokenSource();                    
+                    _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
+                                                            
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial ||
+                        Peers.Where(x => x.NodeHeight + 1 == Height && TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1))
                     {
                         await Task.Delay(4);
                     }
@@ -130,92 +129,161 @@ namespace ReserveBlockCore.P2P
 
                     ConsensusSource.Cancel();
                     return null;                    
-                }                                
-                                
-                var MinPass = Signer.Majority() - 1;
-                var HashSource = runType != RunType.Initial ? new CancellationTokenSource(1000) : new CancellationTokenSource();
-                var HashTasks = Peers.Select(node =>
-                {                    
-                    var HashRequestFunc = () => node.Connection?.InvokeCoreAsync<string[]>("Hashes", args: new object?[] { Height, methodCode }, HashSource.Token)
-                        ?? Task.FromResult((string[])null);
-                    return HashRequestFunc.RetryUntilSuccessOrCancel(x => x != null || Globals.LastBlock.Height + 1 != Height || 
-                        node.MethodCode > methodCode || node.MethodCode < methodCode - 1 || node.NodeHeight + 1 != Height, 100, HashSource.Token);
-                })
-                .ToArray();
+                }
 
-                while(ConsensusServer.GetState().Status == ConsensusStatus.Processing)
+                var HashSource = new CancellationTokenSource();
+                var signers = Signer.CurrentSigningAddresses();
+                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
+
+                var MinPass = signers.Count / 2;
+                (string Hash, string Signature) MyHash;
+                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
+                    await Task.Delay(4);
+
+                while (Peers.Where(x => x.NodeHeight + 1 == Height && TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= Majority - 1)
                 {
+                    var CurrentHashes = Hashes.Values.ToArray();
+                    var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
+                    if (NumMatches >= MinPass || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
+                    {
+                        HashSource.Cancel();
+                        return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
+                    }
+
+                    if (CurrentHashes.Length - NumMatches > MinPass || Height != Globals.LastBlock.Height + 1)
+                    {
+                        HashSource.Cancel();
+                        return null;
+                    }
+
                     await Task.Delay(4);
                 }
 
-                var MyHashes = Messages.Select(x => x.Key + ":" + Ecdsa.sha256(x.Value.Message)).ToHashSet();
-                var SuccessTask = HashTasks.WhenAtLeast(x => (x != null && MyHashes.SetEquals(x)) || ForceSuccess(runType, Height, methodCode, MinPass), MinPass);
-                var FailTask = HashTasks.WhenAtLeast(x => x == null || (x != null && !MyHashes.SetEquals(x)) || Globals.LastBlock.Height + 1 != Height, Majority);
-                await Task.WhenAny(SuccessTask, FailTask);
-
-                if (FailTask.IsCompleted)
-                    return null;
-
-                return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
+                HashSource.Cancel();
             }
             catch(Exception ex)
             {
-            }
+            }            
             return null;
-        }
+        }       
 
-        public static bool ForceSuccess(RunType type, long Height, int methodCode, int minPass)
-        {
-            return  (type != RunType.Last ? Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1) : Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == 0));                    
-        }
-
-
-        public static void SendMethodCode(NodeInfo[] peers, int methodCode)
+        public static void SendMethodCode(NodeInfo[] peers, int methodCode, bool isFinalized)
         {
             var Now = TimeUtil.GetMillisecondTime();            
             _ = Task.WhenAll(peers.Select(node =>
             {
                 var Source = new CancellationTokenSource(1000);
-                var SendMethodCodeFunc = () => node.Connection?.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height, methodCode }, Source.Token)
+                var SendMethodCodeFunc = () => node.InvokeAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height, methodCode, isFinalized }, Source.Token)
                     ?? Task.FromResult(false);
                 return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
         }
 
-        public static async Task PeerRequestLoop(int methodCode, NodeInfo peer, HashSet<string> addresses, CancellationTokenSource cts)
+        public static async Task PeerRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
         {
             var messages = ConsensusServer.Messages[(Globals.LastBlock.Height + 1, methodCode)];
             var rnd = new Random();
-            var MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();            
-            while (!cts.IsCancellationRequested && MissingAddresses.Any())
+            var taskDict = new ConcurrentDictionary<string, Task<string>>();
+            var MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+
+            do
             {
-                var delay = Task.Delay(100);
                 try
                 {
-                    if (!peer.IsConnected || TimeUtil.GetMillisecondTime() - peer.LastMethodCodeTime > 2000)
-                    {
-                        await delay;
-                        continue;
-                    }
+                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == Globals.LastBlock.Height &&
+                        x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
 
                     var Source = new CancellationTokenSource(1000);
-                    var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses }, Source.Token);
-                    if(Response != null)
-                    {                        
-                        var arr = Response.Split(";:;");
-                        var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
-                        if(MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, message, signature))
-                            messages[address] = (message, signature);
+                    for (var i = 0; i < RecentPeers.Length; i++)
+                    {
+                        var peer = RecentPeers[i];
+                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length) }, Source.Token);
                     }
-                    MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
-                }
-                catch(Exception ex) {                    
-                }
-                await delay;
-            }
+                    
+                    await Task.WhenAny(taskDict.Values);
 
-            if(ReadyToFinalize == 1)
+                    var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
+                    foreach(var completedTask in CompletedTasks)
+                    {
+                        try
+                        {
+                            var Response = await completedTask.Value;
+                            if (Response != null)
+                            {
+                                var arr = Response.Split(";:;");
+                                var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
+                                if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, message, signature))
+                                    messages[address] = (message, signature);
+                                MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+                            }
+                        }
+                        catch { }
+
+                        taskDict.TryRemove(completedTask.Key, out _);
+                    }
+                }
+                catch { }
+            } while (!cts.IsCancellationRequested && MissingAddresses.Any());
+
+            await cts.Token.WhenCanceled();
+            if (ReadyToFinalize == 1)
+            {
                 ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
+                var Height = Globals.LastBlock.Height + 1;
+                var Messages = ConsensusServer.Messages[(Height, methodCode)];                
+                var MyHash = Ecdsa.sha256(string.Join("", Messages.OrderBy(x => x.Key).Select(x => Ecdsa.sha256(x.Value.Message))));
+                var Signature = SignatureService.AdjudicatorSignature(MyHash);
+                var HashDict = ConsensusServer.Hashes[(Height, methodCode)];
+                HashDict[Globals.AdjudicateAccount.Address] = (MyHash, Signature);                
+                SendMethodCode(peers, methodCode, true);
+            }
+        }
+
+        public static async Task PeerHashRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
+        {
+            var hashes = ConsensusServer.Hashes[(Globals.LastBlock.Height + 1, methodCode)];
+            var rnd = new Random();
+            var taskDict = new ConcurrentDictionary<string, Task<string>>();
+            var MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+
+            do
+            {
+                try
+                {
+                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == Globals.LastBlock.Height &&
+                        x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
+
+                    var Source = new CancellationTokenSource(1000);
+                    for (var i = 0; i < RecentPeers.Length; i++)
+                    {
+                        var peer = RecentPeers[i];
+                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length) }, Source.Token);
+                    }
+
+                    await Task.WhenAny(taskDict.Values);
+
+                    var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
+                    foreach (var completedTask in CompletedTasks)
+                    {
+                        try
+                        {
+                            var Response = await completedTask.Value;
+                            if (Response != null)
+                            {
+                                var arr = Response.Split(":");
+                                var (address, hash, signature) = (arr[0], arr[1], arr[2]);
+                                if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, hash, signature))
+                                    hashes[address] = (hash, signature);
+                                MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+                            }
+                        }
+                        catch { }
+
+                        taskDict.TryRemove(completedTask.Key, out _);
+                    }
+                }
+                catch { }
+            } while (!cts.IsCancellationRequested && MissingAddresses.Any());            
         }
 
         #endregion

@@ -801,12 +801,13 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var Now = TimeUtil.GetMillisecondTime();
-                var remoteMethodCode = (await node.Connection.InvokeAsync<string>("RequestMethodCode")).Split(':');
+                var remoteMethodCode = (await node.InvokeAsync<string>("RequestMethodCode")).Split(':');
                 if(Now > node.LastMethodCodeTime)
                 {
                     node.LastMethodCodeTime = Now;
                     node.NodeHeight = long.Parse(remoteMethodCode[0]);
-                    node.MethodCode = int.Parse(remoteMethodCode[1]);                    
+                    node.MethodCode = int.Parse(remoteMethodCode[1]);
+                    node.IsFinalized = Convert.ToBoolean(remoteMethodCode[2]);
                 }
                 return true;
             }

@@ -42,6 +42,13 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
+        public static T[] Rotate<T>(this IEnumerable<T> list, int numberOfRotations)
+        {
+            var newEnd = list.Take(numberOfRotations);
+            var newBegin = list.Skip(numberOfRotations);
+            return newBegin.Union(newEnd).ToArray();
+        }
+
         public static void AsParamater<T>(this T obj, Action<T> action)
         {
             action(obj);

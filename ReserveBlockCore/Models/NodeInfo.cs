@@ -18,6 +18,8 @@ namespace ReserveBlockCore.Models
 
         public int MethodCode = -100;
 
+        public bool IsFinalized = false;
+
         public long LastMethodCodeTime { get; set; }
         public int NodeLatency { get; set; }
         public DateTime? NodeLastChecked { get; set; }
@@ -40,7 +42,7 @@ namespace ReserveBlockCore.Models
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
             await APILock.WaitAsync();
-            var delay = Task.Delay(1000);
+            var delay = Globals.AdjudicateAccount != null ? Task.Delay(100) : Task.Delay(1000);
             try
             {
                 return await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);

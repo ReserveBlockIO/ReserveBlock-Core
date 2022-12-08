@@ -1,4 +1,6 @@
-﻿using System.IO.Compression;
+﻿using System.ComponentModel;
+using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -63,5 +65,13 @@ namespace ReserveBlockCore.Extensions
 
 			return default;
 		}
-	}
+
+        public static Task WhenCanceled(this CancellationToken cancellationToken)
+        {
+            var tcs = new TaskCompletionSource();
+            cancellationToken.Register(s => ((TaskCompletionSource)s).TrySetResult(), tcs);
+            return tcs.Task;
+        }
+
+    }
 }
