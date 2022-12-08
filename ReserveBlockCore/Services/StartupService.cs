@@ -641,6 +641,14 @@ namespace ReserveBlockCore.Services
                         NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
                     }
 
+                    while(NumAdjudicators > 2)
+                    {
+                        var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
+                        if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
+                        NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
+                    }
+
                     if (NumAdjudicators >= 2)
                     {
                         await delay;
