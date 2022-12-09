@@ -763,22 +763,43 @@ namespace ReserveBlockCore.Commands
 
         public static async Task AdjudicatorInfo()
         {
-            var consensusNodes = Globals.AdjNodes.Values.ToList();
             var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
 
-            if(consensusNodes.Count() > 0)
+            if (Globals.AdjudicateAccount == null)
             {
-                ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
-                foreach (var cNode in consensusNodes)
+                var consensusNodes = Globals.AdjNodes.Values.ToList();
+                if (consensusNodes.Count() > 0)
                 {
-                    var line = $"IP: {cNode.IpAddress} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
-                    ConsoleWriterService.Output(line);
+                    ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
+                    foreach (var cNode in consensusNodes)
+                    {
+                        var line = $"IP: {cNode.IpAddress} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}";
+                        ConsoleWriterService.Output(line);
+                    }
+                    ConsoleWriterService.Output("******************************************************************************");
                 }
-                ConsoleWriterService.Output("******************************************************************************");
+                else
+                {
+                    ConsoleWriterService.Output("Empty");
+                }
             }
             else
             {
-                ConsoleWriterService.Output("Empty");
+                var adjConsensusNodes = Globals.Nodes.Values.ToList();
+                if (adjConsensusNodes.Count() > 0)
+                {
+                    ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
+                    foreach (var cNode in adjConsensusNodes)
+                    {
+                        var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}";
+                        ConsoleWriterService.Output(line);
+                    }
+                    ConsoleWriterService.Output("******************************************************************************");
+                }
+                else
+                {
+                    ConsoleWriterService.Output("Empty");
+                }
             }
 
             if(taskSelectedNumbersV3.Count() > 0)
