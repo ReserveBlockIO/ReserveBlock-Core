@@ -109,7 +109,7 @@ namespace ReserveBlockCore.P2P
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
                     var Delay = Task.Delay(2000);
-                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial || !Delay.IsCompleted))
                     {
                         await Task.Delay(4);
                     }
@@ -141,7 +141,7 @@ namespace ReserveBlockCore.P2P
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                     await Task.Delay(4);
 
-                var HashDelay = Task.Delay(10000000);
+                var HashDelay = Task.Delay(1000);
                 while (!HashDelay.IsCompleted)
                 {
                     var CurrentHashes = Hashes.Values.ToArray();
@@ -219,12 +219,18 @@ namespace ReserveBlockCore.P2P
                                 MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
                             }
                         }
-                        catch { }
+                        catch(Exception ex)
+                        {
+                            ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
+                        }
 
                         taskDict.TryRemove(completedTask.Key, out _);
                     }                    
                 }
-                catch { }
+                catch(Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop outer catch");
+                }
 
             await Task.Delay(10);
             } while (!cts.IsCancellationRequested && MissingAddresses.Any());
@@ -281,14 +287,20 @@ namespace ReserveBlockCore.P2P
                                 MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop outer catch");
+                        }
 
                         taskDict.TryRemove(completedTask.Key, out _);
                     }                    
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop outer catch");
+                }
 
-            await Task.Delay(10);
+                await Task.Delay(10);
             } while (!cts.IsCancellationRequested && MissingAddresses.Any());            
         }
 
