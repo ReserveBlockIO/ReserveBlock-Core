@@ -758,7 +758,7 @@ namespace ReserveBlockCore.Commands
 
         public static async Task AdjudicatorInfo()
         {
-            var consensusNodes = Globals.Nodes.Values.ToList();
+            var consensusNodes = Globals.AdjNodes.Values.ToList();
             var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
 
             if(consensusNodes.Count() > 0)
@@ -766,7 +766,7 @@ namespace ReserveBlockCore.Commands
                 ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
                 foreach (var cNode in consensusNodes)
                 {
-                    var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
+                    var line = $"IP: {cNode.IpAddress} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}"; 
                     ConsoleWriterService.Output(line);
                 }
                 ConsoleWriterService.Output("******************************************************************************");
@@ -790,6 +790,26 @@ namespace ReserveBlockCore.Commands
             {
                 ConsoleWriterService.Output("Empty 2");
             }
+        }
+        public static async Task PeerInfo()
+        {
+            var peerNodes = Globals.Nodes.Values.ToList();
+
+            if (peerNodes.Count() > 0)
+            {
+                ConsoleWriterService.Output("*********************************************Peer Nodes*********************************************");
+                foreach (var node in peerNodes)
+                {
+                    var line = $"IP: {node.NodeIP} | BlockHeight: {node.NodeHeight} | IsConnected? {node.IsConnected} | Latency: {node.NodeLatency} ";
+                    ConsoleWriterService.Output(line);
+                }
+                ConsoleWriterService.Output("****************************************************************************************************");
+            }
+            else
+            {
+                ConsoleWriterService.Output("Empty");
+            }
+
         }
         public static async Task ConsensusNodeInfo()
         {

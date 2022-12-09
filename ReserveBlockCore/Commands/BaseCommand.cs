@@ -54,6 +54,9 @@ namespace ReserveBlockCore.Commands
                 case "/adjinfo":
                     await BaseCommandServices.AdjudicatorInfo();
                     break;
+                case "/peers":
+                    await BaseCommandServices.PeerInfo();
+                    break;
                 case "/cinfo":
                     await BaseCommandServices.ConsensusNodeInfo();
                     break;

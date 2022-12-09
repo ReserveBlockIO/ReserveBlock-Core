@@ -651,6 +651,7 @@ namespace ReserveBlockCore.Services
 
                     if (NumAdjudicators >= 2)
                     {
+                        await ValidatorService.CheckErrorCount();
                         await delay;
                         continue;
                     }
@@ -696,16 +697,7 @@ namespace ReserveBlockCore.Services
                         }
                     }
 
-                    if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
-                    {                        
-                        var result = await ValidatorService.ValidatorErrorReset();
-                        if (result)
-                        {
-                            foreach (var node in Globals.AdjNodes.Values)
-                                node.LastTaskErrorCount = 0;
-                            ValidatorLogUtility.Log("ValidatorErrorReset() called due to 3 or more errors in a row.", "Program.validatorListCheckTimer_Elapsed()");
-                        }
-                    }
+                    await ValidatorService.CheckErrorCount();
 
 
                 }

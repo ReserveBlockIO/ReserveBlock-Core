@@ -6,6 +6,7 @@ using ReserveBlockCore.Utilities;
 using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace ReserveBlockCore.Services
 {
@@ -233,6 +234,18 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static async Task CheckErrorCount()
+        {
+            if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
+            {
+                var adjNodesWithErrors = Globals.AdjNodes.Values.Where(x => x.LastTaskErrorCount > 3).ToList();
+                foreach (var adjNode in adjNodesWithErrors)
+                {
+                    await ValidatorErrorSpecificNode(adjNode.Connection);
+                }
+            }
+        }
+
         public static async Task<bool> ValidatorErrorReset()
         {
             //Disconnect from adj
@@ -241,13 +254,35 @@ namespace ReserveBlockCore.Services
                 await P2PClient.DisconnectAdjudicators();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
-                Thread.Sleep(2000);
+                Thread.Sleep(500);
                 //Reset validator variable.
                 StartupService.SetValidator();
 
                 return true;
             }
             catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
+            }
+
+            return false;
+        }
+
+        public static async Task<bool> ValidatorErrorSpecificNode(HubConnection hubConnection)
+        {
+            //Disconnect from adj
+            try
+            {
+                await hubConnection.DisposeAsync();
+                //Do a block check to ensure all blocks are present.
+                await BlockDownloadService.GetAllBlocks();
+                Thread.Sleep(500);
+                //Reset validator variable.
+                StartupService.SetValidator();
+
+                return true;
+            }
+            catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
             }
