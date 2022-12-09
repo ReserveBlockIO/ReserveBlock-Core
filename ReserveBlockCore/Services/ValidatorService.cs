@@ -234,14 +234,14 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        public static async Task CheckErrorCount()
+        public static async Task PerformErrorCountCheck()
         {
             if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
             {
                 var adjNodesWithErrors = Globals.AdjNodes.Values.Where(x => x.LastTaskErrorCount > 3).ToList();
                 foreach (var adjNode in adjNodesWithErrors)
                 {
-                    await ValidatorErrorSpecificNode(adjNode.Connection);
+                    var result = await ResetAdjConnection(adjNode.Connection);
                 }
             }
         }
@@ -268,7 +268,7 @@ namespace ReserveBlockCore.Services
             return false;
         }
 
-        public static async Task<bool> ValidatorErrorSpecificNode(HubConnection hubConnection)
+        public static async Task<bool> ResetAdjConnection(HubConnection hubConnection)
         {
             //Disconnect from adj
             try
@@ -277,8 +277,6 @@ namespace ReserveBlockCore.Services
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
                 Thread.Sleep(500);
-                //Reset validator variable.
-                StartupService.SetValidator();
 
                 return true;
             }

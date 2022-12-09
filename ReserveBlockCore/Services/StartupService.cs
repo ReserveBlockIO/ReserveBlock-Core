@@ -651,7 +651,7 @@ namespace ReserveBlockCore.Services
 
                     if (NumAdjudicators >= 2)
                     {
-                        await ValidatorService.CheckErrorCount();
+                        await ValidatorService.PerformErrorCountCheck();
                         await delay;
                         continue;
                     }
@@ -697,7 +697,7 @@ namespace ReserveBlockCore.Services
                         }
                     }
 
-                    await ValidatorService.CheckErrorCount();
+                    await ValidatorService.PerformErrorCountCheck();
 
 
                 }
