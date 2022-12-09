@@ -817,18 +817,33 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetTaskAnswersListNew")]
-        public async Task<string> GetTaskAnswersListNew()
+        [HttpGet("GetTaskAnswersList")]
+        public async Task<string> GetTaskAnswersList()
         {
             string output = "";
-            var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
-                Address = x.Address,
-                Answer = x.Answer,
-                NextBlockHeight = x.NextBlockHeight,
-                SubmitTime = x.SubmitTime
 
-            });
-            output = JsonConvert.SerializeObject(taskAnswerList);
+            if(Globals.LastBlock.Height < Globals.BlockLock)
+            {
+                var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
+                    Address = x.Address,
+                    Answer = x.Answer,
+                    NextBlockHeight = x.NextBlockHeight,
+                    SubmitTime = x.SubmitTime
+
+                });
+                output = JsonConvert.SerializeObject(taskAnswerList);
+            }
+            else
+            {
+                var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
+                    Address = x.RBXAddress,
+                    Answer = x.Answer,
+                    IP = x.IPAddress,
+                    Signature = x.Signature.Substring(0,12)
+
+                });
+                output = JsonConvert.SerializeObject(taskAnswerList);
+            }
 
             return output;
         }
