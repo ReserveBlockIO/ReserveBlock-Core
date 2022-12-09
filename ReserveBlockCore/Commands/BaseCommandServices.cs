@@ -271,7 +271,12 @@ namespace ReserveBlockCore.Commands
             if (result)
             {
                 foreach(var node in Globals.AdjNodes.Values)
+                {
                     node.LastTaskErrorCount = 0;
+                    node.LastTaskError = false;
+                    node.LastWinningTaskError = false;
+                }
+                    
                 ValidatorLogUtility.Log("ValidatorErrorReset() called manually. Results: Success!", "Program.validatorListCheckTimer_Elapsed()");
             }
         }

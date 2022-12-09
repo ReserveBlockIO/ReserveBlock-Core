@@ -241,7 +241,11 @@ namespace ReserveBlockCore.Services
                 var adjNodesWithErrors = Globals.AdjNodes.Values.Where(x => x.LastTaskErrorCount > 3).ToList();
                 foreach (var adjNode in adjNodesWithErrors)
                 {
-                    var result = await ResetAdjConnection(adjNode.Connection);
+                    var result = await ResetAdjConnection(adjNode);
+                    if(!result)
+                    {
+                        ErrorLogUtility.LogError($"Failed to reset Adj connection to: {adjNode.Address} on IP: {adjNode.IpAddress}. See exception above.", "ValidatorService.PerformErrorCountCheck()");
+                    }
                 }
             }
         }
@@ -268,12 +272,15 @@ namespace ReserveBlockCore.Services
             return false;
         }
 
-        public static async Task<bool> ResetAdjConnection(HubConnection hubConnection)
+        public static async Task<bool> ResetAdjConnection(AdjNodeInfo adjInfo)
         {
             //Disconnect from adj
             try
             {
-                await hubConnection.DisposeAsync();
+                await adjInfo.Connection.DisposeAsync();
+                Globals.AdjNodes[adjInfo.IpAddress].LastTaskErrorCount = 0;
+                Globals.AdjNodes[adjInfo.IpAddress].LastTaskError = false;
+                Globals.AdjNodes[adjInfo.IpAddress].LastWinningTaskError = false;
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
                 Thread.Sleep(500);
@@ -282,7 +289,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
+                ErrorLogUtility.LogError($"Error Running ResetAdjConnection(). Error: {ex.ToString()}", "ValidatorService.ResetAdjConnection()");
             }
 
             return false;
