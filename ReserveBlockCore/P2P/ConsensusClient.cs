@@ -109,7 +109,7 @@ namespace ReserveBlockCore.P2P
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
                     var Delay = Task.Delay(2000);
-                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial || !Delay.IsCompleted))
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
                     {
                         await Task.Delay(4);
                     }
@@ -141,7 +141,7 @@ namespace ReserveBlockCore.P2P
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                     await Task.Delay(4);
 
-                var HashDelay = Task.Delay(1000);
+                var HashDelay = Task.Delay(10000000);
                 while (!HashDelay.IsCompleted)
                 {
                     var CurrentHashes = Hashes.Values.ToArray();

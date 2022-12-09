@@ -774,7 +774,7 @@ namespace ReserveBlockCore.Services
 
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(4);
-
+            
             var RemainingDelay = Task.CompletedTask;
             ConsoleWriterService.Output("Booting up consensus loop");            
             while (true)
@@ -807,7 +807,7 @@ namespace ReserveBlockCore.Services
                     var MyEncryptedAnswerSignature = SignatureService.AdjudicatorSignature(MyEncryptedAnswer);
                     var EncryptedAnswers = await ConsensusClient.ConsensusRun(0, MyEncryptedAnswer, MyEncryptedAnswerSignature, 2000, RunType.Initial);
                     
-                    if (EncryptedAnswers == null)                    
+                    if (Globals.LastBlock.Height + 1 != Height || EncryptedAnswers == null)                    
                         continue;                   
 
                     ConsoleWriterService.Output("EncryptedAnswer Consensus at height " + Height);
@@ -883,7 +883,7 @@ namespace ReserveBlockCore.Services
                         .Where(x => x.Count() == 1)
                         .Select(x => x.First())
                         .OrderBy(x => Math.Abs(x.Answer - ChosenAnswer))
-                        .ThenBy(x => x.Answer)
+                        .ThenBy(x => x.Answer)                        
                         .Where(x => AccountStateTrei.GetAccountBalance(x.RBXAddress) >= 1000M)
                         .Take(30)
                         .ToArray();
@@ -1048,6 +1048,10 @@ namespace ReserveBlockCore.Services
             foreach (var key in ConsensusServer.Messages.Keys)
                 if (key.Height <= height)
                     ConsensusServer.Messages.TryRemove(key, out _);
+
+            foreach (var key in ConsensusServer.Hashes.Keys)
+                if (key.Height <= height)
+                    ConsensusServer.Hashes.TryRemove(key, out _);
         }
 
         #endregion
