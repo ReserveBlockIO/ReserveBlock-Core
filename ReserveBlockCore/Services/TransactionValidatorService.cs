@@ -33,7 +33,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Timestamp Check
-            if(!blockDownloads)
+            if(Globals.BlocksDownloading == 0)
             {
                 var currentTime = TimeUtil.GetTime();
                 var timeDiff = currentTime - txRequest.Timestamp;

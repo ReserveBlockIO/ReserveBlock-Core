@@ -33,6 +33,198 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetSuccessfulLocalTX")]
+        public async Task<string> GetSuccessfulLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetSuccessfulLocalTransactions();
+
+            if(txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+            
+            return output;
+        }
+
+        [HttpGet("GetMinedLocalTX")]
+        public async Task<string> GetMinedLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalMinedTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetAllLocalTX")]
+        public async Task<string> GetAllLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetAllLocalTransactions(true);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetPendingLocalTX")]
+        public async Task<string> GetPendingLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalPendingTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetFailedLocalTX")]
+        public async Task<string> GetFailedLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalFailedTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalTxByHash/{hash}")]
+        public async Task<string> GetLocalTxByHash(string hash)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetTxByHash(hash);
+
+            if (txList != null)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalTxByHash/{height}")]
+        public async Task<string> GetLocalTxByBlock(long height)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetTxByBlock(height);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalTxBeforeBlock/{height}")]
+        public async Task<string> GetLocalTxBeforeBlock(long height)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsBeforeBlock(height);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalTxAfterBlock/{height}")]
+        public async Task<string> GetLocalTxAfterBlock(long height)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsSinceBlock(height);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalTxBeforeTimestamp/{timestamp}")]
+        public async Task<string> GetLocalTxBeforeTimestamp(long timestamp)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsBeforeDate(timestamp);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalTxAfterTimestamp/{timestamp}")]
+        public async Task<string> GetLocalTxAfterTimestamp(long timestamp)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsSinceDate(timestamp);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        [HttpGet("GetLocalADNRTX")]
+        public async Task<string> GetLocalADNRTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalAdnrTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
         //Step 2.
         [HttpGet("GetAddressNonce/{address}")]
         public async Task<string> GetAddressNonce(string address)

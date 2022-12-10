@@ -318,14 +318,14 @@ namespace ReserveBlockCore.Services
                                 var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
                                 if (account != null)
                                 {
-                                    await BlockTransactionValidatorService.ProcessIncomingTransactions(localTransaction, account);
+                                    await BlockTransactionValidatorService.ProcessIncomingTransactions(localTransaction, account, block.Height);
                                 }
 
                                 //Process transactions sent ->From<- wallet
                                 var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.FromAddress);
                                 if (fromAccount != null)
                                 {
-                                    await BlockTransactionValidatorService.ProcessOutgoingTransaction(localTransaction, fromAccount);
+                                    await BlockTransactionValidatorService.ProcessOutgoingTransaction(localTransaction, fromAccount, block.Height);
                                 }
                             }
                         }

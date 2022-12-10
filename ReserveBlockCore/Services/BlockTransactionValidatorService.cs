@@ -11,13 +11,13 @@ namespace ReserveBlockCore.Services
     public class BlockTransactionValidatorService
     {
         #region Process Incoming (to) Transactions
-        public static async Task ProcessIncomingTransactions(Transaction tx, Account account)
+        public static async Task ProcessIncomingTransactions(Transaction tx, Account account, long blockHeight)
         {
             if (tx.TransactionType == TransactionType.TX)
             {
                 AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount);
 
-                TransactionData.UpdateTxStatus(tx, TransactionStatus.Success);
+                TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight);
             }
             if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_SALE)
             {
@@ -201,13 +201,13 @@ namespace ReserveBlockCore.Services
 
         #region Process Outgoing (from) Transactions
 
-        public static async Task ProcessOutgoingTransaction(Transaction tx, Account account)
+        public static async Task ProcessOutgoingTransaction(Transaction tx, Account account, long blockHeight)
         {
             var fromTx = tx;
             fromTx.Amount = tx.Amount * -1M;
             fromTx.Fee = tx.Fee * -1M;
 
-            TransactionData.UpdateTxStatus(fromTx, TransactionStatus.Success);
+            TransactionData.UpdateTxStatusAndHeight(fromTx, TransactionStatus.Success, blockHeight);
 
             if (tx.TransactionType != TransactionType.TX)
             {

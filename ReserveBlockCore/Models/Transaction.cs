@@ -10,11 +10,14 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
+using LiteDB;
 
 namespace ReserveBlockCore.Models
 {
     public class Transaction
     {
+        public ObjectId Id { get; set; }
+
         [StringLength(128)]
         public string Hash { get; set; }
         [StringLength(36)]

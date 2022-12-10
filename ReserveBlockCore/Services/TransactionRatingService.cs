@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Services
                 }
                 if (tx.TransactionType == TransactionType.VOTE)
                 {
-
+                    rating = await VoteRating(tx);
                 }
 
                 return rating;
@@ -114,6 +114,45 @@ namespace ReserveBlockCore.Services
             return rating;
         }
 
+        private static async Task<TransactionRating> VoteRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+
+            if (mempool != null)
+            {
+                if (mempool.Count() >= 2)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
+                    (x.TransactionType == TransactionType.VOTE ||
+                        x.TransactionType == TransactionType.VOTE_TOPIC));
+
+                    if (txs.Count() > 1)
+                    {
+                        rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
+                        txs.ForEach(x =>
+                        {
+                            x.TransactionRating = rating;
+                        });
+
+                        pool.UpdateSafe(txs);
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+
         private static async Task<TransactionRating> VoteTopicRating(Transaction tx)
         {
             TransactionRating rating = TransactionRating.A;
@@ -128,12 +167,12 @@ namespace ReserveBlockCore.Services
                     (x.TransactionType == TransactionType.VOTE ||
                         x.TransactionType == TransactionType.VOTE_TOPIC));
 
-                    if (txs.Count() != 0)
+                    if (txs.Count() > 1)
                     {
                         rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
                         txs.ForEach(x =>
                         {
-                            x.TransactionRating = TransactionRating.F; 
+                            x.TransactionRating = rating; 
                         });
 
                         pool.UpdateSafe(txs);

@@ -62,18 +62,20 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void UpdateTxStatus(Transaction transaction, TransactionStatus txStatus)
+        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight)
         {
             var txs = GetAll();
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
             if(txCheck==null)
             {
                 transaction.TransactionStatus = txStatus;
+                transaction.Height = blockHeight;
                 txs.InsertSafe(transaction);
             }
             else
             {
                 txCheck.TransactionStatus = txStatus;
+                transaction.Height = blockHeight;
                 txs.UpdateSafe(txCheck);
             }
         }
@@ -546,7 +548,7 @@ namespace ReserveBlockCore.Data
             return collection;
         }
 
-        public static List<Transaction> GetLocalTransactions(bool showFailed = false)
+        public static List<Transaction> GetAllLocalTransactions(bool showFailed = false)
         {
             List<Transaction> transactions = new List<Transaction>();
 
@@ -554,6 +556,64 @@ namespace ReserveBlockCore.Data
 
             if (showFailed)
                 transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
+        }
+
+        public static Transaction? GetTxByHash(string hash)
+        {
+            var transaction = GetAll().Query().Where(x => x.Hash == hash).FirstOrDefault();
+
+            return transaction;
+        }
+
+        public static List<Transaction> GetTxByBlock(long height)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Height == height).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetSuccessfulLocalTransactions(bool showFailed = false)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Success).ToList();
+
+            if (showFailed)
+                transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalMinedTransactions(bool showFailed = false)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x =>  x.FromAddress == "Coinbase_BlkRwd").ToList();
+
+            if (showFailed)
+                transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalPendingTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Pending).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalFailedTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Failed).ToList();
 
             return transactions;
         }

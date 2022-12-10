@@ -18,7 +18,9 @@ namespace ReserveBlockCore.Services
         {                        
             try
             {
-                if (Interlocked.Exchange(ref Globals.BlocksDownloading, 1) != 0)
+                Interlocked.Exchange(ref Globals.BlocksDownloading, 1);
+                Thread.Sleep(100);
+                if (Globals.BlocksDownloading != 1)
                 {
                     await Task.Delay(1000);
                     return false;
