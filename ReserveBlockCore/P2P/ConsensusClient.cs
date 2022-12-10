@@ -202,6 +202,12 @@ namespace ReserveBlockCore.P2P
                         taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length) }, Source.Token);
                     }
                     
+                    if(!taskDict.Any())
+                    {
+                        await Task.Delay(10);
+                        continue;
+                    }
+
                     await Task.WhenAny(taskDict.Values);
 
                     var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
@@ -268,6 +274,12 @@ namespace ReserveBlockCore.P2P
                     {
                         var peer = RecentPeers[i];
                         taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length) }, Source.Token);
+                    }
+
+                    if (!taskDict.Any())
+                    {
+                        await Task.Delay(10);
+                        continue;
                     }
 
                     await Task.WhenAny(taskDict.Values);
