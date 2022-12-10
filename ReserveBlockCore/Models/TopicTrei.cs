@@ -341,10 +341,10 @@ namespace ReserveBlockCore.Models
                 if (result.Item1 == true)
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
-                    //TransactionData.AddToPool(topicTx);
-                    //TransactionData.AddTxToWallet(topicTx);
-                    //AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
-                    //await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
+                    TransactionData.AddToPool(topicTx);
+                    TransactionData.AddTxToWallet(topicTx);
+                    AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
+                    await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
                     return (topicTx, "Success");
                 }
                 else

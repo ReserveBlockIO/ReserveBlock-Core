@@ -227,7 +227,10 @@ namespace ReserveBlockCore.Services
                                 var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
                                 rejectBlock = txResult == false ? rejectBlock = true : false;
                                 //check for duplicate tx
-                                if (blkTransaction.TransactionType != TransactionType.TX && blkTransaction.TransactionType != TransactionType.ADNR)
+                                if (blkTransaction.TransactionType != TransactionType.TX && 
+                                    blkTransaction.TransactionType != TransactionType.ADNR && 
+                                    blkTransaction.TransactionType != TransactionType.VOTE &&
+                                    blkTransaction.TransactionType != TransactionType.VOTE_TOPIC)
                                 {
                                     if(blkTransaction.Data != null)
                                     {
