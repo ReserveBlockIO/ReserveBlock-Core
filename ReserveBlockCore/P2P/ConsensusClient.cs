@@ -83,8 +83,7 @@ namespace ReserveBlockCore.P2P
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
                 long Height = -1;                
                 int Majority = -1;
-                ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
-                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;
+                ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;                
                 SendMethodCode(Peers, methodCode, false);
                 var DelayTask = Task.Delay(timeToFinalize);
                 while (true)
@@ -142,9 +141,7 @@ namespace ReserveBlockCore.P2P
 
                 var MinPass = signers.Count / 2;
                 (string Hash, string Signature) MyHash;
-                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
-                    await Task.Delay(4);
-
+                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;                
                 Hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
                 var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
                     (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
@@ -156,6 +153,9 @@ namespace ReserveBlockCore.P2P
 
                 ConsensusServer.Hashes.TryAdd((Height, methodCode), Messages);
                 Hashes = ConsensusServer.Hashes[(Height, methodCode)];
+                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
+                    await Task.Delay(4);
+
                 Hashes[Globals.AdjudicateAccount.Address] = MyHash;
 
                 var HashDelay = Task.Delay(1000);
