@@ -290,6 +290,32 @@ namespace ReserveBlockCore.Data
                                 }
                             }
 
+                            if(tx.TransactionType == TransactionType.VOTE_TOPIC)
+                            {
+                                var signature = tx.Signature;
+                                //the signature must be checked here to ensure someone isn't spamming bad TXs to invalidated votes/vote topics
+                                var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                                if (sigCheck)
+                                {
+                                    var topicAlreadyExist = approvedMemPoolList.Exists(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.VOTE_TOPIC);
+                                    if (topicAlreadyExist)
+                                        reject = true;
+                                }
+                            }
+
+                            if (tx.TransactionType == TransactionType.VOTE)
+                            {
+                                var signature = tx.Signature;
+                                //the signature must be checked here to ensure someone isn't spamming bad TXs to invalidated votes/vote topics
+                                var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                                if (sigCheck)
+                                {
+                                    var topicAlreadyExist = approvedMemPoolList.Exists(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.VOTE);
+                                    if (topicAlreadyExist)
+                                        reject = true;
+                                }
+                            }
+
                             if (reject == false)
                             {
                                 var signature = tx.Signature;
