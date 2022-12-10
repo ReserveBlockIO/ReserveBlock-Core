@@ -8,6 +8,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.P2P
 {
@@ -180,18 +181,38 @@ namespace ReserveBlockCore.P2P
             return true;
         }
 
-        public string Message(long height, int methodCode, string[] addresses)
+        public string Message(long height, int methodCode, string[] addresses, string peerMessage)
         {
             try
             {
                 var ip = GetIP(Context);
-                if (!Globals.Nodes.TryGetValue(ip, out var Pool))
+                if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
                     return null;
                 }
 
+                string message = null;
+                string signature = null;
+                if(peerMessage != null)
+                {
+                    var split = peerMessage.Split(";:;");
+                    (message, signature) = (split[0], split[1]);
+                    message = message.Replace("::", ":");
+                }
+
+                var NothingToSend = false;
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
+                {
+                    messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
+                    Messages[(height, methodCode)] = messages;
+                    NothingToSend = true;
+                }
+
+                if (message != null && SignatureService.VerifySignature(node.Address, message, signature))
+                    messages[node.Address] = (message, signature);
+
+                if (NothingToSend)
                     return null;
 
                 foreach (var address in addresses)
@@ -212,22 +233,41 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public string Hash(long height, int methodCode, string[] addresses)
+        public string Hash(long height, int methodCode, string[] addresses, string peerHash)
         {
             try
             {
                 var ip = GetIP(Context);
-                if (!Globals.Nodes.TryGetValue(ip, out var Pool))
+                if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
                     return null;
                 }
 
-                if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
+                string hash = null;
+                string signature = null;
+                if (peerHash != null)
+                {
+                    var split = peerHash.Split(":");
+                    (hash, signature) = (split[0], split[1]);                    
+                }
+
+                var NothingToSend = false;
+                if (!Hashes.TryGetValue((height, methodCode), out var hashes))
+                {
+                    hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
+                    Hashes[(height, methodCode)] = hashes;
+                    NothingToSend = true;
+                }
+
+                if (hash != null && SignatureService.VerifySignature(node.Address, hash, signature))
+                    hashes[node.Address] = (hash, signature);
+
+                if (NothingToSend)
                     return null;
 
-                if (!Hashes.TryGetValue((height, methodCode), out var hashes))
-                    return null;
+                if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
+                    return null;                
 
                 foreach (var address in addresses)
                 {

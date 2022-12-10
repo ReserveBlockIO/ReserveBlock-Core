@@ -97,14 +97,18 @@ namespace ReserveBlockCore.P2P
                     Majority = NumNodes / 2 + 1;
 
                     Messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
-                    ConsensusServer.Messages.Clear();
-                    ConsensusServer.Messages[(Height, methodCode)] = Messages;
+                    var MessageKeysToKeep = ConsensusServer.Messages.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
+                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
+                        .Select(x => x.Key).ToHashSet();
+                    foreach(var key in ConsensusServer.Messages.Keys.Where(x => !MessageKeysToKeep.Contains(x)))
+                    {
+                        ConsensusServer.Messages.TryRemove(key, out _);
+                    }
+
+                    ConsensusServer.Messages.TryAdd((Height, methodCode), Messages);
+                    Messages = ConsensusServer.Messages[(Height, methodCode)];                    
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
-
-                    Hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
-                    ConsensusServer.Hashes.Clear();
-                    ConsensusServer.Hashes[(Height, methodCode)] = Hashes;
-
+                                    
                     var ConsensusSource = new CancellationTokenSource();                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
@@ -140,6 +144,19 @@ namespace ReserveBlockCore.P2P
                 (string Hash, string Signature) MyHash;
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                     await Task.Delay(4);
+
+                Hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
+                var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
+                    (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
+                    .Select(x => x.Key).ToHashSet();
+                foreach (var key in ConsensusServer.Hashes.Keys.Where(x => !HashKeysToKeep.Contains(x)))
+                {
+                    ConsensusServer.Hashes.TryRemove(key, out _);
+                }
+
+                ConsensusServer.Hashes.TryAdd((Height, methodCode), Messages);
+                Hashes = ConsensusServer.Hashes[(Height, methodCode)];
+                Hashes[Globals.AdjudicateAccount.Address] = MyHash;
 
                 var HashDelay = Task.Delay(1000);
                 while (!HashDelay.IsCompleted)
@@ -187,6 +204,9 @@ namespace ReserveBlockCore.P2P
             var rnd = new Random();
             var taskDict = new ConcurrentDictionary<string, Task<string>>();
             var MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+            var SentMessageToPeerSet = new HashSet<string>();
+            var MyMessage = messages[Globals.AdjudicateAccount.Address];
+            var ToSend = MyMessage.Message.Replace(":", "::") + ";:;" + MyMessage.Signature;
 
             do
             {
@@ -199,7 +219,8 @@ namespace ReserveBlockCore.P2P
                     for (var i = 0; i < RecentPeers.Length; i++)
                     {
                         var peer = RecentPeers[i];
-                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length) }, Source.Token);
+                        var MessageToSend = SentMessageToPeerSet.Contains(peer.NodeIP) ? null : ToSend;
+                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), MessageToSend }, Source.Token);
                     }
                     
                     if(!taskDict.Any())
@@ -231,6 +252,7 @@ namespace ReserveBlockCore.P2P
                         }
 
                         taskDict.TryRemove(completedTask.Key, out _);
+                        SentMessageToPeerSet.Add(completedTask.Key);
                     }                    
                 }
                 catch(Exception ex)
@@ -261,6 +283,9 @@ namespace ReserveBlockCore.P2P
             var rnd = new Random();
             var taskDict = new ConcurrentDictionary<string, Task<string>>();
             var MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+            var SentHashToPeerSet = new HashSet<string>();
+            var MyHash = hashes[Globals.AdjudicateAccount.Address];
+            var ToSend = MyHash.Hash + ":" + MyHash.Signature;
 
             do
             {
@@ -273,7 +298,8 @@ namespace ReserveBlockCore.P2P
                     for (var i = 0; i < RecentPeers.Length; i++)
                     {
                         var peer = RecentPeers[i];
-                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length) }, Source.Token);
+                        var HashToSend = SentHashToPeerSet.Contains(peer.NodeIP) ? null : ToSend;
+                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), HashToSend }, Source.Token);
                     }
 
                     if (!taskDict.Any())
@@ -305,6 +331,7 @@ namespace ReserveBlockCore.P2P
                         }
 
                         taskDict.TryRemove(completedTask.Key, out _);
+                        SentHashToPeerSet.Add(completedTask.Key);
                     }                    
                 }
                 catch (Exception ex)

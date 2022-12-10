@@ -1015,12 +1015,23 @@ namespace ReserveBlockCore.Services
             
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
-            localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = TimeUtil.GetMillisecondTime() });
-            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString());
+            var Now = TimeUtil.GetMillisecondTime();
+            localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = Now });
+            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
 
             var data = JsonConvert.SerializeObject(block);
+
+            foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
+            {
+                try
+                {
+                    _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
+                }
+                catch { }
+            }
             await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-            Console.WriteLine("Done sending - Height: " + block.Height.ToString());
+            Now = TimeUtil.GetMillisecondTime();
+            Console.WriteLine("Done sending - Height: " + block.Height.ToString() + " at " + Now);
             
             await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
             ConsoleWriterService.Output("Fortis Pool Processed");
@@ -1037,25 +1048,13 @@ namespace ReserveBlockCore.Services
 
         public static void ClearRoundDicts(long height)
         {
-            //foreach (var key in EncryptedNumberDict.Keys)
-            //    if (key <= height)
-            //        EncryptedNumberDict.TryRemove(key, out _);
-
             foreach (var key in Globals.TaskSelectedNumbersV3.Keys)
                 if (key.Height <= height)
                     Globals.TaskSelectedNumbersV3.TryRemove(key, out _);
 
             foreach (var key in Globals.TaskWinnerDictV3.Keys)
                 if (key.Height <= height)
-                    Globals.TaskWinnerDictV3.TryRemove(key, out _);
-            
-            foreach (var key in ConsensusServer.Messages.Keys)
-                if (key.Height <= height)
-                    ConsensusServer.Messages.TryRemove(key, out _);
-
-            foreach (var key in ConsensusServer.Hashes.Keys)
-                if (key.Height <= height)
-                    ConsensusServer.Hashes.TryRemove(key, out _);
+                    Globals.TaskWinnerDictV3.TryRemove(key, out _);           
         }
 
         #endregion
