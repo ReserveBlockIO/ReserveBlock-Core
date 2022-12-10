@@ -136,9 +136,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 var HashSource = new CancellationTokenSource();
-                var signers = Signer.CurrentSigningAddresses();
-                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
-
+                var signers = Signer.CurrentSigningAddresses();                
                 var MinPass = signers.Count / 2;
                 (string Hash, string Signature) MyHash;
                 ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;                
@@ -153,6 +151,7 @@ namespace ReserveBlockCore.P2P
 
                 ConsensusServer.Hashes.TryAdd((Height, methodCode), Messages);
                 Hashes = ConsensusServer.Hashes[(Height, methodCode)];
+                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                     await Task.Delay(4);
 
