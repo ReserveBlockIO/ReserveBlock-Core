@@ -49,6 +49,12 @@ namespace ReserveBlockCore.Utilities
                 var AddressSignatures = block.AdjudicatorSignature.Split('|');
                 var Addresses = new HashSet<string>();
                 var SignerAddresses = Signer.CurrentSigningAddresses();
+                if(Globals.IsTestNet)
+                {
+                    SignerAddresses.Add("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK");
+                    SignerAddresses.Add("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr");
+                }
+
                 foreach (var AddressSignature in AddressSignatures)
                 {
                     var split = AddressSignature.Split(':');
@@ -60,7 +66,7 @@ namespace ReserveBlockCore.Utilities
                     ValidCount++;
                     Addresses.Add(Address);
                 }
-                if (ValidCount == Addresses.Count && ValidCount == Signer.Majority())
+                if (ValidCount == Addresses.Count && ValidCount >= Signer.Majority())
                     return true;
             }
 
