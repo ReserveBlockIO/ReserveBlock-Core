@@ -281,7 +281,7 @@ namespace ReserveBlockCore.P2P
                         var ipAddress = GetIP(Context);
                         return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
                         {
-                            if (Globals.BlocksDownloading == 0)
+                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
                             {
                                 if (Globals.AdjudicateAccount != null)
                                 {
@@ -381,7 +381,7 @@ namespace ReserveBlockCore.P2P
                     var ipAddress = GetIP(Context);
                     return await P2PServer.SignalRQueue(Context, answerSize, async () =>
                     {
-                        if (Globals.BlocksDownloading == 0)
+                        if (Globals.BlocksDownloadSlim.CurrentCount != 0)
                         {
                             if (Globals.AdjudicateAccount != null)
                             {
@@ -441,7 +441,7 @@ namespace ReserveBlockCore.P2P
                 return await P2PServer.SignalRQueue(Context, (transaction.Data?.Length ?? 0) + 1028, async () =>
                 {
                     bool output = false;
-                    if (Globals.BlocksDownloading == 0)
+                    if (Globals.BlocksDownloadSlim.CurrentCount != 0)
                     {
                         if (Globals.AdjudicateAccount != null)
                         {

@@ -42,7 +42,7 @@ namespace ReserveBlockCore
         public const int ADNRLimit = 65;
         public static int BlockLock = 400000;
         public static long LastAdjudicateTime = 0;
-        public static int BlocksDownloading = 0;
+        public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;
         public static int ChainCheckPointInterval = 0;
         public static int ChainCheckPointRetain = 0;

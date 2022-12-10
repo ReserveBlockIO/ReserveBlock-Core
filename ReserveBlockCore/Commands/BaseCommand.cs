@@ -276,7 +276,7 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "8": //Startup Masternode
                     Globals.StopConsoleOutput = true;
-                    if (Globals.StopAllTimers == false && Globals.BlocksDownloading == 0)
+                    if (Globals.StopAllTimers == false && Globals.BlocksDownloadSlim.CurrentCount != 0)
                     {
                         if(Globals.IsWalletEncrypted == false)
                         {

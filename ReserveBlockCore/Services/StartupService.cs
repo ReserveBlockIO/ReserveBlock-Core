@@ -831,8 +831,7 @@ namespace ReserveBlockCore.Services
 
                 }
                 if (!Globals.IsResyncing)
-                {
-                    Globals.BlocksDownloading = 0;
+                {                    
                     Globals.StopAllTimers = false;
                     Globals.IsChainSynced = true;
                 }

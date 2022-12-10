@@ -158,7 +158,7 @@ namespace ReserveBlockCore.P2P
             {
                 await SignalRQueue(Context, (int)nextBlock.Size, async () =>
                 {
-                    if (Globals.BlocksDownloading == 0)
+                    if (Globals.BlocksDownloadSlim.CurrentCount != 0)
                     {
                         if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                         {

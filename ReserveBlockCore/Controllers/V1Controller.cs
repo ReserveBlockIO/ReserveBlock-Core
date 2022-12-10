@@ -342,7 +342,7 @@ namespace ReserveBlockCore.Controllers
 
             var walletInfo = new[]
             {
-                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = Globals.BlocksDownloading.ToString(),
+                new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = (Globals.BlocksDownloadSlim.CurrentCount == 0).ToString(),
                     IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString()}
             };
 

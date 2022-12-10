@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Nodes
             {
                 return;
             }
-            if (Globals.StopAllTimers == false && Globals.BlocksDownloading != 1) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
+            if (Globals.StopAllTimers == false && Globals.BlocksDownloadSlim.CurrentCount != 0) //this will prevent new blocks from coming in if flag. Normally only flagged when syncing chain.
             {
                 if (message == "send")
                 {

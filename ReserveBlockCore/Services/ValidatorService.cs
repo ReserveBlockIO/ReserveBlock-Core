@@ -110,7 +110,7 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if (Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
+            if (Globals.StopAllTimers == true || Globals.BlocksDownloadSlim.CurrentCount == 0)
             {
                 output = "Wallet is still starting. Please wait";
                 return output;

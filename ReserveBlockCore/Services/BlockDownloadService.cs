@@ -18,13 +18,7 @@ namespace ReserveBlockCore.Services
         {                        
             try
             {
-                Interlocked.Exchange(ref Globals.BlocksDownloading, 1);
-                Thread.Sleep(100);
-                if (Globals.BlocksDownloading != 1)
-                {
-                    await Task.Delay(1000);
-                    return false;
-                }
+                await Globals.BlocksDownloadSlim.WaitAsync();
                 
                 while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
                 {                                                   
@@ -116,7 +110,8 @@ namespace ReserveBlockCore.Services
             }
             finally
             {
-                Interlocked.Exchange(ref Globals.BlocksDownloading, 0);
+                if (Globals.BlocksDownloadSlim.CurrentCount == 0)
+                    Globals.BlocksDownloadSlim.Release();
             }
 
             return false;

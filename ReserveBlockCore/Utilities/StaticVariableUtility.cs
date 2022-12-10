@@ -43,11 +43,11 @@ namespace ReserveBlockCore.Utilities
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
-            var isBlocksDownloading = "Blocks Downloading: " + (Globals.BlocksDownloading == 1).ToString();
+            var isBlocksDownloading = "Blocks Downloading: " + (Globals.BlocksDownloadSlim.CurrentCount == 0).ToString();
             var isChainSyncing = "Chain Sync State (True = done, false = blocks downloading): " + isChainSynced;            
             var isPeersConnecting = "Peers Connecting Startup: " + (!Globals.Nodes.Any()).ToString();
             var isStopAllTimers = "Stop all timers: " + Globals.StopAllTimers.ToString();
-            var isQueueProcessing = "Queue Processing: " + (Globals.BlocksDownloading == 1);
+            var isQueueProcessing = "Queue Processing: " + (Globals.BlocksDownloadSlim.CurrentCount == 0);
             var isPeerConnected = "Peers connected: " + peersConnected.ToString();
             var peerConnectedCount = "Peers connected Count: " + Globals.Nodes.Count().ToString();
             var peerConnectedToMe = "Peers connected to you: " + peerCount.ToString();

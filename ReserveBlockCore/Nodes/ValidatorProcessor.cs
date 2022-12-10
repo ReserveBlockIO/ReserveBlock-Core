@@ -106,7 +106,7 @@ namespace ReserveBlockCore.Nodes
                 }
                 else
                 {
-                    if (Globals.BlocksDownloading == 0 && !BlockDownloadService.BlockDict.ContainsKey(currentHeight))
+                    if (!BlockDownloadService.BlockDict.ContainsKey(currentHeight))
                     {
                         BlockDownloadService.BlockDict[currentHeight] = (nextBlock, ipAddress);
                         if (nextHeight == currentHeight)
