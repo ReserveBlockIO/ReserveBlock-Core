@@ -129,7 +129,7 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetLocalTxByHash/{height}")]
+        [HttpGet("GetLocalTxByBlock/{height}")]
         public async Task<string> GetLocalTxByBlock(long height)
         {
             //use Id to get specific commands

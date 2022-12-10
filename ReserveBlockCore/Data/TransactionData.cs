@@ -75,7 +75,7 @@ namespace ReserveBlockCore.Data
             else
             {
                 txCheck.TransactionStatus = txStatus;
-                transaction.Height = blockHeight;
+                txCheck.Height = blockHeight;
                 txs.UpdateSafe(txCheck);
             }
         }
