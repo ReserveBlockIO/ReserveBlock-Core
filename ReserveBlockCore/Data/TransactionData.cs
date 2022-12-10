@@ -418,7 +418,10 @@ namespace ReserveBlockCore.Data
             }
 
             //double NFT transfer or burn check
-            if (tx.TransactionType != TransactionType.TX && tx.TransactionType != TransactionType.ADNR)
+            if (tx.TransactionType != TransactionType.TX && 
+                tx.TransactionType != TransactionType.ADNR && 
+                tx.TransactionType != TransactionType.VOTE_TOPIC && 
+                tx.TransactionType != TransactionType.VOTE)
             {
                 if(tx.Data != null)
                 {

@@ -721,7 +721,7 @@ namespace ReserveBlockCore.P2P
                 return;
 
             var SuccessNodes = new HashSet<string>();
-            while (SuccessNodes.Count < 2)
+            while (SuccessNodes.Count < 1)
             {
                 foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address)))
                 {
