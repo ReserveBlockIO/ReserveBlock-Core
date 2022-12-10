@@ -309,22 +309,38 @@ namespace ReserveBlockCore.Services
                     {
                         foreach(var tx in mempool)
                         {
-                            var txTime = tx.Timestamp;
-                            var sendTx = currentTime > txTime ? true : false;
-                            if (sendTx)
+                            var txBeenBroadcasted = Globals.BroadcastedTrxDict.ContainsKey(tx.Hash);
+                            if(!txBeenBroadcasted)
                             {
-                                var txResult = await TransactionValidatorService.VerifyTX(tx);
-                                if (txResult == true)
+                                var txTime = tx.Timestamp;
+                                var sendTx = currentTime > txTime ? true : false;
+                                if (sendTx)
                                 {
-                                    var dblspndChk = await TransactionData.DoubleSpendReplayCheck(tx);
-                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(tx);
-
-                                    if (dblspndChk == false && isCraftedIntoBlock == false && tx.TransactionRating != TransactionRating.F)
+                                    var txResult = await TransactionValidatorService.VerifyTX(tx);
+                                    if (txResult == true)
                                     {
-                                        var txOutput = "";
-                                        txOutput = JsonConvert.SerializeObject(tx);
-                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);//sends messages to all in fortis pool
-                                        Globals.BroadcastedTrxDict[tx.Hash] = tx;
+                                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(tx);
+                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(tx);
+
+                                        if (dblspndChk == false && isCraftedIntoBlock == false && tx.TransactionRating != TransactionRating.F)
+                                        {
+                                            var txOutput = "";
+                                            txOutput = JsonConvert.SerializeObject(tx);
+                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);//sends messages to all in fortis pool
+                                            Globals.BroadcastedTrxDict[tx.Hash] = tx;
+                                        }
+                                        else
+                                        {
+                                            try
+                                            {
+                                                pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                DbContext.Rollback();
+                                                //delete failed
+                                            }
+                                        }
                                     }
                                     else
                                     {
@@ -338,20 +354,8 @@ namespace ReserveBlockCore.Services
                                             //delete failed
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        DbContext.Rollback();
-                                        //delete failed
-                                    }
-                                }
 
+                                }
                             }
                         }
                 }

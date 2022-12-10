@@ -219,7 +219,10 @@ namespace ReserveBlockCore.Data
                         if (!txExist)
                         {
                             var reject = false;
-                            if (tx.TransactionType != TransactionType.TX && tx.TransactionType != TransactionType.ADNR)
+                            if (tx.TransactionType != TransactionType.TX &&
+                                tx.TransactionType != TransactionType.ADNR &&
+                                tx.TransactionType != TransactionType.VOTE_TOPIC &&
+                                tx.TransactionType != TransactionType.VOTE)
                             {
                                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                                 if (scDataArray != null)
