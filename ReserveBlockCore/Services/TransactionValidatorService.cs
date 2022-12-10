@@ -452,9 +452,6 @@ namespace ReserveBlockCore.Services
                                     if (txRequest.FromAddress != vote.Address)
                                         return txResult;
 
-                                    if (vote.Address != Globals.ValidatorAddress)
-                                        return txResult;
-
                                     var voteExixt = Vote.CheckSpecificAddressVoteOnTopic(vote.Address, vote.TopicUID);
 
                                     if (voteExixt)
@@ -918,9 +915,6 @@ namespace ReserveBlockCore.Services
                                     //validator address must equal vote address
                                     if (txRequest.FromAddress != vote.Address)
                                         return (txResult, "Vote address must match the transactions From Address.");
-
-                                    if (vote.Address != Globals.ValidatorAddress)
-                                        return (txResult, "Vote address must match the local Validator Address");
 
                                     var voteExixt = Vote.CheckSpecificAddressVoteOnTopic(vote.Address, vote.TopicUID);
 

@@ -294,6 +294,8 @@ namespace ReserveBlockCore.Data
                                                 topic.VoteYes += 1;
                                             if (vote.VoteType == VoteType.No)
                                                 topic.VoteNo += 1;
+
+                                            TopicTrei.UpdateTopic(topic);
                                         }
                                     }
                                 }
