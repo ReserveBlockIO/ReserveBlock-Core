@@ -162,7 +162,7 @@ namespace ReserveBlockCore.P2P
                 {
                     var CurrentHashes = Hashes.Values.ToArray();
                     var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
-                    if (NumMatches >= MinPass || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
+                    if (NumMatches >= MinPass)
                     {
                         HashSource.Cancel();
                         return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
