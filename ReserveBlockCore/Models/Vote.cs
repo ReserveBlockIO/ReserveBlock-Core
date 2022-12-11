@@ -213,7 +213,7 @@ namespace ReserveBlockCore.Models
                 {
                     voteTx.TransactionStatus = TransactionStatus.Pending;
                     TransactionData.AddToPool(voteTx);
-                    TransactionData.AddTxToWallet(voteTx);
+                    TransactionData.AddTxToWallet(voteTx, true);
                     AccountData.UpdateLocalBalance(voteTx.FromAddress, (voteTx.Fee + voteTx.Amount));
                     await P2PClient.SendTXToAdjudicator(voteTx);//send out to mempool
                     return (voteTx, "Success");

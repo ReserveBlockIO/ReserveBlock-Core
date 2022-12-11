@@ -52,12 +52,18 @@ namespace ReserveBlockCore.Data
             }
 
         }
-        public static void AddTxToWallet(Transaction transaction)
+        public static void AddTxToWallet(Transaction transaction, bool subtract = false)
         {
             var txs = GetAll();
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
             if(txCheck== null)
             {
+                if (subtract)
+                {
+                    transaction.Amount = (transaction.Amount * -1M);
+                    transaction.Fee = (transaction.Fee * -1M);
+                }
+                    
                 txs.InsertSafe(transaction);
             }
         }

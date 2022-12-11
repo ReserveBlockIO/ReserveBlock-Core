@@ -938,7 +938,7 @@ namespace ReserveBlockCore.Services
                     if (Globals.LastBlock.Height + 1 != Height || SubmittedWinners == null)
                         continue;
 
-                    ConsoleWriterService.Output("SubmittedWinner Consensus at height " + Height);                    
+                    ConsoleWriterService.Output("Submitted Winner Consensus at height " + Height);                    
 
                     var WinnerDict = SubmittedWinners.Select(x => JsonConvert.DeserializeObject<Block[]>(x.Message))
                         .SelectMany(x => x)
@@ -963,7 +963,7 @@ namespace ReserveBlockCore.Services
                     if(Winner == null)
                         continue;
 
-                    ConsoleWriterService.Output("Winner fournd. Hash: " + Winner.Hash);
+                    ConsoleWriterService.Output("Winner found. Hash: " + Winner.Hash);
 
                     var WinnerHasheSignature = Winner.Hash + ":" + SignatureService.AdjudicatorSignature(Winner.Hash);                    
                     var WinnerHashSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignature);                    
