@@ -58,7 +58,10 @@ namespace ReserveBlockCore.Services
                         if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
                             continue;
                         var (block, ipAddress) = blockInfo;
-                        var result = await ValidateBlock(block, false);                        
+
+                        var startupDownload = Globals.BlocksDownloadSlim.CurrentCount == 0 ? true : false;
+
+                        var result = await ValidateBlock(block, false, startupDownload);                        
                         if (!result)
                         {                            
                             Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
