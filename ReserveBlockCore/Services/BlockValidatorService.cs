@@ -61,9 +61,11 @@ namespace ReserveBlockCore.Services
 
                         var startupDownload = Globals.BlocksDownloadSlim.CurrentCount == 0 ? true : false;
 
-                        var result = await ValidateBlock(block, false, startupDownload);                        
+                        var result = await ValidateBlock(block, false, startupDownload);
                         if (!result)
-                        {                            
+                        {
+                            if (Globals.AdjudicateAccount != null)
+                                continue;
                             Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");                            
                             if(Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
