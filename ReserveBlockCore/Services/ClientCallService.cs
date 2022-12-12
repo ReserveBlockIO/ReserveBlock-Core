@@ -336,8 +336,7 @@ namespace ReserveBlockCore.Services
                                                 pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
                                             }
                                             catch (Exception ex)
-                                            {
-                                                DbContext.Rollback();
+                                            {                                                
                                                 //delete failed
                                             }
                                         }
@@ -349,8 +348,7 @@ namespace ReserveBlockCore.Services
                                             pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
                                         }
                                         catch (Exception ex)
-                                        {
-                                            DbContext.Rollback();
+                                        {                                            
                                             //delete failed
                                         }
                                     }

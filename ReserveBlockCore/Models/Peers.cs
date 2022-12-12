@@ -42,8 +42,7 @@ namespace ReserveBlockCore.Models
                 return peers;
             }
             catch(Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "Peers.GetAll()");
                 return null;
             }

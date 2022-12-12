@@ -26,8 +26,7 @@ namespace ReserveBlockCore.Models
                     return adjudicators;
                 }
                 catch (Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "Adjudicators.GetAll()");
                     return null;
                 }

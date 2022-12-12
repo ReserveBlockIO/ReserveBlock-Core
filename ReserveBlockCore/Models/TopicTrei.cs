@@ -58,8 +58,7 @@ namespace ReserveBlockCore.Models
                 return topics;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "TopicTrei.GetTopics()");
                 return null;
             }
@@ -354,8 +353,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 Console.WriteLine("Error: {0}", ex.ToString());
             }
 
