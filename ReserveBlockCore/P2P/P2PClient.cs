@@ -721,21 +721,27 @@ namespace ReserveBlockCore.P2P
                 return;
 
             var SuccessNodes = new HashSet<string>();
-            while (SuccessNodes.Count < 1)
+            int failCount = 0;
+            int tryCount = 0;
+            while (SuccessNodes.Count < 1 && failCount < 3 && tryCount < 5)
             {
-                foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address)))
+                foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address) && x.IsConnected == true))
                 {
                     try
                     {
                         if (await node.InvokeAsync<bool>("ReceiveTX", args: new object?[] { tx }))
                             SuccessNodes.Add(node.Address);
+
+                        tryCount += 1;
                     }
                     catch (Exception ex)
                     {
-
+                        failCount += 1;
                     }
                 }                
             }
+
+            Console.WriteLine($"Validator Success Count: {SuccessNodes.Count()}");
         }
 
         #endregion

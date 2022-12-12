@@ -58,13 +58,28 @@ namespace ReserveBlockCore.Data
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
             if(txCheck== null)
             {
+                Transaction tx = new Transaction { 
+                    Height = transaction.Height,
+                    Hash = transaction.Hash,
+                    Amount = transaction.Amount,
+                    FromAddress = transaction.FromAddress,
+                    ToAddress = transaction.ToAddress,
+                    Fee = transaction.Fee,
+                    Data = transaction.Data,
+                    Nonce = transaction.Nonce,
+                    Signature = transaction.Signature,
+                    Timestamp = transaction.Timestamp,
+                    TransactionRating = transaction.TransactionRating,
+                    TransactionStatus = transaction.TransactionStatus,
+                    TransactionType = transaction.TransactionType,
+                };
                 if (subtract)
                 {
-                    transaction.Amount = (transaction.Amount * -1M);
-                    transaction.Fee = (transaction.Fee * -1M);
+                    tx.Amount = (tx.Amount * -1M);
+                    tx.Fee = (tx.Fee * -1M);
                 }
                     
-                txs.InsertSafe(transaction);
+                txs.InsertSafe(tx);
             }
         }
 
