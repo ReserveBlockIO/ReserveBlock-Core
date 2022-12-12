@@ -30,8 +30,7 @@ namespace ReserveBlockCore.Models
                 return adnr;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "Adnr.GetAdnr()");
                 return null;
             }
@@ -210,8 +209,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 Console.WriteLine("Error: {0}", ex.ToString());
             }
 
@@ -312,8 +310,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 Console.WriteLine("Error: {0}", ex.ToString());
                 ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
             }
@@ -410,8 +407,7 @@ namespace ReserveBlockCore.Models
                     return (adnrTx, "Success");
                 }
                 else
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.DeleteAdnrTx(string address)");
                     return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
                 }

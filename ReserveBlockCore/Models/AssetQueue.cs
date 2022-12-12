@@ -38,8 +38,7 @@ namespace ReserveBlockCore.Models
                 return aq;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.GetAssetQueue()");
                 return null;
             }
@@ -81,8 +80,7 @@ namespace ReserveBlockCore.Models
                     
                 }
                 catch(Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError($"Failed to create asset queue item. Error:  {ex.ToString()}", "AssetQueue.CreateAssetQueueItem()");
                 }
                 
@@ -141,8 +139,7 @@ namespace ReserveBlockCore.Models
                     aq.DeleteSafe(aqa.Id);
                 }
                 catch (Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
                 }
             }

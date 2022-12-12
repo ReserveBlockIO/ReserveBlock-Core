@@ -498,8 +498,7 @@ namespace ReserveBlockCore.P2P
                                                     mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
                                                 }
                                                 catch (Exception ex)
-                                                {
-                                                    DbContext.Rollback();
+                                                {                                                    
                                                     //delete failed
                                                 }
                                             }

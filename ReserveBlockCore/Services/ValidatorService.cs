@@ -228,8 +228,7 @@ namespace ReserveBlockCore.Services
                 Console.WriteLine("Validator database records have been reset.");
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
             }
         }
@@ -373,8 +372,7 @@ namespace ReserveBlockCore.Services
 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
             }
         }
 
@@ -420,8 +418,7 @@ namespace ReserveBlockCore.Services
                 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
             }
         }
 

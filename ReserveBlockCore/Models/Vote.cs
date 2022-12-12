@@ -37,8 +37,7 @@ namespace ReserveBlockCore.Models
                 return votes;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "Vote.GetVotes()");
                 return null;
             }
@@ -225,8 +224,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 Console.WriteLine("Error: {0}", ex.ToString());
             }
 

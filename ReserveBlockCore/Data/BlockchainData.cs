@@ -214,8 +214,7 @@ namespace ReserveBlockCore.Data
                 return blocks;
             }
             catch(Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "BlockchainData.GetBlocks()");
                 return null;
             }

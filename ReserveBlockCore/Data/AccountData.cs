@@ -128,8 +128,7 @@ namespace ReserveBlockCore.Data
 			}
 			catch (Exception ex)
             {
-				//restore failed
-				DbContext.Rollback();
+				//restore failed				
 				Console.WriteLine("Account restore failed. Not a valid private key");
             }
 			
@@ -177,8 +176,7 @@ namespace ReserveBlockCore.Data
 			}
 			catch (Exception ex)
 			{
-				//restore failed
-				DbContext.Rollback();
+				//restore failed				
 				Console.WriteLine("Account restore failed. Not a valid private key");
 			}
 
@@ -325,8 +323,7 @@ namespace ReserveBlockCore.Data
 				return accounts;
 			}
 			catch(Exception ex)
-            {
-				DbContext.Rollback();
+            {				
 				ErrorLogUtility.LogError(ex.ToString(), "AccountData.GetAccounts()");
 				return null;
 			}			
