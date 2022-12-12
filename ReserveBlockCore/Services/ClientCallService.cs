@@ -1064,7 +1064,7 @@ namespace ReserveBlockCore.Services
 
         public static (string IPAddress, string RBXAddress, int Answer, string Signature)[] DeserializeSubmissions(string submisisons)
         {
-            return submisisons.Split('|').Select(x =>
+            return submisisons.Split('|').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
             {
                 var split = x.Split(':');
                 return (split[0], split[1], int.Parse(split[2]), split[3]);
