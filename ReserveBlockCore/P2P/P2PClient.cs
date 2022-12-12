@@ -844,7 +844,7 @@ namespace ReserveBlockCore.P2P
             long height = -1;
 
             while (!await P2PClient.ArePeersConnected())
-                await Task.Delay(4);
+                await Task.Delay(20);
 
             var myHeight = Globals.LastBlock.Height;
             await UpdateNodeHeights();

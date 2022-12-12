@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Services
 
                     if (!heightsFromNodes.Any())
                     {
-                        await Task.Delay(4);
+                        await Task.Delay(20);
                         P2PClient.UpdateMaxHeight(Globals.Nodes.Values.Max(x => (long?)x.NodeHeight) ?? -1);                        
                         continue;
                     }

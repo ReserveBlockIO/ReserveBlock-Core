@@ -111,10 +111,12 @@ namespace ReserveBlockCore.P2P
                     var ConsensusSource = new CancellationTokenSource();                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
-                    var Delay = Task.Delay(2000);
-                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1 && (runType == RunType.Initial || !Delay.IsCompleted))
+                    var Delay = Task.Delay(2000);                    
+                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
                     {
-                        await Task.Delay(4);
+                        if (Delay.IsCompleted && runType != RunType.Initial && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() < Majority - 1)
+                            break;
+                        await Task.Delay(20);
                     }
 
                     if (Height != Globals.LastBlock.Height + 1)
@@ -154,13 +156,13 @@ namespace ReserveBlockCore.P2P
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
                 var InitialHashDelay = Task.Delay(1000);
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash) && !InitialHashDelay.IsCompleted)
-                    await Task.Delay(4);
+                    await Task.Delay(20);
 
                 Hashes[Globals.AdjudicateAccount.Address] = MyHash;
-
+                
                 var HashDelay = Task.Delay(1000);
-                while (!HashDelay.IsCompleted)
-                {
+                while (!HashDelay.IsCompleted || Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() >= MinPass)
+                {                    
                     var CurrentHashes = Hashes.Values.ToArray();
                     var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
                     if (NumMatches >= MinPass)
@@ -175,7 +177,7 @@ namespace ReserveBlockCore.P2P
                         return null;
                     }
 
-                    await Task.Delay(4);
+                    await Task.Delay(20);
                 }
 
                 HashSource.Cancel();

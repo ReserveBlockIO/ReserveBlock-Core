@@ -408,7 +408,7 @@ namespace ReserveBlockCore
                 try
                 {
                     while (!Globals.Nodes.Any())
-                        await Task.Delay(4);
+                        await Task.Delay(20);
 
                     await P2PClient.UpdateNodeHeights();
 
