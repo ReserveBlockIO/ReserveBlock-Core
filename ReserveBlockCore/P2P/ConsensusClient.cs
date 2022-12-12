@@ -149,7 +149,7 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Hashes.TryRemove(key, out _);
                 }
 
-                ConsensusServer.Hashes.TryAdd((Height, methodCode), Messages);
+                ConsensusServer.Hashes.TryAdd((Height, methodCode), Hashes);
                 Hashes = ConsensusServer.Hashes[(Height, methodCode)];
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
