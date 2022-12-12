@@ -58,9 +58,14 @@ namespace ReserveBlockCore.Services
                         if (!BlockDownloadService.BlockDict.TryRemove(height, out var blockInfo))
                             continue;
                         var (block, ipAddress) = blockInfo;
-                        var result = await ValidateBlock(block, false);                        
+
+                        var startupDownload = Globals.BlocksDownloadSlim.CurrentCount == 0 ? true : false;
+
+                        var result = await ValidateBlock(block, false, startupDownload);
                         if (!result)
-                        {                            
+                        {
+                            if (Globals.AdjudicateAccount != null)
+                                continue;
                             Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");                            
                             if(Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
@@ -72,7 +77,7 @@ namespace ReserveBlockCore.Services
                             if(Globals.IsChainSynced)
                                 ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] was added from: [purple]{block.Validator}[/] "));
                             else
-                                ConsoleWriterService.Output($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
+                                ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} ");                                                        
                         }                        
                     }
                 }

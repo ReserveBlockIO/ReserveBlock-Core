@@ -816,7 +816,7 @@ namespace ReserveBlockCore.Services
                                         
                     var MySubmissions = Globals.TaskAnswerDictV3.Where(x => x.Key.Height == Height).Select(x => x.Value).ToArray();
                     ConsoleWriterService.Output("My submission count " + MySubmissions.Length);
-                    var MySubmissionsString = JsonConvert.SerializeObject(MySubmissions);
+                    var MySubmissionsString = SerializeSubmissions(MySubmissions);
                     var MySubmissionsSignature = SignatureService.AdjudicatorSignature(MySubmissionsString);
                     var Submissions = await ConsensusClient.ConsensusRun(1, MySubmissionsString, MySubmissionsSignature, 2000, RunType.Middle);
 
@@ -825,7 +825,7 @@ namespace ReserveBlockCore.Services
 
                     ConsoleWriterService.Output("Submissions Consensus at height " + Height);
 
-                    var ValidSubmissions = Submissions.Select(x => JsonConvert.DeserializeObject<(string IPAddress, string RBXAddress, int Answer, string Signature)[]>(x.Message))
+                    var ValidSubmissions = Submissions.Select(x => DeserializeSubmissions(x.Message))
                         .SelectMany(x => x)
                         .Where(x => SignatureService.VerifySignature(x.RBXAddress, Height + ":" + x.Answer, x.Signature))
                         .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
@@ -936,7 +936,7 @@ namespace ReserveBlockCore.Services
                     if (Globals.LastBlock.Height + 1 != Height || SubmittedWinners == null)
                         continue;
 
-                    ConsoleWriterService.Output("SubmittedWinner Consensus at height " + Height);                    
+                    ConsoleWriterService.Output("Submitted Winner Consensus at height " + Height);                    
 
                     var WinnerDict = SubmittedWinners.Select(x => JsonConvert.DeserializeObject<Block[]>(x.Message))
                         .SelectMany(x => x)
@@ -961,7 +961,7 @@ namespace ReserveBlockCore.Services
                     if(Winner == null)
                         continue;
 
-                    ConsoleWriterService.Output("Winner fournd. Hash: " + Winner.Hash);
+                    ConsoleWriterService.Output("Winner found. Hash: " + Winner.Hash);
 
                     var WinnerHasheSignature = Winner.Hash + ":" + SignatureService.AdjudicatorSignature(Winner.Hash);                    
                     var WinnerHashSignature = SignatureService.AdjudicatorSignature(WinnerHasheSignature);                    
@@ -1053,6 +1053,20 @@ namespace ReserveBlockCore.Services
             foreach (var key in Globals.TaskWinnerDictV3.Keys)
                 if (key.Height <= height)
                     Globals.TaskWinnerDictV3.TryRemove(key, out _);           
+        }
+
+        public static string SerializeSubmissions((string IPAddress, string RBXAddress, int Answer, string Signature)[] submissions)
+        {
+            return string.Join("|", submissions.Select(x => x.IPAddress + ":" + x.RBXAddress + ":" + x.Answer + ":" + x.Signature));
+        }
+
+        public static (string IPAddress, string RBXAddress, int Answer, string Signature)[] DeserializeSubmissions(string submisisons)
+        {
+            return submisisons.Split('|').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+            {
+                var split = x.Split(':');
+                return (split[0], split[1], int.Parse(split[2]), split[3]);
+            }).ToArray();
         }
 
         #endregion

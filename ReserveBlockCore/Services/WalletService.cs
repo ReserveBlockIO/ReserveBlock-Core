@@ -247,21 +247,21 @@ namespace ReserveBlockCore.Services
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
                 ValidatorService.StopValidating(validator);
                 TransactionData.AddToPool(txRequest);
-                TransactionData.AddTxToWallet(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
             else if(account.IsValidating)
             {
                 TransactionData.AddToPool(txRequest);
-                TransactionData.AddTxToWallet(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                 await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
             }
             else
             {
                 TransactionData.AddToPool(txRequest);
-                TransactionData.AddTxToWallet(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
                 AccountData.UpdateLocalBalance(newTxn.FromAddress, (newTxn.Fee + newTxn.Amount));
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }

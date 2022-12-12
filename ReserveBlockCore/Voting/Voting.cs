@@ -117,6 +117,11 @@ namespace ReserveBlockCore.Voting
                     table.Border(TableBorder.Rounded);
 
                     AnsiConsole.Write(table);
+
+                    Console.WriteLine("|======================================|");
+                    Console.WriteLine("|type /vote to come back to the vote area|");
+                    Console.WriteLine("|type /menu to come back to main area  |");
+                    Console.WriteLine("|======================================|");
                 }
                 else
                 {
@@ -421,6 +426,11 @@ namespace ReserveBlockCore.Voting
                         table.Border(TableBorder.Rounded);
 
                         AnsiConsole.Write(table);
+
+                        Console.WriteLine("|======================================|");
+                        Console.WriteLine("|type /vote to come back to the vote area|");
+                        Console.WriteLine("|type /menu to come back to main area  |");
+                        Console.WriteLine("|======================================|");
                     }
                     else
                     {
@@ -485,6 +495,11 @@ namespace ReserveBlockCore.Voting
                 table.Border(TableBorder.Rounded);
 
                 AnsiConsole.Write(table);
+
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("|type /vote to come back to the vote area|");
+                Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|======================================|");
             }
         }
 
@@ -534,6 +549,11 @@ namespace ReserveBlockCore.Voting
                 table.Border(TableBorder.Rounded);
 
                 AnsiConsole.Write(table);
+
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("|type /vote to come back to the vote area|");
+                Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|======================================|");
             }
         }
 
@@ -575,7 +595,7 @@ namespace ReserveBlockCore.Voting
             Console.WriteLine("| 6. Topic Details                     |");
             Console.WriteLine("| 7. Exit Voting Program               |");
             Console.WriteLine("|======================================|");
-            Console.WriteLine("|type /vote to come back to main area  |");
+            Console.WriteLine("|type /vote to come back to the vote area|");
             Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
         }

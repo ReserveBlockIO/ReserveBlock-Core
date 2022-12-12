@@ -35,10 +35,10 @@ namespace ReserveBlockCore.Models
         public int VoteNo { get; set; }  //system defined
 
         public decimal TotalVotes { get { return VoteYes + VoteNo;  } }  //system defined
-        public decimal PercentVotesYes { get { return TotalVotes != 0M ? ((VoteYes / TotalVotes) * 100M) : 0M; } }  //system defined
-        public decimal PercentVotesNo { get { return TotalVotes != 0M ? ((VoteNo / TotalVotes) * 100M) : 0M; } }  //system defined
-        public decimal PercentInFavor { get { return ((VoteYes / ValidatorCount) * 100M); } }  //system defined 
-        public decimal PercentAgainst { get { return ((VoteNo / ValidatorCount) * 100M); } }  //system defined
+        public decimal PercentVotesYes { get { try { return TotalVotes != 0M ? Math.Round(((Convert.ToDecimal(VoteYes) / TotalVotes) * 100M), 2) : 0M; } catch { return 0M; } } }  //system defined
+        public decimal PercentVotesNo { get { try { return TotalVotes != 0M ? Math.Round(((Convert.ToDecimal(VoteNo) / TotalVotes) * 100M), 2) : 0M; } catch { return 0M; } } }   //system defined
+        public decimal PercentInFavor { get { try { return Math.Round(((Convert.ToDecimal(VoteYes) / Convert.ToDecimal(ValidatorCount)) * 100M), 2); } catch { return 0M; } } }   //system defined 
+        public decimal PercentAgainst { get { try { return Math.Round(((Convert.ToDecimal(VoteNo) / Convert.ToDecimal(ValidatorCount)) * 100M), 2); } catch { return 0M; } } }   //system defined
 
         public class TopicCreate
         {
@@ -341,7 +341,7 @@ namespace ReserveBlockCore.Models
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
                     TransactionData.AddToPool(topicTx);
-                    TransactionData.AddTxToWallet(topicTx);
+                    TransactionData.AddTxToWallet(topicTx, true);
                     AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
                     await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
                     return (topicTx, "Success");

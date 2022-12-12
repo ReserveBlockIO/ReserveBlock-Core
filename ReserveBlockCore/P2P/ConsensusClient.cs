@@ -162,7 +162,7 @@ namespace ReserveBlockCore.P2P
                 {
                     var CurrentHashes = Hashes.Values.ToArray();
                     var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
-                    if (NumMatches >= MinPass || Globals.Nodes.Values.Any(x => x.NodeHeight + 1 == Height && x.MethodCode == methodCode + 1))
+                    if (NumMatches >= MinPass)
                     {
                         HashSource.Cancel();
                         return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
@@ -245,6 +245,8 @@ namespace ReserveBlockCore.P2P
                                 MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
                             }
                         }
+                        catch(TaskCanceledException ex)
+                        { }
                         catch(Exception ex)
                         {
                             ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
@@ -324,9 +326,11 @@ namespace ReserveBlockCore.P2P
                                 MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
                             }
                         }
+                        catch (TaskCanceledException ex)
+                        { }
                         catch (Exception ex)
                         {
-                            ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop outer catch");
+                            ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop inner catch");
                         }
 
                         taskDict.TryRemove(completedTask.Key, out _);

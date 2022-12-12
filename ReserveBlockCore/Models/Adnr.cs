@@ -181,21 +181,21 @@ namespace ReserveBlockCore.Models
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXMempool(adnrTx);//send out to mempool
                     }
                     else if (account.IsValidating)
                     {
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
                     }
                     else
                     {
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXMempool(adnrTx);//send out to mempool
                     }
@@ -282,7 +282,7 @@ namespace ReserveBlockCore.Models
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXMempool(adnrTx);//send out to mempool
                                                               
@@ -290,14 +290,14 @@ namespace ReserveBlockCore.Models
                     else if (account.IsValidating)
                     {
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
                     }
                     else
                     {
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXMempool(adnrTx);//send out to mempool
                     }
@@ -383,7 +383,7 @@ namespace ReserveBlockCore.Models
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXMempool(adnrTx);//send out to mempool
                                                               //await P2PClient.SendTXToAdjudicator(txRequest);
@@ -393,14 +393,14 @@ namespace ReserveBlockCore.Models
                     else if (account.IsValidating)
                     {
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
                     }
                     else
                     {
                         TransactionData.AddToPool(adnrTx);
-                        TransactionData.AddTxToWallet(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
                         AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
                         await P2PClient.SendTXMempool(adnrTx);//send out to mempool
                     }

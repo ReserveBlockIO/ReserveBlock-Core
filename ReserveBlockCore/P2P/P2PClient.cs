@@ -211,7 +211,9 @@ namespace ReserveBlockCore.P2P
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
 
                 node.IsValidator = await GetValidatorStatus(node.Connection);
-                if(Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                node.IsAdjudicator = await GetAdjudicatorStatus(node.Connection);
+
+                if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
                 {
                     //if (currentNode.Connection != null)
                     //    await currentNode.Connection.DisposeAsync();
@@ -721,21 +723,27 @@ namespace ReserveBlockCore.P2P
                 return;
 
             var SuccessNodes = new HashSet<string>();
-            while (SuccessNodes.Count < 1)
+            int failCount = 0;
+            int tryCount = 0;
+            while (SuccessNodes.Count < 1 && failCount < 3 && tryCount < 5)
             {
-                foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address)))
+                foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address) && x.IsConnected == true))
                 {
                     try
                     {
                         if (await node.InvokeAsync<bool>("ReceiveTX", args: new object?[] { tx }))
                             SuccessNodes.Add(node.Address);
+
+                        tryCount += 1;
                     }
                     catch (Exception ex)
                     {
-
+                        failCount += 1;
                     }
                 }                
             }
+
+            ConsoleWriterService.Output($"Adj Success Count: {SuccessNodes.Count()}");
         }
 
         #endregion
@@ -1393,10 +1401,10 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var valNodes = Globals.Nodes.Values.Where(x => x.IsValidator).ToList();
-                if (valNodes.Count() > 0)
+                var valAdjNodes = Globals.Nodes.Values.Where(x => x.IsValidator || x.IsAdjudicator).ToList();
+                if (valAdjNodes.Count() > 0)
                 {
-                    foreach (var node in valNodes)
+                    foreach (var node in valAdjNodes)
                     {
                         try
                         {
@@ -1468,6 +1476,21 @@ namespace ReserveBlockCore.P2P
             try
             {
                 result = await hubConnection.InvokeAsync<bool>("GetValidatorStatus");
+            }
+            catch { }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Get Adjudicator Status
+        private static async Task<bool> GetAdjudicatorStatus(HubConnection hubConnection)
+        {
+            var result = false;
+            try
+            {
+                result = await hubConnection.InvokeAsync<bool>("GetAdjudicatorStatus");
             }
             catch { }
 
