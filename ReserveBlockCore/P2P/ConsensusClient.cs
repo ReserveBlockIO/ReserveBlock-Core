@@ -155,8 +155,15 @@ namespace ReserveBlockCore.P2P
                 Hashes = ConsensusServer.Hashes[(Height, methodCode)];
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
                 var InitialHashDelay = Task.Delay(1000);
-                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash) && !InitialHashDelay.IsCompleted)
+                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
+                {
+                    if (InitialHashDelay.IsCompleted && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() < Majority - 1)
+                        break;
                     await Task.Delay(20);
+                }
+
+                if (string.IsNullOrWhiteSpace(MyHash.Hash))
+                    return null;
 
                 Hashes[Globals.AdjudicateAccount.Address] = MyHash;
                 
@@ -184,6 +191,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
+                ErrorLogUtility.LogError(ex.ToString(), "ConsensusRun");
             }            
             return null;
         }       
