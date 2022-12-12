@@ -157,7 +157,7 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("CastTopicVote/{topicUID}/{vote}")]
+        [HttpGet("CastTopicVote/{topicUID}/{voteType}")]
         public async Task<string> CastTopicVote(string topicUID, VoteType voteType)
         {
             var output = "";
