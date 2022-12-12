@@ -152,7 +152,8 @@ namespace ReserveBlockCore.P2P
                 ConsensusServer.Hashes.TryAdd((Height, methodCode), Hashes);
                 Hashes = ConsensusServer.Hashes[(Height, methodCode)];
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
-                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
+                var InitialHashDelay = Task.Delay(1000);
+                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash) && !InitialHashDelay.IsCompleted)
                     await Task.Delay(4);
 
                 Hashes[Globals.AdjudicateAccount.Address] = MyHash;
