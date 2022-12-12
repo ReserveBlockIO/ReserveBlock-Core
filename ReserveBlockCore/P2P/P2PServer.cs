@@ -711,5 +711,18 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Adjudicator Status
+        public async Task<bool> GetAdjudicatorStatus()
+        {
+            var result = false;
+
+            if (Globals.AdjudicateAccount != null)
+                result = true;
+
+            return result;
+        }
+
+        #endregion
+
     }
 }

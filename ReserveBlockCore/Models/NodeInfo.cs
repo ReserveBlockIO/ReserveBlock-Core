@@ -38,6 +38,7 @@ namespace ReserveBlockCore.Models
 
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
         public bool IsValidator { get; set; }
+        public bool IsAdjudicator { get; set; }
 
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {

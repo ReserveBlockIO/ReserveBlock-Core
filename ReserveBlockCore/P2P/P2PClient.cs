@@ -211,7 +211,9 @@ namespace ReserveBlockCore.P2P
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
 
                 node.IsValidator = await GetValidatorStatus(node.Connection);
-                if(Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                node.IsAdjudicator = await GetAdjudicatorStatus(node.Connection);
+
+                if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
                 {
                     //if (currentNode.Connection != null)
                     //    await currentNode.Connection.DisposeAsync();
@@ -741,7 +743,7 @@ namespace ReserveBlockCore.P2P
                 }                
             }
 
-            Console.WriteLine($"Validator Success Count: {SuccessNodes.Count()}");
+            ConsoleWriterService.Output($"Adj Success Count: {SuccessNodes.Count()}");
         }
 
         #endregion
@@ -1399,10 +1401,10 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var valNodes = Globals.Nodes.Values.Where(x => x.IsValidator).ToList();
-                if (valNodes.Count() > 0)
+                var valAdjNodes = Globals.Nodes.Values.Where(x => x.IsValidator || x.IsAdjudicator).ToList();
+                if (valAdjNodes.Count() > 0)
                 {
-                    foreach (var node in valNodes)
+                    foreach (var node in valAdjNodes)
                     {
                         try
                         {
@@ -1474,6 +1476,21 @@ namespace ReserveBlockCore.P2P
             try
             {
                 result = await hubConnection.InvokeAsync<bool>("GetValidatorStatus");
+            }
+            catch { }
+
+            return result;
+        }
+
+        #endregion
+
+        #region Get Adjudicator Status
+        private static async Task<bool> GetAdjudicatorStatus(HubConnection hubConnection)
+        {
+            var result = false;
+            try
+            {
+                result = await hubConnection.InvokeAsync<bool>("GetAdjudicatorStatus");
             }
             catch { }
 
