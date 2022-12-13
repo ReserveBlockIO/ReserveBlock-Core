@@ -137,12 +137,13 @@ namespace ReserveBlockCore.P2P
                     return null;                    
                 }
 
-                var HashSource = new CancellationTokenSource();
-                var signers = Signer.CurrentSigningAddresses();                
-                var MinPass = signers.Count / 2;
-                (string Hash, string Signature) MyHash;
-                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;                
-                Hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
+                while (ReadyToFinalize != 1)
+                    await Task.Delay(20);
+
+                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);                                
+                var MyHash = Ecdsa.sha256(string.Join("", Messages.OrderBy(x => x.Key).Select(x => Ecdsa.sha256(x.Value.Message))));
+                var Signature = SignatureService.AdjudicatorSignature(MyHash);
+
                 var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
                     (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
                     .Select(x => x.Key).ToHashSet();
@@ -150,28 +151,23 @@ namespace ReserveBlockCore.P2P
                 {
                     ConsensusServer.Hashes.TryRemove(key, out _);
                 }
-
-                ConsensusServer.Hashes.TryAdd((Height, methodCode), Hashes);
-                Hashes = ConsensusServer.Hashes[(Height, methodCode)];
-                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
-                var InitialHashDelay = Task.Delay(1500);
-                while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
-                {
-                    if (InitialHashDelay.IsCompleted && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() < Majority - 1)
-                        break;
-                    await Task.Delay(20);
-                }
-
-                if (string.IsNullOrWhiteSpace(MyHash.Hash))
-                    return null;
-
-                Hashes[Globals.AdjudicateAccount.Address] = MyHash;
+                
+                ConsensusServer.Hashes.TryAdd((Height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
+                var Hashes = ConsensusServer.Hashes[(Height, methodCode)];
+                Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);
+                SendMethodCode(Peers, methodCode, true);
+                
+                var HashSource = new CancellationTokenSource();
+                var signers = Signer.CurrentSigningAddresses();                
+                var MinPass = signers.Count / 2;                
+                                
+                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);               
                 
                 var HashDelay = Task.Delay(1000);
                 while (!HashDelay.IsCompleted || Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= MinPass)
                 {                    
                     var CurrentHashes = Hashes.Values.ToArray();
-                    var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
+                    var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash).Count();
                     if (NumMatches >= MinPass)
                     {
                         HashSource.Cancel();
@@ -224,8 +220,8 @@ namespace ReserveBlockCore.P2P
                 {
                     var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == Globals.LastBlock.Height &&
                         x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
-
-                    var Source = new CancellationTokenSource(1000);
+                    
+                    var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     for (var i = 0; i < RecentPeers.Length; i++)
                     {
                         var peer = RecentPeers[i];
@@ -276,17 +272,7 @@ namespace ReserveBlockCore.P2P
             } while (!cts.IsCancellationRequested && MissingAddresses.Any());
 
             await cts.Token.WhenCanceled();
-            if (ReadyToFinalize == 1)
-            {
-                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
-                var Height = Globals.LastBlock.Height + 1;
-                var Messages = ConsensusServer.Messages[(Height, methodCode)];                
-                var MyHash = Ecdsa.sha256(string.Join("", Messages.OrderBy(x => x.Key).Select(x => Ecdsa.sha256(x.Value.Message))));
-                var Signature = SignatureService.AdjudicatorSignature(MyHash);
-                var HashDict = ConsensusServer.Hashes[(Height, methodCode)];
-                HashDict[Globals.AdjudicateAccount.Address] = (MyHash, Signature);                
-                SendMethodCode(peers, methodCode, true);
-            }
+            Interlocked.Exchange(ref ReadyToFinalize, 1);
         }
 
         public static async Task PeerHashRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
@@ -306,7 +292,7 @@ namespace ReserveBlockCore.P2P
                     var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == Globals.LastBlock.Height &&
                         x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
 
-                    var Source = new CancellationTokenSource(1000);
+                    var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     for (var i = 0; i < RecentPeers.Length; i++)
                     {
                         var peer = RecentPeers[i];
