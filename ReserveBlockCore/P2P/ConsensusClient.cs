@@ -111,12 +111,14 @@ namespace ReserveBlockCore.P2P
                     var ConsensusSource = new CancellationTokenSource();                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
-                    var Delay = Task.Delay(2000);                    
-                    while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
+                    var Delay = Task.Delay(2000);
+                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode);
+                    while (Height == Globals.LastBlock.Height + 1)
                     {
-                        if (Delay.IsCompleted && runType != RunType.Initial && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() < Majority - 1)
+                        if(!WaitForAddresses.Any(x => !Messages.ContainsKey(x)) && ((Delay.IsCompleted && runType != RunType.Initial) || Messages.Count >= Majority))                        
                             break;
                         await Task.Delay(20);
+                        WaitForAddresses = AddressesToWaitFor(Height, methodCode);
                     }
 
                     if (Height != Globals.LastBlock.Height + 1)
@@ -126,8 +128,7 @@ namespace ReserveBlockCore.P2P
                     }
 
                     if (Messages.Count >= Majority)
-                    {
-                        await Task.Delay(1000);
+                    {                        
                         Interlocked.Exchange(ref ReadyToFinalize, 1);
                         ConsensusSource.Cancel();
                         break;
@@ -160,29 +161,38 @@ namespace ReserveBlockCore.P2P
                 
                 var HashSource = new CancellationTokenSource();
                 var signers = Signer.CurrentSigningAddresses();                
-                var MinPass = signers.Count / 2;                
-                                
+                                                           
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);               
                 
                 var HashDelay = Task.Delay(1000);
-                while (!HashDelay.IsCompleted || Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= MinPass)
+                var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);                
+                while (Height == Globals.LastBlock.Height + 1)
                 {                    
-                    var CurrentHashes = Hashes.Values.ToArray();
-                    var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash).Count();
-                    if (NumMatches >= MinPass)
+                    var CurrentHashes = Hashes.ToArray();
+                    var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();
+                    var NumMatches = CurrentMatchAddresses.Length;
+                    if (NumMatches >= Majority)
                     {
                         HashSource.Cancel();
                         return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                     }
 
-                    if (CurrentHashes.Length - NumMatches > MinPass || Height != Globals.LastBlock.Height + 1)
+                    if (CurrentHashes.Length - NumMatches >= Majority)
                     {
                         HashSource.Cancel();
                         LogState("hash fail", Height, methodCode, ConsensusStatus.Processing, Peers);
                         return null;
                     }
 
-                    await Task.Delay(20);
+                    if (HashDelay.IsCompleted)
+                    {
+                        HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);
+                        var RemainingAddressCount = HashAddressesToWaitFor.Except(CurrentMatchAddresses).Count();
+                        if (NumMatches + RemainingAddressCount < Majority)
+                            return null;
+                    }
+
+                    await Task.Delay(20);                    
                 }
 
                 HashSource.Cancel();
@@ -193,6 +203,13 @@ namespace ReserveBlockCore.P2P
             }
             LogState("exception thrown", Globals.LastBlock.Height + 1, methodCode, ConsensusStatus.Processing, Globals.Nodes.Values.ToArray());
             return null;
+        }
+
+        public static HashSet<string> AddressesToWaitFor(long height, int methodCode)
+        {
+            var Now = TimeUtil.GetMillisecondTime();
+            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
+                .Select(x => x.Address).ToHashSet();
         }
 
         public static void LogState(string place, long height, int methodCode, ConsensusStatus status, NodeInfo[] peers)

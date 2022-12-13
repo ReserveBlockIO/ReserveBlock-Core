@@ -798,8 +798,7 @@ namespace ReserveBlockCore.Services
                     var CurrentTime = TimeUtil.GetMillisecondTime();
                     var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 19000;
                     InitialDelayTime = Math.Max(InitialDelayTime, 0);
-                    //var InitialBlockDelay = Task.Delay((int)InitialDelayTime);
-                    var InitialBlockDelay = Task.Delay(19000);
+                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime);                    
 
                     Height = Globals.LastBlock.Height + 1;
 
