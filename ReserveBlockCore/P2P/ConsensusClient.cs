@@ -168,7 +168,7 @@ namespace ReserveBlockCore.P2P
                 Hashes[Globals.AdjudicateAccount.Address] = MyHash;
                 
                 var HashDelay = Task.Delay(1000);
-                while (!HashDelay.IsCompleted || Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() >= MinPass)
+                while (!HashDelay.IsCompleted || Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() >= MinPass)
                 {                    
                     var CurrentHashes = Hashes.Values.ToArray();
                     var NumMatches = CurrentHashes.Where(x => x.Hash == MyHash.Hash).Count();
