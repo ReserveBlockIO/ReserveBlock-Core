@@ -108,7 +108,7 @@ namespace ReserveBlockCore.P2P
                     Messages = ConsensusServer.Messages[(Height, methodCode)];                    
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
                                     
-                    var ConsensusSource = new CancellationTokenSource();                    
+                    var ConsensusSource = new CancellationTokenSource(runType == RunType.Initial ? 30000 : 6000);                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
                     var Delay = Task.Delay(2000);
@@ -159,9 +159,8 @@ namespace ReserveBlockCore.P2P
                 Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);
                 SendMethodCode(Peers, methodCode, true);
                 
-                var HashSource = new CancellationTokenSource();
-                var signers = Signer.CurrentSigningAddresses();                
-                                                           
+                var HashSource = new CancellationTokenSource(6000);
+                var signers = Signer.CurrentSigningAddresses();                                                                           
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);               
                 
                 var HashDelay = Task.Delay(1000);
@@ -174,6 +173,18 @@ namespace ReserveBlockCore.P2P
                     if (NumMatches >= Majority)
                     {
                         HashSource.Cancel();
+                        while(true)
+                        {
+                            var Now = TimeUtil.GetMillisecondTime();
+                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 2000 && 
+                                (x.MethodCode != 0 || x.IsFinalized) && (!x.IsFinalized || x.MethodCode < methodCode)).Any();
+                            if(AnyNodesToWaitFor)
+                            {
+                                await Task.Delay(20);
+                                continue;
+                            }
+                            break;
+                        }
                         return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                     }
 
