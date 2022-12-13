@@ -209,7 +209,8 @@ namespace ReserveBlockCore.P2P
                     NothingToSend = true;
                 }
 
-                if (message != null && SignatureService.VerifySignature(node.Address, message, signature))
+                var state = GetState();
+                if (message != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
 
                 if (NothingToSend)
@@ -260,7 +261,8 @@ namespace ReserveBlockCore.P2P
                     NothingToSend = true;
                 }
 
-                if (hash != null && SignatureService.VerifySignature(node.Address, hash, signature))
+                var state = GetState();
+                if (hash != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
                     hashes[node.Address] = (hash, signature);
 
                 if (NothingToSend)
