@@ -134,6 +134,7 @@ namespace ReserveBlockCore.P2P
                     }
 
                     ConsensusSource.Cancel();
+                    LogState("end of first loop", Height, methodCode, ConsensusStatus.Processing, Peers);
                     return null;                    
                 }
 
@@ -177,6 +178,7 @@ namespace ReserveBlockCore.P2P
                     if (CurrentHashes.Length - NumMatches > MinPass || Height != Globals.LastBlock.Height + 1)
                     {
                         HashSource.Cancel();
+                        LogState("hash fail", Height, methodCode, ConsensusStatus.Processing, Peers);
                         return null;
                     }
 
@@ -188,9 +190,17 @@ namespace ReserveBlockCore.P2P
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError(ex.ToString(), "ConsensusRun");
-            }            
+            }
+            LogState("exception thrown", Globals.LastBlock.Height + 1, methodCode, ConsensusStatus.Processing, Globals.Nodes.Values.ToArray());
             return null;
-        }       
+        }
+
+        public static void LogState(string place, long height, int methodCode, ConsensusStatus status, NodeInfo[] peers)
+        {
+            var Now = TimeUtil.GetMillisecondTime();
+            var Data = peers.Where(x => Now - x.LastMethodCodeTime < 2100).Select(x => x.Address + " " + x.NodeHeight + " " + x.MethodCode + " " + x.IsFinalized ).ToArray();
+            ErrorLogUtility.LogError(Now + " " + height + " " + methodCode + " " + (status == ConsensusStatus.Finalized ? 1 : 0) + " " + string.Join("|", Data), place);
+        }
 
         public static void SendMethodCode(NodeInfo[] peers, int methodCode, bool isFinalized)
         {
