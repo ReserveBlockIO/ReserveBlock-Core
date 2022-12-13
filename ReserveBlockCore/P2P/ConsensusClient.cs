@@ -114,7 +114,7 @@ namespace ReserveBlockCore.P2P
                     var Delay = Task.Delay(2000);                    
                     while (Messages.Count < Majority && Height == Globals.LastBlock.Height + 1)
                     {
-                        if (Delay.IsCompleted && runType != RunType.Initial && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() < Majority - 1)
+                        if (Delay.IsCompleted && runType != RunType.Initial && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() < Majority - 1)
                             break;
                         await Task.Delay(20);
                     }
@@ -154,10 +154,10 @@ namespace ReserveBlockCore.P2P
                 ConsensusServer.Hashes.TryAdd((Height, methodCode), Hashes);
                 Hashes = ConsensusServer.Hashes[(Height, methodCode)];
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
-                var InitialHashDelay = Task.Delay(1000);
+                var InitialHashDelay = Task.Delay(1500);
                 while (!Hashes.TryGetValue(Globals.AdjudicateAccount.Address, out MyHash))
                 {
-                    if (InitialHashDelay.IsCompleted && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || x.MethodCode == methodCode - 1)).Count() < Majority - 1)
+                    if (InitialHashDelay.IsCompleted && Globals.Nodes.Values.Where(x => TimeUtil.GetMillisecondTime() - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == Height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Count() < Majority - 1)
                         break;
                     await Task.Delay(20);
                 }
@@ -231,7 +231,7 @@ namespace ReserveBlockCore.P2P
                         var peer = RecentPeers[i];
                         var MessageToSend = SentMessageToPeerSet.Contains(peer.NodeIP) ? null : ToSend;
                         taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), MessageToSend }, Source.Token);
-                    }
+                    }                    
                     
                     if(!taskDict.Any())
                     {
