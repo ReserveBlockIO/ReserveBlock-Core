@@ -175,11 +175,12 @@ namespace ReserveBlockCore
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
             Globals.StopAllTimers = true;
-            _ = P2PClient.UpdateMethodCodes();
+            _ = Task.Run(P2PClient.UpdateMethodCodes);
             _ = BlockHeightCheckLoop();
             _ = StartupService.DownloadBlocksOnStart();
-            _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
-            
+            if (Globals.LastBlock.Height >= Globals.BlockLock)
+                _ = Task.Run(ClientCallService.DoWorkV3);            
+
             StartupService.ClearStaleMempool();
 
             //StartupService.RunStateSync();

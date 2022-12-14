@@ -126,7 +126,7 @@ namespace ReserveBlockCore.P2P
                     while (Height == Globals.LastBlock.Height + 1)
                     {
                         var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
-                        if (Messages.Count + RemainingAddressCount < Majority || 
+                        if ((runType != RunType.Initial && Messages.Count + RemainingAddressCount < Majority) || 
                             (RemainingAddressCount == 0 && Messages.Count >= Majority))
                             break;
                         
