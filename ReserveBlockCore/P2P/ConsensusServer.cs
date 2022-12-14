@@ -29,10 +29,12 @@ namespace ReserveBlockCore.P2P
         private static ConsensusState ConsenusStateSingelton;
         private static object UpdateLock = new object();
         public override async Task OnConnectedAsync()
-        {                       
+        {
+            string peerIP = null;
             try
             {
-                var peerIP = GetIP(Context);
+                peerIP = GetIP(Context);
+                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + peerIP, "OnConnectedAsync");
                 if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
@@ -83,15 +85,16 @@ namespace ReserveBlockCore.P2P
                     AdjPool[peerIP] = Pool;
                 }
 
-                if (Pool.Context?.ConnectionId != Context.ConnectionId)
-                    Pool.Context?.Abort();
+                if (Pool.Context?.ConnectionId != Context.ConnectionId)                
+                    Pool.Context?.Abort();              
                 
                 Pool.Context = Context;
             }
             catch (Exception ex)
-            {
+            {                
                 ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.OnConnectedAsync()");
-            }            
+            }
+
         }
         private void EndOnConnect(string ipAddress, string adjMessage, string loggMessage)
         {            
@@ -133,6 +136,7 @@ namespace ReserveBlockCore.P2P
         public string RequestMethodCode()
         {
             var ip = GetIP(Context);
+            LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip, "RequestMethodCode");
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -146,6 +150,7 @@ namespace ReserveBlockCore.P2P
         public bool SendMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
+            LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + isFinalized, "RequestMethodCode");
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -165,6 +170,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
+                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerMessage, "RequestMethodCode");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
@@ -218,6 +224,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
+                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerMessage, "RequestMethodCode");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
