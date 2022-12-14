@@ -807,34 +807,56 @@ namespace ReserveBlockCore.P2P
             var Address = Globals.AdjudicateAccount.Address;
             if (Address == null)
                 return;
-            while(true)
+            var TaskDict = new ConcurrentDictionary<string, Task<string>>();            
+            while (true)
             {
                 try
                 {
-                    var Now = TimeUtil.GetMillisecondTime();
+                    var Delay = Task.Delay(1000);
                     var Source = new CancellationTokenSource(1000);
+                    var Now = TimeUtil.GetMillisecondTime();                    
                     foreach (var node in Globals.Nodes.Values)
+                    {                      
+                        if (!node.IsConnected || node.Address == Address)                                                            
+                            continue;
+
+                        TaskDict[node.NodeIP] = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
+                    }
+
+                    while (TaskDict.Any())
                     {
-                        try
+                        await Task.WhenAny(TaskDict.Values);
+
+                        var CompletedTasks = TaskDict.Where(x => x.Value.IsCompleted).ToArray();
+                        foreach (var completedTask in CompletedTasks)
                         {
-                            if (!node.IsConnected || node.Address == Address)
+                            try
                             {
-                                await Task.Delay(1000);
-                                continue;
+                                var Response = await completedTask.Value;
+                                if (Response != null && Globals.Nodes.TryGetValue(completedTask.Key, out var node))
+                                {
+                                    var remoteMethodCode = Response.Split(':');
+                                    if (Now > node.LastMethodCodeTime)
+                                    {
+                                        node.LastMethodCodeTime = Now;
+                                        node.NodeHeight = long.Parse(remoteMethodCode[0]);
+                                        node.MethodCode = int.Parse(remoteMethodCode[1]);
+                                        node.IsFinalized = remoteMethodCode[2] == "1";
+                                    }
+                                }
                             }
-                            var remoteMethodCode = (await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token)).Split(':');
-                            if (Now > node.LastMethodCodeTime)
+                            catch (TaskCanceledException ex)
+                            { }
+                            catch (Exception ex)
                             {
-                                node.LastMethodCodeTime = Now;
-                                node.NodeHeight = long.Parse(remoteMethodCode[0]);
-                                node.MethodCode = int.Parse(remoteMethodCode[1]);
-                                node.IsFinalized = remoteMethodCode[2] == "1";
+                                ErrorLogUtility.LogError(ex.ToString(), "UpdateMethodCodes inner catch");
                             }
-                        }
-                        catch(Exception ex) {                            
+
+                            TaskDict.TryRemove(completedTask.Key, out _);
                         }
                     }
-                    await Task.Delay(1000);
+
+                    await Delay;
                 }
                 catch { }
             }

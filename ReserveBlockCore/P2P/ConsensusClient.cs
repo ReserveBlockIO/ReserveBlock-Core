@@ -268,41 +268,38 @@ namespace ReserveBlockCore.P2P
 
                         taskDict[peer.NodeIP] = peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), MessageToSend }, Source.Token);
                         waitDict[peer.NodeIP] = Task.Delay(100);
-                    }                    
-                    
-                    if(!taskDict.Any())
-                    {
-                        await Task.Delay(10);
-                        continue;
                     }
 
-                    await Task.WhenAny(taskDict.Values);
-
-                    var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
-                    foreach(var completedTask in CompletedTasks)
+                    while (taskDict.Any())
                     {
-                        try
-                        {
-                            var Response = await completedTask.Value;
-                            if (Response != null)
-                            {
-                                var arr = Response.Split(";:;");
-                                var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
-                                if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, message, signature))
-                                    messages[address] = (message, signature);
-                                MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
-                            }
-                        }
-                        catch(TaskCanceledException ex)
-                        { }
-                        catch(Exception ex)
-                        {
-                            ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
-                        }
+                        await Task.WhenAny(taskDict.Values);
 
-                        taskDict.TryRemove(completedTask.Key, out _);
-                        SentMessageToPeerSet.Add(completedTask.Key);
-                    }                    
+                        var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
+                        foreach (var completedTask in CompletedTasks)
+                        {
+                            try
+                            {
+                                var Response = await completedTask.Value;
+                                if (Response != null)
+                                {
+                                    var arr = Response.Split(";:;");
+                                    var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
+                                    if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, message, signature))
+                                        messages[address] = (message, signature);
+                                    MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+                                }
+                            }
+                            catch (TaskCanceledException ex)
+                            { }
+                            catch (Exception ex)
+                            {
+                                ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
+                            }
+
+                            taskDict.TryRemove(completedTask.Key, out _);
+                            SentMessageToPeerSet.Add(completedTask.Key);
+                        }
+                    }
                 }
                 catch(Exception ex)
                 {
@@ -346,39 +343,36 @@ namespace ReserveBlockCore.P2P
                         waitDict[peer.NodeIP] = Task.Delay(100);
                     }
 
-                    if (!taskDict.Any())
+                    while (taskDict.Any())
                     {
-                        await Task.Delay(10);
-                        continue;
-                    }
+                        await Task.WhenAny(taskDict.Values);
 
-                    await Task.WhenAny(taskDict.Values);
-
-                    var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
-                    foreach (var completedTask in CompletedTasks)
-                    {
-                        try
+                        var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
+                        foreach (var completedTask in CompletedTasks)
                         {
-                            var Response = await completedTask.Value;
-                            if (Response != null)
+                            try
                             {
-                                var arr = Response.Split(":");
-                                var (address, hash, signature) = (arr[0], arr[1], arr[2]);
-                                if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, hash, signature))
-                                    hashes[address] = (hash, signature);
-                                MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+                                var Response = await completedTask.Value;
+                                if (Response != null)
+                                {
+                                    var arr = Response.Split(":");
+                                    var (address, hash, signature) = (arr[0], arr[1], arr[2]);
+                                    if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, hash, signature))
+                                        hashes[address] = (hash, signature);
+                                    MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
+                                }
                             }
-                        }
-                        catch (TaskCanceledException ex)
-                        { }
-                        catch (Exception ex)
-                        {
-                            ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop inner catch");
-                        }
+                            catch (TaskCanceledException ex)
+                            { }
+                            catch (Exception ex)
+                            {
+                                ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop inner catch");
+                            }
 
-                        taskDict.TryRemove(completedTask.Key, out _);
-                        SentHashToPeerSet.Add(completedTask.Key);
-                    }                    
+                            taskDict.TryRemove(completedTask.Key, out _);
+                            SentHashToPeerSet.Add(completedTask.Key);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
