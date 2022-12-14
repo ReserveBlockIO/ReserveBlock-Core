@@ -83,9 +83,9 @@ namespace ReserveBlockCore.P2P
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
                 long Height = -1;                
                 int Majority = -1;
-                ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;                
-                SendMethodCode(Peers, methodCode, false);
-                var DelayTask = Task.Delay(timeToFinalize);
+                ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
+                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;
+                SendMethodCode(Peers, methodCode, false);                
                 while (true)
                 {
                     Height = Globals.LastBlock.Height + 1;                                    
@@ -107,17 +107,29 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Messages.TryAdd((Height, methodCode), Messages);
                     Messages = ConsensusServer.Messages[(Height, methodCode)];                    
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
-                                    
-                    var ConsensusSource = runType == RunType.Initial ? new CancellationTokenSource() : 
-                        new CancellationTokenSource(6000);                    
+
+                    var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
+                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
+                        .Select(x => x.Key).ToHashSet();
+                    foreach (var key in ConsensusServer.Hashes.Keys.Where(x => !HashKeysToKeep.Contains(x)))
+                    {
+                        ConsensusServer.Hashes.TryRemove(key, out _);
+                    }
+
+                    ConsensusServer.Hashes.TryAdd((Height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
+                    Hashes = ConsensusServer.Hashes[(Height, methodCode)];
+
+                    var ConsensusSource = new CancellationTokenSource(30000);                         
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
-                    
-                    var Delay = Task.Delay(2000);
-                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode);
+                                        
+                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode);                    
                     while (Height == Globals.LastBlock.Height + 1)
                     {
-                        if(!WaitForAddresses.Any(x => !Messages.ContainsKey(x)) && ((Delay.IsCompleted && runType != RunType.Initial) || Messages.Count >= Majority))                        
+                        var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
+                        if (Messages.Count + RemainingAddressCount < Majority || 
+                            (RemainingAddressCount == 0 && Messages.Count >= Majority))
                             break;
+                        
                         await Task.Delay(20);
                         WaitForAddresses = AddressesToWaitFor(Height, methodCode);
                     }
@@ -147,24 +159,13 @@ namespace ReserveBlockCore.P2P
                 var MyHash = Ecdsa.sha256(string.Join("", Messages.OrderBy(x => x.Key).Select(x => Ecdsa.sha256(x.Value.Message))));
                 var Signature = SignatureService.AdjudicatorSignature(MyHash);
 
-                var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
-                    (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
-                    .Select(x => x.Key).ToHashSet();
-                foreach (var key in ConsensusServer.Hashes.Keys.Where(x => !HashKeysToKeep.Contains(x)))
-                {
-                    ConsensusServer.Hashes.TryRemove(key, out _);
-                }
-                
-                ConsensusServer.Hashes.TryAdd((Height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
-                var Hashes = ConsensusServer.Hashes[(Height, methodCode)];
                 Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);
                 SendMethodCode(Peers, methodCode, true);
                 
-                var HashSource = new CancellationTokenSource(6000);
+                var HashSource = new CancellationTokenSource(30000);
                 var signers = Signer.CurrentSigningAddresses();                                                                           
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);               
-                
-                var HashDelay = Task.Delay(1000);
+                                
                 var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);                
                 while (Height == Globals.LastBlock.Height + 1)
                 {                    
@@ -188,22 +189,16 @@ namespace ReserveBlockCore.P2P
                         }
                         return Messages.Select(x => (x.Key, x.Value.Message)).ToArray();
                     }
-
-                    if (CurrentHashes.Length - NumMatches >= Majority)
+                                        
+                    HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);
+                    var RemainingAddressCount = HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Value.Hash)).Count();
+                    if (NumMatches + RemainingAddressCount < Majority)
                     {
                         HashSource.Cancel();
                         LogState("hash fail", Height, methodCode, ConsensusStatus.Processing, Peers);
                         return null;
                     }
-
-                    if (HashDelay.IsCompleted)
-                    {
-                        HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);
-                        var RemainingAddressCount = HashAddressesToWaitFor.Except(CurrentMatchAddresses).Count();
-                        if (NumMatches + RemainingAddressCount < Majority)
-                            return null;
-                    }
-
+                    
                     await Task.Delay(20);                    
                 }
 

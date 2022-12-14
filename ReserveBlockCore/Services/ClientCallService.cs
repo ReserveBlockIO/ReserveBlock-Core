@@ -1042,10 +1042,7 @@ namespace ReserveBlockCore.Services
         }
 
         public static void ClearRoundDicts(long height)
-        {
-            ConsensusServer.Messages.Clear();
-            ConsensusServer.Hashes.Clear();
-
+        {            
             foreach (var key in Globals.TaskSelectedNumbersV3.Keys)
                 if (key.Height <= height)
                     Globals.TaskSelectedNumbersV3.TryRemove(key, out _);
