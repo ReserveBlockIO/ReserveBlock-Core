@@ -137,7 +137,7 @@ namespace ReserveBlockCore
             }
 
             StartupService.SetAdjudicatorAddresses();
-            _ = StartupService.ConnectToConsensusNodes();
+            _ = Task.Run(StartupService.ConnectToConsensusNodes);
 
             if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
             {
