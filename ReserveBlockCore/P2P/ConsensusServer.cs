@@ -224,7 +224,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerMessage, "RequestMethodCode");
+                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerHash, "RequestMethodCode");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
