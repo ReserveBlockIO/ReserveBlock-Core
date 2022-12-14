@@ -150,7 +150,7 @@ namespace ReserveBlockCore.P2P
         public bool SendMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
-            LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + isFinalized, "RequestMethodCode");
+            LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + isFinalized, "SendMethodCode");
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -170,7 +170,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerMessage, "RequestMethodCode");
+                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
@@ -224,7 +224,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerHash, "RequestMethodCode");
+                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
@@ -267,7 +267,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.Message()");
+                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.Hash()");
                 }
                 catch { }
             }
