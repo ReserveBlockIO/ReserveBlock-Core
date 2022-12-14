@@ -818,7 +818,10 @@ namespace ReserveBlockCore.P2P
                         try
                         {
                             if (node.Connection == null || node.Address == Address)
+                            {
+                                await Task.Delay(1000);
                                 continue;
+                            }
                             var remoteMethodCode = (await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token)).Split(':');
                             if (Now > node.LastMethodCodeTime)
                             {
@@ -828,7 +831,8 @@ namespace ReserveBlockCore.P2P
                                 node.IsFinalized = remoteMethodCode[2] == "1";
                             }
                         }
-                        catch { }
+                        catch(Exception ex) {                            
+                        }
                     }
                     await Task.Delay(1000);
                 }
