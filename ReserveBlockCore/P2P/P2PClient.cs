@@ -804,9 +804,10 @@ namespace ReserveBlockCore.P2P
 
         public static async Task UpdateMethodCodes()
         {
-            var Address = Globals.AdjudicateAccount.Address;
-            if (Address == null)
+            if (Globals.AdjudicateAccount == null)
                 return;
+            var Address = Globals.AdjudicateAccount.Address;
+            
             var TaskDict = new ConcurrentDictionary<string, Task<string>>();            
             while (true)
             {
