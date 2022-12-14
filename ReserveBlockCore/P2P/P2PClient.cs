@@ -824,39 +824,42 @@ namespace ReserveBlockCore.P2P
                         TaskDict[node.NodeIP] = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
                     }
 
-                    while (TaskDict.Any())
+                    if (!TaskDict.Any())
                     {
-                        await Task.WhenAny(TaskDict.Values);
-
-                        var CompletedTasks = TaskDict.Where(x => x.Value.IsCompleted).ToArray();
-                        foreach (var completedTask in CompletedTasks)
-                        {
-                            try
-                            {
-                                var Response = await completedTask.Value;
-                                if (Response != null && Globals.Nodes.TryGetValue(completedTask.Key, out var node))
-                                {
-                                    var remoteMethodCode = Response.Split(':');
-                                    if (Now > node.LastMethodCodeTime)
-                                    {
-                                        node.LastMethodCodeTime = Now;
-                                        node.NodeHeight = long.Parse(remoteMethodCode[0]);
-                                        node.MethodCode = int.Parse(remoteMethodCode[1]);
-                                        node.IsFinalized = remoteMethodCode[2] == "1";
-                                    }
-                                }
-                            }
-                            catch (TaskCanceledException ex)
-                            { }
-                            catch (Exception ex)
-                            {
-                                ErrorLogUtility.LogError(ex.ToString(), "UpdateMethodCodes inner catch");
-                            }
-
-                            TaskDict.TryRemove(completedTask.Key, out _);
-                        }
+                        await Task.Delay(20);
+                        continue;
                     }
 
+                    await Task.WhenAny(TaskDict.Values);
+
+                    var CompletedTasks = TaskDict.Where(x => x.Value.IsCompleted).ToArray();
+                    foreach (var completedTask in CompletedTasks)
+                    {
+                        try
+                        {
+                            var Response = await completedTask.Value;
+                            if (Response != null && Globals.Nodes.TryGetValue(completedTask.Key, out var node))
+                            {
+                                var remoteMethodCode = Response.Split(':');
+                                if (Now > node.LastMethodCodeTime)
+                                {
+                                    node.LastMethodCodeTime = Now;
+                                    node.NodeHeight = long.Parse(remoteMethodCode[0]);
+                                    node.MethodCode = int.Parse(remoteMethodCode[1]);
+                                    node.IsFinalized = remoteMethodCode[2] == "1";
+                                }
+                            }
+                        }
+                        catch (TaskCanceledException ex)
+                        { }
+                        catch (Exception ex)
+                        {
+                            ErrorLogUtility.LogError(ex.ToString(), "UpdateMethodCodes inner catch");
+                        }
+
+                        TaskDict.TryRemove(completedTask.Key, out _);
+                    }
+                    
                     await Delay;
                 }
                 catch { }

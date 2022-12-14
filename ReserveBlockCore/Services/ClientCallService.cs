@@ -770,12 +770,12 @@ namespace ReserveBlockCore.Services
             return mod < 0 ? (int)mod + n : (int)mod;
         }        
         public static async Task DoWorkV3()
-        {
+        {           
             if (Interlocked.Exchange(ref Globals.AdjudicateLock, 1) == 1 || Globals.AdjudicateAccount == null)
                 return;
 
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
-                await Task.Delay(4);
+                await Task.Delay(20);
             
             var RemainingDelay = Task.CompletedTask;
             ConsoleWriterService.Output("Booting up consensus loop");            
