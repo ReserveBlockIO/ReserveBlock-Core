@@ -108,7 +108,8 @@ namespace ReserveBlockCore.P2P
                     Messages = ConsensusServer.Messages[(Height, methodCode)];                    
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
                                     
-                    var ConsensusSource = new CancellationTokenSource(runType == RunType.Initial ? 30000 : 6000);                    
+                    var ConsensusSource = runType == RunType.Initial ? new CancellationTokenSource() : 
+                        new CancellationTokenSource(6000);                    
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                     
                     var Delay = Task.Delay(2000);
