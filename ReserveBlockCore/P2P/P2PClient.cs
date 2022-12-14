@@ -817,7 +817,7 @@ namespace ReserveBlockCore.P2P
                     {
                         try
                         {
-                            if (node.Connection == null || node.Address == Address)
+                            if (!node.IsConnected || node.Address == Address)
                             {
                                 await Task.Delay(1000);
                                 continue;
