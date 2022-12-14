@@ -807,7 +807,8 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var Now = TimeUtil.GetMillisecondTime();
-                var remoteMethodCode = (await node.InvokeAsync<string>("RequestMethodCode")).Split(':');
+                var Source = new CancellationTokenSource(1000);
+                var remoteMethodCode = (await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token)).Split(':');
                 if(Now > node.LastMethodCodeTime)
                 {
                     node.LastMethodCodeTime = Now;

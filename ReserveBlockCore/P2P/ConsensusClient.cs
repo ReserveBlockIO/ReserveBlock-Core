@@ -215,6 +215,8 @@ namespace ReserveBlockCore.P2P
         public static HashSet<string> AddressesToWaitFor(long height, int methodCode)
         {
             var Now = TimeUtil.GetMillisecondTime();
+            var bob = Globals.Nodes.Values.Where(x => x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
+                .Select(x => x.Address).ToHashSet();
             return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
                 .Select(x => x.Address).ToHashSet();
         }
@@ -232,7 +234,7 @@ namespace ReserveBlockCore.P2P
             _ = Task.WhenAll(peers.Select(node =>
             {
                 var Source = new CancellationTokenSource(1000);
-                var SendMethodCodeFunc = () => node.InvokeAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height, methodCode, isFinalized }, Source.Token)
+                var SendMethodCodeFunc = () => node.Connection.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height, methodCode, isFinalized }, Source.Token)
                     ?? Task.FromResult(false);
                 return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
@@ -243,6 +245,7 @@ namespace ReserveBlockCore.P2P
             var messages = ConsensusServer.Messages[(Globals.LastBlock.Height + 1, methodCode)];
             var rnd = new Random();
             var taskDict = new ConcurrentDictionary<string, Task<string>>();
+            var waitDict = new ConcurrentDictionary<string, Task>();
             var MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
             var SentMessageToPeerSet = new HashSet<string>();
             var MyMessage = messages[Globals.AdjudicateAccount.Address];
@@ -260,7 +263,11 @@ namespace ReserveBlockCore.P2P
                     {
                         var peer = RecentPeers[i];
                         var MessageToSend = SentMessageToPeerSet.Contains(peer.NodeIP) ? null : ToSend;
-                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), MessageToSend }, Source.Token);
+                        if (waitDict.TryRemove(peer.NodeIP, out var waitTask))
+                            await waitTask;
+
+                        taskDict[peer.NodeIP] = peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), MessageToSend }, Source.Token);
+                        waitDict[peer.NodeIP] = Task.Delay(100);
                     }                    
                     
                     if(!taskDict.Any())
@@ -314,6 +321,7 @@ namespace ReserveBlockCore.P2P
             var hashes = ConsensusServer.Hashes[(Globals.LastBlock.Height + 1, methodCode)];
             var rnd = new Random();
             var taskDict = new ConcurrentDictionary<string, Task<string>>();
+            var waitDict = new ConcurrentDictionary<string, Task>();
             var MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
             var SentHashToPeerSet = new HashSet<string>();
             var MyHash = hashes[Globals.AdjudicateAccount.Address];
@@ -331,7 +339,11 @@ namespace ReserveBlockCore.P2P
                     {
                         var peer = RecentPeers[i];
                         var HashToSend = SentHashToPeerSet.Contains(peer.NodeIP) ? null : ToSend;
-                        taskDict[peer.NodeIP] = peer.InvokeAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), HashToSend }, Source.Token);
+                        if(waitDict.TryRemove(peer.NodeIP, out var waitTask))                        
+                            await waitTask;
+                        
+                        taskDict[peer.NodeIP] = peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), HashToSend }, Source.Token);
+                        waitDict[peer.NodeIP] = Task.Delay(100);
                     }
 
                     if (!taskDict.Any())

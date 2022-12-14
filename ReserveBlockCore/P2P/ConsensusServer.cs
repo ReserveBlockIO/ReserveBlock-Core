@@ -130,27 +130,6 @@ namespace ReserveBlockCore.P2P
                 ConsenusStateSingelton.EncryptedAnswer, ConsenusStateSingelton.IsUsed);
         }
 
-        //public static void UpdateLocalState(long height, int methodCode)
-        //{
-        //    if (height == Globals.LastBlock.Height + 1)
-        //    {
-        //        //if (methodCode == 0)
-        //        //    Globals.InitialCompletionSource.TrySetResult();
-
-        //        if (methodCode == -1 && ConsenusStateSingelton.MethodCode == -1)
-        //        {
-        //            var InitialCount = Globals.Nodes.Values.Where(x => x.NodeHeight == height && x.MethodCode == -1 &&
-        //                x.Address != Globals.AdjudicateAccount.Address).Count();
-
-        //            if (InitialCount >= Signer.CurrentSigningAddresses().Count / 2)
-        //                Globals.InitialCompletionSource.TrySetResult();
-        //        }
-
-        //        if (ConsenusStateSingelton.MethodCode + 1 == methodCode)
-        //            IncrementMethodCode(methodCode);
-        //    }
-        //}
-
         public string RequestMethodCode()
         {
             var ip = GetIP(Context);
