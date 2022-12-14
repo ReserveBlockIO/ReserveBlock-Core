@@ -119,8 +119,8 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Hashes.TryAdd((Height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
                     Hashes = ConsensusServer.Hashes[(Height, methodCode)];
 
-                    var ConsensusSource = new CancellationTokenSource(30000);                         
-                    _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
+                    var ConsensusSource = new CancellationTokenSource(30000);
+                    _ = Task.Run(() => PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource));
                                         
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode);                    
                     while (Height == Globals.LastBlock.Height + 1)
@@ -163,8 +163,8 @@ namespace ReserveBlockCore.P2P
                 SendMethodCode(Peers, methodCode, true);
                 
                 var HashSource = new CancellationTokenSource(30000);
-                var signers = Signer.CurrentSigningAddresses();                                                                           
-                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);               
+                var signers = Signer.CurrentSigningAddresses();
+                _ = Task.Run(() => PeerHashRequestLoop(methodCode, Peers, signers, HashSource));
                                 
                 var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);                
                 while (Height == Globals.LastBlock.Height + 1)

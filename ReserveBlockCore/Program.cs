@@ -173,10 +173,10 @@ namespace ReserveBlockCore
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
-            _ = StartupService.StartupPeers();
+            _ = Task.Run(StartupService.StartupPeers);
             Globals.StopAllTimers = true;
             _ = Task.Run(P2PClient.UpdateMethodCodes);
-            _ = BlockHeightCheckLoop();
+            _ = Task.Run(BlockHeightCheckLoop);
             _ = StartupService.DownloadBlocksOnStart();
             if (Globals.LastBlock.Height >= Globals.BlockLock)
                 _ = Task.Run(ClientCallService.DoWorkV3);            
