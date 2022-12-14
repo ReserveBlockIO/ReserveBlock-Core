@@ -802,34 +802,43 @@ namespace ReserveBlockCore.P2P
             return (-1, DateTime.UtcNow, 0);
         }
 
-        public static async Task<bool> UpdateNodeMethodCode(NodeInfo node)
+        public static async Task UpdateMethodCodes()
         {
-            try
+            var Address = Globals.AdjudicateAccount.Address;
+            if (Address == null)
+                return;
+            while(true)
             {
-                var Now = TimeUtil.GetMillisecondTime();
-                var Source = new CancellationTokenSource(1000);
-                var remoteMethodCode = (await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token)).Split(':');
-                if(Now > node.LastMethodCodeTime)
+                try
                 {
-                    node.LastMethodCodeTime = Now;
-                    node.NodeHeight = long.Parse(remoteMethodCode[0]);
-                    node.MethodCode = int.Parse(remoteMethodCode[1]);
-                    node.IsFinalized = remoteMethodCode[2] == "1";
+                    var Now = TimeUtil.GetMillisecondTime();
+                    var Source = new CancellationTokenSource(1000);
+                    foreach (var node in Globals.Nodes.Values)
+                    {
+                        try
+                        {
+                            if (node.Connection == null || node.Address == Address)
+                                continue;
+                            var remoteMethodCode = (await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token)).Split(':');
+                            if (Now > node.LastMethodCodeTime)
+                            {
+                                node.LastMethodCodeTime = Now;
+                                node.NodeHeight = long.Parse(remoteMethodCode[0]);
+                                node.MethodCode = int.Parse(remoteMethodCode[1]);
+                                node.IsFinalized = remoteMethodCode[2] == "1";
+                            }
+                        }
+                        catch { }
+                    }
+                    await Task.Delay(1000);
                 }
-                return true;
+                catch { }
             }
-            catch { }
-            return false;
         }
 
         public static async Task UpdateNodeHeights()
         {
-            if (Globals.AdjudicateAccount != null)
-            {
-                foreach (var node in Globals.Nodes.Values)
-                    await UpdateNodeMethodCode(node);
-            }
-            else
+            if (Globals.AdjudicateAccount == null)            
             {
                 foreach (var node in Globals.Nodes.Values)
                     (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(node.Connection);

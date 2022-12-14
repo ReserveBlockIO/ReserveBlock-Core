@@ -175,6 +175,7 @@ namespace ReserveBlockCore
             StartupService.DisplayValidatorAddress();
             _ = StartupService.StartupPeers();
             Globals.StopAllTimers = true;
+            _ = P2PClient.UpdateMethodCodes();
             _ = BlockHeightCheckLoop();
             _ = StartupService.DownloadBlocksOnStart();
             _ = Globals.LastBlock.Height >= Globals.BlockLock ? ClientCallService.DoWorkV3() : Task.CompletedTask;
@@ -427,7 +428,7 @@ namespace ReserveBlockCore
                         if (node.NodeHeight < MaxHeight - 3)
                             await P2PClient.RemoveNode(node);
                     }
-
+                    
                     DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
                 }
                 catch { }

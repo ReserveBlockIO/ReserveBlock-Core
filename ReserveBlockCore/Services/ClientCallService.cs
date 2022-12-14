@@ -790,6 +790,9 @@ namespace ReserveBlockCore.Services
                     var Answer = State.Answer;
                     var Signers = Signer.CurrentSigningAddresses();
                     var Majority = Signers.Count / 2 + 1;
+
+                    while (Globals.Nodes.Values.Where(x => x.IsConnected).Count() < Majority - 1)
+                        await Task.Delay(20);
                                                         
                     var fortisPool = Globals.FortisPool.Values;
 
