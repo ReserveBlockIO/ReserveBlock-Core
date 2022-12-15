@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Net;
 using System.Numerics;
 using System.Security;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -332,10 +333,47 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            Globals.EncryptPassword = password.ToSecureString();
-            password = "0";
+            try
+            {
+                if (!string.IsNullOrEmpty(password))
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var accounts = AccountData.GetAccounts();
+                    if (accounts != null)
+                    {
+                        var account = accounts.Query().Where(x => x.Address != null).FirstOrDefault();
+                        if (account == null)
+                            return JsonConvert.SerializeObject(new { Result = "Fail", Message = "No accounts in wallet." });
 
-            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
+                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                        var randString = RandomStringUtility.GetRandomString(8);
+
+                        var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                        var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                        if (sigVerify)
+                        {
+                            password = "";
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
+                        }
+                        else
+                        {
+                            password = "";
+                            Globals.EncryptPassword.Dispose();
+                            Globals.EncryptPassword = new SecureString();
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
+                        }
+                    }
+                }
+
+                password = "0";
+            }
+            catch(Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error. Error: {ex.ToString()}" });
+            }
 
             return output;
         }
