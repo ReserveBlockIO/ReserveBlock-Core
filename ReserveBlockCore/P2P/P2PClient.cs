@@ -807,7 +807,7 @@ namespace ReserveBlockCore.P2P
             if (Globals.AdjudicateAccount == null)
                 return;
             var Address = Globals.AdjudicateAccount.Address;
-            var Height = Globals.LastBlock.Height;
+            var Height = -1L;
             while (true)
             {
                 if(Height != Globals.LastBlock.Height)
@@ -839,6 +839,12 @@ namespace ReserveBlockCore.P2P
                 {                    
                     var Now = TimeUtil.GetMillisecondTime();
                     var Source = new CancellationTokenSource(1000);
+                    if(!node.IsConnected)
+                    {
+                        await delay;
+                        continue;
+                    }
+
                     var RequestTask = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
 
                     var Response = await RequestTask;

@@ -283,6 +283,12 @@ namespace ReserveBlockCore.P2P
                         break;
                     }
 
+                    if (!peer.IsConnected)
+                    {
+                        await delay;
+                        continue;
+                    }
+
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var MessageTask = peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);                    
 
@@ -340,6 +346,12 @@ namespace ReserveBlockCore.P2P
                     {
                         cts.Cancel();
                         break;
+                    }
+
+                    if (!peer.IsConnected)
+                    {
+                        await delay;
+                        continue;
                     }
 
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
