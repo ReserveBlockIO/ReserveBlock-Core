@@ -41,7 +41,7 @@ namespace ReserveBlockCore.Controllers
             BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = ip,
-                Port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
                 Name = name,
                 BeaconUID = bUID
                 
