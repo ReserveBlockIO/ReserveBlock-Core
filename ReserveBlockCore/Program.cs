@@ -149,6 +149,11 @@ namespace ReserveBlockCore
                 Globals.GUIPasswordNeeded = true;
             }
 
+            if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.GUI)
+            {
+                Globals.GUIPasswordNeeded = true;
+            }
+
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();
             //var nodeIp = await SeedNodeService.PingSeedNode();

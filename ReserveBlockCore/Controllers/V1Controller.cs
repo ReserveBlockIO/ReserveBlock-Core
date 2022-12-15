@@ -192,8 +192,8 @@ namespace ReserveBlockCore.Controllers
                 if (sigVerify)
                 {
                     password = "";
+                    Globals.GUIPasswordNeeded = false;
                     output = JsonConvert.SerializeObject(new { Result = "Success", Message = ""});
-
                 }
                 else
                 {

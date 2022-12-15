@@ -387,7 +387,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.248.14.123",
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
                 Name = "RBX Beacon 1",
                 BeaconUID = "Foundation Beacon 1"
             };
@@ -398,7 +398,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "162.251.121.150",
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
                 Name = "RBX Beacon 2",
                 BeaconUID = "Foundation Beacon 2"
 
@@ -409,7 +409,7 @@ namespace ReserveBlockCore.Services
             BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
             {
                 IPAddress = "185.199.226.121",
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 30000,
+                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
                 Name = "RBX Beacon 3",
                 BeaconUID = "Foundation Beacon 3"
 
@@ -771,7 +771,7 @@ namespace ReserveBlockCore.Services
                     var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
                     if (beaconDataJsonDes != null)
                     {
-                        var port = Globals.IsTestNet != true ? Globals.Port + 10000 : Globals.Port + 20000;
+                        var port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000;
                         var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
                         await P2PClient.ConnectBeacon(url);
                     }
