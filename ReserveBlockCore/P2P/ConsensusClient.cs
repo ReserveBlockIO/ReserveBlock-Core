@@ -119,7 +119,7 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Hashes.TryAdd((Height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
                     Hashes = ConsensusServer.Hashes[(Height, methodCode)];
 
-                    var ConsensusSource = new CancellationTokenSource(30000);
+                    var ConsensusSource = new CancellationTokenSource();
                     _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
                                         
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode);                    
@@ -161,7 +161,7 @@ namespace ReserveBlockCore.P2P
                 Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);
                 SendMethodCode(Peers, methodCode, true);
                 
-                var HashSource = new CancellationTokenSource(30000);
+                var HashSource = new CancellationTokenSource();
                 var signers = Signer.CurrentSigningAddresses();
                 _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
                                 
@@ -242,7 +242,8 @@ namespace ReserveBlockCore.P2P
 
         public static async Task PeerRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
         {
-            var messages = ConsensusServer.Messages[(Globals.LastBlock.Height + 1, methodCode)];
+            var currentHeight = Globals.LastBlock.Height;
+            var messages = ConsensusServer.Messages[(currentHeight + 1, methodCode)];
             var rnd = new Random();
             var taskDict = new ConcurrentDictionary<string, Task<string>>();
             var waitDict = new ConcurrentDictionary<string, Task>();
@@ -255,21 +256,24 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == Globals.LastBlock.Height &&
+                    if (ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
+                        break;
+
+                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == currentHeight &&
                         x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
-                    
+
+                    if (!RecentPeers.Any())
+                    {
+                        await Task.Delay(20);
+                        continue;
+                    }
+
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     for (var i = 0; i < RecentPeers.Length; i++)
                     {
                         var peer = RecentPeers[i];
                         _ = PeerRequestLoopHelper(peer, SentMessageToPeerSet, ToSend, methodCode, 
                             MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), taskDict, waitDict, Source);
-                    }
-
-                    if (!taskDict.Any())
-                    {
-                        await Task.Delay(20);
-                        continue;
                     }
 
                     await Task.WhenAny(taskDict.Values);
@@ -326,7 +330,8 @@ namespace ReserveBlockCore.P2P
 
         public static async Task PeerHashRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
         {
-            var hashes = ConsensusServer.Hashes[(Globals.LastBlock.Height + 1, methodCode)];
+            var currentHeight = Globals.LastBlock.Height;
+            var hashes = ConsensusServer.Hashes[(currentHeight + 1, methodCode)];
             var rnd = new Random();
             var taskDict = new ConcurrentDictionary<string, Task<string>>();
             var waitDict = new ConcurrentDictionary<string, Task>();
@@ -339,8 +344,17 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == Globals.LastBlock.Height &&
+                    if (ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
+                        break;
+
+                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == currentHeight &&
                         x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
+
+                    if (!RecentPeers.Any())
+                    {
+                        await Task.Delay(20);
+                        continue;
+                    }
 
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     for (var i = 0; i < RecentPeers.Length; i++)
@@ -348,12 +362,6 @@ namespace ReserveBlockCore.P2P
                         var peer = RecentPeers[i];
                         _ = PeerHashRequestLoopHelper(peer, SentHashToPeerSet, ToSend, methodCode,
                             MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), taskDict, waitDict, Source);                        
-                    }
-
-                    if(!taskDict.Any())
-                    {
-                        await Task.Delay(20);
-                        continue;
                     }
 
                     await Task.WhenAny(taskDict.Values);
