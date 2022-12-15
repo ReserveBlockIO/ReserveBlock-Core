@@ -303,6 +303,8 @@ namespace ReserveBlockCore.P2P
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
                 }
+
+                await delay;
             }
         }
 
@@ -359,6 +361,8 @@ namespace ReserveBlockCore.P2P
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "HashRequestLoop inner catch");
                 }
+
+                await delay;
             }
         }
 
