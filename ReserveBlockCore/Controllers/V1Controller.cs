@@ -196,34 +196,41 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetEncryptedPassword/{**password}")]
         public async Task<string> GetEncryptedPassword(string password)
         {
-            //use Id to get specific commands
             var output = "False"; // this will only display if command not recognized.
-
-            if (!string.IsNullOrEmpty(password))
+            //use Id to get specific commands
+            try
             {
-                Globals.EncryptPassword = password.ToSecureString();
-                var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
-                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-                var randString = RandomStringUtility.GetRandomString(8);
-
-                var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
-                var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
-
-                if (sigVerify)
+                if (!string.IsNullOrEmpty(password))
                 {
-                    password = "";
-                    Globals.GUIPasswordNeeded = false;
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = ""});
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var randString = RandomStringUtility.GetRandomString(8);
+
+                    var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                    var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                    if (sigVerify)
+                    {
+                        password = "";
+                        Globals.GUIPasswordNeeded = false;
+                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = "" });
+                    }
+                    else
+                    {
+                        password = "";
+                        Globals.EncryptPassword.Dispose();
+                        Globals.EncryptPassword = new SecureString();
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
+                    }
                 }
-                else
-                {
-                    password = "";
-                    Globals.EncryptPassword.Dispose();
-                    Globals.EncryptPassword = new SecureString();
-                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
-                }
+            }
+            catch(Exception ex)
+            {
+
             }
 
             return output;
@@ -299,6 +306,24 @@ namespace ReserveBlockCore.Controllers
                 output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Wallet is already encrypted." });
             }
             
+            return output;
+        }
+
+        [HttpGet("GetEncryptLock")]
+        public async Task<string> GetEncryptLock()
+        {
+            var output = "Fail";
+
+            if (string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.AdjudicateAccount == null)
+            {
+                Globals.EncryptPassword.Dispose();
+                Globals.EncryptPassword = new SecureString();
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is locked." });
+                return output;
+            }
+
+            output= JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to lock wallet." });
+
             return output;
         }
 
