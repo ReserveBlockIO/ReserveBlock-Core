@@ -85,7 +85,7 @@ namespace ReserveBlockCore.Models
                 //decrypt private key for send
                 if (Globals.EncryptPassword.Length == 0)
                 {
-                    return "You must decrypt wallet first before you can send a transaction!";
+                    return _privateKey;
                 }
                 else
                 {
