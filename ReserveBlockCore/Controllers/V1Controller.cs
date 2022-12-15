@@ -372,6 +372,9 @@ namespace ReserveBlockCore.Controllers
             }
             catch(Exception ex)
             {
+                password = "";
+                Globals.EncryptPassword.Dispose();
+                Globals.EncryptPassword = new SecureString();
                 output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error. Error: {ex.ToString()}" });
             }
 
