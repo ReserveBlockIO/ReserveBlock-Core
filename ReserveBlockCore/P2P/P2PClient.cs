@@ -816,7 +816,7 @@ namespace ReserveBlockCore.P2P
 
                     foreach (var node in Globals.Nodes.Values)
                     {
-                        if (!node.IsConnected || node.Address == Address || UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
+                        if (node.Address == Address || UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
                             continue;
 
                         UpdateMethodCodeAddresses[node.Address] = true;
