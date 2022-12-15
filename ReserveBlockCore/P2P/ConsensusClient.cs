@@ -120,7 +120,7 @@ namespace ReserveBlockCore.P2P
                     Hashes = ConsensusServer.Hashes[(Height, methodCode)];
 
                     var ConsensusSource = new CancellationTokenSource();
-                    _ = PeerRequestLoop(methodCode, Peers, CurrentAddresses, ConsensusSource);
+                    _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode);                    
                     while (Height == Globals.LastBlock.Height + 1)
@@ -163,7 +163,7 @@ namespace ReserveBlockCore.P2P
                 
                 var HashSource = new CancellationTokenSource();
                 var signers = Signer.CurrentSigningAddresses();
-                _ = PeerHashRequestLoop(methodCode, Peers, signers, HashSource);
+                _ = HashRequests(methodCode, Peers, signers.ToArray(), HashSource);
                                 
                 var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);                
                 while (Height == Globals.LastBlock.Height + 1)
@@ -239,178 +239,127 @@ namespace ReserveBlockCore.P2P
                 return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
             }));
         }
-
-        public static async Task PeerRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
+        public static string[] RotateFrom(string[] arr, string elem)
+        {
+            var Index = arr.Select((x, i) => (x, i)).Where(x => x.x == elem).Select(x => (int?)x.i).FirstOrDefault() ?? -1;
+            if (Index == -1)
+                return arr;
+            return arr.Skip(Index).Concat(arr.Take(Index)).ToArray();
+        }
+        public static async Task MessageRequests(int methodCode, NodeInfo[] peers, string[] addresses, CancellationTokenSource cts)
         {
             var currentHeight = Globals.LastBlock.Height;
-            var messages = ConsensusServer.Messages[(currentHeight + 1, methodCode)];
-            var rnd = new Random();
-            var taskDict = new ConcurrentDictionary<string, Task<string>>();
-            var waitDict = new ConcurrentDictionary<string, Task>();
-            var MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
-            var SentMessageToPeerSet = new HashSet<string>();
+            var messages = ConsensusServer.Messages[(currentHeight + 1, methodCode)];                          
             var MyMessage = messages[Globals.AdjudicateAccount.Address];
             var ToSend = MyMessage.Message.Replace(":", "::") + ";:;" + MyMessage.Signature;
 
-            do
+            for (var i = 0; i < peers.Length; i++)
             {
-                try
-                {
-                    if (ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
-                        break;
-
-                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == currentHeight &&
-                        x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
-
-                    if (!RecentPeers.Any())
-                    {
-                        await Task.Delay(20);
-                        continue;
-                    }
-
-                    var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
-                    for (var i = 0; i < RecentPeers.Length; i++)
-                    {
-                        var peer = RecentPeers[i];
-                        _ = PeerRequestLoopHelper(peer, SentMessageToPeerSet, ToSend, methodCode, 
-                            MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), taskDict, waitDict, Source);
-                    }
-
-                    await Task.WhenAny(taskDict.Values);
-
-                    var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
-                    foreach (var completedTask in CompletedTasks)
-                    {
-                        try
-                        {
-                            var Response = await completedTask.Value;
-                            if (Response != null)
-                            {
-                                var arr = Response.Split(";:;");
-                                var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
-                                if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, message, signature))
-                                    messages[address] = (message, signature);
-                                MissingAddresses = addresses.Except(messages.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
-                            }
-                        }
-                        catch (TaskCanceledException ex)
-                        { }
-                        catch (Exception ex)
-                        {
-                            ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
-                        }
-
-                        taskDict.TryRemove(completedTask.Key, out _);
-                        SentMessageToPeerSet.Add(completedTask.Key);
-                    }                    
-                }
-                catch(Exception ex)
-                {
-                    ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop outer catch");
-                }
-
-            await Task.Delay(20);
-            } while (!cts.IsCancellationRequested && MissingAddresses.Any());
+                var peer = peers[i];                
+                _ = MessageRequest(peer, ToSend, currentHeight, methodCode, messages, addresses, cts);
+            }
 
             await cts.Token.WhenCanceled();
             Interlocked.Exchange(ref ReadyToFinalize, 1);
         }
-
-        private static async Task PeerRequestLoopHelper(NodeInfo peer, HashSet<string> sentMessageToPeerSet, string toSend,
-            int methodCode, string[] missingAddresses,
-            ConcurrentDictionary<string, Task<string>> taskDict, ConcurrentDictionary<string, Task> waitDict, CancellationTokenSource cts)
+        
+        private static async Task MessageRequest(NodeInfo peer, string toSend, long currentHeight, int methodCode,
+            ConcurrentDictionary<string, (string Message, string Signature)> messages, string[] addresses, CancellationTokenSource cts)
         {
-            var MessageToSend = sentMessageToPeerSet.Contains(peer.NodeIP) ? null : toSend;
-            if (waitDict.TryRemove(peer.NodeIP, out var waitTask))
-                await waitTask;
-
-            taskDict[peer.NodeIP] = peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, missingAddresses, MessageToSend }, cts.Token);
-            waitDict[peer.NodeIP] = Task.Delay(100);
-        }
-
-        public static async Task PeerHashRequestLoop(int methodCode, NodeInfo[] peers, HashSet<string> addresses, CancellationTokenSource cts)
-        {
-            var currentHeight = Globals.LastBlock.Height;
-            var hashes = ConsensusServer.Hashes[(currentHeight + 1, methodCode)];
-            var rnd = new Random();
-            var taskDict = new ConcurrentDictionary<string, Task<string>>();
-            var waitDict = new ConcurrentDictionary<string, Task>();
-            var MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
-            var SentHashToPeerSet = new HashSet<string>();
-            var MyHash = hashes[Globals.AdjudicateAccount.Address];
-            var ToSend = MyHash.Hash + ":" + MyHash.Signature;
-
-            do
+            var SentMessage = false;            
+            addresses = RotateFrom(addresses, peer.Address);
+            
+            while (!cts.IsCancellationRequested)
             {
+                var delay = Task.Delay(100);
                 try
                 {
-                    if (ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
-                        break;
-
-                    var RecentPeers = peers.Where(x => x.IsConnected && x.NodeHeight == currentHeight &&
-                        x.MethodCode == methodCode && !taskDict.ContainsKey(x.NodeIP)).ToArray();
-
-                    if (!RecentPeers.Any())
+                    var MessageToSend = SentMessage ? null : toSend;                                        
+                    var RemainingAddresses = addresses.Where(x => !messages.Keys.Contains(x)).ToArray();
+                    
+                    if(RemainingAddresses.Length == 0 || ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
                     {
-                        await Task.Delay(20);
-                        continue;
+                        cts.Cancel();
+                        break;
                     }
 
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
-                    for (var i = 0; i < RecentPeers.Length; i++)
+                    var MessageTask = peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);                    
+
+                    var Response = await MessageTask;
+                    if (Response != null)
                     {
-                        var peer = RecentPeers[i];
-                        _ = PeerHashRequestLoopHelper(peer, SentHashToPeerSet, ToSend, methodCode,
-                            MissingAddresses.Rotate(i * MissingAddresses.Length / RecentPeers.Length), taskDict, waitDict, Source);                        
+                        var arr = Response.Split(";:;");
+                        var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
+                        if (SignatureService.VerifySignature(address, message, signature))
+                            messages[address] = (message, signature);                        
                     }
 
-                    await Task.WhenAny(taskDict.Values);
-
-                    var CompletedTasks = taskDict.Where(x => x.Value.IsCompleted).ToArray();
-                    foreach (var completedTask in CompletedTasks)
-                    {
-                        try
-                        {
-                            var Response = await completedTask.Value;
-                            if (Response != null)
-                            {
-                                var arr = Response.Split(":");
-                                var (address, hash, signature) = (arr[0], arr[1], arr[2]);
-                                if (MissingAddresses.Contains(address) && SignatureService.VerifySignature(address, hash, signature))
-                                    hashes[address] = (hash, signature);
-                                MissingAddresses = addresses.Except(hashes.Select(x => x.Key)).OrderBy(x => rnd.Next()).ToArray();
-                            }
-                        }
-                        catch (TaskCanceledException ex)
-                        { }
-                        catch (Exception ex)
-                        {
-                            ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop inner catch");
-                        }
-
-                        taskDict.TryRemove(completedTask.Key, out _);
-                        SentHashToPeerSet.Add(completedTask.Key);
-                    }                    
+                    SentMessage = true;
                 }
+                catch (TaskCanceledException ex)
+                { }
                 catch (Exception ex)
                 {
-                    ErrorLogUtility.LogError(ex.ToString(), "PeerHashRequestLoop outer catch");
+                    ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
                 }
-
-                await Task.Delay(20);
-            } while (!cts.IsCancellationRequested && MissingAddresses.Any());            
+            }
         }
 
-        private static async Task PeerHashRequestLoopHelper(NodeInfo peer, HashSet<string> sentMessageToPeerSet, string toSend,
-            int methodCode, string[] missingAddresses,
-            ConcurrentDictionary<string, Task<string>> taskDict, ConcurrentDictionary<string, Task> waitDict, CancellationTokenSource cts)
+        public static async Task HashRequests(int methodCode, NodeInfo[] peers, string[] addresses, CancellationTokenSource cts)
         {
-            var HashToSend = sentMessageToPeerSet.Contains(peer.NodeIP) ? null : toSend;
-            if (waitDict.TryRemove(peer.NodeIP, out var waitTask))
-                await waitTask;
+            var currentHeight = Globals.LastBlock.Height;
+            var hashes = ConsensusServer.Hashes[(currentHeight + 1, methodCode)];
+            var MyHash = hashes[Globals.AdjudicateAccount.Address];
+            var ToSend = MyHash.Hash + ":" + MyHash.Signature;
 
-            taskDict[peer.NodeIP] = peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, missingAddresses, HashToSend }, cts.Token);
-            waitDict[peer.NodeIP] = Task.Delay(100);
+            for (var i = 0; i < peers.Length; i++)
+            {
+                var peer = peers[i];
+                _ = HashRequest(peer, ToSend, currentHeight, methodCode, hashes, addresses, cts);
+            }           
+        }
+
+        private static async Task HashRequest(NodeInfo peer, string toSend, long currentHeight, int methodCode,
+            ConcurrentDictionary<string, (string Hash, string Signature)> hashes, string[] addresses, CancellationTokenSource cts)
+        {
+            var SentHash = false;
+            addresses = RotateFrom(addresses, peer.Address);
+
+            while (!cts.IsCancellationRequested)
+            {
+                var delay = Task.Delay(100);
+                try
+                {
+                    var HashToSend = SentHash ? null : toSend;
+                    var RemainingAddresses = addresses.Where(x => !hashes.Keys.Contains(x)).ToArray();
+
+                    if (RemainingAddresses.Length == 0 || ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
+                    {
+                        cts.Cancel();
+                        break;
+                    }
+
+                    var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
+                    var Response = await peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
+                    
+                    if (Response != null)
+                    {
+                        var arr = Response.Split(":");
+                        var (address, hash, signature) = (arr[0], arr[1], arr[2]);
+                        if (SignatureService.VerifySignature(address, hash, signature))
+                            hashes[address] = (hash, signature);
+                    }
+
+                    SentHash = true;
+                }
+                catch (TaskCanceledException ex)
+                { }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "HashRequestLoop inner catch");
+                }
+            }
         }
 
         #endregion

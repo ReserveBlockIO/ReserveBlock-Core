@@ -807,62 +807,61 @@ namespace ReserveBlockCore.P2P
             if (Globals.AdjudicateAccount == null)
                 return;
             var Address = Globals.AdjudicateAccount.Address;
-            
-            var TaskDict = new ConcurrentDictionary<string, Task<string>>();            
+            var Height = Globals.LastBlock.Height;
             while (true)
             {
-                try
+                if(Height != Globals.LastBlock.Height)
                 {
-                    var Delay = Task.Delay(1000);
-                    var Source = new CancellationTokenSource(1000);
-                    var Now = TimeUtil.GetMillisecondTime();                    
+                    Height = Globals.LastBlock.Height;
+
                     foreach (var node in Globals.Nodes.Values)
-                    {                      
-                        if (!node.IsConnected || node.Address == Address)                                                            
+                    {
+                        if (!node.IsConnected || node.Address == Address || UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
                             continue;
 
-                        TaskDict[node.NodeIP] = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
+                        UpdateMethodCodeAddresses[node.Address] = true;
+                        _ = UpdateMethodCode(node);
                     }
+                }                                   
 
-                    if (!TaskDict.Any())
+                await Task.Delay(1000);
+            }
+        }
+
+        private static ConcurrentDictionary<string, bool> UpdateMethodCodeAddresses = new ConcurrentDictionary<string, bool>();
+        
+        private static async Task UpdateMethodCode(NodeInfo node)
+        {
+            while (true)
+            {
+                var delay = Task.Delay(1000);
+                try
+                {                    
+                    var Now = TimeUtil.GetMillisecondTime();
+                    var Source = new CancellationTokenSource(1000);
+                    var RequestTask = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
+
+                    var Response = await RequestTask;
+                    if (Response != null)
                     {
-                        await Task.Delay(20);
-                        continue;
-                    }
-
-                    await Task.WhenAny(TaskDict.Values);
-
-                    var CompletedTasks = TaskDict.Where(x => x.Value.IsCompleted).ToArray();
-                    foreach (var completedTask in CompletedTasks)
-                    {
-                        try
+                        var remoteMethodCode = Response.Split(':');
+                        if (Now > node.LastMethodCodeTime)
                         {
-                            var Response = await completedTask.Value;
-                            if (Response != null && Globals.Nodes.TryGetValue(completedTask.Key, out var node))
-                            {
-                                var remoteMethodCode = Response.Split(':');
-                                if (Now > node.LastMethodCodeTime)
-                                {
-                                    node.LastMethodCodeTime = Now;
-                                    node.NodeHeight = long.Parse(remoteMethodCode[0]);
-                                    node.MethodCode = int.Parse(remoteMethodCode[1]);
-                                    node.IsFinalized = remoteMethodCode[2] == "1";
-                                }
-                            }
+                            node.LastMethodCodeTime = Now;
+                            node.NodeHeight = long.Parse(remoteMethodCode[0]);
+                            node.MethodCode = int.Parse(remoteMethodCode[1]);
+                            node.IsFinalized = remoteMethodCode[2] == "1";
                         }
-                        catch (TaskCanceledException ex)
-                        { }
-                        catch (Exception ex)
-                        {
-                            ErrorLogUtility.LogError(ex.ToString(), "UpdateMethodCodes inner catch");
-                        }
-
-                        TaskDict.TryRemove(completedTask.Key, out _);
                     }
-                    
-                    await Delay;
                 }
-                catch { }
+                catch (TaskCanceledException ex)
+                { }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "UpdateMethodCodes inner catch");
+                }
+
+                await delay;
             }
         }
 
