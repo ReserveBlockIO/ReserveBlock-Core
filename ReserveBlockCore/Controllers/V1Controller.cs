@@ -171,6 +171,28 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetIsWalletEncrypted")]
+        public async Task<string> GetIsWalletEncrypted()
+        {
+            var output = "false";
+
+            if (Globals.IsWalletEncrypted)
+                output = "true";
+
+            return output;
+        }
+
+        [HttpGet("GetIsEncryptedPasswordStored")]
+        public async Task<string> GetIsEncryptedPasswordStored()
+        {
+            var output = "false";
+
+            if (Globals.EncryptPassword.Length > 0)
+                output = "true";
+
+            return output;
+        }
+
         [HttpGet("GetEncryptedPassword/{**password}")]
         public async Task<string> GetEncryptedPassword(string password)
         {
