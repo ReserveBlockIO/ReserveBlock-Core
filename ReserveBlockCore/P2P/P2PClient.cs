@@ -212,19 +212,16 @@ namespace ReserveBlockCore.P2P
 
                 node.IsValidator = await GetValidatorStatus(node.Connection);
                 node.IsAdjudicator = await GetAdjudicatorStatus(node.Connection);
+                Globals.Nodes.TryAdd(IPAddress, node);
 
                 if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
                 {
-                    //if (currentNode.Connection != null)
-                    //    await currentNode.Connection.DisposeAsync();
                     currentNode.Connection = hubConnection;
                     currentNode.NodeIP = IPAddress;
                     currentNode.NodeHeight = node.NodeHeight;
                     currentNode.NodeLastChecked = node.NodeLastChecked;
                     currentNode.NodeLatency = node.NodeLatency;
-                }
-                else
-                    Globals.Nodes[IPAddress] = node;
+                }   
                             
                 ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
                 peer.IsOutgoing = true;
@@ -836,15 +833,15 @@ namespace ReserveBlockCore.P2P
             {
                 var delay = Task.Delay(1000);
                 try
-                {                    
-                    var Now = TimeUtil.GetMillisecondTime();
-                    var Source = new CancellationTokenSource(1000);
+                {                                                         
                     if(!node.IsConnected)
                     {
                         await delay;
                         continue;
                     }
 
+                    var Now = TimeUtil.GetMillisecondTime();
+                    var Source = new CancellationTokenSource(1000);
                     var RequestTask = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
 
                     var Response = await RequestTask;

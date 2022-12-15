@@ -159,20 +159,20 @@ namespace ReserveBlockCore.Services
                                 if(Globals.AdjudicateAccount != null)
                                 {
                                     foreach (var pool in result)
-                                        Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                        Globals.Nodes.TryAdd(pool.IPAddress, new NodeInfo
                                         {
                                             Address = pool.RBXAddress,
                                             NodeIP = pool.IPAddress
-                                        };
+                                        });
                                 }
                                 else
                                 {
                                     foreach (var pool in result)
-                                        Globals.AdjNodes[pool.IPAddress] = new AdjNodeInfo
+                                        Globals.AdjNodes.TryAdd(pool.IPAddress, new AdjNodeInfo
                                         {
                                             Address = pool.RBXAddress,
                                             IpAddress = pool.IPAddress
-                                        };
+                                        });
                                 }
 
                             }
@@ -212,19 +212,19 @@ namespace ReserveBlockCore.Services
                                     {
                                         if (Globals.AdjudicateAccount != null)
                                         {
-                                            Globals.Nodes[pool.IPAddress] = new NodeInfo
+                                            Globals.Nodes.TryAdd(pool.IPAddress, new NodeInfo
                                             {
                                                 Address = pool.RBXAddress,
                                                 NodeIP = pool.IPAddress
-                                            };
+                                            });
                                         }
                                         else
                                         {
-                                            Globals.AdjNodes[pool.IPAddress] = new AdjNodeInfo
+                                            Globals.AdjNodes.TryAdd(pool.IPAddress, new AdjNodeInfo
                                             {
                                                 Address = pool.RBXAddress,
                                                 IpAddress = pool.IPAddress
-                                            };
+                                            });
                                         }
 
                                         var nPeer = new Peers
