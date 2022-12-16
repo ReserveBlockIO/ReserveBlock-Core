@@ -293,7 +293,7 @@ namespace ReserveBlockCore.P2P
                         }
                         if (PrefixSplit.Length == 2)
                         {
-                            var arr = PrefixSplit[1].Split(":");
+                            var arr = PrefixSplit[1].Split(";:;");
                             var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
                             if (SignatureService.VerifySignature(address, message, signature))
                                 messages[address] = (message, signature);
