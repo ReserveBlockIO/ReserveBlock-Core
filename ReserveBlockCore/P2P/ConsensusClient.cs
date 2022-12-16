@@ -76,8 +76,8 @@ namespace ReserveBlockCore.P2P
         public static async Task<(string Address, string Message)[]> ConsensusRun(int methodCode, string message, string signature, int timeToFinalize, RunType runType)
         {
             try
-            {
-                _ = LogUtility.LogAsync(methodCode + " " + message, "ConsensusRun");
+            {                
+                LogUtility.LogQueue(methodCode + " " + message, "ConsensusRun");
                 Interlocked.Exchange(ref ReadyToFinalize, 0);
                 ConsensusServer.UpdateState(methodCode: methodCode);
                 var Address = Globals.AdjudicateAccount.Address;
@@ -127,7 +127,7 @@ namespace ReserveBlockCore.P2P
                     while (Height == Globals.LastBlock.Height + 1)
                     {
                         var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
-                        _ = LogUtility.LogAsync(Messages.Count + " " + RemainingAddressCount, "ConsensusRun First loop");
+                        LogUtility.LogQueue(Messages.Count + " " + RemainingAddressCount, "ConsensusRun First loop");
                         if ((runType != RunType.Initial && Messages.Count + RemainingAddressCount < Majority) || 
                             (RemainingAddressCount == 0 && Messages.Count >= Majority))
                             break;
@@ -181,7 +181,7 @@ namespace ReserveBlockCore.P2P
                             var Now = TimeUtil.GetMillisecondTime();
                             var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 2000 && 
                                 (x.MethodCode != 0 || x.IsFinalized) && (!x.IsFinalized || x.MethodCode < methodCode)).Any();
-                            _ = LogUtility.LogAsync(AnyNodesToWaitFor.ToString(), "ConsensusRun inner success loop");
+                            LogUtility.LogQueue(AnyNodesToWaitFor.ToString(), "ConsensusRun inner success loop");
                             if (AnyNodesToWaitFor)
                             {
                                 await Task.Delay(20);
@@ -194,7 +194,7 @@ namespace ReserveBlockCore.P2P
                                         
                     HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);
                     var RemainingAddressCount = HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Value.Hash)).Count();
-                    _ = LogUtility.LogAsync(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
+                    LogUtility.LogQueue(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
                     if (NumMatches + RemainingAddressCount < Majority)
                     {
                         HashSource.Cancel();
@@ -293,10 +293,10 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    _ = LogUtility.LogAsync(methodCode + " " + MessageToSend, "Before Message");
+                    LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);
-                    _ = LogUtility.LogAsync(Response, "After Message");
+                    LogUtility.LogQueue(Response, "After Message");
 
                     if (Response != null)
                     {
@@ -359,10 +359,10 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    _ = LogUtility.LogAsync(methodCode + " " + HashToSend, "Before Hash");
+                    LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var Response = await peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
-                    _ = LogUtility.LogAsync(Response, "After Hash");
+                    LogUtility.LogQueue(Response, "After Hash");
 
                     if (Response != null)
                     {

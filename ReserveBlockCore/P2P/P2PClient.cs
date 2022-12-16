@@ -840,10 +840,10 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    _ = LogUtility.LogAsync(node.NodeIP, "Before RequestMethodCode");
+                    LogUtility.LogQueue(node.NodeIP, "Before RequestMethodCode");
                     var Now = TimeUtil.GetMillisecondTime();                    
                     var Response = await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>());
-                    _ = LogUtility.LogAsync(node.NodeIP + " " + Response, "After RequestMethodCode");
+                    LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
                     if (Response != null)
                     {

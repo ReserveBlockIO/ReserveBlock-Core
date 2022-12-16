@@ -34,7 +34,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 peerIP = GetIP(Context);
-                _ = LogUtility.LogAsync(peerIP, "OnConnectedAsync");
+                LogUtility.LogQueue(peerIP, "OnConnectedAsync");
                 if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
@@ -136,7 +136,7 @@ namespace ReserveBlockCore.P2P
         public string RequestMethodCode()
         {
             var ip = GetIP(Context);
-            _ = LogUtility.LogAsync(ip, "RequestMethodCode");
+            LogUtility.LogQueue(ip, "RequestMethodCode");
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -170,7 +170,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                _ = LogUtility.LogAsync(ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
+                LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
@@ -224,7 +224,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                _ = LogUtility.LogAsync(ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
+                LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();

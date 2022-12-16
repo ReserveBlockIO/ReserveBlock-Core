@@ -178,6 +178,7 @@ namespace ReserveBlockCore
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
+            _ = Task.Run(LogUtility.LogLoop);
             _ = Task.Run(StartupService.StartupPeers);
             Globals.StopAllTimers = true;
             _ = Task.Run(P2PClient.UpdateMethodCodes);

@@ -6,56 +6,60 @@ using System.Text;
 namespace ReserveBlockCore.Utilities
 {
     public class LogUtility
-    {
-        private static ConcurrentDictionary<string, SemaphoreSlim> FileLock = new ConcurrentDictionary<string, SemaphoreSlim>();
-        public static async Task LogAsync(string message, string location)
+    {        
+        private static ConcurrentQueue<(string Message, string Location, DateTime Time)> FileQueue = new ConcurrentQueue<(string, string, DateTime)>();
+        public static void LogQueue(string message, string location)
         {
-            var slim = FileLock.GetOrAdd(location, new SemaphoreSlim(1, 1));
-            try
-            {
-                await slim.WaitAsync();
-                var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-                var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+            FileQueue.Enqueue((message, location, DateTime.Now));
+        }
 
-                var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
-                string path = "";
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        public static async Task LogLoop()
+        {
+            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+            
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
                 {
-                    string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
-                    if (Debugger.IsAttached)
-                    {
-                        path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                    }
-                    else
-                    {
-                        path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                    }
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
                 }
-
-                if (!string.IsNullOrEmpty(Globals.CustomPath))
-                {
-                    path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-
-                if (!Directory.Exists(path))
-                {
-                    Directory.CreateDirectory(path);
-                }
-
-                await File.AppendAllTextAsync(path + "rbxlogasync.txt", Environment.NewLine + text);
             }
-            catch { }
-            finally
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
             {
-                if (slim.CurrentCount == 0)
-                    slim.Release();
+                path = Globals.CustomPath + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+            }
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            while (true)
+            {
+                while(FileQueue.Count > 0)
+                {
+                    if(FileQueue.TryDequeue(out var content))
+                    {
+                        var text = "[" + content.Time + "]" + " : " + "[" + content.Location + "]" + " : " + content.Message;
+                        await File.AppendAllTextAsync(path + "rbxlogasync.txt", Environment.NewLine + text);
+                    }
+                }
+
+                await Task.Delay(20);
             }
         }
-
         public static async void Log(string message, string location, bool firstEntry = false)
         {
             try
