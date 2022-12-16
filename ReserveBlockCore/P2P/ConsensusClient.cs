@@ -120,7 +120,7 @@ namespace ReserveBlockCore.P2P
                     var ConsensusSource = new CancellationTokenSource();
                     _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
-                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode);                    
+                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 5000);                    
                     while (Height == Globals.LastBlock.Height + 1)
                     {
                         var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
@@ -130,7 +130,7 @@ namespace ReserveBlockCore.P2P
                             break;
                         
                         await Task.Delay(20);
-                        WaitForAddresses = AddressesToWaitFor(Height, methodCode);
+                        WaitForAddresses = AddressesToWaitFor(Height, methodCode, 5000);
                     }
 
                     if (Height != Globals.LastBlock.Height + 1)
@@ -165,7 +165,7 @@ namespace ReserveBlockCore.P2P
                 var signers = Signer.CurrentSigningAddresses();
                 _ = HashRequests(methodCode, Peers, signers.ToArray(), HashSource);
                                 
-                var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);                
+                var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 2000);                
                 while (Height == Globals.LastBlock.Height + 1)
                 {                    
                     var CurrentHashes = Hashes.ToArray();
@@ -191,7 +191,7 @@ namespace ReserveBlockCore.P2P
                         return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray();
                     }
                                         
-                    HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode);
+                    HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 2000);
                     var RemainingAddressCount = HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Value.Hash)).Count();
                     LogUtility.LogQueue(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
                     if (NumMatches + RemainingAddressCount < Majority)
@@ -214,10 +214,10 @@ namespace ReserveBlockCore.P2P
             return null;
         }
 
-        public static HashSet<string> AddressesToWaitFor(long height, int methodCode)
+        public static HashSet<string> AddressesToWaitFor(long height, int methodCode, int wait)
         {
             var Now = TimeUtil.GetMillisecondTime();            
-            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 2000 && x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
+            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait && x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
                 .Select(x => x.Address).ToHashSet();
         }
 
