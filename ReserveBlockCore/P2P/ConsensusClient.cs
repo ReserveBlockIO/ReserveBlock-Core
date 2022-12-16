@@ -291,10 +291,13 @@ namespace ReserveBlockCore.P2P
                                 peer.IsFinalized = Prefix[2] == "1";
                             }
                         }
-                        var arr = PrefixSplit[1].Split(":");
-                        var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
-                        if (SignatureService.VerifySignature(address, message, signature))
-                            messages[address] = (message, signature);                        
+                        if (PrefixSplit.Length == 2)
+                        {
+                            var arr = PrefixSplit[1].Split(":");
+                            var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
+                            if (SignatureService.VerifySignature(address, message, signature))
+                                messages[address] = (message, signature);
+                        }
                     }
 
                     SentMessage = true;
@@ -371,10 +374,13 @@ namespace ReserveBlockCore.P2P
                                 peer.IsFinalized = Prefix[2] == "1";
                             }
                         }
-                        var arr = PrefixSplit[1].Split(":");
-                        var (address, hash, signature) = (arr[0], arr[1], arr[2]);
-                        if (SignatureService.VerifySignature(address, hash, signature))
-                            hashes[address] = (hash, signature);
+                        if (PrefixSplit.Length == 2)
+                        {
+                            var arr = PrefixSplit[1].Split(":");
+                            var (address, hash, signature) = (arr[0], arr[1], arr[2]);
+                            if (SignatureService.VerifySignature(address, hash, signature))
+                                hashes[address] = (hash, signature);
+                        }
                     }
 
                     SentHash = true;

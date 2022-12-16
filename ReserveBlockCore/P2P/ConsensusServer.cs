@@ -147,6 +147,7 @@ namespace ReserveBlockCore.P2P
 
         public string Message(long height, int methodCode, string[] addresses, string peerMessage)
         {
+            string Prefix = null;
             try
             {
                 var ip = GetIP(Context);
@@ -158,7 +159,9 @@ namespace ReserveBlockCore.P2P
                 }
 
                 UpdateNode(node, height - 1, methodCode, false);
-                
+                Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
+                                    (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
+
                 string message = null;
                 string signature = null;
                 if(peerMessage != null)
@@ -172,9 +175,7 @@ namespace ReserveBlockCore.P2P
                 var state = GetState();
                 if (message != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
-
-                var Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
-                    (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
+                
                 foreach (var address in addresses)
                 {
                     if (messages.TryGetValue(address, out var Value))
@@ -190,11 +191,12 @@ namespace ReserveBlockCore.P2P
                 catch { }
             }
                        
-            return null;
+            return Prefix;
         }
 
         public string Hash(long height, int methodCode, string[] addresses, string peerHash)
         {
+            string Prefix = null;
             try
             {
                 var ip = GetIP(Context);
@@ -206,6 +208,8 @@ namespace ReserveBlockCore.P2P
                 }
 
                 UpdateNode(node, height - 1, methodCode, true);
+                Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
+                                    (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
 
                 string hash = null;
                 string signature = null;
@@ -222,9 +226,7 @@ namespace ReserveBlockCore.P2P
 
                 if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
                     return null;
-
-                var Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
-                                    (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
+                
                 foreach (var address in addresses)
                 {
                     if (hashes.TryGetValue(address, out var Value))
@@ -240,7 +242,7 @@ namespace ReserveBlockCore.P2P
                 catch { }
             }
 
-            return null;
+            return Prefix;
         }
 
         private static string GetIP(HubCallerContext context)
