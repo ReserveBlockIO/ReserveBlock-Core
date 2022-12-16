@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Net;
 using System.Numerics;
 using System.Security;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -171,37 +172,66 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetIsWalletEncrypted")]
+        public async Task<string> GetIsWalletEncrypted()
+        {
+            var output = "false";
+
+            if (Globals.IsWalletEncrypted)
+                output = "true";
+
+            return output;
+        }
+
+        [HttpGet("GetIsEncryptedPasswordStored")]
+        public async Task<string> GetIsEncryptedPasswordStored()
+        {
+            var output = "false";
+
+            if (Globals.EncryptPassword.Length > 0)
+                output = "true";
+
+            return output;
+        }
+
         [HttpGet("GetEncryptedPassword/{**password}")]
         public async Task<string> GetEncryptedPassword(string password)
         {
-            //use Id to get specific commands
             var output = "False"; // this will only display if command not recognized.
-
-            if (!string.IsNullOrEmpty(password))
+            //use Id to get specific commands
+            try
             {
-                Globals.EncryptPassword = password.ToSecureString();
-                var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
-                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-                var randString = RandomStringUtility.GetRandomString(8);
-
-                var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
-                var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
-
-                if (sigVerify)
+                if (!string.IsNullOrEmpty(password))
                 {
-                    password = "";
-                    Globals.GUIPasswordNeeded = false;
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = ""});
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                    var randString = RandomStringUtility.GetRandomString(8);
+
+                    var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                    var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                    if (sigVerify)
+                    {
+                        password = "";
+                        Globals.GUIPasswordNeeded = false;
+                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = "" });
+                    }
+                    else
+                    {
+                        password = "";
+                        Globals.EncryptPassword.Dispose();
+                        Globals.EncryptPassword = new SecureString();
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
+                    }
                 }
-                else
-                {
-                    password = "";
-                    Globals.EncryptPassword.Dispose();
-                    Globals.EncryptPassword = new SecureString();
-                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
-                }
+            }
+            catch(Exception ex)
+            {
+
             }
 
             return output;
@@ -280,15 +310,73 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        [HttpGet("GetEncryptLock")]
+        public async Task<string> GetEncryptLock()
+        {
+            var output = "Fail";
+
+            if (string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.AdjudicateAccount == null)
+            {
+                Globals.EncryptPassword.Dispose();
+                Globals.EncryptPassword = new SecureString();
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Wallet is locked." });
+                return output;
+            }
+
+            output= JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Failed to lock wallet." });
+
+            return output;
+        }
+
         [HttpGet("GetDecryptWallet/{password}")]
         public async Task<string> GetDecryptWallet(string password)
         {
             var output = "";
 
-            Globals.EncryptPassword = password.ToSecureString();
-            password = "0";
+            try
+            {
+                if (!string.IsNullOrEmpty(password))
+                {
+                    Globals.EncryptPassword = password.ToSecureString();
+                    var accounts = AccountData.GetAccounts();
+                    if (accounts != null)
+                    {
+                        var account = accounts.Query().Where(x => x.Address != null).FirstOrDefault();
+                        if (account == null)
+                            return JsonConvert.SerializeObject(new { Result = "Fail", Message = "No accounts in wallet." });
 
-            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
+                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                        var randString = RandomStringUtility.GetRandomString(8);
+
+                        var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                        var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                        if (sigVerify)
+                        {
+                            password = "";
+                            output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
+                        }
+                        else
+                        {
+                            password = "";
+                            Globals.EncryptPassword.Dispose();
+                            Globals.EncryptPassword = new SecureString();
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Password was incorrect. Please attempt again" });
+                        }
+                    }
+                }
+
+                password = "0";
+            }
+            catch(Exception ex)
+            {
+                password = "";
+                Globals.EncryptPassword.Dispose();
+                Globals.EncryptPassword = new SecureString();
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error. Error: {ex.ToString()}" });
+            }
 
             return output;
         }
