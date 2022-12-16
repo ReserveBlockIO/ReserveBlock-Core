@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Utilities
         private static ConcurrentQueue<(string Message, string Location, DateTime Time)> FileQueue = new ConcurrentQueue<(string, string, DateTime)>();
         public static void LogQueue(string message, string location)
         {
+            return; // this disables the log queue
             FileQueue.Enqueue((message, location, DateTime.Now));
         }
 
