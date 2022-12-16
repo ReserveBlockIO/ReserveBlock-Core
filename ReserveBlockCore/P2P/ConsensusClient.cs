@@ -121,7 +121,7 @@ namespace ReserveBlockCore.P2P
                     _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 6000);                    
-                    while (Height == Globals.LastBlock.Height + 1)
+                    while (Height == Globals.LastBlock.Height + 1 && !ConsensusSource.IsCancellationRequested)
                     {
                         var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
                         LogUtility.LogQueue(Messages.Count + " " + RemainingAddressCount, "ConsensusRun First loop");
@@ -166,7 +166,7 @@ namespace ReserveBlockCore.P2P
                 _ = HashRequests(methodCode, Peers, signers.ToArray(), HashSource);
                                 
                 var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 2000);                
-                while (Height == Globals.LastBlock.Height + 1)
+                while (Height == Globals.LastBlock.Height + 1 && !HashSource.IsCancellationRequested)
                 {                    
                     var CurrentHashes = Hashes.ToArray();
                     var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();
