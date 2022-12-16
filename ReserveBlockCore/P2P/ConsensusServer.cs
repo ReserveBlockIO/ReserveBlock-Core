@@ -26,6 +26,7 @@ namespace ReserveBlockCore.P2P
         public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Message, string Signature)>> Messages;
         public static ConcurrentDictionary<(long Height, int MethodCode), ConcurrentDictionary<string, (string Hash, string Signature)>> Hashes;
 
+        public static object UpdateNodeLock = new object();
         private static ConsensusState ConsenusStateSingelton;
         private static object UpdateLock = new object();
         public override async Task OnConnectedAsync()
@@ -131,37 +132,17 @@ namespace ReserveBlockCore.P2P
                 return (-1, 0, ConsensusStatus.Processing, -1, null, false);
             return (ConsenusStateSingelton.Height, ConsenusStateSingelton.MethodCode, ConsenusStateSingelton.Status, ConsenusStateSingelton.RandomNumber,
                 ConsenusStateSingelton.EncryptedAnswer, ConsenusStateSingelton.IsUsed);
-        }
+        }    
 
-        public string RequestMethodCode()
+        public static void UpdateNode(NodeInfo node, long height, int methodCode, bool finalized)
         {
-            var ip = GetIP(Context);
-            LogUtility.LogQueue(ip, "RequestMethodCode");
-            if (!Globals.Nodes.TryGetValue(ip, out var node))
+            lock(UpdateNodeLock)
             {
-                Context?.Abort();
-                return null;
+                node.NodeHeight = height;
+                node.MethodCode = methodCode;
+                node.IsFinalized = finalized;
+                node.LastMethodCodeTime = TimeUtil.GetMillisecondTime();
             }
-
-            return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" + 
-                (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
-        }
-
-        public bool SendMethodCode(long height, int methodCode, bool isFinalized)
-        {
-            var ip = GetIP(Context);            
-            if (!Globals.Nodes.TryGetValue(ip, out var node))
-            {
-                Context?.Abort();
-                return false;
-            }
-
-            node.NodeHeight = height;
-            node.MethodCode = methodCode;
-            node.IsFinalized = isFinalized;
-            node.LastMethodCodeTime = TimeUtil.GetMillisecondTime();
-
-            return true;
         }
 
         public string Message(long height, int methodCode, string[] addresses, string peerMessage)
@@ -176,6 +157,8 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
+                UpdateNode(node, height, methodCode, false);
+                
                 string message = null;
                 string signature = null;
                 if(peerMessage != null)
@@ -200,10 +183,12 @@ namespace ReserveBlockCore.P2P
                 if (NothingToSend)
                     return null;
 
+                var Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
+                    (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
                 foreach (var address in addresses)
                 {
                     if (messages.TryGetValue(address, out var Value))
-                        return address + ";:;" + Value.Message.Replace(":", "::") + ";:;" + Value.Signature;
+                        return Prefix + "|" + address + ";:;" + Value.Message.Replace(":", "::") + ";:;" + Value.Signature;
                 }               
             }
             catch(Exception ex)
@@ -230,6 +215,8 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
+                UpdateNode(node, height, methodCode, true);
+
                 string hash = null;
                 string signature = null;
                 if (peerHash != null)
@@ -254,12 +241,14 @@ namespace ReserveBlockCore.P2P
                     return null;
 
                 if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
-                    return null;                
+                    return null;
 
+                var Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
+                                    (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
                 foreach (var address in addresses)
                 {
                     if (hashes.TryGetValue(address, out var Value))
-                        return address + ":" + Value.Hash + ":" + Value.Signature;
+                        return Prefix + "|" + address + ":" + Value.Hash + ":" + Value.Signature;
                 }
             }
             catch (Exception ex)

@@ -21,6 +21,7 @@ using ReserveBlockCore.Extensions;
 using System.Xml.Linq;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using System.Reflection.Metadata;
 
 namespace ReserveBlockCore.P2P
 {
@@ -85,8 +86,7 @@ namespace ReserveBlockCore.P2P
                 long Height = -1;                
                 int Majority = -1;
                 ConcurrentDictionary<string, (string Message, string Signature)> Messages = null;
-                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;
-                SendMethodCode(Peers, methodCode, false);                
+                ConcurrentDictionary<string, (string Hash, string Signature)> Hashes = null;                               
                 while (true)
                 {
                     Height = Globals.LastBlock.Height + 1;                                    
@@ -160,8 +160,7 @@ namespace ReserveBlockCore.P2P
                 var MyHash = Ecdsa.sha256(string.Join("", Messages.OrderBy(x => x.Key).Select(x => Ecdsa.sha256(x.Value.Message))));
                 var Signature = SignatureService.AdjudicatorSignature(MyHash);
 
-                Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);
-                SendMethodCode(Peers, methodCode, true);
+                Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);                
                 
                 var HashSource = new CancellationTokenSource();
                 var signers = Signer.CurrentSigningAddresses();
@@ -231,18 +230,6 @@ namespace ReserveBlockCore.P2P
             var Data = peers.Where(x => Now - x.LastMethodCodeTime < 2100).Select(x => x.Address + " " + x.NodeHeight + " " + x.MethodCode + " " + x.IsFinalized ).ToArray();
             ErrorLogUtility.LogError(Now + " " + height + " " + methodCode + " " + (status == ConsensusStatus.Finalized ? 1 : 0) + " " + string.Join("|", Data), place);
         }
-
-        public static void SendMethodCode(NodeInfo[] peers, int methodCode, bool isFinalized)
-        {
-            var Now = TimeUtil.GetMillisecondTime();            
-            _ = Task.WhenAll(peers.Select(node =>
-            {
-                var Source = new CancellationTokenSource(1000);
-                var SendMethodCodeFunc = () => node.Connection.InvokeCoreAsync<bool>("SendMethodCode", args: new object?[] { Globals.LastBlock.Height, methodCode, isFinalized }, Source.Token)
-                    ?? Task.FromResult(false);
-                return SendMethodCodeFunc.RetryUntilSuccessOrCancel(x => x || TimeUtil.GetMillisecondTime() - Now > 2000, 100, default);
-            }));
-        }
         public static string[] RotateFrom(string[] arr, string elem)
         {
             var Index = arr.Select((x, i) => (x, i)).Where(x => x.x == elem).Select(x => (int?)x.i).FirstOrDefault() ?? -1;
@@ -295,12 +282,25 @@ namespace ReserveBlockCore.P2P
 
                     LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
+                    var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);
                     LogUtility.LogQueue(Response, "After Message");
 
                     if (Response != null)
                     {
-                        var arr = Response.Split(";:;");
+                        var PrefixSplit = Response.Split(new[] { '|' }, 2);
+                        var Prefix = PrefixSplit[0].Split(':');
+                        if (Now > peer.LastMethodCodeTime)
+                        {
+                            lock (ConsensusServer.UpdateNodeLock)
+                            {
+                                peer.LastMethodCodeTime = Now;
+                                peer.NodeHeight = long.Parse(Prefix[0]);
+                                peer.MethodCode = int.Parse(Prefix[1]);
+                                peer.IsFinalized = Prefix[2] == "1";
+                            }
+                        }
+                        var arr = PrefixSplit[1].Split(":");
                         var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
                         if (SignatureService.VerifySignature(address, message, signature))
                             messages[address] = (message, signature);                        
@@ -359,14 +359,27 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");
+                    LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");                    
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
+                    var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
                     LogUtility.LogQueue(Response, "After Hash");
 
                     if (Response != null)
                     {
-                        var arr = Response.Split(":");
+                        var PrefixSplit = Response.Split(new[] { '|' }, 2);
+                        var Prefix = PrefixSplit[0].Split(':');
+                        if (Now > peer.LastMethodCodeTime)
+                        {
+                            lock (ConsensusServer.UpdateNodeLock)
+                            {
+                                peer.LastMethodCodeTime = Now;
+                                peer.NodeHeight = long.Parse(Prefix[0]);
+                                peer.MethodCode = int.Parse(Prefix[1]);
+                                peer.IsFinalized = Prefix[2] == "1";
+                            }
+                        }
+                        var arr = PrefixSplit[1].Split(":");
                         var (address, hash, signature) = (arr[0], arr[1], arr[2]);
                         if (SignatureService.VerifySignature(address, hash, signature))
                             hashes[address] = (hash, signature);

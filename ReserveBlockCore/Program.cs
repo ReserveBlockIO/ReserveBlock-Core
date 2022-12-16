@@ -180,8 +180,7 @@ namespace ReserveBlockCore
             StartupService.DisplayValidatorAddress();
             _ = Task.Run(LogUtility.LogLoop);
             _ = Task.Run(StartupService.StartupPeers);
-            Globals.StopAllTimers = true;
-            _ = Task.Run(P2PClient.UpdateMethodCodes);
+            Globals.StopAllTimers = true;            
             _ = Task.Run(BlockHeightCheckLoop);
             _ = StartupService.DownloadBlocksOnStart();
             if (Globals.LastBlock.Height >= Globals.BlockLock)
