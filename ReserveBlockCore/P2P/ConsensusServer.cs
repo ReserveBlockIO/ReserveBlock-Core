@@ -167,21 +167,16 @@ namespace ReserveBlockCore.P2P
                     (message, signature) = (split[0], split[1]);
                     message = message.Replace("::", ":");
                 }
-
-                var NothingToSend = false;
+                
                 if (!Messages.TryGetValue((height, methodCode), out var messages))
                 {
                     messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
-                    Messages[(height, methodCode)] = messages;
-                    NothingToSend = true;
+                    Messages[(height, methodCode)] = messages;                    
                 }
 
                 var state = GetState();
                 if (message != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
-
-                if (NothingToSend)
-                    return null;
 
                 var Prefix = (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
                     (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
@@ -224,21 +219,16 @@ namespace ReserveBlockCore.P2P
                     var split = peerHash.Split(":");
                     (hash, signature) = (split[0], split[1]);                    
                 }
-
-                var NothingToSend = false;
+                
                 if (!Hashes.TryGetValue((height, methodCode), out var hashes))
                 {
                     hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
-                    Hashes[(height, methodCode)] = hashes;
-                    NothingToSend = true;
+                    Hashes[(height, methodCode)] = hashes;                    
                 }
 
                 var state = GetState();
                 if (hash != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
-                    hashes[node.Address] = (hash, signature);
-
-                if (NothingToSend)
-                    return null;
+                    hashes[node.Address] = (hash, signature);                
 
                 if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
                     return null;
