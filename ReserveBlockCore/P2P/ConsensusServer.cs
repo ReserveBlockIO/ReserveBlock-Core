@@ -167,13 +167,8 @@ namespace ReserveBlockCore.P2P
                     (message, signature) = (split[0], split[1]);
                     message = message.Replace("::", ":");
                 }
-                
-                if (!Messages.TryGetValue((height, methodCode), out var messages))
-                {
-                    messages = new ConcurrentDictionary<string, (string Message, string Signature)>();
-                    Messages[(height, methodCode)] = messages;                    
-                }
 
+                var messages = Messages.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Message, string Signature)>());                
                 var state = GetState();
                 if (message != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
@@ -219,13 +214,8 @@ namespace ReserveBlockCore.P2P
                     var split = peerHash.Split(":");
                     (hash, signature) = (split[0], split[1]);                    
                 }
-                
-                if (!Hashes.TryGetValue((height, methodCode), out var hashes))
-                {
-                    hashes = new ConcurrentDictionary<string, (string Hash, string Signature)>();
-                    Hashes[(height, methodCode)] = hashes;                    
-                }
 
+                var hashes = Hashes.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
                 var state = GetState();
                 if (hash != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
                     hashes[node.Address] = (hash, signature);                
