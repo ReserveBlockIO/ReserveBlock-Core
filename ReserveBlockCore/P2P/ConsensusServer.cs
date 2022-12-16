@@ -149,8 +149,7 @@ namespace ReserveBlockCore.P2P
 
         public bool SendMethodCode(long height, int methodCode, bool isFinalized)
         {
-            var ip = GetIP(Context);
-            _ =LogUtility.LogAsync(ip + " " + height + " " + methodCode + " " + isFinalized, "SendMethodCode");
+            var ip = GetIP(Context);            
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
