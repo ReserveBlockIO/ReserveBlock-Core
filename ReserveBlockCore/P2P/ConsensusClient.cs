@@ -120,7 +120,7 @@ namespace ReserveBlockCore.P2P
                     var ConsensusSource = new CancellationTokenSource();
                     _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
-                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 5000);                    
+                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 6000);                    
                     while (Height == Globals.LastBlock.Height + 1)
                     {
                         var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
@@ -305,7 +305,7 @@ namespace ReserveBlockCore.P2P
                                 messages[address] = (message, signature);
                         }
                         else
-                            await Task.Delay(800);
+                            await Task.Delay(500);
                     }
 
                     SentMessage = true;
@@ -356,7 +356,7 @@ namespace ReserveBlockCore.P2P
 
                     if (!peer.IsConnected)
                     {
-                        await Task.Delay(800);
+                        await Task.Delay(500);
                         continue;
                     }
 
