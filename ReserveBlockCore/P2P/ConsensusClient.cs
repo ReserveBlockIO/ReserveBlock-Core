@@ -244,21 +244,21 @@ namespace ReserveBlockCore.P2P
             await cts.Token.WhenCanceled();
             Interlocked.Exchange(ref ReadyToFinalize, 1);
         }
-        
+
         private static async Task MessageRequest(NodeInfo peer, string toSend, long currentHeight, int methodCode,
             ConcurrentDictionary<string, (string Message, string Signature)> messages, string[] addresses, CancellationTokenSource cts)
         {
-            var SentMessage = false;            
+            var SentMessage = false;
             addresses = RotateFrom(addresses, peer.Address);
-            
+
             while (!cts.IsCancellationRequested)
-            {                
+            {
                 try
                 {
-                    var MessageToSend = SentMessage ? null : toSend;                                        
+                    var MessageToSend = SentMessage ? null : toSend;
                     var RemainingAddresses = addresses.Where(x => !messages.Keys.Contains(x)).ToArray();
-                    
-                    if(RemainingAddresses.Length == 0 || ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
+
+                    if (RemainingAddresses.Length == 0 || ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
                     {
                         cts.Cancel();
                         break;
@@ -266,7 +266,7 @@ namespace ReserveBlockCore.P2P
 
                     if (!peer.IsConnected)
                     {
-                        await Task.Delay(800);
+                        await Task.Delay(20);
                         continue;
                     }
 
@@ -291,9 +291,10 @@ namespace ReserveBlockCore.P2P
                             }
                         }
 
-                        if(peer.NodeHeight > currentHeight)
+                        if (peer.NodeHeight > currentHeight)
                         {
                             cts.Cancel();
+                            LogUtility.LogQueue(currentHeight + " " + methodCode, "Message height cancel");
                             break;
                         }
 
@@ -303,9 +304,14 @@ namespace ReserveBlockCore.P2P
                             var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
                             if (SignatureService.VerifySignature(address, message, signature))
                                 messages[address] = (message, signature);
+                            else
+                                LogUtility.LogQueue(address + " " + message + " " + signature, "Message signature failure");
                         }
                         else
+                        {
+                            LogUtility.LogQueue(currentHeight + " " + methodCode, "Message wait");
                             await Task.Delay(500);
+                        }
                     }
 
                     SentMessage = true;
@@ -316,7 +322,7 @@ namespace ReserveBlockCore.P2P
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
                 }
-                
+
                 await Task.Delay(100);
             }
         }
@@ -336,13 +342,13 @@ namespace ReserveBlockCore.P2P
         }
 
         private static async Task HashRequest(NodeInfo peer, string toSend, long currentHeight, int methodCode,
-            ConcurrentDictionary<string, (string Hash, string Signature)> hashes, string[] addresses, CancellationTokenSource cts)
+    ConcurrentDictionary<string, (string Hash, string Signature)> hashes, string[] addresses, CancellationTokenSource cts)
         {
             var SentHash = false;
             addresses = RotateFrom(addresses, peer.Address);
 
             while (!cts.IsCancellationRequested)
-            {                
+            {
                 try
                 {
                     var HashToSend = SentHash ? null : toSend;
@@ -356,11 +362,11 @@ namespace ReserveBlockCore.P2P
 
                     if (!peer.IsConnected)
                     {
-                        await Task.Delay(500);
+                        await Task.Delay(20);
                         continue;
                     }
 
-                    LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");                    
+                    LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
@@ -384,6 +390,7 @@ namespace ReserveBlockCore.P2P
                         if (peer.NodeHeight > currentHeight)
                         {
                             cts.Cancel();
+                            LogUtility.LogQueue(currentHeight + " " + methodCode, "Hash height cancel");
                             break;
                         }
 
@@ -393,9 +400,13 @@ namespace ReserveBlockCore.P2P
                             var (address, hash, signature) = (arr[0], arr[1], arr[2]);
                             if (SignatureService.VerifySignature(address, hash, signature))
                                 hashes[address] = (hash, signature);
+                            else
+                                LogUtility.LogQueue(address + " " + hash + " " + signature, "Hash signature failure");
                         }
                         else
-                            await Task.Delay(800);
+                        {
+                            await Task.Delay(500);
+                        }
                     }
 
                     SentHash = true;
@@ -406,7 +417,7 @@ namespace ReserveBlockCore.P2P
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "HashRequestLoop inner catch");
                 }
-                
+
                 await Task.Delay(100);
             }
         }
