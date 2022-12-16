@@ -342,10 +342,12 @@ namespace ReserveBlockCore.Controllers
                     if (accounts != null)
                     {
                         var account = accounts.Query().Where(x => x.Address != null).FirstOrDefault();
+                        
                         if (account == null)
                             return JsonConvert.SerializeObject(new { Result = "Fail", Message = "No accounts in wallet." });
-
-                        BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                        Thread.Sleep(200);
+                        var privKey = account.PrivateKey;
+                        BigInteger b1 = BigInteger.Parse(privKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                         PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                         var randString = RandomStringUtility.GetRandomString(8);

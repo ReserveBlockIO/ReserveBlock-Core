@@ -121,17 +121,17 @@ namespace ReserveBlockCore.Models
                             }
                             else
                             {
-                                return "Could not find the provided address in the keystore.";
+                                return _privateKey;
                             }
                         }
                         else
                         {
-                            return "Keystore is null.";
+                            return _privateKey;
                         }
                     }
                     catch (Exception ex)
                     {
-                        return $"Unknown Error decrypting keys. Error: {ex.ToString()}";
+                        return _privateKey;
                     }
                 }
             }
