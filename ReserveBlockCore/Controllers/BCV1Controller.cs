@@ -54,6 +54,15 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        [HttpGet("AddBeacon/{name}")]
+        public async Task<string> AddBeacon(string name)
+        {
+            var output = "";
+
+            return output;
+        }
+
         [HttpGet("DecodeBeaconLocator/{locator}")]
         public async Task<string> DecodeBeaconLocator(string locator)
         {

@@ -786,37 +786,42 @@ namespace ReserveBlockCore.Controllers
             var result = "No Potential Validator Accounts Found.";
             var address = addr;
             var uniqueName = uname;
-            if(Globals.IsWalletEncrypted == false)
+
+            if(Globals.IsWalletEncrypted == true)
             {
-                var valAccount = AccountData.GetPossibleValidatorAccounts();
-                if (valAccount.Count() > 0)
+                if (Globals.EncryptPassword.Length == 0)
+                    return "Please type in your encrypted password before starting validating.";
+            }
+
+            var valAccount = AccountData.GetPossibleValidatorAccounts();
+            if (valAccount.Count() > 0)
+            {
+                var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
+                if (accountCheck != null)
                 {
-                    var accountCheck = valAccount.Where(x => x.Address == address).FirstOrDefault();
-                    if (accountCheck != null)
+                    if (accountCheck.IsValidating)
                     {
-                        if (accountCheck.IsValidating)
-                        {
-                            result = "Node is already flagged as validator.";
-                            return result;
-                        }
-                        try
-                        {
-                            var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
-                            result = valResult;
-                        }
-                        catch (Exception ex)
-                        {
-                            ErrorLogUtility.LogError(ex.ToString(), "V1Controller.StartValidating - result: " + result);
-                            result = $"Unknown Error Occured: {ex.ToString()}";
-                        }
-                        output = true;
+                        result = "Node is already flagged as validator.";
+                        return result;
                     }
-                    else
+                    try
                     {
-                        result = "Account provided was not found in wallet.";
+                        var valResult = await ValidatorService.StartValidating(accountCheck, uniqueName);
+                        result = valResult;
                     }
+                    catch (Exception ex)
+                    {
+                        ErrorLogUtility.LogError(ex.ToString(), "V1Controller.StartValidating - result: " + result);
+                        result = $"Unknown Error Occured: {ex.ToString()}";
+                    }
+                    output = true;
+                }
+                else
+                {
+                    result = "Account provided was not found in wallet.";
                 }
             }
+            
             else
             {
                 result = "Cannot start validating on an encrypted wallet.";
