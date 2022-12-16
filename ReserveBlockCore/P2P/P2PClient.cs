@@ -840,11 +840,11 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    var Now = TimeUtil.GetMillisecondTime();
-                    var Source = new CancellationTokenSource(1000);
-                    var RequestTask = node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>(), Source.Token);
+                    _ = LogUtility.LogAsync(node.NodeIP, "Before RequestMethodCode");
+                    var Now = TimeUtil.GetMillisecondTime();                    
+                    var Response = await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>());
+                    _ = LogUtility.LogAsync(node.NodeIP + " " + Response, "After RequestMethodCode");
 
-                    var Response = await RequestTask;
                     if (Response != null)
                     {
                         var remoteMethodCode = Response.Split(':');
@@ -857,7 +857,7 @@ namespace ReserveBlockCore.P2P
                         }
                     }
                 }
-                catch (TaskCanceledException ex)
+                catch (OperationCanceledException ex)
                 { }
                 catch (Exception ex)
                 {

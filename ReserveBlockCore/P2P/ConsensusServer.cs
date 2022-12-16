@@ -34,7 +34,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 peerIP = GetIP(Context);
-                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + peerIP, "OnConnectedAsync");
+                _ = LogUtility.LogAsync(peerIP, "OnConnectedAsync");
                 if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
@@ -136,7 +136,7 @@ namespace ReserveBlockCore.P2P
         public string RequestMethodCode()
         {
             var ip = GetIP(Context);
-            LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip, "RequestMethodCode");
+            _ = LogUtility.LogAsync(ip, "RequestMethodCode");
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -150,7 +150,7 @@ namespace ReserveBlockCore.P2P
         public bool SendMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
-            LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + isFinalized, "SendMethodCode");
+            _ =LogUtility.LogAsync(ip + " " + height + " " + methodCode + " " + isFinalized, "SendMethodCode");
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -170,7 +170,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
+                _ = LogUtility.LogAsync(ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
@@ -224,7 +224,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var ip = GetIP(Context);
-                LogUtility.Log(TimeUtil.GetMillisecondTime() + " " + ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
+                _ = LogUtility.LogAsync(ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
