@@ -157,7 +157,7 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
-                UpdateNode(node, height, methodCode, false);
+                UpdateNode(node, height - 1, methodCode, false);
                 
                 string message = null;
                 string signature = null;
@@ -205,7 +205,7 @@ namespace ReserveBlockCore.P2P
                     return null;
                 }
 
-                UpdateNode(node, height, methodCode, true);
+                UpdateNode(node, height - 1, methodCode, true);
 
                 string hash = null;
                 string signature = null;
