@@ -252,8 +252,7 @@ namespace ReserveBlockCore.P2P
             addresses = RotateFrom(addresses, peer.Address);
             
             while (!cts.IsCancellationRequested)
-            {
-                var delay = Task.Delay(80);
+            {                
                 try
                 {
                     var MessageToSend = SentMessage ? null : toSend;                                        
@@ -267,7 +266,7 @@ namespace ReserveBlockCore.P2P
 
                     if (!peer.IsConnected)
                     {
-                        await delay;
+                        await Task.Delay(800);
                         continue;
                     }
 
@@ -305,6 +304,8 @@ namespace ReserveBlockCore.P2P
                             if (SignatureService.VerifySignature(address, message, signature))
                                 messages[address] = (message, signature);
                         }
+                        else
+                            await Task.Delay(800);
                     }
 
                     SentMessage = true;
@@ -315,9 +316,8 @@ namespace ReserveBlockCore.P2P
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
                 }
-
-                await delay;
-                await Task.Delay(20);
+                
+                await Task.Delay(100);
             }
         }
 
@@ -342,8 +342,7 @@ namespace ReserveBlockCore.P2P
             addresses = RotateFrom(addresses, peer.Address);
 
             while (!cts.IsCancellationRequested)
-            {
-                var delay = Task.Delay(80);
+            {                
                 try
                 {
                     var HashToSend = SentHash ? null : toSend;
@@ -357,7 +356,7 @@ namespace ReserveBlockCore.P2P
 
                     if (!peer.IsConnected)
                     {
-                        await delay;
+                        await Task.Delay(800);
                         continue;
                     }
 
@@ -395,6 +394,8 @@ namespace ReserveBlockCore.P2P
                             if (SignatureService.VerifySignature(address, hash, signature))
                                 hashes[address] = (hash, signature);
                         }
+                        else
+                            await Task.Delay(800);
                     }
 
                     SentHash = true;
@@ -405,9 +406,8 @@ namespace ReserveBlockCore.P2P
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "HashRequestLoop inner catch");
                 }
-
-                await delay;
-                await Task.Delay(20);
+                
+                await Task.Delay(100);
             }
         }
 
