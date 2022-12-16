@@ -145,8 +145,7 @@ namespace ReserveBlockCore.P2P
                         break;
                     }
 
-                    ConsensusSource.Cancel();
-                    LogState("end of first loop", Height, methodCode, ConsensusStatus.Processing, Peers);
+                    ConsensusSource.Cancel();                    
                     return null;                    
                 }
 
@@ -195,8 +194,7 @@ namespace ReserveBlockCore.P2P
                     LogUtility.LogQueue(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
                     if (NumMatches + RemainingAddressCount < Majority)
                     {
-                        HashSource.Cancel();
-                        LogState("hash fail", Height, methodCode, ConsensusStatus.Processing, Peers);
+                        HashSource.Cancel();                        
                         return null;
                     }
                     
@@ -208,8 +206,7 @@ namespace ReserveBlockCore.P2P
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError(ex.ToString(), "ConsensusRun");
-            }
-            LogState("exception thrown", Globals.LastBlock.Height + 1, methodCode, ConsensusStatus.Processing, Globals.Nodes.Values.ToArray());
+            }            
             return null;
         }
 
