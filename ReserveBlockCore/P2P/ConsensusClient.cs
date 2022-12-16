@@ -217,7 +217,8 @@ namespace ReserveBlockCore.P2P
         public static HashSet<string> AddressesToWaitFor(long height, int methodCode, int wait)
         {
             var Now = TimeUtil.GetMillisecondTime();            
-            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait && x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
+            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait && ((x.NodeHeight + 1 == height && (x.MethodCode == methodCode || x.MethodCode == methodCode + 1 || (x.MethodCode == methodCode - 1 && x.IsFinalized)))
+                || (x.NodeHeight <= height && x.MethodCode == 0)))
                 .Select(x => x.Address).ToHashSet();
         }
 
