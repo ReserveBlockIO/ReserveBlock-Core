@@ -135,7 +135,7 @@ namespace ReserveBlockCore.P2P
 
                     if (Height != Globals.LastBlock.Height + 1)
                     {
-                        ConsensusSource.Cancel();
+                        ConsensusSource.Cancel();                        
                         continue;
                     }
 
@@ -291,6 +291,13 @@ namespace ReserveBlockCore.P2P
                                 peer.IsFinalized = Prefix[2] == "1";
                             }
                         }
+
+                        if(peer.NodeHeight > currentHeight)
+                        {
+                            cts.Cancel();
+                            break;
+                        }
+
                         if (PrefixSplit.Length == 2)
                         {
                             var arr = PrefixSplit[1].Split(";:;");
@@ -374,6 +381,13 @@ namespace ReserveBlockCore.P2P
                                 peer.IsFinalized = Prefix[2] == "1";
                             }
                         }
+
+                        if (peer.NodeHeight > currentHeight)
+                        {
+                            cts.Cancel();
+                            break;
+                        }
+
                         if (PrefixSplit.Length == 2)
                         {
                             var arr = PrefixSplit[1].Split(":");
