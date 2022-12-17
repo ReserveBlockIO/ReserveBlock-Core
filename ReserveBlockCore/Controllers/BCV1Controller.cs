@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System.Diagnostics;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -18,9 +19,10 @@ namespace ReserveBlockCore.Controllers
         /// Creates a beacon on the local host
         /// </summary>
         /// <param name="name"></param>
+        /// <param port="port"></param>
         /// <returns></returns>
-        [HttpGet("CreateBeacon/{name}")]
-        public async Task<string> CreateBeacon(string name)
+        [HttpGet("CreateBeacon/{name}/{port}")]
+        public async Task<string> CreateBeacon(string name, int port = 0)
         {
             var output = "";
 
@@ -32,34 +34,105 @@ namespace ReserveBlockCore.Controllers
             }
 
             var bUID = Guid.NewGuid().ToString().Substring(0, 12).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
-
-            BeaconInfo bInfo = new BeaconInfo();
-            bInfo.Name = name;
-            bInfo.IsBeaconActive = true;
-            bInfo.BeaconUID = bUID;
-
-            BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
+            
+            Beacons beacon = new Beacons
             {
                 IPAddress = ip,
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
                 Name = name,
-                BeaconUID = bUID
-                
+                Port = port != 0 ? port : Globals.Port + 20000,
+                BeaconUID = bUID,
+                SelfBeacon = true,
+                SelfBeaconActive = true,
             };
 
-            var beaconLocJson = JsonConvert.SerializeObject(beaconLoc);
-            bInfo.BeaconLocator = beaconLocJson.ToBase64();
+            var result = Beacons.SaveBeacon(beacon);
 
-            output = BeaconInfo.SaveBeaconInfo(bInfo);
+            if (!result)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Failed to add beacon." });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been added." });
+            }
 
             return output;
         }
 
-        [HttpGet("AddBeacon/{name}")]
-        public async Task<string> AddBeacon(string name)
+        [HttpGet("GetBeacons")]
+        public async Task<string> GetBeacons()
+        {
+            var output = "[]";
+
+            var beacons = Beacons.GetBeacons();
+
+            if (beacons != null)
+            {
+                var beaconList = beacons.FindAll().ToList();
+                if (beaconList.Count > 0)
+                    output = JsonConvert.SerializeObject(beaconList);
+            }
+            return output;
+        }
+
+        [HttpGet("AddBeacon/{name}/{port}/{**ip}")]
+        public async Task<string> AddBeacon(string name,  string ip, int port = 0)
         {
             var output = "";
 
+            var bUID = Guid.NewGuid().ToString().Substring(0, 12).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+
+            Beacons beacon = new Beacons {
+                IPAddress = ip,
+                Name = name,
+                Port = port != 0 ? port : Globals.Port + 20000,
+                BeaconUID = bUID,
+                SelfBeacon = false,
+                SelfBeaconActive = false
+            };
+
+            var result = Beacons.SaveBeacon(beacon);
+
+            if (!result)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Failed to add beacon." });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been added." });
+            }
+                
+            return output;
+        }
+
+        [HttpGet("DeleteBeacon/{id}")]
+        public async Task<string> DeleteBeacon(int id)
+        {
+            var output = "[]";
+
+            var beacons = Beacons.GetBeacons();
+
+            if (beacons != null)
+            {
+                var beaconExist = beacons.Query().Where(x => x.Id == id).FirstOrDefault();
+                if(beaconExist != null)
+                {
+                    var result = Beacons.DeleteBeacon(beaconExist);
+                    if(result)
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been deleted." });
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Failed to delete beacon." });
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Beacon does not exist." });
+                }
+                
+            }
             return output;
         }
 
@@ -118,15 +191,15 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var result = BeaconInfo.SetBeaconActiveState();
+            var result = Beacons.SetBeaconActiveState();
 
             if(result == null)
             {
-                output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "Error turning beacon on/off" });
+                output = JsonConvert.SerializeObject(new { Result = "Failed", Message = "Error turning beacon on/off" });
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Result = "Success", ResultMessage = result.Value });
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = result.Value });
             }
 
             return output;
