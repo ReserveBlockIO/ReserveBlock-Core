@@ -145,6 +145,20 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        public string RequestMethodCode()
+        {
+            var ip = GetIP(Context);
+            LogUtility.LogQueue(ip, "RequestMethodCode");
+            if (!Globals.Nodes.TryGetValue(ip, out var node))
+            {
+                Context?.Abort();
+                return null;
+            }
+
+            return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
+                (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
+        }
+
         public string Message(long height, int methodCode, string[] addresses, string peerMessage)
         {
             string Prefix = null;

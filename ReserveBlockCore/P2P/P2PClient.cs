@@ -799,6 +799,83 @@ namespace ReserveBlockCore.P2P
             return (-1, DateTime.UtcNow, 0);
         }
 
+        public static async Task UpdateMethodCodes()
+        {
+            if (Globals.AdjudicateAccount == null)
+                return;
+            var Address = Globals.AdjudicateAccount.Address;
+            var Height = -1L;
+            while (true)
+            {
+                if (Height != Globals.LastBlock.Height)
+                {
+                    Height = Globals.LastBlock.Height;
+
+                    foreach (var node in Globals.Nodes.Values)
+                    {
+                        if (node.Address == Address || UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
+                            continue;
+
+                        UpdateMethodCodeAddresses[node.Address] = true;
+                        _ = UpdateMethodCode(node);
+                    }
+                }
+
+                await Task.Delay(1000);
+            }
+        }
+
+        private static ConcurrentDictionary<string, bool> UpdateMethodCodeAddresses = new ConcurrentDictionary<string, bool>();
+
+        private static async Task UpdateMethodCode(NodeInfo node)
+        {
+            while (true)
+            {                
+                try
+                {
+                    if (!node.IsConnected)
+                    {
+                        await Task.Delay(20);
+                        continue;
+                    }
+
+                    LogUtility.LogQueue(node.NodeIP, "Before RequestMethodCode");
+                    var Now = TimeUtil.GetMillisecondTime();
+                    if(Now - node.LastMethodCodeTime < 1000)
+                    {
+                        await Task.Delay(1000 - (int)(Now - node.LastMethodCodeTime));
+                        continue;
+                    }
+
+                    var Response = await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>());
+                    LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
+
+                    if (Response != null)
+                    {
+                        var remoteMethodCode = Response.Split(':');
+                        if (Now > node.LastMethodCodeTime)
+                        {
+                            lock (ConsensusServer.UpdateNodeLock)
+                            {
+                                node.LastMethodCodeTime = Now;
+                                node.NodeHeight = long.Parse(remoteMethodCode[0]);
+                                node.MethodCode = int.Parse(remoteMethodCode[1]);
+                                node.IsFinalized = remoteMethodCode[2] == "1";
+                            }
+                        }
+                    }
+                }
+                catch (OperationCanceledException ex)
+                { }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "UpdateMethodCodes inner catch");
+                }
+
+                await Task.Delay(20);
+            }
+        }
+
         public static async Task UpdateNodeHeights()
         {
             if (Globals.AdjudicateAccount == null)            
