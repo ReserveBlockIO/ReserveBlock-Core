@@ -847,7 +847,9 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    var Response = await node.Connection.InvokeCoreAsync<string>("RequestMethodCode", Array.Empty<object>());
+                    var state = ConsensusServer.GetState();
+                    var Response = await node.InvokeAsync<string>("RequestMethodCode", 
+                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized } );
                     LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
                     if (Response != null)
