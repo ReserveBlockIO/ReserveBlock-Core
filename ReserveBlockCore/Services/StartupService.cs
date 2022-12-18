@@ -304,11 +304,7 @@ namespace ReserveBlockCore.Services
                 if(beaconInfo != null)
                 {
                     var port = Globals.Port + 20000; //23338 - mainnet
-                    if (Globals.IsTestNet == true)
-                    {
-                        port = port + 10000; //33338 - testnet
-                    }
-
+ 
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
                     Thread obj_thread = new Thread(server.StartServer());
                     Console.WriteLine("Beacon Started");
