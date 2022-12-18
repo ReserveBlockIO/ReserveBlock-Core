@@ -87,7 +87,7 @@ namespace ReserveBlockCore.Services
                 {
                     Globals.EncryptPassword = password.ToSecureString();
                     var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                     var randString = RandomStringUtility.GetRandomString(8);
@@ -142,7 +142,7 @@ namespace ReserveBlockCore.Services
                 {
                     Globals.EncryptPassword = password.ToSecureString();
                     var account = Globals.AdjudicateAccount;
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                     var randString = RandomStringUtility.GetRandomString(8);
@@ -202,7 +202,7 @@ namespace ReserveBlockCore.Services
                 Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
                 {
-                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
                 }
             }
@@ -223,7 +223,7 @@ namespace ReserveBlockCore.Services
                 Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
                 {
-                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
                 }
             }

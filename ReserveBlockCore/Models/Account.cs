@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
+using ReserveBlockCore.Voting;
 
 namespace ReserveBlockCore.Models
 {
@@ -15,12 +16,17 @@ namespace ReserveBlockCore.Models
     {
         private string _privateKey;
         public long Id { get; set; }
-        public string PrivateKey { get { return GetPrivateKey(_privateKey, Address); } set { _privateKey = value; } }
+        public string PrivateKey { get; set; }
         public string PublicKey { set; get; }
         public string Address { get; set; }
         public string? ADNR { get; set; }
         public decimal Balance { get; set; }
         public bool IsValidating { get; set; }
+
+        public string GetKey
+        {
+            get { return GetPrivateKey(PrivateKey, Address); }
+        }
 
         public Account Build()
         {
@@ -85,7 +91,7 @@ namespace ReserveBlockCore.Models
                 //decrypt private key for send
                 if (Globals.EncryptPassword.Length == 0)
                 {
-                    return _privateKey;
+                    return privkey;
                 }
                 else
                 {
@@ -121,17 +127,17 @@ namespace ReserveBlockCore.Models
                             }
                             else
                             {
-                                return _privateKey;
+                                return privkey;
                             }
                         }
                         else
                         {
-                            return _privateKey;
+                            return privkey;
                         }
                     }
                     catch (Exception ex)
                     {
-                        return _privateKey;
+                        return privkey;
                     }
                 }
             }

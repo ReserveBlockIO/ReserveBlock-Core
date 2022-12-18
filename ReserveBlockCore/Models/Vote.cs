@@ -168,7 +168,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "TopicVote()", Vote = vote });

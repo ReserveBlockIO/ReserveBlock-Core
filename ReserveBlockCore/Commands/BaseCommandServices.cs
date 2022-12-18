@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Commands
                 table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
 
                 accountList.ForEach(x => {
-                    table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.PrivateKey}[/]");
+                    table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.GetKey}[/]");
                 });
 
                 table.Border(TableBorder.Rounded);
@@ -91,11 +91,6 @@ namespace ReserveBlockCore.Commands
             {
                 Console.WriteLine("Wallet Encryption is not currently compatible with HD wallets.");
                 Console.WriteLine("This will be released in a future wallet update.");
-            }
-            else if(Globals.ValidatorAddress != "")
-            {
-                Console.WriteLine("Validators are required to sign their task and cannot have their keys encrypted");
-                Console.WriteLine("This may be addressed at a later time.");
             }
             else if(Globals.IsWalletEncrypted == false)
             {

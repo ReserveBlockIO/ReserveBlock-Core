@@ -206,7 +206,7 @@ namespace ReserveBlockCore.Controllers
                 {
                     Globals.EncryptPassword = password.ToSecureString();
                     var account = AccountData.GetSingleAccount(Globals.ValidatorAddress);
-                    BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                     PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                     var randString = RandomStringUtility.GetRandomString(8);
@@ -346,7 +346,7 @@ namespace ReserveBlockCore.Controllers
                         if (account == null)
                             return JsonConvert.SerializeObject(new { Result = "Fail", Message = "No accounts in wallet." });
                         Thread.Sleep(200);
-                        var privKey = account.PrivateKey;
+                        var privKey = account.GetKey;
                         BigInteger b1 = BigInteger.Parse(privKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                         PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
@@ -401,7 +401,7 @@ namespace ReserveBlockCore.Controllers
 
             var newAddressInfo = new[]
             {
-                new { Address = account.Address, PrivateKey = account.PrivateKey}
+                new { Address = account.Address, PrivateKey = account.GetKey}
             };
 
             LogUtility.Log("New Address Created: " + account.Address, "V1Controller.GetNewAddress()");
@@ -867,7 +867,7 @@ namespace ReserveBlockCore.Controllers
             var account = AccountData.GetSingleAccount(address);
             if(account != null)
             {
-                BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
                 var signature = SignatureService.CreateSignature(message, privateKey, account.PublicKey);
