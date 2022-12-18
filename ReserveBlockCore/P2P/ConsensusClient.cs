@@ -192,9 +192,9 @@ namespace ReserveBlockCore.P2P
                     }
                                         
                     HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);
-                    var RemainingAddressCount = HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Value.Hash)).Count();
+                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Value.Hash)).Count() : 0;
                     LogUtility.LogQueue(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
-                    if (NumMatches + RemainingAddressCount < Majority || HashSource.IsCancellationRequested)
+                    if (NumMatches + RemainingAddressCount < Majority)
                     {
                         HashSource.Cancel();
                         LogUtility.LogQueue(Height + " " + methodCode, "hash fail");                        
@@ -274,7 +274,7 @@ namespace ReserveBlockCore.P2P
                     LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var Now = TimeUtil.GetMillisecondTime();
-                    var Response = await peer.Connection.InvokeCoreAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);
+                    var Response = await peer.InvokeAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);
                     LogUtility.LogQueue(Response, "After Message");
 
                     if (Response != null)
@@ -370,7 +370,7 @@ namespace ReserveBlockCore.P2P
                     LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var Now = TimeUtil.GetMillisecondTime();
-                    var Response = await peer.Connection.InvokeCoreAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
+                    var Response = await peer.InvokeAsync<string>("Hash", args: new object?[] { Globals.LastBlock.Height + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
                     LogUtility.LogQueue(Response, "After Hash");
 
                     if (Response != null)

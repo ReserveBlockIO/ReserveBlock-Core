@@ -145,7 +145,7 @@ namespace ReserveBlockCore.P2P
             }
         }
 
-        public string RequestMethodCode()
+        public string RequestMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
             LogUtility.LogQueue(ip, "RequestMethodCode");
@@ -154,6 +154,8 @@ namespace ReserveBlockCore.P2P
                 Context?.Abort();
                 return null;
             }
+
+            UpdateNode(node, height, methodCode, isFinalized);
 
             return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
                 (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
