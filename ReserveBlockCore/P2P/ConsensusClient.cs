@@ -192,7 +192,7 @@ namespace ReserveBlockCore.P2P
                     }
                                         
                     HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);
-                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Value.Hash)).Count() : 0;
+                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
                     LogUtility.LogQueue(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
                     if (NumMatches + RemainingAddressCount < Majority)
                     {
