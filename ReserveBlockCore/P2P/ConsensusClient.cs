@@ -80,7 +80,7 @@ namespace ReserveBlockCore.P2P
             {                
                 LogUtility.LogQueue(methodCode + " " + message, "ConsensusRun");
                 Interlocked.Exchange(ref ReadyToFinalize, 0);
-                ConsensusServer.UpdateState(methodCode: methodCode);
+                ConsensusServer.UpdateState(methodCode: methodCode, status: (int)ConsensusStatus.Processing);
                 var Address = Globals.AdjudicateAccount.Address;
                 var Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
                 long Height = -1;                
