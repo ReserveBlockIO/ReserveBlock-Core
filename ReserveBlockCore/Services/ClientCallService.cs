@@ -1004,7 +1004,7 @@ namespace ReserveBlockCore.Services
                     var signature = string.Join("|", Hashes.Select(x => x.Address + ":" + x.Signature));
                     Winner.AdjudicatorSignature = signature;
 
-                    ConsensusServer.UpdateState(methodCode: 0);
+                    ConsensusServer.UpdateState(methodCode: 0, status: (int)ConsensusStatus.Processing);
                     if (await BlockValidatorService.ValidateBlock(Winner, false))
                         PreviousRunSucceeded = true;
                 }
