@@ -284,7 +284,14 @@ namespace ReserveBlockCore.Commands
                         }
                         else
                         {
-                            Console.WriteLine("This is an encrypted wallet and cannot have validating turned on at this moment.");
+                            if(Globals.EncryptPassword.Length == 0)
+                            {
+                                Console.WriteLine("Please type in your encryption password first.");
+                            }
+                            else
+                            {
+                                ValidatorService.DoValidate();
+                            }
                         }
                         
                     }

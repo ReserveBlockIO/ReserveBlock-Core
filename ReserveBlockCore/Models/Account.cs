@@ -23,10 +23,8 @@ namespace ReserveBlockCore.Models
         public decimal Balance { get; set; }
         public bool IsValidating { get; set; }
 
-        public string GetKey
-        {
-            get { return GetPrivateKey(PrivateKey, Address); }
-        }
+        //Use this to return private keys
+        public string GetKey{ get { return GetPrivateKey(PrivateKey, Address); } }
 
         public Account Build()
         {
@@ -78,10 +76,8 @@ namespace ReserveBlockCore.Models
                         account.ADNR = adnr.Name;
                         accounts.UpdateSafe(account);
                     }
-
                 }
             }
-            
         }
 
         private string GetPrivateKey(string privkey, string address)
