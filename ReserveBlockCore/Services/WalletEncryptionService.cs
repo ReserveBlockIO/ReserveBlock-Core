@@ -26,7 +26,7 @@ namespace ReserveBlockCore.Services
 			var encryptionString = Convert.ToBase64String(key);
 
 			//Encrypting private key with random 32 byte
-			byte[] encrypted = EncryptKey(account.PrivateKey, key);
+			byte[] encrypted = EncryptKey(account.GetKey, key);
 
 			//Encrypting random 32 byte with clients supplied password. This key will be stored and is encrypted
 			byte[] keyEncrypted = EncryptKey(encryptionString, passwordKey);

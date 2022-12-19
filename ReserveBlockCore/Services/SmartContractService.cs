@@ -74,7 +74,7 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -203,7 +203,7 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -325,7 +325,7 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -458,7 +458,7 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -592,7 +592,7 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;
@@ -726,7 +726,7 @@ namespace ReserveBlockCore.Services
                 return null;//balance insufficient
             }
 
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             var txHash = scTx.Hash;

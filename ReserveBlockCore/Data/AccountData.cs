@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Data
 
 		public static PrivateKey GetPrivateKey(Account account)
         {
-            BigInteger b1 = BigInteger.Parse(account.PrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
 			return privateKey;
@@ -265,7 +265,7 @@ namespace ReserveBlockCore.Data
 			Console.WriteLine("======================");
 			Console.WriteLine("\nAddress :\n{0}", account.Address);
 			Console.WriteLine("\nPublic Key (Uncompressed):\n{0}", account.PublicKey);
-			Console.WriteLine("\nPrivate Key:\n{0}", account.PrivateKey);
+			Console.WriteLine("\nPrivate Key:\n{0}", account.GetKey);
 			Console.WriteLine("\n - - - - - - - - - - - - - - - - - - - - - - ");
 			Console.WriteLine("*** Be sure to save private key!                   ***");
 			Console.WriteLine("*** Use your private key to restore account!       ***");
@@ -273,7 +273,7 @@ namespace ReserveBlockCore.Data
 		public static async void AddToAccount(Account account)
 		{
 			var accountList = GetAccounts();
-			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.PrivateKey);
+			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.GetKey);
 
 			//This is checking in the event the user is restoring an account, and not creating a brand new one.
 			if(accountCheck == null)
