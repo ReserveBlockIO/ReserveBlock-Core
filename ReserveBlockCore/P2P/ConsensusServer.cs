@@ -189,7 +189,7 @@ namespace ReserveBlockCore.P2P
 
                 var messages = Messages.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Message, string Signature)>());                
                 var state = GetState();
-                if (message != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
+                if (message != null && state.Status != ConsensusStatus.Finalized && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
                 
                 foreach (var address in addresses)

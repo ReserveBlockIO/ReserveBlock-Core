@@ -299,7 +299,7 @@ namespace ReserveBlockCore.P2P
                             break;
                         }
 
-                        if (PrefixSplit.Length == 2)
+                        if (PrefixSplit.Length == 2 && ConsensusServer.GetState().Status == ConsensusStatus.Processing)
                         {
                             var arr = PrefixSplit[1].Split(";:;");
                             var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);

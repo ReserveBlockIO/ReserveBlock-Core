@@ -776,8 +776,7 @@ namespace ReserveBlockCore.Services
 
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(20);
-            
-            var RemainingDelay = Task.CompletedTask;
+                        
             ConsoleWriterService.Output("Booting up consensus loop");            
             while (true)
             {                               
@@ -793,11 +792,14 @@ namespace ReserveBlockCore.Services
 
                     while (Globals.BlocksDownloadSlim.CurrentCount == 0 || Globals.Nodes.Values.Where(x => x.IsConnected).Count() < Majority - 1)
                         await Task.Delay(20);
+
+                    if (Height != Globals.LastBlock.Height + 1)
+                        continue;
                                                         
                     var fortisPool = Globals.FortisPool.Values;
-
-                    await RemainingDelay;
+                    
                     var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
+                    await Globals.RemainingDelay;
                     var CurrentTime = TimeUtil.GetMillisecondTime();
                     var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 19000;
                     InitialDelayTime = Math.Max(InitialDelayTime, 0);
@@ -994,11 +996,9 @@ namespace ReserveBlockCore.Services
                         await InitialBlockDelay;
                     }
                     catch { }
-                    RemainingDelay = Task.Delay(6000);
+                    
                     if (!await BlockValidatorService.ValidateBlock(Winner, false))
-                        continue;
-                    else
-                        await FinalizeWork(Winner);
+                        continue;                    
                 }
                 catch(Exception ex)
                 {
@@ -1008,7 +1008,7 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        private static async Task FinalizeWork(Block block)
+        public static async Task FinalizeWork(Block block)
         {
             ConsoleWriterService.Output("Task Completed and Block Found: " + block.Height.ToString());
             ConsoleWriterService.Output(DateTime.Now.ToString());            
@@ -1016,6 +1016,7 @@ namespace ReserveBlockCore.Services
             // log time here
             var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
             var Now = TimeUtil.GetMillisecondTime();
+            Globals.RemainingDelay = Task.Delay(6000);
             localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = Now });
             Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
 

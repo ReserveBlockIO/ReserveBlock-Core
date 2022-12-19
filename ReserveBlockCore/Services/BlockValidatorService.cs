@@ -350,6 +350,10 @@ namespace ReserveBlockCore.Services
                             ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
                         }
                     }
+
+                    if(Globals.AdjudicateAccount != null)                   
+                        await ClientCallService.FinalizeWork(block);
+                    
                     return result;//block accepted
                 }
                 else

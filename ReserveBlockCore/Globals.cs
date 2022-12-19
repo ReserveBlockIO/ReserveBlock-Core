@@ -35,7 +35,7 @@ namespace ReserveBlockCore
         public static BeaconReference BeaconReference = new BeaconReference();
         public static Process proc = new Process();
 
-        public static DateTime? RemoteCraftLockTime = null;
+        public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
         public static DateTime? APIUnlockTime = null;
 
@@ -107,6 +107,7 @@ namespace ReserveBlockCore
         public static SecureString? MotherPassword = null;
 
         public static IHttpClientFactory HttpClientFactory;
+        public static Task RemainingDelay = Task.CompletedTask;
 
         #endregion
 
