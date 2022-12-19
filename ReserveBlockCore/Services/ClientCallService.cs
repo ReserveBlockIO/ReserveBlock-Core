@@ -1032,7 +1032,9 @@ namespace ReserveBlockCore.Services
                 }
                 catch { }
             }
-            await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
+
+            if(HubContext?.Clients != null)
+                await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
             Now = TimeUtil.GetMillisecondTime();
             Console.WriteLine("Done sending - Height: " + block.Height.ToString() + " at " + Now);
             
