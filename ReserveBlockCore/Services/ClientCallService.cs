@@ -1017,36 +1017,40 @@ namespace ReserveBlockCore.Services
 
         public static async Task FinalizeWork(Block block)
         {
-            ConsoleWriterService.Output("Task Completed and Block Found: " + block.Height.ToString());
-            ConsoleWriterService.Output(DateTime.Now.ToString());
-
-            var Now = TimeUtil.GetMillisecondTime();
-            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
-            var data = JsonConvert.SerializeObject(block);
-
-            foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
+            try
             {
-                try
+                ConsoleWriterService.Output("Task Completed and Block Found: " + block.Height.ToString());
+                ConsoleWriterService.Output(DateTime.Now.ToString());
+
+                var Now = TimeUtil.GetMillisecondTime();
+                Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
+                var data = JsonConvert.SerializeObject(block);
+
+                foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
                 {
-                    _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    try
+                    {
+                        _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    }
+                    catch { }
                 }
-                catch { }
+
+                if (HubContext?.Clients != null)
+                    await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
+                Now = TimeUtil.GetMillisecondTime();
+                Console.WriteLine("Done sending - Height: " + block.Height.ToString() + " at " + Now);
+
+                await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
+                ConsoleWriterService.Output("Fortis Pool Processed");
+
+                foreach (var key in Globals.TaskAnswerDictV3.Keys)
+                    if (key.Height <= block.Height)
+                        Globals.TaskAnswerDictV3.TryRemove(key, out _);
+
+                Globals.LastAdjudicateTime = TimeUtil.GetTime();
+                Globals.BroadcastedTrxDict.Clear();
             }
-
-            if(HubContext?.Clients != null)
-                await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-            Now = TimeUtil.GetMillisecondTime();
-            Console.WriteLine("Done sending - Height: " + block.Height.ToString() + " at " + Now);
-            
-            await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
-            ConsoleWriterService.Output("Fortis Pool Processed");
-
-            foreach (var key in Globals.TaskAnswerDictV3.Keys)
-                if (key.Height <= block.Height)
-                    Globals.TaskAnswerDictV3.TryRemove(key, out _);
-            
-            Globals.LastAdjudicateTime = TimeUtil.GetTime();
-            Globals.BroadcastedTrxDict.Clear();            
+            catch { }
         }
 
         public static void ClearRoundDicts(long height)
