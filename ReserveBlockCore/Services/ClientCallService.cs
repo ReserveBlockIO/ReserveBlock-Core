@@ -776,12 +776,15 @@ namespace ReserveBlockCore.Services
 
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(20);
-                        
+            
+            var PreviousHeight = -1L;
+            var PreviousRunSucceeded = false;
+            var BlockDelay = Task.CompletedTask;
             ConsoleWriterService.Output("Booting up consensus loop");            
             while (true)
             {                               
                 try
-                {
+                {                    
                     var Height = Globals.LastBlock.Height + 1;
                     ClearRoundDicts(Height);
                     TaskQuestionUtility.CreateTaskQuestion("rndNum");
@@ -795,17 +798,27 @@ namespace ReserveBlockCore.Services
 
                     if (Height != Globals.LastBlock.Height + 1)
                         continue;
-                                                        
-                    var fortisPool = Globals.FortisPool.Values;
                     
-                    var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
-                    await Globals.RemainingDelay;
-                    var CurrentTime = TimeUtil.GetMillisecondTime();
-                    var InitialDelayTime = LocalTime != null ? 19000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 19000;
-                    InitialDelayTime = Math.Max(InitialDelayTime, 0);
-                    var InitialBlockDelay = Task.Delay((int)InitialDelayTime);                    
+                    if(PreviousHeight != Height)
+                    {                                               
+                        PreviousHeight = Height;
+                        var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
+                        await BlockDelay;
+                        var CurrentTime = TimeUtil.GetMillisecondTime();
+                        var DelayTime = LocalTime != null ? 25000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 25000;
+                        DelayTime = Math.Max(DelayTime, 0);
+                        BlockDelay = Task.Delay((int)DelayTime);
 
-                    Height = Globals.LastBlock.Height + 1;
+                        if (PreviousRunSucceeded)
+                        {
+                            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
+                            localTimeDb.InsertSafe(new BlockLocalTime { Height = Height - 1, LocalTime = CurrentTime });
+                        }
+                        PreviousRunSucceeded = false;
+                    }                    
+
+                    if (Height != Globals.LastBlock.Height + 1)
+                        continue;
 
                     ConsoleWriterService.Output("Start of Consensus at height " + Height);
                     var MyDecryptedAnswer = Height + ":" + Answer;
@@ -990,15 +1003,9 @@ namespace ReserveBlockCore.Services
                   
                     var signature = string.Join("|", Hashes.Select(x => x.Address + ":" + x.Signature));
                     Winner.AdjudicatorSignature = signature;
-                    
-                    try
-                    {
-                        await InitialBlockDelay;
-                    }
-                    catch { }
-                    
-                    if (!await BlockValidatorService.ValidateBlock(Winner, false))
-                        continue;                    
+
+                    if (await BlockValidatorService.ValidateBlock(Winner, false))
+                        PreviousRunSucceeded = true;
                 }
                 catch(Exception ex)
                 {
@@ -1011,15 +1018,10 @@ namespace ReserveBlockCore.Services
         public static async Task FinalizeWork(Block block)
         {
             ConsoleWriterService.Output("Task Completed and Block Found: " + block.Height.ToString());
-            ConsoleWriterService.Output(DateTime.Now.ToString());            
-            
-            // log time here
-            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
-            var Now = TimeUtil.GetMillisecondTime();
-            Globals.RemainingDelay = Task.Delay(6000);
-            localTimeDb.InsertSafe(new BlockLocalTime { Height = block.Height, LocalTime = Now });
-            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
+            ConsoleWriterService.Output(DateTime.Now.ToString());
 
+            var Now = TimeUtil.GetMillisecondTime();
+            Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
             var data = JsonConvert.SerializeObject(block);
 
             foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))

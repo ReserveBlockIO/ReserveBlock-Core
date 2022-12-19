@@ -873,7 +873,14 @@ namespace ReserveBlockCore.Commands
             ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
 
             ConsoleWriterService.Output("******************************************************************************");
-            
+
+            ConsoleWriterService.Output("*****************************Node Dump*******************************");
+
+            ConsoleWriterService.Output("Now: " + TimeUtil.GetMillisecondTime() + "\r\n");
+
+            ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)));
+
+            ConsoleWriterService.Output("******************************************************************************");
         }
 
 

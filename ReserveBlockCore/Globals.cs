@@ -138,8 +138,7 @@ namespace ReserveBlockCore
         public static (long, TaskNumberAnswerV2?, DateTime) CurrentTaskNumberAnswerV2;
         public static (long Height, int Answer, string Signature, DateTime Time) CurrentTaskNumberAnswerV3;
         public static (TaskWinner, DateTime) CurrentWinner;
-        public static string VerifySecret = "";
-        public static Task RemainingDelay = Task.CompletedTask;
+        public static string VerifySecret = "";        
 
         public static ConcurrentDictionary<string, ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>> ConsensusDump = new ConcurrentDictionary<string, ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>>();
 
