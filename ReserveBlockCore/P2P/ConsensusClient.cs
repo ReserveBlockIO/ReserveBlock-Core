@@ -121,9 +121,9 @@ namespace ReserveBlockCore.P2P
                     _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 3000);                    
-                    while (Height == Globals.LastBlock.Height + 1 && !ConsensusSource.IsCancellationRequested)
+                    while (Height == Globals.LastBlock.Height + 1)
                     {
-                        var RemainingAddressCount = WaitForAddresses.Except(Messages.Select(x => x.Key)).Count();
+                        var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;
                         LogUtility.LogQueue(Messages.Count + " " + RemainingAddressCount, "ConsensusRun First loop");
                         if ((runType != RunType.Initial && Messages.Count + RemainingAddressCount < Majority) || 
                             (RemainingAddressCount == 0 && Messages.Count >= Majority))
