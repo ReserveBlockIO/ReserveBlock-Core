@@ -850,6 +850,30 @@ namespace ReserveBlockCore.Commands
             ConsoleWriterService.Output(conMessage);            
 
             ConsoleWriterService.Output("******************************************************************************");
+
+            var hashMessage = string.Join("\r\n", ConsensusServer.Hashes.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Hash + " " + y.Value.Signature))
+                            .SelectMany(x => x));
+
+            ConsoleWriterService.Output("*****************************Consensus Hashes*******************************");
+
+            ConsoleWriterService.Output(conMessage);
+
+            ConsoleWriterService.Output("******************************************************************************");
+
+            var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, 3000).ToArray();
+
+            ConsoleWriterService.Output("*****************************Addresses To Wait For*******************************");
+
+            ConsoleWriterService.Output(JsonConvert.SerializeObject(addressesToWaitFor));
+
+            ConsoleWriterService.Output("******************************************************************************");
+
+            ConsoleWriterService.Output("*****************************Consensus Dump*******************************");
+
+            ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
+
+            ConsoleWriterService.Output("******************************************************************************");
+            
         }
 
 

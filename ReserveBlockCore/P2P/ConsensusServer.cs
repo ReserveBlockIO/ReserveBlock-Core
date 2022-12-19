@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
@@ -8,6 +9,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Xml.Linq;
 
 namespace ReserveBlockCore.P2P
@@ -145,6 +147,12 @@ namespace ReserveBlockCore.P2P
             }
         }
 
+        public static void UpdateConsensusDump(string ipAddress, string method, string request, string response)
+        {
+            var NodeElem = Globals.ConsensusDump.GetOrAdd(ipAddress, new ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>());
+            NodeElem[method] = (DateTime.Now, request, response);
+        }
+
         public string RequestMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
@@ -152,25 +160,31 @@ namespace ReserveBlockCore.P2P
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
+                UpdateConsensusDump(ip, "RequestMethodCode", height + " " + methodCode + " " + isFinalized, null);
                 return null;
             }
 
             UpdateNode(node, height, methodCode, isFinalized);
 
+            UpdateConsensusDump(ip, "RequestMethodCode", height + " " + methodCode + " " + isFinalized, (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
+                (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0));
             return (Globals.LastBlock.Height).ToString() + ":" + ConsenusStateSingelton.MethodCode + ":" +
                 (ConsenusStateSingelton.Status == ConsensusStatus.Finalized ? 1 : 0);
         }
 
         public string Message(long height, int methodCode, string[] addresses, string peerMessage)
         {
+            var now = DateTime.Now.ToString();
             string Prefix = null;
+            string ip = null;
             try
             {
-                var ip = GetIP(Context);
+                ip = GetIP(Context);
                 LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
+                    UpdateConsensusDump(ip, "Message", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerMessage, null);
                     return null;
                 }
 
@@ -195,7 +209,11 @@ namespace ReserveBlockCore.P2P
                 foreach (var address in addresses)
                 {
                     if (messages.TryGetValue(address, out var Value))
+                    {
+                        UpdateConsensusDump(ip, "Message", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerMessage,
+                            Prefix + "|" + address + ";:;" + Value.Message.Replace(":", "::") + ";:;" + Value.Signature);
                         return Prefix + "|" + address + ";:;" + Value.Message.Replace(":", "::") + ";:;" + Value.Signature;
+                    }
                 }               
             }
             catch(Exception ex)
@@ -206,20 +224,23 @@ namespace ReserveBlockCore.P2P
                 }
                 catch { }
             }
-                       
+
+            UpdateConsensusDump(ip, "Message", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerMessage, Prefix);
             return Prefix;
         }
 
         public string Hash(long height, int methodCode, string[] addresses, string peerHash)
         {
             string Prefix = null;
+            string ip = null;
             try
             {
-                var ip = GetIP(Context);
+                ip = GetIP(Context);
                 LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
+                    UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash, null);
                     return null;
                 }
 
@@ -238,15 +259,22 @@ namespace ReserveBlockCore.P2P
                 var hashes = Hashes.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
                 var state = GetState();
                 if (hash != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
-                    hashes[node.Address] = (hash, signature);                
+                    hashes[node.Address] = (hash, signature);
 
                 if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
+                {
+                    UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash, null);
                     return null;
+                }
                 
                 foreach (var address in addresses)
                 {
                     if (hashes.TryGetValue(address, out var Value))
+                    {
+                        UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash,
+                            Prefix + "|" + address + ":" + Value.Hash + ":" + Value.Signature);
                         return Prefix + "|" + address + ":" + Value.Hash + ":" + Value.Signature;
+                    }
                 }
             }
             catch (Exception ex)
@@ -258,6 +286,7 @@ namespace ReserveBlockCore.P2P
                 catch { }
             }
 
+            UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash, Prefix);
             return Prefix;
         }
 

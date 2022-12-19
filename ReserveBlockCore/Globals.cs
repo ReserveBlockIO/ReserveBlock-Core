@@ -106,8 +106,7 @@ namespace ReserveBlockCore
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;
 
-        public static IHttpClientFactory HttpClientFactory;
-        public static Task RemainingDelay = Task.CompletedTask;
+        public static IHttpClientFactory HttpClientFactory;        
 
         #endregion
 
@@ -140,6 +139,9 @@ namespace ReserveBlockCore
         public static (long Height, int Answer, string Signature, DateTime Time) CurrentTaskNumberAnswerV3;
         public static (TaskWinner, DateTime) CurrentWinner;
         public static string VerifySecret = "";
+        public static Task RemainingDelay = Task.CompletedTask;
+
+        public static ConcurrentDictionary<string, ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>> ConsensusDump = new ConcurrentDictionary<string, ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>>();
 
         public static ConcurrentDictionary<string, TaskWinner> TaskWinnerDictV2 = new ConcurrentDictionary<string, TaskWinner>(); // RBX address
         public static ConcurrentDictionary<(string RBXAddress, long Height), Block> TaskWinnerDictV3 = new ConcurrentDictionary<(string RBXAddress, long Height), Block>(); // RBX address
