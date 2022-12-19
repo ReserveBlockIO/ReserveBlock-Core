@@ -856,7 +856,7 @@ namespace ReserveBlockCore.Commands
 
             ConsoleWriterService.Output("*****************************Consensus Hashes*******************************");
 
-            ConsoleWriterService.Output(conMessage);
+            ConsoleWriterService.Output(hashMessage);
 
             ConsoleWriterService.Output("******************************************************************************");
 
