@@ -203,7 +203,10 @@ namespace ReserveBlockCore.P2P
 
                 var messages = Messages.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Message, string Signature)>());                
                 var state = GetState();
-                if (message != null && state.Status != ConsensusStatus.Finalized && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, message, signature))
+                
+                if (message != null && height >= Globals.LastBlock.Height + 1 
+                    && ((methodCode == state.MethodCode && state.Status != ConsensusStatus.Finalized) || methodCode > state.MethodCode)
+                    && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
                 
                 foreach (var address in addresses)
@@ -261,7 +264,7 @@ namespace ReserveBlockCore.P2P
                 if (hash != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
                     hashes[node.Address] = (hash, signature);
 
-                if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized)
+                if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized && methodCode == state.MethodCode)
                 {
                     UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash, null);
                     return null;
