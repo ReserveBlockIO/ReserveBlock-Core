@@ -158,33 +158,28 @@ namespace ReserveBlockCore.P2P
             {
                 await SignalRQueue(Context, (int)nextBlock.Size, async () =>
                 {
-                    if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                   
+                    if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                     {
-                        if (nextBlock.ChainRefId == BlockchainData.ChainRef)
-                        {
-                            var IP = GetIP(Context);
-                            var nextHeight = Globals.LastBlock.Height + 1;
-                            var currentHeight = nextBlock.Height;
+                        var IP = GetIP(Context);
+                        var nextHeight = Globals.LastBlock.Height + 1;
+                        var currentHeight = nextBlock.Height;
+                        
+                        if (currentHeight >= nextHeight && BlockDownloadService.BlockDict.TryAdd(currentHeight, (nextBlock, IP)))
+                        {                            
+                            await BlockValidatorService.ValidateBlocks();
 
-                            var isNewBlock = currentHeight >= nextHeight && !BlockDownloadService.BlockDict.ContainsKey(currentHeight);
-
-                            if (isNewBlock)
-                            {
-                                BlockDownloadService.BlockDict[currentHeight] = (nextBlock, IP);
-                                await BlockValidatorService.ValidateBlocks();
-                            }
-
-                            if (nextHeight == currentHeight && isNewBlock)
+                            if (nextHeight == currentHeight)
                             {
                                 string data = "";
                                 data = JsonConvert.SerializeObject(nextBlock);
                                 await Clients.All.SendAsync("GetMessage", "blk", data);
                             }
 
-                            if (nextHeight < currentHeight && isNewBlock)
+                            if (nextHeight < currentHeight)
                                 await BlockDownloadService.GetAllBlocks();
                         }
-                    }
+                    }                    
                 });
             }
             catch { }

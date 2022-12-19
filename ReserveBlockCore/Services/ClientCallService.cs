@@ -1019,6 +1019,9 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                if (Globals.BlocksDownloadSlim.CurrentCount == 0)
+                    return;
+
                 ConsoleWriterService.Output("Task Completed and Block Found: " + block.Height.ToString());
                 ConsoleWriterService.Output(DateTime.Now.ToString());
 
