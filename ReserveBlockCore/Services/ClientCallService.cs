@@ -1020,6 +1020,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                ConsensusServer.UpdateState(methodCode: 0, status: (int)ConsensusStatus.Processing);
                 if (Globals.BlocksDownloadSlim.CurrentCount == 0)
                     return;
 
