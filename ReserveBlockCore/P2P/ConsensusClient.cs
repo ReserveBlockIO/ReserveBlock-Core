@@ -259,7 +259,7 @@ namespace ReserveBlockCore.P2P
                     var MessageToSend = SentMessage ? null : toSend;
                     var RemainingAddresses = addresses.Where(x => !messages.Keys.Contains(x)).ToArray();
 
-                    if (RemainingAddresses.Length == 0 || ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
+                    if ((RemainingAddresses.Length == 0 && methodCode != 0) || ConsensusServer.GetState().MethodCode != methodCode || Globals.LastBlock.Height != currentHeight)
                     {
                         cts.Cancel();
                         break;

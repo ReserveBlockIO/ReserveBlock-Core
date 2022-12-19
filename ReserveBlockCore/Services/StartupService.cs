@@ -546,9 +546,6 @@ namespace ReserveBlockCore.Services
             if (Globals.AdjudicateAccount == null)
                 return;
 
-            while (Globals.StopAllTimers || Globals.BlocksDownloadSlim.CurrentCount == 0)
-                await Task.Delay(20);
-
             while(true)
             {
                 try

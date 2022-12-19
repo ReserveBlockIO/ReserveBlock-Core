@@ -136,7 +136,8 @@ namespace ReserveBlockCore
                 StartupService.EncryptedPasswordEntry();
             }
 
-            StartupService.SetAdjudicatorAddresses();            
+            StartupService.SetAdjudicatorAddresses();
+            _ = Task.Run(StartupService.ConnectToConsensusNodes);
 
             if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
             {
@@ -182,8 +183,7 @@ namespace ReserveBlockCore
             _ = Task.Run(StartupService.StartupPeers);
             Globals.StopAllTimers = true;            
             _ = Task.Run(BlockHeightCheckLoop);
-            _ = StartupService.DownloadBlocksOnStart();
-            _ = Task.Run(StartupService.ConnectToConsensusNodes);
+            _ = StartupService.DownloadBlocksOnStart();            
             if (Globals.LastBlock.Height >= Globals.BlockLock)
                 _ = Task.Run(ClientCallService.DoWorkV3);            
 
