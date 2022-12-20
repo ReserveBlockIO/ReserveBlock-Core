@@ -274,7 +274,7 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);
                     LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");                    
                     var Now = TimeUtil.GetMillisecondTime();
-                    var Response = await peer.InvokeAsync("Message", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend },
+                    var Response = await peer.InvokeAsync<string>("Message", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend },
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token).Token);
                     LogUtility.LogQueue(Response, "After Message");
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestMessage", null, Response);
@@ -372,7 +372,7 @@ namespace ReserveBlockCore.P2P
                     LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                    
                     var Now = TimeUtil.GetMillisecondTime();
-                    var Response = await peer.InvokeAsync("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
+                    var Response = await peer.InvokeAsync<string>("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token);
                     LogUtility.LogQueue(Response, "After Hash");
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestHash", null, Response);

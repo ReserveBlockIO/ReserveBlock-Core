@@ -28,8 +28,8 @@ namespace ReserveBlockCore.Models
 
         private int ProcessQueueLock = 0;
 
-        private ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)> invokeQueue =
-            new ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)>();
+        private ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult)> invokeQueue =
+            new ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult)>();
 
         private async Task ProcessQueue()
         {
@@ -46,13 +46,13 @@ namespace ReserveBlockCore.Models
                         try
                         {
                             var token = RequestInfo.ctFunc();
-                            var Result = await Connection.InvokeCoreAsync<string>(RequestInfo.method, RequestInfo.args, token);
-                            RequestInfo.source.SetResult(Result);
+                            var Result = await RequestInfo.invokeFunc(token);
+                            RequestInfo.setResult(Result);
                             Fail = false;
                         }
                         catch { }
                         if (Fail)
-                            RequestInfo.source.SetResult(null);
+                            RequestInfo.setResult(default);
                     }
                 }
                 catch { }
@@ -63,10 +63,11 @@ namespace ReserveBlockCore.Models
                 await ProcessQueue();
         }
 
-        public async Task<string> InvokeAsync(string method, object[] args, Func<CancellationToken> ctFunc)
+        public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc)
         {
-            var Source = new TaskCompletionSource<string>();
-            invokeQueue.Enqueue((method, args, ctFunc, Source));
+            var Source = new TaskCompletionSource<T>();
+            var InvokeFunc = async (CancellationToken ct) => (object)(await Connection.InvokeCoreAsync<T>(method, args, ct));
+            invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x)));
             _ = ProcessQueue();
 
             return await Source.Task;
