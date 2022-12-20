@@ -24,21 +24,20 @@ namespace ReserveBlockCore.Extensions
         public static S Command<S, T>(this ILiteCollection<T> col, Func<S> cmd)
         {
             SemaphoreSlim slim = null;
+            S Result = default;
             try
             {
                 slim = col.GetSlim();
                 slim.Wait();
-                return cmd();
+                Result =  cmd();
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
-                return default;
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");                
             }
-            finally
-            {
-                try { slim.Release(); } catch { }
-            }
+
+            try { slim.Release(); } catch { }            
+            return Result;
         }
 
         public static void Command<T>(this ILiteCollection<T> col, Action cmd)
@@ -53,10 +52,8 @@ namespace ReserveBlockCore.Extensions
             {
                 ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
             }
-            finally
-            {
-                try { slim.Release(); } catch { }
-            }
+
+            try { slim.Release(); } catch { }            
         }
 
         //

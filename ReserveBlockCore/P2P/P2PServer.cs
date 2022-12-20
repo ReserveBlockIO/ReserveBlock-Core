@@ -129,9 +129,12 @@ namespace ReserveBlockCore.P2P
                 await Task.WhenAll(delayTask, task);
                 Result = await task;
             }
-            catch { }            
+            catch { }
+            finally
+            {
+                try { Lock.Semaphore.Release(); } catch { }
+            }
             
-            try { Lock.Semaphore.Release(); } catch { }
             Interlocked.Decrement(ref Lock.ConnectionCount);
             Interlocked.Add(ref Lock.BufferCost, -sizeCost);
 

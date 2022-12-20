@@ -111,8 +111,11 @@ namespace ReserveBlockCore.Services
                 }
             }
             catch { }
-            
-            try { Globals.BlocksDownloadSlim.Release(); } catch { }
+            finally
+            {
+                try { Globals.BlocksDownloadSlim.Release(); } catch { }
+            }
+                        
             return false;
         }
 

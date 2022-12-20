@@ -83,8 +83,10 @@ namespace ReserveBlockCore.Services
                 }
             }
             catch { }
-            
-            try { ValidateBlocksSemaphore.Release(); } catch { }            
+            finally
+            {
+                try { ValidateBlocksSemaphore.Release(); } catch { }
+            }
         }
         public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
@@ -373,8 +375,11 @@ namespace ReserveBlockCore.Services
                 }
             }
             catch { }
-            
-            try { ValidateBlockSemaphore.Release(); } catch { }                            
+            finally
+            {
+                try { ValidateBlockSemaphore.Release(); } catch { }
+            }
+                        
             return false;
         }
 
