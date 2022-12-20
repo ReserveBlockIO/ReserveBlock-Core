@@ -781,12 +781,13 @@ namespace ReserveBlockCore.Commands
             else
             {
                 var adjConsensusNodes = Globals.Nodes.Values.ToList();
+                var Now = TimeUtil.GetMillisecondTime();
                 if (adjConsensusNodes.Count() > 0)
                 {
                     ConsoleWriterService.Output("*******************************Consensus Nodes*******************************");
                     foreach (var cNode in adjConsensusNodes)
                     {
-                        var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected}";
+                        var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected} ({Now - cNode.LastMethodCodeTime < 3000})";
                         ConsoleWriterService.Output(line);
                     }
                     ConsoleWriterService.Output("******************************************************************************");
