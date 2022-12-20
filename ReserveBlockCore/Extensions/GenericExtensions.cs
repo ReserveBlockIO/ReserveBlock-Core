@@ -54,6 +54,30 @@ namespace ReserveBlockCore.Extensions
             action(obj);
         }
 
+        public static ReleaseToken Lock(this SemaphoreSlim semaphore,
+            CancellationToken cancellationToken = default)
+        {
+            semaphore.Wait(cancellationToken);
+            return new ReleaseToken(semaphore);
+        }
+
+        public static async ValueTask<ReleaseToken> LockAsync(this SemaphoreSlim semaphore,
+            CancellationToken cancellationToken = default)
+        {
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return new ReleaseToken(semaphore);
+        }
+
+        public readonly struct ReleaseToken : IDisposable
+        {
+            private readonly SemaphoreSlim _semaphore;
+            public ReleaseToken(SemaphoreSlim semaphore) => _semaphore = semaphore;
+            public void Dispose()
+            {
+                try { _semaphore?.Release(); } catch{}
+            }
+        }
+
         public static SecureString ToSecureString(this string source)
         {
             var secureStr = new SecureString();

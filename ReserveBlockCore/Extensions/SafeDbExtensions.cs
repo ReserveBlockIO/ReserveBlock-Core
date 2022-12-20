@@ -22,32 +22,18 @@ namespace ReserveBlockCore.Extensions
 
         public static S Command<S, T>(this ILiteCollection<T> col, Func<S> cmd)
         {
-            var DbSemaphore = col.GetSlim();
-            DbSemaphore.Wait();
-            try
+            using(col.GetSlim().Lock())
             {
                 return cmd();
-            }
-            finally
-            {
-                if (DbSemaphore.CurrentCount == 0)
-                    DbSemaphore.Release();
-            }
+            }            
         }
 
         public static void Command<T>(this ILiteCollection<T> col, Action cmd)
         {
-            var DbSemaphore = col.GetSlim();
-            DbSemaphore.Wait();
-            try
+            using(col.GetSlim().Lock())
             {
                 cmd();
-            }
-            finally
-            {
-                if (DbSemaphore.CurrentCount == 0)
-                    DbSemaphore.Release();
-            }
+            }           
         }
 
         //

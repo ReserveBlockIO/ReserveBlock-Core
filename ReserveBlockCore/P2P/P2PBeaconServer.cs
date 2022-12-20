@@ -556,8 +556,8 @@ namespace ReserveBlockCore.P2P
         {
             Interlocked.Increment(ref Lock.ConnectionCount);
             Interlocked.Add(ref Lock.BufferCost, sizeCost);
-            await Lock.Semaphore.WaitAsync();
-            try
+            T Result;
+            using(await Lock.Semaphore.LockAsync())
             {
                 var task = func();
                 if (Lock.DelayLevel == 0)
@@ -565,17 +565,12 @@ namespace ReserveBlockCore.P2P
 
                 var delayTask = Task.Delay(500 * (1 << (Lock.DelayLevel - 1)));
                 await Task.WhenAll(delayTask, task);
-                return await task;
+                Result = await task;
             }
-            finally
-            {
-                if (Lock.Semaphore.CurrentCount == 0) // finally can be executed more than once
-                {
-                    Interlocked.Decrement(ref Lock.ConnectionCount);
-                    Interlocked.Add(ref Lock.BufferCost, -sizeCost);
-                    Lock.Semaphore.Release();
-                }
-            }
+
+            Interlocked.Decrement(ref Lock.ConnectionCount);
+            Interlocked.Add(ref Lock.BufferCost, -sizeCost);
+            return Result;
         }
 
         public static async Task SignalRQueue(HubCallerContext context, int sizeCost, Func<Task> func)
