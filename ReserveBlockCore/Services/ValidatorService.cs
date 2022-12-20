@@ -233,6 +233,30 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static async Task<string?> SuspendMasterNode()
+        {
+            try
+            {
+                var accounts = AccountData.GetAccounts();
+                var valAccount = accounts.Query().Where(x => x.IsValidating == true).FirstOrDefault();
+
+                if (valAccount != null)
+                {
+                    valAccount.IsValidating = false;
+                    accounts.UpdateSafe(valAccount);
+
+                    return valAccount.Address;
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
+            }
+
+            return null;
+        }
+
+
         public static async Task PerformErrorCountCheck()
         {
             if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
