@@ -156,6 +156,10 @@ namespace ReserveBlockCore
             if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.GUI)
             {
                 Globals.GUIPasswordNeeded = true;
+                while (Globals.EncryptPassword.Length == 0)
+                {
+                    Thread.Sleep(1000);
+                }
             }
 
             //Temporary for TestNet------------------------------------
