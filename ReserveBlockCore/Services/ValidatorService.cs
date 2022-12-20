@@ -244,7 +244,7 @@ namespace ReserveBlockCore.Services
                 {
                     valAccount.IsValidating = false;
                     accounts.UpdateSafe(valAccount);
-
+                    Globals.ValidatorAddress = "";
                     return valAccount.Address;
                 }
             }
