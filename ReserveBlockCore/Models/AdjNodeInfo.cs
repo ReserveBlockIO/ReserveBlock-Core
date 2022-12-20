@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,28 +23,53 @@ namespace ReserveBlockCore.Models
         public DateTime? LastTaskResultTime { get; set; }
         public long LastTaskBlockHeight { get; set; }
         public bool LastTaskError { get; set; }
-        public int LastTaskErrorCount { get; set; }        
-
-        public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
+        public int LastTaskErrorCount { get; set; }                
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
-        public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
-        {
-            T Result = default;
-            try
-            {
-                await APILock.WaitAsync();
-                var delay = Task.Delay(1000);
-                Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
-                await delay;                
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AdjNodeInfo.InvokeAsync()");
-            }
-                        
-            try { APILock.Release(); } catch { }            
 
-            return Result;
+        private int ProcessQueueLock = 0;
+
+        private ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)> invokeQueue =
+            new ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)>();
+
+        private async Task ProcessQueue()
+        {
+            if (Interlocked.Exchange(ref ProcessQueueLock, 1) == 1)
+                return;
+
+            while (invokeQueue.Count != 0)
+            {
+                try
+                {
+                    if (invokeQueue.TryDequeue(out var RequestInfo))
+                    {
+                        var Fail = true;
+                        try
+                        {
+                            var token = RequestInfo.ctFunc();
+                            var Result = await Connection.InvokeCoreAsync<string>(RequestInfo.method, RequestInfo.args, token);
+                            RequestInfo.source.SetResult(Result);
+                            Fail = false;
+                        }
+                        catch { }
+                        if (Fail)
+                            RequestInfo.source.SetResult(null);
+                    }
+                }
+                catch { }
+            }
+
+            Interlocked.Exchange(ref ProcessQueueLock, 0);
+            if (invokeQueue.Count != 0)
+                await ProcessQueue();
+        }
+
+        public async Task<string> InvokeAsync(string method, object[] args, Func<CancellationToken> ctFunc)
+        {
+            var Source = new TaskCompletionSource<string>();
+            invokeQueue.Enqueue((method, args, ctFunc, Source));
+            _ = ProcessQueue();
+
+            return await Source.Task;
         }
     }
 }

@@ -34,10 +34,7 @@ namespace ReserveBlockCore.Models
 
         public long PreviousReceiveTime;
 
-        public long SecondPreviousReceiveTime;
-
-        public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
-
+        public long SecondPreviousReceiveTime;        
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
         public bool IsValidator { get; set; }
         public bool IsAdjudicator { get; set; }

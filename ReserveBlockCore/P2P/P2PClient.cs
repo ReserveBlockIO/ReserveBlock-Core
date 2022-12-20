@@ -476,8 +476,8 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var Source = new CancellationTokenSource(3000);
-                    var result = await node.InvokeAsync<bool>("ReceiveWinningBlockV3", new object[] { block }, Source.Token);
+                    var result = Convert.ToBoolean(await node.InvokeAsync("ReceiveWinningBlockV3", new object[] { block },
+                        () => new CancellationTokenSource(3000).Token));
                     if (result)
                     {
                         node.LastWinningTaskError = false;
@@ -529,8 +529,9 @@ namespace ReserveBlockCore.P2P
                     await Task.Delay(randNum);                                
                 try
                 {
-                    var Source = new CancellationTokenSource(1000);
-                    var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswerV3", args: new object[] { taskAnswer }, Source.Token);
+                    var stringResult = await node.InvokeAsync("ReceiveTaskAnswerV3", new object[] { taskAnswer },
+                                            () => new CancellationTokenSource(1000).Token);
+                    var result = JsonConvert.DeserializeObject<TaskAnswerResult>(stringResult);
                     if (result != null)
                     {
                         if (result.AnswerAccepted)
@@ -597,9 +598,9 @@ namespace ReserveBlockCore.P2P
                             if (taskWin.WinningBlock.Height == Globals.LastBlock.Height + 1)
                             {
                                 if (hubAdjConnection1 != null)
-                                {
-                                    var Source = new CancellationTokenSource(3000);
-                                    var result = await hubAdjConnection1.InvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin }, Source.Token);
+                                {                                    
+                                    var result = Convert.ToBoolean(await hubAdjConnection1.InvokeAsync("ReceiveWinningTaskBlock", new object[] { taskWin }, 
+                                        () => new CancellationTokenSource(3000).Token));
                                     if (result)
                                     {
                                         hubAdjConnection1.LastWinningTaskError = false;
@@ -664,9 +665,10 @@ namespace ReserveBlockCore.P2P
                             if (taskAnswer.NextBlockHeight == Globals.LastBlock.Height + 1)
                             {
                                 if (hubAdjConnection1 != null)
-                                {
-                                    var Source = new CancellationTokenSource(1000);
-                                    var result = await hubAdjConnection1.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer }, Source.Token);
+                                {                                    
+                                    var stringResult = await hubAdjConnection1.InvokeAsync("ReceiveTaskAnswer_New", new object[] { taskAnswer }, 
+                                        () => new CancellationTokenSource(1000).Token);
+                                    var result = JsonConvert.DeserializeObject<TaskAnswerResult>(stringResult);
                                     if (result != null)
                                     {
                                         if (result.AnswerAccepted)
@@ -729,9 +731,9 @@ namespace ReserveBlockCore.P2P
                 foreach (var node in Globals.AdjNodes.Values.Where(x => !SuccessNodes.Contains(x.Address) && x.IsConnected == true))
                 {
                     try
-                    {
-                        var Source = new CancellationTokenSource(1000);
-                        if (await node.InvokeAsync<bool>("ReceiveTX", args: new object?[] { tx }, Source.Token))
+                    {                        
+                        if (Convert.ToBoolean(await node.InvokeAsync("ReceiveTX", new object?[] { tx }, 
+                            () => new CancellationTokenSource(1000).Token)))
                             SuccessNodes.Add(node.Address);
 
                         tryCount += 1;
