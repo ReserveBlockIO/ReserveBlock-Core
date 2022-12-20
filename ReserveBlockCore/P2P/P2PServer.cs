@@ -118,8 +118,9 @@ namespace ReserveBlockCore.P2P
             Interlocked.Increment(ref Lock.ConnectionCount);
             Interlocked.Add(ref Lock.BufferCost, sizeCost);
             T Result;
-            using(await Lock.Semaphore.LockAsync())
+            try
             {
+                await Lock.Semaphore.WaitAsync();
                 var task = func();
                 if (Lock.DelayLevel == 0)
                     return await task;
@@ -127,6 +128,10 @@ namespace ReserveBlockCore.P2P
                 var delayTask = Task.Delay(500 * (1 << (Lock.DelayLevel - 1)));
                 await Task.WhenAll(delayTask, task);
                 Result = await task;
+            }
+            finally
+            {
+                try { Lock.Semaphore.Release(); } catch { }
             }
 
             Interlocked.Decrement(ref Lock.ConnectionCount);

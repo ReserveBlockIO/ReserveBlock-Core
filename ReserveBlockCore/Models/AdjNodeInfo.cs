@@ -27,13 +27,18 @@ namespace ReserveBlockCore.Models
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
-            using(await APILock.LockAsync(ct))
+            try
             {
+                await APILock.WaitAsync();
                 var delay = Task.Delay(1000);
                 var Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
                 await delay;
                 return Result;
-            }            
+            }
+            finally
+            {
+                try { APILock.Release(); } catch { }
+            }
         }
     }
 }

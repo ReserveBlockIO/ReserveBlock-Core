@@ -31,8 +31,9 @@ namespace ReserveBlockCore.Services
         }
         public static async Task ValidateBlocks()
         {
-            using (await ValidateBlocksSemaphore.LockAsync())
+            try
             {
+                await ValidateBlocksSemaphore.WaitAsync();
                 while (BlockDownloadService.BlockDict.Any())
                 {
                     var nextHeight = Globals.LastBlock.Height + 1;
@@ -81,11 +82,16 @@ namespace ReserveBlockCore.Services
                     }
                 }
             }
+            finally
+            {
+                try { ValidateBlocksSemaphore.Release(); } catch { }
+            }
         }
         public static async Task<bool> ValidateBlock(Block block, bool ignoreAdjSignatures, bool blockDownloads = false)
         {
-            using (await ValidateBlockSemaphore.LockAsync())
+            try
             {
+                await ValidateBlockSemaphore.WaitAsync();
                 try
                 {
                     DbContext.BeginTrans();
@@ -366,6 +372,10 @@ namespace ReserveBlockCore.Services
                     DbContext.Rollback();
                     Console.WriteLine($"Error: {ex.ToString()}");
                 }
+            }
+            finally
+            {
+                try { ValidateBlockSemaphore.Release(); } catch { }
             }
                 
             return false;

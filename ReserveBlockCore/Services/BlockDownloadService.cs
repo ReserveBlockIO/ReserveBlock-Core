@@ -16,8 +16,9 @@ namespace ReserveBlockCore.Services
 
         public static async Task<bool> GetAllBlocks()
         {
-            using(await Globals.BlocksDownloadSlim.LockAsync())
+            try
             {
+                await Globals.BlocksDownloadSlim.WaitAsync();
                 try
                 {
                     while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
@@ -108,6 +109,10 @@ namespace ReserveBlockCore.Services
                         Console.WriteLine(ex.ToString());
                     }
                 }
+            }
+            finally
+            {
+                try { Globals.BlocksDownloadSlim.Release(); } catch { }
             }
 
             return false;
