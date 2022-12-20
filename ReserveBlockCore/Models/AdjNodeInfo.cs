@@ -28,24 +28,22 @@ namespace ReserveBlockCore.Models
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
+            T Result = default;
             try
             {
                 await APILock.WaitAsync();
                 var delay = Task.Delay(1000);
-                var Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
-                await delay;
-                return Result;
+                Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
+                await delay;                
             }
             catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AdjNodeInfo.InvokeAsync()");
             }
-            finally
-            {
-                try { APILock.Release(); } catch { }
-            }
+                        
+            try { APILock.Release(); } catch { }            
 
-            return default;
+            return Result;
         }
     }
 }

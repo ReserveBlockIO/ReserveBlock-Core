@@ -43,24 +43,22 @@ namespace ReserveBlockCore.Models
 
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
+            T Result = default;
             try
             {
                 await APILock.WaitAsync();
-                var delay = Globals.AdjudicateAccount != null ? Task.CompletedTask : Task.Delay(1000);
-                var Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
-                await delay;
-                return Result;
+                var delay = Globals.AdjudicateAccount != null ? Task.CompletedTask : Task.Delay(1000);                                
+                Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
+                await delay;                
             }
             catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "NodeInfo.InvokeAsync()");
             }
-            finally
-            {
-                try { APILock.Release(); } catch { }
-            }
+                       
+            try { APILock.Release(); } catch { }            
 
-            return default;
+            return Result;
         }
     }
 }
