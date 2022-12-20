@@ -1033,13 +1033,13 @@ namespace ReserveBlockCore.Services
                 var Now = TimeUtil.GetMillisecondTime();
                 Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
                 var data = JsonConvert.SerializeObject(block);
-
-                var Source = new CancellationTokenSource(5000);
+                
                 foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
                 {
                     try
                     {                        
-                        _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block }, Source.Token);
+                        _ = node.InvokeAsync("ReceiveBlock", new object?[] { block }, 
+                            () => new CancellationTokenSource(5000).Token);
                     }
                     catch (Exception ex)
                     {

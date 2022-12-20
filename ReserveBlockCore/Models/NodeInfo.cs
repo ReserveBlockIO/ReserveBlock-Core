@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,24 +42,41 @@ namespace ReserveBlockCore.Models
         public bool IsValidator { get; set; }
         public bool IsAdjudicator { get; set; }
 
-        public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
-        {
-            T Result = default;
-            try
-            {
-                await APILock.WaitAsync();
-                var delay = Globals.AdjudicateAccount != null ? Task.CompletedTask : Task.Delay(1000);                                
-                Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
-                await delay;                
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "NodeInfo.InvokeAsync()");
-            }
-                       
-            try { APILock.Release(); } catch { }            
+        private ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)> invokeQueue =
+            new ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)>();
 
-            return Result;
+        private async Task ProcessQueue()
+        {
+            while(invokeQueue.Count != 0)
+            {
+                try
+                {
+                    if (invokeQueue.TryDequeue(out var RequestInfo))
+                    {
+                        var Fail = true;
+                        try
+                        {
+                            var token = RequestInfo.ctFunc();
+                            var Result = await Connection.InvokeCoreAsync<string>(RequestInfo.method, RequestInfo.args, token);
+                            RequestInfo.source.SetResult(Result);
+                            Fail = false;
+                        }
+                        catch { }
+                        if(Fail)
+                            RequestInfo.source.SetResult(null);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public async Task<string> InvokeAsync(string method, object[] args, Func<CancellationToken> ctFunc)
+        {
+            var Source = new TaskCompletionSource<string>();
+            invokeQueue.Enqueue((method, args, ctFunc, Source));
+            _ = ProcessQueue();
+
+            return await Source.Task;
         }
     }
 }

@@ -400,7 +400,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Send Adjudicator
-        public async Task<Adjudicators?> SendLeadAdjudicator()
+        public async Task<string> SendLeadAdjudicator()
         {
             return await SignalRQueue(Context, 128, async () =>
             {
@@ -410,7 +410,7 @@ namespace ReserveBlockCore.P2P
                     leadAdj = Adjudicators.AdjudicatorData.GetLeadAdjudicator();
                 }
 
-                return leadAdj;
+                return JsonConvert.SerializeObject(leadAdj);
             });
         }
 

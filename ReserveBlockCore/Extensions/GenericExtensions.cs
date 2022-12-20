@@ -179,7 +179,6 @@ namespace ReserveBlockCore.Extensions
                 return memoryStream.ToArray();
             }
         }
-
         public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
         {
             TValue value;

@@ -850,10 +850,10 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    var state = ConsensusServer.GetState();
-                    var Source = new CancellationTokenSource(1000);
-                    var Response = await node.InvokeAsync<string>("RequestMethodCode", 
-                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, Source.Token );
+                    var state = ConsensusServer.GetState();                    
+                    var Response = await node.InvokeAsync("RequestMethodCode", 
+                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, 
+                        () => new CancellationTokenSource(1000).Token);
                     LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
                     if (Response != null)
@@ -1377,9 +1377,9 @@ namespace ReserveBlockCore.P2P
             else
             {
                 foreach(var node in Globals.Nodes.Values)
-                {
-                    var Source = new CancellationTokenSource(1000);
-                    string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo", Array.Empty<object>(), Source.Token);
+                {                    
+                    string beaconInfo = await node.InvokeAsync("SendBeaconInfo", Array.Empty<object>(), 
+                        () => new CancellationTokenSource(1000).Token);
                     if (beaconInfo != "NA")
                     {
                         NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
@@ -1421,8 +1421,9 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        var Source = new CancellationTokenSource(1000);
-                        var leadAdjudictor = await node.InvokeAsync<Adjudicators?>("SendLeadAdjudicator", Array.Empty<object>(), Source.Token);
+                        var request = await node.InvokeAsync("SendLeadAdjudicator", Array.Empty<object>(),
+                            () => new CancellationTokenSource(1000).Token);
+                        var leadAdjudictor = JsonConvert.DeserializeObject<Adjudicators>(request);
 
                         if (leadAdjudictor != null)
                         {
@@ -1468,9 +1469,9 @@ namespace ReserveBlockCore.P2P
                     foreach (var node in valAdjNodes)
                     {
                         try
-                        {
-                            var Source = new CancellationTokenSource(1000);
-                            string message = await node.InvokeAsync<string>("SendTxToMempool", args: new object?[] { txSend }, Source.Token);
+                        {                            
+                            string message = await node.InvokeAsync("SendTxToMempool", new object?[] { txSend }, 
+                                () => new CancellationTokenSource(1000).Token);
 
                             if (message == "ATMP")
                             {
@@ -1517,10 +1518,9 @@ namespace ReserveBlockCore.P2P
                 foreach(var node in Globals.Nodes.Values)
                 {
                     try
-                    {
-                        var Source = new CancellationTokenSource(5000);
-                        await node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block }, Source.Token);
-                        
+                    {                        
+                        await node.InvokeAsync("ReceiveBlock", new object?[] { block }, 
+                            () => new CancellationTokenSource(5000).Token);                        
                     }
                     catch (Exception ex)
                     {
