@@ -808,6 +808,7 @@ namespace ReserveBlockCore.Services
                         var DelayTime = LocalTime != null ? 25000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 25000;
                         DelayTime = Math.Max(DelayTime, 0);
                         BlockDelay = Task.Delay((int)DelayTime);
+                        ConsoleWriterService.Output("Next Consensus Delay: " + DelayTime);
 
                         if (PreviousRunSucceeded)
                         {
