@@ -144,24 +144,6 @@ namespace ReserveBlockCore
                 StartupService.EncryptedPasswordEntryAdj();
             }
 
-            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
-            {
-                Globals.GUIPasswordNeeded = true;
-                while(Globals.EncryptPassword.Length == 0)
-                {
-                    Thread.Sleep(1000);
-                }
-            }
-
-            if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.GUI)
-            {
-                Globals.GUIPasswordNeeded = true;
-                while (Globals.EncryptPassword.Length == 0)
-                {
-                    Thread.Sleep(1000);
-                }
-            }
-
             //Temporary for TestNet------------------------------------
             //SeedNodeService.SeedNodes();
             //var nodeIp = await SeedNodeService.PingSeedNode();
@@ -267,6 +249,24 @@ namespace ReserveBlockCore
             }
 
             StartupService.StartupMemBlocks();
+
+            if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
+            {
+                Globals.GUIPasswordNeeded = true;
+                while (Globals.EncryptPassword.Length == 0)
+                {
+                    Thread.Sleep(1000);
+                }
+            }
+
+            if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.GUI)
+            {
+                Globals.GUIPasswordNeeded = true;
+                while (Globals.EncryptPassword.Length == 0)
+                {
+                    Thread.Sleep(1000);
+                }
+            }
 
             await TransactionData.UpdateWalletTXTask();
 
