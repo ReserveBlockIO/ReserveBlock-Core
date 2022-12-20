@@ -476,7 +476,8 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    var result = await node.InvokeAsync<bool>("ReceiveWinningBlockV3", new object[] { block });
+                    var Source = new CancellationTokenSource(3000);
+                    var result = await node.InvokeAsync<bool>("ReceiveWinningBlockV3", new object[] { block }, Source.Token);
                     if (result)
                     {
                         node.LastWinningTaskError = false;
@@ -528,7 +529,8 @@ namespace ReserveBlockCore.P2P
                     await Task.Delay(randNum);                                
                 try
                 {
-                    var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswerV3", args: new object[] { taskAnswer });
+                    var Source = new CancellationTokenSource(1000);
+                    var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswerV3", args: new object[] { taskAnswer }, Source.Token);
                     if (result != null)
                     {
                         if (result.AnswerAccepted)
@@ -596,8 +598,8 @@ namespace ReserveBlockCore.P2P
                             {
                                 if (hubAdjConnection1 != null)
                                 {
-
-                                    var result = await hubAdjConnection1.InvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin });
+                                    var Source = new CancellationTokenSource(3000);
+                                    var result = await hubAdjConnection1.InvokeAsync<bool>("ReceiveWinningTaskBlock", new object[] { taskWin }, Source.Token);
                                     if (result)
                                     {
                                         hubAdjConnection1.LastWinningTaskError = false;
@@ -663,8 +665,8 @@ namespace ReserveBlockCore.P2P
                             {
                                 if (hubAdjConnection1 != null)
                                 {
-
-                                    var result = await hubAdjConnection1.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer });
+                                    var Source = new CancellationTokenSource(1000);
+                                    var result = await hubAdjConnection1.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", args: new object[] { taskAnswer }, Source.Token);
                                     if (result != null)
                                     {
                                         if (result.AnswerAccepted)
@@ -728,7 +730,8 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        if (await node.InvokeAsync<bool>("ReceiveTX", args: new object?[] { tx }))
+                        var Source = new CancellationTokenSource(1000);
+                        if (await node.InvokeAsync<bool>("ReceiveTX", args: new object?[] { tx }, Source.Token))
                             SuccessNodes.Add(node.Address);
 
                         tryCount += 1;
@@ -848,8 +851,9 @@ namespace ReserveBlockCore.P2P
                     }
 
                     var state = ConsensusServer.GetState();
+                    var Source = new CancellationTokenSource(1000);
                     var Response = await node.InvokeAsync<string>("RequestMethodCode", 
-                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized } );
+                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, Source.Token );
                     LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
                     if (Response != null)
@@ -1371,7 +1375,8 @@ namespace ReserveBlockCore.P2P
             {
                 foreach(var node in Globals.Nodes.Values)
                 {
-                    string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo");
+                    var Source = new CancellationTokenSource(1000);
+                    string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo", Array.Empty<object>(), Source.Token);
                     if (beaconInfo != "NA")
                     {
                         NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
@@ -1413,7 +1418,8 @@ namespace ReserveBlockCore.P2P
                 {
                     try
                     {
-                        var leadAdjudictor = await node.InvokeAsync<Adjudicators?>("SendLeadAdjudicator");
+                        var Source = new CancellationTokenSource(1000);
+                        var leadAdjudictor = await node.InvokeAsync<Adjudicators?>("SendLeadAdjudicator", Array.Empty<object>(), Source.Token);
 
                         if (leadAdjudictor != null)
                         {
@@ -1460,7 +1466,8 @@ namespace ReserveBlockCore.P2P
                     {
                         try
                         {
-                            string message = await node.InvokeAsync<string>("SendTxToMempool", args: new object?[] { txSend });
+                            var Source = new CancellationTokenSource(1000);
+                            string message = await node.InvokeAsync<string>("SendTxToMempool", args: new object?[] { txSend }, Source.Token);
 
                             if (message == "ATMP")
                             {
@@ -1507,8 +1514,9 @@ namespace ReserveBlockCore.P2P
                 foreach(var node in Globals.Nodes.Values)
                 {
                     try
-                    {                        
-                        await node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    {
+                        var Source = new CancellationTokenSource(5000);
+                        await node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block }, Source.Token);
                         
                     }
                     catch (Exception ex)

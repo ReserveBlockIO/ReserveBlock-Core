@@ -1031,11 +1031,12 @@ namespace ReserveBlockCore.Services
                 Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
                 var data = JsonConvert.SerializeObject(block);
 
+                var Source = new CancellationTokenSource(5000);
                 foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
                 {
                     try
-                    {
-                        _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block });
+                    {                        
+                        _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block }, Source.Token);
                     }
                     catch { }
                 }

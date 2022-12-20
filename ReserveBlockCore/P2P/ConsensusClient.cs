@@ -273,7 +273,7 @@ namespace ReserveBlockCore.P2P
 
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);
                     LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");
-                    var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
+                    var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token);
                     var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.InvokeAsync<string>("Message", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend }, Source.Token);
                     LogUtility.LogQueue(Response, "After Message");
@@ -373,7 +373,7 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);
                     var Source = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token);
                     var Now = TimeUtil.GetMillisecondTime();
-                    var Response = await peer.InvokeAsync<string>("Hash", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, cts.Token);
+                    var Response = await peer.InvokeAsync<string>("Hash", args: new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, Source.Token);
                     LogUtility.LogQueue(Response, "After Hash");
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestHash", null, Response);
 
