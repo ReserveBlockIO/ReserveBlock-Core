@@ -213,10 +213,10 @@ namespace ReserveBlockCore.Services
                 Globals.Signers = new ConcurrentDictionary<(string, long), long?>
                 {
                     [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
-                    //[("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
+                    [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
                     [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
                     [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
-                    //[("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
+                    [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
                 };
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
