@@ -271,6 +271,10 @@ namespace ReserveBlockCore
 
             if (valEncryptCheck && valEncryptAddr != null)
             {
+                while(Globals.EncryptPassword.Length == 0)
+                {
+                    Thread.Sleep(1000);
+                }
                 var accounts = AccountData.GetAccounts();
                 var myAccount = accounts.FindOne(x => x.IsValidating == false && x.Address == valEncryptAddr);
                 if (myAccount != null)
@@ -279,10 +283,6 @@ namespace ReserveBlockCore
                     accounts.UpdateSafe(myAccount);
                     Globals.ValidatorAddress = myAccount.Address;
                     LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
-                }
-                while(Globals.EncryptPassword.Length == 0)
-                {
-                    Thread.Sleep(1000);
                 }
             }
             
