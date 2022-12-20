@@ -1105,6 +1105,7 @@ namespace ReserveBlockCore.P2P
                             var errorMsg = string.Format("Failed to talk to beacon.");
                             ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconUploadRequest(List<BeaconInfo.BeaconInfoJson> locators, List<string> assets, string scUID) - try");
                             try { await hubBeaconConnection.StopAsync(); }
+                            catch { }
                             finally
                             {
                                 await hubBeaconConnection.DisposeAsync();
@@ -1220,6 +1221,7 @@ namespace ReserveBlockCore.P2P
                             var errorMsg = string.Format("Failed to talk to beacon.");
                             ErrorLogUtility.LogError(errorMsg, "P2PClient.BeaconDownloadRequest() - try");
                             try { await hubBeaconConnection.StopAsync(); }
+                            catch { }
                             finally
                             {
                                 await hubBeaconConnection.DisposeAsync();
@@ -1268,6 +1270,7 @@ namespace ReserveBlockCore.P2P
                             var errorMsg = string.Format("Failed to talk to beacon.");
                             NFTLogUtility.Log(errorMsg, "P2PClient.BeaconFileIsReady() - try");
                             try { await hubBeaconConnection.StopAsync(); }
+                            catch { }
                             finally
                             {
                                 await hubBeaconConnection.DisposeAsync();

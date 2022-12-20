@@ -110,6 +110,7 @@ namespace ReserveBlockCore.Services
                     }
                 }
             }
+            catch { }
             finally
             {
                 try { Globals.BlocksDownloadSlim.Release(); } catch { }

@@ -833,6 +833,10 @@ namespace ReserveBlockCore.Services
                 }
                 download = false; //exit the while.
             }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "StartupService.DownloadBlocksOnStart()");
+            }
             finally
             {
                 Globals.StopAllTimers = false;

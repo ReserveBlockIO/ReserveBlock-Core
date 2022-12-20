@@ -221,11 +221,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
-                try
-                {                    
-                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.Message()");
-                }
-                catch { }
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ConsensusServer.Message()");
             }
 
             UpdateConsensusDump(ip, "Message", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerMessage, Prefix);
@@ -282,11 +278,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                try
-                {
-                    ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "ConsensusServer.Hash()");
-                }
-                catch { }
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ConsensusServer.Hash()");
             }
 
             UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash, Prefix);
@@ -309,7 +301,10 @@ namespace ReserveBlockCore.P2P
 
                 return peerIP;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ConsensusServer.GetIP()");
+            }
 
             return "0.0.0.0";
         }

@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
@@ -29,6 +30,11 @@ namespace ReserveBlockCore.Extensions
                 slim.Wait();
                 return cmd();
             }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
+                return default;
+            }
             finally
             {
                 try { slim.Release(); } catch { }
@@ -42,6 +48,10 @@ namespace ReserveBlockCore.Extensions
             {
                 slim.Wait();
                 cmd();
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
             }
             finally
             {

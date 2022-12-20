@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using ReserveBlockCore.Utilities;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -93,6 +94,11 @@ namespace ReserveBlockCore.Extensions
 
                 return str1.Equals(str2);
             }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "GenericExtensions.SecureStringCompare()");
+                return false;
+            }            
             finally
             {
                 if (ss_bstr1_ptr != IntPtr.Zero)
@@ -114,6 +120,11 @@ namespace ReserveBlockCore.Extensions
             {
                 unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(source);
                 return Marshal.PtrToStringUni(unmanagedString);
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "GenericExtensions.ToUnsecureString()");
+                return null;
             }
             finally
             {

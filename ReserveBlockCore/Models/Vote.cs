@@ -146,7 +146,10 @@ namespace ReserveBlockCore.Models
                 Address = Globals.ValidatorAddress;
                 return true;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "Vote.Build()");
+            }            
 
             return false;
         }

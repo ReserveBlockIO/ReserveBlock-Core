@@ -869,7 +869,10 @@ namespace ReserveBlockCore.Services
                             if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
                                 pool.Item2.Context?.Abort();
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.FortisPoolAbortLoops");
+                    }
 
                     ConsensusServer.UpdateState(isUsed: true);
                     var DecryptedAnswers = await ConsensusClient.ConsensusRun(2, MyDecryptedAnswer, MyEncryptedAnswer, 2000, RunType.Middle);
@@ -1038,7 +1041,10 @@ namespace ReserveBlockCore.Services
                     {                        
                         _ = node.InvokeAsync<string>("ReceiveBlock", args: new object?[] { block }, Source.Token);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.ReceiveBlock");
+                    }
                 }
 
                 if (HubContext?.Clients != null)
@@ -1056,7 +1062,10 @@ namespace ReserveBlockCore.Services
                 Globals.LastAdjudicateTime = TimeUtil.GetTime();
                 Globals.BroadcastedTrxDict.Clear();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.FinalizeWork");
+            }
         }
 
         public static void ClearRoundDicts(long height)

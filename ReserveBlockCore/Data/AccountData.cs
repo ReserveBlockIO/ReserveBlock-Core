@@ -46,8 +46,11 @@ namespace ReserveBlockCore.Data
 						accountMade = true;
 					}
 				}
-				catch { }
-			}
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AccountData.CreateNewAccount()");
+                }
+            }
 			
 
 			return account;

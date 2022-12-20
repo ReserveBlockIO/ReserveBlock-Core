@@ -485,7 +485,7 @@ namespace ReserveBlockCore.P2P
             catch (Exception ex)
             {
                 ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
-            }
+            }            
             finally
             {
                 IsConnectingDict.TryRemove(IPAddress, out _);
@@ -515,7 +515,10 @@ namespace ReserveBlockCore.P2P
                     }                        
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ConsensusClient.GetBlock()");
+            }
 
             return false;
         }
@@ -529,7 +532,10 @@ namespace ReserveBlockCore.P2P
                 using (var Source = new CancellationTokenSource(2000))
                     return await node.Connection.InvokeAsync<long>("SendBlockHeight", Source.Token);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ConsensusClient.GetNodeHeight()");
+            }
             return default;
         }
     }

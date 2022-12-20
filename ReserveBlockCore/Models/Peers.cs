@@ -104,7 +104,10 @@ namespace ReserveBlockCore.Models
 
                 return "Peer not found";
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "Peers.UnbanPeer()");
+            }
 
             return "Peer not found";
         }

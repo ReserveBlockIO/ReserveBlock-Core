@@ -82,6 +82,7 @@ namespace ReserveBlockCore.Services
                     }
                 }
             }
+            catch { }
             finally
             {
                 try { ValidateBlocksSemaphore.Release(); } catch { }
@@ -373,6 +374,7 @@ namespace ReserveBlockCore.Services
                     Console.WriteLine($"Error: {ex.ToString()}");
                 }
             }
+            catch { }
             finally
             {
                 try { ValidateBlockSemaphore.Release(); } catch { }

@@ -20,6 +20,9 @@ namespace ReserveBlockCore.Utilities
 
                 return await ResetTreis();
             }
+            catch {
+                return default;
+            }
             finally
             {
                 Globals.IsResyncing = false;

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,10 +36,16 @@ namespace ReserveBlockCore.Models
                 await delay;
                 return Result;
             }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AdjNodeInfo.InvokeAsync()");
+            }
             finally
             {
                 try { APILock.Release(); } catch { }
             }
+
+            return default;
         }
     }
 }

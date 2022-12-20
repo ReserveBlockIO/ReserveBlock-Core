@@ -424,7 +424,10 @@ namespace ReserveBlockCore.Models
                         UpdateTopic(topic);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "TopicTrei.AuditTopic()");
+            }
         }
 
         #endregion

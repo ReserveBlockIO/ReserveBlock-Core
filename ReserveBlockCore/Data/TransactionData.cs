@@ -126,7 +126,10 @@ namespace ReserveBlockCore.Data
 
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "TransactionData.UpdateWalletTXTask()");
+                }
             }
         }
 

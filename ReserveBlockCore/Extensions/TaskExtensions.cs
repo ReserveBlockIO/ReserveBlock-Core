@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using ReserveBlockCore.Utilities;
+using System.ComponentModel;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -58,7 +59,10 @@ namespace ReserveBlockCore.Extensions
 					if (success(Result))
 						return Result;
 				}
-				catch { }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "TaskExtensions.RetryUntilSuccessOrCancel()");
+                }
                 if (delay != null)
                     await delay;
             }
