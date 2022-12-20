@@ -42,7 +42,7 @@ namespace ReserveBlockCore.Models
 
         public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
         {
-            using (await APILock.LockAsync())
+            using (await APILock.LockAsync(ct))
             {
                 var delay = Globals.AdjudicateAccount != null ? Task.CompletedTask : Task.Delay(1000);
                 var Result = await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
