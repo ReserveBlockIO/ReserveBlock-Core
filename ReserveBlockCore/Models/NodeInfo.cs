@@ -42,11 +42,16 @@ namespace ReserveBlockCore.Models
         public bool IsValidator { get; set; }
         public bool IsAdjudicator { get; set; }
 
+        private int ProcessQueueLock = 0;
+
         private ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)> invokeQueue =
             new ConcurrentQueue<(string method, object[] args, Func<CancellationToken> ctFunc, TaskCompletionSource<string> source)>();
 
         private async Task ProcessQueue()
         {
+            if (Interlocked.Exchange(ref ProcessQueueLock, 1) == 1)
+                return;
+
             while(invokeQueue.Count != 0)
             {
                 try
@@ -68,6 +73,10 @@ namespace ReserveBlockCore.Models
                 }
                 catch { }
             }
+
+            Interlocked.Exchange(ref ProcessQueueLock, 0);
+            if (invokeQueue.Count != 0)
+                await ProcessQueue();
         }
 
         public async Task<string> InvokeAsync(string method, object[] args, Func<CancellationToken> ctFunc)
