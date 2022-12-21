@@ -48,18 +48,29 @@ namespace ReserveBlockCore.Utilities
                 var ValidCount = 0;
                 var AddressSignatures = block.AdjudicatorSignature.Split('|');
                 var Addresses = new HashSet<string>();
-                var SignerAddresses = Globals.Signers.Keys;
+                
                 if(Globals.IsTestNet)
-                {
-                    SignerAddresses.Add("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK");
-                    SignerAddresses.Add("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr");
+                {                    
+                    foreach (var AddressSignature in AddressSignatures)
+                    {
+                        var split = AddressSignature.Split(':');
+                        var (Address, Signature) = (split[0], split[1]);
+                        if (!Globals.Signers.ContainsKey(Address) && Address != "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK" && Address != "xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr")
+                            return false;
+                        if (!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
+                            return false;
+                        ValidCount++;
+                        Addresses.Add(Address);
+                    }
+                    if (ValidCount == Addresses.Count && ValidCount >= Signer.Majority())
+                        return true;
                 }
 
                 foreach (var AddressSignature in AddressSignatures)
                 {
                     var split = AddressSignature.Split(':');
                     var (Address, Signature) = (split[0], split[1]);
-                    if (!SignerAddresses.Contains(Address))
+                    if (!Globals.Signers.ContainsKey(Address))
                         return false;
                     if(!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
                         return false;

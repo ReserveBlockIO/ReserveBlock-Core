@@ -97,7 +97,7 @@ namespace ReserveBlockCore.P2P
                     Majority = NumNodes / 2 + 1;
                     
                     var MessageKeysToKeep = ConsensusServer.Messages.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
-                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
+                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1))
                         .Select(x => x.Key).ToHashSet();
                     foreach(var key in ConsensusServer.Messages.Keys.Where(x => !MessageKeysToKeep.Contains(x)))
                     {
@@ -108,7 +108,7 @@ namespace ReserveBlockCore.P2P
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
                     var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
-                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1) || (x.Key.Height == Height + 1 && x.Key.MethodCode == 0))
+                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1))
                         .Select(x => x.Key).ToHashSet();
                     foreach (var key in ConsensusServer.Hashes.Keys.Where(x => !HashKeysToKeep.Contains(x)))
                     {
@@ -161,9 +161,8 @@ namespace ReserveBlockCore.P2P
 
                 Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);                
                 
-                var HashSource = new CancellationTokenSource();
-                var signers = Globals.Signers.Keys;
-                _ = HashRequests(methodCode, Peers, signers.ToArray(), HashSource);
+                var HashSource = new CancellationTokenSource();                
+                _ = HashRequests(methodCode, Peers, Globals.Signers.Keys.ToArray(), HashSource);
                                 
                 var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);                
                 while (Height == Globals.LastBlock.Height + 1)
