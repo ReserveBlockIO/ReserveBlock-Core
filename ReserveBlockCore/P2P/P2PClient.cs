@@ -1471,9 +1471,10 @@ namespace ReserveBlockCore.P2P
                     foreach (var node in valAdjNodes)
                     {
                         try
-                        {                            
-                            string message = await node.InvokeAsync<string>("SendTxToMempool", new object?[] { txSend }, 
-                                () => new CancellationTokenSource(1000).Token);
+                        {
+                            string message = Globals.AdjudicateAccount == null ? await node.InvokeAsync<string>("SendTxToMempool", new object?[] { txSend },
+                                () => new CancellationTokenSource(1000).Token) : await node.Connection.InvokeCoreAsync
+                                <string>("SendTxToMempool", new object?[] { txSend }, new CancellationTokenSource(1000).Token);
 
                             if (message == "ATMP")
                             {
