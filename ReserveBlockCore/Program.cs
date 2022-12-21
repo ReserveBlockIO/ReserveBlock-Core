@@ -21,6 +21,9 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+            bool valEncryptCheck = false;
+            string? valEncryptAddr = "";
+
             //Forced Testnet
             Globals.IsTestNet = true;
             var argList = args.ToList();
@@ -144,14 +147,20 @@ namespace ReserveBlockCore
                 StartupService.EncryptedPasswordEntryAdj();
             }
 
-            if(Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
+            if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
             {
                 Globals.GUIPasswordNeeded = true;
+                //while (Globals.EncryptPassword.Length == 0)
+                //{
+                //    Thread.Sleep(1000);
+                //}
             }
 
             if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.GUI)
             {
                 Globals.GUIPasswordNeeded = true;
+                valEncryptAddr = await ValidatorService.SuspendMasterNode();
+                valEncryptCheck = true;
             }
 
             //Temporary for TestNet------------------------------------
@@ -260,6 +269,23 @@ namespace ReserveBlockCore
 
             StartupService.StartupMemBlocks();
 
+            if (valEncryptCheck && valEncryptAddr != null)
+            {
+                while(Globals.EncryptPassword.Length == 0)
+                {
+                    Thread.Sleep(1000);
+                }
+                var accounts = AccountData.GetAccounts();
+                var myAccount = accounts.FindOne(x => x.IsValidating == false && x.Address == valEncryptAddr);
+                if (myAccount != null)
+                {
+                    myAccount.IsValidating = true;
+                    accounts.UpdateSafe(myAccount);
+                    Globals.ValidatorAddress = myAccount.Address;
+                    LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
+                }
+            }
+            
             await TransactionData.UpdateWalletTXTask();
 
             _ = StartupService.ConnectToAdjudicators();
