@@ -855,7 +855,7 @@ namespace ReserveBlockCore.P2P
                     var state = ConsensusServer.GetState();                    
                     var Response = await node.InvokeAsync<string>("RequestMethodCode", 
                         new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, 
-                        () => 1000 - (int)(TimeUtil.GetMillisecondTime() - node.LastMethodCodeTime) > 0 ? new CancellationTokenSource(1000).Token
+                        () => (int)(TimeUtil.GetMillisecondTime() - node.LastMethodCodeTime) >= 1000 ? new CancellationTokenSource(1000).Token
                             : Globals.CancelledToken);
                     LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
