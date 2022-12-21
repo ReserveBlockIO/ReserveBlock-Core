@@ -12,7 +12,9 @@ namespace ReserveBlockCore
     {
         static Globals()
         {
-
+            var Source = new CancellationTokenSource();
+            Source.Cancel();
+            CancelledToken = Source.Token;
         }
 
         #region Timers
@@ -96,6 +98,8 @@ namespace ReserveBlockCore
         public static bool AdjPoolCheckLock = false;
         public static bool GUI = false;
         public static bool GUIPasswordNeeded = false;
+
+        public static CancellationToken CancelledToken;
 
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address

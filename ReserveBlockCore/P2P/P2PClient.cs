@@ -845,16 +845,18 @@ namespace ReserveBlockCore.P2P
 
                     LogUtility.LogQueue(node.NodeIP, "Before RequestMethodCode");
                     var Now = TimeUtil.GetMillisecondTime();
-                    if(Now - node.LastMethodCodeTime < 1000)
+                    var Diff = 1000 - (int)(Now - node.LastMethodCodeTime);
+                    if (Diff > 0)
                     {
-                        await Task.Delay(1000 - (int)(Now - node.LastMethodCodeTime));
+                        await Task.Delay(Diff);
                         continue;
                     }
 
                     var state = ConsensusServer.GetState();                    
                     var Response = await node.InvokeAsync<string>("RequestMethodCode", 
                         new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, 
-                        () => new CancellationTokenSource(1000).Token);
+                        () => 1000 - (int)(TimeUtil.GetMillisecondTime() - node.LastMethodCodeTime) > 0 ? new CancellationTokenSource(1000).Token
+                            : Globals.CancelledToken);
                     LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
                     if (Response != null)
