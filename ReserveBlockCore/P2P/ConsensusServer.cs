@@ -204,8 +204,9 @@ namespace ReserveBlockCore.P2P
                 var messages = Messages.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Message, string Signature)>());                
                 var state = GetState();
                 
-                if (message != null && height >= Globals.LastBlock.Height + 1 
-                    && ((methodCode == state.MethodCode && state.Status != ConsensusStatus.Finalized) || methodCode > state.MethodCode)
+                if (message != null && height == Globals.LastBlock.Height + 1 
+                    && ((methodCode == state.MethodCode && state.Status != ConsensusStatus.Finalized) || 
+                        (methodCode == state.MethodCode + 1 && state.Status == ConsensusStatus.Finalized))
                     && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
                 
@@ -257,7 +258,7 @@ namespace ReserveBlockCore.P2P
 
                 var hashes = Hashes.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());
                 var state = GetState();
-                if (hash != null && height >= Globals.LastBlock.Height + 1 && methodCode >= state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
+                if (hash != null && height == Globals.LastBlock.Height + 1 && methodCode == state.MethodCode && SignatureService.VerifySignature(node.Address, hash, signature))
                     hashes[node.Address] = (hash, signature);
 
                 if (ConsenusStateSingelton.Status != ConsensusStatus.Finalized && methodCode == state.MethodCode)
