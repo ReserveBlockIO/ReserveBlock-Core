@@ -353,6 +353,7 @@ namespace ReserveBlockCore.Services
                             }
                         }
 
+                        Signer.UpdateSigningAddresses();
                         if (Globals.AdjudicateAccount != null)
                             await ClientCallService.FinalizeWork(block);
 

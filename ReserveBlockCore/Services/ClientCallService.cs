@@ -790,7 +790,7 @@ namespace ReserveBlockCore.Services
                     TaskQuestionUtility.CreateTaskQuestion("rndNum");
                     var State = ConsensusServer.GetState();
                     var Answer = State.Answer;
-                    var Signers = Signer.CurrentSigningAddresses();
+                    var Signers = Globals.Signers.Keys.ToHashSet();
                     var Majority = Signers.Count / 2 + 1;
 
                     while (Globals.BlocksDownloadSlim.CurrentCount == 0 || Globals.Nodes.Values.Where(x => x.IsConnected).Count() < Majority - 1)
@@ -802,7 +802,7 @@ namespace ReserveBlockCore.Services
                     if(PreviousHeight != Height)
                     {                                               
                         PreviousHeight = Height;
-                        var LocalTime = BlockLocalTime.GetFirstAtLeast(Math.Max(Height - 24000, (Height + Globals.BlockLock) / 2));
+                        var LocalTime = BlockLocalTime.GetFirstAtLeast((Height + Globals.BlockLock) / 2);
                         await BlockDelay;
                         var CurrentTime = TimeUtil.GetMillisecondTime();
                         var DelayTime = LocalTime != null ? 25000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 25000;

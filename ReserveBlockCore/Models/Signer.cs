@@ -1,5 +1,10 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
+using System.Globalization;
+using System.Numerics;
 
 namespace ReserveBlockCore.Models
 {
@@ -23,17 +28,34 @@ namespace ReserveBlockCore.Models
             }
         }
 
-        public static HashSet<string> CurrentSigningAddresses()
+        public static ConcurrentDictionary<(string Address, long StartHeight), long?> Signers;
+        public static void UpdateSigningAddresses()
         {
             var Height = Globals.LastBlock.Height;
-            return Globals.Signers.Where(x => x.Key.StartHeight <= Height && (x.Value == null || x.Value >= Height))
+            var NewSigners = Signers.Where(x => x.Key.StartHeight <= Height && (x.Value == null || x.Value >= Height))
                .Select(x => x.Key.Address)
                .ToHashSet();
-        }
+            foreach (var signer in NewSigners)
+                Globals.Signers[signer] = true;
+            foreach (var singer in Globals.Signers.Keys)
+                if (!NewSigners.Contains(singer))
+                    Globals.Signers.TryRemove(singer, out _);
 
+            if (Globals.AdjudicateAccount == null)
+            {
+                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+                Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
+                if (Globals.AdjudicateAccount != null)
+                {
+                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+                    _ = Task.Run(StartupService.ConnectToConsensusNodes);
+                }
+            }
+        }        
         public static int NumSigners()
         {
-            return CurrentSigningAddresses().Count;
+            return Globals.Signers.Count;
         }
         public static int Majority()
         {

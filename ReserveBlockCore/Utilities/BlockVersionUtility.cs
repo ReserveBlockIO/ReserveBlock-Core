@@ -48,7 +48,7 @@ namespace ReserveBlockCore.Utilities
                 var ValidCount = 0;
                 var AddressSignatures = block.AdjudicatorSignature.Split('|');
                 var Addresses = new HashSet<string>();
-                var SignerAddresses = Signer.CurrentSigningAddresses();
+                var SignerAddresses = Globals.Signers.Keys;
                 if(Globals.IsTestNet)
                 {
                     SignerAddresses.Add("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK");

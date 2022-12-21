@@ -90,9 +90,9 @@ namespace ReserveBlockCore.P2P
                 while (true)
                 {
                     Height = Globals.LastBlock.Height + 1;                                    
-                    Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();                    
+                    Peers = Globals.Nodes.Values.Where(x => x.Address != Address).ToArray();
 
-                    var CurrentAddresses = Signer.CurrentSigningAddresses();
+                    var CurrentAddresses = Globals.Signers.Keys.ToHashSet();
                     var NumNodes = CurrentAddresses.Count;
                     Majority = NumNodes / 2 + 1;
                     
@@ -162,7 +162,7 @@ namespace ReserveBlockCore.P2P
                 Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);                
                 
                 var HashSource = new CancellationTokenSource();
-                var signers = Signer.CurrentSigningAddresses();
+                var signers = Globals.Signers.Keys;
                 _ = HashRequests(methodCode, Peers, signers.ToArray(), HashSource);
                                 
                 var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);                

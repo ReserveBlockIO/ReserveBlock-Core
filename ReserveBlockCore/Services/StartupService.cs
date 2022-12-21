@@ -178,12 +178,12 @@ namespace ReserveBlockCore.Services
 
                 if(Signers.Any())
                 {
-                    Globals.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
+                    Signer.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
                         Signers.ToDictionary(x => (x.Address, x.StartHeight), x => x.EndHeight));
                 }
                 else
                 {
-                    Globals.Signers = new ConcurrentDictionary<(string, long), long?>
+                    Signer.Signers = new ConcurrentDictionary<(string, long), long?>
                     {
                         [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
                         [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
@@ -192,14 +192,14 @@ namespace ReserveBlockCore.Services
                         [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
                     };
 
-                    foreach(var signer in Globals.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
+                    foreach(var signer in Signer.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
                         signerDB.InsertSafe(signer);                    
                 }
                 
 
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-                Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
+                Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
                 {
                     BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Services
             {
                 Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
 
-                Globals.Signers = new ConcurrentDictionary<(string, long), long?>
+                Signer.Signers = new ConcurrentDictionary<(string, long), long?>
                 {
                     [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
                     [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
@@ -220,7 +220,7 @@ namespace ReserveBlockCore.Services
                 };
 
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-                Globals.AdjudicateAccount = Accounts.Where(x => Signer.CurrentSigningAddresses().Contains(x.Address)).FirstOrDefault();
+                Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
                 {
                     BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
@@ -550,7 +550,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var SigningAddresses = Globals.Signers.Keys.ToHashSet();
                     var ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
                                         
                     if(SigningAddresses.Except(ConsensusAddresses).Any())
@@ -610,7 +610,7 @@ namespace ReserveBlockCore.Services
                         continue;
                     }
 
-                    var SigningAddresses = Signer.CurrentSigningAddresses();
+                    var SigningAddresses = Globals.Signers.Keys.ToHashSet();
                     var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
 
                     if (SigningAddresses.Except(AdjAddresses).Any())
