@@ -856,7 +856,7 @@ namespace ReserveBlockCore.P2P
                     var Response = await node.InvokeAsync<string>("RequestMethodCode", 
                         new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, 
                         () => (int)(TimeUtil.GetMillisecondTime() - node.LastMethodCodeTime) >= 1000 ? new CancellationTokenSource(1000).Token
-                            : Globals.CancelledToken);
+                            : Globals.CancelledToken, "RequestMethodCode");
                     LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
 
                     if (Response != null)
@@ -1382,7 +1382,7 @@ namespace ReserveBlockCore.P2P
                 foreach(var node in Globals.Nodes.Values)
                 {                    
                     string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo", Array.Empty<object>(), 
-                        () => new CancellationTokenSource(1000).Token);
+                        () => new CancellationTokenSource(1000).Token, "SendBeaconInfo");
                     if (beaconInfo != "NA")
                     {
                         NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
@@ -1425,7 +1425,7 @@ namespace ReserveBlockCore.P2P
                     try
                     {
                         var leadAdjudictor = await node.InvokeAsync<Adjudicators>("SendLeadAdjudicator", Array.Empty<object>(),
-                            () => new CancellationTokenSource(1000).Token);                        
+                            () => new CancellationTokenSource(1000).Token, "SendLeadAdjudicator");                        
 
                         if (leadAdjudictor != null)
                         {
@@ -1473,7 +1473,7 @@ namespace ReserveBlockCore.P2P
                         try
                         {
                             string message = Globals.AdjudicateAccount == null ? await node.InvokeAsync<string>("SendTxToMempool", new object?[] { txSend },
-                                () => new CancellationTokenSource(1000).Token) : await node.Connection.InvokeCoreAsync
+                                () => new CancellationTokenSource(1000).Token, "SendTxToMempool") : await node.Connection.InvokeCoreAsync
                                 <string>("SendTxToMempool", new object?[] { txSend }, new CancellationTokenSource(1000).Token);
 
                             if (message == "ATMP")

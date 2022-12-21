@@ -39,10 +39,15 @@ namespace ReserveBlockCore.Models
         public bool IsValidator { get; set; }
         public bool IsAdjudicator { get; set; }
 
+        public string[] Queue { get
+            {
+                return invokeQueue.Select(x => x.Item4).ToArray();
+            } }
+
         private int ProcessQueueLock = 0;
 
-        private ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult)> invokeQueue =
-            new ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult)>();
+        private ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult, string)> invokeQueue =
+            new ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult, string)>();
 
         private async Task ProcessQueue()
         {
@@ -81,13 +86,13 @@ namespace ReserveBlockCore.Models
                 await ProcessQueue();
         }
 
-        public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc)
+        public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc, string description)
         {
             try
             {
                 var Source = new TaskCompletionSource<T>();
                 var InvokeFunc = async (CancellationToken ct) => (object)(await Connection.InvokeCoreAsync<T>(method, args, ct));
-                invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x)));
+                invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x), TimeUtil.GetMillisecondTime() + " " + description));
                 _ = ProcessQueue();
 
                 return await Source.Task;

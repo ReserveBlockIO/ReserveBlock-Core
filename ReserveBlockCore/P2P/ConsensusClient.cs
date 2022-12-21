@@ -274,7 +274,8 @@ namespace ReserveBlockCore.P2P
                     LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");                    
                     var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.InvokeAsync<string>("Message", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend },
-                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token).Token);
+                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token).Token,
+                        "Message " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + MessageToSend);
                     LogUtility.LogQueue(Response, "After Message");
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestMessage", null, Response);
 
@@ -372,7 +373,8 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                    
                     var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.InvokeAsync<string>("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
-                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token);
+                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token,
+                        "Hash "+ (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + HashToSend);
                     LogUtility.LogQueue(Response, "After Hash");
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestHash", null, Response);
 
