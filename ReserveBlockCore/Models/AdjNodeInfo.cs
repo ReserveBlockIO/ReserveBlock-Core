@@ -65,12 +65,21 @@ namespace ReserveBlockCore.Models
 
         public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc)
         {
-            var Source = new TaskCompletionSource<T>();
-            var InvokeFunc = async (CancellationToken ct) => (object)(await Connection.InvokeCoreAsync<T>(method, args, ct));
-            invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x)));
-            _ = ProcessQueue();
+            try
+            {
+                var Source = new TaskCompletionSource<T>();
+                var InvokeFunc = async (CancellationToken ct) => (object)(await Connection.InvokeCoreAsync<T>(method, args, ct));
+                invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x)));
+                _ = ProcessQueue();
 
-            return await Source.Task;
+                return await Source.Task;
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AdjNodeInfo.InvokeAsync()");
+            }
+            return default;
+            
         }
     }
 }
