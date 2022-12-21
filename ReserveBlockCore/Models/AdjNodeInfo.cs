@@ -46,6 +46,11 @@ namespace ReserveBlockCore.Models
                         try
                         {
                             var token = RequestInfo.ctFunc();
+                            if (token.IsCancellationRequested)
+                            {
+                                RequestInfo.setResult(default);
+                                continue;
+                            }
                             var Result = await RequestInfo.invokeFunc(token);
                             RequestInfo.setResult(Result);
                             Fail = false;
@@ -74,12 +79,9 @@ namespace ReserveBlockCore.Models
 
                 return await Source.Task;
             }
-            catch(Exception ex)
-            {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AdjNodeInfo.InvokeAsync()");
-            }
+            catch { }
+
             return default;
-            
         }
     }
 }
