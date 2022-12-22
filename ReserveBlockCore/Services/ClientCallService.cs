@@ -803,7 +803,7 @@ namespace ReserveBlockCore.Services
                         PreviousHeight = Height;                        
                         await BlockDelay;
                         var CurrentTime = TimeUtil.GetMillisecondTime();
-                        var DelayTimeCorrection = 25000 * (Height - 4900L) - (CurrentTime - 1671720934130L);                        
+                        var DelayTimeCorrection = 25000 * (Height - 16L) - (CurrentTime - 1671725784780L);                        
                         var DelayTime = Math.Min(Math.Max(25000 + DelayTimeCorrection, 20000), 30000);
                         BlockDelay = Task.Delay((int)DelayTime);
                         ConsoleWriterService.Output("\r\nNext Consensus Delay: " + DelayTime + " (" + DelayTimeCorrection +  ")");                        
