@@ -1000,8 +1000,7 @@ namespace ReserveBlockCore.Services
                     Winner.AdjudicatorSignature = signature;
 
                     ConsensusServer.UpdateState(methodCode: 0, status: (int)ConsensusStatus.Processing);
-                    if (await BlockValidatorService.ValidateBlock(Winner, false))
-                        PreviousRunSucceeded = true;
+                    await BlockValidatorService.ValidateBlock(Winner, false)                    
                 }
                 catch(Exception ex)
                 {
