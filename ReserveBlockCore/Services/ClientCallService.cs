@@ -777,8 +777,7 @@ namespace ReserveBlockCore.Services
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(20);
             
-            var PreviousHeight = -1L;
-            var PreviousRunSucceeded = false;
+            var PreviousHeight = -1L;            
             var BlockDelay = Task.CompletedTask;
             ConsoleWriterService.Output("Booting up consensus loop");            
             while (true)
@@ -801,21 +800,13 @@ namespace ReserveBlockCore.Services
                     
                     if(PreviousHeight != Height)
                     {                                               
-                        PreviousHeight = Height;
-                        var LocalTime = BlockLocalTime.GetFirstAtLeast((Height + Globals.BlockLock) / 2);
+                        PreviousHeight = Height;                        
                         await BlockDelay;
                         var CurrentTime = TimeUtil.GetMillisecondTime();
-                        var DelayTime = LocalTime != null ? 25000 - (CurrentTime - LocalTime.LocalTime) + 25000 * (Height - LocalTime.Height) : 25000;
-                        DelayTime = Math.Max(DelayTime, 0);
+                        var DelayTime =25000 - (CurrentTime - 1671720934130L) + 25000 * (Height - 4900L);
+                        DelayTime = Math.Min(Math.Max(DelayTime, 20000), 30000);
                         BlockDelay = Task.Delay((int)DelayTime);
-                        ConsoleWriterService.Output("\r\nNext Consensus Delay: " + DelayTime);
-
-                        if (PreviousRunSucceeded)
-                        {
-                            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
-                            localTimeDb.InsertSafe(new BlockLocalTime { Height = Height - 1, LocalTime = CurrentTime });
-                        }
-                        PreviousRunSucceeded = false;
+                        ConsoleWriterService.Output("\r\nNext Consensus Delay: " + DelayTime);                        
                     }                    
 
                     if (Height != Globals.LastBlock.Height + 1)
