@@ -1078,12 +1078,11 @@ namespace ReserveBlockCore.Services
         }
 
         internal static async Task StartupPeers()
-        {
-            if (Globals.AdjudicateAccount != null)
-                return;
-
+        {            
             while (true)
             {
+                if (Globals.AdjudicateAccount != null)
+                    return;
                 var delay = Task.Delay(10000);
                 try
                 {
