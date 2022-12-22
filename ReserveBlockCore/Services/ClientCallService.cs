@@ -297,6 +297,7 @@ namespace ReserveBlockCore.Services
                     }
 
                     //Txs will need to be wrapped into a batch or this process will need to operate slowly.
+                    var mempool = TransactionData.GetPool();
                     if (txsToBroadcastVal.Count() > 0)
                     {
                         foreach (var transaction in txsToBroadcastVal)
@@ -304,7 +305,6 @@ namespace ReserveBlockCore.Services
                             var isTxStale = await TransactionData.IsTxTimestampStale(transaction.Transaction);
                             if (!isTxStale)
                             {
-                                var mempool = TransactionData.GetPool();
                                 if (mempool.Count() != 0)
                                 {
                                     var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
