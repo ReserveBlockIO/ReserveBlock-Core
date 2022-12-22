@@ -176,7 +176,7 @@ namespace ReserveBlockCore.P2P
                         while(true)
                         {
                             var Now = TimeUtil.GetMillisecondTime();
-                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 3000 &&
+                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 3000 && x.NodeHeight == Height &&
                                 ((x.MethodCode == methodCode && !x.IsFinalized) || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Any();                                                               
                             LogUtility.LogQueue(AnyNodesToWaitFor.ToString(), "ConsensusRun inner success loop");
                             if (AnyNodesToWaitFor)
