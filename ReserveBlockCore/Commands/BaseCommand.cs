@@ -325,7 +325,12 @@ namespace ReserveBlockCore.Commands
                 case "12": //SC import
                     ConsoleWriterService.Output("Feature coming soon");
                     break;
-                case "13": //Exit
+                case "13": //voting
+                    Globals.StopConsoleOutput = true;
+                    await Voting.Voting.StartVoteProgram();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "14": //Exit
                     commandResult = "_EXIT";
                     break;
 

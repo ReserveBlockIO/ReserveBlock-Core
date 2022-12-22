@@ -472,6 +472,7 @@ namespace ReserveBlockCore.P2P
                                                     txOutput = JsonConvert.SerializeObject(transaction);
                                                     await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
                                                     Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
+                                                    Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
                                                     output = true;
                                                 }
                                             }
@@ -489,6 +490,7 @@ namespace ReserveBlockCore.P2P
                                                     txOutput = JsonConvert.SerializeObject(transaction);
                                                     await SendAdjMessageAll("tx", txOutput);
                                                     Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
+                                                    Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
                                                 }
                                             }
                                             else
@@ -521,6 +523,8 @@ namespace ReserveBlockCore.P2P
                                                 var txOutput = "";
                                                 txOutput = JsonConvert.SerializeObject(transaction);
                                                 await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                                Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
+                                                Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
                                                 output = true;
                                             }
                                         }

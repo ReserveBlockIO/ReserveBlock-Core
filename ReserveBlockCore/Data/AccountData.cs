@@ -248,7 +248,8 @@ namespace ReserveBlockCore.Data
                 Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
                 Console.WriteLine("| 11. Stop Masternode                  |");
                 Console.WriteLine("| 12. Import Smart Contract (disabled) |");
-                Console.WriteLine("| 13. Exit                             |");
+                Console.WriteLine("| 13. Voting                           |");
+                Console.WriteLine("| 14. Exit                             |");
                 Console.WriteLine("|======================================|");
                 Console.WriteLine("|type /help for menu options           |");
                 Console.WriteLine("|type /menu to come back to main area  |");
