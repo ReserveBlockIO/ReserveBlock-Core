@@ -820,7 +820,7 @@ namespace ReserveBlockCore.P2P
                         if (node.Address == Address || UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
                             continue;
 
-                        UpdateMethodCodeAddresses[node.Address] = true;
+                        UpdateMethodCodeAddresses[node.NodeIP] = true;
                         _ = UpdateMethodCode(node);
                     }
                 }
