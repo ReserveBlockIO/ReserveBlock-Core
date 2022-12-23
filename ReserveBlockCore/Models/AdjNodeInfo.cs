@@ -73,7 +73,11 @@ namespace ReserveBlockCore.Models
             try
             {
                 var Source = new TaskCompletionSource<T>();
-                var InvokeFunc = async (CancellationToken ct) => (object)(await Connection.InvokeCoreAsync<T>(method, args, ct));
+                var InvokeFunc = async (CancellationToken ct) => {
+                    try { return Connection != null ? (object)(await Connection.InvokeCoreAsync<T>(method, args, ct)) : (object)default(T); }
+                    catch { }
+                    return (object)default(T);
+                };
                 invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x)));
                 _ = ProcessQueue();
 
