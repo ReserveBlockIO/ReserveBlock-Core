@@ -145,6 +145,23 @@ namespace ReserveBlockCore.P2P
                 node.IsFinalized = finalized;
                 node.LastMethodCodeTime = TimeUtil.GetMillisecondTime();
             }
+
+            RemoveStaleCache(node);
+        }
+
+        public static void RemoveStaleCache(NodeInfo node)
+        {
+            var NodeHeight = node.NodeHeight + 1;
+            var MessageKeys = ConsensusServer.Messages.Where(x => x.Value.ContainsKey(node.Address)).Select(x => x.Key).ToHashSet();
+            var HashKeys = ConsensusServer.Messages.Where(x => x.Value.ContainsKey(node.Address)).Select(x => x.Key).ToHashSet();
+
+            foreach (var key in MessageKeys.Where(x => x.Height != NodeHeight || x.MethodCode != node.MethodCode))
+                if (ConsensusServer.Messages.TryGetValue(key, out var message))
+                    message.TryRemove(node.Address, out _);
+            foreach (var key in HashKeys.Where(x => x.Height != NodeHeight || (node.IsFinalized && x.MethodCode != node.MethodCode)
+              || (!node.IsFinalized && x.MethodCode != node.MethodCode - 1)))
+                if (ConsensusServer.Hashes.TryGetValue(key, out var hash))
+                    hash.TryRemove(node.Address, out _);
         }
 
         public static void UpdateConsensusDump(string ipAddress, string method, string request, string response)

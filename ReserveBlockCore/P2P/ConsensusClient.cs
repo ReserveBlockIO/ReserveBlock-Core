@@ -293,6 +293,8 @@ namespace ReserveBlockCore.P2P
                                 peer.MethodCode = int.Parse(Prefix[1]);
                                 peer.IsFinalized = Prefix[2] == "1";
                             }
+                            
+                            ConsensusServer.RemoveStaleCache(peer);
                         }
 
                         if (peer.NodeHeight > currentHeight)
@@ -386,6 +388,8 @@ namespace ReserveBlockCore.P2P
                                 peer.MethodCode = int.Parse(Prefix[1]);
                                 peer.IsFinalized = Prefix[2] == "1";
                             }
+
+                            ConsensusServer.RemoveStaleCache(peer);
                         }
 
                         if (peer.NodeHeight > currentHeight)

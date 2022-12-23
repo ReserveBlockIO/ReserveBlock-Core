@@ -869,6 +869,8 @@ namespace ReserveBlockCore.P2P
                                 node.MethodCode = int.Parse(remoteMethodCode[1]);
                                 node.IsFinalized = remoteMethodCode[2] == "1";
                             }
+
+                            ConsensusServer.RemoveStaleCache(node);
                         }
                     }
                 }
