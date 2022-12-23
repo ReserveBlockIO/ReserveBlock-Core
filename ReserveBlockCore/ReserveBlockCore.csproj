@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ApplicationIcon>Assets\Images\rbxnew.ico</ApplicationIcon>
     <PackageIcon>rbxnew.ico</PackageIcon>
+	<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	<NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -19,7 +19,10 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class TXV1Controller : ControllerBase
     {
-        //Step 1.
+        /// <summary>
+        /// Returns the timestamp of the given wallet.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetTimestamp")]
         public async Task<string> GetTimestamp()
         {
@@ -33,6 +36,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a list of successful transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetSuccessfulLocalTX")]
         public async Task<string> GetSuccessfulLocalTX()
         {
@@ -49,6 +56,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a list of mined reward transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMinedLocalTX")]
         public async Task<string> GetMinedLocalTX()
         {
@@ -65,6 +76,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a list of all transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetAllLocalTX")]
         public async Task<string> GetAllLocalTX()
         {
@@ -81,6 +96,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a list of pending transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetPendingLocalTX")]
         public async Task<string> GetPendingLocalTX()
         {
@@ -97,6 +116,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a list of failed transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetFailedLocalTX")]
         public async Task<string> GetFailedLocalTX()
         {
@@ -113,6 +136,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a single transaction with hash as the search
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <returns></returns>
         [HttpGet("GetLocalTxByHash/{hash}")]
         public async Task<string> GetLocalTxByHash(string hash)
         {
@@ -129,6 +157,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a single transaction with height as the search
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
         [HttpGet("GetLocalTxByBlock/{height}")]
         public async Task<string> GetLocalTxByBlock(long height)
         {
@@ -145,6 +178,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a all transactions before a block height as the search
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
         [HttpGet("GetLocalTxBeforeBlock/{height}")]
         public async Task<string> GetLocalTxBeforeBlock(long height)
         {
@@ -161,6 +199,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a all transactions after a block height as the search
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
         [HttpGet("GetLocalTxAfterBlock/{height}")]
         public async Task<string> GetLocalTxAfterBlock(long height)
         {
@@ -177,6 +220,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a all transactions before a timestamp height as the search
+        /// </summary>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
         [HttpGet("GetLocalTxBeforeTimestamp/{timestamp}")]
         public async Task<string> GetLocalTxBeforeTimestamp(long timestamp)
         {
@@ -193,6 +241,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a all transactions after a timestamp height as the search
+        /// </summary>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
         [HttpGet("GetLocalTxAfterTimestamp/{timestamp}")]
         public async Task<string> GetLocalTxAfterTimestamp(long timestamp)
         {
@@ -209,6 +262,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns all transactions for ADNR
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetLocalADNRTX")]
         public async Task<string> GetLocalADNRTX()
         {
@@ -225,7 +282,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Step 2.
+        /// <summary>
+        /// Returns and Address Nonce
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
         [HttpGet("GetAddressNonce/{address}")]
         public async Task<string> GetAddressNonce(string address)
         {
@@ -239,7 +300,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //step 2b if its NFT Minting
+        /// <summary>
+        /// Creates a minting tranasctions
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("GetNFTMintData")]
         public async Task<string> GetNFTMintData([FromBody] object jsonData)
         {
@@ -278,7 +343,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2c - Skip this if you are needing to move files and use beacons.
+        /// <summary>
+        /// Creates a beacon upload request transactions
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="signature"></param>
+        /// <returns></returns>
         [HttpGet("CreateBeaconUploadRequest/{scUID}/{toAddress}/{**signature}")]
         public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
         {
@@ -370,7 +441,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2d if its NFT Transfers. This = Transaction.Data 
+        /// <summary>
+        /// Creates a NFT transfer transaction
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="locators"></param>
+        /// <returns></returns>
         [HttpGet("GetNFTTransferData/{scUID}/{toAddress}/{locators}")]
         public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators)
         {
@@ -408,7 +485,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2e if its NFT Burn. This = Transaction.Data 
+        /// <summary>
+        /// Creates a NFT Burn data transactions
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="fromAddress"></param>
+        /// <returns></returns>
         [HttpGet("GetNFTBurnData/{scUID}/{fromAddress}/")]
         public async Task<string> GetNFTBurnData(string scUID, string fromAddress)
         {
@@ -444,7 +526,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Step 3.
+        /// <summary>
+        /// Produces the estimated fee for a transaction
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("GetRawTxFee")]
         public async Task<string> GetRawTxFee([FromBody] object jsonData)
         {
@@ -482,7 +568,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Step 4.
+        /// <summary>
+        /// Produces the TX Hash
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("GetTxHash")]
         public async Task<string> GetTxHash([FromBody] object jsonData)
         {
@@ -510,7 +600,13 @@ namespace ReserveBlockCore.Controllers
         //Step 5.
         //You create the signature now in your application.
 
-        //Step 6.
+        /// <summary>
+        /// Validate a signature
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="address"></param>
+        /// <param name="sigScript"></param>
+        /// <returns></returns>
         [HttpGet("ValidateSignature/{message}/{address}/{**sigScript}")]
         public async Task<string> ValidateSignature(string message, string address, string sigScript)
         {
@@ -539,6 +635,10 @@ namespace ReserveBlockCore.Controllers
 
         //If validation was true
         //Step 7.
+        /// <summary>
+        /// Verify a raw transaction
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("VerifyRawTransaction")]
         public async Task<string> VerifyRawTransaction([FromBody] object jsonData)
         {
@@ -579,6 +679,10 @@ namespace ReserveBlockCore.Controllers
         }
 
         //Step 8.
+        /// <summary>
+        /// Sends a raw TX over the network
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("SendRawTransaction")]
         public async Task<string> SendRawTransaction([FromBody] object jsonData)
         {
@@ -621,6 +725,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Test raw transaction is received and return the input
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("TestRawTransaction")]
         public string TestRawTransaction([FromBody] object jsonData)
         {
@@ -641,6 +749,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Create an ADNR and associate it to address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         [HttpGet("CreateAdnr/{address}/{name}")]
         public async Task<string> CreateAdnr(string address, string name)
         {
@@ -724,6 +838,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Transfer ADNR from one address to another
+        /// </summary>
+        /// <param name="fromAddress"></param>
+        /// <param name="toAddress"></param>
+        /// <returns></returns>
         [HttpGet("TransferAdnr/{fromAddress}/{toAddress}")]
         public async Task<string> TransferAdnr(string fromAddress, string toAddress)
         {
@@ -793,6 +913,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Permanently remove ADNR from address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
         [HttpGet("DeleteAdnr/{address}")]
         public async Task<string> DeleteAdnr(string address)
         {
@@ -839,6 +964,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Send a transaction. Specify from, to, and amount
+        /// </summary>
+        /// <param name="faddr"></param>
+        /// <param name="taddr"></param>
+        /// <param name="amt"></param>
+        /// <returns></returns>
         [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}")]
         public async Task<string> SendTransaction(string faddr, string taddr, string amt)
         {

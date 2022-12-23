@@ -18,14 +18,20 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class SCV1Controller : ControllerBase
     {
-        // GET: api/<V1>
+        /// <summary>
+        /// Returns summary of this API
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IEnumerable<string> Get()
         {
             return new string[] { "Smart", "Contracts", "API" };
         }
 
-        // GET api/<V1>/getgenesisblock
+        /// <summary>
+        /// Another test command
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("{id}")]
         public string Get(string id)
         {
@@ -43,6 +49,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// You can pass your json payload here and the system will return it to ensure its formatted correct.
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("SCPassTest")]
         public object SCPassTest([FromBody] object jsonData)
         {
@@ -51,6 +62,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// You can pass your json payload here and the system will return it to ensure it deserializes correctly. If it does returns it back serialized.
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("SCPassDesTest")]
         public string SCPassDesTest([FromBody] object jsonData)
         {
@@ -71,6 +86,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// returns the owner of a smart contract **deprecated
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
         [HttpGet("GetCurrentSCOwner/{scUID}")]
         public async Task<string> GetCurrentSCOwner(string scUID)
         {
@@ -79,7 +99,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-
+        /// <summary>
+        /// Allows you to search or dump out all smart contracts associated to your wallet
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <param name="search"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("GetAllSmartContracts/{pageNumber}")]
         [Route("GetAllSmartContracts/{pageNumber}/{**search}")]
@@ -170,6 +195,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Allows you to search or dump out minted smart contracts associated to your wallet
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <param name="search"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("GetMintedSmartContracts/{pageNumber}")]
         [Route("GetMintedSmartContracts/{pageNumber}/{**search}")]
@@ -265,6 +296,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Shows a single smart contract with the provided id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetSingleSmartContract/{id}")]
         public async Task<string> GetSingleSmartContract(string id)
         {
@@ -344,6 +380,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the locator beacon information for a smart contract assets.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
         [HttpGet("GetLastKnownLocators/{scUID}")]
         public async Task<string> GetLastKnownLocators(string scUID)
         {
@@ -364,6 +405,12 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// Lets you associate an asset to an NFT repo in the event media is lost or damage. MD5 must match.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="assetPath"></param>
+        /// <returns></returns>
         [HttpGet("AssociateNFTAsset/{scUID}/{**assetPath}")]
         public async Task<string> AssociateNFTAsset(string scUID, string assetPath)
         {
@@ -442,12 +489,36 @@ namespace ReserveBlockCore.Controllers
             
         }
 
-        [HttpGet("DownloadNftAssets/{nftId}")]
-        public async Task<string> DownloadNftAssets(string nftId)
-        {
-            return $"NFT Id: {nftId}";
-        }
-
+        /// <summary>
+        /// Creates the smart contract SEN for minting.
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <remarks>
+        /// Sample request:
+        ///     POST /CreateSmartContract
+        ///     {
+        ///     "Id":0,
+        ///     "Name":"Trillium NFT",
+        ///     "Description":"The First NFT From Trillium for RBX",
+        ///     "MinterName":"The Minter",
+        ///     "MinterAddress":"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC",
+        ///     "SmartContractAsset":
+        ///     {
+        ///         "AssetId":"00000000-0000-0000-0000-000000000000",
+        ///         "Name":"13.png",
+        ///         "Location":"D:\\13.png",
+        ///         "AssetAuthorName":"Author Man",
+        ///         "Extension":".png",
+        ///         "FileSize":1129
+        ///     },
+        ///     "IsPublic":false,
+        ///     "SmartContractUID":null,
+        ///     "IsMinter":false,
+        ///     "IsPublished":false,
+        ///     "Features":null
+        ///     }
+        /// </remarks>
+        /// <returns></returns>
         [HttpPost("CreateSmartContract")]
         public async Task<string> CreateSmartContract([FromBody] object jsonData)
         {
@@ -541,6 +612,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Mints the contract onto the network created from /CreateSmartContract
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("MintSmartContract/{id}")]
         public async Task<string> MintSmartContract(string id)
         {
@@ -572,6 +648,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Creates a transaction to send a desired NFT from one wallet to another
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="backupURL"></param>
+        /// <returns></returns>
         [HttpGet]
         [Route("TransferNFT/{id}/{toAddress}")]
         [Route("TransferNFT/{id}/{toAddress}/{**backupURL}")]
@@ -682,6 +765,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Creates a transaction that burns the desired NFT
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("Burn/{id}")]
         public async Task<string> Burn(string id)
         {
@@ -702,6 +790,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Creates a transaction to evolve an NFT
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="toAddress"></param>
+        /// <returns></returns>
         [HttpGet("Evolve/{id}/{toAddress}")]
         public async Task<string> Evolve(string id, string toAddress)
         {
@@ -722,6 +816,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Creates a transaction to devolve an NFT
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="toAddress"></param>
+        /// <returns></returns>
         [HttpGet("Devolve/{id}/{toAddress}")]
         public async Task<string> Devolve(string id, string toAddress)
         {
@@ -742,6 +842,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Creates a transaction to evolve an NFT to a specfic state
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="toAddress"></param>
+        /// /// <param name="evolveState"></param>
+        /// <returns></returns>
         [HttpGet("EvolveSpecific/{id}/{toAddress}/{evolveState}")]
         public async Task<string> EvolveSpecific(string id, string toAddress, int evolveState)
         {
@@ -762,6 +869,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        ///  Makes NFT public for DST shop
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("ChangeNFTPublicState/{id}")]
         public async Task<string> ChangeNFTPublicState(string id)
         {
@@ -777,6 +889,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the NFTs asset location.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
         [HttpGet("GetNFTAssetLocation/{scUID}/{**fileName}")]
         public async Task<string> GetNFTAssetLocation(string scUID, string fileName)
         {
@@ -792,6 +910,11 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// returns the smart contract data generated from on chain information
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetSmartContractData/{id}")]
         public async Task<string> GetSmartContractData(string id)
         {
@@ -807,6 +930,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Test dynamic NFT 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("TestDynamicNFT/{id}")]
         public async Task<string> TestDynamicNFT(string id)
         {
@@ -827,6 +955,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Test if smart contract is present.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="toAddress"></param>
+        /// <returns></returns>
         [HttpGet("TestRemove/{id}/{toAddress}")]
         public async Task<string> TestRemove(string id, string toAddress)
         {

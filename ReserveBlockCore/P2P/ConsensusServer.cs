@@ -307,8 +307,6 @@ namespace ReserveBlockCore.P2P
                 ErrorLogUtility.LogError($"Error receiving broadcasted TX. Error: {ex.ToString()}", "ConsensusServer.GetBroadcastedTx()");
             }
 
-            
-
             return result;
         }
 

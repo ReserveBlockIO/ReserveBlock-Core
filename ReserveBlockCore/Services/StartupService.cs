@@ -767,7 +767,6 @@ namespace ReserveBlockCore.Services
                     var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
                     if (beaconDataJsonDes != null)
                     {
-                        var port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000;
                         var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
                         await P2PClient.ConnectBeacon(url);
                     }
