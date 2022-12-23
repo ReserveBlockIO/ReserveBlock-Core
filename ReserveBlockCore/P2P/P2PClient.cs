@@ -842,8 +842,7 @@ namespace ReserveBlockCore.P2P
                         await Task.Delay(20);
                         continue;
                     }
-
-                    LogUtility.LogQueue(node.NodeIP, "Before RequestMethodCode");
+                    
                     var Now = TimeUtil.GetMillisecondTime();
                     var Diff = 1000 - (int)(Now - node.LastMethodCodeTime);
                     if (Diff > 0)
@@ -856,8 +855,7 @@ namespace ReserveBlockCore.P2P
                     var Response = await node.InvokeAsync<string>("RequestMethodCode", 
                         new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, 
                         () => (int)(TimeUtil.GetMillisecondTime() - node.LastMethodCodeTime) >= 1000 ? new CancellationTokenSource(1000).Token
-                            : Globals.CancelledToken, "RequestMethodCode");
-                    LogUtility.LogQueue(node.NodeIP + " " + Response, "After RequestMethodCode");
+                            : Globals.CancelledToken, "RequestMethodCode");                    
 
                     if (Response != null)
                     {

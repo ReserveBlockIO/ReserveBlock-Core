@@ -78,7 +78,6 @@ namespace ReserveBlockCore.P2P
         {
             try
             {                
-                LogUtility.LogQueue(methodCode + " " + message, "ConsensusRun");
                 Interlocked.Exchange(ref ReadyToFinalize, 0);
                 ConsensusServer.UpdateState(methodCode: methodCode, status: (int)ConsensusStatus.Processing);
                 var Address = Globals.AdjudicateAccount.Address;
@@ -123,8 +122,7 @@ namespace ReserveBlockCore.P2P
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 3000);                    
                     while (Height == Globals.LastBlock.Height + 1)
                     {
-                        var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;
-                        LogUtility.LogQueue(Messages.Count + " " + RemainingAddressCount, "ConsensusRun First loop");
+                        var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;                        
                         if ((runType != RunType.Initial && Messages.Count + RemainingAddressCount < Majority) || 
                             (RemainingAddressCount == 0 && Messages.Count >= Majority))
                             break;
@@ -146,7 +144,9 @@ namespace ReserveBlockCore.P2P
                     }
 
                     ConsensusSource.Cancel();
-                    LogUtility.LogQueue(Height + " " + methodCode, "end of first loop");                    
+                    LogUtility.LogQueue(Height + " " + methodCode + " " + Messages.Count + " " 
+                        + WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() + " " + TimeUtil.GetMillisecondTime() + "\r\n" +                        
+                        JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "First exit", "ConsensusExits.txt", true);
                     return null;                    
                 }
 
@@ -178,25 +178,28 @@ namespace ReserveBlockCore.P2P
                             var Now = TimeUtil.GetMillisecondTime();
                             var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 3000 && x.NodeHeight == Height &&
                                 ((x.MethodCode == methodCode && !x.IsFinalized) || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Any();                                                               
-                            LogUtility.LogQueue(AnyNodesToWaitFor.ToString(), "ConsensusRun inner success loop");
+                            
                             if (AnyNodesToWaitFor)
                             {
                                 await Task.Delay(20);
                                 continue;
                             }
                             break;
-                        }
-                        LogUtility.LogQueue(Height + " " + methodCode, "good return");
+                        }                        
+                        LogUtility.LogQueue(Height + " " + methodCode + " " + NumMatches + " " +  CurrentHashes.Length + " " + TimeUtil.GetMillisecondTime() + "\r\n" +                            
+                            JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new {x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime})), "Good exit", "ConsensusExits.txt", false);
                         return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray();
                     }
                                         
                     HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);
                     var RemainingAddressCount = !HashSource.IsCancellationRequested ? HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
-                    LogUtility.LogQueue(NumMatches + " " + RemainingAddressCount, "ConsensusRun fail check");
+                    
                     if (NumMatches + RemainingAddressCount < Majority)
                     {
                         HashSource.Cancel();
-                        LogUtility.LogQueue(Height + " " + methodCode, "hash fail");                        
+                        LogUtility.LogQueue(Height + " " + methodCode + " " + TimeUtil.GetMillisecondTime() + "\r\n" +
+                            JsonConvert.SerializeObject(Hashes.GroupBy(x => x.Value.Hash).Select(x => new { x.Key, Count = x.Count()})) + "\r\n" +
+                            JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "Hash exit", "ConsensusExits.txt", true);
                         return null;
                     }
                     
@@ -209,7 +212,7 @@ namespace ReserveBlockCore.P2P
             {
                 ErrorLogUtility.LogError(ex.ToString(), "ConsensusRun");
             }
-            LogUtility.LogQueue((Globals.LastBlock.Height + 1) + " " + methodCode, "exception thrown at end");            
+                       
             return null;
         }
 
@@ -270,13 +273,11 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);
-                    LogUtility.LogQueue(methodCode + " " + MessageToSend, "Before Message");                    
+                    ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);                    
                     var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.InvokeAsync<string>("Message", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend },
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token).Token,
-                        "Message " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + MessageToSend);
-                    LogUtility.LogQueue(Response, "After Message");
+                        "Message " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + MessageToSend);                    
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestMessage", null, Response);
 
                     if (Response != null)
@@ -296,8 +297,7 @@ namespace ReserveBlockCore.P2P
 
                         if (peer.NodeHeight > currentHeight)
                         {
-                            cts.Cancel();
-                            LogUtility.LogQueue(currentHeight + " " + methodCode, "Message height cancel");
+                            cts.Cancel();                            
                             break;
                         }
 
@@ -306,13 +306,10 @@ namespace ReserveBlockCore.P2P
                             var arr = PrefixSplit[1].Split(";:;");
                             var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
                             if (SignatureService.VerifySignature(address, message, signature))
-                                messages[address] = (message, signature);
-                            else
-                                LogUtility.LogQueue(address + " " + message + " " + signature, "Message signature failure");
+                                messages[address] = (message, signature);                            
                         }
                         else if (peer.MethodCode > methodCode)
-                        {
-                            LogUtility.LogQueue(currentHeight + " " + methodCode, "Message wait");
+                        {                            
                             await Task.Delay(500);
                         }
                     }
@@ -368,14 +365,12 @@ namespace ReserveBlockCore.P2P
                         await Task.Delay(20);
                         continue;
                     }
-
-                    LogUtility.LogQueue(methodCode + " " + HashToSend, "Before Hash");
+                    
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                    
                     var Now = TimeUtil.GetMillisecondTime();
                     var Response = await peer.InvokeAsync<string>("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token,
-                        "Hash "+ (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + HashToSend);
-                    LogUtility.LogQueue(Response, "After Hash");
+                        "Hash "+ (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + HashToSend);                    
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestHash", null, Response);
 
                     if (Response != null)
@@ -395,8 +390,7 @@ namespace ReserveBlockCore.P2P
 
                         if (peer.NodeHeight > currentHeight)
                         {
-                            cts.Cancel();
-                            LogUtility.LogQueue(currentHeight + " " + methodCode, "Hash height cancel");
+                            cts.Cancel();                            
                             break;
                         }
 
@@ -405,9 +399,7 @@ namespace ReserveBlockCore.P2P
                             var arr = PrefixSplit[1].Split(":");
                             var (address, hash, signature) = (arr[0], arr[1], arr[2]);
                             if (SignatureService.VerifySignature(address, hash, signature))
-                                hashes[address] = (hash, signature);
-                            else
-                                LogUtility.LogQueue(address + " " + hash + " " + signature, "Hash signature failure");
+                                hashes[address] = (hash, signature);                            
                         }
                         else if(peer.MethodCode > methodCode)
                         {

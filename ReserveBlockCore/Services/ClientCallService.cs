@@ -1185,10 +1185,7 @@ namespace ReserveBlockCore.Services
                     {                        
                         _ = node.Connection.InvokeCoreAsync("ReceiveBlock", new object?[] { block }, BlockSource.Token);
                     }
-                    catch (Exception ex)
-                    {
-                        ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.ReceiveBlock");
-                    }
+                    catch {}
                 }
 
                 if (HubContext?.Clients != null)

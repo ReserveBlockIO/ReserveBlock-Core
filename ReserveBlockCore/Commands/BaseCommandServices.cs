@@ -840,13 +840,13 @@ namespace ReserveBlockCore.Commands
             
             var conStateLine = $"Next Height: {Globals.LastBlock.Height + 1} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode}";
             ConsoleWriterService.Output(conStateLine);
-            LogUtility.LogQueue(conStateLine, "", true);
+            LogUtility.LogQueue(conStateLine, "", "cinfo.txt", true);
             
             ConsoleWriterService.Output("******************************************************************************");
 
             var conMessage = string.Join("\r\n", ConsensusServer.Messages.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Message + " " + y.Value.Signature))
                 .SelectMany(x => x));
-            LogUtility.LogQueue(conMessage, "", true);
+            LogUtility.LogQueue(conMessage, "", "cinfo.txt", true);
 
             ConsoleWriterService.Output("*****************************Consensus Messages*******************************");
 
@@ -856,7 +856,7 @@ namespace ReserveBlockCore.Commands
 
             var hashMessage = string.Join("\r\n", ConsensusServer.Hashes.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Hash + " " + y.Value.Signature))
                             .SelectMany(x => x));
-            LogUtility.LogQueue(hashMessage, "", true);
+            LogUtility.LogQueue(hashMessage, "", "cinfo.txt", true);
 
             ConsoleWriterService.Output("*****************************Consensus Hashes*******************************");
 
@@ -866,7 +866,7 @@ namespace ReserveBlockCore.Commands
 
             var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, 3000).ToArray();
 
-            LogUtility.LogQueue(JsonConvert.SerializeObject(addressesToWaitFor), "", true);
+            LogUtility.LogQueue(JsonConvert.SerializeObject(addressesToWaitFor), "", "cinfo.txt", true);
             ConsoleWriterService.Output("*****************************Addresses To Wait For*******************************");
 
             ConsoleWriterService.Output(JsonConvert.SerializeObject(addressesToWaitFor));
@@ -877,14 +877,14 @@ namespace ReserveBlockCore.Commands
 
             ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
 
-            LogUtility.LogQueue(JsonConvert.SerializeObject(Globals.ConsensusDump), "", true);
+            LogUtility.LogQueue(JsonConvert.SerializeObject(Globals.ConsensusDump), "", "cinfo.txt", true);
             ConsoleWriterService.Output("******************************************************************************");
 
             ConsoleWriterService.Output("*****************************Node Dump*******************************");
 
             ConsoleWriterService.Output("Now: " + TimeUtil.GetMillisecondTime() + "\r\n");
 
-            LogUtility.LogQueue(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)), "", true);
+            LogUtility.LogQueue(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)), "", "cinfo.txt", true);
             ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)));
 
             ConsoleWriterService.Output("******************************************************************************");

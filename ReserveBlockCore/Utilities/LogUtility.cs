@@ -7,12 +7,12 @@ namespace ReserveBlockCore.Utilities
 {
     public class LogUtility
     {        
-        private static ConcurrentQueue<(string Message, string Location, DateTime Time)> FileQueue = new ConcurrentQueue<(string, string, DateTime)>();
-        public static void LogQueue(string message, string location, bool log = false)
+        private static ConcurrentQueue<(string Message, string Location, string FileName, DateTime Time)> FileQueue = new ConcurrentQueue<(string, string, string, DateTime)>();
+        public static void LogQueue(string message, string location, string fileName, bool log)
         {
             if(!log)
                 return; // this disables the log queue
-            FileQueue.Enqueue((message, location, DateTime.Now));
+            FileQueue.Enqueue((message, location, fileName, DateTime.Now));
         }
 
         public static async Task LogLoop()
@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Utilities
                     if(FileQueue.TryDequeue(out var content))
                     {
                         var text = "[" + content.Time + "]" + " : " + "[" + content.Location + "]" + " : " + content.Message;
-                        await File.AppendAllTextAsync(path + "rbxlogasync.txt", Environment.NewLine + text);
+                        await File.AppendAllTextAsync(path + content.FileName, Environment.NewLine + text);
                     }
                 }
 

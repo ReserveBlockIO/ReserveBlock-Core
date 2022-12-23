@@ -37,8 +37,7 @@ namespace ReserveBlockCore.P2P
             string peerIP = null;
             try
             {
-                peerIP = GetIP(Context);
-                LogUtility.LogQueue(peerIP, "OnConnectedAsync");
+                peerIP = GetIP(Context);                
                 if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
@@ -157,7 +156,7 @@ namespace ReserveBlockCore.P2P
         public string RequestMethodCode(long height, int methodCode, bool isFinalized)
         {
             var ip = GetIP(Context);
-            LogUtility.LogQueue(ip, "RequestMethodCode");
+            LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + isFinalized + " " + TimeUtil.GetMillisecondTime(), "RequestMethodCode", "ConsensusServer.txt", false);
             if (!Globals.Nodes.TryGetValue(ip, out var node))
             {
                 Context?.Abort();
@@ -181,7 +180,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 ip = GetIP(Context);
-                LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + peerMessage, "Message");
+                LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + string.IsNullOrWhiteSpace(peerMessage) + " " + TimeUtil.GetMillisecondTime(), "Message", "ConsensusServer.txt", false);                
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
@@ -237,7 +236,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 ip = GetIP(Context);
-                LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + peerHash, "Hash");
+                LogUtility.LogQueue(ip + " " + height + " " + methodCode + " " + string.IsNullOrWhiteSpace(peerHash) + " " + TimeUtil.GetMillisecondTime(), "Hash", "ConsensusServer.txt", false);                
                 if (!Globals.Nodes.TryGetValue(ip, out var node))
                 {
                     Context?.Abort();
