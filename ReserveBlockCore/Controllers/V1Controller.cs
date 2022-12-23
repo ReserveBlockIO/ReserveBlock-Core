@@ -21,14 +21,20 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class V1Controller : ControllerBase
     {
-        // GET: api/<V1>
+        /// <summary>
+        /// Check Status of API
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IEnumerable<string> Get()
         {
             return new string[] { "RBX-Wallet", "API" };
         }
 
-        // GET api/<V1>/getgenesisblock
+        /// <summary>
+        /// Another check method for API
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("{id}")]
         public string Get(string id)
         {
@@ -48,6 +54,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Unlock the API using Password
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         [HttpGet("UnlockWallet/{password}")]
         public async Task<string> UnlockWallet(string password)
         {
@@ -92,6 +103,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Lock the API using Password
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         [HttpGet("LockWallet/{password}")]
         public async Task<string> LockWallet(string password)
         {
@@ -136,6 +152,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the state of a wallets encryption and if password is present
+        /// </summary>
+        /// <returns></returns>
         public static async Task<string> GetCheckEncryptionStatus()
         {
             string output = "";
@@ -161,6 +181,10 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// Check for GUI launchers to request password on startup if needed
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("CheckPasswordNeeded")]
         public async Task<string> CheckPasswordNeeded()
         {
@@ -172,6 +196,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the state of a wallets encryption
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetIsWalletEncrypted")]
         public async Task<string> GetIsWalletEncrypted()
         {
@@ -183,6 +211,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the state of a wallets encryption password existence. If 0 it is not entered.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetIsEncryptedPasswordStored")]
         public async Task<string> GetIsEncryptedPasswordStored()
         {
@@ -194,6 +226,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Enter a password that will store in the Globals.EncryptPassword in order for wallet to function
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         [HttpGet("GetEncryptedPassword/{**password}")]
         public async Task<string> GetEncryptedPassword(string password)
         {
@@ -237,6 +274,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Simple Status Check
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("CheckStatus")]
         public async Task<string> CheckStatus()
         {
@@ -247,6 +288,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Converts wallet to an HD Wallet
+        /// </summary>
+        /// <param name="strength"></param>
+        /// <returns></returns>
         [HttpGet("GetHDWallet/{strength}")]
         public async Task<string> GetHDWallet(int strength)
         {
@@ -265,6 +311,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Restores and HD Wallet
+        /// </summary>
+        /// <param name="mnemonic"></param>
+        /// <returns></returns>
         [HttpGet("GetRestoreHDWallet/{mnemonic}")]
         public async Task<string> GetRestoreHDWallet(string mnemonic)
         {
@@ -281,7 +332,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //its recommended that you verify password before submitting to this endpoint.
+        /// <summary>
+        /// This is a permanent process of encrypting a wallet with a user supplied password.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         [HttpGet("GetEncryptWallet/{password}")]
         public async Task<string> GetEncryptWallet(string password)
         {
@@ -310,6 +365,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Erases encryption password from all memory and release from RAM as well.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetEncryptLock")]
         public async Task<string> GetEncryptLock()
         {
@@ -328,6 +387,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Decrypts wallet encryption and allows functions to work.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         [HttpGet("GetDecryptWallet/{password}")]
         public async Task<string> GetDecryptWallet(string password)
         {
@@ -383,7 +447,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-
+        /// <summary>
+        /// Produces a new address
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetNewAddress")]
         public async Task<string> GetNewAddress()
         {
@@ -411,6 +478,11 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        /// <summary>
+        /// Spits out wallet info.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetWalletInfo")]
         public async Task<string> GetWalletInfo()
         {
@@ -442,6 +514,11 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        /// <summary>
+        /// Dumps out all addresses locally stored.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetAllAddresses")]
         public async Task<string> GetAllAddresses()
         {
@@ -462,6 +539,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out a validator owned address.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetValidatorAddresses")]
         public async Task<string> GetValidatorAddresses()
         {
@@ -482,6 +563,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Turns stored validator information on.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("TurnOnValidator/{id}")]
         public async Task<string> TurnOnValidator(string id)
         {
@@ -530,6 +616,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Turns validator off
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("TurnOffValidator/{id}")]
         public async Task<string> TurnOffValidator(string id)
         {
@@ -552,6 +643,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out validator information. In this case the Unique name to an address
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetValidatorInfo/{id}")]
         public async Task<string> GetValidatorInfo(string id)
         {
@@ -572,6 +668,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the wallet info for a specific local address
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetAddressInfo/{id}")]
         public async Task<string> GetAddressInfo(string id)
         {
@@ -591,6 +692,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Imports a private key.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("ImportPrivateKey/{id}")]
         public async Task<string> ImportPrivateKey(string id)
         {
@@ -642,8 +748,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Sends block information - for like block explorers
-
+        /// <summary>
+        /// Sends back block information on a requested block
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("SendBlock/{id}")]
         public async Task<string> SendBlock(string id)
         {
@@ -665,6 +774,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns last block stored in wallet.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetLastBlock")]
         public async Task<string> GetLastBlock()
         {
@@ -685,6 +798,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// This is deprecated. Do not use.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetRollbackBlocks/{id}")]
         public async Task<string> GetRollbackBlocks(string id)
         {
@@ -710,6 +828,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// **Deprecated use TX API - Returns all transactions
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetAllTransactions")]
         public async Task<string> GetAllTransactions()
         {
@@ -730,6 +853,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// **Deprecated. Use TX API For transactions
+        /// </summary>
+        /// <param name="faddr"></param>
+        /// <param name="taddr"></param>
+        /// <param name="amt"></param>
+        /// <returns></returns>
         [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}")]
         public async Task<string> SendTransaction(string faddr, string taddr, string amt)
         {
@@ -779,6 +909,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Start validating with provided address and unique name
+        /// </summary>
+        /// <param name="addr"></param>
+        /// <param name="uname"></param>
+        /// <returns></returns>
         [HttpGet("StartValidating/{addr}/{uname}")]
         public async Task<string> StartValidating(string addr, string uname)
         {
@@ -830,6 +966,11 @@ namespace ReserveBlockCore.Controllers
             return result;
         }
 
+        /// <summary>
+        /// Change your validator name. Restart is required.
+        /// </summary>
+        /// <param name="uname"></param>
+        /// <returns></returns>
         [HttpGet("ChangeValidatorName/{uname}")]
         public async Task<string> ChangeValidatorName(string uname)
         {
@@ -847,6 +988,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Validator reset.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ResetValidator")]
         public async Task<string> ResetValidator()
         {
@@ -859,6 +1004,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Create a signature with provided message and address
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="address"></param>
+        /// <returns></returns>
         [HttpGet("CreateSignature/{message}/{address}")]
         public async Task<string> CreateSignature(string message, string address)
         {
@@ -881,6 +1032,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Validate a signature with provided message and address and sigscript
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="address"></param>
+        /// <param name="sigScript"></param>
+        /// <returns></returns>
         [HttpGet("ValidateSignature/{message}/{address}/{**sigScript}")]
         public async Task<bool> ValidateSignature(string message, string address, string sigScript)
         {
@@ -892,6 +1050,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns the mempool
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMempool")]
         public async Task<string> GetMempool()
         {
@@ -902,6 +1064,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out the entire memblock cluster. This can be very large.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMemBlockCluster")]
         public async Task<string> GetMemBlockCluster()
         {
@@ -912,6 +1078,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns a task answer list
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetTaskAnswersList")]
         public async Task<string> GetTaskAnswersList()
         {
@@ -943,6 +1113,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns master node list that is sent
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMasternodesSent")]
         public async Task<string> GetMasternodesSent()
         {
@@ -954,6 +1128,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns entire fortis pool (Masternode List)
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMasternodes")]
         public async Task<string> GetMasternodes()
         {
@@ -974,6 +1152,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns beacon pool
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetBeaconPool")]
         public async Task<string> GetBeaconPool()
         {
@@ -985,6 +1167,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns adj node information
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetValidatorPoolInfo")]
         public async Task<string> GetValidatorPoolInfo()
         {
@@ -1002,6 +1188,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Returns Peer Info
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetPeerInfo")]
         public async Task<string> GetPeerInfo()
         {
@@ -1022,6 +1212,10 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// Dumps out banned peers
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ListBannedPeers")]
         public async Task<string> ListBannedPeers()
         {
@@ -1040,6 +1234,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Unbans a Peer IP
+        /// </summary>
+        /// <param name="ipAddress"></param>
+        /// <returns></returns>
         [HttpGet("UnbanPeer/{**ipAddress}")]
         public async Task<string> UnbanPeer(string ipAddress)
         {
@@ -1048,6 +1247,10 @@ namespace ReserveBlockCore.Controllers
             return result;
         }
 
+        /// <summary>
+        /// Unbans all peers
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("UnbanAllPeers")]
         public async Task<string> UnbanAllPeers()
         {
@@ -1056,6 +1259,10 @@ namespace ReserveBlockCore.Controllers
             return result.ToString();
         }
 
+        /// <summary>
+        /// Dumps out debug information
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetDebugInfo")]
         public async Task<string> GetDebugInfo()
         {
@@ -1064,6 +1271,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out connection history
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetConnectionHistory")]
         public async Task<string> GetConnectionHistory()
         {
@@ -1072,6 +1283,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out client information
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetClientInfo")]
         public async Task<string> GetClientInfo()
         {
@@ -1080,6 +1295,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out CLI version
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetCLIVersion")]
         public async Task<string> GetCLIVersion()
         {
@@ -1090,6 +1309,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out RBX log
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ReadRBXLog")]
         public async Task<string> ReadRBXLog()
         {
@@ -1100,6 +1323,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Clears the RBX log
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ClearRBXLog")]
         public async Task<string> ClearRBXLog()
         {
@@ -1111,6 +1338,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Reads the validator log
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ReadValLog")]
         public async Task<string> ReadValLog()
         {
@@ -1121,6 +1352,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Clears the validator log
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("ClearValLog")]
         public async Task<string> ClearValLog()
         {
@@ -1132,6 +1367,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Stops all wallet functions and exits
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("SendExit")]
         public async Task SendExit()
         {

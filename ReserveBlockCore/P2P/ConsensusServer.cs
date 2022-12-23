@@ -10,6 +10,7 @@ using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Transactions;
 using System.Xml.Linq;
 
 namespace ReserveBlockCore.P2P
@@ -284,6 +285,29 @@ namespace ReserveBlockCore.P2P
 
             UpdateConsensusDump(ip, "Hash", height + " " + methodCode + " (" + string.Join(",", addresses) + ") " + peerHash, Prefix);
             return Prefix;
+        }
+
+        public async Task<bool> GetBroadcastedTx(List<TransactionBroadcast> txBroadcastList)
+        {
+            bool result = false;
+
+            try
+            {
+                foreach (var txBroadcast in txBroadcastList)
+                {
+                    if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(txBroadcast.Hash, out _))
+                    {
+                        Globals.ConsensusBroadcastedTrxDict[txBroadcast.Hash] = new TransactionBroadcast { Hash = txBroadcast.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = false, Transaction = txBroadcast.Transaction };
+                        result = true;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error receiving broadcasted TX. Error: {ex.ToString()}", "ConsensusServer.GetBroadcastedTx()");
+            }
+
+            return result;
         }
 
         private static string GetIP(HubCallerContext context)

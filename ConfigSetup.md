@@ -84,7 +84,7 @@ The point of this paper is to outline the config file setup and features it has.
 17.	PasswordClearTime (default is 10 mins)
 	+ a.	Type int
 	+ b.	Ex: PasswordClearTime=5
-	+ c.	This will control the clear time for an ecrypted wallets password
+	+ c.	This will control the clear time for an encrypted wallets password
 
 18.	AutoDownloadNFTAsset (default is true)
 	+ a.	Type Boolean

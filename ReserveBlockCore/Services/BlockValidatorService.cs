@@ -318,6 +318,7 @@ namespace ReserveBlockCore.Services
                                         {
                                             mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
                                             Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out _);
+                                            Globals.ConsensusBroadcastedTrxDict.TryRemove(localTransaction.Hash, out _);
                                         }
                                     }
 

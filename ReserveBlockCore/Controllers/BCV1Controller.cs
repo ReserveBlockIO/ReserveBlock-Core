@@ -16,10 +16,10 @@ namespace ReserveBlockCore.Controllers
     public class BCV1Controller : ControllerBase
     {
         /// <summary>
-        /// Creates a beacon on the local host
+        /// Creates a beacon on the local host and stores for later use to relay assets
         /// </summary>
         /// <param name="name"></param>
-        /// <param port="port"></param>
+        /// <param name="port"></param>
         /// <returns></returns>
         [HttpGet("CreateBeacon/{name}/{port}")]
         public async Task<string> CreateBeacon(string name, int port = 0)
@@ -59,6 +59,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets the beacons local to this wallet.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetBeacons")]
         public async Task<string> GetBeacons()
         {
@@ -75,6 +79,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Adds a beacon on the local host and stores for later use
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="port"></param>
+        /// <param name="ip"></param>
+        /// <returns></returns>
         [HttpGet("AddBeacon/{name}/{port}/{**ip}")]
         public async Task<string> AddBeacon(string name,  string ip, int port = 0)
         {
@@ -105,6 +116,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Deletes a beacon on the local host
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("DeleteBeacon/{id}")]
         public async Task<string> DeleteBeacon(int id)
         {
@@ -136,6 +152,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Decodes a beacon locator and sends the data
+        /// </summary>
+        /// <param name="locator"></param>
+        /// <returns></returns>
         [HttpGet("DecodeBeaconLocator/{locator}")]
         public async Task<string> DecodeBeaconLocator(string locator)
         {
@@ -155,6 +176,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets the local beacon information
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetBeaconInfo")]
         public async Task<string> GetBeaconInfo()
         {
@@ -186,6 +211,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Changes your beacon state from active/inactive states.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("SetBeaconState")]
         public async Task<string> SetBeaconState()
         {
@@ -205,6 +234,13 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets the assets based on the smart contract UID and the signature required.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="locators"></param>
+        /// <param name="signature"></param>
+        /// <returns></returns>
         [HttpGet("GetBeaconAssets/{scUID}/{locators}/{**signature}/")]
         public async Task<string> GetBeaconAssets(string scUID, string locators, string signature)
         {
@@ -214,6 +250,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets the assets queue this current beacon is responsible for
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetAssetQueue")]
         public async Task<string> GetAssetQueue()
         {
@@ -233,6 +273,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Sets the asset queue to complete
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetAssetQuestComplete")]
         public async Task<string> GetAssetQuestComplete()
         {
@@ -256,7 +300,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-
+        /// <summary>
+        /// Returns all current beacon request
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetBeaconRequest")]
         public async Task<string> GetBeaconRequest()
         {
@@ -271,6 +318,12 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        /// <summary>
+        /// Deletes a specific beacon request with a provided scUID = id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("GetDeleteBeaconRequest/{id}")]
         public async Task<string> GetDeleteBeaconRequest(int id)
         {
@@ -284,6 +337,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Deletes all beacon request tied to the current local beacon
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetDeleteBeaconRequestAll")]
         public async Task<string> GetDeleteBeaconRequestAll()
         {

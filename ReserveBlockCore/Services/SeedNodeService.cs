@@ -14,6 +14,8 @@ namespace ReserveBlockCore.Services
         public static async Task<string> PingSeedNode()
         {
             bool nodeFound = false;
+            bool isSeeded = false;
+            int count = 0;
             var url = "NA";
 
             Random rnd = new Random();
@@ -23,40 +25,42 @@ namespace ReserveBlockCore.Services
                 SeedNodes();
             var randomizedSeedNostList = SeedNodeList.OrderBy(x => rnd.Next()).ToList();
 
-            foreach (var node in randomizedSeedNostList)
+            do
             {
-                try
+                foreach (var node in randomizedSeedNostList)
                 {
-                    using (var client = Globals.HttpClientFactory.CreateClient())
+                    try
                     {
-
-                        string endpoint = node.NodeUrl + @"/api/V1";
-                        using (var Response = await client.GetAsync(endpoint))
+                        using (var client = Globals.HttpClientFactory.CreateClient())
                         {
-                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
-                            {
-                                string data = await Response.Content.ReadAsStringAsync();
 
-                                var _response = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
-                                var status = _response[1];
-                                if (status == "Online")
+                            string endpoint = node.NodeUrl + @"/api/V1";
+                            using (var Response = await client.GetAsync(endpoint))
+                            {
+                                if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                                 {
-                                    nodeFound = true;
-                                    url = node.NodeUrl;
-                                    break;
+                                    string data = await Response.Content.ReadAsStringAsync();
+
+                                    var _response = data.TrimStart('[').TrimEnd(']').Replace("\"", "").Split(',');
+                                    var status = _response[1];
+                                    if (status == "Online")
+                                    {
+                                        nodeFound = true;
+                                        url = node.NodeUrl;
+                                        isSeeded = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
+                    catch { count += 1; }
+                    count += 1;
                 }
-                catch (Exception ex)
-                {
 
-                }
-            }
-
+            } while (!isSeeded && count < 3);
+                
             return url;
-
         }
 
         public static async Task GetSeedNodePeers(string url)

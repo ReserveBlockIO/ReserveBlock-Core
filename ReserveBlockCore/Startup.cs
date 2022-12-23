@@ -31,6 +31,35 @@ namespace ReserveBlockCore
 
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ReserveBlock CLI API", Version = "v1" });
+                c.DocumentFilter<SwaggerDocumentFilter<Account>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AccountKeystore>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AccountStateTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjNodeInfo>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjPool>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjudicatorPool>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Adjudicators>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Adnr>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Block>>();
+                c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
+                c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
+                c.DocumentFilter<SwaggerDocumentFilter<HDWallet>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Keystore>>();
+                c.DocumentFilter<SwaggerDocumentFilter<NodeInfo>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Peers>>();
+                c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskAnswerResult>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskNumberAnswerV2>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskQuestion>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskWinner>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TopicTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Transaction>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Validators>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Vote>>();
+                c.DocumentFilter<SwaggerDocumentFilter<WorldTrei>>();
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
         }
 

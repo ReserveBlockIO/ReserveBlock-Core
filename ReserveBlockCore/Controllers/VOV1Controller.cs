@@ -12,6 +12,10 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class VOV1Controller : ControllerBase
     {
+        /// <summary>
+        /// Dumps out all vote topics
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetAllTopics")]
         public async Task<string> GetAllTopics()
         {
@@ -30,6 +34,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out all "active" topics
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetActiveTopics")]
         public async Task<string> GetActiveTopics()
         {
@@ -47,6 +55,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Dumps out all "inactive" topics
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetInactiveTopics")]
         public async Task<string> GetInactiveTopics()
         {
@@ -64,22 +76,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        [HttpGet("GetVotedOnTopics")]
-        public async Task<string> GetVotedOnTopics()
-        {
-            var output = "";
-
-            return output;
-        }
-
-        [HttpGet("GetNonVotedOnTopics")]
-        public async Task<string> GetNonVotedOnTopics()
-        {
-            var output = "";
-
-            return output;
-        }
-
+        /// <summary>
+        /// Gets the details of topics
+        /// </summary>
+        /// <param name="topicUID"></param>
+        /// <returns></returns>
         [HttpGet("GetTopicDetails/{topicUID}")]
         public async Task<string> GetTopicDetails(string topicUID)
         {
@@ -95,6 +96,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets the topics you have created from the active validator address
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMyTopics")]
         public async Task<string> GetMyTopics()
         {
@@ -112,6 +117,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets botes you have casted with given validator address.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetMyVotes")]
         public async Task<string> GetMyVotes()
         {
@@ -129,6 +138,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Gets the details of topics
+        /// </summary>
+        /// <param name="topicUID"></param>
+        /// <returns></returns>
         [HttpGet("GetTopicVotes/{topicUID}")]
         public async Task<string> GetTopicVotes(string topicUID)
         {
@@ -145,6 +159,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Audit a specific topic. This process can take a while.
+        /// </summary>
+        /// <param name="topicUID"></param>
+        /// <returns></returns>
         [HttpGet("GetAuditTopic/{topicUID}")]
         public async Task<string> GetAuditTopic(string topicUID)
         {
@@ -157,6 +176,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Cast your vote on a specific topic. (yes or no)
+        /// </summary>
+        /// <param name="topicUID"></param>
+        /// <param name="voteType"></param>
+        /// <returns></returns>
         [HttpGet("CastTopicVote/{topicUID}/{voteType}")]
         public async Task<string> CastTopicVote(string topicUID, VoteType voteType)
         {
@@ -190,6 +215,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Search for a topic with a single word search
+        /// </summary>
+        /// <param name="search"></param>
+        /// <returns></returns>
         [HttpGet("GetSearchTopics/{**search}")]
         public async Task<string> GetSearchTopics(string search)
         {
@@ -218,6 +248,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Post a vote topic
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("PostNewTopic")]
         public async Task<string> PostNewTopic([FromBody] object jsonData)
         {
