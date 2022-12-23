@@ -292,7 +292,8 @@ namespace ReserveBlockCore.Services
 
                         foreach (var tx in txsToBroadcastAdj)
                         {
-                            Globals.ConsensusBroadcastedTrxDict[tx.Hash].IsBroadcastedToAdj = true;
+                            if(Globals.ConsensusBroadcastedTrxDict.ContainsKey(tx.Hash))
+                                Globals.ConsensusBroadcastedTrxDict[tx.Hash].IsBroadcastedToAdj = true;
                         }
                     }
 
@@ -395,7 +396,8 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
+                            if(Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
+                                Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                         }
                     }
                 }

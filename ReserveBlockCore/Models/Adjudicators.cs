@@ -43,16 +43,6 @@ namespace ReserveBlockCore.Models
                 return adjudicators.FindOne(x => x.IsLeadAdjuidcator);
             }
 
-            public static Adjudicators[] GetAdjudicators()
-            {
-                var adjudicators = GetAll();
-                if (Globals.IsTestNet == true)                
-                    return adjudicators.Find(x => x.Address.StartsWith("x")).ToArray();
-                
-
-                return adjudicators.FindAll().ToArray();
-            }
-
             public static Guid GetAdjudicatorKey()
             {
                 return Guid.NewGuid();
