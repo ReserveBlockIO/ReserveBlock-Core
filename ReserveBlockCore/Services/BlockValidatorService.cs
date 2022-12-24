@@ -164,14 +164,21 @@ namespace ReserveBlockCore.Services
                     {
                         var version3Result = await BlockVersionUtility.Version3Rules(block);
                         if (!version3Result)
+                        {
+                            DbContext.Rollback();
                             return result;
+                        }
+                            
                     }
                     else if (block.Version > 1)
                     {
                         //Run block version 2 rules
                         var version2Result = await BlockVersionUtility.Version2Rules(block);
                         if (!version2Result)
+                        {
+                            DbContext.Rollback();
                             return result;
+                        }
                     }
                     //ensures the timestamps being produced are correct
                     if (block.Height != 0)
