@@ -95,8 +95,7 @@ namespace ReserveBlockCore.P2P
                     var NumNodes = CurrentAddresses.Count;
                     Majority = NumNodes / 2 + 1;
                     
-                    var MessageKeysToKeep = ConsensusServer.Messages.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
-                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1))
+                    var MessageKeysToKeep = ConsensusServer.Messages.Where(x => x.Key.Height == Height && x.Key.MethodCode == methodCode)
                         .Select(x => x.Key).ToHashSet();
                     foreach(var key in ConsensusServer.Messages.Keys.Where(x => !MessageKeysToKeep.Contains(x)))
                     {
@@ -106,8 +105,7 @@ namespace ReserveBlockCore.P2P
                     Messages = ConsensusServer.Messages.GetOrAdd((Height, methodCode), new ConcurrentDictionary<string, (string Message, string Signature)>());                    
                     Messages[Globals.AdjudicateAccount.Address] = (message, signature);
 
-                    var HashKeysToKeep = ConsensusServer.Hashes.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
-                        (x.Key.Height == Height && x.Key.MethodCode == methodCode - 1))
+                    var HashKeysToKeep = ConsensusServer.Hashes.Where(x => x.Key.Height == Height && x.Key.MethodCode == methodCode - 1)
                         .Select(x => x.Key).ToHashSet();
                     foreach (var key in ConsensusServer.Hashes.Keys.Where(x => !HashKeysToKeep.Contains(x)))
                     {
@@ -153,9 +151,10 @@ namespace ReserveBlockCore.P2P
                 while (ReadyToFinalize != 1)
                     await Task.Delay(20);
 
+                
+                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);
                 var FinalizedMessages = Messages.OrderBy(x => x.Key).ToArray();
-
-                ConsensusServer.UpdateState(status: (int)ConsensusStatus.Finalized);                                
+                               
                 var MyHash = Ecdsa.sha256(string.Join("", FinalizedMessages.Select(x => Ecdsa.sha256(x.Value.Message))));
                 var Signature = SignatureService.AdjudicatorSignature(MyHash);
 
@@ -164,7 +163,7 @@ namespace ReserveBlockCore.P2P
                 var HashSource = new CancellationTokenSource();                
                 _ = HashRequests(methodCode, Peers, Globals.Signers.Keys.ToArray(), HashSource);
                                 
-                var HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);                
+                var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, 3000);                
                 while (Height == Globals.LastBlock.Height + 1)
                 {                    
                     var CurrentHashes = Hashes.ToArray();
@@ -177,7 +176,7 @@ namespace ReserveBlockCore.P2P
                         {
                             var Now = TimeUtil.GetMillisecondTime();
                             var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 3000 && x.NodeHeight == Height &&
-                                ((x.MethodCode == methodCode && !x.IsFinalized) || (x.MethodCode == methodCode - 1 && x.IsFinalized))).Any();                                                               
+                                (x.MethodCode == methodCode && !x.IsFinalized)).Any();                                                               
                             
                             if (AnyNodesToWaitFor)
                             {
@@ -190,9 +189,9 @@ namespace ReserveBlockCore.P2P
                             JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new {x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime})), "Good exit", "ConsensusExits.txt", false);
                         return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray();
                     }
-                                        
-                    HashAddressesToWaitFor = AddressesToWaitFor(Height, methodCode, 3000);
-                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? HashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
+
+                    hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, 3000);
+                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
                     
                     if (NumMatches + RemainingAddressCount < Majority)
                     {
@@ -219,8 +218,16 @@ namespace ReserveBlockCore.P2P
         public static HashSet<string> AddressesToWaitFor(long height, int methodCode, int wait)
         {
             var Now = TimeUtil.GetMillisecondTime();            
-            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait && ((x.NodeHeight + 2 == height) ||
-                (x.NodeHeight + 1 == height && (x.MethodCode == methodCode || (x.MethodCode == methodCode + 1 && !x.IsFinalized) || (x.MethodCode == methodCode - 1 && x.IsFinalized)))))
+            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait && ((x.NodeHeight + 2 == height && methodCode == 0) ||
+                (x.NodeHeight + 1 == height && (x.MethodCode == methodCode || (x.MethodCode == methodCode - 1 && x.IsFinalized)))))
+                .Select(x => x.Address).ToHashSet();
+        }
+
+        public static HashSet<string> HashAddressesToWaitFor(long height, int methodCode, int wait)
+        {
+            var Now = TimeUtil.GetMillisecondTime();
+            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait &&
+                (x.NodeHeight + 1 == height && (x.MethodCode == methodCode || (x.MethodCode == methodCode + 1 && !x.IsFinalized))))
                 .Select(x => x.Address).ToHashSet();
         }
 
