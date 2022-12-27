@@ -261,8 +261,8 @@ namespace ReserveBlockCore.P2P
             {
                 ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswerV3()");
             }
-            taskAnsRes.AnswerCode = 1337; // Unknown Error
-            return taskAnsRes;
+            
+            return new TaskAnswerResult {  AnswerCode = 1337 }; // Unknown Error
         }
 
         #endregion
