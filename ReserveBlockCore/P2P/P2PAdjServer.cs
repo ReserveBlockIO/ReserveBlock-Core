@@ -203,27 +203,28 @@ namespace ReserveBlockCore.P2P
         #region Receive Rand Num and Task Answer V3
         public async Task<TaskAnswerResult> ReceiveTaskAnswerV3(string request)
         {
-            var taskAnsRes = new TaskAnswerResult();
-            var taskResult = request?.Split(':');
-            if (taskResult == null || taskResult.Length != 2)
-            {
-                taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
-                return taskAnsRes;
-            }
-
             if (Globals.AdjudicateAccount == null)
-            {
-                taskAnsRes.AnswerCode = 4; //adjudicator is still booting up
-                return taskAnsRes;
+            {                
+                return new TaskAnswerResult { AnswerCode = 4 }; //adjudicator is still booting up
             }
 
             try
             {
-                var (Answer, Signature) = (taskResult[0], taskResult[1]);
-                var answerSize = Answer.Length + Signature.Length;
-                var ipAddress = GetIP(Context);
-                return  await P2PServer.SignalRQueue(Context, answerSize, async () =>
+                return  await P2PServer.SignalRQueue(Context, request.Length, async () =>
                 {
+                    var taskAnsRes = new TaskAnswerResult();
+                                        
+                    var taskResult = request?.Split(':');
+                    if (taskResult == null || taskResult.Length != 2)
+                    {
+                        taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
+                        return taskAnsRes;
+                    }
+
+                    var (Answer, Signature) = (taskResult[0], taskResult[1]);
+                    var answerSize = Answer.Length + Signature.Length;
+                    var ipAddress = GetIP(Context);
+
                     //This will result in users not getting their answers chosen if they are not in list.
                     var fortisPool = Globals.FortisPool.Values;
                     if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
