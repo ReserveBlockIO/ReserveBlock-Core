@@ -297,16 +297,23 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetHDWallet(int strength)
         {
             var output = "";
-            var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-
-            Globals.HDWallet = true;
-
-            var newHDWalletInfo = new[]
+            try
             {
-                new { Result = mnemonic}
-            };
+                var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
 
-            output = JsonConvert.SerializeObject(newHDWalletInfo);
+                Globals.HDWallet = true;
+
+                var newHDWalletInfo = new[]
+                {
+                new { Result = mnemonic}
+                };
+
+                output = JsonConvert.SerializeObject(newHDWalletInfo);
+            }
+            catch(Exception ex)
+            {
+                output = $"ERROR! Message: {ex.ToString()}";
+            }
 
             return output;
         }
@@ -320,14 +327,21 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetRestoreHDWallet(string mnemonic)
         {
             var output = "";
-            var mnemonicRestore = HDWallet.HDWalletData.RestoreHDWallet(mnemonic);
-
-            var newHDWalletInfo = new[]
+            try
             {
-                new { Result = mnemonicRestore}
-            };
+                var mnemonicRestore = HDWallet.HDWalletData.RestoreHDWallet(mnemonic);
 
-            output = JsonConvert.SerializeObject(newHDWalletInfo);
+                var newHDWalletInfo = new[]
+                {
+                new { Result = mnemonicRestore}
+                };
+
+                output = JsonConvert.SerializeObject(newHDWalletInfo);
+            }
+            catch(Exception ex)
+            {
+                output = $"ERROR! Message: {ex.ToString()}";
+            }
 
             return output;
         }
