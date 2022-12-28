@@ -203,7 +203,7 @@ namespace ReserveBlockCore.BIP39
 
             var wordListFile = wordlists[wordlist.ToString()];
 
-            var wordListArray = File.ReadAllLines(@$"BIP39{Path.DirectorySeparatorChar}wordlist{Path.DirectorySeparatorChar}{wordListFile}");
+            var wordListArray = File.ReadAllLines(@$"{Directory.GetCurrentDirectory()}{Path.DirectorySeparatorChar}BIP39{Path.DirectorySeparatorChar}wordlist{Path.DirectorySeparatorChar}{wordListFile}");
 
             return wordListArray;
         }
