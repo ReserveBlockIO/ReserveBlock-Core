@@ -708,17 +708,17 @@ namespace ReserveBlockCore.Commands
                 {
                     var strength = Convert.ToInt32(strengthStr);
                     var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-                    Globals.HDWallet = true;
+                    Globals.HDWallet = mnemonic.Item1;
 
-                    return mnemonic;
+                    return mnemonic.Item2;
                 }
                 else if(strengthStr == "24")
                 {
                     var strength = Convert.ToInt32(strengthStr);
                     var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
-                    Globals.HDWallet = true;
+                    Globals.HDWallet = mnemonic.Item1;
 
-                    return mnemonic;
+                    return mnemonic.Item2;
                 }
                 else
                 {

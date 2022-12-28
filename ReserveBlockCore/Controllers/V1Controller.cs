@@ -301,18 +301,13 @@ namespace ReserveBlockCore.Controllers
             {
                 var mnemonic = HDWallet.HDWalletData.CreateHDWallet(strength, BIP39Wordlist.English);
 
-                Globals.HDWallet = true;
+                Globals.HDWallet = mnemonic.Item1;
 
-                var newHDWalletInfo = new[]
-                {
-                new { Result = mnemonic}
-                };
-
-                output = JsonConvert.SerializeObject(newHDWalletInfo);
+                output = JsonConvert.SerializeObject(new { Result = mnemonic.Item1, Message = mnemonic.Item2});
             }
             catch(Exception ex)
             {
-                output = $"ERROR! Message: {ex.ToString()}";
+                output = JsonConvert.SerializeObject(new { Result = false, Message = $"Error: {ex.ToString()}" });
             }
 
             return output;
@@ -331,12 +326,7 @@ namespace ReserveBlockCore.Controllers
             {
                 var mnemonicRestore = HDWallet.HDWalletData.RestoreHDWallet(mnemonic);
 
-                var newHDWalletInfo = new[]
-                {
-                new { Result = mnemonicRestore}
-                };
-
-                output = JsonConvert.SerializeObject(newHDWalletInfo);
+                output = JsonConvert.SerializeObject(new { Result = mnemonicRestore });
             }
             catch(Exception ex)
             {
