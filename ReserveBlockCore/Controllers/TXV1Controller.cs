@@ -968,6 +968,7 @@ namespace ReserveBlockCore.Controllers
         /// Shows the consensus broadcast list of txs
         /// </summary>
         /// <returns></returns>
+        [HttpGet("GetConsensusBroadcastTx")]
         public async Task<string> GetConsensusBroadcastTx()
         {
             var output = "";
@@ -986,6 +987,7 @@ namespace ReserveBlockCore.Controllers
         /// Shows the validator broadcast list of txs
         /// </summary>
         /// <returns></returns>
+        [HttpGet("GetValBroadcastTx")]
         public async Task<string> GetValBroadcastTx()
         {
             var output = "";

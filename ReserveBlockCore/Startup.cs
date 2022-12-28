@@ -56,7 +56,6 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Validators>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Vote>>();
                 c.DocumentFilter<SwaggerDocumentFilter<WorldTrei>>();
-
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
