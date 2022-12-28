@@ -289,7 +289,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Converts wallet to an HD Wallet
+        /// Converts wallet to an HD Wallet. Must choose strength of 12 or 24.
         /// </summary>
         /// <param name="strength"></param>
         /// <returns></returns>
