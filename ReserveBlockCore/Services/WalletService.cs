@@ -111,20 +111,22 @@ namespace ReserveBlockCore.Services
                 return output;
             }
 
-            var adnrCheck = ToAddress.ToLower().EndsWith(".rbx");
+            ToAddress = ToAddress.ToAddressNormalize();
 
-            if (adnrCheck)
-            {
-                var result = Adnr.GetAddress(ToAddress);
-                if(result.Item1 == true)
-                {
-                    ToAddress = result.Item2;
-                }
-                else
-                {
-                    return "Address not recognized or is not stored in the ADNR state trei.";
-                }
-            }
+            //var adnrCheck = ToAddress.ToLower().EndsWith(".rbx");
+
+            //if (adnrCheck)
+            //{
+            //    var result = Adnr.GetAddress(ToAddress);
+            //    if(result.Item1 == true)
+            //    {
+            //        ToAddress = result.Item2;
+            //    }
+            //    else
+            //    {
+            //        return "Address not recognized or is not stored in the ADNR state trei.";
+            //    }
+            //}
 
             var nTx = new Transaction
             {

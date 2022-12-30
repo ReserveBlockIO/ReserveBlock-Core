@@ -100,7 +100,7 @@ namespace ReserveBlockCore.Services
 
                     if (block == null)
                     {
-                        DbContext.Rollback();
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()");
                         return result; //null block submitted. reject 
                     }
 
@@ -108,7 +108,7 @@ namespace ReserveBlockCore.Services
                     {
                         if (block.ChainRefId != BlockchainData.ChainRef)
                         {
-                            DbContext.Rollback();
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-2");
                             return result; //block rejected due to chainref difference
                         }
                         //Genesis Block
@@ -139,7 +139,7 @@ namespace ReserveBlockCore.Services
                         //validates the signature of the validator that crafted the block
                         if (verifyBlockSig != true)
                         {
-                            DbContext.Rollback();
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-3");
                             return result;//block rejected due to failed validator signature
                         }
                     }
@@ -148,7 +148,7 @@ namespace ReserveBlockCore.Services
                     //Validates that the block has same chain ref
                     if (block.ChainRefId != BlockchainData.ChainRef)
                     {
-                        DbContext.Rollback();
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-5");
                         return result;//block rejected due to chainref difference
                     }
 
@@ -156,7 +156,7 @@ namespace ReserveBlockCore.Services
 
                     if (block.Version != blockVersion)
                     {
-                        DbContext.Rollback();
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-6");
                         return result;
                     }
 
@@ -165,7 +165,7 @@ namespace ReserveBlockCore.Services
                         var version3Result = await BlockVersionUtility.Version3Rules(block);
                         if (!version3Result)
                         {
-                            DbContext.Rollback();
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-7");
                             return result;
                         }
                             
@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Services
                         var version2Result = await BlockVersionUtility.Version2Rules(block);
                         if (!version2Result)
                         {
-                            DbContext.Rollback();
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-8");
                             return result;
                         }
                     }
@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Services
                         var currentTimestamp = TimeUtil.GetTime(1);
                         if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                         {
-                            DbContext.Rollback();
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-9");
                             return result;
                         }
                     }
@@ -208,13 +208,13 @@ namespace ReserveBlockCore.Services
                     //This will also check that the prev hash matches too
                     if (!newBlock.Hash.Equals(block.Hash))
                     {
-                        DbContext.Rollback();
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-10");
                         return result;//block rejected
                     }
 
                     if (!newBlock.MerkleRoot.Equals(block.MerkleRoot))
                     {
-                        DbContext.Rollback();
+                        DbContext.Rollback("BlockValidatorService.ValidateBlock()-11");
                         return result;//block rejected
                     }
 
@@ -226,7 +226,7 @@ namespace ReserveBlockCore.Services
 
                         if (blockCoinBaseResult == false)
                         {
-                            DbContext.Rollback();
+                            DbContext.Rollback("BlockValidatorService.ValidateBlock()-12");
                             return result;//block rejected
                         }
 
@@ -304,14 +304,14 @@ namespace ReserveBlockCore.Services
 
                             if (rejectBlock)
                             {
-                                DbContext.Rollback();
+                                DbContext.Rollback("BlockValidatorService.ValidateBlock()-13");
                                 return result;//block rejected due to bad transaction(s)
                             }
 
                             result = true;
                             BlockchainData.AddBlock(block);//add block to chain.
                             UpdateMemBlocks(block);//update mem blocks
-                            StateData.UpdateTreis(block); //update treis
+                            await StateData.UpdateTreis(block); //update treis
                             var mempool = TransactionData.GetPool();
 
                             if (block.Transactions.Count() > 0)
@@ -379,7 +379,7 @@ namespace ReserveBlockCore.Services
                 }
                 catch (Exception ex)
                 {
-                    DbContext.Rollback();
+                    DbContext.Rollback("BlockValidatorService.ValidateBlock()-14");
                     Console.WriteLine($"Error: {ex.ToString()}");
                 }
             }

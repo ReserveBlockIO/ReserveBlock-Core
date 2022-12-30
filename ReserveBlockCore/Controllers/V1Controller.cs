@@ -345,7 +345,11 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetEncryptWallet(string password)
         {
             var output = "";
-            if (Globals.IsWalletEncrypted != true)
+            if(Globals.HDWallet == true)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"HD wallet cannot be encrypted at this time." });
+            }
+            else if (Globals.IsWalletEncrypted != true)
             {
                 try
                 {

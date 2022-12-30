@@ -201,11 +201,23 @@ namespace ReserveBlockCore.Data
             DB_Vote.Commit();
         }
 
-        public static void Rollback()
+        public static void Rollback(string location = "")
         {
+            bool isStateUpdating = Globals.TreisUpdating;
+
             if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
                 return;
             Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+
+            if(isStateUpdating)
+            {
+                ErrorLogUtility.LogError("Rollback Has Occurred during Trei Update!", location);
+            }
+            else
+            {
+                ErrorLogUtility.LogError("Rollback Has Occurred!", location);
+            }
+            
 
             DB.Rollback();
             DB_Mempool.Rollback();

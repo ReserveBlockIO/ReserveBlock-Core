@@ -289,6 +289,13 @@ namespace ReserveBlockCore.Services
                 Globals.LastBlock = BlockchainData.GetLastBlock();
             }
         }
+        internal static async void RunStateSync()
+        {
+            //Use top method for mainnet
+            //if (Globals.LastBlock.Height < Globals.BlockLock && Globals.AdjudicateAccount == null)
+            if (Globals.AdjudicateAccount == null)
+                await StateTreiSyncService.SyncAccountStateTrei();
+        }
         internal static void RunRules()
         {
             //RuleService.ResetValidators();
@@ -1175,6 +1182,11 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("|type /help for menu options           |");
             Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
+            if(Globals.DuplicateAdjAddr)
+            { Console.WriteLine("|Duplicate Address Found Validating!    |"); }
+            if (Globals.DuplicateAdjIP)
+            { Console.WriteLine("|Duplicate IPAddress Found Validating!  |"); }
+
         }
     }
 }

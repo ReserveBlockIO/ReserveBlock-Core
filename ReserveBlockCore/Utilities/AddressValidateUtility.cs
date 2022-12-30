@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Utilities
         {
             var result = false;
 
-			var adnrCheck = addr.EndsWith(".rbx");
+			var adnrCheck = addr.Contains(".rbx");
 
             if (adnrCheck)
             {

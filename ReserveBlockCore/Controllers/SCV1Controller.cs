@@ -679,7 +679,7 @@ namespace ReserveBlockCore.Controllers
                         else
                         {
                             var locator = Globals.Locators.Values.FirstOrDefault();
-                            toAddress = toAddress.Replace(" ", "");
+                            toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
                             var localAddress = AccountData.GetSingleAccount(toAddress);
 
                             var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
@@ -801,6 +801,8 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
+            toAddress = toAddress.ToAddressNormalize();
+
             var tx = await SmartContractService.EvolveSmartContract(id, toAddress);
 
             if (tx == null)
@@ -826,6 +828,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> Devolve(string id, string toAddress)
         {
             string output;
+
+            toAddress = toAddress.ToAddressNormalize();
 
             var tx = await SmartContractService.DevolveSmartContract(id, toAddress);
 
@@ -853,6 +857,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> EvolveSpecific(string id, string toAddress, int evolveState)
         {
             string output;
+
+            toAddress = toAddress.ToAddressNormalize();
 
             var tx = await SmartContractService.ChangeEvolveStateSpecific(id, toAddress, evolveState);
 
@@ -965,6 +971,8 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> TestRemove(string id, string toAddress)
         {
             var output = "";
+
+            toAddress = toAddress.ToAddressNormalize();
 
             var sc = SmartContractMain.SmartContractData.GetSmartContract(id);
             if (sc != null)

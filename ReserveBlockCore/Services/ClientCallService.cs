@@ -913,6 +913,26 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region Do work V3
+        private static async Task SendDuplicateMessage(string conId, int dupType)
+        {
+            if(dupType == 0)
+            {
+                try
+                {
+                    await HubContext.Clients.Client(conId).SendAsync("GetAdjMessage", "dupIP", "0");
+                }
+                catch { }
+            }
+
+            if(dupType == 1)
+            {
+                try
+                {
+                    await HubContext.Clients.Client(conId).SendAsync("GetAdjMessage", "dupAddr", "1");
+                }
+                catch { }
+            }
+        }
 
         public static int CombineRandoms(IList<int> randoms, int minValue, int maxValue)
         {
@@ -1009,12 +1029,25 @@ namespace ReserveBlockCore.Services
                     try
                     {
                         foreach (var ip in BadIPs)
+                        {
                             if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
+                            {
+                                await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0,0,0,0,700));
                                 pool.Item2.Context?.Abort();
+                                
+                            }
+                                
+                        }
 
                         foreach (var address in BadAddresses)
+                        {
                             if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
+                            {
+                                await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 1).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
                                 pool.Item2.Context?.Abort();
+                            }
+                                
+                        }
                     }
                     catch (Exception ex)
                     {

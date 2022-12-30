@@ -354,7 +354,7 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
         {
             var output = "";
-
+            toAddress = toAddress.ToAddressNormalize();
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
             if (scStateTrei != null)
             {
@@ -453,6 +453,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            toAddress = toAddress.ToAddressNormalize();
 
             var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
             try

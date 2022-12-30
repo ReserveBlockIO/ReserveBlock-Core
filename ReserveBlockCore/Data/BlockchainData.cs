@@ -303,6 +303,10 @@ namespace ReserveBlockCore.Data
         }
         public static void AddBlock(Block block)
         {
+            while(Globals.TreisUpdating)
+            {
+                //prevents new block from being added while treis are updating
+            }
             var blocks = GetBlocks();            
             //only input block if null
             var blockCheck = blocks.FindOne(x => x.Height == block.Height);

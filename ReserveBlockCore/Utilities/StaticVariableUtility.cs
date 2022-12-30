@@ -40,6 +40,8 @@ namespace ReserveBlockCore.Utilities
             var mostLikelyIP = P2PClient.MostLikelyIP();
             var isWalletEncrypted = Globals.IsWalletEncrypted;            
             var beaconReference = Globals.BeaconReference.Reference;
+            var dupIPs = Globals.DuplicateAdjIP.ToString();
+            var dupAddr = Globals.DuplicateAdjAddr.ToString();
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
@@ -82,6 +84,8 @@ namespace ReserveBlockCore.Utilities
             var beaconRefText = $"Beacon Reference Id: {beaconReference}";
             var beacConnection = "Beacon Connected?: " + beaconConnection;
             var bannedPeersText = $"Banned Peer Count: {bannedPeers}";
+            var dupIPText = $"Duplicate IPs found Validating? {dupIPs}";
+            var dupAddrText = $"Duplicate Addresses found Validating? {dupAddr}";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -122,6 +126,10 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(blockHeightStr);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(validatorStr);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(dupIPText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(dupAddrText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(remoteLock);
             strBld.AppendLine("---------------------------------------------------------------------");

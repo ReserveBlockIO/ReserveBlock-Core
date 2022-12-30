@@ -1,5 +1,7 @@
-﻿using ReserveBlockCore.Utilities;
+﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System.IO.Compression;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -152,6 +154,26 @@ namespace ReserveBlockCore.Extensions
             var stringToBase64 = Convert.ToBase64String(plainTextBytes);
 
             return stringToBase64;
+        }
+
+        public static string ToAddressNormalize(this string source)
+        {
+            var adnrCheck = source.ToLower().Contains(".rbx");
+
+            if (adnrCheck)
+            {
+                var result = Adnr.GetAddress(source);
+                if (result.Item1 == true)
+                {
+                    return result.Item2;
+                }
+                else
+                {
+                    return source;
+                }
+            }
+
+            return source;
         }
 
         public static string ToStringFromBase64(this string source)

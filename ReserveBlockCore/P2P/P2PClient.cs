@@ -291,7 +291,9 @@ namespace ReserveBlockCore.P2P
                     message == "badBlock" || 
                     message == "sendWinningBlock" ||
                     message == "disconnect" ||
-                    message == "terminate")
+                    message == "terminate" ||
+                    message == "dupIP" ||
+                    message == "dupAddr")
                     {
                         switch(message)
                         {
@@ -331,6 +333,12 @@ namespace ReserveBlockCore.P2P
                                 break;
                             case "terminate":
                                 await ValidatorService.DoMasterNodeStop();
+                                break;
+                            case "dupIP":
+                                Globals.DuplicateAdjIP = true;
+                                break;
+                            case "dupAddr":
+                                Globals.DuplicateAdjAddr = true;
                                 break;
                         }
                     }

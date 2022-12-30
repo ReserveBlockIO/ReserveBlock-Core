@@ -7,6 +7,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using Spectre.Console.Rendering;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
@@ -199,7 +200,11 @@ namespace ReserveBlockCore
 
             StartupService.ClearStaleMempool();
 
-            //StartupService.RunStateSync();
+            //Syncing treis
+            Console.WriteLine("Syncing State Treis... This process may take a moment.");
+            StartupService.RunStateSync();
+            Console.WriteLine("Done Syncing State Treis...");
+
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 
@@ -438,6 +443,8 @@ namespace ReserveBlockCore
         #region Block Height Check
         private static async Task BlockHeightCheckLoop()
         {
+            bool dupMessageShown = false;
+
             while(true)
             {
                 try
@@ -464,6 +471,22 @@ namespace ReserveBlockCore
                     }
                     
                     DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
+                    if(Globals.DuplicateAdjAddr)
+                    {
+                        if(!dupMessageShown)
+                            StartupService.MainMenu();
+                        dupMessageShown = true;
+                    }
+
+                    if(Globals.DuplicateAdjIP)
+                    {
+                        if (!dupMessageShown)
+                            StartupService.MainMenu();
+                        dupMessageShown = true;
+                    }
+
+                    if(!Globals.DuplicateAdjIP && !Globals.DuplicateAdjAddr)
+                        dupMessageShown = false;
                 }
                 catch { }
 

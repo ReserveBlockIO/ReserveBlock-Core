@@ -73,6 +73,7 @@ namespace ReserveBlockCore
             app.UseSwagger();
             app.UseSwaggerUI(c => {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "ReserveBlock API v1");
+                c.DisplayRequestDuration();
             });
 
             app.Use((context, func) =>

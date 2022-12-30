@@ -118,7 +118,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets botes you have casted with given validator address.
+        /// Gets votes you have casted with given validator address.
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetMyVotes")]
@@ -169,7 +169,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            TopicTrei.AuditTopic(topicUID);
+            _ = TopicTrei.AuditTopic(topicUID);
 
             output = $"Audit started for topic: {topicUID}";
             

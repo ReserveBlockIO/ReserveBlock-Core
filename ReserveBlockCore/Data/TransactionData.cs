@@ -180,7 +180,7 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {
-                DbContext.Rollback();
+                DbContext.Rollback("TransactionData.GetPool()");
                 return null;
             }
             
@@ -371,7 +371,7 @@ namespace ReserveBlockCore.Data
                                             }
                                             catch (Exception ex)
                                             {
-                                                DbContext.Rollback();
+                                                DbContext.Rollback("TransactionData.ProcessTxPool()");
                                             }
                                         }
                                     }
@@ -387,7 +387,7 @@ namespace ReserveBlockCore.Data
                                         }
                                         catch (Exception ex)
                                         {
-                                            DbContext.Rollback();
+                                            DbContext.Rollback("TransactionData.ProcessTxPool()-2");
                                         }
                                     }
                                 }
@@ -403,7 +403,7 @@ namespace ReserveBlockCore.Data
                                     }
                                     catch (Exception ex)
                                     {
-                                        DbContext.Rollback();
+                                        DbContext.Rollback("TransactionData.ProcessTxPool()-3");
                                     }
                                 }
                             }
@@ -420,7 +420,7 @@ namespace ReserveBlockCore.Data
                             }
                             catch (Exception ex2)
                             {
-                                DbContext.Rollback();
+                                DbContext.Rollback("TransactionData.ProcessTxPool()-4");
                             }
                         }
                     }
