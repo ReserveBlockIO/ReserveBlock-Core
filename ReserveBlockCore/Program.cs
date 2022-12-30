@@ -173,6 +173,7 @@ namespace ReserveBlockCore
 
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
+            StartupService.StartupMemBlocks();
 
             var httpClientBuilder = Host.CreateDefaultBuilder(args)
                      .ConfigureServices(services =>
@@ -273,7 +274,7 @@ namespace ReserveBlockCore
                 }
             }
 
-            StartupService.StartupMemBlocks();
+            
 
             if (valEncryptCheck && valEncryptAddr != null)
             {
