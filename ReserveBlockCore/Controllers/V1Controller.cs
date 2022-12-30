@@ -513,7 +513,8 @@ namespace ReserveBlockCore.Controllers
             var walletInfo = new[]
             {
                 new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = (Globals.BlocksDownloadSlim.CurrentCount == 0).ToString(),
-                    IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString()}
+                    IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), 
+                    ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString(), DuplicateValIP = Globals.DuplicateAdjIP, DuplicateValAddress = Globals.DuplicateAdjAddr, }
             };
 
             output = JsonConvert.SerializeObject(walletInfo);
