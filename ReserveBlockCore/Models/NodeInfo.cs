@@ -97,7 +97,10 @@ namespace ReserveBlockCore.Models
                 invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x), TimeUtil.GetMillisecondTime() + " " + description));
                 _ = ProcessQueue();
 
-                return await Source.Task;
+                var Result = await Source.Task;
+                if (Globals.AdjudicateAccount != null)
+                    await Task.Delay(1000);
+                return Result;
             }
             catch { }
 

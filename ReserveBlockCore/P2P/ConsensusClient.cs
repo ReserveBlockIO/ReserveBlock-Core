@@ -452,10 +452,7 @@ namespace ReserveBlockCore.P2P
                     options.Headers.Add("signature", signature);
                     options.Headers.Add("walver", Globals.CLIVersion);
                 })                
-                .Build();
-
-                LogUtility.Log("Connecting to Consensus Node", "ConnectConsensusNode()");
-
+                .Build();                
                 
                 hubConnection.Reconnecting += (sender) =>
                 {
