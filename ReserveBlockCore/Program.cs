@@ -429,6 +429,7 @@ namespace ReserveBlockCore
                     Thread.Sleep(2000);
                     while(Globals.TreisUpdating)
                     {
+                        await Task.Delay(100);
                         //waiting for treis to stop
                     }
 

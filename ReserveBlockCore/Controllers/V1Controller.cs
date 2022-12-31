@@ -1390,6 +1390,7 @@ namespace ReserveBlockCore.Controllers
             Thread.Sleep(1000);
             while (Globals.TreisUpdating)
             {
+                await Task.Delay(100);
                 //waiting for treis to stop
             }
             Settings.InitiateShutdownUpdate();

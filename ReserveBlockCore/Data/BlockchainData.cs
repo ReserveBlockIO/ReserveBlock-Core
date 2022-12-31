@@ -305,6 +305,7 @@ namespace ReserveBlockCore.Data
         {
             while(Globals.TreisUpdating)
             {
+                Thread.Sleep(100);
                 //prevents new block from being added while treis are updating
             }
             var blocks = GetBlocks();            
