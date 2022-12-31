@@ -19,7 +19,8 @@ namespace ReserveBlockCore.Services
 
         public static void UpdateMemBlocks(Block block)
         {
-            Globals.MemBlocks.TryDequeue(out Block test);
+            if(Globals.MemBlocks.Count == 400)
+                Globals.MemBlocks.TryDequeue(out Block test);
             Globals.MemBlocks.Enqueue(block);
         }
 
