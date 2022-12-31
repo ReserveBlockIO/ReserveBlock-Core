@@ -1388,6 +1388,12 @@ namespace ReserveBlockCore.Controllers
             LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
             Globals.StopAllTimers = true;
             Thread.Sleep(1000);
+            while (Globals.TreisUpdating)
+            {
+                //waiting for treis to stop
+            }
+            Settings.InitiateShutdownUpdate();
+
             Environment.Exit(0);
         }
 

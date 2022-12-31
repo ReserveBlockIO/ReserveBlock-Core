@@ -203,7 +203,15 @@ namespace ReserveBlockCore
 
             //Syncing treis
             Console.WriteLine("Syncing State Treis... This process may take a moment.");
-            StartupService.RunStateSync();
+
+            var settings = Settings.GetSettings();
+            if(settings != null)
+            {
+                if (!settings.CorrectShutdown)
+                    StartupService.RunStateSync();
+                _ = Settings.InitiateStartupUpdate();
+            }
+            
             Console.WriteLine("Done Syncing State Treis...");
 
             StartupService.RunRules(); //rules for cleaning up wallet data.
@@ -419,6 +427,12 @@ namespace ReserveBlockCore
                     Globals.StopAllTimers = true;
                     Console.WriteLine("Closing and Exiting Wallet Application.");
                     Thread.Sleep(2000);
+                    while(Globals.TreisUpdating)
+                    {
+                        //waiting for treis to stop
+                    }
+
+                    Settings.InitiateShutdownUpdate();
                     Environment.Exit(0);
                 }
 

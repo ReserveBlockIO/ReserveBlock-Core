@@ -76,9 +76,9 @@ namespace ReserveBlockCore.Data
 
                             var newRec = new StateTreiAuditData
                             {
-                                NewValue = from.Balance -= (tx.Amount + tx.Fee),
+                                NewValue = (from.Balance - (tx.Amount + tx.Fee)),
                                 OldValue = from.Balance,
-                                NextNonce = from.Nonce += 1,
+                                NextNonce = from.Nonce + 1,
                                 Nonce = from.Nonce,
                                 Address = from.Key,
                                 StateRoot = block.StateRoot,
