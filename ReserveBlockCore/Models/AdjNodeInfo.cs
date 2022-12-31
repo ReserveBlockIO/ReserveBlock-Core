@@ -82,7 +82,7 @@ namespace ReserveBlockCore.Models
                 _ = ProcessQueue();
 
                 var Result = await Source.Task;
-                if (Globals.AdjudicateAccount != null)
+                if (Globals.AdjudicateAccount == null)
                     await Task.Delay(1000);
                 return Result;
             }
