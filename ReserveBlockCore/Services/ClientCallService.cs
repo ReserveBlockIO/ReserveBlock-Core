@@ -202,7 +202,7 @@ namespace ReserveBlockCore.Services
                                                     foreach (string asset in assetList)
                                                     {
                                                         var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
-                                                        var fileExist = File.Exists(path);
+                                                        var fileExist = System.IO.File.Exists(path);
                                                         if (!fileExist)
                                                         {
                                                             try
