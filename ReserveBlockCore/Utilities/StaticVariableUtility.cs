@@ -42,6 +42,8 @@ namespace ReserveBlockCore.Utilities
             var beaconReference = Globals.BeaconReference.Reference;
             var dupIPs = Globals.DuplicateAdjIP.ToString();
             var dupAddr = Globals.DuplicateAdjAddr.ToString();
+            var explorerData = Globals.ExplorerValDataLastSendSuccess.ToString();
+            var explorerDataLastSent = Globals.ExplorerValDataLastSend.ToString();
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
@@ -86,6 +88,9 @@ namespace ReserveBlockCore.Utilities
             var bannedPeersText = $"Banned Peer Count: {bannedPeers}";
             var dupIPText = $"Duplicate IPs found Validating? {dupIPs}";
             var dupAddrText = $"Duplicate Addresses found Validating? {dupAddr}";
+            var explorerDataText = $"Explorer Last Send Success? {explorerData}";
+            var explorerLastSendText = $"Explorer Last Send Date: {explorerDataLastSent}";
+
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -138,6 +143,10 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(isResyncing);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(adjudicatorText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(explorerDataText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(explorerLastSendText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(adjConnection);
             strBld.AppendLine("---------------------------------------------------------------------");

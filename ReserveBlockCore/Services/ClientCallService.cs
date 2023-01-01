@@ -20,6 +20,8 @@ using System.Security;
 using System.Transactions;
 using System.Xml.Linq;
 using static ReserveBlockCore.P2P.ConsensusClient;
+using static System.Net.WebRequestMethods;
+using System.Text;
 
 namespace ReserveBlockCore.Services
 {
@@ -55,7 +57,7 @@ namespace ReserveBlockCore.Services
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
-                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 180));
+                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 60));
 
             if (Globals.ChainCheckPoint == true)
             {
@@ -419,7 +421,7 @@ namespace ReserveBlockCore.Services
             {
                 if (Globals.StopAllTimers == false)
                 {
-                    if (Globals.AdjudicateAccount != null && !Globals.IsTestNet)
+                    if (Globals.AdjudicateAccount != null)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
                         var fortisPool = Globals.FortisPool.Values
@@ -437,19 +439,34 @@ namespace ReserveBlockCore.Services
                         var fortisPoolStr = "";
                         fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
 
-                        var explorerNode = fortisPool.Where(x => x.Address == "RHNCRbgCs7KGdXk17pzRYAYPRKCkSMwasf").FirstOrDefault();
-
-                        if (explorerNode != null)
+                        try
                         {
-                            try
+                            using (var client = Globals.HttpClientFactory.CreateClient())
                             {
-                                await _hubContext.Clients.Client(explorerNode.ConnectionId).SendAsync("GetAdjMessage", "fortisPool", fortisPoolStr);
-                            }
-                            catch 
-                            {
-                                ErrorLogUtility.LogError("Failed to send fortis pool to RHNCRbgCs7KGdXk17pzRYAYPRKCkSMwasf", "ClientCallSerivce.DoFortisPoolWork()");
+                                string endpoint = Globals.IsTestNet ? "https://testnet-data.rbx.network/api/masternodes/send/" : "https://data.rbx.network/api/masternodes/send/";
+                                var httpContent = new StringContent(fortisPoolStr, Encoding.UTF8, "application/json");
+                                using (var Response = await client.PostAsync(endpoint, httpContent))
+                                {
+                                    if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                                    {
+                                        //success
+                                        Globals.ExplorerValDataLastSend = DateTime.Now;
+                                        Globals.ExplorerValDataLastSendSuccess = true;
+                                    }
+                                    else
+                                    {
+                                        ErrorLogUtility.LogError("Error sending payload to explorer", "ClientCallService.DoFortisPoolWork()");
+                                        Globals.ExplorerValDataLastSendSuccess = false;
+                                    }
+                                }
                             }
                         }
+                        catch(Exception ex)
+                        {
+                            ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.DoFortisPoolWork()");
+                            Globals.ExplorerValDataLastSendSuccess = false;
+                        }
+                        
                     }
                 }                
 

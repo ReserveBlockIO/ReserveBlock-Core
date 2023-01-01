@@ -40,6 +40,7 @@ namespace ReserveBlockCore
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
         public static DateTime? APIUnlockTime = null;
+        public static DateTime? ExplorerValDataLastSend = null;
 
         public const int ADNRLimit = 65;
         public static int BlockLock = 400000;
@@ -101,6 +102,7 @@ namespace ReserveBlockCore
         public static bool TreisUpdating = false;
         public static bool DuplicateAdjIP = false;
         public static bool DuplicateAdjAddr = false;
+        public static bool ExplorerValDataLastSendSuccess = false;
 
         public static CancellationToken CancelledToken;
 
