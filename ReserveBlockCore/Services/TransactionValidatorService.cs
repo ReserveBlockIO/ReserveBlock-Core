@@ -33,9 +33,12 @@ namespace ReserveBlockCore.Services
             }
 
             //This might have to be used after certain block height. 
-            if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
-                return txResult;
-
+            if(txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
+            {
+                if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
+                    return txResult;
+            }
+            
             //Timestamp Check
             if (Globals.BlocksDownloadSlim.CurrentCount != 0)
             {
