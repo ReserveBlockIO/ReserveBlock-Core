@@ -357,7 +357,7 @@ namespace ReserveBlockCore.Data
                                         var isCraftedIntoBlock = await HasTxBeenCraftedIntoBlock(tx);
                                         var txVerify = await TransactionValidatorService.VerifyTX(tx);
 
-                                        if (txVerify && !dblspndChk && !isCraftedIntoBlock)
+                                        if (txVerify.Item1 && !dblspndChk && !isCraftedIntoBlock)
                                             approvedMemPoolList.Add(tx);
                                     }
                                     else

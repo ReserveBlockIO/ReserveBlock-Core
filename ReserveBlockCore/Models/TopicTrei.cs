@@ -336,7 +336,7 @@ namespace ReserveBlockCore.Models
                     topicTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(topicTx);
+                var result = await TransactionValidatorService.VerifyTX(topicTx);
                 if (result.Item1 == true)
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;

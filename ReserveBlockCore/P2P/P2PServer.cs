@@ -483,7 +483,7 @@ namespace ReserveBlockCore.P2P
                             if (!isTxStale)
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
-                                if (txResult == false)
+                                if (txResult.Item1 == false)
                                 {
                                     try
                                     {
@@ -500,7 +500,7 @@ namespace ReserveBlockCore.P2P
                                 var rating = await TransactionRatingService.GetTransactionRating(txReceived);
                                 txReceived.TransactionRating = rating;
 
-                                if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                                if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                 {
                                     mempool.InsertSafe(txReceived);
                                     await P2PClient.SendTXToAdjudicator(txReceived);
@@ -562,7 +562,7 @@ namespace ReserveBlockCore.P2P
                         if (!isTxStale)
                         {
                             var txResult = await TransactionValidatorService.VerifyTX(txReceived);
-                            if (!txResult)
+                            if (!txResult.Item1)
                             {
                                 try
                                 {
@@ -577,7 +577,7 @@ namespace ReserveBlockCore.P2P
                             var rating = await TransactionRatingService.GetTransactionRating(txReceived);
                             txReceived.TransactionRating = rating;
 
-                            if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                            if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
                                 if(Globals.AdjudicateAccount == null)

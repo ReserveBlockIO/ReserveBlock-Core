@@ -151,7 +151,7 @@ namespace ReserveBlockCore.Nodes
                             {
 
                                 var txResult = await TransactionValidatorService.VerifyTX(transaction);
-                                if (txResult == true)
+                                if (txResult.Item1 == true)
                                 {
                                     var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                     var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
@@ -185,7 +185,7 @@ namespace ReserveBlockCore.Nodes
                         {
 
                             var txResult = await TransactionValidatorService.VerifyTX(transaction);
-                            if (txResult == true)
+                            if (txResult.Item1 == true)
                             {
                                 var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction);
                                 var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);

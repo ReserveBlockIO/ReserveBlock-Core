@@ -203,7 +203,7 @@ namespace ReserveBlockCore.Models
 
             try
             {
-                var result = await TransactionValidatorService.VerifyTXDetailed(decShopTx);
+                var result = await TransactionValidatorService.VerifyTX(decShopTx);
                 if (result.Item1 == true)
                 {
                     TransactionData.AddToPool(decShopTx);

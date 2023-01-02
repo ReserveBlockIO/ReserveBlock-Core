@@ -171,7 +171,7 @@ namespace ReserveBlockCore.Models
                     adnrTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
                 if (result.Item1 == true)
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
@@ -272,7 +272,7 @@ namespace ReserveBlockCore.Models
                     adnrTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
                 if (result.Item1 == true)
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
@@ -373,7 +373,7 @@ namespace ReserveBlockCore.Models
                     adnrTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
                 if (result.Item1 == true)
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;

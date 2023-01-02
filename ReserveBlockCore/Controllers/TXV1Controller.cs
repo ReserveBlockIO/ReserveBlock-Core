@@ -654,7 +654,7 @@ namespace ReserveBlockCore.Controllers
 
                 if (transaction != null)
                 {
-                    var result = await TransactionValidatorService.VerifyTXDetailed(transaction);
+                    var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
 
@@ -699,7 +699,7 @@ namespace ReserveBlockCore.Controllers
                 if (transaction != null)
                 {
                     var result = await TransactionValidatorService.VerifyTX(transaction);
-                    if (result == true)
+                    if (result.Item1 == true)
                     {
                         TransactionData.AddToPool(transaction);
                         await P2PClient.SendTXMempool(transaction);//send out to mempool

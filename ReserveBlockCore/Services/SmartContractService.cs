@@ -97,7 +97,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result == true)
+                if (result.Item1 == true)
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
@@ -128,7 +128,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    NFTLogUtility.Log($"Transaction Failed Verify and was not Sent to Mempool : {scMain.SmartContractUID}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
+                    NFTLogUtility.Log($"Transaction Failed Verify and was not Sent to Mempool : {scMain.SmartContractUID}. Result: {result.Item2}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
                     var output = "Fail! Transaction Verify has failed.";
                     return null;
                 }
@@ -226,7 +226,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result == true)
+                if (result.Item1 == true)
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
@@ -258,7 +258,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
-                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}. Result: {result.Item2}", "SmartContractService.TransferSmartContract()");
                     return null;
                 }
             }
@@ -350,7 +350,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result == true)
+                if (result.Item1 == true)
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
@@ -382,7 +382,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
-                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}", "SmartContractService.BurnSmartContract()");
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}. Result: {result.Item2}", "SmartContractService.BurnSmartContract()");
                     return null;
                 }
             }
@@ -485,7 +485,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result == true)
+                if (result.Item1 == true)
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
@@ -517,7 +517,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
-                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scUID}", "SmartContractService.EvolveSmartContract()");
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scUID}. Result {result.Item2}", "SmartContractService.EvolveSmartContract()");
                     return null;
                 }
             }
@@ -621,7 +621,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result == true)
+                if (result.Item1 == true)
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
@@ -653,7 +653,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
-                    NFTLogUtility.Log($"Error Devolve Failed TX Verify: {scUID}", "SmartContractService.DevolveSmartContract()");
+                    NFTLogUtility.Log($"Error Devolve Failed TX Verify: {scUID}. Result: {result.Item2}", "SmartContractService.DevolveSmartContract()");
                     return null;
                 }
             }
@@ -757,7 +757,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result == true)
+                if (result.Item1 == true)
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
@@ -789,7 +789,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
-                    NFTLogUtility.Log($"Error Evo Specific Failed TX Verify: {scUID}", "SmartContractService.ChangeEvolveStateSpecific()");
+                    NFTLogUtility.Log($"Error Evo Specific Failed TX Verify: {scUID}. Result: {result.Item2}", "SmartContractService.ChangeEvolveStateSpecific()");
                     return null;
                 }
             }

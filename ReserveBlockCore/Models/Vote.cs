@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Models
                     voteTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(voteTx);//MODIFY THIS FOR VOTE RULES!
+                var result = await TransactionValidatorService.VerifyTX(voteTx);//MODIFY THIS FOR VOTE RULES!
                 if (result.Item1 == true)
                 {
                     voteTx.TransactionStatus = TransactionStatus.Pending;

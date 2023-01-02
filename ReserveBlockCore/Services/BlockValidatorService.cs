@@ -240,7 +240,7 @@ namespace ReserveBlockCore.Services
                                 if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                                 {
                                     var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
-                                    rejectBlock = txResult == false ? rejectBlock = true : false;
+                                    rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;
                                     //check for duplicate tx
                                     if (blkTransaction.TransactionType != TransactionType.TX &&
                                         blkTransaction.TransactionType != TransactionType.ADNR &&
@@ -479,7 +479,7 @@ namespace ReserveBlockCore.Services
                     if (transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                     {
                         var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
-                        rejectBlock = txResult == false ? rejectBlock = true : false;
+                        rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;
                         if (rejectBlock)
                         {
                             RemoveTxFromMempool(transaction);//this should not happen, but if client did fail to properly handle tx it will reject it here.

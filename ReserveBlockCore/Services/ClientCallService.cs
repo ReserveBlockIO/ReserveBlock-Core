@@ -315,7 +315,7 @@ namespace ReserveBlockCore.Services
                                     {
 
                                         var txResult = await TransactionValidatorService.VerifyTX(transaction.Transaction);
-                                        if (txResult == true)
+                                        if (txResult.Item1 == true)
                                         {
                                             var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction.Transaction);
                                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
@@ -372,7 +372,7 @@ namespace ReserveBlockCore.Services
                                 {
 
                                     var txResult = await TransactionValidatorService.VerifyTX(transaction.Transaction);
-                                    if (txResult == true)
+                                    if (txResult.Item1 == true)
                                     {
                                         var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction.Transaction);
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
@@ -489,7 +489,7 @@ namespace ReserveBlockCore.Services
                                 if (sendTx)
                                 {
                                     var txResult = await TransactionValidatorService.VerifyTX(tx);
-                                    if (txResult == true)
+                                    if (txResult.Item1 == true)
                                     {
                                         var dblspndChk = await TransactionData.DoubleSpendReplayCheck(tx);
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(tx);

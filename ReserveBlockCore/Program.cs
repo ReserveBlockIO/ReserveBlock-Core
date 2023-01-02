@@ -69,6 +69,10 @@ namespace ReserveBlockCore
             
             NFTLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
 
+            APILogUtility.Log(logCLIVer, "Main", true);
+
+            APILogUtility.Log($"RBX API ver. - {logCLIVer}", "Main");
+
             StartupService.AnotherInstanceCheck();
 
             StartupService.StartupDatabase();// initializes databases

@@ -73,7 +73,7 @@ namespace ReserveBlockCore.Utilities
                         if (transaction.FromAddress != "Coinbase_TrxFees" && transaction.FromAddress != "Coinbase_BlkRwd")
                         {
                             var txResult = await TransactionValidatorService.VerifyTX(transaction, blockDownloads);
-                            rejectBlock = txResult == false ? rejectBlock = true : false;
+                            rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;
                         }
                         else
                         {

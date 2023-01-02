@@ -103,6 +103,7 @@ namespace ReserveBlockCore
         public static bool DuplicateAdjIP = false;
         public static bool DuplicateAdjAddr = false;
         public static bool ExplorerValDataLastSendSuccess = false;
+        public static bool LogAPI = false;
 
         public static CancellationToken CancelledToken;
 

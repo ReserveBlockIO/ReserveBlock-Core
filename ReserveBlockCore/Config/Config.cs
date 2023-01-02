@@ -34,6 +34,7 @@ namespace ReserveBlockCore.Config
         public List<string> RejectAssetExtensionTypes { get; set; }
 		public List<string> AllowedExtensionsTypes { get; set; }
 		public string? CustomPath { get; set; }
+		public bool LogAPI { get; set; }
 
         public static Config ReadConfigFile()
         {
@@ -82,7 +83,8 @@ namespace ReserveBlockCore.Config
 				config.ChainCheckPointRetain = dict.ContainsKey("ChainCheckPointRetain") ? Convert.ToInt32(dict["ChainCheckPointRetain"]) : 2;
 				config.ChainCheckpointLocation = dict.ContainsKey("ChainCheckpointLocation") ? dict["ChainCheckpointLocation"] : GetPathUtility.GetCheckpointPath();
 				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
-                
+                config.LogAPI = dict.ContainsKey("LogAPI") ? Convert.ToBoolean(dict["LogAPI"]) : false;
+
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
                 config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
@@ -153,6 +155,7 @@ namespace ReserveBlockCore.Config
 					Globals.RejectAssetExtensionTypes.Add(type);
 			Globals.IgnoreIncomingNFTs = config.IgnoreIncomingNFTs;
 			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
+			Globals.LogAPI = config.LogAPI;
 
 			if(config.TestNet == true)
             {
