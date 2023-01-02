@@ -336,14 +336,16 @@ namespace ReserveBlockCore.Services
                                         await BlockTransactionValidatorService.ProcessOutgoingTransaction(localTransaction, fromAccount, block.Height);
                                     }
 
+                                }
+
+                                foreach (var localTransaction in block.Transactions)
+                                {
                                     //Process transactions sent ->To<- wallet
                                     var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
                                     if (account != null)
                                     {
                                         await BlockTransactionValidatorService.ProcessIncomingTransactions(localTransaction, account, block.Height);
                                     }
-
-                                    
                                 }
                             }
 
