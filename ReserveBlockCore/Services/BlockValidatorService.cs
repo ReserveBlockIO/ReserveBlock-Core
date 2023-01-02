@@ -313,6 +313,8 @@ namespace ReserveBlockCore.Services
                             BlockchainData.AddBlock(block);//add block to chain.
                             UpdateMemBlocks(block);//update mem blocks
                             await StateData.UpdateTreis(block); //update treis
+
+                            DbContext.Commit();
                             var mempool = TransactionData.GetPool();
 
                             if (block.Transactions.Count() > 0)
@@ -335,7 +337,6 @@ namespace ReserveBlockCore.Services
                                     {
                                         await BlockTransactionValidatorService.ProcessOutgoingTransaction(localTransaction, fromAccount, block.Height);
                                     }
-
                                 }
 
                                 foreach (var localTransaction in block.Transactions)
@@ -352,7 +353,7 @@ namespace ReserveBlockCore.Services
                         }
 
                         await TransactionData.UpdateWalletTXTask();
-                        DbContext.Commit();
+                        
                         if (P2PClient.MaxHeight() <= block.Height)
                         {
                             if (Globals.LastBlock.Height >= Globals.BlockLock)

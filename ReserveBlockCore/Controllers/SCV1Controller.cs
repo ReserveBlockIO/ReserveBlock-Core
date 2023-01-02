@@ -96,6 +96,10 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            output = JsonConvert.SerializeObject(scState);
+
             return output;
         }
 
