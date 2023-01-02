@@ -34,8 +34,12 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             {
-                if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
-                    return (txResult, "Address failed to validate");
+                //Testnet block add.
+                if(Globals.LastBlock.Height > 12118)
+                {
+                    if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
+                        return (txResult, "Address failed to validate");
+                }
             }
 
             //Timestamp Check
