@@ -88,7 +88,8 @@ namespace ReserveBlockCore.Controllers
 
                 List<string> APIExclusionList = new List<string> { "SendBlock", "GetWalletInfo", "GetAllAddresses", "GetValidatorAddresses", "GetAllLocalTX", 
                     "GetSuccessfulLocalTX", "GetFailedLocalTX", "GetPendingLocalTX", "GetMinedLocalTX", "GetAllTopics", "GetActiveTopics", "GetInactiveTopics",
-                    "GetMyTopics", "GetAllSmartContracts", "GetMintedSmartContracts"};
+                    "GetMyTopics", "GetAllSmartContracts", "GetMintedSmartContracts", "CheckStatus", "GetIsWalletEncrypted", "GetMyVotes", "GetSingleSmartContract",
+                    "GetNFTAssetLocation"};
 
                 if(!APIExclusionList.Contains(action))
                 {
