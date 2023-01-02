@@ -10,12 +10,12 @@ namespace ReserveBlockCore.Utilities
         {
             var result = false;
 
-			var adnrCheck = addr.Contains(".rbx");
+			var adnrCheck = addr.ToLower().Contains(".rbx");
 
             if (adnrCheck)
             {
 				var adnr = Adnr.GetAdnr();
-				var adnrExist = adnr.FindOne(x => x.Name == addr);
+				var adnrExist = adnr.FindOne(x => x.Name == addr.ToLower());
 				if(adnrExist != null)
                 {
 					addr = adnrExist.Address;

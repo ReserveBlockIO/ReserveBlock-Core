@@ -1014,6 +1014,23 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Validates an RBX Address or ADNR
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet("ValidateAddress/{**address}")]
+        public async Task<string> ValidateAddress(string address)
+        {
+            string output = "";
+
+            var result = AddressValidateUtility.ValidateAddress(address);
+
+            output = result.ToString();
+
+            return output;
+        }
+
+        /// <summary>
         /// Create a signature with provided message and address
         /// </summary>
         /// <param name="message"></param>

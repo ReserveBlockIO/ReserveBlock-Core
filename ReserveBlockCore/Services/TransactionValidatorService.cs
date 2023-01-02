@@ -32,8 +32,12 @@ namespace ReserveBlockCore.Services
                 }
             }
 
+            //This might have to be used after certain block height. 
+            if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
+                return txResult;
+
             //Timestamp Check
-            if(Globals.BlocksDownloadSlim.CurrentCount != 0)
+            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
             {
                 var currentTime = TimeUtil.GetTime();
                 var timeDiff = currentTime - txRequest.Timestamp;
