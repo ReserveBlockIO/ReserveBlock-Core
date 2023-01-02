@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -135,6 +136,7 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {                
                 Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Minting Smart Contract: {ex.ToString()}", "SmartContractService.MintSmartContractTx(SmartContractMain scMain)");
             }
 
             return null;
@@ -256,12 +258,14 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
                     return null;
                 }
             }
             catch (Exception ex)
             {                
                 Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Transferring Smart Contract: {ex.ToString()}", "SmartContractService.TransferSmartContract()");
             }
 
             return null;
@@ -378,12 +382,14 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}", "SmartContractService.BurnSmartContract()");
                     return null;
                 }
             }
             catch (Exception ex)
             {                
                 Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Burning Smart Contract: {ex.ToString()}", "SmartContractService.BurnSmartContract()");
             }
 
             return null;
@@ -511,12 +517,14 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scUID}", "SmartContractService.EvolveSmartContract()");
                     return null;
                 }
             }
             catch (Exception ex)
             {                
                 Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Evolving Smart Contract: {ex.ToString()}", "SmartContractService.EvolveSmartContract()");
             }
 
             return null;
@@ -645,12 +653,14 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
+                    NFTLogUtility.Log($"Error Devolve Failed TX Verify: {scUID}", "SmartContractService.DevolveSmartContract()");
                     return null;
                 }
             }
             catch (Exception ex)
             {                
                 Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Burning Smart Contract: {ex.ToString()}", "SmartContractService.DevolveSmartContract()");
             }
 
             return null;
@@ -779,12 +789,14 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     var output = "Fail! Transaction Verify has failed.";
+                    NFTLogUtility.Log($"Error Evo Specific Failed TX Verify: {scUID}", "SmartContractService.ChangeEvolveStateSpecific()");
                     return null;
                 }
             }
             catch (Exception ex)
             {                
                 Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Evo Specific Smart Contract: {ex.ToString()}", "SmartContractService.ChangeEvolveStateSpecific()");
             }
 
             return null;
