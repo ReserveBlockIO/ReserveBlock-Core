@@ -712,12 +712,14 @@ namespace ReserveBlockCore.Controllers
                                     bool beaconSendFinalResult = true;
                                     if(assets.Count() > 0)
                                     {
-                                        foreach(var asset in assets)
+                                        NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {sc.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                                        foreach (var asset in assets)
                                         {
                                             var sendResult = await BeaconUtility.SendAssets(sc.SmartContractUID, asset);
                                             if (!sendResult)
                                                 beaconSendFinalResult = false;
                                         }
+                                        NFTLogUtility.Log($"NFT Asset Transfer Done for: {sc.SmartContractUID}.", "SCV1Controller.TransferNFT()");
                                     }
                                     if(beaconSendFinalResult)
                                     {

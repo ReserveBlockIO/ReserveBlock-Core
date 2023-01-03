@@ -22,6 +22,7 @@ namespace ReserveBlockCore.Utilities
                         var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
                         var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
+                        NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.ProcessData() - send");
                         BeaconResponse rsp = BeaconClient.Send(filePath, beacon.IPAddress, beacon.Port);
                         if (rsp.Status == 1)
                         {
