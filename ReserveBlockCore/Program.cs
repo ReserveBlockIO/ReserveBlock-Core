@@ -244,6 +244,9 @@ namespace ReserveBlockCore
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
             var commandLoopTask3 = Task.Run(() => CommandLoop3());
 
+            while (Globals.StopAllTimers || Globals.BlocksDownloadSlim.CurrentCount == 0)
+                await Task.Delay(20);
+
             //for web API using Kestrel
             var builder = Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>

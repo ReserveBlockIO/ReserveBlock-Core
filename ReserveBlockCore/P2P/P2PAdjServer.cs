@@ -30,6 +30,15 @@ namespace ReserveBlockCore.P2P
             try
             {
                 peerIP = GetIP(Context);
+                if (Globals.FortisPool.TryGetFromKey1(peerIP, out var pool) && pool.Value.Context?.ConnectionId != Context.ConnectionId)
+                    pool.Value.Context?.Abort();
+
+                if (Globals.BannedIPs.ContainsKey(peerIP))
+                {
+                    Context.Abort();
+                    return;
+                }
+
                 var httpContext = Context.GetHttpContext();
                 if(httpContext == null)
                 {                    
