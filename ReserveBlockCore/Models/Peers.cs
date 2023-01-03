@@ -137,14 +137,14 @@ namespace ReserveBlockCore.Models
             else
                 peerDb.InsertSafe(new Peers { PeerIP = ipAddress, IsBanned = true });
 
-            if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var pool))
-                pool.Value.Context?.Abort();
+            //if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var pool))
+            //    pool.Value.Context?.Abort();
 
-            if (Globals.AdjNodes.TryRemove(ipAddress, out var adjnode) && adjnode.Connection != null)
-                adjnode.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            //if (Globals.AdjNodes.TryRemove(ipAddress, out var adjnode) && adjnode.Connection != null)
+            //    adjnode.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
-            if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
-                node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            //if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
+            //    node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public static void UpdatePeerLastReach(Peers incPeer)
