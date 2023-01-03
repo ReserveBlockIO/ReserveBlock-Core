@@ -24,11 +24,11 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {            
             var peerIP = GetIP(Context);
-            if (Globals.BannedIPs.ContainsKey(peerIP))
-            {
-                Context.Abort();
-                return;
-            }
+            //if (Globals.BannedIPs.ContainsKey(peerIP))
+            //{
+            //    Context.Abort();
+            //    return;
+            //}
             if (Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
                 context.Abort();
 
