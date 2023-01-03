@@ -70,7 +70,18 @@ namespace ReserveBlockCore.P2P
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
         {
             var now = TimeUtil.GetMillisecondTime();
-            var ipAddress = GetIP(context);            
+            var ipAddress = GetIP(context);
+            if(Globals.AdjudicateLock == null)
+            {
+                if (Globals.AdjNodes.ContainsKey(ipAddress))
+                    return await func();
+            }
+            else
+            {
+                if (Globals.Nodes.ContainsKey(ipAddress))
+                    return await func();
+            }
+
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
             {                               
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               

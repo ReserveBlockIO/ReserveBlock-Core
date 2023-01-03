@@ -114,29 +114,37 @@ namespace ReserveBlockCore.Models
 
         public static void BanPeer(string ipAddress, string message, string location)
         {
-            if (Globals.AdjNodes.ContainsKey(ipAddress))
-                return;
-            //Globals.BannedIPs[ipAddress] = true;
-            //var peerDb = Peers.GetAll();
-            //var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
+            if (Globals.AdjudicateLock == null)
+            {
+                if (Globals.AdjNodes.ContainsKey(ipAddress))
+                    return;
+            }
+            else
+            {
+                if (Globals.Nodes.ContainsKey(ipAddress))
+                    return;
+            }
+
+            Globals.BannedIPs[ipAddress] = true;
+            var peerDb = Peers.GetAll();
+            var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
             BanLogUtility.Log(message, location);
-            //if (peer != null)
-            //{
-            //    peer.IsBanned = true;
-            //    peerDb.UpdateSafe(peer);                
-            //}
-            //else
-            //    peerDb.InsertSafe(new Peers { PeerIP = ipAddress, IsBanned = true });
+            if (peer != null)
+            {
+                peer.IsBanned = true;
+                peerDb.UpdateSafe(peer);
+            }
+            else
+                peerDb.InsertSafe(new Peers { PeerIP = ipAddress, IsBanned = true });
 
-            //if (Globals.P2PPeerList.TryRemove(ipAddress, out var context))            
-            //    context.Abort();
+            if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var pool))
+                pool.Value.Context?.Abort();
 
+            if (Globals.AdjNodes.TryRemove(ipAddress, out var adjnode) && adjnode.Connection != null)
+                adjnode.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
-            //if (Globals.AdjPeerList.TryRemove(ipAddress, out var context2))
-            //    context2.Abort();
-
-            //if (Globals.Nodes.TryRemove(ipAddress, out NodeInfo node))
-            //    node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
+                node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public static void UpdatePeerLastReach(Peers incPeer)

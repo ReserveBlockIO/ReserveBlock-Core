@@ -208,6 +208,13 @@ namespace ReserveBlockCore.P2P
                 return new TaskAnswerResult { AnswerCode = 4 }; //adjudicator is still booting up
             }
 
+            var ipAddress = GetIP(Context);
+            if (request?.Length > 200)
+            {
+                Peers.BanPeer(ipAddress, "request too big", "ReceiveTaskAnswerV3");
+                return new TaskAnswerResult { AnswerCode = 5 };
+            }
+
             try
             {
                 return  await P2PServer.SignalRQueue(Context, request.Length, async () =>
@@ -222,8 +229,7 @@ namespace ReserveBlockCore.P2P
                     }
 
                     var (Answer, Signature) = (taskResult[0], taskResult[1]);
-                    var answerSize = Answer.Length + Signature.Length;
-                    var ipAddress = GetIP(Context);
+                    var answerSize = Answer.Length + Signature.Length;                    
 
                     //This will result in users not getting their answers chosen if they are not in list.
                     var fortisPool = Globals.FortisPool.Values;
@@ -332,11 +338,16 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                if (block == null || block.Size > 1048576 || Globals.AdjudicateAccount == null || block.Height != Globals.LastBlock.Height + 1)
+                if (block == null || Globals.AdjudicateAccount == null || block.Height != Globals.LastBlock.Height + 1)
                     return false;
-
-
+                
                 var ipAddress = GetIP(Context);
+                if (block.Size > 1048576)
+                {
+                    Peers.BanPeer(ipAddress, "block size too big", "ReceiveWinningBlockV3");
+                    return false;
+                }
+
                 return await P2PServer.SignalRQueue(Context, (int)block.Size, async () =>
                 {
                     if (!Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))

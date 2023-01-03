@@ -3,6 +3,7 @@ using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -69,7 +70,12 @@ namespace ReserveBlockCore.Models
                                 RequestInfo.setResult(default);
                                 continue;
                             }
-                            var Result = await RequestInfo.invokeFunc(token);                           
+                            var timer = new Stopwatch();
+                            timer.Start();
+                            var Result = await RequestInfo.invokeFunc(token);
+                            timer.Stop();
+                            if (timer.ElapsedMilliseconds > 800)
+                                LogUtility.LogQueue(RequestInfo.Item4 + " " + timer.ElapsedMilliseconds, "ProcessQueue", "slowrequest.txt", true);
                             RequestInfo.setResult(Result);                            
                             Fail = false;
                         }
