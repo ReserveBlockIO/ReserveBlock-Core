@@ -447,7 +447,7 @@ namespace ReserveBlockCore.Services
                                 var httpContent = new StringContent(fortisPoolStr, Encoding.UTF8, "application/json");
                                 using (var Response = await client.PostAsync(endpoint, httpContent))
                                 {
-                                    if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                                    if (Response.StatusCode == HttpStatusCode.OK)
                                     {
                                         //success
                                         Globals.ExplorerValDataLastSend = DateTime.Now;
@@ -455,7 +455,7 @@ namespace ReserveBlockCore.Services
                                     }
                                     else
                                     {
-                                        ErrorLogUtility.LogError("Error sending payload to explorer", "ClientCallService.DoFortisPoolWork()");
+                                        ErrorLogUtility.LogError($"Error sending payload to explorer. Response Code: {Response.StatusCode}. Reason: {Response.ReasonPhrase}", "ClientCallService.DoFortisPoolWork()");
                                         Globals.ExplorerValDataLastSendSuccess = false;
                                     }
                                 }
