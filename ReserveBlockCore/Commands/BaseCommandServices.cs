@@ -410,7 +410,7 @@ namespace ReserveBlockCore.Commands
                     bool ValidateIP = IPAddress.TryParse(peer, out ip);
                     if (ValidateIP)
                     {
-                        Globals.BannedIPs[peer] = false;
+                        Globals.BannedIPs.TryRemove(peer, out _);
                         var peers = Peers.GetAll();
                         var peerExist = peers.Exists(x => x.PeerIP == peer);
                         if (!peerExist)

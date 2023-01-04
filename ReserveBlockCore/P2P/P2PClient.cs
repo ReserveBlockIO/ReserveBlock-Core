@@ -548,7 +548,7 @@ namespace ReserveBlockCore.P2P
                         else
                         {
                             var errorCodeDesc = await TaskAnswerCodeUtility.TaskAnswerCodeReason(result.AnswerCode);
-                            ConsoleWriterService.Output($"Task was not accpeted: Error Code: {result.AnswerCode} - Reason: {errorCodeDesc} Attempt: {i}/3.");
+                            ConsoleWriterService.Output($"Task was not accpeted: From: {node.IpAddress} Error Code: {result.AnswerCode} - Reason: {errorCodeDesc} Attempt: {i}/3.");
                             ValidatorLogUtility.Log($"Task Answer was not accepted. Error Code: {result.AnswerCode} - Reason: {errorCodeDesc}", "P2PClient.SendTaskAnswer_New()");
                             node.LastTaskError = true;
    
