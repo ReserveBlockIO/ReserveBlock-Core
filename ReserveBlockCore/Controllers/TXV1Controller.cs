@@ -701,6 +701,12 @@ namespace ReserveBlockCore.Controllers
                     var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
+                        if (transaction.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                            transaction.TransactionRating = rating;
+                        }
+
                         TransactionData.AddToPool(transaction);
                         await P2PClient.SendTXMempool(transaction);//send out to mempool
 
