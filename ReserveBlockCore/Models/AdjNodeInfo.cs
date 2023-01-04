@@ -25,6 +25,8 @@ namespace ReserveBlockCore.Models
         public bool LastTaskError { get; set; }
         public int LastTaskErrorCount { get; set; }                
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
+        
+        private Task InvokeDelay = Task.CompletedTask;
 
         private int ProcessQueueLock = 0;
 
@@ -51,6 +53,13 @@ namespace ReserveBlockCore.Models
                                 RequestInfo.setResult(default);
                                 continue;
                             }
+
+                            if (Globals.AdjudicateAccount == null)
+                            {
+                                await InvokeDelay;                                                                
+                                InvokeDelay = Task.Delay(1000);                                
+                            }                                
+
                             var Result = await RequestInfo.invokeFunc(token);
                             RequestInfo.setResult(Result);
                             Fail = false;
@@ -71,7 +80,7 @@ namespace ReserveBlockCore.Models
         public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc)
         {
             try
-            {
+            {                
                 var Source = new TaskCompletionSource<T>();
                 var InvokeFunc = async (CancellationToken ct) => {
                     try { return Connection != null ? (object)(await Connection.InvokeCoreAsync<T>(method, args, ct)) : (object)default(T); }
@@ -82,8 +91,6 @@ namespace ReserveBlockCore.Models
                 _ = ProcessQueue();
 
                 var Result = await Source.Task;
-                if (Globals.AdjudicateAccount == null)
-                    await Task.Delay(1000);
                 return Result;
             }
             catch { }

@@ -62,8 +62,8 @@ namespace ReserveBlockCore.Services
 
                         var startupDownload = Globals.BlocksDownloadSlim.CurrentCount == 0 ? true : false;
 
-                        var result = await ValidateBlock(block, false, startupDownload);
-                        if (!result)
+                        var result = await ValidateBlock(block, false, startupDownload);                        
+                        if (!result && block.Height == Globals.LastBlock.Height + 1)
                         {
                             if (Globals.AdjudicateAccount != null)
                                 continue;
@@ -94,6 +94,9 @@ namespace ReserveBlockCore.Services
             try
             {
                 await ValidateBlockSemaphore.WaitAsync();
+                if (block?.Height <= Globals.LastBlock.Height)
+                    return block.Hash == Globals.LastBlock.Hash;
+
                 try
                 {
                     DbContext.BeginTrans();

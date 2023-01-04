@@ -44,6 +44,9 @@ namespace ReserveBlockCore.Nodes
                 var answer = Globals.CurrentTaskNumberAnswerV3.Signature != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
                     : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
 
+                if ((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 4)
+                    return;
+
                 if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height || verifySecret != Globals.CurrentWinner.Item1?.VerifySecret)
                 {
                     if (answer != null)
@@ -66,10 +69,6 @@ namespace ReserveBlockCore.Nodes
                             node?.AsParamater(x => x.LastTaskError = true);
                         }
                     }
-                }
-                else if((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 8)
-                {
-                    return;
                 }
                 else
                 {
@@ -214,15 +213,16 @@ namespace ReserveBlockCore.Nodes
                 await BlockDownloadService.GetAllBlocks();
             }
 
+            if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 4)
+            {
+                return;
+            }
+
             if (Globals.CurrentTaskNumberAnswerV3.Height != blockHeight)
             {
                 var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);                
                 var Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
                 Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, Signature, DateTime.Now);
-            }
-            else if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 5)
-            {
-                return;
             }
 
             await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Signature);

@@ -31,11 +31,7 @@ namespace ReserveBlockCore.Models
         
         public long SendingBlockTime;
         
-        public long TotalDataSent;
-
-        public long PreviousReceiveTime;
-
-        public long SecondPreviousReceiveTime;        
+        public long TotalDataSent;              
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
         public bool IsValidator { get; set; }
         public bool IsAdjudicator { get; set; }
@@ -44,6 +40,8 @@ namespace ReserveBlockCore.Models
             {
                 return invokeQueue.Select(x => x.Item4).ToArray();
             } }
+
+        private Task InvokeDelay = Task.CompletedTask;
 
         private int ProcessQueueLock = 0;
 
@@ -70,6 +68,13 @@ namespace ReserveBlockCore.Models
                                 RequestInfo.setResult(default);
                                 continue;
                             }
+
+                            if (Globals.AdjudicateAccount == null)
+                            {
+                                await InvokeDelay;
+                                InvokeDelay = Task.Delay(1000);
+                            }
+
                             var timer = new Stopwatch();
                             timer.Start();
                             var Result = await RequestInfo.invokeFunc(token);
@@ -103,9 +108,7 @@ namespace ReserveBlockCore.Models
                 invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x), TimeUtil.GetMillisecondTime() + " " + description));
                 _ = ProcessQueue();
 
-                var Result = await Source.Task;
-                if (Globals.AdjudicateAccount == null)
-                    await Task.Delay(1000);
+                var Result = await Source.Task;                
                 return Result;
             }
             catch { }

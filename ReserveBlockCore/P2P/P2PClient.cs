@@ -165,19 +165,6 @@ namespace ReserveBlockCore.P2P
                         if (data?.Length > 1179648)
                             return;
 
-                        if(Globals.Nodes.TryGetValue(IPAddress, out var node))
-                        {
-                            var now = TimeUtil.GetMillisecondTime();
-                            var prevPrevTime = Interlocked.Exchange(ref node.SecondPreviousReceiveTime, node.PreviousReceiveTime);
-                            if (now - prevPrevTime < 5000)
-                            {
-                                Peers.BanPeer(IPAddress, IPAddress + ": Sent blocks too fast to peer.", "GetMessage");                                
-                                return;
-                            }
-                            Interlocked.Exchange(ref node.PreviousReceiveTime, now);                            
-                        }
-                        // if someone calls in more often than 2 times in 15 seconds ban them
-
                         if (message != "IP")
                         {
                             await NodeDataProcessor.ProcessData(message, data, IPAddress);
@@ -480,6 +467,8 @@ namespace ReserveBlockCore.P2P
 
         private static async Task SendWinningTaskV3(AdjNodeInfo node, Block block)
         {
+            if (node.LastWinningTaskBlockHeight >= block.Height)
+                return;
             for (var i = 1; i < 4; i++)
             {
                 try
@@ -529,6 +518,9 @@ namespace ReserveBlockCore.P2P
 
         private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
         {
+            if (node.LastSentBlockHeight == Globals.LastBlock.Height + 1)
+                return;
+
             Random rand = new Random();
             int randNum = rand.Next(0, 3000);
             for (var i = 1; i < 4; i++)
