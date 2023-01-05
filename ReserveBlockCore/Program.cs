@@ -198,6 +198,14 @@ namespace ReserveBlockCore
             _ = Task.Run(P2PClient.UpdateMethodCodes);
             _ = Task.Run(StartupService.StartupPeers);
                    
+            if(Globals.AdjudicateAccount != null)
+            {
+                Globals.StopAllTimers = true;
+                _ = Task.Run(BlockHeightCheckLoop);
+                _ = StartupService.DownloadBlocksOnStart();
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
+                    _ = Task.Run(ClientCallService.DoWorkV3);
+            }
 
             StartupService.ClearStaleMempool();
 
@@ -270,11 +278,14 @@ namespace ReserveBlockCore
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
 
-            Globals.StopAllTimers = true;
-            _ = Task.Run(BlockHeightCheckLoop);
-            _ = StartupService.DownloadBlocksOnStart();
-            if (Globals.LastBlock.Height >= Globals.BlockLock)
-                _ = Task.Run(ClientCallService.DoWorkV3);
+            if (Globals.AdjudicateAccount == null)
+            {
+                Globals.StopAllTimers = true;
+                _ = Task.Run(BlockHeightCheckLoop);
+                _ = StartupService.DownloadBlocksOnStart();
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
+                    _ = Task.Run(ClientCallService.DoWorkV3);
+            }
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
 
