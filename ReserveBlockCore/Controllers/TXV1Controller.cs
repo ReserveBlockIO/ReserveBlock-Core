@@ -896,7 +896,7 @@ namespace ReserveBlockCore.Controllers
                             }
                             else
                             {
-                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address is not a valid RBX address." });
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"To Address is not a valid RXBX address." });
                             }
 
                         }
@@ -1028,7 +1028,7 @@ namespace ReserveBlockCore.Controllers
 
             if (addrCheck == false)
             {
-                output = "This is not a valid RBX address to send to. Please verify again.";
+                output = "This is not a valid RXBX address to send to. Please verify again.";
                 return output;
             }
 

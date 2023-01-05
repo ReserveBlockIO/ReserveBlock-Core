@@ -394,7 +394,7 @@ namespace ReserveBlockCore.Voting
                     {
                         var table = new Table();
 
-                        table.Title("[yellow]RBX Search Topic Results[/]").Centered();
+                        table.Title("[yellow]RXBX Search Topic Results[/]").Centered();
                         table.AddColumn(new TableColumn(new Panel("Topic ID")));
                         table.AddColumn(new TableColumn(new Panel("Topic Owner")));
                         table.AddColumn(new TableColumn(new Panel("Name")));
@@ -457,13 +457,13 @@ namespace ReserveBlockCore.Voting
                 Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
                 AnsiConsole.Write(
-                new FigletText("RBX Topics")
+                new FigletText("RXBX Topics")
                 .Centered()
                 .Color(Color.Green));
 
                 var table = new Table();
 
-                table.Title("[yellow]RBX Active Topics[/]").Centered();
+                table.Title("[yellow]RXBX Active Topics[/]").Centered();
                 table.AddColumn(new TableColumn(new Panel("Topic ID")));
                 table.AddColumn(new TableColumn(new Panel("Topic Owner")));
                 table.AddColumn(new TableColumn(new Panel("Name")));
@@ -512,13 +512,13 @@ namespace ReserveBlockCore.Voting
                 Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
                 AnsiConsole.Write(
-                new FigletText("RBX Topics")
+                new FigletText("RXBX Topics")
                 .Centered()
                 .Color(Color.Green));
 
                 var table = new Table();
 
-                table.Title("[yellow]RBX Inactive Topics[/]").Centered();
+                table.Title("[yellow]RXBX Inactive Topics[/]").Centered();
                 table.AddColumn(new TableColumn(new Panel("Topic ID")));
                 table.AddColumn(new TableColumn(new Panel("Topic Owner")));
                 table.AddColumn(new TableColumn(new Panel("Name")));
@@ -565,14 +565,14 @@ namespace ReserveBlockCore.Voting
             if (Globals.IsTestNet != true)
             {
                 AnsiConsole.Write(
-                new FigletText("RBX Voting")
+                new FigletText("RXBX Voting")
                 .LeftAligned()
                 .Color(Color.Blue));
             }
             else
             {
                 AnsiConsole.Write(
-                new FigletText("RBX Voting - TestNet")
+                new FigletText("RXBX Voting - TestNet")
                 .LeftAligned()
                 .Color(Color.Green));
             }

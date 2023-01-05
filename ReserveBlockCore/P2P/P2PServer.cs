@@ -519,7 +519,15 @@ namespace ReserveBlockCore.P2P
                                 if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                 {
                                     mempool.InsertSafe(txReceived);
-                                    await P2PClient.SendTXToAdjudicator(txReceived);
+                                    if(Globals.AdjudicateAccount == null)
+                                    {
+                                        await P2PClient.SendTXToAdjudicator(txReceived);
+                                    }
+                                    else
+                                    {
+                                        
+                                    }
+                                    
                                     return "ATMP";//added to mempool
                                 }
                                 else

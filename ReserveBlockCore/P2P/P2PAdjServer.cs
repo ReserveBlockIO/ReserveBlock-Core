@@ -89,8 +89,8 @@ namespace ReserveBlockCore.P2P
                 if(stateAddress.Balance < 1000)
                 {
                     await EndOnConnect(peerIP, "W", startTime, conQueue,
-                        "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.",
-                        "Connected, but you do not have the minimum balance of 1000 RBX: " + address);
+                        "Connected, but you do not have the minimum balance of 1000 RXBX. You are being disconnected.",
+                        "Connected, but you do not have the minimum balance of 1000 RXBX: " + address);
                     return;
                 }
 

@@ -57,7 +57,7 @@ namespace ReserveBlockCore.Services
                 TimeSpan.FromSeconds(2));
 
             _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
-                TimeSpan.FromSeconds(Globals.IsTestNet ? 30 : 60));
+                TimeSpan.FromSeconds(60));
 
             if (Globals.ChainCheckPoint == true)
             {

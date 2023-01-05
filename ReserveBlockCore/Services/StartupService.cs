@@ -255,7 +255,7 @@ namespace ReserveBlockCore.Services
 
             //testnet
             BlockchainData.ChainRef = "m1_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
-            LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
+            LogUtility.Log("RXBX ChainRef - " + BlockchainData.ChainRef, "Main");
 
             if (Globals.IsTestNet)
             {
@@ -1141,14 +1141,14 @@ namespace ReserveBlockCore.Services
             if(Globals.IsTestNet != true)
             {
                 AnsiConsole.Write(
-                new FigletText("RBX Wallet")
+                new FigletText("RXBX Wallet")
                 .LeftAligned()
                 .Color(Color.Blue));
             }
             else
             {
                 AnsiConsole.Write(
-                new FigletText("RBX Wallet - TestNet")
+                new FigletText("RXBX Wallet - TestNet")
                 .LeftAligned()
                 .Color(Color.Green));
             }

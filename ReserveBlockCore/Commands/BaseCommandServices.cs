@@ -62,13 +62,13 @@ namespace ReserveBlockCore.Commands
                 Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
                 AnsiConsole.Write(
-                new FigletText("RBX Private Keys")
+                new FigletText("RXBX Private Keys")
                 .Centered()
                 .Color(Color.Green));
 
                 var table = new Table();
 
-                table.Title("[yellow]RBX Private Keys[/]").Centered();
+                table.Title("[yellow]RXBX Private Keys[/]").Centered();
                 table.AddColumn(new TableColumn(new Panel("Address")));
                 table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
 
@@ -693,7 +693,7 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a shop.");
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RXBX to create a shop.");
                 MainMenuReturn();
             }
         }
@@ -1013,7 +1013,7 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a dnr.");
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RXBX to create a dnr.");
                 return output;
             }
 
@@ -1124,7 +1124,7 @@ namespace ReserveBlockCore.Commands
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Invalid RBX address has been entered. Please try again.");
+                                    Console.WriteLine("Invalid RXBX address has been entered. Please try again.");
                                 }
                             }
                             else
@@ -1143,7 +1143,7 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a dnr.");
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RXBX to create a dnr.");
                 return output;
             }
 
@@ -1313,7 +1313,7 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a dnr.");
+                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RXBX to create a dnr.");
                 return output;
             }
 
@@ -1420,13 +1420,13 @@ namespace ReserveBlockCore.Commands
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
             AnsiConsole.Write(
-            new FigletText("RBX Info")
+            new FigletText("RXBX Info")
             .Centered()
             .Color(Color.Green));
 
             var table = new Table();
 
-            table.Title("[yellow]RBX Info[/]").Centered();
+            table.Title("[yellow]RXBX Info[/]").Centered();
             table.AddColumn(new TableColumn(new Panel("Title")));
             table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
 
@@ -1453,19 +1453,19 @@ namespace ReserveBlockCore.Commands
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
 
             AnsiConsole.Write(
-            new FigletText("RBX Help")
+            new FigletText("RXBX Help")
             .Centered()
             .Color(Color.Green));
 
             var table = new Table();
 
-            table.Title("[yellow]RBX Wallet Commands[/]").Centered();
+            table.Title("[yellow]RXBX Wallet Commands[/]").Centered();
             table.AddColumn(new TableColumn(new Panel("Command")));
             table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
 
 
-            table.AddRow("[blue]/help[/]", "[green]This will print out the RBX wallet help menu.[/]");
-            table.AddRow("[blue]/info[/]", "[green]This will print out the RBX wallet client information.[/]");
+            table.AddRow("[blue]/help[/]", "[green]This will print out the RXBX wallet help menu.[/]");
+            table.AddRow("[blue]/info[/]", "[green]This will print out the RXBX wallet client information.[/]");
             table.AddRow("[blue]/debug[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
             table.AddRow("[blue]/stopco[/]", "[green]This will stop the automatic printout of text in CLI.[/]");
             table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");
@@ -1496,7 +1496,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
             table.AddRow("[blue]3[/]", "[green]This will restore an account with a provided key.[/]");
             table.AddRow("[blue]3hd[/]", "[green]Restores an HD wallet with a provided Mnemonic (12 or 24 words).[/]");
-            table.AddRow("[blue]4[/]", "[green]This will start an RBX transactions for coins only.[/]");
+            table.AddRow("[blue]4[/]", "[green]This will start an RXBX transactions for coins only.[/]");
             table.AddRow("[blue]5[/]", "[green]This will print out the most recent block synced to wallet.[/]");
             table.AddRow("[blue]6[/]", "[green]This will print out your most recent 10 transactions.[/]");
             table.AddRow("[blue]7[/]", "[green]This will print out your wallet accounts.[/]");

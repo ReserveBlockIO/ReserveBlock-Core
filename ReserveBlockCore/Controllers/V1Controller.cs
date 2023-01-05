@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            return new string[] { "RBX-Wallet", "API" };
+            return new string[] { "RXBX-Wallet", "API" };
         }
 
         /// <summary>
@@ -881,7 +881,7 @@ namespace ReserveBlockCore.Controllers
 
             if (addrCheck == false)
             {
-                output = "This is not a valid RBX address to send to. Please verify again.";
+                output = "This is not a valid RXBX address to send to. Please verify again.";
                 return output;
             }
 

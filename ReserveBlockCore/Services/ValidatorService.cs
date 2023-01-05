@@ -129,7 +129,7 @@ namespace ReserveBlockCore.Services
                 }
                 if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
                 {
-                    output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
+                    output = "Account Found, but does not meet the minimum of 1000 RXBX. Please send funds to get account balance to 1000 RXBX.";
                     return output;
                 }
                 if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
@@ -362,7 +362,7 @@ namespace ReserveBlockCore.Services
 
             await P2PClient.DisconnectAdjudicators();
 
-            ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
+            ValidatorLogUtility.Log("Funds have dropped below 1000 RXBX. Removing from pool.", "ValidatorService.StopValidating()");
 
         }
 

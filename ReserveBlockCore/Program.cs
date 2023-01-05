@@ -63,15 +63,15 @@ namespace ReserveBlockCore
             var logCLIVer = Globals.CLIVersion.ToString();
 
             LogUtility.Log(logCLIVer, "Main", true);
-            LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
+            LogUtility.Log($"RXBX Wallet - {logCLIVer}", "Main");
 
             NFTLogUtility.Log(logCLIVer, "Main", true);
             
-            NFTLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
+            NFTLogUtility.Log($"RXBX NFT ver. - {logCLIVer}", "Main");
 
             APILogUtility.Log(logCLIVer, "Main", true);
 
-            APILogUtility.Log($"RBX API ver. - {logCLIVer}", "Main");
+            APILogUtility.Log($"RXBX API ver. - {logCLIVer}", "Main");
 
             StartupService.AnotherInstanceCheck();
 

@@ -329,7 +329,7 @@ namespace ReserveBlockCore.Services
                             }
 
                             if (txRequest.Amount < 1M)
-                                return (txResult, "There must be at least 1 RBX to perform an ADNR Function.");
+                                return (txResult, "There must be at least 1 RXBX to perform an ADNR Function.");
 
                         }
                         catch (Exception ex)
