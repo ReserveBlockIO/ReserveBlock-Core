@@ -723,6 +723,7 @@ namespace ReserveBlockCore.Controllers
                                     //}
                                     //if(beaconSendFinalResult)
                                     //{
+                                        //var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
                                         _ = SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
                                         
                                         var txJson = JsonConvert.SerializeObject(new {Result = "Success", Message = "NFT Transfer has been started." });
