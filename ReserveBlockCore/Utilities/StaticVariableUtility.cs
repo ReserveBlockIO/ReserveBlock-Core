@@ -65,20 +65,20 @@ namespace ReserveBlockCore.Utilities
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + Globals.FortisPool.Count.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
-            var lastWinningTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x => 
-                "*Only for Validators* Last Winning task Error?: " + x.LastWinningTaskError));
-            var lastWinningTaskSentTimeText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
-                "*Only for Validators* Last Winng Task Sent Time: " + x.LastWinningTaskSentTime));             
-            var lastTaskSentText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
-                "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + x.LastTaskSentTime));           
-            var lastTaskResultText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
-                "*Only for Validators* Latest Task (Solved) Result Received at: " + x.LastTaskResultTime));            
-            var lastTaskBlockHeightText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
-                "*Only for Validators* Last Task Block Height : " + x.LastTaskBlockHeight));                                     
-            var lastTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
-                "*Only for Validators* Last Task Error : " + x.LastTaskError));                                                                      
-            var lastTaskErrorCountText = string.Join("\r\n", Globals.AdjNodes.Values.Select(x =>
-                "*Only for Validators* Last Task Error Count: " + x.LastTaskErrorCount));                                     
+            var lastWinningTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => 
+                $"ADJ: {x.Address} "+"*Only for Validators* Last Winning task Error?: " + x.LastWinningTaskError));
+            var lastWinningTaskSentTimeText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Winng Task Sent Time: " + x.LastWinningTaskSentTime));             
+            var lastTaskSentText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+                $"ADJ: {x.Address} " + "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + x.LastTaskSentTime));           
+            var lastTaskResultText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+                $"ADJ: {x.Address} " + "*Only for Validators* Latest Task (Solved) Result Received at: " + x.LastTaskResultTime));            
+            var lastTaskBlockHeightText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Block Height : " + x.LastTaskBlockHeight));                                     
+            var lastTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error : " + x.LastTaskError));                                                                      
+            var lastTaskErrorCountText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error Count: " + x.LastTaskErrorCount));                                     
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";

@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Services
             _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(40),
                 TimeSpan.FromSeconds(2));
 
-            _fortisPoolTimer = new Timer(DoFortisPoolWork, null, TimeSpan.FromSeconds(90),
+            _fortisPoolTimer = new Timer(DoFortisPoolTXBroadcastWork, null, TimeSpan.FromSeconds(90),
                 TimeSpan.FromSeconds(60));
 
             if (Globals.ChainCheckPoint == true)
@@ -414,8 +414,8 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region Fortis Pool Work
-        private async void DoFortisPoolWork(object? state)
+        #region Fortis Pool and TX Broadcast Work
+        private async void DoFortisPoolTXBroadcastWork(object? state)
         {
             try
             {
@@ -468,8 +468,11 @@ namespace ReserveBlockCore.Services
                         }
                         
                     }
-                }                
+                }
 
+                //if (Globals.AdjudicateAccount != null)
+                //{
+                //}
                 //rebroadcast TXs
                 var pool = TransactionData.GetPool();
                 var mempool = TransactionData.GetMempool();

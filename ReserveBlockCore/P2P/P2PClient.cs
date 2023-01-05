@@ -467,8 +467,8 @@ namespace ReserveBlockCore.P2P
 
         private static async Task SendWinningTaskV3(AdjNodeInfo node, Block block)
         {
-            if (node.LastWinningTaskBlockHeight >= block.Height)
-                return;
+            //if (node.LastWinningTaskBlockHeight >= block.Height)
+            //    return;
             for (var i = 1; i < 4; i++)
             {
                 try
@@ -518,8 +518,8 @@ namespace ReserveBlockCore.P2P
 
         private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
         {
-            if (node.LastSentBlockHeight == Globals.LastBlock.Height + 1)
-                return;
+            //if (node.LastSentBlockHeight == Globals.LastBlock.Height + 1)
+            //    return;
 
             Random rand = new Random();
             int randNum = rand.Next(0, 3000);

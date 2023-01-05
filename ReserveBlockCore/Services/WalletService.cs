@@ -68,7 +68,7 @@ namespace ReserveBlockCore.Services
 
                     if (addrCheck == false)
                     {
-                        Console.WriteLine("\nError! You have entered an invalid RXBX Address!");
+                        Console.WriteLine("\nError! You have entered an invalid RBX Address!");
                         return;
                     }
 
@@ -149,7 +149,7 @@ namespace ReserveBlockCore.Services
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
             if ((nTx.Amount + nTx.Fee) > senderBalance)
             {
-                output = "Insufficient Funds. You have: " + senderBalance.ToString() + " RXBX on the network and the total was: " + (nTx.Amount + nTx.Fee).ToString() + " RBX";
+                output = "Insufficient Funds. You have: " + senderBalance.ToString() + " RBX on the network and the total was: " + (nTx.Amount + nTx.Fee).ToString() + " RBX";
                 Console.WriteLine("\nError! Sender ({0}) don't have enough balance!", account.Address);
                 Console.WriteLine("Sender ({0}) balance is {1}", account.Address, senderBalance);
                 return output;
