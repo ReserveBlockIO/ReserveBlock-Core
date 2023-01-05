@@ -35,7 +35,7 @@ namespace ReserveBlockCore.Services
                         {
 
                             string endpoint = node.NodeUrl + @"/api/V1";
-                            using (var Response = await client.GetAsync(endpoint))
+                            using (var Response = await client.GetAsync(endpoint).WaitAsync(new TimeSpan(0,0,5)))
                             {
                                 if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                                 {
@@ -51,11 +51,14 @@ namespace ReserveBlockCore.Services
                                         break;
                                     }
                                 }
+                                else
+                                {
+                                    count += 1;
+                                }
                             }
                         }
                     }
                     catch { count += 1; }
-                    count += 1;
                 }
 
             } while (!isSeeded && count < 3);
