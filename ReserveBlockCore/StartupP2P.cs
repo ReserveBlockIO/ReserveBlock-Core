@@ -53,26 +53,35 @@ namespace ReserveBlockCore
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<P2PServer>("/blockchain", options => {                    
-                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large                    
-                });
-                endpoints.MapHub<P2PAdjServer>("/adjudicator", options => {                    
-                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                });
-                endpoints.MapHub<P2PBeaconServer>("/beacon", options => {
-                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                });
-                endpoints.MapHub<P2PBeaconServer>("/mother", options => {
-                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                });
-                endpoints.MapHub<ConsensusServer>("/consensus", options => {
-                    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                });
+
+                if(Globals.AdjudicateAccount == null)
+                {
+                    endpoints.MapHub<P2PServer>("/blockchain", options => {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large                    
+                    });
+                    endpoints.MapHub<P2PBeaconServer>("/beacon", options => {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    });
+                    endpoints.MapHub<P2PBeaconServer>("/mother", options => {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    });
+                }
+                else
+                {
+                    endpoints.MapHub<P2PAdjServer>("/adjudicator", options => {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    });
+                    endpoints.MapHub<ConsensusServer>("/consensus", options => {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    });
+                }
+                
+                
             });
         }
     }

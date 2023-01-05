@@ -126,7 +126,7 @@ namespace ReserveBlockCore.Services
                 {
                     IsIncoming = false,
                     IsOutgoing = true,
-                    PeerIP = "144.126.156.102",
+                    PeerIP = "162.248.14.123",
                     FailCount = 0
                 };
 
