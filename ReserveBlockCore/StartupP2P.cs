@@ -54,6 +54,15 @@ namespace ReserveBlockCore
             {
                 endpoints.MapControllers();
 
+                //change to mother local DB rec
+                if(Globals.ConnectToMother)
+                {
+                    endpoints.MapHub<P2PBeaconServer>("/mother", options => {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    });
+                }
+
                 if(Globals.AdjudicateAccount == null)
                 {
                     endpoints.MapHub<P2PServer>("/blockchain", options => {
@@ -61,10 +70,6 @@ namespace ReserveBlockCore
                         options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large                    
                     });
                     endpoints.MapHub<P2PBeaconServer>("/beacon", options => {
-                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    });
-                    endpoints.MapHub<P2PBeaconServer>("/mother", options => {
                         options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
                         options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
                     });
