@@ -145,130 +145,162 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region TransferSmartContract
-        public static async Task<Transaction?> TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA", string backupURL = "")
+        public static async Task TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA", string backupURL = "")
         {
-            Transaction? scTx = null;
+            var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(scMain);
 
-            var scst = SmartContractStateTrei.GetSmartContractState(scMain.SmartContractUID);
-            
-            if(scst == null)
+            bool beaconSendFinalResult = true;
+            if (assets.Count() > 0)
             {
-                return null;
-            }
-
-            toAddress = toAddress.Replace(" ", "");
-
-            var account = AccountData.GetSingleAccount(scst.OwnerAddress);
-            if (account == null)
-            {
-                return null;//Minter address is not found
-            }
-            var fromAddress = account.Address;
-
-            var scData = SmartContractReaderService.ReadSmartContract(scMain);
-
-            var txData = "";
-
-            
-            if (!string.IsNullOrWhiteSpace(scData.Result.Item1))
-            {
-                var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
-                var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
-                var newSCInfo = new[]
+                NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                foreach (var asset in assets)
                 {
-                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64, 
+                    var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset);
+                    if (!sendResult)
+                        beaconSendFinalResult = false;
+                }
+                NFTLogUtility.Log($"NFT Asset Transfer Done for: {scMain.SmartContractUID}.", "SCV1Controller.TransferNFT()");
+            }
+            if (beaconSendFinalResult)
+            {
+                Transaction? scTx = null;
+
+                var scst = SmartContractStateTrei.GetSmartContractState(scMain.SmartContractUID);
+
+                if (scst == null)
+                {
+                    NFTLogUtility.Log($"Failed to find SC Locally. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
+                    //return null;
+                }
+
+                toAddress = toAddress.Replace(" ", "");
+
+                var account = AccountData.GetSingleAccount(scst.OwnerAddress);
+                if (account == null)
+                {
+                    NFTLogUtility.Log($"Minter address not found. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
+                    //return null;//Minter address is not found
+                }
+                var fromAddress = account.Address;
+
+                var scData = SmartContractReaderService.ReadSmartContract(scMain);
+
+                var txData = "";
+
+
+                if (!string.IsNullOrWhiteSpace(scData.Result.Item1))
+                {
+                    var bytes = Encoding.Unicode.GetBytes(scData.Result.Item1);
+                    var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
+                    var newSCInfo = new[]
+                    {
+                    new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64,
                         Locators = locators, MD5List = md5List, BackupURL = backupURL != "" ? backupURL : "NA"}
                 };
 
-                txData = JsonConvert.SerializeObject(newSCInfo);
-            }
-
-            scTx = new Transaction
-            {
-                Timestamp = TimeUtil.GetTime(),
-                FromAddress = account.Address,
-                ToAddress = toAddress,
-                Amount = 0.0M,
-                Fee = 0,
-                Nonce = AccountStateTrei.GetNextNonce(account.Address),
-                TransactionType = TransactionType.NFT_TX,
-                Data = txData
-            };
-
-            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
-
-            scTx.Build();
-
-            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
-            if ((scTx.Amount + scTx.Fee) > senderBalance)
-            {
-                return null;//balance insufficient
-            }
-
-            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-            var txHash = scTx.Hash;
-            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
-            if (signature == "ERROR")
-            {
-                return null; //TX sig failed
-            }
-
-            scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
-
-            try
-            {
-                if (scTx.TransactionRating == null)
-                {
-                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
-                    scTx.TransactionRating = rating;
+                    txData = JsonConvert.SerializeObject(newSCInfo);
                 }
 
-                var result = await TransactionValidatorService.VerifyTX(scTx);
-                if (result.Item1 == true)
+                scTx = new Transaction
                 {
-                    scTx.TransactionStatus = TransactionStatus.Pending;
+                    Timestamp = TimeUtil.GetTime(),
+                    FromAddress = account.Address,
+                    ToAddress = toAddress,
+                    Amount = 0.0M,
+                    Fee = 0,
+                    Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                    TransactionType = TransactionType.NFT_TX,
+                    Data = txData
+                };
 
-                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+                scTx.Build();
+
+                var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+                if ((scTx.Amount + scTx.Fee) > senderBalance)
+                {
+                    scTx.TransactionStatus = TransactionStatus.Failed;
+                    TransactionData.AddTxToWallet(scTx, true);
+                    NFTLogUtility.Log($"Balance insufficient. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
+                    //return null;//balance insufficient
+                }
+
+                BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                var txHash = scTx.Hash;
+                var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+                if (signature == "ERROR")
+                {
+                    scTx.TransactionStatus = TransactionStatus.Failed;
+                    TransactionData.AddTxToWallet(scTx, true);
+                    NFTLogUtility.Log($"TX Signature Failed. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
+                    //return null; //TX sig failed
+                }
+
+                scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
+
+                try
+                {
+                    if (scTx.TransactionRating == null)
                     {
-                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
-                        ValidatorService.StopValidating(validator);
-                        TransactionData.AddToPool(scTx);
-                        TransactionData.AddTxToWallet(scTx, true);
-                        AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                        await P2PClient.SendTXMempool(scTx);//send out to mempool
+                        var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                        scTx.TransactionRating = rating;
                     }
-                    else if (account.IsValidating)
+
+                    var result = await TransactionValidatorService.VerifyTX(scTx);
+                    if (result.Item1 == true)
                     {
-                        TransactionData.AddToPool(scTx);
-                        TransactionData.AddTxToWallet(scTx, true);
-                        AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                        await P2PClient.SendTXToAdjudicator(scTx);//send directly to adjs
+                        scTx.TransactionStatus = TransactionStatus.Pending;
+
+                        if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                        {
+                            var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
+                            ValidatorService.StopValidating(validator);
+                            TransactionData.AddToPool(scTx);
+                            TransactionData.AddTxToWallet(scTx, true);
+                            AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
+                            await P2PClient.SendTXMempool(scTx);//send out to mempool
+                        }
+                        else if (account.IsValidating)
+                        {
+                            TransactionData.AddToPool(scTx);
+                            TransactionData.AddTxToWallet(scTx, true);
+                            AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
+                            await P2PClient.SendTXToAdjudicator(scTx);//send directly to adjs
+                        }
+                        else
+                        {
+                            TransactionData.AddToPool(scTx);
+                            TransactionData.AddTxToWallet(scTx, true);
+                            AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
+                            await P2PClient.SendTXMempool(scTx);//send out to mempool
+                        }
+                        NFTLogUtility.Log($"TX Success. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
+                        //return scTx;
                     }
                     else
                     {
-                        TransactionData.AddToPool(scTx);
+                        var output = "Fail! Transaction Verify has failed.";
+                        scTx.TransactionStatus = TransactionStatus.Failed;
                         TransactionData.AddTxToWallet(scTx, true);
-                        AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                        await P2PClient.SendTXMempool(scTx);//send out to mempool
+                        NFTLogUtility.Log($"Error Transfer Failed TX Verify: {scMain.SmartContractUID}. Result: {result.Item2}", "SmartContractService.TransferSmartContract()");
+                        //return null;
                     }
-                    return scTx;
                 }
-                else
+                catch (Exception ex)
                 {
-                    var output = "Fail! Transaction Verify has failed.";
-                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scMain.SmartContractUID}. Result: {result.Item2}", "SmartContractService.TransferSmartContract()");
-                    return null;
+                    scTx.TransactionStatus = TransactionStatus.Failed;
+                    TransactionData.AddTxToWallet(scTx, true);
+                    NFTLogUtility.Log($"Error Transferring Smart Contract: {ex.ToString()}", "SmartContractService.TransferSmartContract()");
                 }
             }
-            catch (Exception ex)
-            {                
-                Console.WriteLine("Error: {0}", ex.ToString());
-                NFTLogUtility.Log($"Error Transferring Smart Contract: {ex.ToString()}", "SmartContractService.TransferSmartContract()");
+            else
+            {
+                NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {locators} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
             }
-
-            return null;
+            //return null;
         }
 
         #endregion

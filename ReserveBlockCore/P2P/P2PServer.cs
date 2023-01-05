@@ -525,7 +525,7 @@ namespace ReserveBlockCore.P2P
                                     }
                                     else
                                     {
-                                        
+                                        //this should not happen as no one should be connected to an ADJ through p2pserver
                                     }
                                     
                                     return "ATMP";//added to mempool

@@ -709,32 +709,30 @@ namespace ReserveBlockCore.Controllers
                                 if (aqResult)
                                 {
 
-                                    bool beaconSendFinalResult = true;
-                                    if(assets.Count() > 0)
-                                    {
-                                        NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {sc.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
-                                        foreach (var asset in assets)
-                                        {
-                                            var sendResult = await BeaconUtility.SendAssets(sc.SmartContractUID, asset);
-                                            if (!sendResult)
-                                                beaconSendFinalResult = false;
-                                        }
-                                        NFTLogUtility.Log($"NFT Asset Transfer Done for: {sc.SmartContractUID}.", "SCV1Controller.TransferNFT()");
-                                    }
-                                    if(beaconSendFinalResult)
-                                    {
-                                        var tx = await SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
-                                        NFTLogUtility.Log($"NFT Transfer TX response was : {tx.Hash}", "SCV1Controller.TransferNFT()");
-                                        NFTLogUtility.Log($"NFT Transfer TX Data was : {tx.Data}", "SCV1Controller.TransferNFT()");
-
-                                        var txJson = JsonConvert.SerializeObject(tx);
+                                    //bool beaconSendFinalResult = true;
+                                    //if(assets.Count() > 0)
+                                    //{
+                                    //    NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {sc.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                                    //    foreach (var asset in assets)
+                                    //    {
+                                    //        var sendResult = await BeaconUtility.SendAssets(sc.SmartContractUID, asset);
+                                    //        if (!sendResult)
+                                    //            beaconSendFinalResult = false;
+                                    //    }
+                                    //    NFTLogUtility.Log($"NFT Asset Transfer Done for: {sc.SmartContractUID}.", "SCV1Controller.TransferNFT()");
+                                    //}
+                                    //if(beaconSendFinalResult)
+                                    //{
+                                        _ = SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
+                                        
+                                        var txJson = JsonConvert.SerializeObject(new {Result = "Success", Message = "NFT Transfer has been started." });
                                         output = txJson;
-                                    }
-                                    else
-                                    {
-                                        output = "Failed to upload to Beacon. Please check NFT logs for more details.";
-                                        NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
-                                    }
+                                    //}
+                                    //else
+                                    //{
+                                    //    output = "Failed to upload to Beacon. Please check NFT logs for more details.";
+                                    //    NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                                    //}
                                 }
                                 else
                                 {

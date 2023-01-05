@@ -1468,6 +1468,7 @@ namespace ReserveBlockCore.P2P
                 var valAdjNodes = Globals.Nodes.Values.Where(x => x.IsValidator || x.IsAdjudicator).ToList();
                 if (valAdjNodes.Count() > 0)
                 {
+                    var successCount = 0;
                     foreach (var node in valAdjNodes)
                     {
                         try
@@ -1479,10 +1480,12 @@ namespace ReserveBlockCore.P2P
                             if (message == "ATMP")
                             {
                                 //success
+                                successCount += 1;
                             }
                             else if (message == "TFVP")
                             {
-                                Console.WriteLine("Transaction Failed Verification Process on remote node");
+                                if(successCount == 0)
+                                    Console.WriteLine("Transaction Failed Verification Process on remote node");
                             }
                             else
                             {
