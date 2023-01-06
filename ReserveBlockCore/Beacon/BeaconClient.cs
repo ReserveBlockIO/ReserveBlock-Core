@@ -108,8 +108,10 @@ namespace ReserveBlockCore.Beacon
         {
             try
             {
+                BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
                 string Selected_file = FilePath;
                 string File_name = Path.GetFileName(Selected_file);
+                BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
                 FileStream fs = new FileStream(Selected_file, FileMode.Open);
                 TcpClient tc = new TcpClient(TargetIP, Port);
                 NetworkStream ns = tc.GetStream();
@@ -140,6 +142,7 @@ namespace ReserveBlockCore.Beacon
                                     ns.Flush();
                                     ProgressValue = (int)Math.Ceiling((double)recv_file_pointer / (double)fs.Length * 100);
                                     ConsoleWriterService.Output($"{File_name} - Upload Progress: {ProgressValue}");
+                                    BeaconLogUtility.Log($"{File_name} - Upload Progress: {ProgressValue}%", "BeaconClient.Send()");
                                 }
                                 else
                                 {
@@ -148,10 +151,11 @@ namespace ReserveBlockCore.Beacon
                                     ns.Flush();
                                     fs.Close();
                                     loop_break = true;
+                                    BeaconLogUtility.Log($"{File_name} - Upload Closing. Code 128", "BeaconClient.Send()");
                                 }
                                 break;
                             case 777:
-                                //file exist
+                                BeaconLogUtility.Log($"{File_name} - Already Exist. Code 777.", "BeaconClient.Send()");
                                 ns.Flush();
                                 fs.Close();
                                 loop_break_file_exist = true;
@@ -162,6 +166,7 @@ namespace ReserveBlockCore.Beacon
                     }
                     else
                     {
+                        BeaconLogUtility.Log($"{File_name} - NS.ReadBytes != 2. Error.", "BeaconClient.Send()");
                         loop_break = true;
                         ns.Close();
                         return new BeaconResponse { Status = -1, Description = "Error: " + "Error sending asset." };
@@ -179,9 +184,10 @@ namespace ReserveBlockCore.Beacon
 
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return new BeaconResponse { Status = -1, Description = "Error: " + e.ToString() };
+                BeaconLogUtility.Log($"Unknown Error: {ex.ToString()}", "BeaconClient.Send()");
+                return new BeaconResponse { Status = -1, Description = "Error: " + ex.ToString() };
             }
         }
 

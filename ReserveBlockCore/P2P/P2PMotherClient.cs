@@ -132,7 +132,7 @@ namespace ReserveBlockCore.P2P
                             IsValidating = true,
                             ValidatorName = validator.UniqueName,
                             PeerCount = peerCount,
-                            LastTaskBlockSent = lastTaskBlock != null ? lastTaskBlock.LastTaskBlockHeight : 0,
+                            LastTaskBlockSent = lastTaskBlock != null ? lastTaskBlock.LastSentBlockHeight : 0,
                             LastTaskSent = lastTaskSent != null ? lastTaskSent.LastTaskSentTime : null
                         };
 

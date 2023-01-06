@@ -70,7 +70,7 @@ namespace ReserveBlockCore.Utilities
                         else
                         {
                             retryCount += 1;
-                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed.", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
                         }
                     }
                     else
