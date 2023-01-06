@@ -259,9 +259,9 @@ namespace ReserveBlockCore.Commands
                 var momName = Console.ReadLine();
                 if (!string.IsNullOrEmpty(momName))
                 {
-                    Console.WriteLine("Please enter your connetion password mom...");
+                    Console.WriteLine("Please enter your connection password mom...");
                     var password = Console.ReadLine();
-                    Console.WriteLine("Please confirm your connetion password mom...");
+                    Console.WriteLine("Please confirm your connection password mom...");
                     var passwordConfirm = Console.ReadLine();
                     if (password == passwordConfirm)
                     {
@@ -273,7 +273,7 @@ namespace ReserveBlockCore.Commands
                         };
 
                         Mother.SaveMother(nMom);
-
+                        Console.WriteLine("Thank you mom. Please restart wallet to start service.");
 
                     }
                     else
