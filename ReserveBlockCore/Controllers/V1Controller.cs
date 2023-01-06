@@ -1215,6 +1215,25 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns mothers kids
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Mother")]
+        public async Task<string> Mother()
+        {
+            var output = "[]";
+
+            var result = Globals.MothersKids.Values.ToList();
+
+            if(result.Count > 0)
+            {
+                output = JsonConvert.SerializeObject(result);
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns Peer Info
         /// </summary>
         /// <returns></returns>

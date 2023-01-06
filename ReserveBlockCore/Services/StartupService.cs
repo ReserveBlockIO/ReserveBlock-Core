@@ -1083,6 +1083,30 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static async Task StartupMother()
+        {
+            while (true)
+            {
+                if (!Globals.ConnectToMother && !string.IsNullOrEmpty(Globals.MotherAddress))
+                    return;
+                var delay = Task.Delay(13000);
+                try
+                {
+                    var url = "http://" + Globals.MotherAddress + ":" + Globals.Port + "/mother";
+                    if (!P2PMotherClient.IsMotherConnected)
+                        await P2PMotherClient.ConnectMother(url);
+
+                    await P2PMotherClient.SendMotherData();
+
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Failed to send mother payload {ex.ToString()}", "StartupService.StartupMother()");
+                }
+
+                await delay;
+            }
+        }
         internal static async Task StartupPeers()
         {            
             while (true)

@@ -156,6 +156,11 @@ namespace ReserveBlockCore.Commands
                 case "/setto":
                     BaseCommandServices.SetTrilliumOutput();
                     break;
+                case "/mother":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.Mother();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/trillium":
                     Globals.StopConsoleOutput = true;
                     //start trillium

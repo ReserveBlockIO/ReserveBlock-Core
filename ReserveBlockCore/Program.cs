@@ -302,7 +302,11 @@ namespace ReserveBlockCore
                 }
             }
 
-            
+            if(Globals.ConnectToMother)
+            {
+                //connect to mother
+                _ = StartupService.StartupMother();
+            }
 
             if (valEncryptCheck && valEncryptAddr != null)
             {

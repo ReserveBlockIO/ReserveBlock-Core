@@ -250,6 +250,46 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static async void StartMother()
+        {
+            var mom = Mother.GetMother();
+            if(mom == null)
+            {
+                Console.WriteLine("Please enter your name mom...");
+                var momName = Console.ReadLine();
+                if (!string.IsNullOrEmpty(momName))
+                {
+                    Console.WriteLine("Please enter your connetion password mom...");
+                    var password = Console.ReadLine();
+                    Console.WriteLine("Please confirm your connetion password mom...");
+                    var passwordConfirm = Console.ReadLine();
+                    if (password == passwordConfirm)
+                    {
+                        Mother nMom = new Mother
+                        {
+                            Name = momName,
+                            Password = password,
+                            StartDate = DateTime.Now,
+                        };
+
+                        Mother.SaveMother(nMom);
+
+
+                    }
+                    else
+                    {
+                        Console.WriteLine("Passwords did not match mom!");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Name cannot be blank mom!");
+                }
+            }
+            
+            //start mother program here!
+        }
+
         public static async void SetTrilliumOutput()
         {
             Globals.ShowTrilliumOutput ^= true;

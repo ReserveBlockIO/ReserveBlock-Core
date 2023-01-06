@@ -55,7 +55,7 @@ namespace ReserveBlockCore
                 endpoints.MapControllers();
 
                 //change to mother local DB rec
-                if(Globals.ConnectToMother)
+                if(Mother.GetMother() != null)
                 {
                     endpoints.MapHub<P2PBeaconServer>("/mother", options => {
                         options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large

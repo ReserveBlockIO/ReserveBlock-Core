@@ -94,6 +94,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_TOPIC_TREI = "rsrv_topic_trei";
         public const string RSRV_VOTE = "rsrv_vote";
         public const string RSRV_SETTINGS = "rsrv_settings";
+        public const string RSRV_MOTHER = "rsrv_mother";
 
         internal static void Initialize()
         {

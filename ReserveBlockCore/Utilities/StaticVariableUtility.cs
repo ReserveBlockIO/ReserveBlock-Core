@@ -74,7 +74,7 @@ namespace ReserveBlockCore.Utilities
             var lastTaskResultText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
                 $"ADJ: {x.Address} " + "*Only for Validators* Latest Task (Solved) Result Received at: " + x.LastTaskResultTime));            
             var lastTaskBlockHeightText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Block Height : " + x.LastTaskBlockHeight));                                     
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Block Height : " + x.LastSentBlockHeight));                                     
             var lastTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
                 $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error : " + x.LastTaskError));                                                                      
             var lastTaskErrorCountText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
