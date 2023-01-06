@@ -229,6 +229,7 @@ namespace ReserveBlockCore.P2P
         private static ConcurrentDictionary<string, bool> ConnectAdjudicatorLock = new ConcurrentDictionary<string, bool>();
         public static async Task<bool> ConnectAdjudicator(string url, string address, string time, string uName, string signature)
         {
+            var IPAddress = GetPathUtility.IPFromURL(url);
             try
             {
                 if (!ConnectAdjudicatorLock.TryAdd(url, true))
@@ -245,27 +246,25 @@ namespace ReserveBlockCore.P2P
                 .Build();
 
 
-                LogUtility.Log("Connecting to Adjudicator", "ConnectAdjudicator()");
-
-                var IPAddress = GetPathUtility.IPFromURL(url);
+                LogUtility.Log($"Connecting to Adjudicator {IPAddress}", "ConnectAdjudicator()");                
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
-                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
+                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Reconnected += (sender) =>
                 {
                     LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
-                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
+                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} has been restored.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Closed += (sender) =>
                 {
                     LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
-                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
+                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} has been closed.");
                     return Task.CompletedTask;
                 };
                 
@@ -355,7 +354,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
+                ValidatorLogUtility.Log($"Failed! Connecting to Adjudicator {IPAddress}: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }
             finally
             {

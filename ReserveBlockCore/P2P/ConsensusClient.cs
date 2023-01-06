@@ -457,21 +457,21 @@ namespace ReserveBlockCore.P2P
                 hubConnection.Reconnecting += (sender) =>
                 {
                     LogUtility.Log("Reconnecting to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator lost. Attempting to Reconnect.");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + $"] Connection to consensus node {IPAddress} lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Reconnected += (sender) =>
                 {
                     LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been restored.");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + $"] Connection to consensus node {IPAddress} has been restored.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Closed += (sender) =>
                 {
                     LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + "] Connection to adjudicator has been closed.");
+                    Console.WriteLine("[" + DateTime.Now.ToString() + $"] Connection to consensus node {IPAddress} has been closed.");
                     return Task.CompletedTask;
                 };                
 
@@ -485,7 +485,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
+                ValidatorLogUtility.Log($"Failed! Connecting to consensus node {IPAddress}: Reason - " + ex.ToString(), "ConnectAdjudicator()");
             }            
             finally
             {
