@@ -145,7 +145,7 @@ namespace ReserveBlockCore.P2P
                     LogUtility.LogQueue(Height + " " + methodCode + " " + Messages.Count + " " 
                         + WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() + " " + TimeUtil.GetMillisecondTime() + "\r\n" +                        
                         JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "First exit", "ConsensusExits.txt", true);
-                    return null;                    
+                    return null; // not enough messages from peers were received
                 }
 
                 while (ReadyToFinalize != 1)
@@ -187,7 +187,7 @@ namespace ReserveBlockCore.P2P
                         }                        
                         LogUtility.LogQueue(Height + " " + methodCode + " " + NumMatches + " " +  CurrentHashes.Length + " " + TimeUtil.GetMillisecondTime() + "\r\n" +                            
                             JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new {x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime})), "Good exit", "ConsensusExits.txt", false);
-                        return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray();
+                        return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
                     }
 
                     hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, 3000);
@@ -199,7 +199,7 @@ namespace ReserveBlockCore.P2P
                         LogUtility.LogQueue(Height + " " + methodCode + " " + TimeUtil.GetMillisecondTime() + "\r\n" +
                             JsonConvert.SerializeObject(Hashes.GroupBy(x => x.Value.Hash).Select(x => new { x.Key, Count = x.Count()})) + "\r\n" +
                             JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "Hash exit", "ConsensusExits.txt", true);
-                        return null;
+                        return null; // not enough peers agree to reach consensus with this node
                     }
                     
                     await Task.Delay(20);                    
@@ -212,7 +212,7 @@ namespace ReserveBlockCore.P2P
                 ErrorLogUtility.LogError(ex.ToString(), "ConsensusRun");
             }
                        
-            return null;
+            return null; // something bad happened
         }
 
         public static HashSet<string> AddressesToWaitFor(long height, int methodCode, int wait)

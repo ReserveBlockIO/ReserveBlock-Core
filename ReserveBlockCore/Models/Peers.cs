@@ -74,6 +74,7 @@ namespace ReserveBlockCore.Models
         public static async Task<int> UnbanAllPeers()
         {
             Globals.BannedIPs.Clear();
+            Globals.MessageLocks.Clear();
             var peers = GetAll();
             var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
             var count = 0;
@@ -92,6 +93,8 @@ namespace ReserveBlockCore.Models
             try
             {
                 Globals.BannedIPs.TryRemove(ipAddress, out _);
+                Globals.MessageLocks.TryRemove(ipAddress, out _);
+                
                 var peerDb = Peers.GetAll();
                 var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
                 if (peer != null)

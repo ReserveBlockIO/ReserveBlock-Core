@@ -137,6 +137,9 @@ namespace ReserveBlockCore.P2P
             try
             {
                 await Lock.Semaphore.WaitAsync();
+                Interlocked.Decrement(ref Lock.ConnectionCount);
+                Interlocked.Add(ref Lock.BufferCost, -sizeCost);
+
                 var task = func();
                 if (Lock.DelayLevel == 0)
                     return await task;
@@ -150,31 +153,18 @@ namespace ReserveBlockCore.P2P
             {
                 try { Lock.Semaphore.Release(); } catch { }
             }
-            
-            Interlocked.Decrement(ref Lock.ConnectionCount);
-            Interlocked.Add(ref Lock.BufferCost, -sizeCost);
-
+                        
             return Result;            
-        }
-
-        public static async Task SignalRQueue(HubCallerContext context, int sizeCost, Func<Task> func)
-        {
-            var commandWrap = async () =>
-            {
-                await func();
-                return 1;
-            };
-            await SignalRQueue(context, sizeCost, commandWrap);
         }
 
         #endregion
 
         #region Receive Block
-        public async Task ReceiveBlock(Block nextBlock)
+        public async Task<bool> ReceiveBlock(Block nextBlock)
         {
             try
             {
-                await SignalRQueue(Context, (int)nextBlock.Size, async () =>
+                return await SignalRQueue(Context, (int)nextBlock.Size, async () =>
                 {
                    
                     if (nextBlock.ChainRefId == BlockchainData.ChainRef)
@@ -196,12 +186,17 @@ namespace ReserveBlockCore.P2P
 
                             if (nextHeight < currentHeight)
                                 await BlockDownloadService.GetAllBlocks();
+
+                            return true;
                         }
-                    }                    
+                    }
+
+                    return false;
                 });
             }
             catch { }
-            
+
+            return false;            
         }
 
         #endregion
@@ -237,7 +232,8 @@ namespace ReserveBlockCore.P2P
 
         public async Task<string> PingBackPeer()
         {
-            return await SignalRQueue(Context, 128, async () => {
+            return await SignalRQueue(Context, 1024, async () =>
+            {
                 return "HelloBackPeer";
             });
         }
@@ -273,100 +269,112 @@ namespace ReserveBlockCore.P2P
 
         #region  ReceiveDownloadRequest
         public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
-        {
-            return await SignalRQueue(Context, 1024, async () =>
+        {            
+            bool result = false;
+            var peerIP = GetIP(Context);
+
+            try
             {
-                bool result = false;
-                var peerIP = GetIP(Context);
-
-                try
+                if (bdd != null)
                 {
-                    if (bdd != null)
+                    var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
+                    if (scState == null)
                     {
-                        var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
-                        if (scState == null)
-                        {
-                            return result; //fail
-                        }
+                        return result; //fail
+                    }
 
-                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
-                        if (sigCheck == false)
-                        {
-                            return result; //fail
-                        }
+                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
+                    if (sigCheck == false)
+                    {
+                        return result; //fail
+                    }
 
-                        var beaconDatas = BeaconData.GetBeacon();
-                        var beaconData = BeaconData.GetBeaconData();
-                        foreach (var fileName in bdd.Assets)
+                    var beaconDatas = BeaconData.GetBeacon();
+                    var beaconData = BeaconData.GetBeaconData();
+                    foreach (var fileName in bdd.Assets)
+                    {
+                        if (beaconData != null)
                         {
-                            if (beaconData != null)
+                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
+                            if (bdCheck != null)
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
-                                if (bdCheck != null)
+                                if (beaconDatas != null)
                                 {
-                                    if (beaconDatas != null)
-                                    {
-                                        bdCheck.DownloadIPAddress = peerIP;
-                                        beaconDatas.UpdateSafe(bdCheck);
-                                    }
-                                    else
-                                    {
-                                        return result;//fail
-                                    }
+                                    bdCheck.DownloadIPAddress = peerIP;
+                                    beaconDatas.UpdateSafe(bdCheck);
                                 }
                                 else
                                 {
-                                    return result; //fail
+                                    return result;//fail
                                 }
                             }
                             else
                             {
                                 return result; //fail
                             }
-
-                            result = true;
+                        }
+                        else
+                        {
+                            return result; //fail
                         }
 
+                        result = true;
                     }
-                }
-                catch (Exception ex)
-                {
-                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-                }
 
-                return result;
-            });
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+            }
+
+            return result;
         }
 
         #endregion
 
         #region ReceiveUploadRequest
         public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
-        {
-            return await SignalRQueue(Context, 1024, async () =>
+        {            
+            bool result = false;
+            var peerIP = GetIP(Context);
+            try
             {
-                bool result = false;
-                var peerIP = GetIP(Context);
-                try
+                if (bsd != null)
                 {
-                    if (bsd != null)
+                    var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
+                    if (scState == null)
                     {
-                        var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
-                        if (scState == null)
-                        {
-                            return result;
-                        }
+                        return result;
+                    }
 
-                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
-                        if (sigCheck == false)
-                        {
-                            return result;
-                        }
+                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
+                    if (sigCheck == false)
+                    {
+                        return result;
+                    }
 
-                        var beaconData = BeaconData.GetBeaconData();
-                        foreach (var fileName in bsd.Assets)
+                    var beaconData = BeaconData.GetBeaconData();
+                    foreach (var fileName in bsd.Assets)
+                    {
+                        if (beaconData == null)
                         {
-                            if (beaconData == null)
+                            var bd = new BeaconData
+                            {
+                                AssetExpireDate = 0,
+                                AssetReceiveDate = 0,
+                                AssetName = fileName,
+                                IPAdress = peerIP,
+                                NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+                                SmartContractUID = bsd.SmartContractUID
+                            };
+
+                            BeaconData.SaveBeaconData(bd);
+                        }
+                        else
+                        {
+                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
+                            if (bdCheck == null)
                             {
                                 var bd = new BeaconData
                                 {
@@ -380,37 +388,19 @@ namespace ReserveBlockCore.P2P
 
                                 BeaconData.SaveBeaconData(bd);
                             }
-                            else
-                            {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
-                                if (bdCheck == null)
-                                {
-                                    var bd = new BeaconData
-                                    {
-                                        AssetExpireDate = 0,
-                                        AssetReceiveDate = 0,
-                                        AssetName = fileName,
-                                        IPAdress = peerIP,
-                                        NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                        SmartContractUID = bsd.SmartContractUID
-                                    };
-
-                                    BeaconData.SaveBeaconData(bd);
-                                }
-                            }
                         }
-
-                        result = true;
-
                     }
-                }
-                catch (Exception ex)
-                {
-                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-                }
 
-                return result;
-            });
+                    result = true;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+            }
+
+            return result;            
         }
 
         #endregion

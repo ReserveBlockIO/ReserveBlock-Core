@@ -287,14 +287,20 @@ namespace ReserveBlockCore.P2P
         {
             try
             {
-                if(winningTask != null)
+                var ipAddress = GetIP(Context);
+                if (Globals.LastBlock.Height > Globals.BlockLock)
+                {
+                    Context.Abort();
+                    return false;
+                }
+
+                if (winningTask != null)
                 {
                     if(winningTask.WinningBlock != null)
                     {
                         if (winningTask.WinningBlock.Size > 1048576)
                             return false;
-
-                        var ipAddress = GetIP(Context);
+                        
                         return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
                         {
                             if (Globals.BlocksDownloadSlim.CurrentCount != 0)
@@ -343,31 +349,33 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         #region Receive Winning Task Block Answer V3
-        public async Task<bool> ReceiveWinningBlockV3(Block block)
+        public async Task<bool> ReceiveWinningBlockV3(string blockString)
         {
             try
             {
-                if (block == null || Globals.AdjudicateAccount == null || block.Height != Globals.LastBlock.Height + 1)
+                if (blockString == null || Globals.AdjudicateAccount == null)
                     return false;
                 
                 var ipAddress = GetIP(Context);
-                if (block.Size > 1048576)
+                if (blockString.Length > 1048576 || !Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
                 {
                     Peers.BanPeer(ipAddress, "block size too big", "ReceiveWinningBlockV3");
                     return false;
                 }
 
-                return await P2PServer.SignalRQueue(Context, (int)block.Size, async () =>
+                var block = JsonConvert.DeserializeObject<Block>(blockString);                
+                var RBXAddress = Pool.Key2;
+                if (!Globals.TaskSelectedNumbersV3.ContainsKey((RBXAddress, block.Height)))
                 {
-                    if (!Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
-                        return false;
+                    Peers.BanPeer(ipAddress, "unselected block was submitted", "ReceiveWinningBlockV3");
+                    return false;
+                }
 
-                    var RBXAddress = Pool.Key2;
-                    if(!Globals.TaskSelectedNumbersV3.ContainsKey((RBXAddress, block.Height)))
-                    {                       
-                        return false;
-                    }                    
+                if (block.Height != Globals.LastBlock.Height + 1)
+                    return false;
 
+                return await P2PServer.SignalRQueue(Context, blockString.Length, async () =>
+                {                                        
                     if (SignatureService.VerifySignature(RBXAddress, block.Hash, block.ValidatorSignature)
                         && RBXAddress == block.Validator && Globals.TaskWinnerDictV3.TryAdd((RBXAddress, block.Height), block))
                     {
@@ -390,6 +398,13 @@ namespace ReserveBlockCore.P2P
             TaskAnswerResult taskAnsRes = new TaskAnswerResult();
             try
             {
+                var ipAddress = GetIP(Context);
+                if (Globals.LastBlock.Height > Globals.BlockLock)
+                {
+                    Context.Abort();
+                    return new TaskAnswerResult { AnswerCode = 4 };
+                }
+
                 if (taskResult != null)
                 {
                     var answerSize = JsonConvert.SerializeObject(taskResult).Length;
@@ -398,8 +413,7 @@ namespace ReserveBlockCore.P2P
                         taskAnsRes.AnswerCode = 1; //Answer too large
                         return taskAnsRes;
                     }
-
-                    var ipAddress = GetIP(Context);
+                    
                     return await P2PServer.SignalRQueue(Context, answerSize, async () =>
                     {
                         if (Globals.BlocksDownloadSlim.CurrentCount != 0)

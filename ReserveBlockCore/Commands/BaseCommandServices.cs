@@ -451,6 +451,7 @@ namespace ReserveBlockCore.Commands
                     if (ValidateIP)
                     {
                         Globals.BannedIPs.TryRemove(peer, out _);
+                        Globals.MessageLocks.TryRemove(peer, out _);
                         var peers = Peers.GetAll();
                         var peerExist = peers.Exists(x => x.PeerIP == peer);
                         if (!peerExist)

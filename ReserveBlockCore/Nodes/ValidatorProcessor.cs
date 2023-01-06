@@ -36,30 +36,32 @@ namespace ReserveBlockCore.Nodes
                 }
             }
 
-            if(message == "sendWinningBlock")
+            if (message == "sendWinningBlock")
             {
                 var verifySecret = data != null ? data : "Empty";
                 var taskWin = new TaskWinner();
                 var fortisPool = Globals.FortisPool.Values;
                 var answer = Globals.CurrentTaskNumberAnswerV3.Signature != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
                     : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
-
-                if ((DateTime.Now - Globals.CurrentWinner.Item2).Seconds < 4)
+                
+                if ((DateTime.Now - node.LastWinningTaskRequestTime).Seconds < 4)
                     return;
 
-                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner.Item1?.WinningBlock?.Height || verifySecret != Globals.CurrentWinner.Item1?.VerifySecret)
+                if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner?.WinningBlock?.Height || verifySecret != Globals.CurrentWinner?.VerifySecret)
                 {
                     if (answer != null)
                     {
                         var block = await BlockchainData.CraftNewBlock_New(Globals.ValidatorAddress, fortisPool.Count(), answer);
                         if (block != null)
                         {
+                            var blockString = JsonConvert.SerializeObject(block);
                             taskWin.VerifySecret = verifySecret;
                             taskWin.Address = Globals.ValidatorAddress;
                             taskWin.WinningBlock = block;
-                            Globals.CurrentWinner = (taskWin, DateTime.Now);
+                            Globals.CurrentWinner = taskWin;
+                            node.LastWinningTaskRequestTime = DateTime.Now;
                             if (block.Height > Globals.BlockLock)
-                                await P2PClient.SendWinningTaskV3(block);
+                                await P2PClient.SendWinningTaskV3(node, blockString, block.Height);
                             else
                                 await P2PClient.SendWinningTask_New(taskWin);
                         }
@@ -72,10 +74,14 @@ namespace ReserveBlockCore.Nodes
                 }
                 else
                 {
-                    if (Globals.CurrentWinner.Item1.WinningBlock.Height > Globals.BlockLock)
-                        await P2PClient.SendWinningTaskV3(Globals.CurrentWinner.Item1.WinningBlock);
+                    if (Globals.CurrentWinner?.WinningBlock.Height > Globals.BlockLock)
+                    {
+                        node.LastWinningTaskRequestTime = DateTime.Now;
+                        var blockString = JsonConvert.SerializeObject(Globals.CurrentWinner.WinningBlock);
+                        await P2PClient.SendWinningTaskV3(node, blockString, Globals.CurrentWinner.WinningBlock.Height);
+                    }
                     else
-                        await P2PClient.SendWinningTask_New(Globals.CurrentWinner.Item1);
+                        await P2PClient.SendWinningTask_New(Globals.CurrentWinner);
                 }
             }
 

@@ -71,14 +71,15 @@ namespace ReserveBlockCore.Models
 
                             if (Globals.AdjudicateAccount == null)
                             {
-                                await InvokeDelay;
-                                InvokeDelay = Task.Delay(1000);
+                                await InvokeDelay;                                
                             }
 
                             var timer = new Stopwatch();
                             timer.Start();
                             var Result = await RequestInfo.invokeFunc(token);
                             timer.Stop();
+                            InvokeDelay = Task.Delay(1000);
+
                             if (timer.ElapsedMilliseconds > 800)
                                 LogUtility.LogQueue(RequestInfo.Item4 + " " + timer.ElapsedMilliseconds, "ProcessQueue", "slowrequest.txt", true);
                             RequestInfo.setResult(Result);                            

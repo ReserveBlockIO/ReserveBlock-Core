@@ -394,12 +394,12 @@ namespace ReserveBlockCore.P2P
 
             await DropDisconnectedPeers();            
 
-            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":3338", ""))
+            var SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
             if (Globals.IsTestNet)
-                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":13338", ""))
+                SkipIPs = new HashSet<string>(Globals.Nodes.Values.Select(x => x.NodeIP.Replace(":" + Globals.Port, ""))
                 .Union(Globals.BannedIPs.Keys)
                 .Union(Globals.ReportedIPs.Keys));
 
@@ -457,18 +457,8 @@ namespace ReserveBlockCore.P2P
 
         #region Send Winning Task V3
 
-        public static async Task SendWinningTaskV3(Block block)
+        public static async Task SendWinningTaskV3(AdjNodeInfo node, string block, long height)
         {
-            if (block == null || block.Height != Globals.LastBlock.Height + 1)
-                return;
-
-            await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendWinningTaskV3(x, block)));
-        }
-
-        private static async Task SendWinningTaskV3(AdjNodeInfo node, Block block)
-        {
-            //if (node.LastWinningTaskBlockHeight >= block.Height)
-            //    return;
             for (var i = 1; i < 4; i++)
             {
                 try
@@ -479,7 +469,7 @@ namespace ReserveBlockCore.P2P
                     {
                         node.LastWinningTaskError = false;
                         node.LastWinningTaskSentTime = DateTime.Now;
-                        node.LastWinningTaskBlockHeight = block.Height;
+                        node.LastWinningTaskBlockHeight = height;
                         break;
                     }
                     else
@@ -518,8 +508,8 @@ namespace ReserveBlockCore.P2P
 
         private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
         {
-            //if (node.LastSentBlockHeight == Globals.LastBlock.Height + 1)
-            //    return;
+            if (node.LastSentBlockHeight == Globals.LastBlock.Height + 1)
+                return;
 
             Random rand = new Random();
             int randNum = rand.Next(0, 3000);
@@ -1522,13 +1512,12 @@ namespace ReserveBlockCore.P2P
                 Console.WriteLine("Failed to broadcast Transaction. No peers are connected to you.");
             }
             else
-            {
-                var BlockSource = new CancellationTokenSource(5000);
+            {                
                 foreach (var node in Globals.Nodes.Values)
                 {
                     try
                     {                        
-                        _ = node.Connection.InvokeCoreAsync("ReceiveBlock", new object?[] { block }, BlockSource.Token);
+                        _ = node.InvokeAsync<bool>("ReceiveBlock", new object?[] { block }, () => new CancellationTokenSource(5000).Token, "ReceiveBlock");
                     }
                     catch (Exception ex)
                     {

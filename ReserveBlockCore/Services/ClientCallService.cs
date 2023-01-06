@@ -1232,13 +1232,13 @@ namespace ReserveBlockCore.Services
                 var Now = TimeUtil.GetMillisecondTime();
                 Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
                 var data = JsonConvert.SerializeObject(block);
-
-                var BlockSource = new CancellationTokenSource(5000);
+                
                 foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
                 {
                     try
                     {                        
-                        _ = node.Connection.InvokeCoreAsync("ReceiveBlock", new object?[] { block }, BlockSource.Token);
+                        _ = node.InvokeAsync<bool>("ReceiveBlock", new object?[] { block }, () => new CancellationTokenSource(5000).Token, 
+                            "ReceiveBlock");
                     }
                     catch {}
                 }
