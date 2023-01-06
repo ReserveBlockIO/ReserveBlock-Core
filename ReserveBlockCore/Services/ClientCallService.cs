@@ -1156,7 +1156,13 @@ namespace ReserveBlockCore.Services
                     if (Globals.LastBlock.Height + 1 != Height || SubmittedWinners == null)
                         continue;
 
-                    ConsoleWriterService.Output("Submitted Winner Consensus at height " + Height);                    
+                    ConsoleWriterService.Output("Submitted Winner Consensus at height " + Height);
+
+                    if (SubmittedWinners.Length == 0 && HubContext?.Clients != null)
+                    {
+                        await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", JsonConvert.SerializeObject(Globals.LastBlock));
+                        continue;
+                    }
 
                     var WinnerDict = SubmittedWinners.Select(x => JsonConvert.DeserializeObject<Block[]>(x.Message))
                         .SelectMany(x => x)
