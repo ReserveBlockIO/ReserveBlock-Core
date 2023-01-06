@@ -158,7 +158,7 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/mother":
                     Globals.StopConsoleOutput = true;
-                    BaseCommandServices.Mother();
+                    BaseCommandServices.StartMother();
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/trillium":
