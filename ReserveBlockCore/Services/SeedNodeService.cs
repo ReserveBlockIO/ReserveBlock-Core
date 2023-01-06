@@ -7,7 +7,7 @@ namespace ReserveBlockCore.Services
 {
     public class SeedNodeService
     {
-        public static List<SeedNode> SeedNodeList { get; set; }
+        public static List<SeedNode> SeedNodeList = new List<SeedNode>();
 
         public static HashSet<string> TestNetIPs = new HashSet<string> { "144.126.156.102", "144.126.156.101", "66.94.124.3", "66.94.124.2", "185.199.226.121" };
         //public static HashSet<string> TestNetIPs = new HashSet<string> { "144.126.156.102", "66.94.124.3", "66.94.124.2"};
@@ -122,6 +122,11 @@ namespace ReserveBlockCore.Services
 
                 }
             }
+        }
+
+        public static async Task GetSeedNodePeersTestnet()
+        {
+
             if (Globals.IsTestNet == true)
             {
                 //manually add testnet IPs
@@ -268,37 +273,45 @@ namespace ReserveBlockCore.Services
 
         public static List<SeedNode> SeedNodes()
         {
-            SeedNodeList = new List<SeedNode>();
-
             List<SeedNode> seedNodes = new List<SeedNode>();
 
-            seedNodes.Add(new SeedNode
+            if (SeedNodeList.Count == 0)
             {
-                NodeUrl = "https://seed1.rbx.network"
-            });
-            seedNodes.Add(new SeedNode
+                SeedNodeList = new List<SeedNode>();
+
+                seedNodes.Add(new SeedNode
+                {
+                    NodeUrl = "https://seed1.rbx.network"
+                });
+                seedNodes.Add(new SeedNode
+                {
+                    NodeUrl = "https://seed2.rbx.network"
+                });
+
+                //seedNodes.Add(new SeedNode
+                //{
+                //    NodeUrl = "https://marigold.rbx.network"
+                //});
+                //seedNodes.Add(new SeedNode
+                //{
+                //    NodeUrl = "https://daisy.rbx.network"
+                //});
+                //seedNodes.Add(new SeedNode
+                //{
+                //    NodeUrl = "https://tulip.rbx.network"
+                //});
+                //seedNodes.Add(new SeedNode
+                //{
+                //    NodeUrl = "https://peony.rbx.network"
+                //});
+
+                SeedNodeList.AddRange(seedNodes);
+            }
+            else
             {
-                NodeUrl = "https://seed2.rbx.network"
-            });
-
-            //seedNodes.Add(new SeedNode
-            //{
-            //    NodeUrl = "https://marigold.rbx.network"
-            //});
-            //seedNodes.Add(new SeedNode
-            //{
-            //    NodeUrl = "https://daisy.rbx.network"
-            //});
-            //seedNodes.Add(new SeedNode
-            //{
-            //    NodeUrl = "https://tulip.rbx.network"
-            //});
-            //seedNodes.Add(new SeedNode
-            //{
-            //    NodeUrl = "https://peony.rbx.network"
-            //});
-
-            SeedNodeList.AddRange(seedNodes);
+                seedNodes = SeedNodeList;
+            }
+            
 
             return seedNodes;
         }

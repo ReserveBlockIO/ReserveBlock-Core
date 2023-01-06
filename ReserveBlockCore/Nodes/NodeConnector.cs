@@ -18,10 +18,15 @@ namespace ReserveBlockCore.Nodes
 
             if(peers.Count == 0)
             {
+                SeedNodeService.SeedNodes();
                 var nodeIp = await SeedNodeService.PingSeedNode();
-                await SeedNodeService.GetSeedNodePeers(nodeIp);
+                if (Globals.IsTestNet == false)
+                    await SeedNodeService.GetSeedNodePeers(nodeIp);
                 alreadyCalled = true;
             }
+
+            if(Globals.IsTestNet)
+                await SeedNodeService.GetSeedNodePeersTestnet();
 
             peers = Peers.GetAll().FindAll().ToList();
             if(peers.Count <= 8 && !Globals.IsTestNet)

@@ -502,10 +502,7 @@ namespace ReserveBlockCore.Services
         }
         internal static async Task GetAdjudicatorPool()
         {
-            //add seed nodes
-            SeedNodeService.SeedNodes();
             await NodeConnector.StartNodeAdjPoolConnecting();
-
         }
 
         internal static async Task SetLeadAdjudicator()

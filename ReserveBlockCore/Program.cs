@@ -169,12 +169,7 @@ namespace ReserveBlockCore
                 valEncryptCheck = true;
             }
 
-            //Temporary for TestNet------------------------------------
-            //SeedNodeService.SeedNodes();
-            //var nodeIp = await SeedNodeService.PingSeedNode();
-            //await SeedNodeService.GetSeedNodePeers(nodeIp);
-            //Temporary for TestNet------------------------------------
-
+            SeedNodeService.SeedNodes();
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
             StartupService.StartupMemBlocks();
