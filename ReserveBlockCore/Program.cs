@@ -194,6 +194,8 @@ namespace ReserveBlockCore
             StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
+            StartupService.CheckForDuplicateBlocks();
+
             _ = Task.Run(LogUtility.LogLoop);
             _ = Task.Run(P2PClient.UpdateMethodCodes);
             _ = Task.Run(StartupService.StartupPeers);
@@ -288,10 +290,6 @@ namespace ReserveBlockCore
             }
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
-
-            StartupService.CheckLastBlock();
-
-            StartupService.CheckForDuplicateBlocks();
 
             if (Globals.DatabaseCorruptionDetected == true)
             {
