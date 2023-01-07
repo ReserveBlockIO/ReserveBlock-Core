@@ -458,10 +458,13 @@ namespace ReserveBlockCore.P2P
 
         public static async Task SendWinningTaskV3(AdjNodeInfo node, string block, long height)
         {
+            var now = DateTime.Now;
             for (var i = 1; i < 4; i++)
             {
                 try
                 {
+                    if ((DateTime.Now - now).Milliseconds > 3000)
+                        return;
                     var result = await node.InvokeAsync<bool>("ReceiveWinningBlockV3", new object[] { block },
                         () => new CancellationTokenSource(3000).Token);
                     if (result)
