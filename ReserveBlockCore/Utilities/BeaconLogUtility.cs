@@ -42,12 +42,12 @@ namespace ReserveBlockCore.Utilities
                 }
                 if (firstEntry == true)
                 {
-                    await File.AppendAllTextAsync(path + "beacon.txt", Environment.NewLine + " ");
+                    await File.AppendAllTextAsync(path + "beaconlog.txt", Environment.NewLine + " ");
 
 
                 }
 
-                await File.AppendAllTextAsync(path + "beacon.txt", Environment.NewLine + text);
+                await File.AppendAllTextAsync(path + "beaconlog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {
@@ -82,7 +82,7 @@ namespace ReserveBlockCore.Utilities
                 Directory.CreateDirectory(path);
             }
 
-            await File.WriteAllTextAsync(path + "beacon.txt", "");
+            await File.WriteAllTextAsync(path + "beaconlog.txt", "");
         }
 
         public static async Task<string> ReadLog()
@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Utilities
                 Directory.CreateDirectory(path);
             }
 
-            var result = await File.ReadAllLinesAsync(path + "beacon.txt");
+            var result = await File.ReadAllLinesAsync(path + "beaconlog.txt");
 
             StringBuilder strBld = new StringBuilder();
 
