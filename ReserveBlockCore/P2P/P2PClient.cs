@@ -463,7 +463,7 @@ namespace ReserveBlockCore.P2P
             {
                 try
                 {
-                    if ((DateTime.Now - now).Milliseconds > 3000)
+                    if ((DateTime.Now - now).Milliseconds > 2000)
                         return;
                     var result = await node.InvokeAsync<bool>("ReceiveWinningBlockV3", new object[] { block },
                         () => new CancellationTokenSource(3000).Token);
