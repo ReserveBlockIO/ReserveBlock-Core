@@ -253,6 +253,7 @@ namespace ReserveBlockCore.Commands
         public static async void StartMother()
         {
             var mom = Mother.GetMother();
+            bool firstSave = false;
             if(mom == null)
             {
                 Console.WriteLine("Please enter your name mom...");
@@ -273,7 +274,8 @@ namespace ReserveBlockCore.Commands
                         };
 
                         Mother.SaveMother(nMom);
-                        Console.WriteLine("Thank you mom. Please restart wallet to start service.");
+                        firstSave = true;
+                        Console.WriteLine("Thank you mom. Please restart wallet to start service. Type /mother to start the service up.");
 
                     }
                     else
@@ -286,8 +288,10 @@ namespace ReserveBlockCore.Commands
                     Console.WriteLine("Name cannot be blank mom!");
                 }
             }
-            
+
             //start mother program here!
+            if(!firstSave)
+                await Mothering.Mother.StartMotherProgram();
         }
 
         public static async void SetTrilliumOutput()

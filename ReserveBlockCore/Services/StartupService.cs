@@ -800,34 +800,33 @@ namespace ReserveBlockCore.Services
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
                         await BlockDownloadService.GetAllBlocks();
                     }
-                    //This is not being reached on some devices. 
 
                     var lastBlock = Globals.LastBlock;
-                    var currentTimestamp = TimeUtil.GetTime(-60);
+                    var currentTimestamp = TimeUtil.GetTime(-90);
 
-                    //This needs to come back for mainnet**
-                    //if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
-                    DateTime endTime = DateTime.UtcNow;
-                    ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
-                    LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
-                    download = false; //exit the while.                
-                    var accounts = AccountData.GetAccounts();
-                    var accountList = accounts.FindAll().ToList();
-                    if (accountList.Count() > 0)
+                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
                     {
-                        var stateTrei = StateData.GetAccountStateTrei();
-                        foreach (var account in accountList)
+                        DateTime endTime = DateTime.UtcNow;
+                        ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
+                        LogUtility.Log("Block downloads finished.", "DownloadBlocksOnStart()-else");
+                        download = false; //exit the while.                
+                        var accounts = AccountData.GetAccounts();
+                        var accountList = accounts.FindAll().ToList();
+                        if (accountList.Count() > 0)
                         {
-                            var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
-                            if (stateRec != null)
+                            var stateTrei = StateData.GetAccountStateTrei();
+                            foreach (var account in accountList)
                             {
-                                account.Balance = stateRec.Balance;
-                                accounts.UpdateSafe(account);//updating local record with synced state trei
+                                var stateRec = stateTrei.FindOne(x => x.Key == account.Address);
+                                if (stateRec != null)
+                                {
+                                    account.Balance = stateRec.Balance;
+                                    accounts.UpdateSafe(account);//updating local record with synced state trei
+                                }
                             }
                         }
+
                     }
-
-
                 }
                 if (!Globals.IsResyncing)
                 {                    

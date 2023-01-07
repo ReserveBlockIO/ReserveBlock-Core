@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
+using ReserveBlockCore.Voting;
 
 namespace ReserveBlockCore.Models
 {
@@ -24,6 +25,8 @@ namespace ReserveBlockCore.Models
             public long BlockHeight { get; set; }
             public string ValidatorName { get; set; }
             public bool IsValidating { get; set; }
+            public bool ActiveWithMother { get { return LastDataSentTime >= DateTime.Now.AddMinutes(-3) ? true : false; } }
+            public bool ActiveWithValidating { get { return LastTaskSent == null ? false : LastTaskSent >= DateTime.Now.AddMinutes(-3) ? true : false; } }
         }
 
         public class DataPayload

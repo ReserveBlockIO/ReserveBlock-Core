@@ -69,6 +69,8 @@ namespace ReserveBlockCore.P2P
         {
             var peerIP = GetIP(Context);
             Globals.MothersKidsContext.TryRemove(peerIP, out _);
+            //Don't remove now
+            //Globals.MothersKids.TryRemove(peerIP, out _);
         }
         private async Task SendMessageClient(string clientId, string method, string message)
         {
@@ -110,7 +112,7 @@ namespace ReserveBlockCore.P2P
                     kid.PeerCount = payload.PeerCount;
                     kid.LastDataSentTime = DateTime.Now;
 
-                    Globals.MothersKids[peerIP] = kid;
+                    Globals.MothersKids[payload.Address] = kid;
                     result = true;
                 }
                 else
@@ -129,7 +131,7 @@ namespace ReserveBlockCore.P2P
                         PeerCount = payload.PeerCount,
                     };
 
-                    Globals.MothersKids[peerIP] = nKid;
+                    Globals.MothersKids[payload.Address] = nKid;
                     result = true;
                 }
             }
