@@ -536,6 +536,7 @@ namespace ReserveBlockCore.P2P
                         else if(result.AnswerCode == 7)
                         {
                             node.LastTaskSentTime = DateTime.Now;
+                            node.LastTaskError = false;
                             node.LastSentBlockHeight = Globals.LastBlock.Height + 1;
                             return;
                         }
