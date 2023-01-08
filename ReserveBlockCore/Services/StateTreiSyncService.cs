@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                Console.WriteLine("Syncing State Treis... This process may take a moment.");
                 DbContext.BeginTrans();
                 if (IsRunning == false)
                 {
@@ -121,7 +122,7 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
-
+                Console.WriteLine("Done Syncing State Treis...");
                 IsRunning = false;
                 DbContext.Commit();
             }

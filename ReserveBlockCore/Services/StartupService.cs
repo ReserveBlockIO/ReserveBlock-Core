@@ -276,6 +276,39 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static async Task RunSettingChecks()
+        {
+            var settings = Settings.GetSettings();
+            if (settings != null)
+            {
+                if (!settings.CorrectShutdown)
+                    RunStateSync();
+
+                if (Globals.AdjudicateAccount == null)
+                {
+                    var now = DateTime.Now;
+                    var lastShutDown = settings.LastShutdown;
+
+                    if (lastShutDown != null && settings.CorrectShutdown)
+                    {
+                        if (lastShutDown.Value.AddSeconds(20) > now)
+                        {
+                            var diff = Convert.ToInt32((lastShutDown.Value.AddSeconds(20) - now).TotalMilliseconds);
+                            Console.WriteLine("Wallet was restarted too fast. Startup will continue in a moment. Do not close wallet.");
+                            await Task.Delay(diff);//make the wallet wait if restart is too fast
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
+                        await Task.Delay(15000);
+                    }
+                }
+
+                _ = Settings.InitiateStartupUpdate();
+            }
+        }
+
         internal static void SetBlockHeight()
         {
             Globals.LastBlock.Height = BlockchainData.GetHeight();

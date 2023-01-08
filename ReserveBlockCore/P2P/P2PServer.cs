@@ -687,9 +687,9 @@ namespace ReserveBlockCore.P2P
             {
                 //do check for validator. if yes return val otherwise return Hello.
                 var validators = Validators.Validator.GetAll();
-                var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count(); //revise this to use local account and IsValidating
+                var isValidator = !string.IsNullOrEmpty(Globals.ValidatorAddress) ? true : false;
 
-                if (hasValidators > 0)
+                if (isValidator)
                     return "HelloVal";
 
                 return "Hello";

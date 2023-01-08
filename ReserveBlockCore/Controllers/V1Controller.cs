@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.BIP39;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
@@ -400,7 +401,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="password"></param>
         /// <returns></returns>
-        [HttpGet("GetDecryptWallet/{password}")]
+        [HttpGet("GetDecryptWallet/{**password}")]
         public async Task<string> GetDecryptWallet(string password)
         {
             var output = "";
@@ -429,6 +430,7 @@ namespace ReserveBlockCore.Controllers
 
                         if (sigVerify)
                         {
+                            Globals.GUIPasswordNeeded = false;
                             password = "";
                             output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Password has been stored for {Globals.PasswordClearTime} minutes." });
                         }
@@ -1231,6 +1233,35 @@ namespace ReserveBlockCore.Controllers
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Snake Game. DO not launch in Swagger
+        /// Congrats you have found an easter egg!
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Snake")]
+        public async Task<ContentResult> Snake()
+        {
+            var gCompressed = @"H4sIAAAAAAAACrVYW2/TSBQ+zyvxH7KVoCltQ7t0WXZJKwHblVYCLQJeEOKhTZwSaJPgUBoL9b/v953xeC72uEYNshJ7zpz7deyh
+            /Cp/y3/yXN7KO3klx9KTj/JVLuRcjuSO/CLDhnUmJzIu1z1cQ2BM8TvHzhFWD4K1w1oCVkRQy30Hz6cyB98CT9+rfYOTgd+Z4v6F9b7s4borTwKsC
+            2iVA2sqM8Xa8/av9cmuUnJOwWEkn8EjB8Yl+IyV0yn0MzuhxDFkLWWhu4ViTtS6VYR3Aij1n8mu+iWDrkvFH+F5ppA8ovkE+fTXFDwL0I2gkcHkf5
+            rWWMqnEeTO5Bv+lw2WzkE1Vlrj0QW07gFzrrqO8XwFfxttm7gzynE8CQuzY1j52q5Dra5U1ldQHcqGHGhcN6KIhzvEJ+QMHC6AtVFmnM/XyloCmoN
+            iAS4Gxv285ptDjeUc0EvlSa8OICHD/Vjts9BnsORf4PZls9JgU7ZKDznuNlYr/Bv+vkTL+3mAR56/gbfj5/NkTpq4kNu+PGqQyYy18vzs9/GWwDlB
+            JmclnsuLVZkJj0C7U0FNXsfQcYlttfJ3DIWPzUw9x2Vy/r188PbsndW7gkd8zAPdvY4sPUE8WXMpCx7Ci3ULDNTnx99EfTbSOmMsemVkXmu0mBMXi
+            De92scTO8tOpetWIDtXukvcyeUlMJjVA+0Ic622vgfNPf595XQfv37JuYd675XytnR3u1ob3a9bLDDyFiXfUMMvwM60bp8Cd6ryLOU/qhUzul/x8D
+            ORPNiNqOc2Lj/jhhqtUF7slVQ3bsvcsJIGWDPuzIPXuNPqvsaav7DCXGeJd/zeEtvnqmOgcdhWjXwoM9/p5+8UCfwi4cNYFn241+DDGK/eTZytJnN
+            sVTb1bdbXUmsnpcdRq4Ru+tVnr1/rTZKLjh4gXl0/P6a39UGR8EGYN110TJ9AfGzXHQdaB0uduxPN7e9lTwt9vFN1tVDqdbJeU/JYTTPYZHLnKOIY
+            9+R2q32+i6oDNZ9MwqqeQE9SvqnOE8Z/m9o/OBGf3Ejr+oGbD9ZXPqRQiM2OXUy2eB37sLu25JKpR32NUz6a6FQ41pPlR+gdd/J+hU0N2ft5Xovnj
+            l9X3fxjuVrvuHU331iJvlSbZz5veoVX6H/C7+EK5TbjFg229m7IUU4m6/uYLtbjsHXec6b0cGr4vZrP9Z7SxLlYG+ewZ/AyOUNP29PQtJTm8sOcFv
+            Y1UtOyq3apf4NP/zV7PV63x7xZ4ntQfeiQBe3UqbxITSNzeq1HLdW3u+I7zQwdT7Y3U8UZa2gPOlDy7GFzK5WJdZp4GjVR/LzK+HnVEc6UcOUmoau
+            h+hse31PH6MDfSsgLfZ8379h8M+YbGb1YKO2V9nXqVu/UWZSRD3DxJJ7pHKcHcv2mcIVnwzGe0PSNeePmNHCV8FD+qGqlKRcM1k2nJpc5uwlvtudM
+            6F1j3SVi2mZZ/ZSVtvFxwsbih2wsfsjGVQcbc+9UuR5L/1xrNNcVS5vf67GSX2vWGc+zW0UzPBUbe1nltJRx5eyjVfZ7DrFu865svozFX54Ijb+F8
+            WuZ/bb6P7Dsz8GKFQAA";
+
+            var gDecompressed = gCompressed.ToDecompress();
+
+            return base.Content(gDecompressed, "text/html");
         }
 
         /// <summary>

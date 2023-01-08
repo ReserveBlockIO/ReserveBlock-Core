@@ -138,14 +138,13 @@ namespace ReserveBlockCore
             }
 
             StartupService.SetValidator();
+            StartupService.SetAdjudicatorAddresses();
+            Signer.UpdateSigningAddresses();
 
             if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
             {
                 StartupService.EncryptedPasswordEntry();
             }
-
-            StartupService.SetAdjudicatorAddresses();
-            Signer.UpdateSigningAddresses();            
 
             if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && !Globals.GUI)
             {
@@ -155,18 +154,16 @@ namespace ReserveBlockCore
             if (Globals.IsWalletEncrypted && Globals.AdjudicateAccount != null && Globals.GUI)
             {
                 Globals.GUIPasswordNeeded = true;
-                //while (Globals.EncryptPassword.Length == 0)
-                //{
-                //    Thread.Sleep(1000);
-                //}
             }
 
             if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.GUI)
             {
                 Globals.GUIPasswordNeeded = true;
-                valEncryptAddr = await ValidatorService.SuspendMasterNode();
+                valEncryptAddr = await ValidatorService.SuspendMasterNode();//investigate this and ensure startup happens after suspend
                 valEncryptCheck = true;
             }
+
+            await StartupService.RunSettingChecks();
 
             SeedNodeService.SeedNodes();
             StartupService.SetBlockHeight();
@@ -204,19 +201,6 @@ namespace ReserveBlockCore
             }
 
             StartupService.ClearStaleMempool();
-
-            //Syncing treis
-            Console.WriteLine("Syncing State Treis... This process may take a moment.");
-
-            var settings = Settings.GetSettings();
-            if(settings != null)
-            {
-                if (!settings.CorrectShutdown)
-                    StartupService.RunStateSync();
-                _ = Settings.InitiateStartupUpdate();
-            }
-            
-            Console.WriteLine("Done Syncing State Treis...");
 
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
@@ -313,6 +297,7 @@ namespace ReserveBlockCore
                     myAccount.IsValidating = true;
                     accounts.UpdateSafe(myAccount);
                     Globals.ValidatorAddress = myAccount.Address;
+                    Globals.GUIPasswordNeeded = false;
                     LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
                 }
             }
