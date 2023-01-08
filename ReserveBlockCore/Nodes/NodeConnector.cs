@@ -71,5 +71,31 @@ namespace ReserveBlockCore.Nodes
                 //No peers available. You will have to manually add them.
             }
         }
+
+        public static async Task StartNodeAdjPoolConnecting_New()
+        {
+            bool successfulConnect = false;
+            int attempts = 0;
+
+            while (!successfulConnect)
+            {
+                if (attempts > 6)
+                {
+                    successfulConnect = true;//error has occurred
+                }
+                var nodeIp = await SeedNodeService.PingSeedNode();
+
+                if (nodeIp != null)
+                {
+                    await SeedNodeService.GetAdjPoolList_New(nodeIp);
+                    successfulConnect = true;
+                }
+                else
+                {
+                    attempts += 1;
+                }
+                //No peers available. You will have to manually add them.
+            }
+        }
     }
 }

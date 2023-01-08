@@ -271,6 +271,58 @@ namespace ReserveBlockCore.Services
 
         }
 
+        public static async Task GetAdjPoolList_New(string url)
+        {
+            try
+            {
+                using (var client = Globals.HttpClientFactory.CreateClient())
+                {
+
+                    string endpoint = !Globals.IsTestNet ? url + "/api/V1/GetAdjPoolMainnet" : url + "/api/V1/GetAdjPoolTestnet";
+                    using (var Response = await client.GetAsync(endpoint))
+                    {
+                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            string data = await Response.Content.ReadAsStringAsync();
+
+                            var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
+                            if (Globals.AdjudicateAccount != null)
+                            {
+                                //Check to see if result is different than Globals.Nodes.
+                                //If no difference do nothing. If there is update list and perform action to disconnect from old IP
+                                foreach (var pool in result)
+                                    Globals.Nodes.TryAdd(pool.IPAddress, new NodeInfo
+                                    {
+                                        Address = pool.RBXAddress,
+                                        NodeIP = pool.IPAddress
+                                    });
+                            }
+                            else
+                            {
+                                //Check to see if result is different than Globals.AdjNodes.
+                                //If no difference do nothing. If there is update list and perform action to disconnect from old IP
+                                foreach (var pool in result)
+                                    Globals.AdjNodes.TryAdd(pool.IPAddress, new AdjNodeInfo
+                                    {
+                                        Address = pool.RBXAddress,
+                                        IpAddress = pool.IPAddress
+                                    });
+                            }
+
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
         public static List<SeedNode> SeedNodes()
         {
             List<SeedNode> seedNodes = new List<SeedNode>();

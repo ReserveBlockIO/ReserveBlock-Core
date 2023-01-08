@@ -538,6 +538,23 @@ namespace ReserveBlockCore.Services
             await NodeConnector.StartNodeAdjPoolConnecting();
         }
 
+        internal static async Task GetAdjudicatorPool_New()
+        {
+            bool isAdjudicate = false;
+            do
+            {
+                if(Globals.AdjudicateAccount != null)
+                    isAdjudicate = true;
+
+                var delay = Task.Delay(120000); //wait 2 mins to next call
+                await NodeConnector.StartNodeAdjPoolConnecting_New();
+
+                await delay;
+            }
+            while (isAdjudicate);
+            
+        }
+
         internal static async Task SetLeadAdjudicator()
         {
             var adjudicatorLead = Adjudicators.AdjudicatorData.GetLeadAdjudicator();

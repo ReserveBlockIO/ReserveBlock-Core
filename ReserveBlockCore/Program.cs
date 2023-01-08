@@ -141,6 +141,10 @@ namespace ReserveBlockCore
             StartupService.SetAdjudicatorAddresses();
             Signer.UpdateSigningAddresses();
 
+            //check for new IPs here
+            //_ = StartupService.GetAdjudicatorPool_New();
+
+
             if (Globals.IsWalletEncrypted && !string.IsNullOrEmpty(Globals.ValidatorAddress) && !Globals.GUI)
             {
                 StartupService.EncryptedPasswordEntry();
