@@ -1264,15 +1264,15 @@ namespace ReserveBlockCore.Controllers
                 foreach(var kid in kids)
                 {
                     var newKidCard = mDecompressed2;
-                    newKidCard.Replace("{ValidatorName}", kid.ValidatorName);
-                    newKidCard.Replace("{Balance}", kid.Balance.ToString());
-                    newKidCard.Replace("{IPAddress}", kid.IPAddress);
-                    newKidCard.Replace("{BlockHeight}", kid.BlockHeight.ToString());
-                    newKidCard.Replace("{IsValidatingYesNo}", kid.ActiveWithValidating ? "Yes" : "No");
-                    newKidCard.Replace("{IsConnectedToMotherYesNo}", kid.ActiveWithMother ? "Yes" : "No");
-                    newKidCard.Replace("{IsValidatingBg}", kid.ActiveWithValidating ? "bg-success" : "bg-danger");
-                    newKidCard.Replace("{IsConnectedToMotherBg}", kid.ActiveWithMother ? "bg-success" : "bg-danger");
-                    newKidCard.Replace("{Address}", kid.Address);
+                    newKidCard = newKidCard.Replace("{ValidatorName}", kid.ValidatorName);
+                    newKidCard = newKidCard.Replace("{Balance}", kid.Balance.ToString());
+                    newKidCard = newKidCard.Replace("{IPAddress}", kid.IPAddress);
+                    newKidCard = newKidCard.Replace("{BlockHeight}", kid.BlockHeight.ToString());
+                    newKidCard = newKidCard.Replace("{IsValidatingYesNo}", kid.ActiveWithValidating ? "Yes" : "No");
+                    newKidCard = newKidCard.Replace("{IsConnectedToMotherYesNo}", kid.ActiveWithMother ? "Yes" : "No");
+                    newKidCard = newKidCard.Replace("{IsValidatingBg}", kid.ActiveWithValidating ? "bg-success" : "bg-danger");
+                    newKidCard = newKidCard.Replace("{IsConnectedToMotherBg}", kid.ActiveWithMother ? "bg-success" : "bg-danger");
+                    newKidCard = newKidCard.Replace("{Address}", kid.Address);
 
                     mother.AppendLine(newKidCard);
                 }
