@@ -15,6 +15,9 @@ using Microsoft.AspNetCore.Mvc.Formatters.Xml;
 using ReserveBlockCore.Beacon;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.IO;
+using System.Globalization;
+using System.Numerics;
+using ReserveBlockCore.EllipticCurve;
 
 namespace ReserveBlockCore.Commands
 {
@@ -224,8 +227,43 @@ namespace ReserveBlockCore.Commands
                     ConsoleKeyInfo i = Console.ReadKey(true);
                     if (i.Key == ConsoleKey.Enter)
                     {
-                        Globals.EncryptPassword = pwd;
-                        break;
+                        var accounts = AccountData.GetAccounts();
+                        if (accounts != null)
+                        {
+                            var account = accounts.Query().Where(x => x.Address != null).FirstOrDefault();
+
+                            if (account == null)
+                                break;
+
+                            Globals.EncryptPassword = pwd;
+                            Thread.Sleep(200);
+                            var privKey = account.GetKey;
+                            BigInteger b1 = BigInteger.Parse(privKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                            var randString = RandomStringUtility.GetRandomString(8);
+
+                            var signature = SignatureService.CreateSignature(randString, privateKey, account.PublicKey);
+                            var sigVerify = SignatureService.VerifySignature(account.Address, randString, signature);
+
+                            if (sigVerify)
+                            {
+                                Console.WriteLine($"Password has been entered and will be stored for {Globals.PasswordClearTime} minutes.");
+                                break;
+                            }
+                            else
+                            {
+                                Globals.EncryptPassword.Dispose();
+                                Globals.EncryptPassword = new SecureString();
+                                Console.WriteLine("Failed to decrypt wallet. Password was incorrect!");
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                        
                     }
                     else if (i.Key == ConsoleKey.Backspace)
                     {
@@ -241,8 +279,6 @@ namespace ReserveBlockCore.Commands
                         Console.Write("");
                     }
                 }
-
-                Console.WriteLine("Password has been entered.");
             }
             else
             {

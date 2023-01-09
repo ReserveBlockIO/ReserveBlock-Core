@@ -1252,10 +1252,16 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("|type /help for menu options           |");
             Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
-            if(Globals.DuplicateAdjAddr)
-            { Console.WriteLine("|Duplicate Address Found Validating!    |"); }
+            
+            if (Globals.DuplicateAdjAddr)
+            { Console.WriteLine("|Duplicate Address Found Validating!   |"); }
             if (Globals.DuplicateAdjIP)
-            { Console.WriteLine("|Duplicate IPAddress Found Validating!  |"); }
+            { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
+            if(Globals.NFTFilesReadyEPN)
+            {
+                ConsoleWriterService.OutputMarked("[red]| NFT Files awaiting download!         |[/]");
+                ConsoleWriterService.OutputMarked("[red]| Please input encrypt password        |[/]");
+            }
 
         }
     }

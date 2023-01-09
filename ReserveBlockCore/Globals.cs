@@ -104,6 +104,8 @@ namespace ReserveBlockCore
         public static bool DuplicateAdjAddr = false;
         public static bool ExplorerValDataLastSendSuccess = false;
         public static bool LogAPI = false;
+        public static bool NFTFilesReadyEPN = false; // nft files ready, encryption password needed
+        public static bool NFTsDownloading = false;
 
         public static CancellationToken CancelledToken;
 

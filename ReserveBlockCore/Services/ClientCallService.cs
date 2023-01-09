@@ -117,7 +117,7 @@ namespace ReserveBlockCore.Services
         {
             if(Globals.IsWalletEncrypted == true)
             {
-                if(string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.AdjudicateAccount == null)
+                if(string.IsNullOrEmpty(Globals.ValidatorAddress) && Globals.AdjudicateAccount == null && !Globals.NFTsDownloading)
                 {
                     Globals.EncryptPassword.Dispose();
                     Globals.EncryptPassword = new SecureString();
@@ -145,34 +145,51 @@ namespace ReserveBlockCore.Services
 
                         if(aqList.Count() > 0)
                         {
-                            foreach(var aq in aqList)
+                            if(Globals.IsWalletEncrypted && Globals.EncryptPassword.Length > 0)
                             {
-                                aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
-                                var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
-                                aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
-                                try
+                                Globals.NFTsDownloading = true;
+                                foreach (var aq in aqList)
                                 {
-                                    var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(aq.SmartContractUID, aq.Locator, "NA", aq.MD5List);
-                                    if(result == "Success")
+                                    aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
+                                    var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
+                                    aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
+                                    try
                                     {
-                                        NFTLogUtility.Log($"Download Request has been sent", "ClientCallService.DoAssetWork()");
-                                        aq.IsComplete = true;
-                                        aq.Attempts = 0;
-                                        aq.NextAttempt = DateTime.UtcNow;
-                                        aqDB.UpdateSafe(aq);
+                                        var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(aq.SmartContractUID, aq.Locator, "NA", aq.MD5List);
+                                        if (result == "Success")
+                                        {
+                                            NFTLogUtility.Log($"Download Request has been sent", "ClientCallService.DoAssetWork()");
+                                            aq.IsComplete = true;
+                                            aq.Attempts = 0;
+                                            aq.NextAttempt = DateTime.UtcNow;
+                                            aqDB.UpdateSafe(aq);
+                                        }
+                                        else
+                                        {
+                                            NFTLogUtility.Log($"Download Request has not been sent. Reason: {result}", "ClientCallService.DoAssetWork()");
+                                            aqDB.UpdateSafe(aq);
+                                        }
+
                                     }
-                                    else
+                                    catch (Exception ex)
                                     {
-                                        NFTLogUtility.Log($"Download Request has not been sent. Reason: {result}", "ClientCallService.DoAssetWork()");
-                                        aqDB.UpdateSafe(aq);
+                                        NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.ToString()}", "ClientCallService.DoAssetWork()");
                                     }
-                                    
                                 }
-                                catch(Exception ex)
-                                {
-                                    NFTLogUtility.Log($"Error Performing Asset Download. Error: {ex.ToString()}", "ClientCallService.DoAssetWork()");
-                                }
+                                Globals.NFTsDownloading = false;
+                                Globals.NFTFilesReadyEPN = false;
                             }
+                            else
+                            {
+                                //set global var to true
+                                Globals.NFTFilesReadyEPN = true;
+                            }
+                            
+                        }
+                        else
+                        {
+                            //set global var to false
+                            Globals.NFTFilesReadyEPN = false;
                         }
 
                         var aqCompleteList = aqDB.Find(x =>  x.IsComplete == true && x.IsDownloaded == false &&

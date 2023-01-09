@@ -517,7 +517,8 @@ namespace ReserveBlockCore.Controllers
             {
                 new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = (Globals.BlocksDownloadSlim.CurrentCount == 0).ToString(),
                     IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), 
-                    ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString(), DuplicateValIP = Globals.DuplicateAdjIP, DuplicateValAddress = Globals.DuplicateAdjAddr, }
+                    ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString(), DuplicateValIP = Globals.DuplicateAdjIP, 
+                    DuplicateValAddress = Globals.DuplicateAdjAddr, NFTFilesReadyEPN = Globals.NFTFilesReadyEPN}
             };
 
             output = JsonConvert.SerializeObject(walletInfo);
@@ -1261,11 +1262,11 @@ namespace ReserveBlockCore.Controllers
 
             if (kids.Count > 0)
             {
-                foreach(var kid in kids)
+                foreach (var kid in kids)
                 {
                     var newKidCard = mDecompressed2;
                     newKidCard = newKidCard.Replace("{ValidatorName}", kid.ValidatorName);
-                    newKidCard = newKidCard.Replace("{Balance}", kid.Balance.ToString());
+                    newKidCard = newKidCard.Replace("{Balance}", $"{kid.Balance} RBX");
                     newKidCard = newKidCard.Replace("{IPAddress}", kid.IPAddress);
                     newKidCard = newKidCard.Replace("{BlockHeight}", kid.BlockHeight.ToString());
                     newKidCard = newKidCard.Replace("{IsValidatingYesNo}", kid.ActiveWithValidating ? "Yes" : "No");
