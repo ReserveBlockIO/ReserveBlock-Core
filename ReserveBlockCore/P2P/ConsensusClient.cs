@@ -280,8 +280,7 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);                    
-                    var Now = TimeUtil.GetMillisecondTime();
+                    ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);                                        
                     var Response = await peer.InvokeAsync<string>("Message", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend },
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token).Token,
                         "Message " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + MessageToSend);                    
@@ -291,6 +290,7 @@ namespace ReserveBlockCore.P2P
                     {
                         var PrefixSplit = Response.Split(new[] { '|' }, 2);
                         var Prefix = PrefixSplit[0].Split(':');
+                        var Now = TimeUtil.GetMillisecondTime();
                         if (Now > peer.LastMethodCodeTime)
                         {
                             lock (ConsensusServer.UpdateNodeLock)
@@ -375,8 +375,7 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
                     
-                    ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                    
-                    var Now = TimeUtil.GetMillisecondTime();
+                    ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                                        
                     var Response = await peer.InvokeAsync<string>("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token,
                         "Hash "+ (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + HashToSend);                    
@@ -386,6 +385,7 @@ namespace ReserveBlockCore.P2P
                     {
                         var PrefixSplit = Response.Split(new[] { '|' }, 2);
                         var Prefix = PrefixSplit[0].Split(':');
+                        var Now = TimeUtil.GetMillisecondTime();
                         if (Now > peer.LastMethodCodeTime)
                         {
                             lock (ConsensusServer.UpdateNodeLock)
