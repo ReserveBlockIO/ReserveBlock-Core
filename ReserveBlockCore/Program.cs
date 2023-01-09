@@ -83,7 +83,7 @@ namespace ReserveBlockCore
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
-            
+            SeedNodeService.SeedNodes();
 
             Globals.BlockLock = Globals.IsTestNet == true ? 16 : 4000000;
 
@@ -169,7 +169,6 @@ namespace ReserveBlockCore
 
             await StartupService.RunSettingChecks();
 
-            SeedNodeService.SeedNodes();
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
             StartupService.StartupMemBlocks();

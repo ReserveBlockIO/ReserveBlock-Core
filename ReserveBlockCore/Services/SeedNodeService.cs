@@ -21,7 +21,7 @@ namespace ReserveBlockCore.Services
             Random rnd = new Random();
 
             //randomizes seed list so not one is always the one being called.
-            if(SeedNodeList == null)
+            if(SeedNodeList.Count() == 0)
                 SeedNodes();
             var randomizedSeedNostList = SeedNodeList.Where(x => x != null).OrderBy(x => rnd.Next()).ToList();
 
