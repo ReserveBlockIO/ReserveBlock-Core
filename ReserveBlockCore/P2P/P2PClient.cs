@@ -846,11 +846,10 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
-                    var state = ConsensusServer.GetState();                    
-                    var Response = await node.InvokeAsync<string>("RequestMethodCode", 
-                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized }, 
-                        () => (int)(TimeUtil.GetMillisecondTime() - node.LastMethodCodeTime) >= 1000 ? new CancellationTokenSource(1000).Token
-                            : Globals.CancelledToken, "RequestMethodCode");                    
+                    var state = ConsensusServer.GetState();
+                    var Response = await node.Connection.InvokeCoreAsync<string>("RequestMethodCode",
+                        new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized },
+                        new CancellationTokenSource(1000).Token);                         
 
                     if (Response != null)
                     {
