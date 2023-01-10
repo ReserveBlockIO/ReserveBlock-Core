@@ -30,9 +30,6 @@ namespace ReserveBlockCore.P2P
             try
             {
                 peerIP = GetIP(Context);
-                if (Globals.FortisPool.TryGetFromKey1(peerIP, out var pool) && pool.Value.Context?.ConnectionId != Context.ConnectionId)
-                    pool.Value.Context?.Abort();
-
                 if (Globals.BannedIPs.ContainsKey(peerIP))
                 {
                     Context.Abort();
@@ -182,11 +179,17 @@ namespace ReserveBlockCore.P2P
             var hasIpPool = Globals.FortisPool.TryGetFromKey1(pool.IpAddress, out var ipPool);
             var hasAddressPool = Globals.FortisPool.TryGetFromKey2(pool.Address, out var addressPool);
 
-            if (hasIpPool && ipPool.Value.Context.ConnectionId != pool.Context.ConnectionId)
-                ipPool.Value.Context.Abort();
+            if (hasIpPool && ipPool.Value.Context.ConnectionId != pool.Context.ConnectionId && !ipPool.Value.Context.ConnectionAborted.IsCancellationRequested)
+            {
+                pool.Context.Abort();
+                return;                 
+            }
 
-            if (hasAddressPool && addressPool.Value.Context.ConnectionId != pool.Context.ConnectionId)
-                addressPool.Value.Context.Abort();
+            if (hasAddressPool && addressPool.Value.Context.ConnectionId != pool.Context.ConnectionId && !addressPool.Value.Context.ConnectionAborted.IsCancellationRequested)
+            {
+                pool.Context.Abort();
+                return;
+            }
 
             Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
         }

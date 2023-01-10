@@ -29,8 +29,13 @@ namespace ReserveBlockCore.P2P
                 Context.Abort();
                 return;
             }
-            if (Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
-                context.Abort();
+
+            if (Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId &&
+                !context.ConnectionAborted.IsCancellationRequested)
+            {                
+                Context.Abort();
+                return;
+            }
 
             Globals.P2PPeerDict[peerIP] = Context;
 
