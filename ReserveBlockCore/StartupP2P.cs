@@ -63,7 +63,7 @@ namespace ReserveBlockCore
                     });
                 }
 
-                if(Globals.AdjudicateAccount == null)
+                if(Globals.LastBlock.Height > Globals.BlockLock || Globals.AdjudicateAccount == null)
                 {
                     endpoints.MapHub<P2PServer>("/blockchain", options => {
                         options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
