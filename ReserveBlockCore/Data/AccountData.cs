@@ -315,6 +315,8 @@ namespace ReserveBlockCore.Data
 		{
 			var accountList = GetAccounts();
 			var localAccount = accountList.FindOne(x => x.Address == address);
+			if (amount < 0M)
+				amount = amount * -1.0M;
 			localAccount.Balance += amount;
 
 			accountList.UpdateSafe(localAccount);

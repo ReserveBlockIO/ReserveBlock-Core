@@ -218,46 +218,65 @@ namespace ReserveBlockCore.Commands
 
         public static async Task FindTXByHash()
         {
-            //var height = Globals.LastBlock.Height;
-            //bool resultFound = false;
-            //Console.WriteLine("Please enter the TX Hash you are looking for...");
-            //var txHash = Console.ReadLine();
-            //if(!string.IsNullOrEmpty(txHash))
-            //{
-            //    var blocks = BlockchainData.GetBlocks();
-            //    Parallel.For(0, height, (blockHeight, loopState) => {
-            //        var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
-            //        if (block != null)
-            //        {
-            //            var txs = block.Transactions.ToList();
-            //            var result = txs.Where(x => x.Hash == txHash).FirstOrDefault();
-            //            if (result != null)
-            //            {
-            //                resultFound = true;
-            //                ConsoleWriterService.Output($"Hash Found in block {blockHeight}");
-            //                ConsoleWriterService.Output($"TXHash: {result.Hash}");
-            //                ConsoleWriterService.Output($"To: {result.ToAddress}");
-            //                ConsoleWriterService.Output($"From: {result.FromAddress}");
-            //                ConsoleWriterService.Output($"Amount: {result.Amount} RBX");
-            //                ConsoleWriterService.Output($"Fee {result.Fee} RBX");
-            //                ConsoleWriterService.Output($"TX Rating {result.TransactionRating}");
-            //                ConsoleWriterService.Output($"TX Type: {result.TransactionType}");
-            //                ConsoleWriterService.Output($"Timestamp : {result.Timestamp}");
-            //                ConsoleWriterService.Output($"Signature: {result.Signature}");
-            //                ConsoleWriterService.Output($"----------------------------Data----------------------------");
-            //                ConsoleWriterService.Output($"Data: {result.Data}");
-            //                loopState.Break();
-            //            }
-            //        }
-            //    });
+            var coreCount = Environment.ProcessorCount;
+            if (coreCount >= 4)
+            {
+                Console.WriteLine("Please enter the TX Hash you are looking for...");
+                var txHash = Console.ReadLine();
+                if (!string.IsNullOrEmpty(txHash))
+                {
+                    try
+                    {
+                        txHash = txHash.Replace(" ", "");//removes any whitespace before or after in case left in.
+                        var blocks = BlockchainData.GetBlocks();
+                        var height = Convert.ToInt32(Globals.LastBlock.Height);
+                        bool resultFound = false;
 
-            //    if (!resultFound)
-            //        ConsoleWriterService.Output("No transaction found with that hash.");
-            //}
-            //else
-            //{
-            //    ConsoleWriterService.Output("Input cannot be empty...");
-            //}
+                        List<int> integerList = Enumerable.Range(0, height + 1).ToList();
+                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = 4 }, (blockHeight, loopState) =>
+                        {
+                            var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
+                            if (block != null)
+                            {
+                                var txs = block.Transactions.ToList();
+                                var result = txs.Where(x => x.Hash == txHash).FirstOrDefault();
+                                if (result != null)
+                                {
+                                    resultFound = true;
+                                    Console.WriteLine($"Hash Found in block {result.Height}");
+                                    Console.WriteLine($"TXHash: {result.Hash}");
+                                    Console.WriteLine($"To: {result.ToAddress}");
+                                    Console.WriteLine($"From: {result.FromAddress}");
+                                    Console.WriteLine($"Amount: {result.Amount} RBX");
+                                    Console.WriteLine($"Fee {result.Fee} RBX");
+                                    Console.WriteLine($"TX Rating {result.TransactionRating}");
+                                    Console.WriteLine($"TX Type: {result.TransactionType}");
+                                    Console.WriteLine($"Timestamp : {result.Timestamp}");
+                                    Console.WriteLine($"Signature: {result.Signature}");
+                                    Console.WriteLine($"----------------------------Data----------------------------");
+                                    Console.WriteLine($"Data: {result.Data}");
+                                    loopState.Break();
+
+                                }
+                            }
+                        });
+
+                        if (!resultFound)
+                            Console.WriteLine("No transaction found with that hash.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error Performing Query: {ex.ToString()}");
+                    }
+
+                }
+            }
+            else
+            {
+                Console.WriteLine("The current system does not have enough physical/logical cores to safely run a query of this magnitude.");
+                Console.WriteLine("To ensure wallet integrity this query was cancelled.");
+            }
+            
         }
 
         public static async Task DecryptWallet()
@@ -1523,6 +1542,8 @@ namespace ReserveBlockCore.Commands
             var processArch = RuntimeInformation.ProcessArchitecture;
             var netFramework = RuntimeInformation.FrameworkDescription;
 
+            var threadCount = Environment.ProcessorCount;
+
             string path = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -1560,12 +1581,14 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]Port[/]", $"[green]{Globals.Port}[/]");
             table.AddRow("[blue]OS[/]", $"[green]{osDesc}[/]");
             table.AddRow("[blue]Processor Architecture[/]", $"[green]{processArch}[/]");
+            table.AddRow("[blue]Thread Count[/]", $"[green]{threadCount}[/]");
             table.AddRow("[blue].Net Core[/]", $"[green]{netFramework}[/]");
             table.AddRow("[blue]External IP[/]", $"[green]{mostLikelyIP}[/]");
             table.AddRow("[blue]HD Wallet?[/]", $"[green]{Globals.HDWallet}[/]");
             table.AddRow("[blue]Folder Path[/]", $"[green]{path}[/]");
             table.AddRow("[blue]System Time[/]", $"[green]{DateTime.Now}[/]");
             table.AddRow("[blue]Timestamp[/]", $"[green]{TimeUtil.GetTime()}[/]");
+            
 
             table.Border(TableBorder.Rounded);
 
