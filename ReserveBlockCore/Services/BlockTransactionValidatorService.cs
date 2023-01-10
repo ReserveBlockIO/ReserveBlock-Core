@@ -17,7 +17,17 @@ namespace ReserveBlockCore.Services
             {
                 AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount);
 
-                TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight);
+                var fromAccount = AccountData.GetSingleAccount(tx.FromAddress);
+                if(fromAccount == null)
+                {
+                    TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight);
+                }
+                else
+                {
+                    //same wallet TX detected. This will ensure the To TX is also added.
+                    TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight, true);
+                }
+                
             }
             if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_SALE)
             {

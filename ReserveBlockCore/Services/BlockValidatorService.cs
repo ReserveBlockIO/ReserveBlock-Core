@@ -322,33 +322,33 @@ namespace ReserveBlockCore.Services
 
                             if (block.Transactions.Count() > 0)
                             {
-                                foreach (var localTransaction in block.Transactions)
+                                foreach (var localFromTransaction in block.Transactions)
                                 {
                                     if (mempool != null)
                                     {
-                                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == localTransaction.Hash);
+                                        var mempoolTx = mempool.FindAll().Where(x => x.Hash == localFromTransaction.Hash);
                                         if (mempoolTx.Count() > 0)
                                         {
-                                            mempool.DeleteManySafe(x => x.Hash == localTransaction.Hash);
-                                            Globals.BroadcastedTrxDict.TryRemove(localTransaction.Hash, out _);
-                                            Globals.ConsensusBroadcastedTrxDict.TryRemove(localTransaction.Hash, out _);
+                                            mempool.DeleteManySafe(x => x.Hash == localFromTransaction.Hash);
+                                            Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+                                            Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
                                         }
                                     }
                                     //Process transactions sent ->From<- wallet
-                                    var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.FromAddress);
+                                    var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localFromTransaction.FromAddress);
                                     if (fromAccount != null)
                                     {
-                                        await BlockTransactionValidatorService.ProcessOutgoingTransaction(localTransaction, fromAccount, block.Height);
+                                        await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
                                     }
                                 }
 
-                                foreach (var localTransaction in block.Transactions)
+                                foreach (var localToTransaction in block.Transactions)
                                 {
                                     //Process transactions sent ->To<- wallet
-                                    var account = AccountData.GetAccounts().FindOne(x => x.Address == localTransaction.ToAddress);
+                                    var account = AccountData.GetAccounts().FindOne(x => x.Address == localToTransaction.ToAddress);
                                     if (account != null)
                                     {
-                                        await BlockTransactionValidatorService.ProcessIncomingTransactions(localTransaction, account, block.Height);
+                                        await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
                                     }
                                 }
                             }

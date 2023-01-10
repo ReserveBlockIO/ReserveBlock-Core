@@ -83,22 +83,40 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight)
+        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false)
         {
             var txs = GetAll();
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
-            if(txCheck==null)
+            if(!sameWalletTX)
             {
-                transaction.TransactionStatus = txStatus;
-                transaction.Height = blockHeight;
-                txs.InsertSafe(transaction);
+                if (txCheck == null)
+                {
+                    transaction.TransactionStatus = txStatus;
+                    transaction.Height = blockHeight;
+                    txs.InsertSafe(transaction);
+                }
+                else
+                {
+                    txCheck.TransactionStatus = txStatus;
+                    txCheck.Height = blockHeight;
+                    txs.UpdateSafe(txCheck);
+                }
             }
             else
             {
-                txCheck.TransactionStatus = txStatus;
-                txCheck.Height = blockHeight;
-                txs.UpdateSafe(txCheck);
+                if(txCheck != null)
+                {
+                    if(txCheck.Amount < 0)
+                    {
+                        transaction.TransactionStatus = txStatus;
+                        transaction.Height = blockHeight;
+                        transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
+                        transaction.Fee = transaction.Fee < 0 ? transaction.Fee * -1.0M : transaction.Fee;
+                        txs.InsertSafe(transaction);
+                    }
+                }
             }
+            
         }
 
         public static async Task UpdateWalletTXTask()
