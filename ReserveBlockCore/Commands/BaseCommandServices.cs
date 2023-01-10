@@ -232,8 +232,8 @@ namespace ReserveBlockCore.Commands
                         var height = Convert.ToInt32(Globals.LastBlock.Height);
                         bool resultFound = false;
 
-                        List<int> integerList = Enumerable.Range(0, height + 1).ToList();
-                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = 4 }, (blockHeight, loopState) =>
+                        var integerList = Enumerable.Range(0, height + 1);
+                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount == 4 ? 2 : 4 }, (blockHeight, loopState) =>
                         {
                             var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
                             if (block != null)

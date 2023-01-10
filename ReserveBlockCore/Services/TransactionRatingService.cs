@@ -53,14 +53,14 @@ namespace ReserveBlockCore.Services
 
             if (mempool != null)
             {
-                if (mempool.Count() > 50)
+                if (mempool.Count() > 25)
                 {
                     var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
                     (x.TransactionType == TransactionType.NFT_MINT ||
                         x.TransactionType == TransactionType.NFT_SALE ||
                         x.TransactionType == TransactionType.NFT_BURN ||
                         x.TransactionType == TransactionType.NFT_TX));
-                    if (txs.Count() > 50)
+                    if (txs.Count() > 25)
                     {
                         rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
                         txs.ForEach(x =>
@@ -218,10 +218,10 @@ namespace ReserveBlockCore.Services
             }
             if (mempool != null)
             {
-                if (mempool.Count() > 100)
+                if (mempool.Count() > 50)
                 {
                     var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.TX);
-                    if (txs.Count() > 100)
+                    if (txs.Count() > 50)
                     {
                         rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
                         txs.ForEach(x =>

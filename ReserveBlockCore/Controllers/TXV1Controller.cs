@@ -549,7 +549,7 @@ namespace ReserveBlockCore.Controllers
                 {
                     Timestamp = tx.Timestamp,
                     FromAddress = tx.FromAddress,
-                    ToAddress = tx.ToAddress,
+                    ToAddress = tx.ToAddress.ToAddressNormalize(),
                     Amount = tx.Amount + 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(tx.FromAddress),
@@ -587,9 +587,17 @@ namespace ReserveBlockCore.Controllers
                 txJToken["Data"] = dataTest;
                 var tx = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
 
-                tx.Build();
+                if(tx != null)
+                {
+                    tx.ToAddress = tx.ToAddress.ToAddressNormalize();
+                    tx.Build();
 
-                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"TX Fee Calculated", Hash = tx.Hash });
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"TX Fee Calculated", Hash = tx.Hash });
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Could not deserialize raw TX." });
+                }
             }
             catch (Exception ex)
             {
@@ -655,6 +663,7 @@ namespace ReserveBlockCore.Controllers
 
                 if (transaction != null)
                 {
+                    transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
                     var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
