@@ -8,6 +8,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -695,9 +696,9 @@ namespace ReserveBlockCore.Controllers
                 var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
                 txJToken["Data"] = dataTest;
                 var transaction = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
-
                 if (transaction != null)
                 {
+                    transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
                     var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
