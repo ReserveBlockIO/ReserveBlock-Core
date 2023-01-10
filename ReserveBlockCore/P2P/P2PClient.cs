@@ -854,7 +854,6 @@ namespace ReserveBlockCore.P2P
                     if (Response != null)
                     {
                         var remoteMethodCode = Response.Split(':');
-                        Now = TimeUtil.GetMillisecondTime();
                         if (Now > node.LastMethodCodeTime)
                         {
                             lock (ConsensusServer.UpdateNodeLock)

@@ -128,8 +128,7 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 8;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, bool> BannedIPs;
-        public static CancellationTokenSource source = new CancellationTokenSource(10000);
+        public static ConcurrentDictionary<string, bool> BannedIPs;        
 
         #endregion
 

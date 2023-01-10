@@ -24,9 +24,10 @@ using System.Net;
 using System.Reflection.Metadata;
 
 namespace ReserveBlockCore.P2P
-{
+{    
     public class ConsensusClient : IAsyncDisposable, IDisposable
     {
+        public const int HeartBeatTimeout = 6000;
         #region Hub Dispose
         public void Dispose()
         {
@@ -117,7 +118,7 @@ namespace ReserveBlockCore.P2P
                     var ConsensusSource = new CancellationTokenSource();
                     _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
-                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode, 3000);                    
+                    var WaitForAddresses = AddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                    
                     while (Height == Globals.LastBlock.Height + 1)
                     {
                         var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;                        
@@ -126,7 +127,7 @@ namespace ReserveBlockCore.P2P
                             break;
                         
                         await Task.Delay(20);
-                        WaitForAddresses = AddressesToWaitFor(Height, methodCode, 3000);
+                        WaitForAddresses = AddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
                     }
 
                     if (Height != Globals.LastBlock.Height + 1)
@@ -163,7 +164,7 @@ namespace ReserveBlockCore.P2P
                 var HashSource = new CancellationTokenSource();                
                 _ = HashRequests(methodCode, Peers, Globals.Signers.Keys.ToArray(), HashSource);
                                 
-                var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, 3000);                
+                var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                
                 while (Height == Globals.LastBlock.Height + 1)
                 {                    
                     var CurrentHashes = Hashes.ToArray();
@@ -175,7 +176,7 @@ namespace ReserveBlockCore.P2P
                         while(true)
                         {
                             var Now = TimeUtil.GetMillisecondTime();
-                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < 3000 && x.NodeHeight == Height &&
+                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < HeartBeatTimeout && x.NodeHeight == Height &&
                                 (x.MethodCode == methodCode && !x.IsFinalized)).Any();                                                               
                             
                             if (AnyNodesToWaitFor)
@@ -190,7 +191,7 @@ namespace ReserveBlockCore.P2P
                         return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
                     }
 
-                    hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, 3000);
+                    hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
                     var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
                     
                     if (NumMatches + RemainingAddressCount < Majority)
@@ -280,17 +281,17 @@ namespace ReserveBlockCore.P2P
                         continue;
                     }
 
+                    var Now = TimeUtil.GetMillisecondTime();
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestMessage", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", messages.Select(x => x.Key + " " + x.Value.Message)) + ") ", null);                                        
                     var Response = await peer.InvokeAsync<string>("Message", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, MessageToSend },
-                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(3000).Token).Token,
+                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(HeartBeatTimeout).Token).Token,
                         "Message " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + MessageToSend);                    
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestMessage", null, Response);
 
                     if (Response != null)
                     {
                         var PrefixSplit = Response.Split(new[] { '|' }, 2);
-                        var Prefix = PrefixSplit[0].Split(':');
-                        var Now = TimeUtil.GetMillisecondTime();
+                        var Prefix = PrefixSplit[0].Split(':');                        
                         if (Now > peer.LastMethodCodeTime)
                         {
                             lock (ConsensusServer.UpdateNodeLock)
@@ -374,7 +375,8 @@ namespace ReserveBlockCore.P2P
                         await Task.Delay(20);
                         continue;
                     }
-                    
+
+                    var Now = TimeUtil.GetMillisecondTime();
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                                        
                     var Response = await peer.InvokeAsync<string>("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
                         () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token,
@@ -384,8 +386,7 @@ namespace ReserveBlockCore.P2P
                     if (Response != null)
                     {
                         var PrefixSplit = Response.Split(new[] { '|' }, 2);
-                        var Prefix = PrefixSplit[0].Split(':');
-                        var Now = TimeUtil.GetMillisecondTime();
+                        var Prefix = PrefixSplit[0].Split(':');                        
                         if (Now > peer.LastMethodCodeTime)
                         {
                             lock (ConsensusServer.UpdateNodeLock)
