@@ -148,6 +148,11 @@ namespace ReserveBlockCore.Commands
                     Globals.StopConsoleOutput = false;
                     ConsoleWriterService.Output($"Beacons found {beacons.Result.Count()}");
                     break;
+                case "/findtx":
+                    Globals.StopConsoleOutput = true;
+                    await BaseCommandServices.FindTXByHash();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/synctrei":
                     Globals.StopConsoleOutput = true;
                     await BaseCommandServices.SyncTreis();

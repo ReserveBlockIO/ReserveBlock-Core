@@ -216,6 +216,50 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static async Task FindTXByHash()
+        {
+            //var height = Globals.LastBlock.Height;
+            //bool resultFound = false;
+            //Console.WriteLine("Please enter the TX Hash you are looking for...");
+            //var txHash = Console.ReadLine();
+            //if(!string.IsNullOrEmpty(txHash))
+            //{
+            //    var blocks = BlockchainData.GetBlocks();
+            //    Parallel.For(0, height, (blockHeight, loopState) => {
+            //        var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
+            //        if (block != null)
+            //        {
+            //            var txs = block.Transactions.ToList();
+            //            var result = txs.Where(x => x.Hash == txHash).FirstOrDefault();
+            //            if (result != null)
+            //            {
+            //                resultFound = true;
+            //                ConsoleWriterService.Output($"Hash Found in block {blockHeight}");
+            //                ConsoleWriterService.Output($"TXHash: {result.Hash}");
+            //                ConsoleWriterService.Output($"To: {result.ToAddress}");
+            //                ConsoleWriterService.Output($"From: {result.FromAddress}");
+            //                ConsoleWriterService.Output($"Amount: {result.Amount} RBX");
+            //                ConsoleWriterService.Output($"Fee {result.Fee} RBX");
+            //                ConsoleWriterService.Output($"TX Rating {result.TransactionRating}");
+            //                ConsoleWriterService.Output($"TX Type: {result.TransactionType}");
+            //                ConsoleWriterService.Output($"Timestamp : {result.Timestamp}");
+            //                ConsoleWriterService.Output($"Signature: {result.Signature}");
+            //                ConsoleWriterService.Output($"----------------------------Data----------------------------");
+            //                ConsoleWriterService.Output($"Data: {result.Data}");
+            //                loopState.Break();
+            //            }
+            //        }
+            //    });
+
+            //    if (!resultFound)
+            //        ConsoleWriterService.Output("No transaction found with that hash.");
+            //}
+            //else
+            //{
+            //    ConsoleWriterService.Output("Input cannot be empty...");
+            //}
+        }
+
         public static async Task DecryptWallet()
         {
             if(Globals.EncryptPassword.Length == 0)
@@ -917,58 +961,58 @@ namespace ReserveBlockCore.Commands
         public static async Task ConsensusNodeInfo()
         {
             var conState = ConsensusServer.GetState();
-            ConsoleWriterService.Output("*******************************Consensus State********************************");
+            Console.WriteLine("*******************************Consensus State********************************");
             
             var conStateLine = $"Next Height: {Globals.LastBlock.Height + 1} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode}";
-            ConsoleWriterService.Output(conStateLine);
+            Console.WriteLine(conStateLine);
             LogUtility.LogQueue(conStateLine, "", "cinfo.txt", true);
-            
-            ConsoleWriterService.Output("******************************************************************************");
+
+            Console.WriteLine("******************************************************************************");
 
             var conMessage = string.Join("\r\n", ConsensusServer.Messages.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Message + " " + y.Value.Signature))
                 .SelectMany(x => x));
             LogUtility.LogQueue(conMessage, "", "cinfo.txt", true);
 
-            ConsoleWriterService.Output("*****************************Consensus Messages*******************************");
+            Console.WriteLine("*****************************Consensus Messages*******************************");
 
-            ConsoleWriterService.Output(conMessage);            
+            Console.WriteLine(conMessage);            
 
-            ConsoleWriterService.Output("******************************************************************************");
+            Console.WriteLine("******************************************************************************");
 
             var hashMessage = string.Join("\r\n", ConsensusServer.Hashes.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Hash + " " + y.Value.Signature))
                             .SelectMany(x => x));
             LogUtility.LogQueue(hashMessage, "", "cinfo.txt", true);
 
-            ConsoleWriterService.Output("*****************************Consensus Hashes*******************************");
+            Console.WriteLine("*****************************Consensus Hashes*******************************");
 
-            ConsoleWriterService.Output(hashMessage);
+            Console.WriteLine(hashMessage);
 
-            ConsoleWriterService.Output("******************************************************************************");
+            Console.WriteLine("******************************************************************************");
 
             var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, 3000).ToArray();
 
             LogUtility.LogQueue(JsonConvert.SerializeObject(addressesToWaitFor), "", "cinfo.txt", true);
-            ConsoleWriterService.Output("*****************************Addresses To Wait For*******************************");
+            Console.WriteLine("*****************************Addresses To Wait For*******************************");
 
-            ConsoleWriterService.Output(JsonConvert.SerializeObject(addressesToWaitFor));
+            Console.WriteLine(JsonConvert.SerializeObject(addressesToWaitFor));
 
-            ConsoleWriterService.Output("******************************************************************************");
+            Console.WriteLine("******************************************************************************");
 
-            ConsoleWriterService.Output("*****************************Consensus Dump*******************************");
+            Console.WriteLine("*****************************Consensus Dump*******************************");
 
-            ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
+            Console.WriteLine(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
 
             LogUtility.LogQueue(JsonConvert.SerializeObject(Globals.ConsensusDump), "", "cinfo.txt", true);
-            ConsoleWriterService.Output("******************************************************************************");
+            Console.WriteLine("******************************************************************************");
 
-            ConsoleWriterService.Output("*****************************Node Dump*******************************");
+            Console.WriteLine("*****************************Node Dump*******************************");
 
-            ConsoleWriterService.Output("Now: " + TimeUtil.GetMillisecondTime() + "\r\n");
+            Console.WriteLine("Now: " + TimeUtil.GetMillisecondTime() + "\r\n");
 
             LogUtility.LogQueue(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)), "", "cinfo.txt", true);
-            ConsoleWriterService.Output(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)));
+            Console.WriteLine(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)));
 
-            ConsoleWriterService.Output("******************************************************************************");
+            Console.WriteLine("******************************************************************************");
         }
 
 
