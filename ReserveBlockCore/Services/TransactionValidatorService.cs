@@ -139,7 +139,6 @@ namespace ReserveBlockCore.Services
             }
 
             if (txRequest.TransactionType != TransactionType.TX)
-
             {
                 if (txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT
                     || txRequest.TransactionType == TransactionType.NFT_BURN)

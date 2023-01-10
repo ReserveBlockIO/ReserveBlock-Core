@@ -592,7 +592,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400));
+            Globals.MemBlocks = new ConcurrentQueue<Block>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400).ToArray().OrderBy(x => x.Height));
         }
 
         public static async Task ConnectToConsensusNodes()
