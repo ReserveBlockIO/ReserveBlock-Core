@@ -44,6 +44,10 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
                 c.DocumentFilter<SwaggerDocumentFilter<HDWallet>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Keystore>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother.Kids>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherJoinPayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherStartPayload>>();
                 c.DocumentFilter<SwaggerDocumentFilter<NodeInfo>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Peers>>();
                 c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
