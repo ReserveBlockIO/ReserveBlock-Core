@@ -42,6 +42,20 @@ namespace ReserveBlockCore.Models
 
         }
 
+        public class MotherStartPayload
+        { 
+            public string Name { get; set; }
+            public string Password { get; set; }
+        }
+
+        public class MotherJoinPayload
+        {
+            public string IPAddress { get; set; }
+            public string Password { get; set; }
+        }
+
+
+
         #region Get Mother DB
         public static LiteDB.ILiteCollection<Mother>? GetMotherDb()
         {
@@ -97,11 +111,10 @@ namespace ReserveBlockCore.Models
                     motherDb.InsertSafe(mom);
                     return (true, "Mom saved.");
                 }
+                return (false, "Mother was already present.");
 
-                return (false, "Mom DB was null.");
             }
-
-            return (false, "Mother was already present.");
+            return (false, "Mom DB was null.");
         }
 
         #endregion

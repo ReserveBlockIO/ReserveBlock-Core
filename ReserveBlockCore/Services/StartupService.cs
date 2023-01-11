@@ -1142,8 +1142,8 @@ namespace ReserveBlockCore.Services
                     if (!P2PMotherClient.IsMotherConnected)
                         await P2PMotherClient.ConnectMother(url);
 
-                    await P2PMotherClient.SendMotherData();
-
+                    if(P2PMotherClient.IsMotherConnected)
+                        await P2PMotherClient.SendMotherData();
                 }
                 catch (Exception ex)
                 {

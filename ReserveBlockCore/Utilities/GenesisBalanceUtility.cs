@@ -13,7 +13,7 @@
             if(Globals.IsTestNet == true)
             {
                 balanceSheet = new Dictionary<string, decimal> {
-                                {"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC", 1000000M },
+                                {"xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC", 15000000M },
                                 {"xLK7MYcjqJ74suU1wGQ6M7TgpQuevH4wiH", 10000M },
                                 {"xLcKCCKPBk94yZm8uzcTHXneEj69XHSshq", 10000M },
                                 {"xDCHzEyNfRtsZxKdoGB2ZoZeeSygah91fW", 10000M },
