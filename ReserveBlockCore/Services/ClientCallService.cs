@@ -136,6 +136,7 @@ namespace ReserveBlockCore.Services
             {
                 AssetLock = true;
                 {
+                    bool encPassNeeded = false;
                     var currentDate = DateTime.UtcNow;
                     var aqDB = AssetQueue.GetAssetQueue();
                     if(aqDB != null)
@@ -145,7 +146,7 @@ namespace ReserveBlockCore.Services
 
                         if(aqList.Count() > 0)
                         {
-                            if(Globals.IsWalletEncrypted && Globals.EncryptPassword.Length > 0)
+                            if(!Globals.IsWalletEncrypted || (Globals.IsWalletEncrypted && Globals.EncryptPassword.Length > 0))
                             {
                                 Globals.NFTsDownloading = true;
                                 foreach (var aq in aqList)
