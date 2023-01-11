@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Models
                             timer.Stop();
                             InvokeDelay = Task.Delay(1000);
 
-                            if (timer.ElapsedMilliseconds > 800)
+                            if (timer.ElapsedMilliseconds > 3000)
                                 LogUtility.LogQueue(RequestInfo.Item4 + " " + timer.ElapsedMilliseconds, "ProcessQueue", "slowrequest.txt", true);
                             RequestInfo.setResult(Result);                            
                             Fail = false;

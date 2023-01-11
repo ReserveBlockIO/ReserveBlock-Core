@@ -36,6 +36,12 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
+                if (Globals.FortisPool.TryGetFromKey1(peerIP, out var pool) && pool.Value.Context.ConnectionId != Context.ConnectionId && !pool.Value.Context.ConnectionAborted.IsCancellationRequested)
+                {
+                    Context.Abort();
+                    return;
+                }
+
                 var httpContext = Context.GetHttpContext();
                 if(httpContext == null)
                 {                    
@@ -176,15 +182,7 @@ namespace ReserveBlockCore.P2P
 
         private static void UpdateFortisPool(FortisPool pool)
         {
-            var hasIpPool = Globals.FortisPool.TryGetFromKey1(pool.IpAddress, out var ipPool);
-            var hasAddressPool = Globals.FortisPool.TryGetFromKey2(pool.Address, out var addressPool);
-
-            if (hasIpPool && ipPool.Value.Context.ConnectionId != pool.Context.ConnectionId && !ipPool.Value.Context.ConnectionAborted.IsCancellationRequested)
-            {
-                pool.Context.Abort();
-                return;                 
-            }
-
+            var hasAddressPool = Globals.FortisPool.TryGetFromKey2(pool.Address, out var addressPool);            
             if (hasAddressPool && addressPool.Value.Context.ConnectionId != pool.Context.ConnectionId && !addressPool.Value.Context.ConnectionAborted.IsCancellationRequested)
             {
                 pool.Context.Abort();

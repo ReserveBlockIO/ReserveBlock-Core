@@ -522,7 +522,7 @@ namespace ReserveBlockCore.P2P
                 try
                 {
                     var result = await node.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswerV3", new object[] { taskAnswer },
-                                            () => new CancellationTokenSource(1000).Token);                    
+                                            () => new CancellationTokenSource(3000).Token);                    
                     if (result != null)
                     {
                         if (result.AnswerAccepted)
@@ -661,7 +661,7 @@ namespace ReserveBlockCore.P2P
                                 if (hubAdjConnection1 != null)
                                 {                                    
                                     var result = await hubAdjConnection1.InvokeAsync<TaskAnswerResult>("ReceiveTaskAnswer_New", new object[] { taskAnswer }, 
-                                        () => new CancellationTokenSource(1000).Token);
+                                        () => new CancellationTokenSource(3000).Token);
                                     
                                     if (result != null)
                                     {
@@ -727,7 +727,7 @@ namespace ReserveBlockCore.P2P
                     try
                     {                        
                         if (await node.InvokeAsync<bool>("ReceiveTX", new object?[] { tx }, 
-                            () => new CancellationTokenSource(1000).Token))
+                            () => new CancellationTokenSource(3000).Token))
                             SuccessNodes.Add(node.Address);
 
                         tryCount += 1;
@@ -849,7 +849,7 @@ namespace ReserveBlockCore.P2P
                     var state = ConsensusServer.GetState();
                     var Response = await node.Connection.InvokeCoreAsync<string>("RequestMethodCode",
                         new object[] { Globals.LastBlock.Height, state.MethodCode, state.Status == ConsensusStatus.Finalized },
-                        new CancellationTokenSource(1000).Token);                         
+                        new CancellationTokenSource(10000).Token);                         
 
                     if (Response != null)
                     {
@@ -1376,7 +1376,7 @@ namespace ReserveBlockCore.P2P
                 foreach(var node in Globals.Nodes.Values)
                 {                    
                     string beaconInfo = await node.InvokeAsync<string>("SendBeaconInfo", Array.Empty<object>(), 
-                        () => new CancellationTokenSource(1000).Token, "SendBeaconInfo");
+                        () => new CancellationTokenSource(3000).Token, "SendBeaconInfo");
                     if (beaconInfo != "NA")
                     {
                         NFTLogUtility.Log("Beacon Found on hub " + node.NodeIP, "P2PClient.GetBeacons()");
@@ -1419,7 +1419,7 @@ namespace ReserveBlockCore.P2P
                     try
                     {
                         var leadAdjudictor = await node.InvokeAsync<Adjudicators>("SendLeadAdjudicator", Array.Empty<object>(),
-                            () => new CancellationTokenSource(1000).Token, "SendLeadAdjudicator");                        
+                            () => new CancellationTokenSource(3000).Token, "SendLeadAdjudicator");                        
 
                         if (leadAdjudictor != null)
                         {
@@ -1468,8 +1468,8 @@ namespace ReserveBlockCore.P2P
                         try
                         {
                             string message = Globals.AdjudicateAccount == null ? await node.InvokeAsync<string>("SendTxToMempool", new object?[] { txSend },
-                                () => new CancellationTokenSource(1000).Token, "SendTxToMempool") : await node.Connection.InvokeCoreAsync
-                                <string>("SendTxToMempool", new object?[] { txSend }, new CancellationTokenSource(1000).Token);
+                                () => new CancellationTokenSource(3000).Token, "SendTxToMempool") : await node.Connection.InvokeCoreAsync
+                                <string>("SendTxToMempool", new object?[] { txSend }, new CancellationTokenSource(3000).Token);
 
                             if (message == "ATMP")
                             {

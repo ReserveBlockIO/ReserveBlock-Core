@@ -312,11 +312,11 @@ namespace ReserveBlockCore.P2P
                             break;
                         }
 
-                        if (PrefixSplit.Length == 2 && ConsensusServer.GetState().Status == ConsensusStatus.Processing)
+                        if (PrefixSplit.Length == 2)
                         {
                             var arr = PrefixSplit[1].Split(";:;");
                             var (address, message, signature) = (arr[0], arr[1].Replace("::", ":"), arr[2]);
-                            if (SignatureService.VerifySignature(address, message, signature))
+                            if (SignatureService.VerifySignature(address, message, signature) && ConsensusServer.GetState().Status == ConsensusStatus.Processing)
                                 messages[address] = (message, signature);                            
                         }
                         else if (peer.MethodCode > methodCode)
@@ -328,7 +328,9 @@ namespace ReserveBlockCore.P2P
                     SentMessage = true;
                 }
                 catch (TaskCanceledException ex)
-                { }
+                {
+                    LogUtility.LogQueue((currentHeight + 1) + " " + methodCode, "MessageRequest", "cancelled.txt", true);
+                }
                 catch (Exception ex)
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "PeerRequestLoop inner catch");
@@ -380,7 +382,7 @@ namespace ReserveBlockCore.P2P
                     var Now = TimeUtil.GetMillisecondTime();
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "BeforeRequestHash", toSend + " " + (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", hashes.Select(x => x.Key + " " + x.Value.Hash)) + ") ", null);                                        
                     var Response = await peer.InvokeAsync<string>("Hash", new object?[] { currentHeight + 1, methodCode, RemainingAddresses, HashToSend }, 
-                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(1000).Token).Token,
+                        () => CancellationTokenSource.CreateLinkedTokenSource(cts.Token, new CancellationTokenSource(HeartBeatTimeout).Token).Token,
                         "Hash "+ (currentHeight + 1) + " " + methodCode + " (" + string.Join(",", RemainingAddresses) + ") " + HashToSend);                    
                     ConsensusServer.UpdateConsensusDump(peer.NodeIP, "AfterRequestHash", null, Response);
 
@@ -423,7 +425,9 @@ namespace ReserveBlockCore.P2P
                     SentHash = true;
                 }
                 catch (TaskCanceledException ex)
-                { }
+                {
+                    LogUtility.LogQueue((currentHeight + 1) + " " + methodCode, "HashRequest", "cancelled.txt", true);
+                }
                 catch (Exception ex)
                 {
                     ErrorLogUtility.LogError(ex.ToString(), "HashRequestLoop inner catch");
@@ -506,7 +510,7 @@ namespace ReserveBlockCore.P2P
             Block Block = null;
             try
             {
-                var source = new CancellationTokenSource(10000);
+                var source = new CancellationTokenSource(HeartBeatTimeout);
                 Block = await node.Connection.InvokeCoreAsync<Block>("SendBlock", args: new object?[] { height - 1 }, source.Token);
                 if (Block != null)
                 {
@@ -532,7 +536,7 @@ namespace ReserveBlockCore.P2P
             {
                 if (!node.IsConnected)
                     return default;
-                using (var Source = new CancellationTokenSource(2000))
+                using (var Source = new CancellationTokenSource(HeartBeatTimeout))
                     return await node.Connection.InvokeAsync<long>("SendBlockHeight", Source.Token);
             }
             catch (Exception ex)
