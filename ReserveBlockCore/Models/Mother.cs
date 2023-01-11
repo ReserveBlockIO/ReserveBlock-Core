@@ -101,9 +101,9 @@ namespace ReserveBlockCore.Models
         public static (bool,string) SaveMother(Mother mom)
         {
             var mother = GetMother();
-            if(mother == null)
+            var motherDb = GetMotherDb();
+            if (mother == null)
             {
-                var motherDb = GetMotherDb();
                 mom.Password = mom.Password.ToEncrypt(); //encrypts the password with password as key
                 mom.StartDate = DateTime.Now;
                 if(motherDb != null)
@@ -111,8 +111,16 @@ namespace ReserveBlockCore.Models
                     motherDb.InsertSafe(mom);
                     return (true, "Mom saved.");
                 }
-                return (false, "Mother was already present.");
-
+            }
+            else
+            {
+                if(motherDb != null)
+                {
+                    mother.Password = mom.Password.ToEncrypt();
+                    mother.Name = mom.Name;
+                    motherDb.UpdateSafe(mother);
+                    return (true, "Mom updated.");
+                }
             }
             return (false, "Mom DB was null.");
         }
