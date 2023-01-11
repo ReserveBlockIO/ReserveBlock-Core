@@ -1267,6 +1267,40 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Stops mother.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("StopMother")]
+        public async Task<string> StopMother()
+        {
+            var output = "{}";
+
+            try
+            {
+                var mom = Models.Mother.GetMother();
+
+                if (mom != null)
+                {
+                    var result = Models.Mother.DeleteMother(mom);
+                    if (result.Item1 == true)
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Success", Message = result.Item2 });
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = result.Item2 });
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error. Error: {ex.ToString()}" });
+            }
+            
+            return output;
+        }
+
+        /// <summary>
         /// Returns json of mother or null
         /// </summary>
         /// <returns></returns>
@@ -1359,7 +1393,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Returns mothers kids
+        /// Returns mother
         /// </summary>
         /// <returns></returns>
         [HttpGet("Mother")]

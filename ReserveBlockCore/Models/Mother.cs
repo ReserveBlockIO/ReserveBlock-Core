@@ -118,5 +118,28 @@ namespace ReserveBlockCore.Models
         }
 
         #endregion
+
+        #region Delete Mother
+        public static (bool, string) DeleteMother(Mother mom)
+        {
+            var mother = GetMother();
+            if (mother != null)
+            {
+                var motherDb = GetMotherDb();
+                if (motherDb != null)
+                {
+                    motherDb.DeleteSafe(mom.Id);
+                    return (true, "Mom deleted.");
+                }
+                else
+                {
+                    return (false, "Mom DB was null.");
+                }
+            }
+            return (false, "Mother was not present.");
+
+        }
+
+        #endregion
     }
 }
