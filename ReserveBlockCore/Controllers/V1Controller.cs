@@ -519,7 +519,7 @@ namespace ReserveBlockCore.Controllers
                 new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = (Globals.BlocksDownloadSlim.CurrentCount == 0).ToString(),
                     IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), 
                     ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString(), DuplicateValIP = Globals.DuplicateAdjIP, 
-                    DuplicateValAddress = Globals.DuplicateAdjAddr, NFTFilesReadyEPN = Globals.NFTFilesReadyEPN, ConnectedToMothe = Globals.ConnectToMother.ToString()}
+                    DuplicateValAddress = Globals.DuplicateAdjAddr, NFTFilesReadyEPN = Globals.NFTFilesReadyEPN, ConnectedToMother = Globals.ConnectToMother.ToString()}
             };
 
             output = JsonConvert.SerializeObject(walletInfo);
