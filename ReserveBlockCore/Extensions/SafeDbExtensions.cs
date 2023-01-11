@@ -261,7 +261,7 @@ namespace ReserveBlockCore.Extensions
         //     was deleted
         public static bool DeleteSafe<T>(this ILiteCollection<T> col, BsonValue id)
         {
-            return Command(col, () => col.DeleteSafe(id));
+            return Command(col, () => col.Delete(id));
         }
 
         //
