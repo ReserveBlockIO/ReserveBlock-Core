@@ -96,7 +96,8 @@ namespace ReserveBlockCore.P2P
                     var NumNodes = CurrentAddresses.Count;
                     Majority = NumNodes / 2 + 1;
                     
-                    var MessageKeysToKeep = ConsensusServer.Messages.Where(x => x.Key.Height == Height && x.Key.MethodCode == methodCode)
+                    var MessageKeysToKeep = ConsensusServer.Messages.Where(x => (x.Key.Height == Height && x.Key.MethodCode == methodCode) ||
+                        (x.Key.Height > Height && x.Key.MethodCode == 0))
                         .Select(x => x.Key).ToHashSet();
                     foreach(var key in ConsensusServer.Messages.Keys.Where(x => !MessageKeysToKeep.Contains(x)))
                     {

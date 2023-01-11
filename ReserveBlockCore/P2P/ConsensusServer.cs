@@ -153,13 +153,13 @@ namespace ReserveBlockCore.P2P
         {
             var NodeHeight = node.NodeHeight + 1;
             var MessageKeys = ConsensusServer.Messages.Where(x => x.Value.ContainsKey(node.Address)).Select(x => x.Key).ToHashSet();
-            var HashKeys = ConsensusServer.Messages.Where(x => x.Value.ContainsKey(node.Address)).Select(x => x.Key).ToHashSet();
+            var HashKeys = ConsensusServer.Hashes.Where(x => x.Value.ContainsKey(node.Address)).Select(x => x.Key).ToHashSet();
 
-            foreach (var key in MessageKeys.Where(x => x.Height > NodeHeight || (x.Height == NodeHeight && x.MethodCode > node.MethodCode)))
+            var state = GetState();
+            foreach (var key in MessageKeys.Where(x => x.MethodCode > node.MethodCode && state.MethodCode != x.MethodCode))
                 if (ConsensusServer.Messages.TryGetValue(key, out var message))
                     message.TryRemove(node.Address, out _);
-            foreach (var key in HashKeys.Where(x => x.Height > NodeHeight || (x.Height == NodeHeight && ((x.MethodCode > node.MethodCode)
-              || (!node.IsFinalized && x.MethodCode == node.MethodCode)))))
+            foreach (var key in HashKeys.Where(x => x.MethodCode > node.MethodCode && state.MethodCode != x.MethodCode))
                 if (ConsensusServer.Hashes.TryGetValue(key, out var hash))
                     hash.TryRemove(node.Address, out _);
         }
@@ -220,10 +220,12 @@ namespace ReserveBlockCore.P2P
 
                 var messages = Messages.GetOrAdd((height, methodCode), new ConcurrentDictionary<string, (string Message, string Signature)>());                
                 var state = GetState();
+
                 
-                if (message != null && height == Globals.LastBlock.Height + 1 
+                if (message != null && ((methodCode == 0 && state.MethodCode != 0)) ||
+                    (height == Globals.LastBlock.Height + 1 
                     && ((methodCode == state.MethodCode && state.Status != ConsensusStatus.Finalized) || 
-                        (methodCode == state.MethodCode + 1 && state.Status == ConsensusStatus.Finalized))
+                        (methodCode == state.MethodCode + 1 && state.Status == ConsensusStatus.Finalized)))
                     && SignatureService.VerifySignature(node.Address, message, signature))
                     messages[node.Address] = (message, signature);
                 
