@@ -8,8 +8,8 @@ using System.Text;
 namespace ReserveBlockCore.Controllers
 {
     [ActionFilterController]
-    [Route("api/[controller]")]
-    [Route("api/[controller]/{somePassword?}")]
+    [Route("adjapi/[controller]")]
+    [Route("adjapi/[controller]/{somePassword?}")]
     [ApiController]
     public class ADJV1Controller : ControllerBase
     {
@@ -31,19 +31,26 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetDups()
         {
             string output = "";
-            var dups = Globals.DuplicatesBroadcastedDict.Values.Select(x => new
+            try
             {
-                x.IPAddress,
-                x.Address,
-                x.StopNotify,
-                x.Reason,
-                x.LastNotified,
-                x.LastDetection,
-                x.NotifyCount
+                var dups = Globals.DuplicatesBroadcastedDict.Values.Select(x => new
+                {
+                    x.IPAddress,
+                    x.Address,
+                    x.StopNotify,
+                    x.Reason,
+                    x.LastNotified,
+                    x.LastDetection,
+                    x.NotifyCount
 
-            }).ToList();
+                }).ToList();
 
-            output = JsonConvert.SerializeObject(dups);
+                output = JsonConvert.SerializeObject(dups);
+            }
+            catch (Exception ex)
+            {
+                output = $"Error calling api: {ex.ToString()}";
+            }
 
             return output;
         }
@@ -58,13 +65,21 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var txlist = Globals.ConsensusBroadcastedTrxDict.Values.ToList();
-
-            if (txlist.Count > 0)
+            try
             {
-                output = JsonConvert.SerializeObject(txlist);
-            }
+                var txlist = Globals.ConsensusBroadcastedTrxDict.Values.ToList();
 
+                if (txlist.Count > 0)
+                {
+                    output = JsonConvert.SerializeObject(txlist);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                output = $"Error calling api: {ex.ToString()}";
+            }
+            
             return output;
         }
 
@@ -77,11 +92,18 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var txlist = Globals.BroadcastedTrxDict.Values.ToList();
-
-            if (txlist.Count > 0)
+            try
             {
-                output = JsonConvert.SerializeObject(txlist);
+                var txlist = Globals.BroadcastedTrxDict.Values.ToList();
+
+                if (txlist.Count > 0)
+                {
+                    output = JsonConvert.SerializeObject(txlist);
+                }
+            }
+            catch(Exception ex)
+            {
+                output = $"Error calling api: {ex.ToString()}";
             }
 
             return output;
@@ -96,18 +118,26 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodes()
         {
             string output = "";
-            var validators = Globals.FortisPool.Values.Select(x => new
-            {
-                x.Context.ConnectionId,
-                x.ConnectDate,
-                x.LastAnswerSendDate,
-                x.IpAddress,
-                x.Address,
-                x.UniqueName,
-                x.WalletVersion
-            }).ToList();
 
-            output = JsonConvert.SerializeObject(validators);
+            try
+            {
+                var validators = Globals.FortisPool.Values.Select(x => new
+                {
+                    x.Context.ConnectionId,
+                    x.ConnectDate,
+                    x.LastAnswerSendDate,
+                    x.IpAddress,
+                    x.Address,
+                    x.UniqueName,
+                    x.WalletVersion
+                }).ToList();
+
+                output = JsonConvert.SerializeObject(validators);
+            }
+            catch(Exception ex)
+            {
+                output = $"Error calling api: {ex.ToString()}";
+            }
 
             return output;
         }
@@ -120,19 +150,27 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodesSent()
         {
             string output = "";
-            var currentTime = DateTime.Now.AddMinutes(-15);
-            var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).Select(x => new
-            {
-                x.Context.ConnectionId,
-                x.ConnectDate,
-                x.LastAnswerSendDate,
-                x.IpAddress,
-                x.Address,
-                x.UniqueName,
-                x.WalletVersion
-            }).ToList(); 
 
-            output = JsonConvert.SerializeObject(fortisPool);
+            try
+            {
+                var currentTime = DateTime.Now.AddMinutes(-15);
+                var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).Select(x => new
+                {
+                    x.Context.ConnectionId,
+                    x.ConnectDate,
+                    x.LastAnswerSendDate,
+                    x.IpAddress,
+                    x.Address,
+                    x.UniqueName,
+                    x.WalletVersion
+                }).ToList();
+
+                output = JsonConvert.SerializeObject(fortisPool);
+            }
+            catch(Exception ex)
+            {
+                output = $"Error calling api: {ex.ToString()}";
+            }
 
             return output;
         }
@@ -146,27 +184,34 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            if (Globals.LastBlock.Height < Globals.BlockLock)
+            try
             {
-                var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
-                    x.Address,
-                    x.Answer,
-                    x.NextBlockHeight,
-                    x.SubmitTime
+                if (Globals.LastBlock.Height < Globals.BlockLock)
+                {
+                    var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
+                        x.Address,
+                        x.Answer,
+                        x.NextBlockHeight,
+                        x.SubmitTime
 
-                });
-                output = JsonConvert.SerializeObject(taskAnswerList);
+                    });
+                    output = JsonConvert.SerializeObject(taskAnswerList);
+                }
+                else
+                {
+                    var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
+                        Address = x.RBXAddress,
+                        Answer = x.Answer,
+                        IP = x.IPAddress,
+                        Signature = x.Signature.Substring(0, 12)
+
+                    });
+                    output = JsonConvert.SerializeObject(taskAnswerList);
+                }
             }
-            else
+            catch(Exception ex)
             {
-                var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
-                    Address = x.RBXAddress,
-                    Answer = x.Answer,
-                    IP = x.IPAddress,
-                    Signature = x.Signature.Substring(0, 12)
-
-                });
-                output = JsonConvert.SerializeObject(taskAnswerList);
+                output = $"Error calling api: {ex.ToString()}";
             }
 
             return output;
@@ -180,35 +225,44 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetAdjInfo()
         {
             var output = "";
-            StringBuilder outputBuilder = new StringBuilder();
 
-            var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
-
-            var adjConsensusNodes = Globals.Nodes.Values.ToList();
-            var Now = TimeUtil.GetMillisecondTime();
-            if (adjConsensusNodes.Count() > 0)
+            try
             {
-                outputBuilder.AppendLine("*******************************Consensus Nodes*******************************");
-                foreach (var cNode in adjConsensusNodes)
-                {
-                    var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected} ({Now - cNode.LastMethodCodeTime < 3000})";
-                    outputBuilder.AppendLine(line);
-                }
-                outputBuilder.AppendLine("******************************************************************************");
-            }
+                StringBuilder outputBuilder = new StringBuilder();
 
-            if (taskSelectedNumbersV3.Count() > 0)
+                var taskSelectedNumbersV3 = Globals.TaskSelectedNumbersV3.Values.ToList();
+
+                var adjConsensusNodes = Globals.Nodes.Values.ToList();
+                var Now = TimeUtil.GetMillisecondTime();
+                if (adjConsensusNodes.Count() > 0)
+                {
+                    outputBuilder.AppendLine("*******************************Consensus Nodes*******************************");
+                    foreach (var cNode in adjConsensusNodes)
+                    {
+                        var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected} ({Now - cNode.LastMethodCodeTime < 3000})";
+                        outputBuilder.AppendLine(line);
+                    }
+                    outputBuilder.AppendLine("******************************************************************************");
+                }
+
+                if (taskSelectedNumbersV3.Count() > 0)
+                {
+                    outputBuilder.AppendLine("*******************************Task Answers V3********************************");
+                    foreach (var taskNum in taskSelectedNumbersV3)
+                    {
+                        var taskLine = $"Address: {taskNum.RBXAddress} |  IP Address: {taskNum.IPAddress} | Answer: {taskNum.Answer}";
+                        outputBuilder.AppendLine(taskLine);
+                    }
+                    outputBuilder.AppendLine("******************************************************************************");
+                }
+
+                output = outputBuilder.ToString();
+            }
+            catch(Exception ex) 
             {
-                outputBuilder.AppendLine("*******************************Task Answers V3********************************");
-                foreach (var taskNum in taskSelectedNumbersV3)
-                {
-                    var taskLine = $"Address: {taskNum.RBXAddress} |  IP Address: {taskNum.IPAddress} | Answer: {taskNum.Answer}";
-                    outputBuilder.AppendLine(taskLine);
-                }
-                outputBuilder.AppendLine("******************************************************************************");
+                output = $"Error calling api: {ex.ToString()}";
             }
-
-            output = outputBuilder.ToString();  
+             
             return output;
         }
 
@@ -220,63 +274,71 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetConsensusInfo()
         {
             var output = "";
-            StringBuilder outputBuilder = new StringBuilder();
 
-            var conState = ConsensusServer.GetState();
-            outputBuilder.AppendLine("*******************************Consensus State********************************");
+            try
+            {
+                StringBuilder outputBuilder = new StringBuilder();
 
-            var conStateLine = $"Next Height: {Globals.LastBlock.Height + 1} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode}";
-            outputBuilder.AppendLine(conStateLine);
-            LogUtility.LogQueue(conStateLine, "", "cinfo.txt", true);
+                var conState = ConsensusServer.GetState();
+                outputBuilder.AppendLine("*******************************Consensus State********************************");
 
-            outputBuilder.AppendLine("******************************************************************************");
+                var conStateLine = $"Next Height: {Globals.LastBlock.Height + 1} | Status: {conState.Status} | Answer: {conState.Answer} | Method Code: {conState.MethodCode}";
+                outputBuilder.AppendLine(conStateLine);
+                LogUtility.LogQueue(conStateLine, "", "cinfo.txt", true);
 
-            var conMessage = string.Join("\r\n", ConsensusServer.Messages.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Message + " " + y.Value.Signature))
-                .SelectMany(x => x));
-            LogUtility.LogQueue(conMessage, "", "cinfo.txt", true);
+                outputBuilder.AppendLine("******************************************************************************");
 
-            outputBuilder.AppendLine("*****************************Consensus Messages*******************************");
+                var conMessage = string.Join("\r\n", ConsensusServer.Messages.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Message + " " + y.Value.Signature))
+                    .SelectMany(x => x));
+                LogUtility.LogQueue(conMessage, "", "cinfo.txt", true);
 
-            outputBuilder.AppendLine(conMessage);
+                outputBuilder.AppendLine("*****************************Consensus Messages*******************************");
 
-            outputBuilder.AppendLine("******************************************************************************");
+                outputBuilder.AppendLine(conMessage);
 
-            var hashMessage = string.Join("\r\n", ConsensusServer.Hashes.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Hash + " " + y.Value.Signature))
-                            .SelectMany(x => x));
-            LogUtility.LogQueue(hashMessage, "", "cinfo.txt", true);
+                outputBuilder.AppendLine("******************************************************************************");
 
-            outputBuilder.AppendLine("*****************************Consensus Hashes*******************************");
+                var hashMessage = string.Join("\r\n", ConsensusServer.Hashes.Select(x => x.Value.Select(y => x.Key.Height + " " + x.Key.MethodCode + " " + y.Key + " " + y.Value.Hash + " " + y.Value.Signature))
+                                .SelectMany(x => x));
+                LogUtility.LogQueue(hashMessage, "", "cinfo.txt", true);
 
-            outputBuilder.AppendLine(hashMessage);
+                outputBuilder.AppendLine("*****************************Consensus Hashes*******************************");
 
-            outputBuilder.AppendLine("******************************************************************************");
+                outputBuilder.AppendLine(hashMessage);
 
-            var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, 3000).ToArray();
+                outputBuilder.AppendLine("******************************************************************************");
 
-            LogUtility.LogQueue(JsonConvert.SerializeObject(addressesToWaitFor), "", "cinfo.txt", true);
-            outputBuilder.AppendLine("*****************************Addresses To Wait For*******************************");
+                var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, 3000).ToArray();
 
-            outputBuilder.AppendLine(JsonConvert.SerializeObject(addressesToWaitFor));
+                LogUtility.LogQueue(JsonConvert.SerializeObject(addressesToWaitFor), "", "cinfo.txt", true);
+                outputBuilder.AppendLine("*****************************Addresses To Wait For*******************************");
 
-            outputBuilder.AppendLine("******************************************************************************");
+                outputBuilder.AppendLine(JsonConvert.SerializeObject(addressesToWaitFor));
 
-            outputBuilder.AppendLine("*****************************Consensus Dump*******************************");
+                outputBuilder.AppendLine("******************************************************************************");
 
-            outputBuilder.AppendLine(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
+                outputBuilder.AppendLine("*****************************Consensus Dump*******************************");
 
-            LogUtility.LogQueue(JsonConvert.SerializeObject(Globals.ConsensusDump), "", "cinfo.txt", true);
-            outputBuilder.AppendLine("******************************************************************************");
+                outputBuilder.AppendLine(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.ConsensusDump)));
 
-            outputBuilder.AppendLine("*****************************Node Dump*******************************");
+                LogUtility.LogQueue(JsonConvert.SerializeObject(Globals.ConsensusDump), "", "cinfo.txt", true);
+                outputBuilder.AppendLine("******************************************************************************");
 
-            outputBuilder.AppendLine("Now: " + TimeUtil.GetMillisecondTime() + "\r\n");
+                outputBuilder.AppendLine("*****************************Node Dump*******************************");
 
-            LogUtility.LogQueue(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)), "", "cinfo.txt", true);
-            outputBuilder.AppendLine(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)));
+                outputBuilder.AppendLine("Now: " + TimeUtil.GetMillisecondTime() + "\r\n");
 
-            outputBuilder.AppendLine("******************************************************************************");
+                LogUtility.LogQueue(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)), "", "cinfo.txt", true);
+                outputBuilder.AppendLine(JsonConvert.SerializeObject(JsonConvert.SerializeObject(Globals.Nodes.Values)));
 
-            output = outputBuilder.ToString();
+                outputBuilder.AppendLine("******************************************************************************");
+
+                output = outputBuilder.ToString();
+            }
+            catch (Exception ex)
+            {
+                output = $"Error calling api: {ex.ToString()}";
+            }
 
             return output;
         }
