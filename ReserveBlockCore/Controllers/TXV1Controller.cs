@@ -982,30 +982,11 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Shows the consensus broadcast list of txs
+        /// Shows the fortis pool work broadcast list of txs
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetConsensusBroadcastTx")]
-        public async Task<string> GetConsensusBroadcastTx()
-        {
-            var output = "";
-
-            var txlist = Globals.ConsensusBroadcastedTrxDict.Values.ToList();
-
-            if(txlist.Count > 0)
-            {
-                output = JsonConvert.SerializeObject(txlist);
-            }
-
-            return output;
-        }
-
-        /// <summary>
-        /// Shows the validator broadcast list of txs
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("GetValBroadcastTx")]
-        public async Task<string> GetValBroadcastTx()
+        [HttpGet("GetFortisBroadcastTx")]
+        public async Task<string> GetFortisBroadcastTx()
         {
             var output = "";
 
@@ -1018,6 +999,7 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
 
         /// <summary>
         /// Send a transaction. Specify from, to, and amount

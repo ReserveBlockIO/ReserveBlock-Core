@@ -308,9 +308,10 @@ namespace ReserveBlockCore.P2P
         public async Task<bool> GetBroadcastedTx(List<TransactionBroadcast> txBroadcastList)
         {
             bool result = false;
-
             try
             {
+                var txHashes = JsonConvert.SerializeObject(txBroadcastList.Select(x => x.Hash).ToArray());
+                AdjLogUtility.Log($"UTC Time: {DateTime.Now} TX List Received: {txHashes}", "ConsensusServer.GetBroadcastedTx()");
                 foreach (var txBroadcast in txBroadcastList)
                 {
                     if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(txBroadcast.Hash, out _))
@@ -322,6 +323,7 @@ namespace ReserveBlockCore.P2P
             }
             catch(Exception ex)
             {
+                AdjLogUtility.Log($"Error receiving broadcasted TX. Error: {ex.ToString()}", "ConsensusServer.GetBroadcastedTx()");
                 ErrorLogUtility.LogError($"Error receiving broadcasted TX. Error: {ex.ToString()}", "ConsensusServer.GetBroadcastedTx()");
             }
 

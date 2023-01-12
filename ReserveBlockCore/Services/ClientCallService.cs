@@ -303,11 +303,17 @@ namespace ReserveBlockCore.Services
 
                     if (txsToBroadcastAdj.Count() > 0)
                     {
+                        var txHashes = JsonConvert.SerializeObject(txsToBroadcastAdj.Select(x => x.Hash).ToArray());
+                        AdjLogUtility.Log($"UTC: {DateTime.UtcNow} - Sending TX List to Other Nodes: {txHashes}", "ClientCallService.DoConsensusBroadcastWork()");
+
+                        int count = 1;
                         var nodes = Globals.Nodes.Values.Where(x => x.IsConnected).ToList();
                         foreach (var node in nodes)
                         {
                             var source = new CancellationTokenSource(5000);
                             var result = await node.Connection.InvokeCoreAsync<bool>("GetBroadcastedTx", args: new object?[] { txsToBroadcastAdj }, source.Token);
+                            AdjLogUtility.Log($"{count}. UTC: {DateTime.UtcNow} - TX List Sent to: {node.NodeIP}. Result: {result}", "ClientCallService.DoConsensusBroadcastWork()");
+                            count += 1;
                         }
 
                         foreach (var tx in txsToBroadcastAdj)
@@ -424,6 +430,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex)
             {
+                AdjLogUtility.Log($"Error broadcasting TXs. Error: {ex.ToString()}", "ClientCallService.DoConsensusBroadcastWork()");
                 ErrorLogUtility.LogError($"Error broadcasting TXs. Error: {ex.ToString()}", "ClientCallService.DoConsensusBroadcastWork()");
             }
             
@@ -1070,21 +1077,111 @@ namespace ReserveBlockCore.Services
                         {
                             if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
                             {
-                                await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0,0,0,0,700));
-                                pool.Item2.Context?.Abort();
-                                
+                                Globals.DuplicatesBroadcastedDict.TryGetValue(ip, out var result);
+                                {
+                                    //if no result will add them to dictionary and send response - Notify count set to 1/3
+                                    if (result == null)
+                                    {
+                                        await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
+                                        pool.Item2.Context?.Abort();
+                                        DuplicateValidators dupVal = new DuplicateValidators { 
+                                            Address = pool.Item2.Address,
+                                            IPAddress = pool.Item2.IpAddress,
+                                            LastNotified = DateTime.Now,
+                                            LastDetection = DateTime.Now,
+                                            NotifyCount = 1,
+                                            Reason = DuplicateValidators.ReasonFor.DuplicateIP,
+                                            StopNotify = false
+                                        };
+                                        Globals.DuplicatesBroadcastedDict[ip] = dupVal;
+                                    }
+                                    else
+                                    {
+                                        //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
+                                        if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
+                                        {
+                                            await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
+                                            pool.Item2.Context?.Abort();
+
+                                            result.LastNotified = DateTime.Now;
+                                            result.LastDetection = DateTime.Now;
+                                            result.NotifyCount += 1;
+                                            result.StopNotify = result.NotifyCount >= 3 ? true : false;
+
+                                            Globals.DuplicatesBroadcastedDict[ip] = result;
+                                        }
+                                        else
+                                        {
+                                            //Stop notify is true and we wil no longer alert for 12 hours.
+                                            if (result.StopNotify)
+                                            {
+                                                if (result.LastNotified < DateTime.Now.AddHours(-12))
+                                                {
+                                                    //if they've gone 2 hours without acting a duplicate we will remove them 12 hours later.
+                                                    if (result.LastDetection < DateTime.Now.AddHours(-2))
+                                                        Globals.DuplicatesBroadcastedDict.TryRemove(ip, out _);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                                
                         }
 
                         foreach (var address in BadAddresses)
                         {
                             if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
                             {
-                                await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 1).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
-                                pool.Item2.Context?.Abort();
+                                Globals.DuplicatesBroadcastedDict.TryGetValue(pool.Item2.IpAddress, out var result);
+                                {
+                                    //if no result will add them to dictionary and send response - Notify count set to 1/3
+                                    if (result == null)
+                                    {
+                                        await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 1).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
+                                        pool.Item2.Context?.Abort();
+                                        DuplicateValidators dupVal = new DuplicateValidators
+                                        {
+                                            Address = pool.Item2.Address,
+                                            IPAddress = pool.Item2.IpAddress,
+                                            LastNotified = DateTime.Now,
+                                            LastDetection = DateTime.Now,
+                                            NotifyCount = 1,
+                                            Reason = DuplicateValidators.ReasonFor.DuplicateAddress,
+                                            StopNotify = false
+                                        };
+                                        Globals.DuplicatesBroadcastedDict[pool.Item2.IpAddress] = dupVal;
+                                    }
+                                    else
+                                    {
+                                        //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
+                                        if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
+                                        {
+                                            await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
+                                            pool.Item2.Context?.Abort();
+
+                                            result.LastNotified = DateTime.Now;
+                                            result.LastDetection = DateTime.Now;
+                                            result.NotifyCount += 1;
+                                            result.StopNotify = result.NotifyCount >= 3 ? true : false;
+
+                                            Globals.DuplicatesBroadcastedDict[pool.Item2.IpAddress] = result;
+                                        }
+                                        else
+                                        {
+                                            //Stop notify is true and we wil no longer alert for 12 hours.
+                                            if (result.StopNotify)
+                                            {
+                                                if (result.LastNotified < DateTime.Now.AddHours(-12))
+                                                {
+                                                    //if they've gone 2 hours without acting a duplicate we will remove them 24 hours later.
+                                                    if(result.LastDetection < DateTime.Now.AddHours(-2))
+                                                        Globals.DuplicatesBroadcastedDict.TryRemove(pool.Item2.IpAddress, out _);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                                
                         }
                     }
                     catch (Exception ex)

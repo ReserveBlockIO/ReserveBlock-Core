@@ -164,6 +164,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, TaskNumberAnswerV2> RejectedTaskAnswerDict_New = new ConcurrentDictionary<string, TaskNumberAnswerV2>(); // RBX address
         public static ConcurrentDictionary<string, Transaction> BroadcastedTrxDict = new ConcurrentDictionary<string, Transaction>(); // TX Hash
         public static ConcurrentDictionary<string, TransactionBroadcast> ConsensusBroadcastedTrxDict = new ConcurrentDictionary<string, TransactionBroadcast>(); //TX Hash
+        public static ConcurrentDictionary<string, DuplicateValidators> DuplicatesBroadcastedDict= new ConcurrentDictionary<string, DuplicateValidators>();
 
         #endregion
 

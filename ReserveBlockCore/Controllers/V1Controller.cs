@@ -971,10 +971,9 @@ namespace ReserveBlockCore.Controllers
                     result = "Account provided was not found in wallet.";
                 }
             }
-            
             else
             {
-                result = "Cannot start validating on an encrypted wallet.";
+                result = "No eligible accounts were found that can validate.";
             }
 
             return result;

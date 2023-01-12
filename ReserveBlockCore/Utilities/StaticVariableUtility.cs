@@ -169,15 +169,18 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(lastWinningTaskSentTimeText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
-            nodes.Values.ToList().ForEach(x => {
-                var ip = x.NodeIP;
-                var lastcheck = x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime().ToLongTimeString() : "NA";
-                var height = x.NodeHeight.ToString();
-                var latency = x.NodeLatency.ToString();
+            if(nodes.Count() > 0)
+            {
+                nodes.Values.ToList().ForEach(x => {
+                    var ip = x.NodeIP;
+                    var lastcheck = x.NodeLastChecked != null ? x.NodeLastChecked.Value.ToLocalTime().ToLongTimeString() : "NA";
+                    var height = x.NodeHeight.ToString();
+                    var latency = x.NodeLatency.ToString();
 
-                strBld.AppendLine("Node: " + ip + " - Last Checked: " + lastcheck + " - Height: " + height + " - Latency: " + latency);
-                strBld.AppendLine("---------------------------------------------------------------------");
-            });
+                    strBld.AppendLine("Node: " + ip + " - Last Checked: " + lastcheck + " - Height: " + height + " - Latency: " + latency);
+                    strBld.AppendLine("---------------------------------------------------------------------");
+                });
+            }
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(reportedIPText);
             strBld.AppendLine("---------------------------------------------------------------------");

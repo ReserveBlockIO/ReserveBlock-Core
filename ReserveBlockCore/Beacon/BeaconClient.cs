@@ -86,7 +86,6 @@ namespace ReserveBlockCore.Beacon
                             ns.Close();
                             return new BeaconResponse { Status = 1, Description = "Receive successful." };
                         }
-
                     }
                 }
 
