@@ -350,6 +350,15 @@ namespace ReserveBlockCore.P2P
                     };
                 }
 
+                if (Globals.LastBlock.Height >= Globals.BlockLock)
+                {
+                    ValidatorProcessor.RandomNumberTaskV3(Globals.LastBlock.Height + 1);
+                }
+                else
+                {
+                    ValidatorProcessor.RandomNumberTask_New(Globals.LastBlock.Height + 1);
+                }
+
                 return true;
             }
             catch (Exception ex)

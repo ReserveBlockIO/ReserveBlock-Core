@@ -38,7 +38,7 @@ namespace ReserveBlockCore.P2P
 
                 if (Globals.FortisPool.TryGetFromKey1(peerIP, out var pool) && pool.Value.Context.ConnectionId != Context.ConnectionId && !pool.Value.Context.ConnectionAborted.IsCancellationRequested)
                 {
-                    Context.Abort();
+                    await EndOnConnect(peerIP, "30", startTime, conQueue, "IP Address is already in use", "IP Address is already in use");
                     return;
                 }
 
@@ -55,11 +55,18 @@ namespace ReserveBlockCore.P2P
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
+                var hasAddressPool = Globals.FortisPool.TryGetFromKey2(address, out var addressPool);
+                if (hasAddressPool && addressPool.Value.Context.ConnectionId != Context.ConnectionId && !addressPool.Value.Context.ConnectionAborted.IsCancellationRequested)
+                {
+                    await EndOnConnect(peerIP, "20", startTime, conQueue, "RBX Address is already in use", "RBX Address is already in use");
+                    return;
+                }
+
                 var SignedMessage = address;
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
                     SignedMessage = address + ":" + time;
-                    if (TimeUtil.GetTime() - long.Parse(time) > 30000000)
+                    if (TimeUtil.GetTime() - long.Parse(time) > 300)
                     {
                         await EndOnConnect(peerIP, "20", startTime, conQueue, "Signature Bad time.", "Signature Bad time.");
                         return;
@@ -116,17 +123,6 @@ namespace ReserveBlockCore.P2P
 
                 UpdateFortisPool(fortisPools);
 
-                await SendAdjMessageSingle("status", $"Authenticated? True");
-                conQueue.WasSuccess = true;
-                lastArea = "U";
-                await SendAdjMessageSingle("status", "Connected");
-                TaskQuestion nTaskQuestion = new TaskQuestion();
-                nTaskQuestion.TaskType = "rndNum";
-                nTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
-                string taskQuestionStr = "";
-                taskQuestionStr = JsonConvert.SerializeObject(nTaskQuestion);
-                await SendAdjMessageSingle("task", taskQuestionStr);
-
                 lastArea = "A";
                 if (Globals.OptionalLogging == true)                
                     LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {peerIP} ", "Adj Connection");                
@@ -182,13 +178,6 @@ namespace ReserveBlockCore.P2P
 
         private static void UpdateFortisPool(FortisPool pool)
         {
-            var hasAddressPool = Globals.FortisPool.TryGetFromKey2(pool.Address, out var addressPool);            
-            if (hasAddressPool && addressPool.Value.Context.ConnectionId != pool.Context.ConnectionId && !addressPool.Value.Context.ConnectionAborted.IsCancellationRequested)
-            {
-                pool.Context.Abort();
-                return;
-            }
-
             Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
         }
 
