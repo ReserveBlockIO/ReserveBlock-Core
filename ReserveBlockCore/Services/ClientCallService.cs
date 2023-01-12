@@ -1420,12 +1420,12 @@ namespace ReserveBlockCore.Services
                     foreach (TaskNumberAnswerV2 taskAnswer in taskAnswerList)
                     {
                         if (Globals.FortisPool.TryGetFromKey2(taskAnswer.Address, out var validator))
-                            validator.Value.LastAnswerSendDate = DateTime.Now;
+                            validator.Value.LastAnswerSendDate = DateTime.UtcNow;
                     }
                 }
 
                 var nodeWithAnswer = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).ToList();
-                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
+                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.UtcNow).ToList();
                 foreach (var deadNode in deadNodes)
                 {
                     Globals.FortisPool.TryRemoveFromKey1(deadNode.IpAddress, out _);
@@ -1447,12 +1447,12 @@ namespace ReserveBlockCore.Services
                     foreach (var address in rbxAddressSubmissions)
                     {
                         if (Globals.FortisPool.TryGetFromKey2(address, out var validator))
-                            validator.Value.LastAnswerSendDate = DateTime.Now;
+                            validator.Value.LastAnswerSendDate = DateTime.UtcNow;
                     }
                 }
 
                 var nodeWithAnswer = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).ToList();
-                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.Now).ToList();
+                var deadNodes = nodeWithAnswer.Where(x => x.LastAnswerSendDate.Value.AddMinutes(15) <= DateTime.UtcNow).ToList();
                 foreach (var deadNode in deadNodes)
                 {
                     Globals.FortisPool.TryRemoveFromKey1(deadNode.IpAddress, out _);

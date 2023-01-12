@@ -61,24 +61,29 @@ namespace ReserveBlockCore.Utilities
             var remoteLockTime = "Remote Lock Time: " + (Globals.RemoteCraftLockTime == null ?  "NA" : Globals.RemoteCraftLockTime.Value.ToShortTimeString());
             var isResyncing = "Chain Resyncing? : " + Globals.IsResyncing.ToString();
             var isCorrupt = "Database Corruption Detected? : " + Globals.DatabaseCorruptionDetected.ToString();
-            var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
+            
+            //adj only info
+            var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + Globals.FortisPool.Count.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
-            var lastWinningTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => 
-                $"ADJ: {x.Address} "+"*Only for Validators* Last Winning task Error?: " + x.LastWinningTaskError));
+            
+            //val only info
+            var lastWinningTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
+            $"ADJ: {x.Address} " + "*Only for Validators* Last Winning task Error?: " + x.LastWinningTaskError));
             var lastWinningTaskSentTimeText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Last Winng Task Sent Time: " + x.LastWinningTaskSentTime));             
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Winng Task Sent Time: " + x.LastWinningTaskSentTime));
             var lastTaskSentText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + x.LastTaskSentTime));           
+                $"ADJ: {x.Address} " + "*Only for Validators* Most Recent Task (Unsolved) Sent at: " + x.LastTaskSentTime));
             var lastTaskResultText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Latest Task (Solved) Result Received at: " + x.LastTaskResultTime));            
+                $"ADJ: {x.Address} " + "*Only for Validators* Latest Task (Solved) Result Received at: " + x.LastTaskResultTime));
             var lastTaskBlockHeightText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Block Height : " + x.LastSentBlockHeight));                                     
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Block Height : " + x.LastSentBlockHeight));
             var lastTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error : " + x.LastTaskError));                                                                      
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error : " + x.LastTaskError));
             var lastTaskErrorCountText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
-                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error Count: " + x.LastTaskErrorCount));                                     
+                $"ADJ: {x.Address} " + "*Only for Validators* Last Task Error Count: " + x.LastTaskErrorCount));
+                                            
             var hdWalletText = $"HD Wallet? : {hdWallet}";
             var reportedIPText = $"Reported IPs: {reportedIPs}";
             var externalIPText = $"External IP: {mostLikelyIP}";
@@ -150,24 +155,30 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(adjConnection);
             strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(fortisPoolText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(valCountText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastTaskResultText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastTaskSentText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastTaskBlockHeightText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastTaskErrorText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastTaskErrorCountText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastWinningTaskErrorText);
-            strBld.AppendLine("---------------------------------------------------------------------");
-            strBld.AppendLine(lastWinningTaskSentTimeText);
-            strBld.AppendLine("---------------------------------------------------------------------");
+            if(Globals.AdjudicateAccount != null)
+            {
+                strBld.AppendLine(fortisPoolText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(valCountText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+            }
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                strBld.AppendLine(lastTaskResultText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(lastTaskSentText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(lastTaskBlockHeightText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(lastTaskErrorText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(lastTaskErrorCountText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(lastWinningTaskErrorText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(lastWinningTaskSentTimeText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+            }
             strBld.AppendLine("-------------------------------Node Info-----------------------------");
             if(nodes.Count() > 0)
             {
