@@ -202,8 +202,7 @@ namespace ReserveBlockCore.Controllers
                     var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
                         Address = x.RBXAddress,
                         Answer = x.Answer,
-                        IP = x.IPAddress,
-                        Signature = x.Signature.Substring(0, 12)
+                        IP = x.IPAddress                        
 
                     });
                     output = JsonConvert.SerializeObject(taskAnswerList);

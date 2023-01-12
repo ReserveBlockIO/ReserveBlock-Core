@@ -1053,10 +1053,11 @@ namespace ReserveBlockCore.Services
                         continue;
 
                     ConsoleWriterService.Output("Submissions Consensus at height " + Height);
-
-                    var ValidSubmissions = Submissions.Select(x => DeserializeSubmissions(x.Message))
+                    
+                    var ValidSubmissions = Submissions
+                        .AsParallel()
+                        .Select(x => DeserializeSubmissions(x.Message))
                         .SelectMany(x => x)
-                        .Where(x => SignatureService.VerifySignature(x.RBXAddress, Height + ":" + x.Answer, x.Signature))
                         .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
                         .Distinct()
                         .ToArray();
@@ -1108,7 +1109,7 @@ namespace ReserveBlockCore.Services
                     if (Answers.Length < Majority)
                         continue;
 
-                    var PotentialWinners = ValidSubmissions
+                    var PotentialWinners = ValidSubmissions                        
                         .Where(x => !BadIPs.Contains(x.IPAddress) && !BadAddresses.Contains(x.RBXAddress))
                         .GroupBy(x => x.Answer)
                         .Where(x => x.Count() == 1)
@@ -1361,17 +1362,17 @@ namespace ReserveBlockCore.Services
                     Globals.TaskWinnerDictV3.TryRemove(key, out _);           
         }
 
-        public static string SerializeSubmissions((string IPAddress, string RBXAddress, int Answer, string Signature)[] submissions)
+        public static string SerializeSubmissions((string IPAddress, string RBXAddress, int Answer)[] submissions)
         {
-            return string.Join("|", submissions.Select(x => x.IPAddress + ":" + x.RBXAddress + ":" + x.Answer + ":" + x.Signature));
+            return string.Join("|", submissions.Select(x => x.IPAddress + ":" + x.RBXAddress + ":" + x.Answer));
         }
 
-        public static (string IPAddress, string RBXAddress, int Answer, string Signature)[] DeserializeSubmissions(string submisisons)
+        public static (string IPAddress, string RBXAddress, int Answer)[] DeserializeSubmissions(string submisisons)
         {
             return submisisons.Split('|').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
             {
                 var split = x.Split(':');
-                return (split[0], split[1], int.Parse(split[2]), split[3]);
+                return (split[0], split[1], int.Parse(split[2]));
             }).ToArray();
         }
 

@@ -231,19 +231,9 @@ namespace ReserveBlockCore.P2P
                     //This will result in users not getting their answers chosen if they are not in list.
                     var fortisPool = Globals.FortisPool.Values;
                     if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
-                    {                            
-                        var NextHeight = Globals.LastBlock.Height + 1;
-                        if (!SignatureService.VerifySignature(Pool.Key2, NextHeight + ":" + Answer, Signature))
-                        {
-                            NextHeight++;
-                            if (!SignatureService.VerifySignature(Pool.Key2, NextHeight + ":" + Answer, Signature))
-                            {
-                                taskAnsRes.AnswerCode = 6;
-                                return taskAnsRes;
-                            }
-                        }
-
-                        if (!Globals.TaskAnswerDictV3.TryAdd((Pool.Key2, NextHeight), (ipAddress, Pool.Key2, int.Parse(Answer), Signature)))
+                    {
+                        // fix to use the pass in height
+                        if (!Globals.TaskAnswerDictV3.TryAdd((Pool.Key2, Globals.LastBlock.Height + 1), (ipAddress, Pool.Key2, int.Parse(Answer))))
                         {
                             taskAnsRes.AnswerAccepted = true;
                             taskAnsRes.AnswerCode = 0;
