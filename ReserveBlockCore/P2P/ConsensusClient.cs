@@ -177,10 +177,8 @@ namespace ReserveBlockCore.P2P
                         while(true)
                         {
                             var Now = TimeUtil.GetMillisecondTime();
-                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < HeartBeatTimeout && ((x.NodeHeight + 1 == Height &&
-                                (x.MethodCode == methodCode && !x.IsFinalized)) || (methodCode == 0 && x.NodeHeight + 2 == Height))).Any();                                                               
-                            
-                            if (AnyNodesToWaitFor)
+                            hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                                                        
+                            if (Hashes.Where(x => x.Value.Hash != MyHash).Any() || hashAddressesToWaitFor.Any())
                             {
                                 await Task.Delay(20);
                                 continue;
