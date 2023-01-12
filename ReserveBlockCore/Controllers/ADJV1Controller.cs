@@ -239,7 +239,7 @@ namespace ReserveBlockCore.Controllers
                     outputBuilder.AppendLine("*******************************Consensus Nodes*******************************");
                     foreach (var cNode in adjConsensusNodes)
                     {
-                        var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected} ({Now - cNode.LastMethodCodeTime < 3000})";
+                        var line = $"IP: {cNode.NodeIP} | Address: {cNode.Address} | IsConnected? {cNode.IsConnected} ({Now - cNode.LastMethodCodeTime < ConsensusClient.HeartBeatTimeout})";
                         outputBuilder.AppendLine(line);
                     }
                     outputBuilder.AppendLine("******************************************************************************");
