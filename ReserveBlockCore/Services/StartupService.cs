@@ -854,7 +854,7 @@ namespace ReserveBlockCore.Services
                     var lastBlock = Globals.LastBlock;
                     var currentTimestamp = TimeUtil.GetTime(-90);
 
-                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.ValidatorAddress == "xMpa8DxDLdC9SQPcAFBc2vqwyPsoFtrWyC")
+                    if(lastBlock.Timestamp >= currentTimestamp || Globals.AdjudicateAccount != null || Globals.IsTestNet)
                     {
                         DateTime endTime = DateTime.UtcNow;
                         ConsoleWriterService.Output($"Block downloads finished on: {endTime.ToLocalTime()}");
