@@ -129,6 +129,7 @@ namespace ReserveBlockCore.Services
 
             if (Globals.IsTestNet == true)
             {
+                List<Peers> peerList = new List<Peers>();
                 //manually add testnet IPs
                 Peers nPeer = new Peers
                 {
@@ -138,16 +139,40 @@ namespace ReserveBlockCore.Services
                     FailCount = 0
                 };
 
+                Peers n2Peer = new Peers
+                {
+                    IsIncoming = false,
+                    IsOutgoing = true,
+                    PeerIP = "164.92.105.169",
+                    FailCount = 0
+                };
+
+                Peers n3Peer = new Peers
+                {
+                    IsIncoming = false,
+                    IsOutgoing = true,
+                    PeerIP = "137.184.158.154",
+                    FailCount = 0
+                };
+
+                peerList.Add(nPeer);
+                peerList.Add(n2Peer);
+                peerList.Add(n3Peer);
+
                 var dbPeers = Peers.GetAll();
-                var peerExist = dbPeers.FindOne(x => x.PeerIP == nPeer.PeerIP);
-                if (peerExist == null)
+
+                foreach(var peer in peerList)
                 {
-                    dbPeers.InsertSafe(nPeer);
-                }
-                else
-                {
-                    peerExist.FailCount = 0;
-                    dbPeers.UpdateSafe(peerExist);
+                    var peerExist = dbPeers.FindOne(x => x.PeerIP == peer.PeerIP);
+                    if (peerExist == null)
+                    {
+                        dbPeers.InsertSafe(peer);
+                    }
+                    else
+                    {
+                        peerExist.FailCount = 0;
+                        dbPeers.UpdateSafe(peerExist);
+                    }
                 }
             }
         }
