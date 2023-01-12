@@ -206,6 +206,11 @@ namespace ReserveBlockCore.P2P
             }
 
             var ipAddress = GetIP(Context);
+            if (request?.Length > 30)
+            {                
+                return new TaskAnswerResult { AnswerCode = 5 };
+            }
+
             if (request?.Length > 200)
             {
                 Peers.BanPeer(ipAddress, "request too big", "ReceiveTaskAnswerV3");
@@ -225,15 +230,19 @@ namespace ReserveBlockCore.P2P
                         return taskAnsRes;
                     }
 
-                    var (Answer, Signature) = (taskResult[0], taskResult[1]);
-                    var answerSize = Answer.Length + Signature.Length;                    
+                    var (Answer, Height) = (int.Parse(taskResult[0]), long.Parse(taskResult[1]));                                        
 
                     //This will result in users not getting their answers chosen if they are not in list.
                     var fortisPool = Globals.FortisPool.Values;
                     if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
                     {
-                        // fix to use the pass in height
-                        if (!Globals.TaskAnswerDictV3.TryAdd((Pool.Key2, Globals.LastBlock.Height + 1), (ipAddress, Pool.Key2, int.Parse(Answer))))
+                        if (Height != Globals.LastBlock.Height + 1 && Height != Globals.LastBlock.Height + 2)
+                        {
+                            taskAnsRes.AnswerCode = 6;
+                            return taskAnsRes;
+                        }
+                        
+                        if (!Globals.TaskAnswerDictV3.TryAdd((Pool.Key2, Height), (ipAddress, Pool.Key2, Answer)))
                         {
                             taskAnsRes.AnswerAccepted = true;
                             taskAnsRes.AnswerCode = 0;

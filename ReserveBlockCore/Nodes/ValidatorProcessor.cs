@@ -41,7 +41,7 @@ namespace ReserveBlockCore.Nodes
                 var verifySecret = data != null ? data : "Empty";
                 var taskWin = new TaskWinner();
                 var fortisPool = Globals.FortisPool.Values;
-                var answer = Globals.CurrentTaskNumberAnswerV3.Signature != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
+                var answer = Globals.CurrentTaskNumberAnswerV3.Answer != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
                     : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
                 
                 if ((DateTime.Now - node.LastWinningTaskRequestTime).Seconds < 4)
@@ -226,12 +226,11 @@ namespace ReserveBlockCore.Nodes
 
             if (Globals.CurrentTaskNumberAnswerV3.Height != blockHeight)
             {
-                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);                
-                var Signature = SignatureService.ValidatorSignature(blockHeight + ":" + num);
-                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, Signature, DateTime.Now);
+                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);                                
+                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, DateTime.Now);
             }
 
-            await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Signature);
+            await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Height);
         }
 
         public static async void RandomNumberTask_New(long blockHeight)

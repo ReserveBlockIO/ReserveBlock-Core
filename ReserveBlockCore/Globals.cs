@@ -149,7 +149,7 @@ namespace ReserveBlockCore
         public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
 
         public static (long, TaskNumberAnswerV2?, DateTime) CurrentTaskNumberAnswerV2;
-        public static (long Height, int Answer, string Signature, DateTime Time) CurrentTaskNumberAnswerV3;
+        public static (long Height, int Answer, DateTime Time) CurrentTaskNumberAnswerV3;
         public static TaskWinner CurrentWinner;
         public static string VerifySecret = "";        
 
