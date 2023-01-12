@@ -964,7 +964,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    await HubContext.Clients.Client(conId).SendAsync("GetAdjMessage", "dupIP", "0");
+                    await HubContext.Clients.Client(conId).SendAsync("GetAdjMessage", "dupIP", "0", new CancellationTokenSource(1000).Token);
                 }
                 catch { }
             }
@@ -973,7 +973,7 @@ namespace ReserveBlockCore.Services
             {
                 try
                 {
-                    await HubContext.Clients.Client(conId).SendAsync("GetAdjMessage", "dupAddr", "1");
+                    await HubContext.Clients.Client(conId).SendAsync("GetAdjMessage", "dupAddr", "1", new CancellationTokenSource(1000).Token);
                 }
                 catch { }
             }
@@ -1071,122 +1071,16 @@ namespace ReserveBlockCore.Services
                     var BadAddresses = ValidSubmissions.Select(x => x.RBXAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();
 
-                    try
+                    foreach (var ip in BadIPs)
                     {
-                        foreach (var ip in BadIPs)
-                        {
-                            if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
-                            {
-                                Globals.DuplicatesBroadcastedDict.TryGetValue(ip, out var result);
-                                {
-                                    //if no result will add them to dictionary and send response - Notify count set to 1/3
-                                    if (result == null)
-                                    {
-                                        await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
-                                        pool.Item2.Context?.Abort();
-                                        DuplicateValidators dupVal = new DuplicateValidators { 
-                                            Address = pool.Item2.Address,
-                                            IPAddress = pool.Item2.IpAddress,
-                                            LastNotified = DateTime.Now,
-                                            LastDetection = DateTime.Now,
-                                            NotifyCount = 1,
-                                            Reason = DuplicateValidators.ReasonFor.DuplicateIP,
-                                            StopNotify = false
-                                        };
-                                        Globals.DuplicatesBroadcastedDict[ip] = dupVal;
-                                    }
-                                    else
-                                    {
-                                        //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
-                                        if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
-                                        {
-                                            await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
-                                            pool.Item2.Context?.Abort();
-
-                                            result.LastNotified = DateTime.Now;
-                                            result.LastDetection = DateTime.Now;
-                                            result.NotifyCount += 1;
-                                            result.StopNotify = result.NotifyCount >= 3 ? true : false;
-
-                                            Globals.DuplicatesBroadcastedDict[ip] = result;
-                                        }
-                                        else
-                                        {
-                                            //Stop notify is true and we wil no longer alert for 12 hours.
-                                            if (result.StopNotify)
-                                            {
-                                                if (result.LastNotified < DateTime.Now.AddHours(-12))
-                                                {
-                                                    //if they've gone 2 hours without acting a duplicate we will remove them 12 hours later.
-                                                    if (result.LastDetection < DateTime.Now.AddHours(-2))
-                                                        Globals.DuplicatesBroadcastedDict.TryRemove(ip, out _);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        foreach (var address in BadAddresses)
-                        {
-                            if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
-                            {
-                                Globals.DuplicatesBroadcastedDict.TryGetValue(pool.Item2.IpAddress, out var result);
-                                {
-                                    //if no result will add them to dictionary and send response - Notify count set to 1/3
-                                    if (result == null)
-                                    {
-                                        await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 1).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
-                                        pool.Item2.Context?.Abort();
-                                        DuplicateValidators dupVal = new DuplicateValidators
-                                        {
-                                            Address = pool.Item2.Address,
-                                            IPAddress = pool.Item2.IpAddress,
-                                            LastNotified = DateTime.Now,
-                                            LastDetection = DateTime.Now,
-                                            NotifyCount = 1,
-                                            Reason = DuplicateValidators.ReasonFor.DuplicateAddress,
-                                            StopNotify = false
-                                        };
-                                        Globals.DuplicatesBroadcastedDict[pool.Item2.IpAddress] = dupVal;
-                                    }
-                                    else
-                                    {
-                                        //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
-                                        if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
-                                        {
-                                            await SendDuplicateMessage(pool.Item2.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
-                                            pool.Item2.Context?.Abort();
-
-                                            result.LastNotified = DateTime.Now;
-                                            result.LastDetection = DateTime.Now;
-                                            result.NotifyCount += 1;
-                                            result.StopNotify = result.NotifyCount >= 3 ? true : false;
-
-                                            Globals.DuplicatesBroadcastedDict[pool.Item2.IpAddress] = result;
-                                        }
-                                        else
-                                        {
-                                            //Stop notify is true and we wil no longer alert for 12 hours.
-                                            if (result.StopNotify)
-                                            {
-                                                if (result.LastNotified < DateTime.Now.AddHours(-12))
-                                                {
-                                                    //if they've gone 2 hours without acting a duplicate we will remove them 24 hours later.
-                                                    if(result.LastDetection < DateTime.Now.AddHours(-2))
-                                                        Globals.DuplicatesBroadcastedDict.TryRemove(pool.Item2.IpAddress, out _);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
+                            _ = HadBadValidator(pool.Item2, ip);
                     }
-                    catch (Exception ex)
+
+                    foreach (var address in BadAddresses)
                     {
-                        ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.FortisPoolAbortLoops");
+                        if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
+                            _ = HadBadValidator(pool.Item2, address);
                     }
 
                     ConsensusServer.UpdateState(isUsed: true);
@@ -1244,8 +1138,8 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
-                            _ = HubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", "")
-                                                                    .WaitAsync(new TimeSpan(0, 0, 0, 0, 3000));
+                            _ = HubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", "",
+                                new CancellationTokenSource(3000).Token);                                                               
                         }
                         catch (Exception ex)
                         {
@@ -1275,7 +1169,12 @@ namespace ReserveBlockCore.Services
 
                     if (SubmittedWinners.Length == 0 && HubContext?.Clients != null)
                     {
-                        await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", JsonConvert.SerializeObject(Globals.LastBlock));
+                        try
+                        {
+                            await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", JsonConvert.SerializeObject(Globals.LastBlock),
+                                new CancellationTokenSource(10000).Token);
+                        }
+                        catch { }
                         continue;
                     }
 
@@ -1339,6 +1238,64 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static async Task HadBadValidator(FortisPool pool, string key)
+        {            
+            try
+            {
+                Globals.DuplicatesBroadcastedDict.TryGetValue(key, out var result);
+
+                if (result == null)
+                {
+                    await SendDuplicateMessage(pool.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
+                    DuplicateValidators dupVal = new DuplicateValidators
+                    {
+                        Address = pool.Address,
+                        IPAddress = pool.IpAddress,
+                        LastNotified = DateTime.Now,
+                        LastDetection = DateTime.Now,
+                        NotifyCount = 1,
+                        Reason = DuplicateValidators.ReasonFor.DuplicateIP,
+                        StopNotify = false
+                    };
+                    Globals.DuplicatesBroadcastedDict[key] = dupVal;
+                }
+                else
+                {
+                    //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
+                    if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
+                    {
+                        await SendDuplicateMessage(pool.Context.ConnectionId, 0);
+                        result.LastNotified = DateTime.Now;
+                        result.LastDetection = DateTime.Now;
+                        result.NotifyCount += 1;
+                        result.StopNotify = result.NotifyCount >= 3 ? true : false;
+
+                        Globals.DuplicatesBroadcastedDict[key] = result;
+                    }
+                    else
+                    {
+                        //Stop notify is true and we wil no longer alert for 12 hours.
+                        if (result.StopNotify)
+                        {
+                            if (result.LastNotified < DateTime.Now.AddHours(-12))
+                            {
+                                //if they've gone 2 hours without acting a duplicate we will remove them 12 hours later.
+                                if (result.LastDetection < DateTime.Now.AddHours(-2))
+                                    Globals.DuplicatesBroadcastedDict.TryRemove(key, out _);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                pool.Context?.Abort();
+            }
+            catch { }
+        }
+
         public static async Task FinalizeWork(Block block)
         {
             try
@@ -1365,7 +1322,12 @@ namespace ReserveBlockCore.Services
                 }
 
                 if (HubContext?.Clients != null)
-                    await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
+                    try
+                    {
+                        await HubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data,    
+                            new CancellationTokenSource(10000).Token);
+                    }
+                    catch { }
                 Now = TimeUtil.GetMillisecondTime();
                 Console.WriteLine("Done sending - Height: " + block.Height.ToString() + " at " + Now);
 
@@ -1517,15 +1479,6 @@ namespace ReserveBlockCore.Services
             _fortisPoolTimer.Dispose();
             _blockStateSyncTimer.Dispose();
             _checkpointTimer.Dispose();
-        }
-
-        #endregion
-
-        #region Send Message
-
-        public async Task SendMessage(string message, string data)
-        {
-            await _hubContext.Clients.All.SendAsync("GetAdjMessage", message, data);
         }
 
         #endregion

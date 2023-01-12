@@ -26,7 +26,7 @@ namespace ReserveBlockCore.P2P
             string lastArea = "";
             string peerIP = "";
             var startTime = DateTime.UtcNow;
-            ConnectionHistory.ConnectionHistoryQueue conQueue = new ConnectionHistory.ConnectionHistoryQueue();
+            ConnectionHistory.ConnectionHistoryQueue conQueue = null;
             try
             {
                 peerIP = GetIP(Context);
@@ -36,16 +36,17 @@ namespace ReserveBlockCore.P2P
                     return;
                 }
 
+                conQueue = new ConnectionHistory.ConnectionHistoryQueue { IPAddress = peerIP };
                 if (Globals.FortisPool.TryGetFromKey1(peerIP, out var pool) && pool.Value.Context.ConnectionId != Context.ConnectionId && !pool.Value.Context.ConnectionAborted.IsCancellationRequested)
                 {
-                    await EndOnConnect(peerIP, "30", startTime, conQueue, "IP Address is already in use", "IP Address is already in use");
+                    _ = EndOnConnect(peerIP, "30", startTime, conQueue, "IP Address is already in use", "IP Address is already in use");
                     return;
                 }
 
                 var httpContext = Context.GetHttpContext();
                 if(httpContext == null)
-                {                    
-                    await EndOnConnect(peerIP, "1", startTime, conQueue, "httpcontext was null", "httpcontext was null");
+                {
+                    _ = EndOnConnect(peerIP, "1", startTime, conQueue, "httpcontext was null", "httpcontext was null");
                     return;
                 }
 
@@ -55,10 +56,12 @@ namespace ReserveBlockCore.P2P
                 var signature = httpContext.Request.Headers["signature"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
+                conQueue.Address = address;
+
                 var hasAddressPool = Globals.FortisPool.TryGetFromKey2(address, out var addressPool);
                 if (hasAddressPool && addressPool.Value.Context.ConnectionId != Context.ConnectionId && !addressPool.Value.Context.ConnectionAborted.IsCancellationRequested)
                 {
-                    await EndOnConnect(peerIP, "20", startTime, conQueue, "RBX Address is already in use", "RBX Address is already in use");
+                    _ = EndOnConnect(peerIP, "20", startTime, conQueue, "RBX Address is already in use", "RBX Address is already in use");
                     return;
                 }
 
@@ -72,16 +75,13 @@ namespace ReserveBlockCore.P2P
                         return;
                     }
                 }
-
-                conQueue.Address = address;
-                conQueue.IPAddress = peerIP;
-
+                                
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
                 var fortisPool = Globals.FortisPool.Values;                
                 if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(uName) || string.IsNullOrWhiteSpace(signature) || !walletVersionVerify) 
                 {
-                    await EndOnConnect(peerIP, "Z", startTime, conQueue,
+                    _ = EndOnConnect(peerIP, "Z", startTime, conQueue,
                         "Connection Attempted, but missing field(s). Address, Unique name, and Signature required. You are being disconnected.",
                         "Connected, but missing field(s). Address, Unique name, and Signature required: " + address);
                     return;
@@ -90,7 +90,7 @@ namespace ReserveBlockCore.P2P
                 var stateAddress = StateData.GetSpecificAccountStateTrei(address);
                 if(stateAddress == null)
                 {
-                    await EndOnConnect(peerIP, "X", startTime, conQueue,
+                    _ = EndOnConnect(peerIP, "X", startTime, conQueue,
                         "Connection Attempted, But failed to find the address in trie. You are being disconnected.",
                         "Connection Attempted, but missing field Address: " + address + " IP: " + peerIP);
                     return;                    
@@ -98,7 +98,7 @@ namespace ReserveBlockCore.P2P
 
                 if(stateAddress.Balance < 1000)
                 {
-                    await EndOnConnect(peerIP, "W", startTime, conQueue,
+                    _ = EndOnConnect(peerIP, "W", startTime, conQueue,
                         "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.",
                         "Connected, but you do not have the minimum balance of 1000 RBX: " + address);
                     return;
@@ -107,7 +107,7 @@ namespace ReserveBlockCore.P2P
                 var verifySig = SignatureService.VerifySignature(address, SignedMessage, signature);
                 if(!verifySig)
                 {
-                    await EndOnConnect(peerIP, "V", startTime, conQueue,
+                    _ = EndOnConnect(peerIP, "V", startTime, conQueue,
                         "Connected, but your address signature failed to verify. You are being disconnected.",
                         "Connected, but your address signature failed to verify with ADJ: " + address);
                     return;
@@ -128,16 +128,14 @@ namespace ReserveBlockCore.P2P
                     LogUtility.Log($"Last Area Reached : '{lastArea}'. IP: {peerIP} ", "Adj Connection");                
 
                 conQueue.ConnectionTime = (DateTime.UtcNow - startTime).Milliseconds;
-                Globals.ConnectionHistoryDict.TryAdd(conQueue.Address, conQueue);
+                Globals.ConnectionHistoryDict.TryAdd(conQueue.IPAddress, conQueue);
             }
             catch (Exception ex)
             {
                 Globals.FortisPool.TryRemoveFromKey1(peerIP, out _);
                 Context?.Abort();
                 ErrorLogUtility.LogError($"Unhandled exception has happend. Error : {ex.ToString()}", "P2PAdjServer.OnConnectedAsync()");
-            }
-
-            await base.OnConnectedAsync();
+            }            
         }
 
         public override async Task OnDisconnectedAsync(Exception? ex)
@@ -152,12 +150,12 @@ namespace ReserveBlockCore.P2P
 
         private async Task SendAdjMessageSingle(string message, string data)
         {
-            await Clients.Caller.SendAsync("GetAdjMessage", message, data);
+            await Clients.Caller.SendAsync("GetAdjMessage", message, data, new CancellationTokenSource(1000).Token);
         }
 
         private async Task SendAdjMessageAll(string message, string data)
         {
-            await Clients.All.SendAsync("GetAdjMessage", message, data);
+            await Clients.All.SendAsync("GetAdjMessage", message, data, new CancellationTokenSource(6000).Token);
         }
 
         private async Task EndOnConnect(string ipAddress, string lastArea, DateTime startTime, ConnectionHistoryQueue queue, 
@@ -172,7 +170,7 @@ namespace ReserveBlockCore.P2P
 
 
             queue.ConnectionTime = (DateTime.UtcNow - startTime).Milliseconds;
-            Globals.ConnectionHistoryDict.TryAdd(queue.Address, queue);
+            Globals.ConnectionHistoryDict.TryAdd(queue.IPAddress, queue);
             Context?.Abort();
         }
 

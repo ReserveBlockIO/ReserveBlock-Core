@@ -27,7 +27,7 @@ namespace ReserveBlockCore.P2P
 {    
     public class ConsensusClient : IAsyncDisposable, IDisposable
     {
-        public const int HeartBeatTimeout = 10000;
+        public const int HeartBeatTimeout = 6000;
         #region Hub Dispose
         public void Dispose()
         {
