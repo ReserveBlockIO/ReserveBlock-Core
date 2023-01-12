@@ -543,7 +543,7 @@ namespace ReserveBlockCore
                     foreach (var cq in connectionQueueList)
                     {
                         new ConnectionHistory().Process(cq.IPAddress, cq.Address, cq.ConnectionTime, cq.WasSuccess);
-                        Globals.ConnectionHistoryDict.TryRemove(cq.Address, out _);
+                        Globals.ConnectionHistoryDict.TryRemove(cq.IPAddress, out _);
                     }
 
                     var conList = await ConnectionHistory.Read();

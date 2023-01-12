@@ -102,6 +102,8 @@ namespace ReserveBlockCore.Models
         {
             try
             {
+                if (Globals.AdjudicateAccount != null)
+                    return await Connection.InvokeCoreAsync<T>(method, args, ctFunc());
                 var Source = new TaskCompletionSource<T>();
                 var InvokeFunc = async (CancellationToken ct) => {
                     try { return Connection != null ? (object)(await Connection.InvokeCoreAsync<T>(method, args, ct)) : (object)default(T); }
