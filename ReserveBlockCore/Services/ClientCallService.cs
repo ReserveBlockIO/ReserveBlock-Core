@@ -1074,13 +1074,13 @@ namespace ReserveBlockCore.Services
                     foreach (var ip in BadIPs)
                     {
                         if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
-                            _ = HadBadValidator(pool.Item2, ip);
+                            _ = HadBadValidator(pool.Item2, ip, 0);
                     }
 
                     foreach (var address in BadAddresses)
                     {
                         if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
-                            _ = HadBadValidator(pool.Item2, address);
+                            _ = HadBadValidator(pool.Item2, address, 1);
                     }
 
                     ConsensusServer.UpdateState(isUsed: true);
@@ -1238,7 +1238,7 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        public static async Task HadBadValidator(FortisPool pool, string key)
+        public static async Task HadBadValidator(FortisPool pool, string key, int type)
         {            
             try
             {
@@ -1246,7 +1246,7 @@ namespace ReserveBlockCore.Services
 
                 if (result == null)
                 {
-                    await SendDuplicateMessage(pool.Context.ConnectionId, 0).WaitAsync(new TimeSpan(0, 0, 0, 0, 700));
+                    await SendDuplicateMessage(pool.Context.ConnectionId, type);
                     DuplicateValidators dupVal = new DuplicateValidators
                     {
                         Address = pool.Address,
@@ -1254,7 +1254,7 @@ namespace ReserveBlockCore.Services
                         LastNotified = DateTime.Now,
                         LastDetection = DateTime.Now,
                         NotifyCount = 1,
-                        Reason = DuplicateValidators.ReasonFor.DuplicateIP,
+                        Reason = type == 0 ? DuplicateValidators.ReasonFor.DuplicateIP : DuplicateValidators.ReasonFor.DuplicateAddress,
                         StopNotify = false
                     };
                     Globals.DuplicatesBroadcastedDict[key] = dupVal;
@@ -1264,7 +1264,7 @@ namespace ReserveBlockCore.Services
                     //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
                     if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
                     {
-                        await SendDuplicateMessage(pool.Context.ConnectionId, 0);
+                        await SendDuplicateMessage(pool.Context.ConnectionId, type);
                         result.LastNotified = DateTime.Now;
                         result.LastDetection = DateTime.Now;
                         result.NotifyCount += 1;
