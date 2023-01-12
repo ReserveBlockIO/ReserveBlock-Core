@@ -177,8 +177,8 @@ namespace ReserveBlockCore.P2P
                         while(true)
                         {
                             var Now = TimeUtil.GetMillisecondTime();
-                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < HeartBeatTimeout && x.NodeHeight == Height &&
-                                (x.MethodCode == methodCode && !x.IsFinalized)).Any();                                                               
+                            var AnyNodesToWaitFor = Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < HeartBeatTimeout && ((x.NodeHeight + 1 == Height &&
+                                (x.MethodCode == methodCode && !x.IsFinalized)) || (methodCode == 0 && x.NodeHeight + 2 == Height))).Any();                                                               
                             
                             if (AnyNodesToWaitFor)
                             {
@@ -228,8 +228,8 @@ namespace ReserveBlockCore.P2P
         public static HashSet<string> HashAddressesToWaitFor(long height, int methodCode, int wait)
         {
             var Now = TimeUtil.GetMillisecondTime();
-            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait &&
-                (x.NodeHeight + 1 == height && (x.MethodCode == methodCode || (x.MethodCode == methodCode + 1 && !x.IsFinalized))))
+            return Globals.Nodes.Values.Where(x => Now - x.LastMethodCodeTime < wait && ((x.NodeHeight + 2 == height && methodCode == 0) || 
+                (x.NodeHeight + 1 == height && (x.MethodCode == methodCode || (x.MethodCode == methodCode + 1 && !x.IsFinalized)))))
                 .Select(x => x.Address).ToHashSet();
         }
 
