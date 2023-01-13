@@ -449,7 +449,7 @@ namespace ReserveBlockCore.Services
                     if (Globals.AdjudicateAccount != null)
                     {
                         var currentTime = DateTime.Now.AddMinutes(-15);
-                        var fortisPool = Globals.FortisPool.Values
+                        var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null)
                             .Select(x => new
                             {
                                 x.Context.ConnectionId,
@@ -461,8 +461,7 @@ namespace ReserveBlockCore.Services
                                 x.WalletVersion
                             }).ToList();
 
-                        var fortisPoolStr = "";
-                        fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
+                        var fortisPoolStr = JsonConvert.SerializeObject(fortisPool);
 
                         try
                         {
