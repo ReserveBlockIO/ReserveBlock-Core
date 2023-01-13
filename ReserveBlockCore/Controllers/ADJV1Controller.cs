@@ -153,7 +153,6 @@ namespace ReserveBlockCore.Controllers
 
             try
             {
-                var currentTime = DateTime.Now.AddMinutes(-15);
                 var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null).Select(x => new
                 {
                     x.Context.ConnectionId,

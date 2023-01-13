@@ -448,7 +448,6 @@ namespace ReserveBlockCore.Services
                 {
                     if (Globals.AdjudicateAccount != null)
                     {
-                        var currentTime = DateTime.Now.AddMinutes(-15);
                         var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null)
                             .Select(x => new
                             {
