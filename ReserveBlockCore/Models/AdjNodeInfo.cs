@@ -17,7 +17,7 @@ namespace ReserveBlockCore.Models
         public string IpAddress { get; set; }
         public bool LastWinningTaskError { get; set; }
 
-        public DateTime LastWinningTaskRequestTime { get; set; }
+        public long LastWinningTaskRequestTime { get; set; }
         public DateTime LastWinningTaskSentTime { get; set; }
         public long LastWinningTaskBlockHeight { get; set; }
         public long LastSentBlockHeight { get; set; }        

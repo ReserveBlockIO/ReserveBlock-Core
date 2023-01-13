@@ -67,7 +67,8 @@ namespace ReserveBlockCore.Utilities
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
             var fortisPoolText = "*Only for Adjudicators* Fortis Pool Count: " + Globals.FortisPool.Count.ToString();
             var valCountText = "*Only for Adjudicators* Validator Pool Count: " + valCount.ToString();
-            
+            var conCountText = $"Consenseus successes: {Globals.ConsensusSucceses} Consensus failures: {Globals.LastBlock.Height - Globals.ConsensusStartHeight - Globals.ConsensusSucceses + 1}";
+
             //val only info
             var lastWinningTaskErrorText = string.Join("\r\n", Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x =>
             $"ADJ: {x.Address} " + "*Only for Validators* Last Winning task Error?: " + x.LastWinningTaskError));
@@ -160,6 +161,8 @@ namespace ReserveBlockCore.Utilities
                 strBld.AppendLine(fortisPoolText);
                 strBld.AppendLine("---------------------------------------------------------------------");
                 strBld.AppendLine(valCountText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(conCountText);
                 strBld.AppendLine("---------------------------------------------------------------------");
             }
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))

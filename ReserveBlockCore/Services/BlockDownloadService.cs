@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ namespace ReserveBlockCore.Services
                 {
                     while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
                     {
-                        var coolDownTime = DateTime.Now;
+                        var coolDownTime = TimeUtil.GetTime();
                         var taskDict = new ConcurrentDictionary<long, (Task<Block> task, string ipAddress)>();
                         var heightToDownload = Globals.LastBlock.Height + 1;
 
@@ -72,7 +73,7 @@ namespace ReserveBlockCore.Services
                                 var DownloadBuffer = BlockDict.AsParallel().Sum(x => x.Value.block.Size);
                                 if (DownloadBuffer > MaxDownloadBuffer)
                                 {
-                                    if ((DateTime.Now - coolDownTime).Seconds > 30 && taskDict.Keys.Any())
+                                    if (TimeUtil.GetTime() - coolDownTime > 30 && taskDict.Keys.Any())
                                     {
                                         var staleHeight = taskDict.Keys.Min();
                                         var staleTask = taskDict[staleHeight];
@@ -81,7 +82,7 @@ namespace ReserveBlockCore.Services
                                         taskDict.TryRemove(staleHeight, out _);
                                         staleTask.task.Dispose();
                                         heightToDownload = Math.Min(heightToDownload, staleHeight);
-                                        coolDownTime = DateTime.Now;
+                                        coolDownTime = TimeUtil.GetTime();
                                     }
                                 }
                                 else

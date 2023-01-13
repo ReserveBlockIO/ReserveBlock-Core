@@ -54,10 +54,17 @@ namespace ReserveBlockCore.P2P
                 var address = httpContext.Request.Headers["address"].ToString();
                 var time = httpContext.Request.Headers["time"].ToString();
                 var signature = httpContext.Request.Headers["signature"].ToString();
-                                
-                if (TimeUtil.GetTime() - long.Parse(time) > 30)
+
+                var Now = TimeUtil.GetTime();
+                if (Now - long.Parse(time) > 30)
                 {
                     EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
+                    return;
+                }
+
+                if (!Globals.Signatures.TryAdd(signature, Now))
+                {
+                    EndOnConnect(peerIP, "Reused signature.", "Reused signature.");
                     return;
                 }
 
@@ -188,7 +195,7 @@ namespace ReserveBlockCore.P2P
 
         public string Message(long height, int methodCode, string[] addresses, string peerMessage)
         {
-            var now = DateTime.Now.ToString();
+            //var now = DateTime.Now.ToString();
             string Prefix = null;
             string ip = null;
             try

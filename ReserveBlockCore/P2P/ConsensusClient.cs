@@ -496,8 +496,7 @@ namespace ReserveBlockCore.P2P
         #endregion
 
         public static async Task<bool> GetBlock(long height, NodeInfo node)
-        {
-            var startTime = DateTime.Now;
+        {            
             long blockSize = 0;
             Block Block = null;
             try

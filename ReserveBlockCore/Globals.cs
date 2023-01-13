@@ -147,13 +147,16 @@ namespace ReserveBlockCore
         public static ConcurrentMultiDictionary<string, string, BeaconPool> BeaconPool = new ConcurrentMultiDictionary<string, string, BeaconPool>(); // IP address, Reference
         public static ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue> ConnectionHistoryDict = new ConcurrentDictionary<string, ConnectionHistory.ConnectionHistoryQueue>();
         public static ConcurrentBag<ConnectionHistory> ConnectionHistoryList = new ConcurrentBag<ConnectionHistory>();
+        public static ConcurrentDictionary<string, long> Signatures = new ConcurrentDictionary<string, long>();
 
         public static (long, TaskNumberAnswerV2?, DateTime) CurrentTaskNumberAnswerV2;
-        public static (long Height, int Answer, DateTime Time) CurrentTaskNumberAnswerV3;
+        public static (long Height, int Answer, long Time) CurrentTaskNumberAnswerV3;
         public static TaskWinner CurrentWinner;
         public static string VerifySecret = "";        
 
         public static ConcurrentDictionary<string, ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>> ConsensusDump = new ConcurrentDictionary<string, ConcurrentDictionary<string, (DateTime Time, string Request, string Response)>>();
+        public static long ConsensusStartHeight = -1;
+        public static long ConsensusSucceses = 0;
 
         public static ConcurrentDictionary<string, TaskWinner> TaskWinnerDictV2 = new ConcurrentDictionary<string, TaskWinner>(); // RBX address
         public static ConcurrentDictionary<(string RBXAddress, long Height), Block> TaskWinnerDictV3 = new ConcurrentDictionary<(string RBXAddress, long Height), Block>(); // RBX address

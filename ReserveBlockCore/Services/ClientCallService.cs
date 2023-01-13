@@ -1052,8 +1052,7 @@ namespace ReserveBlockCore.Services
 
                     ConsoleWriterService.Output("Submissions Consensus at height " + Height);
                     
-                    var ValidSubmissions = Submissions
-                        .AsParallel()
+                    var ValidSubmissions = Submissions                        
                         .Select(x => DeserializeSubmissions(x.Message))
                         .SelectMany(x => x)
                         .Select(x => (x.IPAddress, x.RBXAddress, x.Answer))
@@ -1210,7 +1209,10 @@ namespace ReserveBlockCore.Services
                     if (Globals.LastBlock.Height + 1 != Height || HashResult == null)
                         continue;
 
-                    ConsoleWriterService.Output("WinnerHashSignature Consensus at height " + Height);                    
+                    ConsoleWriterService.Output("WinnerHashSignature Consensus at height " + Height);
+                    if(Globals.ConsensusStartHeight == -1)
+                        Globals.ConsensusStartHeight = Height;
+                    Globals.ConsensusSucceses++;
 
                     var Hashes = HashResult.Select(x => {
                         var split = x.Message.Split(':');
@@ -1250,8 +1252,8 @@ namespace ReserveBlockCore.Services
                     {
                         Address = pool.Address,
                         IPAddress = pool.IpAddress,
-                        LastNotified = DateTime.Now,
-                        LastDetection = DateTime.Now,
+                        LastNotified = DateTime.UtcNow,
+                        LastDetection = DateTime.UtcNow,
                         NotifyCount = 1,
                         Reason = type == 0 ? DuplicateValidators.ReasonFor.DuplicateIP : DuplicateValidators.ReasonFor.DuplicateAddress,
                         StopNotify = false
@@ -1261,11 +1263,11 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     //If stop notify is false and we haven't sent a message in 30 minutes send another and add to count x/3
-                    if (!result.StopNotify && result.LastNotified < DateTime.Now.AddMinutes(-30))
+                    if (!result.StopNotify && result.LastNotified < DateTime.UtcNow.AddMinutes(-30))
                     {
                         await SendDuplicateMessage(pool.Context.ConnectionId, type);
-                        result.LastNotified = DateTime.Now;
-                        result.LastDetection = DateTime.Now;
+                        result.LastNotified = DateTime.UtcNow;
+                        result.LastDetection = DateTime.UtcNow;
                         result.NotifyCount += 1;
                         result.StopNotify = result.NotifyCount >= 3 ? true : false;
 
@@ -1276,10 +1278,10 @@ namespace ReserveBlockCore.Services
                         //Stop notify is true and we wil no longer alert for 12 hours.
                         if (result.StopNotify)
                         {
-                            if (result.LastNotified < DateTime.Now.AddHours(-12))
+                            if (result.LastNotified < DateTime.UtcNow.AddHours(-12))
                             {
                                 //if they've gone 2 hours without acting a duplicate we will remove them 12 hours later.
-                                if (result.LastDetection < DateTime.Now.AddHours(-2))
+                                if (result.LastDetection < DateTime.UtcNow.AddHours(-2))
                                     Globals.DuplicatesBroadcastedDict.TryRemove(key, out _);
                             }
                         }
