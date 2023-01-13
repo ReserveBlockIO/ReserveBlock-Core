@@ -31,7 +31,7 @@ namespace ReserveBlockCore.P2P
                     .WithAutomaticReconnect()
                     .Build();
 
-                    LogUtility.Log("Connecting to Beacon", "ConnectMother()");
+                    LogUtility.Log("Connecting to Mother", "ConnectMother()");
 
                     var ipAddress = GetPathUtility.IPFromURL(url);
                     hubMotherConnection.Reconnecting += (sender) =>
@@ -50,7 +50,7 @@ namespace ReserveBlockCore.P2P
 
                     hubMotherConnection.Closed += (sender) =>
                     {
-                        LogUtility.Log("Closed to MOther", "ConnectMother()");
+                        LogUtility.Log("Closed to Mother", "ConnectMother()");
                         ConsoleWriterService.Output("[" + DateTime.Now.ToString() + "] Connection to Mother has been closed.");
                         return Task.CompletedTask;
                     };
@@ -78,7 +78,7 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
-                ValidatorLogUtility.Log("Failed! Connecting to Adjudicator: Reason - " + ex.ToString(), "ConnectAdjudicator()");
+                LogUtility.Log("Failed! Connecting to Mother: Reason - " + ex.ToString(), "ConnectMother()");
             }
         }
 

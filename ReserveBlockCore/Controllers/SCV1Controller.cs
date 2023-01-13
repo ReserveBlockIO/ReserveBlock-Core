@@ -676,7 +676,7 @@ namespace ReserveBlockCore.Controllers
                         //This will eventually need to be a chosen parameter someone chooses.                         
                         if (!Globals.Locators.Any())
                         {
-                            output = "You do not have any beacons stored.";
+                            output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "You do not have any beacons stored." });
                             NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
                             return output;
                         }
@@ -737,7 +737,8 @@ namespace ReserveBlockCore.Controllers
                                 }
                                 else
                                 {
-                                    output = "Failed to add upload to Asset Queue. Please check logs for more details.";
+                                    
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Failed to add upload to Asset Queue. Please check logs for more details." });
                                     NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
                                      
                                 }
@@ -747,17 +748,16 @@ namespace ReserveBlockCore.Controllers
                             {
                                 NFTLogUtility.Log($"Beacon upload failed. Result was : {result}", "SCV1Controller.TransferNFT()");
                             }
-
                         }
                     }
                     else
                     {
-                        output = "Smart Contract Found, but has not been minted.";
+                        output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Smart Contract Found, but has not been minted." }); 
                     }
                 }
                 else
                 {
-                    output = "No Smart Contract Found Locally.";
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "No Smart Contract Found Locally." }); 
                 }
             }
             catch(Exception ex)
