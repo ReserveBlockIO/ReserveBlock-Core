@@ -54,6 +54,7 @@ namespace ReserveBlockCore.P2P
 
                 conQueue.Address = address;
                 var SignedMessage = address;
+                var Now = TimeUtil.GetTime();
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
                     SignedMessage = address + ":" + time;
@@ -62,6 +63,12 @@ namespace ReserveBlockCore.P2P
                         await EndOnConnect(peerIP, "20", startTime, conQueue, "Signature Bad time.", "Signature Bad time.");
                         return;
                     }
+                }
+
+                if(!Globals.Signatures.TryAdd(signature, Now))
+                {
+                    await EndOnConnect(peerIP, "40", startTime, conQueue, "Reused signature.", "Reused signature.");
+                    return;
                 }
                                 
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);

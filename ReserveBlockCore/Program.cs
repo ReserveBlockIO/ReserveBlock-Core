@@ -507,6 +507,10 @@ namespace ReserveBlockCore
 
                     if(!Globals.DuplicateAdjIP && !Globals.DuplicateAdjAddr)
                         dupMessageShown = false;
+
+                    var Now = TimeUtil.GetTime();
+                    foreach (var sig in Globals.Signatures.Where(x => Now - x.Value > 300))
+                        Globals.Signatures.TryRemove(sig.Key, out _);
                 }
                 catch { }
 

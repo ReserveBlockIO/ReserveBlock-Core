@@ -43,8 +43,8 @@ namespace ReserveBlockCore.Nodes
                 var fortisPool = Globals.FortisPool.Values;
                 var answer = Globals.CurrentTaskNumberAnswerV3.Answer != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
                     : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
-                
-                if ((DateTime.Now - node.LastWinningTaskRequestTime).Seconds < 4)
+                                
+                if (TimeUtil.GetTime() - node.LastWinningTaskRequestTime < 4)
                     return;
 
                 if (Globals.LastBlock.Height + 1 != Globals.CurrentWinner?.WinningBlock?.Height || verifySecret != Globals.CurrentWinner?.VerifySecret)
@@ -59,7 +59,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.Address = Globals.ValidatorAddress;
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = taskWin;
-                            node.LastWinningTaskRequestTime = DateTime.Now;
+                            node.LastWinningTaskRequestTime = TimeUtil.GetTime();
                             if (block.Height > Globals.BlockLock)
                                 await P2PClient.SendWinningTaskV3(node, blockString, block.Height);
                             else
@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Nodes
                 {
                     if (Globals.CurrentWinner?.WinningBlock.Height > Globals.BlockLock)
                     {
-                        node.LastWinningTaskRequestTime = DateTime.Now;
+                        node.LastWinningTaskRequestTime = TimeUtil.GetTime();
                         var blockString = JsonConvert.SerializeObject(Globals.CurrentWinner.WinningBlock);
                         await P2PClient.SendWinningTaskV3(node, blockString, Globals.CurrentWinner.WinningBlock.Height);
                     }
@@ -219,7 +219,7 @@ namespace ReserveBlockCore.Nodes
                 await BlockDownloadService.GetAllBlocks();
             }
 
-            if ((DateTime.Now - Globals.CurrentTaskNumberAnswerV3.Time).Seconds < 4)
+            if (TimeUtil.GetTime() - Globals.CurrentTaskNumberAnswerV3.Time < 4)
             {
                 return;
             }
@@ -227,7 +227,7 @@ namespace ReserveBlockCore.Nodes
             if (Globals.CurrentTaskNumberAnswerV3.Height != blockHeight)
             {
                 var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);                                
-                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, DateTime.Now);
+                Globals.CurrentTaskNumberAnswerV3 = (blockHeight, num, TimeUtil.GetTime());
             }
 
             await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Height);
