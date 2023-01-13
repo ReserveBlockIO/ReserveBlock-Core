@@ -1149,7 +1149,6 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetMasternodesSent()
         {
             string output = "";
-            var currentTime = DateTime.Now.AddMinutes(-15);
             var fortisPool = Globals.FortisPool.Values.Where(x => x.LastAnswerSendDate != null);
             output = JsonConvert.SerializeObject(fortisPool);
 

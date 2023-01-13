@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using System.Security.Principal;
+using System;
 
 namespace ReserveBlockCore.Services
 {
@@ -65,6 +66,7 @@ namespace ReserveBlockCore.Services
                 {
                     if (tx.TransactionType == TransactionType.NFT_MINT)
                     {
+                        NFTLogUtility.Log($"NFT TX Detected (Mint): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                         var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                         var scData = scDataArray[0];
 
@@ -79,6 +81,7 @@ namespace ReserveBlockCore.Services
                                     if (!string.IsNullOrWhiteSpace(scUID))
                                     {
                                         SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
+                                        NFTLogUtility.Log($"NFT Mint Completed: {scUID}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                     }
                                 }
                             }
@@ -87,6 +90,7 @@ namespace ReserveBlockCore.Services
 
                     if (tx.TransactionType == TransactionType.NFT_TX)
                     {
+                        NFTLogUtility.Log($"NFT TX Detected (TX): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                         var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                         var scData = scDataArray[0];
 
@@ -105,17 +109,25 @@ namespace ReserveBlockCore.Services
                                         var md5List = (string?)scData["MD5List"];
                                         var scUID = (string?)scData["ContractUID"];
 
+                                        NFTLogUtility.Log($"NFT Transfer: {scUID}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+
                                         var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
 
                                         if (sc != null)
                                         {
+                                            NFTLogUtility.Log($"NFT Transfer - SC has been generated.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                             if (localFromAddress == null)
                                             {
                                                 if (locators != "NA")
                                                 {
                                                     var assetList = await MD5Utility.GetAssetList(md5List);
                                                     var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
+                                                    NFTLogUtility.Log($"NFT Transfer - Asset Queue items created.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                     //await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, md5List);
+                                                }
+                                                else
+                                                {
+                                                    NFTLogUtility.Log($"NFT Transfer - No Locators in TX.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                 }
                                             }
                                         }
@@ -151,6 +163,7 @@ namespace ReserveBlockCore.Services
                                 case "Evolve()":
                                     if (!string.IsNullOrWhiteSpace(data))
                                     {
+                                        NFTLogUtility.Log($"NFT Evolve: {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                         var evolveTask = Task.Run(() => { EvolvingFeature.EvolveNFT(tx); });
                                         bool isCompletedSuccessfully = evolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                         if (!isCompletedSuccessfully)
@@ -162,6 +175,7 @@ namespace ReserveBlockCore.Services
                                 case "Devolve()":
                                     if (!string.IsNullOrWhiteSpace(data))
                                     {
+                                        NFTLogUtility.Log($"NFT Devolve: {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                         var devolveTask = Task.Run(() => { EvolvingFeature.DevolveNFT(tx); });
                                         bool isCompletedSuccessfully = devolveTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                         if (!isCompletedSuccessfully)
@@ -173,6 +187,7 @@ namespace ReserveBlockCore.Services
                                 case "ChangeEvolveStateSpecific()":
                                     if (!string.IsNullOrWhiteSpace(data))
                                     {
+                                        NFTLogUtility.Log($"NFT ChangeEvolveStateSpecific: {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                         var evoSpecificTask = Task.Run(() => { EvolvingFeature.EvolveToSpecificStateNFT(tx); });
                                         bool isCompletedSuccessfully = evoSpecificTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
                                         if (!isCompletedSuccessfully)
