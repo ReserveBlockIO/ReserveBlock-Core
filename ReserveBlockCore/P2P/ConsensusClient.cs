@@ -176,6 +176,16 @@ namespace ReserveBlockCore.P2P
                     var CurrentHashes = Hashes.ToArray();
                     var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();                    
                     var NumMatches = CurrentMatchAddresses.Length;
+
+                    if(NumMatches >= Majority && CurrentHashes.Length == CurrentMatchAddresses.Length)
+                    {
+                        foreach (var hash in CurrentHashes.Where(x => x.Value.Hash != MyHash))
+                            Hashes.TryRemove(hash.Key, out _);
+
+                        CurrentHashes = Hashes.ToArray();
+                        CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();
+                        NumMatches = CurrentMatchAddresses.Length;
+                    }
                     
                     var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
                     var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
