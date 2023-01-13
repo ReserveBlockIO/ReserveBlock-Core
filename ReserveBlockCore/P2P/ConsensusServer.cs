@@ -156,10 +156,11 @@ namespace ReserveBlockCore.P2P
             var HashKeys = ConsensusServer.Hashes.Where(x => x.Value.ContainsKey(node.Address)).Select(x => x.Key).ToHashSet();
 
             var state = GetState();
-            foreach (var key in MessageKeys.Where(x => x.MethodCode > node.MethodCode && state.MethodCode != x.MethodCode))
+            foreach (var key in MessageKeys.Where(x => x.MethodCode != node.MethodCode && state.MethodCode != x.MethodCode))
                 if (ConsensusServer.Messages.TryGetValue(key, out var message))
                     message.TryRemove(node.Address, out _);
-            foreach (var key in HashKeys.Where(x => x.MethodCode > node.MethodCode && state.MethodCode != x.MethodCode))
+            foreach (var key in HashKeys.Where(x => (node.IsFinalized && x.MethodCode != node.MethodCode) || 
+                (!node.IsFinalized && x.MethodCode + 1 == node.MethodCode)))
                 if (ConsensusServer.Hashes.TryGetValue(key, out var hash))
                     hash.TryRemove(node.Address, out _);
         }

@@ -160,8 +160,15 @@ namespace ReserveBlockCore.P2P
                 var MyHash = Ecdsa.sha256(string.Join("", FinalizedMessages.Select(x => Ecdsa.sha256(x.Value.Message))));
                 var Signature = SignatureService.AdjudicatorSignature(MyHash);
 
-                Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);                
-                
+                Hashes[Globals.AdjudicateAccount.Address] = (MyHash, Signature);
+
+                var HashKeysToKeepNext = ConsensusServer.Hashes.Where(x => x.Key.Height == Height && x.Key.MethodCode == methodCode)
+                    .Select(x => x.Key).ToHashSet();
+                foreach (var key in ConsensusServer.Hashes.Keys.Where(x => !HashKeysToKeepNext.Contains(x)))
+                {
+                    ConsensusServer.Hashes.TryRemove(key, out _);
+                }
+
                 var HashSource = new CancellationTokenSource();                
                 _ = HashRequests(methodCode, Peers, Globals.Signers.Keys.ToArray(), HashSource);
                                 
@@ -169,24 +176,12 @@ namespace ReserveBlockCore.P2P
                 while (Height == Globals.LastBlock.Height + 1)
                 {                    
                     var CurrentHashes = Hashes.ToArray();
-                    var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();
+                    var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();                    
                     var NumMatches = CurrentMatchAddresses.Length;
-                    if (NumMatches >= Majority)
-                    {
+                    
+                    if (NumMatches >= Majority && !hashAddressesToWaitFor.Any() && CurrentHashes.Length == CurrentMatchAddresses.Length)
+                    {                                                
                         HashSource.Cancel();
-                        while(true)
-                        {
-                            var Now = TimeUtil.GetMillisecondTime();
-                            hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                                                        
-                            if (Hashes.Where(x => x.Value.Hash != MyHash).Any() || hashAddressesToWaitFor.Any())
-                            {
-                                await Task.Delay(20);
-                                continue;
-                            }
-                            break;
-                        }                        
-                        LogUtility.LogQueue(Height + " " + methodCode + " " + NumMatches + " " +  CurrentHashes.Length + " " + TimeUtil.GetMillisecondTime() + "\r\n" +                            
-                            JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new {x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime})), "Good exit", "ConsensusExits.txt", false);
                         return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
                     }
 
