@@ -1008,7 +1008,7 @@ namespace ReserveBlockCore.Commands
 
             Console.WriteLine("******************************************************************************");
 
-            var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, 3000).ToArray();
+            var addressesToWaitFor = ConsensusClient.AddressesToWaitFor(Globals.LastBlock.Height + 1, conState.MethodCode, ConsensusClient.HeartBeatTimeout).ToArray();
 
             LogUtility.LogQueue(JsonConvert.SerializeObject(addressesToWaitFor), "", "cinfo.txt", true);
             Console.WriteLine("*****************************Addresses To Wait For*******************************");

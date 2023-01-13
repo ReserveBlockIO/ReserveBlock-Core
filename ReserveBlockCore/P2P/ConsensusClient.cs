@@ -171,23 +171,22 @@ namespace ReserveBlockCore.P2P
 
                 var HashSource = new CancellationTokenSource();                
                 _ = HashRequests(methodCode, Peers, Globals.Signers.Keys.ToArray(), HashSource);
-                                
-                var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                
+                
                 while (Height == Globals.LastBlock.Height + 1)
                 {                    
                     var CurrentHashes = Hashes.ToArray();
                     var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();                    
                     var NumMatches = CurrentMatchAddresses.Length;
                     
-                    if (NumMatches >= Majority && !hashAddressesToWaitFor.Any() && CurrentHashes.Length == CurrentMatchAddresses.Length)
-                    {                                                
+                    var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
+                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
+
+                    if (NumMatches >= Majority && RemainingAddressCount == 0 && CurrentHashes.Length == CurrentMatchAddresses.Length)
+                    {
                         HashSource.Cancel();
                         return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
                     }
 
-                    hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
-                    var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
-                    
                     if (NumMatches + RemainingAddressCount < Majority)
                     {
                         HashSource.Cancel();
