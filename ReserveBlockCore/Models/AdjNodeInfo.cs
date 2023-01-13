@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Options;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -82,7 +83,7 @@ namespace ReserveBlockCore.Models
         public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc)
         {
             try
-            {                
+            {  
                 var Source = new TaskCompletionSource<T>();
                 var InvokeFunc = async (CancellationToken ct) => {
                     try { return Connection != null ? (object)(await Connection.InvokeCoreAsync<T>(method, args, ct)) : (object)default(T); }

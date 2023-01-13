@@ -196,8 +196,6 @@ namespace ReserveBlockCore.Services
                         signerDB.InsertSafe(signer);                    
                 }
                 
-
-
                 var Accounts = AccountData.GetAccounts().FindAll().ToArray();
                 Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
                 if (Globals.AdjudicateAccount != null)
