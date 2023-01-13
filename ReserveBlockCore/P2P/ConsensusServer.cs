@@ -54,17 +54,6 @@ namespace ReserveBlockCore.P2P
                 var address = httpContext.Request.Headers["address"].ToString();
                 var time = httpContext.Request.Headers["time"].ToString();
                 var signature = httpContext.Request.Headers["signature"].ToString();
-
-                if(!AdjPool.TryAdd(peerIP, new AdjPool { Address = address, Context = Context }))
-                {
-                    var Pool = AdjPool[peerIP];
-                    if (Pool?.Context.ConnectionId != Context.ConnectionId && !Pool.Context.ConnectionAborted.IsCancellationRequested)
-                    {
-                        Context?.Abort();
-                        return;
-                    }
-                    Pool.Context = Context;
-                }
                                 
                 if (TimeUtil.GetTime() - long.Parse(time) > 30)
                 {
@@ -88,7 +77,17 @@ namespace ReserveBlockCore.P2P
                         "Connected, but your address signature failed to verify. You are being disconnected.",
                         "Connected, but your address signature failed to verify with Consensus: " + address);
                     return;
-                }                
+                }
+
+                if (!AdjPool.TryAdd(peerIP, new AdjPool { Address = address, Context = Context }))
+                {
+                    var Pool = AdjPool[peerIP];
+                    if (Pool?.Context.ConnectionId != Context.ConnectionId)
+                    {
+                        Pool.Context?.Abort();                        
+                    }
+                    Pool.Context = Context;
+                }
             }
             catch (Exception ex)
             {                
