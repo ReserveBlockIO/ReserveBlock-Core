@@ -177,7 +177,7 @@ namespace ReserveBlockCore.P2P
                     var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();                    
                     var NumMatches = CurrentMatchAddresses.Length;
 
-                    if(NumMatches >= Majority && CurrentHashes.Length == CurrentMatchAddresses.Length)
+                    if(NumMatches >= Majority && CurrentHashes.Length != CurrentMatchAddresses.Length)
                     {
                         foreach (var hash in CurrentHashes.Where(x => x.Value.Hash != MyHash))
                             Hashes.TryRemove(hash.Key, out _);
