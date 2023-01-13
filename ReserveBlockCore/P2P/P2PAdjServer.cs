@@ -37,11 +37,7 @@ namespace ReserveBlockCore.P2P
                 }
 
                 conQueue = new ConnectionHistory.ConnectionHistoryQueue { IPAddress = peerIP };
-                if (Globals.FortisPool.TryGetFromKey1(peerIP, out var pool) && pool.Value.Context.ConnectionId != Context.ConnectionId && !pool.Value.Context.ConnectionAborted.IsCancellationRequested)
-                {
-                    _ = EndOnConnect(peerIP, "30", startTime, conQueue, "IP Address is already in use", "IP Address is already in use");
-                    return;
-                }
+
 
                 var httpContext = Context.GetHttpContext();
                 if(httpContext == null)
@@ -57,14 +53,6 @@ namespace ReserveBlockCore.P2P
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
 
                 conQueue.Address = address;
-
-                var hasAddressPool = Globals.FortisPool.TryGetFromKey2(address, out var addressPool);
-                if (hasAddressPool && addressPool.Value.Context.ConnectionId != Context.ConnectionId && !addressPool.Value.Context.ConnectionAborted.IsCancellationRequested)
-                {
-                    _ = EndOnConnect(peerIP, "20", startTime, conQueue, "RBX Address is already in use", "RBX Address is already in use");
-                    return;
-                }
-
                 var SignedMessage = address;
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
@@ -176,6 +164,15 @@ namespace ReserveBlockCore.P2P
 
         private static void UpdateFortisPool(FortisPool pool)
         {
+            var hasIpPool = Globals.FortisPool.TryGetFromKey1(pool.IpAddress, out var ipPool);
+            var hasAddressPool = Globals.FortisPool.TryGetFromKey2(pool.Address, out var addressPool);
+
+            if (hasIpPool && ipPool.Value.Context.ConnectionId != pool.Context.ConnectionId)
+                ipPool.Value.Context.Abort();
+
+            if (hasAddressPool && addressPool.Value.Context.ConnectionId != pool.Context.ConnectionId)
+                addressPool.Value.Context.Abort();
+
             Globals.FortisPool[(pool.IpAddress, pool.Address)] = pool;
         }
 

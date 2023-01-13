@@ -30,12 +30,6 @@ namespace ReserveBlockCore.P2P
                 return;
             }
 
-            if (Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId &&
-                !context.ConnectionAborted.IsCancellationRequested)
-            {                
-                Context.Abort();
-                return;
-            }
 
             Globals.P2PPeerDict[peerIP] = Context;
 
@@ -53,6 +47,11 @@ namespace ReserveBlockCore.P2P
                 };
 
                 peers.InsertSafe(nPeer);
+            }
+
+            if (Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+            {
+                context.Abort();
             }
 
             await Clients.Caller.SendAsync("GetMessage", "IP", peerIP);
