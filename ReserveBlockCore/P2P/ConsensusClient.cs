@@ -27,7 +27,7 @@ namespace ReserveBlockCore.P2P
 {    
     public class ConsensusClient : IAsyncDisposable, IDisposable
     {
-        public const int HeartBeatTimeout = 10000;
+        public const int HeartBeatTimeout = 6000;
         #region Hub Dispose
         public void Dispose()
         {
@@ -122,10 +122,9 @@ namespace ReserveBlockCore.P2P
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                    
                     while (Height == Globals.LastBlock.Height + 1)
                     {
-                        var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;                        
-                        if ((runType != RunType.Initial && Messages.Count + RemainingAddressCount < Majority) || 
-                            (RemainingAddressCount == 0 && Messages.Count >= Majority))
-                            break;
+                        var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;
+                        if (RemainingAddressCount == 0 && (runType != RunType.Initial || Messages.Count >= Majority))
+                            break;                        
                         
                         await Task.Delay(20);
                         WaitForAddresses = AddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
@@ -181,19 +180,20 @@ namespace ReserveBlockCore.P2P
                     var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
                     var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
 
-                    if (NumMatches >= Majority && RemainingAddressCount == 0 && CurrentHashes.Length == CurrentMatchAddresses.Length)
+                    if(RemainingAddressCount == 0)
                     {
                         HashSource.Cancel();
-                        return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
-                    }
-
-                    if (NumMatches + RemainingAddressCount < Majority)
-                    {
-                        HashSource.Cancel();
-                        LogUtility.LogQueue(Height + " " + methodCode + " " + TimeUtil.GetMillisecondTime() + "\r\n" +
-                            JsonConvert.SerializeObject(Hashes.GroupBy(x => x.Value.Hash).Select(x => new { x.Key, Count = x.Count()})) + "\r\n" +
-                            JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "Hash exit", "ConsensusExits.txt", true);
-                        return null; // not enough peers agree to reach consensus with this node
+                        if (NumMatches >= Majority && CurrentHashes.Length == CurrentMatchAddresses.Length)
+                        {                            
+                            return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
+                        }
+                        else
+                        {                            
+                            LogUtility.LogQueue(Height + " " + methodCode + " " + TimeUtil.GetMillisecondTime() + "\r\n" +
+                                JsonConvert.SerializeObject(Hashes.GroupBy(x => x.Value.Hash).Select(x => new { x.Key, Count = x.Count() })) + "\r\n" +
+                                JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "Hash exit", "ConsensusExits.txt", true);
+                            return null; // not enough peers agree to reach consensus with this node
+                        }
                     }
                     
                     await Task.Delay(20);                    

@@ -37,13 +37,13 @@ namespace ReserveBlockCore.P2P
             string peerIP = null;
             try
             {
-                peerIP = GetIP(Context);                
+                peerIP = GetIP(Context);
                 if(!Globals.Nodes.ContainsKey(peerIP))
                 {
                     EndOnConnect(peerIP, peerIP + " attempted to connect as adjudicator", peerIP + " attempted to connect as adjudicator");
                     return;
                 }
-                                
+
                 var httpContext = Context.GetHttpContext();
                 if (httpContext == null)
                 {
@@ -55,7 +55,18 @@ namespace ReserveBlockCore.P2P
                 var time = httpContext.Request.Headers["time"].ToString();
                 var signature = httpContext.Request.Headers["signature"].ToString();
 
-                if (TimeUtil.GetTime() - long.Parse(time) > 30000000)
+                if(!AdjPool.TryAdd(peerIP, new AdjPool { Address = address, Context = Context }))
+                {
+                    var Pool = AdjPool[peerIP];
+                    if (Pool?.Context.ConnectionId != Context.ConnectionId && !Pool.Context.ConnectionAborted.IsCancellationRequested)
+                    {
+                        Context?.Abort();
+                        return;
+                    }
+                    Pool.Context = Context;
+                }
+                                
+                if (TimeUtil.GetTime() - long.Parse(time) > 30)
                 {
                     EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
                     return;
@@ -77,21 +88,7 @@ namespace ReserveBlockCore.P2P
                         "Connected, but your address signature failed to verify. You are being disconnected.",
                         "Connected, but your address signature failed to verify with Consensus: " + address);
                     return;
-                }
-
-                if(!AdjPool.TryGetValue(peerIP, out var Pool))
-                {
-                    Pool = new AdjPool
-                    {
-                        Address = address,
-                    };
-                    AdjPool[peerIP] = Pool;
-                }
-
-                if (Pool.Context?.ConnectionId != Context.ConnectionId)                
-                    Pool.Context?.Abort();              
-                
-                Pool.Context = Context;
+                }                
             }
             catch (Exception ex)
             {                
