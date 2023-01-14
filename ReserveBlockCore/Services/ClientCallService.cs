@@ -1018,8 +1018,8 @@ namespace ReserveBlockCore.Services
                     
                     if(PreviousHeight != Height)
                     {                                               
-                        PreviousHeight = Height;                        
-                        await BlockDelay;
+                        PreviousHeight = Height;
+                        await Task.WhenAll(BlockDelay, Task.Delay(3500));
                         var CurrentTime = TimeUtil.GetMillisecondTime();
                         var DelayTimeCorrection = 25000 * (Height - 16L) - (CurrentTime - 1671726925680L);                        
                         var DelayTime = Math.Min(Math.Max(25000 + DelayTimeCorrection, 20000), 30000);
