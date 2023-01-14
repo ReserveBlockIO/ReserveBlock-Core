@@ -514,7 +514,7 @@ namespace ReserveBlockCore.P2P
             {
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);
                 if (Lock.ConnectionCount > 20)
-                    Peers.BanPeer(ipAddress, "Connection count exceeded limit", "P2PBeaconServer.SignalRQueue()");
+                    BanService.BanPeer(ipAddress, "Connection count exceeded limit", "P2PBeaconServer.SignalRQueue()");
 
                 if (Lock.BufferCost + sizeCost > 5000000)
                 {

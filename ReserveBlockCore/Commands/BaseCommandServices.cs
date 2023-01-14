@@ -491,44 +491,17 @@ namespace ReserveBlockCore.Commands
                     bool ValidateIP = IPAddress.TryParse(peer, out ip);
                     if (ValidateIP)
                     {
-                        Globals.BannedIPs[peer] = true;
-                        var peers = Peers.GetAll();
-                        var peerExist = peers.Exists(x => x.PeerIP == peer);
-                        if (!peerExist)
-                        {
-                            Peers nPeer = new Peers
-                            {
-                                IsIncoming = false,
-                                IsOutgoing = true,
-                                PeerIP = peer,
-                                FailCount = 0,
-                                IsBanned = true
-                            };
+                        BanService.BanPeer(peer, "Manual Ban", "BaseCommandService.BanPeer()");
 
-                            peers.InsertSafe(nPeer);
-
-                            Console.WriteLine("Success! Peer has been Banned.");
-                            Console.WriteLine("Returning you to main menu...");
-                            Thread.Sleep(4000);
-                            StartupService.MainMenu();
-
-                        }
-                        else
-                        {
-                            var peerRec = peers.FindOne(x => x.PeerIP == peer);
-                            peerRec.IsBanned = true;
-                            peers.UpdateSafe(peerRec);
-
-                            Console.WriteLine("Success! Peer has been Banned.");
-                            Console.WriteLine("Returning you to main menu...");
-                            Thread.Sleep(4000);
-                            StartupService.MainMenu();
-                        }
+                        Console.WriteLine("Success! Peer has been Banned.");
+                        Console.WriteLine("Returning you to main menu...");
+                        Thread.Sleep(4000);
+                        StartupService.MainMenu();
                     }
                     else
                     {
                         Console.WriteLine("Failed to process. Please input a valid IP...");
-                        Console.WriteLine("Returning you to main menu...");
+                        Console.WriteLine("Returning you to main menu in 4 seconds...");
                         Thread.Sleep(4000);
                         StartupService.MainMenu();
                     }
@@ -553,40 +526,11 @@ namespace ReserveBlockCore.Commands
                     bool ValidateIP = IPAddress.TryParse(peer, out ip);
                     if (ValidateIP)
                     {
-                        Globals.BannedIPs.TryRemove(peer, out _);
-                        Globals.MessageLocks.TryRemove(peer, out _);
-                        var peers = Peers.GetAll();
-                        var peerExist = peers.Exists(x => x.PeerIP == peer);
-                        if (!peerExist)
-                        {
-                            Peers nPeer = new Peers
-                            {
-                                IsIncoming = false,
-                                IsOutgoing = true,
-                                PeerIP = peer,
-                                FailCount = 0,
-                                IsBanned = false
-                            };
-
-                            peers.InsertSafe(nPeer);
-
-                            Console.WriteLine("Success! Peer has been unbanned.");
-                            Console.WriteLine("Returning you to main menu...");
-                            Thread.Sleep(4000);
-                            StartupService.MainMenu();
-
-                        }
-                        else
-                        {
-                            var peerRec = peers.FindOne(x => x.PeerIP == peer);
-                            peerRec.IsBanned = false;
-                            peers.UpdateSafe(peerRec);
-
-                            Console.WriteLine("Success! Peer has been unbanned.");
-                            Console.WriteLine("Returning you to main menu...");
-                            Thread.Sleep(4000);
-                            StartupService.MainMenu();
-                        }
+                        BanService.UnbanPeer(peer);
+                        Console.WriteLine("Success! Peer has been unbanned.");
+                        Console.WriteLine("Returning you to main menu...");
+                        Thread.Sleep(4000);
+                        StartupService.MainMenu();
                     }
                     else
                     {

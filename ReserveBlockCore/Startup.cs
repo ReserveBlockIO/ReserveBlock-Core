@@ -29,6 +29,12 @@ namespace ReserveBlockCore
         {
             services.AddControllers();
 
+            //services.AddApiVersioning(options =>
+            //{
+            //    options.ReportApiVersions = true;
+            //    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+            //});
+
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ReserveBlock CLI API", Version = "v1" });
                 c.DocumentFilter<SwaggerDocumentFilter<Account>>();
@@ -79,6 +85,7 @@ namespace ReserveBlockCore
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "ReserveBlock API v1");
                 c.DisplayRequestDuration();
             });
+
 
             app.Use((context, func) =>
             {

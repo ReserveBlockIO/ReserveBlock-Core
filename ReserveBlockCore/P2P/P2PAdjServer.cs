@@ -217,7 +217,7 @@ namespace ReserveBlockCore.P2P
 
             if (request?.Length > 200)
             {
-                Peers.BanPeer(ipAddress, "request too big", "ReceiveTaskAnswerV3");
+                BanService.BanPeer(ipAddress, "request too big", "ReceiveTaskAnswerV3");
                 return new TaskAnswerResult { AnswerCode = 5 };
             }
 
@@ -350,7 +350,7 @@ namespace ReserveBlockCore.P2P
                 var ipAddress = GetIP(Context);
                 if (blockString.Length > 1048576 || !Globals.FortisPool.TryGetFromKey1(ipAddress, out var Pool))
                 {
-                    Peers.BanPeer(ipAddress, "block size too big", "ReceiveWinningBlockV3");
+                    BanService.BanPeer(ipAddress, "block size too big", "ReceiveWinningBlockV3");
                     return false;
                 }
 
@@ -358,7 +358,7 @@ namespace ReserveBlockCore.P2P
                 var RBXAddress = Pool.Key2;
                 if (!Globals.TaskSelectedNumbersV3.ContainsKey((RBXAddress, block.Height)))
                 {
-                    Peers.BanPeer(ipAddress, "unselected block was submitted", "ReceiveWinningBlockV3");
+                    BanService.BanPeer(ipAddress, "unselected block was submitted", "ReceiveWinningBlockV3");
                     return false;
                 }
 

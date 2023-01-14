@@ -245,6 +245,8 @@ namespace ReserveBlockCore.Beacon
                     ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.ToString()}", "BeaconServer.ProcessSocketRequest()");
                     try
                     {
+                        ns.Flush();
+                        ns.Close();
                         File.Delete(@"" + SaveTo + fileName);
                         break;
                     }
