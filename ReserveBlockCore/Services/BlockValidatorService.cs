@@ -67,7 +67,7 @@ namespace ReserveBlockCore.Services
                         {
                             if (Globals.AdjudicateAccount != null)
                                 continue;
-                            Peers.BanPeer(ipAddress, ipAddress + " at height " + height, "ValidateBlocks");
+                            BanService.BanPeer(ipAddress, ipAddress + " at height " + height, "BlockValidatorService.ValidateBlocks()");
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
                             if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
                                 await node.Connection.DisposeAsync();

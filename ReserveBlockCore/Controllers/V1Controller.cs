@@ -1514,6 +1514,19 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Bans a Peer IP
+        /// </summary>
+        /// <param name="ipAddress"></param>
+        /// <returns></returns>
+        [HttpGet("BanPeer/{**ipAddress}")]
+        public async Task<string> BanPeer(string ipAddress)
+        {
+            BanService.BanPeer(ipAddress, "Banned from API", "V1Controller.BanPeer()");
+            var result = $"Peer({ipAddress}) Banned!";
+            return result;
+        }
+
+        /// <summary>
         /// Unbans a Peer IP
         /// </summary>
         /// <param name="ipAddress"></param>
@@ -1521,19 +1534,21 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("UnbanPeer/{**ipAddress}")]
         public async Task<string> UnbanPeer(string ipAddress)
         {
-            var result = await Peers.UnbanPeer(ipAddress);
+            BanService.UnbanPeer(ipAddress);
+            var result = $"Peer({ipAddress}) Unbanned!";
 
             return result;
         }
 
         /// <summary>
-        /// Unbans all peers
+        /// Unbans all peers.
         /// </summary>
+        /// <param name="unbanPerma"></param>
         /// <returns></returns>
-        [HttpGet("UnbanAllPeers")]
-        public async Task<string> UnbanAllPeers()
+        [HttpGet("UnbanAllPeers/{unbanPerma?}")]
+        public async Task<string> UnbanAllPeers(bool unbanPerma = false)
         {
-            var result = await Peers.UnbanAllPeers();
+            var result = await Peers.UnbanAllPeers(unbanPerma);
 
             return result.ToString();
         }

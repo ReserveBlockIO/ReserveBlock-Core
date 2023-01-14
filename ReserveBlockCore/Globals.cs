@@ -54,7 +54,7 @@ namespace ReserveBlockCore
         public static int Port = 3338;
         public static int APIPort = 7292;
         public static int MajorVer = 2;
-        public static int MinorVer = 1; //change this to 1 for main release
+        public static int MinorVer = 1; 
         public static int BuildVer = 0;
 
         public static string Platform = "";
@@ -128,7 +128,7 @@ namespace ReserveBlockCore
 
         public const int MaxPeers = 8;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
-        public static ConcurrentDictionary<string, bool> BannedIPs;        
+        public static ConcurrentDictionary<string, Peers> BannedIPs;        
 
         #endregion
 

@@ -60,8 +60,8 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("Initializing Reserve Block Database...");
             DbContext.Initialize();
             var peerDb = Peers.GetAll();
-            Globals.BannedIPs = new ConcurrentDictionary<string, bool>(
-                peerDb.Find(x => x.IsBanned).ToArray().ToDictionary(x => x.PeerIP, x => true));
+            Globals.BannedIPs = new ConcurrentDictionary<string, Peers>(
+                peerDb.Find(x => x.IsBanned || x.IsPermaBanned).ToArray().ToDictionary(x => x.PeerIP, x => x));
             var localBlockTime = BlockLocalTime.GetBlockLocalTimes();
             localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
         }

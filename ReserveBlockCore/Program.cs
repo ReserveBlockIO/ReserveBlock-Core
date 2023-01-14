@@ -309,6 +309,7 @@ namespace ReserveBlockCore
 
             _ = StartupService.ConnectToAdjudicators();
             _ = StartupService.ConnectoToBeacon();
+            _ = BanService.PeerBanUnbanService();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
@@ -324,10 +325,8 @@ namespace ReserveBlockCore
 
             await Task.WhenAll(tasks);
 
-            LogUtility.Log("Line Reached. Should not be reached Program.cs Line 251", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
+            LogUtility.Log("Line Reached. Should not be reached Program.cs", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
 
-            //await Task.WhenAny(builder2.RunConsoleAsync(), commandLoopTask2);
-            //await Task.WhenAny(builder.RunConsoleAsync(), commandLoopTask);
         }
 
         #endregion

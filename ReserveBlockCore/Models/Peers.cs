@@ -19,22 +19,27 @@ namespace ReserveBlockCore.Models
         public bool IsOutgoing { get; set; }
         public int FailCount { get; set; }
         public bool IsBanned { get; set; }
+        public bool IsPermaBanned { get; set; }
+        public int BanCount { get; set; }
+        public DateTime? InitialBanDate { get; set; }
+        public DateTime? LastBanDate { get; set; }
+        public DateTime? NextUnbanDate { get; set; }
+        public List<string>? BannedFromAreasList { get; set; }
+        public string? LastBannedFromArea { get; set; }
         public static List<Peers> PeerList(bool isBanned = false)
         {
-            
             var peerList = GetAll();
-            if(peerList.Count() == 0)
+            if(peerList != null && !isBanned)
             {
-                return peerList.FindAll().ToList();
+                return peerList.Query().Where(x => !x.IsBanned && !x.IsPermaBanned).ToList();
             }
             else
             {
                 return peerList.FindAll().ToList();
             }
-
         }
 
-        public static LiteDB.ILiteCollection<Peers> GetAll()
+        public static LiteDB.ILiteCollection<Peers>? GetAll()
         {
             try
             {
@@ -49,13 +54,32 @@ namespace ReserveBlockCore.Models
             
         }
 
+        public static Peers? GetPeer(string ip)
+        {
+            var peers = GetAll();
+            if(peers != null)
+            {
+                var peer = peers.Query().Where(x => x.PeerIP == ip).FirstOrDefault();
+                if(peer != null)
+                {
+                    return peer;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
         public static int BannedPeers()
         {
             int banned = 0;
 
             var peers = GetAll();
 
-            var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
+            var bannedPeers = peers.Find(x => x.IsBanned || x.IsPermaBanned).ToList();
 
             banned = bannedPeers.Count();
 
@@ -66,21 +90,24 @@ namespace ReserveBlockCore.Models
         {
             var peers = GetAll();
 
-            var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
+            var bannedPeers = peers.Find(x => x.IsBanned || x.IsPermaBanned).ToList();
 
             return bannedPeers;
         }
 
-        public static async Task<int> UnbanAllPeers()
+        public static async Task<int> UnbanAllPeers(bool unbanPerma = false)
         {
             Globals.BannedIPs.Clear();
             Globals.MessageLocks.Clear();
             var peers = GetAll();
-            var bannedPeers = peers.Find(x => x.IsBanned == true).ToList();
+            var bannedPeers = peers.Find(x => x.IsBanned && !x.IsPermaBanned).ToList();
+            if(unbanPerma)
+                bannedPeers = peers.Query().Where(x => x.IsBanned && x.IsPermaBanned).ToList();
             var count = 0;
             foreach(var peer in bannedPeers)
             {
-                peer.IsBanned = false;                
+                peer.IsBanned = false;
+                peer.IsPermaBanned = unbanPerma ? false : peer.IsPermaBanned;
                 peers.UpdateSafe(peer);
                 count += 1;
             }
@@ -88,88 +115,6 @@ namespace ReserveBlockCore.Models
             return count;
         }
 
-        public static async Task<string> UnbanPeer(string ipAddress)
-        {
-            try
-            {
-                Globals.BannedIPs.TryRemove(ipAddress, out _);
-                Globals.MessageLocks.TryRemove(ipAddress, out _);
-                
-                var peerDb = Peers.GetAll();
-                var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
-                if (peer != null)
-                {
-                    peer.IsBanned = false;
-                    peerDb.UpdateSafe(peer);
-
-                    return "Peer has been unbanned";
-                }
-
-                return "Peer not found";
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "Peers.UnbanPeer()");
-            }
-
-            return "Peer not found";
-        }
-
-        public static void BanPeer(string ipAddress, string message, string location)
-        {
-            if (Globals.AdjudicateLock == null)
-            {
-                if (Globals.AdjNodes.ContainsKey(ipAddress))
-                    return;
-            }
-            else
-            {
-                if (Globals.Nodes.ContainsKey(ipAddress))
-                    return;
-            }
-
-            Globals.BannedIPs[ipAddress] = true;
-            var peerDb = Peers.GetAll();
-            var peer = peerDb.FindOne(x => x.PeerIP == ipAddress);
-            BanLogUtility.Log(message, location);
-            if (peer != null)
-            {
-                peer.IsBanned = true;
-                peerDb.UpdateSafe(peer);
-            }
-            else
-                peerDb.InsertSafe(new Peers { PeerIP = ipAddress, IsBanned = true });
-
-            if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var pool))
-                pool.Value.Context?.Abort();
-
-            if (Globals.AdjNodes.TryRemove(ipAddress, out var adjnode) && adjnode.Connection != null)
-                adjnode.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-
-            if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
-                node.Connection.DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
-        public static void UpdatePeerLastReach(Peers incPeer)
-        {
-            var peers = GetAll();
-            var peer = GetAll().FindOne(x => x.PeerIP == incPeer.PeerIP);
-            if(peer != null)
-            {
-                //peer.LastReach = DateTime.UtcNow;
-                peers.UpdateSafe(peer);
-            }
-            else
-            {
-                Peers nPeer = new Peers { 
-                    //ChainRefId = incPeer.ChainRefId,
-                    //LastReach = DateTime.UtcNow,
-                    PeerIP = incPeer.PeerIP,
-                };
-
-                peers.InsertSafe(nPeer);
-            }
-        }
     }
 
 }

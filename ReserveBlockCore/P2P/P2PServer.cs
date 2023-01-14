@@ -94,8 +94,8 @@ namespace ReserveBlockCore.P2P
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
             {                               
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               
-                if (Lock.ConnectionCount > 20)                
-                    Peers.BanPeer(ipAddress, ipAddress + ": Connection count exceeded limit.  Peer failed to wait for responses before sending new requests.", func.Method.Name);                                        
+                if (Lock.ConnectionCount > 20)
+                    BanService.BanPeer(ipAddress, ipAddress + ": Connection count exceeded limit.  Peer failed to wait for responses before sending new requests.", func.Method.Name);                                        
                 
                 if (Lock.BufferCost + sizeCost > 5000000)
                 {
