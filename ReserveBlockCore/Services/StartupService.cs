@@ -681,23 +681,23 @@ namespace ReserveBlockCore.Services
 
                     var rnd = new Random();                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                    if (NumAdjudicators >= 2 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(5, 10000) <= 5)
+                    if (NumAdjudicators >= 3 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(5, 10000) <= 5)
                     {
-                        var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
+                        var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, 3)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                         NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
                     }
 
-                    while(NumAdjudicators > 2)
+                    while(NumAdjudicators > 3)
                     {
-                        var ip = Globals.AdjNodes.Values.Skip(rnd.Next(0, 2)).FirstOrDefault()?.IpAddress;
+                        var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, 3)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                         NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
                     }
 
-                    if (NumAdjudicators >= 2)
+                    if (NumAdjudicators >= 3)
                     {
                         await ValidatorService.PerformErrorCountCheck();
                         await delay;
@@ -730,7 +730,7 @@ namespace ReserveBlockCore.Services
                             for(var i = 0; i < NewAdjudicators.Length; i++)
                             {
                                 var NewAdjudicator = NewAdjudicators[i];
-                                if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= 2)
+                                if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= 3)
                                     break;
 
                                 if (NewAdjudicator.IsConnected)

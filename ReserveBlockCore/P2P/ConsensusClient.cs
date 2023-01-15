@@ -123,9 +123,10 @@ namespace ReserveBlockCore.P2P
                     while (Height == Globals.LastBlock.Height + 1)
                     {
                         var RemainingAddressCount = !ConsensusSource.IsCancellationRequested ? WaitForAddresses.Except(Messages.Select(x => x.Key)).Count() : 0;
-                        if (RemainingAddressCount == 0 && (runType != RunType.Initial || Messages.Count >= Majority))
-                            break;                        
-                        
+                        if ((methodCode != 0 && Messages.Count + RemainingAddressCount < Majority) ||
+                            (RemainingAddressCount == 0 && Messages.Count >= Majority))
+                            break;
+
                         await Task.Delay(20);
                         WaitForAddresses = AddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
                     }
@@ -177,35 +178,24 @@ namespace ReserveBlockCore.P2P
                     var CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();                    
                     var NumMatches = CurrentMatchAddresses.Length;
 
-                    if(methodCode == 0 && NumMatches >= Majority && CurrentHashes.Length != CurrentMatchAddresses.Length)
-                    {
-                        foreach (var hash in CurrentHashes.Where(x => x.Value.Hash != MyHash))
-                            Hashes.TryRemove(hash.Key, out _);
-
-                        CurrentHashes = Hashes.ToArray();
-                        CurrentMatchAddresses = CurrentHashes.Where(x => x.Value.Hash == MyHash).Select(x => x.Key).ToArray();
-                        NumMatches = CurrentMatchAddresses.Length;
-                    }
-                    
                     var hashAddressesToWaitFor = HashAddressesToWaitFor(Height, methodCode, HeartBeatTimeout);
                     var RemainingAddressCount = !HashSource.IsCancellationRequested ? hashAddressesToWaitFor.Except(CurrentHashes.Select(x => x.Key)).Count() : 0;
 
-                    if(RemainingAddressCount == 0)
+                    if (NumMatches >= Majority)
                     {
                         HashSource.Cancel();
-                        if (NumMatches >= Majority && CurrentHashes.Length == CurrentMatchAddresses.Length)
-                        {                            
-                            return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
-                        }
-                        else
-                        {                            
-                            LogUtility.LogQueue(Height + " " + methodCode + " " + TimeUtil.GetMillisecondTime() + "\r\n" +
-                                JsonConvert.SerializeObject(Hashes.GroupBy(x => x.Value.Hash).Select(x => new { x.Key, Count = x.Count() })) + "\r\n" +
-                                JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "Hash exit", "ConsensusExits.txt", true);
-                            return null; // not enough peers agree to reach consensus with this node
-                        }
+                        return FinalizedMessages.Select(x => (x.Key, x.Value.Message)).ToArray(); // maximal and sufficient consensus was reached
                     }
-                    
+                   
+                    if (NumMatches + RemainingAddressCount < Majority)
+                    {
+                        HashSource.Cancel();
+                        LogUtility.LogQueue(Height + " " + methodCode + " " + TimeUtil.GetMillisecondTime() + "\r\n" +
+                            JsonConvert.SerializeObject(Hashes.GroupBy(x => x.Value.Hash).Select(x => new { x.Key, Count = x.Count() })) + "\r\n" +
+                            JsonConvert.SerializeObject(Globals.Nodes.Values.Select(x => new { x.NodeIP, x.NodeHeight, x.MethodCode, x.IsFinalized, x.LastMethodCodeTime })), "Hash exit", "ConsensusExits.txt", true);
+                        return null; // not enough peers agree to reach consensus with this node
+                    }
+
                     await Task.Delay(20);                    
                 }
 
