@@ -104,6 +104,8 @@ namespace ReserveBlockCore.Models
                 {
                     beaconInfo.SelfBeaconActive = !beaconInfo.SelfBeaconActive;
                     beacons.UpdateSafe(beaconInfo);
+                    if(Globals.SelfBeacon != null)
+                        Globals.SelfBeacon.SelfBeaconActive = beaconInfo.SelfBeaconActive;
                     return beaconInfo.SelfBeaconActive;
                 }
             }

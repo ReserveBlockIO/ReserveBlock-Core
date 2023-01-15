@@ -710,7 +710,7 @@ namespace ReserveBlockCore.Controllers
                             bool result = false;
                             if (localAddress == null)
                             {
-                                result = await P2PClient.BeaconUploadRequest_New(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0,0,10));
+                                result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0,0,10));
                                 NFTLogUtility.Log($"NFT Beacon Upload Request Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
                             }
                             else

@@ -437,7 +437,7 @@ namespace ReserveBlockCore.Controllers
                                 }
                             }
                             var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-                            var result = await P2PClient.BeaconUploadRequest_New(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
                                 var finalOutput = JsonConvert.SerializeObject(new { Locators = connectedBeacon.Beacons.BeaconUID, MD5List = md5List });

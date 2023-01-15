@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 
@@ -70,6 +71,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
+                await StartupService.SetSelfBeacon();
                 Globals.Beacons[beacon.IPAddress] = beacon;
                 output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been added." });
             }
@@ -208,24 +210,16 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var beacons = Beacons.GetBeacons();
-            if(beacons != null)
+            var beacon = Globals.SelfBeacon;
+            if(beacon != null)
             {
-                var beacon = beacons.Query().Where(x => x.SelfBeacon).FirstOrDefault();
-                if(beacon != null)
-                {
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Beacon = beacon });
-                }
-                else
-                {
-                    output = JsonConvert.SerializeObject(new { Result = "Fail", Beacon = "null" });
-                }                
+                output = JsonConvert.SerializeObject(new { Result = "Success", Beacon = beacon });
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Result = "Fail", ResultMessage = "No Beacon info found." });
-            }
-
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Beacon = "null" });
+            }                
+            
             return output;
         }
 

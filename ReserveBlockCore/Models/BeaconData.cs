@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Models
         public string MD5List { get; set; }
         public bool IsReady { get; set; }
         public bool IsDownloaded { get; set; }
+        public bool DeleteAfterDownload { get; set; }
 
         public class BeaconSendData
         {

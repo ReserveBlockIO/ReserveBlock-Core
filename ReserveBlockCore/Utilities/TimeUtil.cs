@@ -21,10 +21,25 @@ namespace ReserveBlockCore.Utilities
 
         public static long GetTimeForBeaconRelease()
         {
-            long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddDays(5).Ticks;
-            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerSecond);
-            return timeStamp;//returns time in ticks from Epoch Time
+            var beacons = Beacons.GetBeacons();
+            if(beacons != null)
+            {
+                var selfBeacon = Globals.SelfBeacon;
+                if(selfBeacon != null)
+                {
+                    if(selfBeacon.FileCachePeriodDays > 0)
+                    {
+                        return DateTimeOffset.UtcNow.AddDays(selfBeacon.FileCachePeriodDays).ToUnixTimeSeconds();
+                    }
+                    else
+                    {
+                        return DateTimeOffset.UtcNow.AddYears(7777).ToUnixTimeSeconds();
+                    }
+                }
+            }
+
+            //default to 5 days
+            return DateTimeOffset.UtcNow.AddDays(5).ToUnixTimeSeconds();
         }
 
         public static DateTime ToDateTime(long unixTime)

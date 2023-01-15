@@ -9,8 +9,8 @@ namespace ReserveBlockCore.Utilities
     {
         public static async Task<bool> EstablishBeaconConnection(bool upload = false, bool download = false)
         {
-            var selfBeacon = Globals.Beacons.Values.Where(x => x.SelfBeacon && x.SelfBeaconActive).FirstOrDefault();
-            if (selfBeacon != null)
+            var selfBeacon = Globals.SelfBeacon;
+            if (selfBeacon?.SelfBeaconActive == true)
             {
                 var url = "http://" + selfBeacon.IPAddress + ":" + Globals.Port + "/beacon";
                 var result = await P2PClient.ConnectBeacon_New(url, selfBeacon, upload ? "y" : "n", download ? "y" : "n");

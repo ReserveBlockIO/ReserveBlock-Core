@@ -36,6 +36,7 @@ namespace ReserveBlockCore
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
         public static BeaconReference BeaconReference = new BeaconReference();
         public static Process proc = new Process();
+        public static Beacons? SelfBeacon = null;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;

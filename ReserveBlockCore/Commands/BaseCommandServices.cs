@@ -439,7 +439,8 @@ namespace ReserveBlockCore.Commands
                                 IsIncoming = false,
                                 IsOutgoing = true,
                                 PeerIP = peer,
-                                FailCount = 0
+                                FailCount = 0,
+                                BanCount= 0
                             };
 
                             peers.InsertSafe(nPeer);
@@ -640,44 +641,108 @@ namespace ReserveBlockCore.Commands
 
         public static async void CreateBeacon()
         {
-            Console.WriteLine("Please give your beacon a name...");
-            var name = Console.ReadLine();
-            if (!string.IsNullOrWhiteSpace(name))
+            if(Globals.SelfBeacon != null)
             {
-                var ip = P2PClient.MostLikelyIP();
-
-                if (ip == "NA")
+                var selfBeacon = Globals.SelfBeacon;
+                Console.WriteLine("You are already a beacon! Please use /switchbeacon if you wish to turn beacon feature off.");
+                Console.WriteLine($"|=================================~Beacon Info~=================================|");
+                Console.WriteLine($"| Beacon UID: {selfBeacon.BeaconUID}");
+                Console.WriteLine($"|-------------------------------------------------------------------------------|");
+                Console.WriteLine($"| Beacon IP: {selfBeacon.IPAddress}");
+                Console.WriteLine($"|-------------------------------------------------------------------------------|");
+                Console.WriteLine($"| Beacon Name: {selfBeacon.Name}");
+                Console.WriteLine($"|-------------------------------------------------------------------------------|");
+                Console.WriteLine($"| Private Beacon? {selfBeacon.IsPrivateBeacon}");
+                Console.WriteLine($"|-------------------------------------------------------------------------------|");
+                Console.WriteLine($"| File Cache Period: {selfBeacon.FileCachePeriodDays}");
+                Console.WriteLine($"|-------------------------------------------------------------------------------|");
+                Console.WriteLine($"| Auto Delete? {selfBeacon.AutoDeleteAfterDownload}");
+                Console.WriteLine($"|-------------------------------------------------------------------------------|");
+                Console.WriteLine($"| Active? {selfBeacon.SelfBeaconActive}");
+                Console.WriteLine($"|===============================================================================|");
+            }
+            else
+            {
+                Console.WriteLine("Please give your beacon a name...");
+                var name = Console.ReadLine();
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                     Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
+                    Console.WriteLine("Do you want to auto delete file cache after receiver downloads? (y for yes and n for no)");
+                    var autoDeleteString = Console.ReadLine();
+                    bool autoDelete = false;
+                    if (!string.IsNullOrWhiteSpace(autoDeleteString))
+                    {
+                        if (autoDeleteString == "y")
+                            autoDelete = true;
+                    }
+
+                    Console.WriteLine("Do you want this beacon to be private meaning only you can upload to it? (y for yes and n for no)");
+                    var isPrivateString = Console.ReadLine();
+                    bool isPrivate = false;
+                    if (!string.IsNullOrWhiteSpace(isPrivateString))
+                    {
+                        if (isPrivateString == "y")
+                            isPrivate = true;
+                    }
+
+                    Console.WriteLine("Do you want to cache files for a limited time? Please input a number. (0 is infinite, 5 is 5 days, 10 is 10 days, etc.)");
+                    var cachePeriodString = Console.ReadLine();
+                    int fileCachePeriod = 0;
+                    if (!string.IsNullOrWhiteSpace(cachePeriodString))
+                    {
+                        int.TryParse(cachePeriodString, out fileCachePeriod);
+                    }
+
+                    var ip = P2PClient.MostLikelyIP();
+
+                    if (ip == "NA")
+                    {
+                        Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
+                    }
+
+                    var bUID = Guid.NewGuid().ToString().Substring(0, 12).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+
+                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
+                    {
+                        IPAddress = ip,
+                        Port = Globals.Port + 20000,
+                        Name = name,
+                        BeaconUID = bUID
+                    };
+
+                    var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
+
+                    Beacons beacon = new Beacons
+                    {
+                        IPAddress = ip,
+                        Name = name,
+                        Port = Globals.Port + 20000,
+                        BeaconUID = bUID,
+                        AutoDeleteAfterDownload = autoDelete,
+                        FileCachePeriodDays = fileCachePeriod,
+                        IsPrivateBeacon = isPrivate,
+                        SelfBeacon = true,
+                        SelfBeaconActive = true,
+                        BeaconLocator = beaconLocJson1.ToBase64(),
+                    };
+
+                    var result = Beacons.SaveBeacon(beacon);
+
+                    if (result)
+                    {
+                        Console.WriteLine("Beacon Inserted. Please restart wallet for beacon to activate.");
+                        await StartupService.SetSelfBeacon();
+                        Globals.Beacons[beacon.IPAddress] = beacon;
+                    }
+
+                    Console.WriteLine(result);
                 }
-
-                var bUID = Guid.NewGuid().ToString().Substring(0,12).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
-
-                BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson
-                {
-                    IPAddress = ip,
-                    Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
-                    Name = name,
-                    BeaconUID = bUID
-                };
-
-                var beaconLocJson = JsonConvert.SerializeObject(beaconLoc);
-
-                BeaconInfo bInfo = new BeaconInfo();
-                bInfo.Name = name;
-                bInfo.IsBeaconActive = true;
-                bInfo.BeaconLocator = beaconLocJson.ToBase64();
-                bInfo.BeaconUID = bUID;
-
-                var result = BeaconInfo.SaveBeaconInfo(bInfo);
-
-                Console.WriteLine(result);
             }
         }
 
         public static async void SwitchBeaconState()
         {
-            var result = BeaconInfo.SetBeaconActiveState();
+            var result = Beacons.SetBeaconActiveState();
 
             if (result == null)
             {
@@ -685,14 +750,8 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                if(result.Value == true)
-                {
-                    Console.WriteLine("Beacon has been turned on.");
-                }
-                else
-                {
-                    Console.WriteLine("Beacon has been turned off.");
-                }
+                var beaconState = result.Value ? "on" : "off";
+                Console.WriteLine($"Beacon has been turned {beaconState}.");
             }
         }
 

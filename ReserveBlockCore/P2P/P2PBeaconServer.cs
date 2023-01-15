@@ -266,28 +266,60 @@ namespace ReserveBlockCore.P2P
         {
             //return await SignalRQueue(Context, 1024, async () =>
             //{
-                bool result = false;
-                var peerIP = GetIP(Context);
-                try
+            bool result = false;
+            var peerIP = GetIP(Context);
+            try
+            {
+                var beaconAuth = await BeaconService.BeaconAuthorization(bsd.CurrentOwnerAddress);
+                if (!beaconAuth.Item1)
+                    return result;
+
+                if (bsd != null)
                 {
-                    if (bsd != null)
+                    var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
+                    if (scState == null)
                     {
-                        var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
-                        if (scState == null)
-                        {
-                            return result;
-                        }
+                        return result;
+                    }
 
-                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
-                        if (sigCheck == false)
-                        {
-                            return result;
-                        }
+                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
+                    if (sigCheck == false)
+                    {
+                        return result;
+                    }
 
-                        var beaconData = BeaconData.GetBeaconData();
-                        foreach (var fileName in bsd.Assets)
+                    var beaconData = BeaconData.GetBeaconData();
+                    foreach (var fileName in bsd.Assets)
+                    {
+                        if (beaconData == null)
                         {
-                            if (beaconData == null)
+                            var bd = new BeaconData
+                            {
+                                CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
+                                AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(),
+                                AssetReceiveDate = TimeUtil.GetTime(),
+                                AssetName = fileName,
+                                IPAdress = peerIP,
+                                NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+                                SmartContractUID = bsd.SmartContractUID,
+                                IsReady = false,
+                                MD5List = bsd.MD5List,
+                                Reference = bsd.Reference,
+                                DeleteAfterDownload = beaconAuth.Item2
+                            };
+
+                            var beaconResult = BeaconData.SaveBeaconData(bd);
+                            result = true;
+                        }
+                        else
+                        {
+                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && 
+                            x.AssetName == fileName && 
+                            x.IPAdress == peerIP && 
+                            x.IsReady != true && 
+                            x.NextAssetOwnerAddress == bsd.NextAssetOwnerAddress).FirstOrDefault();
+
+                            if (bdCheck == null)
                             {
                                 var bd = new BeaconData
                                 {
@@ -308,47 +340,20 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && 
-                                x.AssetName == fileName && 
-                                x.IPAdress == peerIP && 
-                                x.IsReady != true && 
-                                x.NextAssetOwnerAddress == bsd.NextAssetOwnerAddress).FirstOrDefault();
-
-                                if (bdCheck == null)
-                                {
-                                    var bd = new BeaconData
-                                    {
-                                        CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
-                                        AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(),
-                                        AssetReceiveDate = TimeUtil.GetTime(),
-                                        AssetName = fileName,
-                                        IPAdress = peerIP,
-                                        NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                        SmartContractUID = bsd.SmartContractUID,
-                                        IsReady = false,
-                                        MD5List = bsd.MD5List,
-                                        Reference = bsd.Reference
-                                    };
-
-                                    var beaconResult = BeaconData.SaveBeaconData(bd);
-                                    result = true;
-                                }
-                                else
-                                {
-                                    ErrorLogUtility.LogError($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "P2PBeaconService.ReceiveUploadRequest()");
-                                    return false;
-                                }
+                                ErrorLogUtility.LogError($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "P2PBeaconService.ReceiveUploadRequest()");
+                                return false;
                             }
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-                    return false;
-                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+                return false;
+            }
 
-                return result;
+            return result;
             //});
         }
 
@@ -471,6 +476,8 @@ namespace ReserveBlockCore.P2P
                     {
                         beaconData.IsDownloaded = true;
                         beacon.UpdateSafe(beaconData);
+                        if(beaconData.DeleteAfterDownload)
+                            BeaconService.DeleteFile(beaconData.AssetName);
                     }
 
                     //remove all completed beacon request

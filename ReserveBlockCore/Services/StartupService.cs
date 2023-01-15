@@ -337,8 +337,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                var beaconInfo = BeaconInfo.GetBeaconInfo();
-                if(beaconInfo != null)
+                if(Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
                     var port = Globals.Port + 20000; //23338 - mainnet
  
@@ -352,6 +351,17 @@ namespace ReserveBlockCore.Services
                 Console.WriteLine(ex.ToString());
             }
             
+        }
+
+        internal static async Task SetSelfBeacon()
+        {
+            var beacons = Beacons.GetBeacons();
+            if(beacons != null)
+            {
+                var selfBeacon = beacons.Query().Where(x => x.SelfBeacon).FirstOrDefault();
+                if(selfBeacon != null)
+                    Globals.SelfBeacon = selfBeacon;
+            }
         }
 
         //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
@@ -888,28 +898,6 @@ namespace ReserveBlockCore.Services
             }
             
         }
-
-        public static async Task ConnectoToBeacon()
-        {
-            //if(Globals.AdjudicateAccount == null)
-            //{                
-            //    if (Globals.Locators.Any())
-            //    {
-            //        var beacon = Globals.Locators.Values.FirstOrDefault();
-            //        var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
-            //        if (beaconDataJsonDes != null)
-            //        {
-            //            var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
-            //            await P2PClient.ConnectBeacon(url);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        Console.WriteLine("You have no remote beacons.");
-            //    }
-            //}
-        }
-
         internal static async Task DownloadBlocksOnStart()
         {
             var download = true;

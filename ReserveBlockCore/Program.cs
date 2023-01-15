@@ -209,7 +209,6 @@ namespace ReserveBlockCore
             StartupService.ClearValidatorDups();
 
             StartupService.LoadBeacons();
-            StartupService.BootstrapBeacons();//this will go away soon.
             await StartupService.EstablishBeaconReference();
 
             //Removes validator record from DB_Peers as its now within the wallet.
@@ -307,10 +306,11 @@ namespace ReserveBlockCore
             }
             
             await TransactionData.UpdateWalletTXTask();
+            await StartupService.SetSelfBeacon();
 
             _ = StartupService.ConnectToAdjudicators();
-            _ = StartupService.ConnectoToBeacon();
             _ = BanService.PeerBanUnbanService();
+            _ = BeaconService.BeaconRunService();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {

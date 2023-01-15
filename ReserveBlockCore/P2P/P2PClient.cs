@@ -1141,7 +1141,7 @@ namespace ReserveBlockCore.P2P
 
         #region File Upload To Beacon Beacon NEW
 
-        public static async Task<bool> BeaconUploadRequest_New(BeaconNodeInfo beaconNode, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
+        public static async Task<bool> BeaconUploadRequest(BeaconNodeInfo beaconNode, List<string> assets, string scUID, string nextOwnerAddress, string md5List, string preSigned = "NA")
         {
             bool result = false;
             string signature = "";
