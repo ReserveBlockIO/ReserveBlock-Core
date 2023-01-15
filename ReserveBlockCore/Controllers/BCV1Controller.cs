@@ -180,7 +180,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="locator"></param>
         /// <returns></returns>
-        [HttpGet("DecodeBeaconLocator/{locator}")]
+        [HttpGet("DecodeBeaconLocator/{**locator}")]
         public async Task<string> DecodeBeaconLocator(string locator)
         {
             var output = "";
@@ -214,8 +214,7 @@ namespace ReserveBlockCore.Controllers
                 var beacon = beacons.Query().Where(x => x.SelfBeacon).FirstOrDefault();
                 if(beacon != null)
                 {
-                    var beaconJson = JsonConvert.SerializeObject(beacon);
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Beacon = beaconJson });
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Beacon = beacon });
                 }
                 else
                 {
