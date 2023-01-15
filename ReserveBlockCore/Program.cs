@@ -189,6 +189,7 @@ namespace ReserveBlockCore
             await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
             StartupService.CheckForDuplicateBlocks();
+            await StartupService.SetSelfBeacon();
 
             _ = Task.Run(LogUtility.LogLoop);
             _ = Task.Run(P2PClient.UpdateMethodCodes);
@@ -306,7 +307,7 @@ namespace ReserveBlockCore
             }
             
             await TransactionData.UpdateWalletTXTask();
-            await StartupService.SetSelfBeacon();
+            
 
             _ = StartupService.ConnectToAdjudicators();
             _ = BanService.PeerBanUnbanService();

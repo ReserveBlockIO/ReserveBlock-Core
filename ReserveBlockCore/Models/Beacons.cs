@@ -53,6 +53,14 @@ namespace ReserveBlockCore.Models
                     {
                         existingBeaconInfo.Name = beacon.Name;
                         existingBeaconInfo.Port = beacon.Port;
+                        existingBeaconInfo.SelfBeacon = beacon.SelfBeacon;
+                        existingBeaconInfo.SelfBeaconActive = beacon.SelfBeaconActive;
+                        existingBeaconInfo.BeaconLocator = beacon.BeaconLocator;
+                        existingBeaconInfo.AutoDeleteAfterDownload = beacon.AutoDeleteAfterDownload;
+                        existingBeaconInfo.FileCachePeriodDays = beacon.FileCachePeriodDays;
+                        existingBeaconInfo.IsPrivateBeacon = beacon.IsPrivateBeacon;
+                        existingBeaconInfo.BeaconUID = beacon.BeaconUID;
+
                         beacons.UpdateSafe(existingBeaconInfo); //update existing record
                         return true;
                     }
