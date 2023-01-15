@@ -1021,7 +1021,7 @@ namespace ReserveBlockCore.Services
                         PreviousHeight = Height;
                         await Task.WhenAll(BlockDelay, Task.Delay(3500));
                         var CurrentTime = TimeUtil.GetMillisecondTime();
-                        var DelayTimeCorrection = 25000 * (Height - 16L) - (CurrentTime - 1675424874180L);                        
+                        var DelayTimeCorrection = 25000 * (Height - 16L) - (CurrentTime - 1673397583280L);                        
                         var DelayTime = Math.Min(Math.Max(25000 + DelayTimeCorrection, 20000), 30000);
                         BlockDelay = Task.Delay((int)DelayTime);
                         ConsoleWriterService.Output("\r\nNext Consensus Delay: " + DelayTime + " (" + DelayTimeCorrection +  ")");                        
