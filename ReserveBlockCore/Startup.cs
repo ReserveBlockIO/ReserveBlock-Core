@@ -45,6 +45,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<AdjudicatorPool>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Adjudicators>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Adnr>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Beacons>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
                 c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
