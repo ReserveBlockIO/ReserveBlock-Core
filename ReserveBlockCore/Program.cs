@@ -208,7 +208,8 @@ namespace ReserveBlockCore
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
 
-            StartupService.BootstrapBeacons();
+            StartupService.LoadBeacons();
+            StartupService.BootstrapBeacons();//this will go away soon.
             await StartupService.EstablishBeaconReference();
 
             //Removes validator record from DB_Peers as its now within the wallet.

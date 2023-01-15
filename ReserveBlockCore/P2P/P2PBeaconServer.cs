@@ -174,25 +174,6 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Beacon Locator Info
-        public async Task<string> SendBeaconInfo()
-        {
-            return await SignalRQueue(Context, 128, async () => {
-                var result = "";
-
-                var beaconInfo = BeaconInfo.GetBeaconInfo();
-
-                if (beaconInfo == null)
-                    return "NA";
-
-                result = beaconInfo.BeaconLocator;
-
-                return result;
-            });
-        }
-
-        #endregion
-
         #region  Beacon Receive Download Request - The receiver of the NFT Asset
         public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
         {

@@ -299,11 +299,21 @@ namespace ReserveBlockCore.Utilities
                                     aq.IsComplete = true;
                                     aqDB.UpdateSafe(aq);
 
+                                    var beaconString = aq.Locator.ToStringFromBase64();
+                                    var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+                                    Globals.Beacon.TryGetValue(beacon.IPAddress, out var globalBeacon);
+                                    if(globalBeacon != null)
+                                    {
+                                        globalBeacon.Downloading = false;
+                                        Globals.Beacon[globalBeacon.IPAddress] = globalBeacon;
+                                    }
+
                                     foreach (string asset in assetList)
                                     {
                                         try
                                         {
-                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset);
+                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset, aq.Locator);
                                         }
                                         catch { }
                                     }

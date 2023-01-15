@@ -193,8 +193,9 @@ namespace ReserveBlockCore.Services
                             Globals.NFTFilesReadyEPN = false;
                         }
 
+                        var curDate = DateTime.UtcNow;
                         var aqCompleteList = aqDB.Find(x =>  x.IsComplete == true && x.IsDownloaded == false &&
-                            x.AssetTransferType == AssetQueue.TransferType.Download).ToList();
+                            x.AssetTransferType == AssetQueue.TransferType.Download && x.NextAttempt <= curDate).ToList();
 
                         if(aqCompleteList.Count() > 0)
                         {
@@ -202,55 +203,52 @@ namespace ReserveBlockCore.Services
                             {
                                 try
                                 {
-                                    var curDate = DateTime.UtcNow;
-                                    if(aq.NextAttempt <= curDate)
+                                    await NFTAssetFileUtility.CheckForAssets(aq);
+                                    aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
+                                    var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
+                                    aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
+                                    //attempt to get file again. call out to beacon
+                                    if (aq.MediaListJson != null)
                                     {
-                                        await NFTAssetFileUtility.CheckForAssets(aq);
-                                        aq.Attempts = aq.Attempts < 4 ? aq.Attempts + 1 : aq.Attempts;
-                                        var nextAttemptValue = AssetQueue.GetNextAttemptInterval(aq.Attempts);
-                                        aq.NextAttempt = DateTime.UtcNow.AddSeconds(nextAttemptValue);
-                                        //attempt to get file again. call out to beacon
-                                        if (aq.MediaListJson != null)
+                                        var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
+                                        if (assetList != null)
                                         {
-                                            var assetList = JsonConvert.DeserializeObject<List<string>>(aq.MediaListJson);
-                                            if (assetList != null)
+                                            if (assetList.Count() > 0)
                                             {
-                                                if (assetList.Count() > 0)
+                                                foreach (string asset in assetList)
                                                 {
-                                                    foreach (string asset in assetList)
+                                                    var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
+                                                    var fileExist = System.IO.File.Exists(path);
+                                                    if (!fileExist)
                                                     {
-                                                        var path = NFTAssetFileUtility.NFTAssetPath(asset, aq.SmartContractUID);
-                                                        var fileExist = System.IO.File.Exists(path);
-                                                        if (!fileExist)
+                                                        try
                                                         {
-                                                            try
+                                                            var fileCheckResult = await P2PClient.BeaconFileReadyCheck(aq.SmartContractUID, asset, aq.Locator);
+                                                            if (fileCheckResult)
                                                             {
-                                                                var fileCheckResult = await P2PClient.BeaconFileReadyCheck(aq.SmartContractUID, asset);
-                                                                if (fileCheckResult)
-                                                                {
-                                                                    var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
-                                                                    var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+                                                                var beaconString = aq.Locator.ToStringFromBase64();
+                                                                var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-                                                                    if (beacon != null)
+                                                                if (beacon != null)
+                                                                {
+                                                                    BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, aq.SmartContractUID);
+                                                                    if (rsp.Status != 1)
                                                                     {
-                                                                        BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, aq.SmartContractUID);
-                                                                        if (rsp.Status != 1)
-                                                                        {
-                                                                            //failed to download
-                                                                        }
+                                                                        //failed to download
                                                                     }
                                                                 }
                                                             }
-                                                            catch { }
                                                         }
+                                                        catch { }
                                                     }
-                                                   
                                                 }
+                                                   
                                             }
-                                            
                                         }
-                                        
+                                            
                                     }
+                                        
+                                    
                                     //Look to see if media exist
                                     await NFTAssetFileUtility.CheckForAssets(aq);
                                 }

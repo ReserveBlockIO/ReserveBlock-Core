@@ -674,7 +674,7 @@ namespace ReserveBlockCore.Controllers
                     {
                         //Get beacons here!
                         //This will eventually need to be a chosen parameter someone chooses.                         
-                        if (!Globals.Locators.Any())
+                        if (!Globals.Beacons.Any())
                         {
                             output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "You do not have any beacons stored." });
                             NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
@@ -682,7 +682,23 @@ namespace ReserveBlockCore.Controllers
                         }
                         else
                         {
-                            var locator = Globals.Locators.Values.FirstOrDefault();
+                            if(!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
+                            {
+                                var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                                if(!beaconConnectionResult)
+                                {
+                                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "You failed to connect to any beacons." });
+                                    NFTLogUtility.Log("Error - You failed to connect to any beacons.", "SCV1Controller.TransferNFT()");
+                                    return output;
+                                }
+                            }
+                            var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+                            if(connectedBeacon == null)
+                            {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "You have lost connection to beacons. Please attempt to resend." });
+                                NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "SCV1Controller.TransferNFT()");
+                                return output;
+                            }
                             toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
                             var localAddress = AccountData.GetSingleAccount(toAddress);
 
@@ -694,7 +710,7 @@ namespace ReserveBlockCore.Controllers
                             bool result = false;
                             if (localAddress == null)
                             {
-                                result = await P2PClient.BeaconUploadRequest(locator, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0,0,10));
+                                result = await P2PClient.BeaconUploadRequest_New(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0,0,10));
                                 NFTLogUtility.Log($"NFT Beacon Upload Request Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
                             }
                             else
@@ -704,13 +720,13 @@ namespace ReserveBlockCore.Controllers
 
                             if (result == true)
                             {
-                                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, locator, md5List, assets,
+                                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
                                     AssetQueue.TransferType.Upload);
                                 NFTLogUtility.Log($"NFT Asset Queue Items Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
 
                                 if (aqResult)
                                 {
-                                    _ = SmartContractService.TransferSmartContract(sc, toAddress, locator, md5List, backupURL);
+                                    _ = SmartContractService.TransferSmartContract(sc, toAddress, connectedBeacon, md5List, backupURL);
                                         
                                     var success = JsonConvert.SerializeObject(new {Result = "Success", Message = "NFT Transfer has been started." });
                                     output = success;
@@ -720,12 +736,13 @@ namespace ReserveBlockCore.Controllers
                                 else
                                 {
                                     output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Failed to add upload to Asset Queue. Please check logs for more details." });
-                                    NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {locator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                                    NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {connectedBeacon.Beacons.BeaconLocator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
                                 }
 
                             }
                             else
                             {
+                                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Beacon upload failed. Result was : {result}" });
                                 NFTLogUtility.Log($"Beacon upload failed. Result was : {result}", "SCV1Controller.TransferNFT()");
                             }
                         }

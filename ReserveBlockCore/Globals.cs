@@ -112,10 +112,12 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        
-        public static ConcurrentDictionary<string, string> Locators = new ConcurrentDictionary<string, string>(); // BeaconUID
+        //public static ConcurrentDictionary<string, string> Locators = new ConcurrentDictionary<string, string>(); // BeaconUID
         public static ConcurrentDictionary<string, Mother.Kids> MothersKids = new ConcurrentDictionary<string, Mother.Kids>(); //Mothers Children
         public static ConcurrentDictionary<string, HubCallerContext> MothersKidsContext = new ConcurrentDictionary<string, HubCallerContext>(); //Mothers Children
+        public static ConcurrentDictionary<string, Beacons> Beacons = new ConcurrentDictionary<string, Beacons>();
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
+        public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
 
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;

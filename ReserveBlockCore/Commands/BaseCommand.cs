@@ -144,9 +144,9 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/findbeacon":
                     Globals.StopConsoleOutput = true;
-                    var beacons = P2PClient.GetBeacons();
+                    var beaconCount = Globals.Beacons.Values.Count();
                     Globals.StopConsoleOutput = false;
-                    ConsoleWriterService.Output($"Beacons found {beacons.Result.Count()}");
+                    ConsoleWriterService.Output($"Beacons found {beaconCount}");
                     break;
                 case "/findtx":
                     Globals.StopConsoleOutput = true;

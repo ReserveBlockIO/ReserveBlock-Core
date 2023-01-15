@@ -11,6 +11,10 @@ namespace ReserveBlockCore.Models
         public int Port { get; set; }
         public string Name { get; set; }
         public string BeaconUID { get; set; }
+        public bool AutoDeleteAfterDownload { get; set; }
+        public bool IsPrivateBeacon { get; set; }
+        public int FileCachePeriodDays { get; set; }
+        public string BeaconLocator { get; set; }
         public bool SelfBeacon { get; set; }
         public bool SelfBeaconActive { get; set; }
 

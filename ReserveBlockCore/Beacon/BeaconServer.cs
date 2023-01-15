@@ -140,6 +140,9 @@ namespace ReserveBlockCore.Beacon
                                         loop_break = true;//current size of file is greater than 150 mb and will be deleted now.
                                         try
                                         {
+                                            ns.Flush();
+                                            ns.Close();
+                                            fs.Flush();
                                             fs.Close();
                                             File.Delete(@"" + SaveTo + fileName);
                                             break;

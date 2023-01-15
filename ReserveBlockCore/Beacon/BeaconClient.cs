@@ -119,6 +119,7 @@ namespace ReserveBlockCore.Beacon
                 ns.Flush();
                 bool loop_break = false;
                 bool loop_break_file_exist = false;
+                int progValueRec = 0;
                 while (true)
                 {
                     if (ns.ReadByte() == 2)
@@ -140,8 +141,12 @@ namespace ReserveBlockCore.Beacon
                                     ns.Write(data_to_send, 0, data_to_send.Length);
                                     ns.Flush();
                                     ProgressValue = (int)Math.Ceiling((double)recv_file_pointer / (double)fs.Length * 100);
-                                    ConsoleWriterService.Output($"{File_name} - Upload Progress: {ProgressValue}");
-                                    BeaconLogUtility.Log($"{File_name} - Upload Progress: {ProgressValue}%", "BeaconClient.Send()");
+                                    if(ProgressValue > progValueRec)
+                                    {
+                                        ConsoleWriterService.Output($"{File_name} - Upload Progress: {ProgressValue}%");
+                                        BeaconLogUtility.Log($"{File_name} - Upload Progress: {ProgressValue}%", "BeaconClient.Send()");
+                                        progValueRec = ProgressValue;
+                                    }
                                 }
                                 else
                                 {
@@ -150,6 +155,7 @@ namespace ReserveBlockCore.Beacon
                                     ns.Flush();
                                     fs.Close();
                                     loop_break = true;
+                                    progValueRec = 0;
                                     BeaconLogUtility.Log($"{File_name} - Upload Closing. Code 128", "BeaconClient.Send()");
                                 }
                                 break;
@@ -157,6 +163,7 @@ namespace ReserveBlockCore.Beacon
                                 BeaconLogUtility.Log($"{File_name} - Already Exist. Code 777.", "BeaconClient.Send()");
                                 ns.Flush();
                                 fs.Close();
+                                progValueRec = 0;
                                 loop_break_file_exist = true;
                                 break;
                             default:
@@ -172,11 +179,13 @@ namespace ReserveBlockCore.Beacon
                     }
                     if (loop_break == true)
                     {
+                        progValueRec = 0;
                         ns.Close();
                         return new BeaconResponse { Status = 1, Description = "Send successful." };
                     }
                     if (loop_break_file_exist == true)
                     {
+                        progValueRec = 0;
                         ns.Close();
                         return new BeaconResponse { Status = 777, Description = "File Already Exist" };
                     }

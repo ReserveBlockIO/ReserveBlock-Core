@@ -364,14 +364,26 @@ namespace ReserveBlockCore.Controllers
                 {
                     if (sc.IsPublished == true)
                     {
-                        //Get beacons here!                        
-                        if (!Globals.Locators.Any())
+                        //Get beacons here!
+                        if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
                         {
-                            output = "You are not connected to any beacons.";
+                            var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                            if (!beaconConnectionResult)
+                            {
+                                output = "You are not connected to any beacons.";
+                                NFTLogUtility.Log("Error - You failed to connect to any beacons.", "TXV1Controller.CreateBeaconUploadRequest()");
+                                return output;
+                            }
                         }
                         else
                         {
-                            var locators = Globals.Locators.Values.FirstOrDefault();
+                            var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+                            if (connectedBeacon == null)
+                            {
+                                output = "You have lost connection to beacons. Please attempt to resend.";
+                                NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
+                                return output;
+                            }
                             List<string> assets = new List<string>();
 
                             if (sc.SmartContractAsset != null)
@@ -424,15 +436,12 @@ namespace ReserveBlockCore.Controllers
                                     }
                                 }
                             }
-
-                            var result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, signature);
+                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
+                            var result = await P2PClient.BeaconUploadRequest_New(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
-                                var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-
-                                var finalOutput = JsonConvert.SerializeObject(new { Locators = result, MD5List = md5List });
+                                var finalOutput = JsonConvert.SerializeObject(new { Locators = connectedBeacon.Beacons.BeaconUID, MD5List = md5List });
                                 output = finalOutput;
-
                             }
                         }
                     }

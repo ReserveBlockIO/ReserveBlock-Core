@@ -165,7 +165,7 @@ namespace ReserveBlockCore.Models
                     value = 300; //5 minutes
                     break;
                 case 4:
-                    value = 86400; //1 day
+                    value = 3600; //1 hour
                     break;
                 default:
                     value = 86400;

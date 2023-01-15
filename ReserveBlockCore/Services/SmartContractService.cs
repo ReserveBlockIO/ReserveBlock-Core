@@ -147,7 +147,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region TransferSmartContract
-        public static async Task TransferSmartContract(SmartContractMain scMain, string toAddress, string locators, string md5List = "NA", string backupURL = "")
+        public static async Task TransferSmartContract(SmartContractMain scMain, string toAddress, BeaconNodeInfo beaconNodeInfo, string md5List = "NA", string backupURL = "")
         {
             var scTx = new Transaction();
             try
@@ -160,10 +160,14 @@ namespace ReserveBlockCore.Services
                     NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
                     foreach (var asset in assets)
                     {
-                        var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset);
+                        var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset, beaconNodeInfo.Beacons.BeaconLocator);
                         if (!sendResult)
                             beaconSendFinalResult = false;
                     }
+
+                    beaconNodeInfo.Uploading = false;
+                    Globals.Beacon[beaconNodeInfo.IPAddress] = beaconNodeInfo;
+
                     NFTLogUtility.Log($"NFT Asset Transfer Done for: {scMain.SmartContractUID}.", "SCV1Controller.TransferNFT()");
                 }
                 if (beaconSendFinalResult)
@@ -198,7 +202,7 @@ namespace ReserveBlockCore.Services
                         var newSCInfo = new[]
                         {
                         new { Function = "Transfer()", ContractUID = scMain.SmartContractUID, ToAddress = toAddress, Data = scBase64,
-                            Locators = locators, MD5List = md5List, BackupURL = backupURL != "" ? backupURL : "NA"}
+                            Locators = beaconNodeInfo.Beacons.BeaconLocator, MD5List = md5List, BackupURL = backupURL != "" ? backupURL : "NA"}
                     };
 
                         txData = JsonConvert.SerializeObject(newSCInfo);
@@ -294,7 +298,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {locators} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                    NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {beaconNodeInfo.Beacons.BeaconLocator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
                 }
             }
             catch (Exception ex)

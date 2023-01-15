@@ -155,7 +155,6 @@ namespace ReserveBlockCore.Services
                 {
                     BanServiceLock.Release();
                 }
-                
 
                 await delay;
             }

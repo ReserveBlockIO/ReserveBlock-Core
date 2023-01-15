@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using ReserveBlockCore.Nodes;
 using System.Net;
 using System.Security;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Services
 {
@@ -329,9 +330,7 @@ namespace ReserveBlockCore.Services
         }
         internal static void RunRules()
         {
-            //RuleService.ResetValidators();
-            //RuleService.ResetFailCounts();
-            //RuleService.RemoveOldValidators();
+            //no rules needed at this time
         }
 
         internal static void StartBeacon()
@@ -415,42 +414,123 @@ namespace ReserveBlockCore.Services
             }
         } 
 
+        internal static void LoadBeacons()
+        {
+            var beacons = Beacons.GetBeacons();
+            if(beacons != null)
+            {
+                var beaconList = beacons.Query().Where(x => true).ToList();
+                if(beaconList.Count() == 0)
+                {
+                    //seed beacons
+                    BootstrapBeacons();
+                    beaconList = beacons.Query().Where(x => true).ToList();
+                    if(beaconList.Count() > 0)
+                    {
+                        foreach(var beacon in beaconList)
+                        {
+                            Globals.Beacons.TryAdd(beacon.IPAddress, beacon);
+                        }
+                    }
+                    else
+                    {
+                        ErrorLogUtility.LogError("Failed to see Beacons. NFT Transfers will not work.", "StartupService.LoadBeacons()");
+                    }
+                }
+                else
+                {
+                    foreach (var beacon in beaconList)
+                    {
+                        Globals.Beacons.TryAdd(beacon.IPAddress, beacon);
+                    }
+                }
+            }                
+
+        }
+
         internal static void BootstrapBeacons()
         {
-            var locators = new List<string>();
-            BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
+            var beacons = Beacons.GetBeacons();
+            if(beacons != null )
             {
-                IPAddress = "162.248.14.123",
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
-                Name = "RBX Beacon 1",
-                BeaconUID = "Foundation Beacon 1"
-            };
+                //should not exist but check to be safe.
+                var beacon1Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon1").Exists();
+                if(!beacon1Exist)
+                {
+                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
+                    {
+                        IPAddress = "162.248.14.123",
+                        Port = Globals.Port + 20000,
+                        Name = !Globals.IsTestNet ? "RBX Beacon 1" : "RBX Testnet Beacon 1",
+                        BeaconUID = "FoundationBeacon1"
+                    };
 
-            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);            
-            Globals.Locators[beaconLoc1.BeaconUID] = beaconLocJson1.ToBase64();
+                    var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
+                    //Globals.Locators.TryAdd(beaconLoc1.BeaconUID, beaconLocJson1.ToBase64());
+                    Beacons beacon1 = new Beacons
+                    {
+                        IPAddress = "162.248.14.123",
+                        Name = !Globals.IsTestNet ? "RBX Beacon 1" : "RBX Testnet Beacon 1",
+                        Port = Globals.Port + 20000,
+                        BeaconUID = "FoundationBeacon1",
+                        AutoDeleteAfterDownload = true,
+                        FileCachePeriodDays = 2,
+                        IsPrivateBeacon = false,
+                        SelfBeacon = false,
+                        SelfBeaconActive = false,
+                        BeaconLocator = beaconLocJson1.ToBase64(),
+                    };
 
-            BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
-            {
-                IPAddress = "162.251.121.150",
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
-                Name = "RBX Beacon 2",
-                BeaconUID = "Foundation Beacon 2"
+                    beacons.InsertSafe(beacon1);
+                }
+                else
+                {
+                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
+                    {
+                        IPAddress = "162.248.14.123",
+                        Port = Globals.Port + 20000,
+                        Name = !Globals.IsTestNet ? "RBX Beacon 1" : "RBX Testnet Beacon 1",
+                        BeaconUID = "FoundationBeacon1"
+                    };
 
-            };
-            var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);            
-            //Globals.Locators[beaconLoc2.BeaconUID] = beaconLocJson2.ToBase64();
+                    var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
 
-            BeaconInfo.BeaconInfoJson beaconLoc3 = new BeaconInfo.BeaconInfoJson
-            {
-                IPAddress = "185.199.226.121",
-                Port = Globals.IsTestNet != true ? Globals.Port + 20000 : Globals.Port + 20000,
-                Name = "RBX Beacon 3",
-                BeaconUID = "Foundation Beacon 3"
+                    //Globals.Locators.TryAdd(beaconLoc1.BeaconUID, beaconLocJson1.ToBase64());
+                }
 
-            };
+                var beacon2Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon2").Exists();
+                if(!beacon2Exist)
+                {
+                    BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
+                    {
+                        IPAddress = "135.148.121.99",
+                        Port = Globals.Port + 20000,
+                        Name = !Globals.IsTestNet ? "RBX Beacon 2" : "RBX Testnet Beacon 2",
+                        BeaconUID = "FoundationBeacon2"
 
-            var beaconLocJson3 = JsonConvert.SerializeObject(beaconLoc3);
-            //Globals.Locators[beaconLoc3.BeaconUID] = beaconLocJson3.ToBase64();
+                    };
+                    var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);
+
+                    Beacons beacon2 = new Beacons
+                    {
+                        IPAddress = "135.148.121.99",
+                        Name = !Globals.IsTestNet ? "RBX Beacon 2" : "RBX Testnet Beacon 2",
+                        Port = Globals.Port + 20000,
+                        BeaconUID = "FoundationBeacon2",
+                        AutoDeleteAfterDownload = true,
+                        FileCachePeriodDays = 2,
+                        IsPrivateBeacon = false,
+                        SelfBeacon = false,
+                        SelfBeaconActive = false,
+                        BeaconLocator = beaconLocJson2.ToBase64(),
+                    };
+
+                    beacons.InsertSafe(beacon2);
+                }    
+
+            }
+           
+            
         }
         internal static void ClearStaleMempool()
         {
@@ -811,23 +891,23 @@ namespace ReserveBlockCore.Services
 
         public static async Task ConnectoToBeacon()
         {
-            if(Globals.AdjudicateAccount == null)
-            {                
-                if (Globals.Locators.Any())
-                {
-                    var beacon = Globals.Locators.Values.FirstOrDefault();
-                    var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
-                    if (beaconDataJsonDes != null)
-                    {
-                        var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
-                        await P2PClient.ConnectBeacon(url);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("You have no remote beacons.");
-                }
-            }
+            //if(Globals.AdjudicateAccount == null)
+            //{                
+            //    if (Globals.Locators.Any())
+            //    {
+            //        var beacon = Globals.Locators.Values.FirstOrDefault();
+            //        var beaconDataJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beacon.ToStringFromBase64());
+            //        if (beaconDataJsonDes != null)
+            //        {
+            //            var url = "http://" + beaconDataJsonDes.IPAddress + ":" + Globals.Port + "/beacon";
+            //            await P2PClient.ConnectBeacon(url);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        Console.WriteLine("You have no remote beacons.");
+            //    }
+            //}
         }
 
         internal static async Task DownloadBlocksOnStart()

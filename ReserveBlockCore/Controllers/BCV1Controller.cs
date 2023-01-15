@@ -20,9 +20,12 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="name"></param>
         /// <param name="port"></param>
+        /// <param name="isPrivate"></param>
+        /// <param name="autoDelete"></param>
+        /// <param name="fileCachePeriod"></param>
         /// <returns></returns>
-        [HttpGet("CreateBeacon/{name}/{port}")]
-        public async Task<string> CreateBeacon(string name, int port = 0)
+        [HttpGet("CreateBeacon/{name}/{isPrivate}/{autoDelete}/{fileCachePeriod}/{port}")]
+        public async Task<string> CreateBeacon(string name, bool isPrivate, bool autoDelete, int fileCachePeriod = 0, int port = 0)
         {
             var output = "";
 
@@ -34,15 +37,29 @@ namespace ReserveBlockCore.Controllers
             }
 
             var bUID = Guid.NewGuid().ToString().Substring(0, 12).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
-            
+
+            BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
+            {
+                IPAddress = ip,
+                Port = Globals.Port + 20000,
+                Name = name,
+                BeaconUID = bUID
+            };
+
+            var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
+
             Beacons beacon = new Beacons
             {
                 IPAddress = ip,
                 Name = name,
                 Port = port != 0 ? port : Globals.Port + 20000,
                 BeaconUID = bUID,
+                AutoDeleteAfterDownload= autoDelete,
+                FileCachePeriodDays= fileCachePeriod,
+                IsPrivateBeacon = isPrivate,
                 SelfBeacon = true,
                 SelfBeaconActive = true,
+                BeaconLocator = beaconLocJson1.ToBase64(),
             };
 
             var result = Beacons.SaveBeacon(beacon);
