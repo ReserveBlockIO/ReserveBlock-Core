@@ -70,6 +70,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
+                Globals.Beacons[beacon.IPAddress] = beacon;
                 output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been added." });
             }
 
@@ -113,8 +114,11 @@ namespace ReserveBlockCore.Controllers
             Beacons beacon = new Beacons {
                 IPAddress = ip,
                 Name = name,
-                Port = port != 0 ? port : Globals.Port + 20000,
+                Port = Globals.Port + 20000,
                 BeaconUID = bUID,
+                AutoDeleteAfterDownload = false,
+                FileCachePeriodDays = 0,
+                IsPrivateBeacon = false,
                 SelfBeacon = false,
                 SelfBeaconActive = false
             };
@@ -127,6 +131,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
+                Globals.Beacons[beacon.IPAddress] = beacon;
                 output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been added." });
             }
                 
@@ -147,12 +152,13 @@ namespace ReserveBlockCore.Controllers
 
             if (beacons != null)
             {
-                var beaconExist = beacons.Query().Where(x => x.Id == id).FirstOrDefault();
-                if(beaconExist != null)
+                var beacon = beacons.Query().Where(x => x.Id == id).FirstOrDefault();
+                if(beacon != null)
                 {
-                    var result = Beacons.DeleteBeacon(beaconExist);
+                    var result = Beacons.DeleteBeacon(beacon);
                     if(result)
                     {
+                        Globals.Beacons.TryRemove(beacon.IPAddress, out _);
                         output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Beacon has been deleted." });
                     }
                     else
@@ -202,27 +208,23 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var beaconInfo = BeaconInfo.GetBeaconInfo();
-            if(beaconInfo != null)
+            var beacons = Beacons.GetBeacons();
+            if(beacons != null)
             {
-                BeaconInfo.BeaconInfoJson beaconInfoJsonDes = new BeaconInfo.BeaconInfoJson();
-                try
+                var beacon = beacons.Query().Where(x => x.SelfBeacon).FirstOrDefault();
+                if(beacon != null)
                 {
-                    var beaconString = beaconInfo.BeaconLocator.ToStringFromBase64();
-                    beaconInfoJsonDes = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
-
-                    output = JsonConvert.SerializeObject(new { Result = "Success", BeaconInfo = beaconInfo, BeaconLocatorData = beaconInfoJsonDes });
+                    var beaconJson = JsonConvert.SerializeObject(beacon);
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Beacon = beaconJson });
                 }
-                catch(Exception ex)
+                else
                 {
-                    beaconInfoJsonDes = null;
-                    output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "Failed to retrieve beacon info from DB. Possible Corruption." });
-                }
-                
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Beacon = "null" });
+                }                
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Result = "Failed", ResultMessage = "No Beacon info found." });
+                output = JsonConvert.SerializeObject(new { Result = "Fail", ResultMessage = "No Beacon info found." });
             }
 
             return output;
@@ -245,7 +247,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Result = "Success", Message = result.Value });
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Beacon Active State Changed to: {result.Value}" });
             }
 
             return output;

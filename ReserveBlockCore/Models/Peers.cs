@@ -100,7 +100,7 @@ namespace ReserveBlockCore.Models
             Globals.BannedIPs.Clear();
             Globals.MessageLocks.Clear();
             var peers = GetAll();
-            var bannedPeers = peers.Find(x => x.IsBanned && !x.IsPermaBanned).ToList();
+            var bannedPeers = peers.Query().Where(x => x.IsBanned && !x.IsPermaBanned).ToList();
             if(unbanPerma)
                 bannedPeers = peers.Query().Where(x => x.IsBanned && x.IsPermaBanned).ToList();
             var count = 0;
