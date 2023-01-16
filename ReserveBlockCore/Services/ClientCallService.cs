@@ -289,7 +289,7 @@ namespace ReserveBlockCore.Services
                 {
                     await _consensusBroadcastTimer.DisposeAsync();
                     BroadcastLock = true;
-                    Thread.Sleep(500);
+                    await Task.Delay(500);
                 }
                     
 
@@ -714,7 +714,7 @@ namespace ReserveBlockCore.Services
                                                                 if (number.WinningBlock.Height <= nextBlock.Height)
                                                                     Globals.TaskWinnerDictV2.TryRemove(number.Address, out _);
 
-                                                            Thread.Sleep(100);
+                                                            await Task.Delay(100);
 
                                                             Globals.VerifySecret = "";
 
@@ -787,7 +787,7 @@ namespace ReserveBlockCore.Services
                                                                             if (number.WinningBlock.Height <= nextBlock.Height)
                                                                                 Globals.TaskWinnerDictV2.TryRemove(number.Address, out _);
 
-                                                                        Thread.Sleep(100);
+                                                                        await Task.Delay(100);
 
                                                                         Globals.VerifySecret = "";
 
@@ -872,7 +872,7 @@ namespace ReserveBlockCore.Services
                                                                         if (number.WinningBlock.Height <= nextBlock.Height)
                                                                             Globals.TaskWinnerDictV2.TryRemove(number.Address, out _);
 
-                                                                    Thread.Sleep(100);
+                                                                    await Task.Delay(100);
 
                                                                     Globals.VerifySecret = "";
 

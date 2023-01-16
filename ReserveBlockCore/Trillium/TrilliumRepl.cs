@@ -124,15 +124,8 @@ namespace ReserveBlockCore.Trillium
 		[MetaCommand("exit", "Exits the Program")]
 		private void EvaluateExit()
 		{
-			Console.WriteLine("Trillium Exiting in 3 seconds...");
-			Console.WriteLine("» ...3");
-			Thread.Sleep(1000);
-			Console.WriteLine("» ...2");
-			Thread.Sleep(1000);
-			Console.WriteLine("» ...1");
-			Thread.Sleep(1000);
-			Console.WriteLine("» ...0");
-			Environment.Exit(0);
+			Console.WriteLine("Trillium Exiting");
+			//Environment.Exit(0);
 		}
 		protected override bool IsCompleteSubmission(string text)
 		{

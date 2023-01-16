@@ -25,9 +25,9 @@ namespace ReserveBlockCore.Mothering
 
                 }
             }
-            Console.WriteLine("Return you to main menu in 5 seconds...");
-            Thread.Sleep(5000);
+
             StartupService.MainMenu();
+            Console.WriteLine("Returned to main menu.");
         }
 
         private static CommandResult ProcessCommand(string command)

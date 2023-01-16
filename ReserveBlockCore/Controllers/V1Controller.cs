@@ -420,7 +420,7 @@ namespace ReserveBlockCore.Controllers
                         
                         if (account == null)
                             return JsonConvert.SerializeObject(new { Result = "Fail", Message = "No accounts in wallet." });
-                        Thread.Sleep(200);
+                        await Task.Delay(200);
                         var privKey = account.GetKey;
                         BigInteger b1 = BigInteger.Parse(privKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                         PrivateKey privateKey = new PrivateKey("secp256k1", b1);
@@ -1669,13 +1669,14 @@ namespace ReserveBlockCore.Controllers
         public async Task SendExit()
         {
             //use Id to get specific commands
+            var delay = Task.Delay(2000);
             var output = "Starting Stop"; // this will only display if command not recognized.
             LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
             Globals.StopAllTimers = true;
-            Thread.Sleep(1000);
+            await delay;
             while (Globals.TreisUpdating)
             {
-                await Task.Delay(100);
+                await Task.Delay(300);
                 //waiting for treis to stop
             }
             Settings.InitiateShutdownUpdate();

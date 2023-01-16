@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Voting
                 }
             }
             Console.WriteLine("Return you to main menu in 5 seconds...");
-            Thread.Sleep(5000);
+            await Task.Delay(5000);
             StartupService.MainMenu();
         }
 
@@ -77,7 +77,7 @@ namespace ReserveBlockCore.Voting
             Nothing
         }
 
-        private static void GetTopicDetails()
+        private static async void GetTopicDetails()
         {
             Console.WriteLine("Please enter the topic ID");
             var topicUID = Console.ReadLine();
@@ -125,9 +125,8 @@ namespace ReserveBlockCore.Voting
                 }
                 else
                 {
-                    Console.WriteLine("Could not find topic. Returning you to vote menu.");
-                    Thread.Sleep(4000);
-                    VoteMenu();
+                    await VoteMenu();
+                    Console.WriteLine("Could not find topic. Returned you to vote menu.");
                 }
             }
         }
@@ -207,30 +206,26 @@ namespace ReserveBlockCore.Voting
                         }
                         else
                         {
-                            Console.WriteLine("You must choose yes or no. Returning you to main menu.");
-                            Thread.Sleep(4000);
-                            VoteMenu();
+                            await VoteMenu();
+                            Console.WriteLine("You must choose yes or no. Returned you to main menu.");
                         }
                     }
                     else
                     {
-                        Console.WriteLine("Voting for this topic has ended. Returning you to vote menu.");
-                        Thread.Sleep(4000);
-                        VoteMenu();
+                        await VoteMenu();
+                        Console.WriteLine("Voting for this topic has ended. Returned you to vote menu.");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Could not find topic. Returning you to vote menu.");
-                    Thread.Sleep(4000);
-                    VoteMenu();
+                    await VoteMenu();
+                    Console.WriteLine("Could not find topic. Returned you to vote menu.");
                 }
             }
             else
             {
+                await VoteMenu();
                 Console.WriteLine("You must enter a topic.");
-                Thread.Sleep(4000);
-                VoteMenu();
             }
         }
         private static async void CreateTopic()
@@ -359,16 +354,14 @@ namespace ReserveBlockCore.Voting
                         }
                         else
                         {
-                            Console.WriteLine("Returning you to vote menu...");
-                            Thread.Sleep(4000);
                             await VoteMenu();
+                            Console.WriteLine("Returned you to vote menu.");
                         }
                     }
                     else
                     {
-                        Console.WriteLine("Error. You cannot leave any of these fields blank.");
-                        Thread.Sleep(4000);
                         await VoteMenu();
+                        Console.WriteLine("Error. You cannot leave any of these fields blank.");
                     }
                 }    
             }

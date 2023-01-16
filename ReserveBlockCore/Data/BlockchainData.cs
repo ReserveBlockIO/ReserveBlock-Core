@@ -301,11 +301,11 @@ namespace ReserveBlockCore.Data
             
             return result;
         }
-        public static void AddBlock(Block block)
+        public static async void AddBlock(Block block)
         {
             while(Globals.TreisUpdating)
             {
-                Thread.Sleep(100);
+                await Task.Delay(200);
                 //prevents new block from being added while treis are updating
             }
             var blocks = GetBlocks();            

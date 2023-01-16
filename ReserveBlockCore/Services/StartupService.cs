@@ -36,9 +36,7 @@ namespace ReserveBlockCore.Services
                 {
                     var port = Globals.Port;
                     tcpClient.Connect("127.0.0.1", port);
-                    Console.WriteLine($"Application already running on port {port}. Please verify only one instance is open.");
                     LogUtility.Log($"CLI Already Running on port {port}. Closing new instance.", "StartupService.AnotherInstanceCheck()");
-                    Thread.Sleep(2000);
                     Environment.Exit(0);
                 }
                 catch (Exception)
@@ -1260,12 +1258,6 @@ namespace ReserveBlockCore.Services
 
         internal static void StartupMenu()
         {
-            Console.WriteLine("Starting up Reserve Block Wallet...");
-            
-            
-            //Give thread a moment to recover.
-            Thread.Sleep(1000);
-
             Console.WriteLine("Wallet Started. Awaiting Command...");
         }
 

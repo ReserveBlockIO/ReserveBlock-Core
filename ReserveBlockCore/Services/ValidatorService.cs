@@ -52,13 +52,13 @@ namespace ReserveBlockCore.Services
                     {
                         Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
                         Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                         StartupService.MainMenu();
                     }
                     else if (confirmChoice.ToLower() == "n")
                     {
                         Console.WriteLine("Returning you to main menu in 3 seconds...");
-                        Thread.Sleep(3000);
+                        await Task.Delay(3000);
                         StartupService.MainMenu();
                     }
                     else if (confirmChoice.ToLower() == "y")
@@ -79,28 +79,25 @@ namespace ReserveBlockCore.Services
                             }
 
                             var result = await StartValidating(account, nodeName);
-                            Console.WriteLine(result);
-                            Console.WriteLine("Returning you to main menu in 10 seconds...");
-                            Thread.Sleep(10000);
                             StartupService.MainMenu();
+                            Console.WriteLine(result);
+                            Console.WriteLine("Returned to main menu.");
                         }
-
                     }
                     else
                     {
+                        StartupService.MainMenu();
                         Console.WriteLine("Unexpected input detected.");
-                        Console.WriteLine("Returning you to main menu in 5 seconds...");
-                        Thread.Sleep(5000);
+                        Console.WriteLine("Returned to main menu.");
                     }
 
                 }
                 else
                 {
+                    StartupService.MainMenu();
                     Console.WriteLine("********************************************************************");
                     Console.WriteLine("Insufficient balance to validate.");
-                    Console.WriteLine("Returning you to main menu in 5 seconds...");
-                    Thread.Sleep(5000);
-                    StartupService.MainMenu();
+                    Console.WriteLine("Returned to main menu.");
                 }
             }
             catch (Exception ex) { }
@@ -281,7 +278,7 @@ namespace ReserveBlockCore.Services
                 await P2PClient.DisconnectAdjudicators();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
-                Thread.Sleep(500);
+                await Task.Delay(500);
                 //Reset validator variable.
                 StartupService.SetValidator();
 
@@ -306,7 +303,7 @@ namespace ReserveBlockCore.Services
                 Globals.AdjNodes[adjInfo.IpAddress].LastWinningTaskError = false;
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
-                Thread.Sleep(500);
+                await Task.Delay(500);
 
                 return true;
             }

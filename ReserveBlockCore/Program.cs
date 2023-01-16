@@ -292,7 +292,7 @@ namespace ReserveBlockCore
             {
                 while(Globals.EncryptPassword.Length == 0)
                 {
-                    Thread.Sleep(1000);
+                    await Task.Delay(1000);
                 }
                 var accounts = AccountData.GetAccounts();
                 var myAccount = accounts.FindOne(x => x.IsValidating == false && x.Address == valEncryptAddr);
@@ -317,7 +317,8 @@ namespace ReserveBlockCore
             {
                 StartupService.SetConfigValidator();
             }
-            Thread.Sleep(2000);
+
+            await Task.Delay(2000);
 
             var tasks = new Task[] {
                 commandLoopTask, //CLI console
@@ -337,7 +338,6 @@ namespace ReserveBlockCore
         private static void CommandLoop(string url)
         {
             StartupService.StartupMenu();
-            Thread.Sleep(1000);
             if(Globals.AdjudicateAccount == null)
                 StartupService.MainMenu();
 
@@ -431,7 +431,6 @@ namespace ReserveBlockCore
                 {
                     Globals.StopAllTimers = true;
                     Console.WriteLine("Closing and Exiting Wallet Application.");
-                    Thread.Sleep(2000);
                     while(Globals.TreisUpdating)
                     {
                         await Task.Delay(100);

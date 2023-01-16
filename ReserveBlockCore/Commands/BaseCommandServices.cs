@@ -299,7 +299,7 @@ namespace ReserveBlockCore.Commands
                                 break;
 
                             Globals.EncryptPassword = pwd;
-                            Thread.Sleep(200);
+                            await Task.Delay(200);
                             var privKey = account.GetKey;
                             BigInteger b1 = BigInteger.Parse(privKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
@@ -445,11 +445,9 @@ namespace ReserveBlockCore.Commands
 
                             peers.InsertSafe(nPeer);
 
-                            Console.WriteLine("Success! Peer added.");
-                            Console.WriteLine("Returning you to main menu...");
-                            Thread.Sleep(4000);
                             StartupService.MainMenu();
-
+                            Console.WriteLine("Success! Peer added.");
+                            Console.WriteLine("Returned to main menu...");
                         }
                         else
                         {
@@ -457,19 +455,17 @@ namespace ReserveBlockCore.Commands
                             peerRec.IsOutgoing = !peerRec.IsOutgoing;
                             peers.UpdateSafe(peerRec);
 
+                            StartupService.MainMenu();
                             Console.WriteLine("Peer already exist...");
                             Console.WriteLine($"Peer Outgoing has been set to {peerRec.IsOutgoing}");
-                            Console.WriteLine("Returning you to main menu...");
-                            Thread.Sleep(4000);
-                            StartupService.MainMenu();
+                            Console.WriteLine("Returned to main menu...");
                         }
                     }
                     else
-                    {
-                        Console.WriteLine("Failed to add. Please input a valid IP...");
-                        Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(4000);
+                    {                        
                         StartupService.MainMenu();
+                        Console.WriteLine("Failed to add. Please input a valid IP...");
+                        Console.WriteLine("Returned to main menu...");
                     }
                 }
                 catch(Exception ex)
@@ -493,18 +489,15 @@ namespace ReserveBlockCore.Commands
                     if (ValidateIP)
                     {
                         BanService.BanPeer(peer, "Manual Ban", "BaseCommandService.BanPeer()");
-
-                        Console.WriteLine("Success! Peer has been Banned.");
-                        Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(4000);
                         StartupService.MainMenu();
+                        Console.WriteLine("Success! Peer has been Banned.");
+                        Console.WriteLine("Returned to main menu...");
                     }
                     else
                     {
-                        Console.WriteLine("Failed to process. Please input a valid IP...");
-                        Console.WriteLine("Returning you to main menu in 4 seconds...");
-                        Thread.Sleep(4000);
                         StartupService.MainMenu();
+                        Console.WriteLine("Failed to process. Please input a valid IP...");
+                        Console.WriteLine("Returned to main menu.");
                     }
                 }
                 catch (Exception ex)
@@ -528,17 +521,15 @@ namespace ReserveBlockCore.Commands
                     if (ValidateIP)
                     {
                         BanService.UnbanPeer(peer);
-                        Console.WriteLine("Success! Peer has been unbanned.");
-                        Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(4000);
                         StartupService.MainMenu();
+                        Console.WriteLine("Success! Peer has been unbanned.");
+                        Console.WriteLine("Returned to main menu...");
                     }
                     else
                     {
-                        Console.WriteLine("Failed to process. Please input a valid IP...");
-                        Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(4000);
                         StartupService.MainMenu();
+                        Console.WriteLine("Failed to process. Please input a valid IP...");
+                        Console.WriteLine("Returned to main menu...");
                     }
                 }
                 catch (Exception ex)
@@ -1663,15 +1654,11 @@ namespace ReserveBlockCore.Commands
             AnsiConsole.Write(table);
         }
 
-        private static void MainMenuReturn()
+        private static async void MainMenuReturn()
         {
+            var delay = Task.Delay(3000);
             Console.WriteLine("Returning you to main menu in 3 seconds.");
-            Console.WriteLine("3...");
-            Thread.Sleep(1000);
-            Console.WriteLine("2...");
-            Thread.Sleep(1000);
-            Console.WriteLine("1...");
-            Thread.Sleep(1000);
+            await delay;
             StartupService.MainMenu();
         }
     }

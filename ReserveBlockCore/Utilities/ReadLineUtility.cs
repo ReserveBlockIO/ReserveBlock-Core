@@ -17,15 +17,11 @@ namespace ReserveBlockCore.Utilities
             return readLine;
         }
 
-        private static void MainMenuReturn()
+        private static async void MainMenuReturn()
         {
+            var delay = Task.Delay(3000);
             Console.WriteLine("Returning you to main menu in 3 seconds.");
-            Console.WriteLine("3...");
-            Thread.Sleep(1000);
-            Console.WriteLine("2...");
-            Thread.Sleep(1000);
-            Console.WriteLine("1...");
-            Thread.Sleep(1000);
+            await delay;
             StartupService.MainMenu();
         }
     }
