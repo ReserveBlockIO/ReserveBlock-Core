@@ -680,7 +680,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400).ToArray()
+            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400)
                 .Select(x => x.Transactions.Select(y => new { y.Hash, x.Height})).SelectMany(x => x).ToDictionary(x => x.Hash, x => x.Height));
         }
 
@@ -754,6 +754,7 @@ namespace ReserveBlockCore.Services
                     }
 
                     var SigningAddresses = Globals.Signers.Keys.ToHashSet();
+                    var Majority = SigningAddresses.Count / 2 + 1;
                     var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
 
                     if (SigningAddresses.Except(AdjAddresses).Any())
@@ -772,23 +773,23 @@ namespace ReserveBlockCore.Services
 
                     var rnd = new Random();                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                    if (NumAdjudicators >= 3 && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(5, 10000) <= 5)
+                    if (NumAdjudicators >= Majority && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(5, 10000) <= 5)
                     {
-                        var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, 3)).FirstOrDefault()?.IpAddress;
+                        var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, Majority)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                         NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
                     }
 
-                    while(NumAdjudicators > 3)
+                    while(NumAdjudicators > Majority)
                     {
-                        var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, 3)).FirstOrDefault()?.IpAddress;
+                        var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, Majority)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
                             await node.Connection.DisposeAsync();
                         NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
                     }
 
-                    if (NumAdjudicators >= 3)
+                    if (NumAdjudicators >= Majority)
                     {
                         await ValidatorService.PerformErrorCountCheck();
                         await delay;
@@ -821,7 +822,7 @@ namespace ReserveBlockCore.Services
                             for(var i = 0; i < NewAdjudicators.Length; i++)
                             {
                                 var NewAdjudicator = NewAdjudicators[i];
-                                if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= 3)
+                                if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= Majority)
                                     break;
 
                                 if (NewAdjudicator.IsConnected)
