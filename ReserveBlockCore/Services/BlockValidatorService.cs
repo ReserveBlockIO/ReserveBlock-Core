@@ -19,9 +19,14 @@ namespace ReserveBlockCore.Services
 
         public static void UpdateMemBlocks(Block block)
         {
-            if(Globals.MemBlocks.Count == 400)
-                Globals.MemBlocks.TryDequeue(out Block test);
-            Globals.MemBlocks.Enqueue(block);
+            foreach (var trans in block.Transactions)
+                Globals.MemBlocks[trans.Hash] = block.Height;
+
+            var HeightDiff = Globals.LastBlock.Height - 400;
+            foreach(var pair in Globals.MemBlocks.Where(x => x.Value <= HeightDiff))
+            {
+                Globals.MemBlocks.TryRemove(pair.Key, out _);
+            }            
         }
 
         public static async Task ValidationDelay()

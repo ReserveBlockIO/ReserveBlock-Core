@@ -217,9 +217,8 @@ namespace ReserveBlockCore.Services
             {
                 return txResult;
             }
-
-            var memBlocksTxs = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
+            
+            var txExist = Globals.MemBlocks.ContainsKey(txRequest.Hash);
             if (txExist)
             {
                 return txResult;

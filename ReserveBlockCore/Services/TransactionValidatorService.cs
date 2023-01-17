@@ -55,9 +55,8 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
+            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again            
+            var txExist = Globals.MemBlocks.ContainsKey(txRequest.Hash);
             if (txExist)
             {
                 var mempool = TransactionData.GetPool();
@@ -365,7 +364,7 @@ namespace ReserveBlockCore.Services
                                             if(!blockDownloads)
                                             {
                                                 //checks if topic height is within realm of mem blocks
-                                                if (!Globals.MemBlocks.Where(x => x.Height == topic.BlockHeight).Any())
+                                                if (!Globals.MemBlocks.Values.Where(x => x == topic.BlockHeight).Any())
                                                 {
                                                     return (txResult, "Your topic was not created within the realm of memblocks.");
                                                 }
