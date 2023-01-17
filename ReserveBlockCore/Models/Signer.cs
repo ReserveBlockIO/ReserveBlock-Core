@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
@@ -14,7 +15,6 @@ namespace ReserveBlockCore.Models
         public string Address { get; set; }
         public long StartHeight { get; set; }
         public long? EndHeight { get; set; }
-
         public static LiteDB.ILiteCollection<Signer> GetSigners()
         {
             try
@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Models
             }
         }
 
-        public static ConcurrentDictionary<(string Address, long StartHeight), long?> Signers;
+        public static ConcurrentDictionary<(string Address, long StartHeight), long?> Signers;      
         public static void UpdateSigningAddresses()
         {
             var Height = Globals.LastBlock.Height;
@@ -40,6 +40,22 @@ namespace ReserveBlockCore.Models
             foreach (var singer in Globals.Signers.Keys)
                 if (!NewSigners.Contains(singer))
                     Globals.Signers.TryRemove(singer, out _);
+
+            lock (Globals.SignerCacheLock)
+            {
+                Globals.SignerCache = JsonConvert.SerializeObject(Signer.Signers.Select(x => new
+                {
+                    x.Key.StartHeight,
+                    x.Key.Address,
+                    EndHeight = x.Value
+                }));
+
+                Globals.IpAddressCache = JsonConvert.SerializeObject(Globals.Nodes.Select(x => new
+                {
+                    x.Value.Address,
+                    x.Value.NodeIP                    
+                }));
+            }
 
             if (Globals.AdjudicateAccount == null)
             {

@@ -201,6 +201,19 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Signer Seed Info
+        public async Task<string> SignerInfo()
+        {
+            return await P2PServer.SignalRQueue(Context, Globals.SignerCache.Length, async () => Globals.SignerCache);
+        }
+
+        public async Task<string> IpAddresses()
+        {
+            return await P2PServer.SignalRQueue(Context, Globals.IpAddressCache.Length, async () => Globals.IpAddressCache);       
+        }
+
+        #endregion
+
         #region Receive Rand Num and Task Answer V3
         public async Task<TaskAnswerResult> ReceiveTaskAnswerV3(string request)
         {
