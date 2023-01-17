@@ -19,6 +19,11 @@ namespace ReserveBlockCore.Utilities
             return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();            
         }
 
+        public static long GetTimeFromDateTime(DateTime date)
+        {
+            return ((DateTimeOffset)date).ToUnixTimeSeconds();
+        }
+
         public static long GetTimeForBeaconRelease()
         {
             var beacons = Beacons.GetBeacons();

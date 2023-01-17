@@ -426,6 +426,12 @@ namespace ReserveBlockCore.Services
                                                         {
                                                             return (txResult, "Topic description was missing the Adj Vote in Requirements.");
                                                         }
+
+                                                        var topicSize = topic.TopicDescription.Length + topic.TopicName.Length;
+                                                        if(topicSize > 2800)
+                                                        {
+                                                            return (txResult, "Topic is larger than the 2800 limit.");
+                                                        }
                                                     }
                                                     catch
                                                     {
@@ -448,7 +454,6 @@ namespace ReserveBlockCore.Services
 
                                 }
                             }
-                            
                         }
                         catch(Exception ex)
                         {                            

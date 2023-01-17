@@ -36,7 +36,7 @@ namespace ReserveBlockCore.Services
                 adjVoteReq.MachineCPUCores >= 6 &&
                 adjVoteReq.MachineCPUThreads >= 10 &&
                 adjVoteReq.MachineRam >= 16 &&
-                (adjVoteReq.Bandwith > 32 || adjVoteReq.Bandwith == 0) &&
+                (adjVoteReq.Bandwith > 16 || adjVoteReq.Bandwith == 0) &&
                 adjVoteReq.TechnicalBackground.Length > 100 &&
                 adjVoteReq.ReasonForAdjJoin.Length > 100) { result = true; }
 
