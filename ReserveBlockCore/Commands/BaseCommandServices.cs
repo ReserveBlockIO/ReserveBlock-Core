@@ -1495,6 +1495,65 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static void RPS()
+        {
+            Random random = new();
+            int w1 = 0;
+            int d1 = 0;
+            int l1 = 0;
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine(("Um9jaywgUGFwZXIsIFNjaXNzb3Jz").ToStringFromBase64());
+                Console.WriteLine();
+            GetInput:
+                Console.Write(("Q2hvb3NlIFtyXW9jaywgW3BdYXBlciwgW3NdY2lzc29ycywgb3IgW2VdeGl0Og==").ToStringFromBase64());
+                int pm;
+
+                switch (Console.ReadLine()!.ToLower())
+                {
+                    case "r": pm = 0; break;
+                    case "p": pm = 1; break;
+                    case "s": pm = 2; break;
+                    case "e": Console.Clear(); return;
+                    default: Console.WriteLine(("SW52YWxpZCBJbnB1dC4gVHJ5IEFnYWluLi4u").ToStringFromBase64()); goto GetInput;
+                }
+                int cm = (int)random.Next(3);
+                Console.WriteLine(("VGhlIGNvbXB1dGVyIGNob3NlIA==").ToStringFromBase64() + 
+                    (cm == 0 ? ("cm9jaw==").ToStringFromBase64() : 
+                    cm == 1 ? ("cGFwZXI=").ToStringFromBase64() : 
+                    ("c2Npc3NvcnM=").ToStringFromBase64()) + ".");
+                switch (pm, cm)
+                {
+                    case (0, 1):
+                    case (1, 2):
+                    case (2, 0):
+                        Console.WriteLine(("WW91IGxvc2Uu").ToStringFromBase64());
+                        l1++;
+                        break;
+                    case (0, 2):
+                    case (1, 0):
+                    case (2, 1):
+                        Console.WriteLine(("WW91IHdpbi4=").ToStringFromBase64());
+                        w1++;
+                        break;
+                    default:
+                        Console.WriteLine(("VGhpcyBnYW1lIHdhcyBhIGRyYXcu").ToStringFromBase64());
+                        d1++;
+                        break;
+                }
+                Console.WriteLine(("U2NvcmU6IA==").ToStringFromBase64() + 
+                    w1 + 
+                    ("IHdpbnMsIA==").ToStringFromBase64() + 
+                    l1 +
+                    ("IGxvc3Nlcywg").ToStringFromBase64() + 
+                    d1 +
+                    ("IGRyYXdz").ToStringFromBase64());
+                Console.WriteLine(("UHJlc3MgRW50ZXIgVG8gQ29udGludWUuLi4=").ToStringFromBase64());
+                Console.ReadLine();
+            }
+        }
+
         public static void PrintBlock()
         {
             try

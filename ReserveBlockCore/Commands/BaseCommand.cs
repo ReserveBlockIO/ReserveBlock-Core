@@ -166,6 +166,12 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.StartMother();
                     Globals.StopConsoleOutput = false;
                     break;
+                case "/rps":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.RPS();
+                    Globals.StopConsoleOutput = false;
+                    StartupService.MainMenu();
+                    break;
                 case "/trillium":
                     Globals.StopConsoleOutput = true;
                     //start trillium

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using System;
 using System.Net;
 
 namespace ReserveBlockCore.Services
@@ -345,6 +346,55 @@ namespace ReserveBlockCore.Services
             catch (Exception ex)
             {
 
+            }
+        }
+
+        internal static async Task CallToSeed()
+        {
+            if (!Globals.RefuseToCallSeed)
+            {
+                if (Globals.IsTestNet == false)
+                {
+                    try
+                    {
+                        var settingsDB = Settings.GetSettingsDb();
+                        var settings = Settings.GetSettings();
+                        if(settings?.CalledToSeed == false)
+                        {
+                            var seedNodes = SeedNodes();
+                            int count = 0;
+                            foreach (var seedNode in seedNodes)
+                            {
+                                using (var client = Globals.HttpClientFactory.CreateClient())
+                                {
+                                    string endpoint = seedNode.NodeUrl + "/api/V1/GetCallToNode";
+                                    using (var Response = await client.GetAsync(endpoint).WaitAsync(new TimeSpan(0, 0, 5)))
+                                    {
+                                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
+                                        {
+                                            count += 1;
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            if (count == seedNodes.Count())
+                            {
+                                if (settingsDB != null)
+                                {
+                                    if (settings != null)
+                                    {
+                                        settings.CalledToSeed = true;
+                                        settingsDB.UpdateSafe(settings);
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                    catch { }
+                }
             }
         }
 

@@ -2,6 +2,7 @@
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using System.Transactions;
 
 namespace ReserveBlockCore.Utilities
 {
@@ -9,6 +10,7 @@ namespace ReserveBlockCore.Utilities
     {
         public static async Task<bool> EstablishBeaconConnection(bool upload = false, bool download = false)
         {
+            var userInputedBeaconsFailed = false;
             var selfBeacon = Globals.SelfBeacon;
             if (selfBeacon?.SelfBeaconActive == true)
             {
@@ -20,27 +22,48 @@ namespace ReserveBlockCore.Utilities
                 }
                 else
                 {
+                    ErrorLogUtility.LogError("There was an issue with your self hosted beacon. Please ensure all ports are open and the beacon is properly configured.", "BeaconUtility.EstablishBeaconConnection()");
                     return false;
                 }
             }
-            else
+            else if(Globals.Beacons.Values.Where(x => x.DefaultBeacon == false && !x.SelfBeacon).Any())
             {
-                var pubBeaconList = Globals.Beacons.Values.Where(x => !x.SelfBeacon).ToList();
-                bool conResult = false;
-                while(true)
+                var nonDefaultBeacon = Globals.Beacons.Values.Where(x => x.DefaultBeacon == false && !x.SelfBeacon).ToList();
+                nonDefaultBeacon.Shuffle();
+                var cResult = false;
+                foreach(var beacon in nonDefaultBeacon)
                 {
-                    if (pubBeaconList.Count() == 0)
-                        break;
-
-                    var random = new Random().Next(pubBeaconList.Count);
-                    var pubBeacon = pubBeaconList[random];
+                    var pubBeacon = beacon;
                     var url = "http://" + pubBeacon.IPAddress + ":" + Globals.Port + "/beacon";
                     var result = await P2PClient.ConnectBeacon_New(url, pubBeacon, upload ? "y" : "n", download ? "y" : "n");
-                    if(!result)
+                    if (result)
                     {
-                        pubBeaconList.Remove(pubBeacon);
+                        cResult = true;
+                        break;
                     }
-                    else
+                }
+                if(cResult)
+                {
+                    return true;
+                }
+                else
+                {
+                    userInputedBeaconsFailed = true;
+                }
+            }
+
+            //User provided beacons failed. Attempting default ones.
+            if(userInputedBeaconsFailed)
+            {
+                var pubBeaconList = Globals.Beacons.Values.Where(x => !x.SelfBeacon && x.DefaultBeacon != false).ToList();
+                pubBeaconList.Shuffle();
+                bool conResult = false;
+                foreach(var beacon in pubBeaconList)
+                {
+                    var pubBeacon = beacon;
+                    var url = "http://" + pubBeacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    var result = await P2PClient.ConnectBeacon_New(url, pubBeacon, upload ? "y" : "n", download ? "y" : "n");
+                    if (result)
                     {
                         conResult = true;
                         break;
@@ -49,6 +72,9 @@ namespace ReserveBlockCore.Utilities
 
                 return conResult;
             }
+
+            ErrorLogUtility.LogError("Failed to connect to every beacon stored in wallet. Please ensure you are not blocking outside connections to 3338, 13338, 23338, or 33338.", "BeaconUtility.EstablishBeaconConnection()");
+            return false; //something failed if we reach here. This means ZERO connections were made to beacon
         }
         public static async Task<bool> SendAssets(string scUID, string assetName, string locator)
         {

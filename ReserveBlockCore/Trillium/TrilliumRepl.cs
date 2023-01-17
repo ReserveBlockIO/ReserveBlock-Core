@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Extensions;
+using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Trillium.CodeAnalysis;
@@ -16,8 +17,8 @@ namespace ReserveBlockCore.Trillium
 		private bool _showTree;
 		private bool _showProgram;
 		private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
-
-		public TrilliumRepl()
+        private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+        public TrilliumRepl()
 		{
 			//LoadSubmissions();
 		}
@@ -191,37 +192,8 @@ namespace ReserveBlockCore.Trillium
 		{
 			var trilliumLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
 
-			string path = "";
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			{
-				string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-				path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar +
-						"Submissions" + Path.DirectorySeparatorChar;
-			}
-			else
-			{
-				if (Debugger.IsAttached)
-				{
-					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar +
-						"Submissions" + Path.DirectorySeparatorChar;
-				}
-				else
-				{
-					path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + 
-						"RBX" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar + 
-						"Submissions" + Path.DirectorySeparatorChar;
-				}
-			}
-
-            if (!string.IsNullOrEmpty(Globals.CustomPath))
-            {
-                path = Globals.CustomPath + "RBX" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar;
-            }
-
-            if (!Directory.Exists(path))
-			{
-				Directory.CreateDirectory(path);
-			}
+			string path = GetPathUtility.GetTrilliumPath();
+            
 			return path;
 		}
 

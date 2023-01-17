@@ -9,7 +9,7 @@ namespace ReserveBlockCore.Models
         public bool CorrectShutdown { get; set; }
         public DateTime? LastShutdown { get; set; }
         public DateTime? LastStartup { get; set; }
-
+        public bool CalledToSeed { get; set; }
 
 
         #region Get Settings DB

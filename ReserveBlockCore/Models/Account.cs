@@ -16,6 +16,9 @@ namespace ReserveBlockCore.Models
     {
         private string _privateKey;
         public long Id { get; set; }
+        /// <summary>
+        /// This is where a private key is stored. Do not use this to get the private key. Instead use GetKey.
+        /// </summary>
         public string PrivateKey { get; set; }
         public string PublicKey { set; get; }
         public string Address { get; set; }
@@ -23,7 +26,14 @@ namespace ReserveBlockCore.Models
         public decimal Balance { get; set; }
         public bool IsValidating { get; set; }
 
-        //Use this to return private keys
+        /// <summary>
+        /// This will return your private key. It called the GetPrivateKey(PrivateKey, Address) method.
+        /// It will return either the private key, or the private key encrypted/decrypted depending if password is present.
+        /// </summary>
+        /// <returns>
+        /// public string PrivateKey
+        /// </returns>
+        /// <exception cref="PrivateKey"></exception>
         public string GetKey{ get { return GetPrivateKey(PrivateKey, Address); } }
 
         public Account Build()

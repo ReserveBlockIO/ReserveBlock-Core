@@ -157,5 +157,42 @@ namespace ReserveBlockCore.Utilities
 
             return path;
         }
+
+        public static string GetTrilliumPath()
+        {
+            var trilliumLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
+
+            string path = "";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                path = homeDirectory + Path.DirectorySeparatorChar + MainFolder.ToLower() + Path.DirectorySeparatorChar +
+                    trilliumLocation + Path.DirectorySeparatorChar + "Submissions" + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                if (Debugger.IsAttached)
+                {
+                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar +
+                        "Submissions" + Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar +
+                        "Submissions" + Path.DirectorySeparatorChar;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + "RBX" + Path.DirectorySeparatorChar + trilliumLocation + Path.DirectorySeparatorChar + "Submissions" + Path.DirectorySeparatorChar;
+            }
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            return path;
+        }
     }
 }

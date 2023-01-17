@@ -35,6 +35,7 @@ namespace ReserveBlockCore.Config
 		public List<string> AllowedExtensionsTypes { get; set; }
 		public string? CustomPath { get; set; }
 		public bool LogAPI { get; set; }
+		public bool RefuseToCallSeed { get; set; }
 
         public static Config ReadConfigFile()
         {
@@ -84,6 +85,7 @@ namespace ReserveBlockCore.Config
 				config.ChainCheckpointLocation = dict.ContainsKey("ChainCheckpointLocation") ? dict["ChainCheckpointLocation"] : GetPathUtility.GetCheckpointPath();
 				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
                 config.LogAPI = dict.ContainsKey("LogAPI") ? Convert.ToBoolean(dict["LogAPI"]) : false;
+                config.RefuseToCallSeed = dict.ContainsKey("RefuseToCallSeed") ? Convert.ToBoolean(dict["RefuseToCallSeed"]) : false;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -156,8 +158,10 @@ namespace ReserveBlockCore.Config
 			Globals.IgnoreIncomingNFTs = config.IgnoreIncomingNFTs;
 			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
 			Globals.LogAPI = config.LogAPI;
+			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
 
-			if(config.TestNet == true)
+
+            if (config.TestNet == true)
             {
 				Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";

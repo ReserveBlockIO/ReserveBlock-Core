@@ -312,6 +312,7 @@ namespace ReserveBlockCore
             _ = StartupService.ConnectToAdjudicators();
             _ = BanService.PeerBanUnbanService();
             _ = BeaconService.BeaconRunService();
+            _ = SeedNodeService.CallToSeed();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
