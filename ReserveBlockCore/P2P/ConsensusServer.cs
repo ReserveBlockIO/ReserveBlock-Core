@@ -56,7 +56,7 @@ namespace ReserveBlockCore.P2P
                 var signature = httpContext.Request.Headers["signature"].ToString();
 
                 var Now = TimeUtil.GetTime();
-                if (Now - long.Parse(time) > 30)
+                if (Math.Abs(Now - long.Parse(time)) > 3)
                 {
                     EndOnConnect(peerIP, "Signature Bad time.", "Signature Bad time.");
                     return;
