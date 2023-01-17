@@ -36,7 +36,7 @@ namespace ReserveBlockCore.Services
                         {
 
                             string endpoint = node.NodeUrl + @"/api/V1";
-                            using (var Response = await client.GetAsync(endpoint).WaitAsync(new TimeSpan(0,0,5)))
+                            using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
                             {
                                 if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                                 {
@@ -368,7 +368,7 @@ namespace ReserveBlockCore.Services
                                 using (var client = Globals.HttpClientFactory.CreateClient())
                                 {
                                     string endpoint = seedNode.NodeUrl + "/api/V1/GetCallToNode";
-                                    using (var Response = await client.GetAsync(endpoint).WaitAsync(new TimeSpan(0, 0, 5)))
+                                    using (var Response = await client.GetAsync(endpoint, new CancellationTokenSource(5000).Token))
                                     {
                                         if (Response.StatusCode == System.Net.HttpStatusCode.OK)
                                         {

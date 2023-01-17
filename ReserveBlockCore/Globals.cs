@@ -111,7 +111,7 @@ namespace ReserveBlockCore
 
         public static CancellationToken CancelledToken;
 
-        public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
+        public static ConcurrentDictionary<string, long> MemBlocks = new ConcurrentDictionary<string, long>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
         public static ConcurrentDictionary<string, AdjBench> AdjBench = new ConcurrentDictionary<string, AdjBench>(); // IP Address:Key
         public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        

@@ -181,7 +181,7 @@ namespace ReserveBlockCore.P2P
                     }                    
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,8));
+                await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
                 if (hubConnection.ConnectionId == null)
                     return;
 
@@ -331,7 +331,7 @@ namespace ReserveBlockCore.P2P
                     }
                 });
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));                
+                await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
                 if (string.IsNullOrEmpty(hubConnection.ConnectionId))
                     return false;
 

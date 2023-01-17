@@ -116,7 +116,7 @@ namespace ReserveBlockCore.P2P
 
                     Hashes = ConsensusServer.Hashes.GetOrAdd((Height, methodCode), new ConcurrentDictionary<string, (string Hash, string Signature)>());                    
 
-                    var ConsensusSource = new CancellationTokenSource();
+                    var ConsensusSource = methodCode != 0 ? new CancellationTokenSource(HeartBeatTimeout) : new CancellationTokenSource();
                     _ = MessageRequests(methodCode, Peers, CurrentAddresses.ToArray(), ConsensusSource);
                                         
                     var WaitForAddresses = AddressesToWaitFor(Height, methodCode, HeartBeatTimeout);                    
@@ -169,7 +169,7 @@ namespace ReserveBlockCore.P2P
                     ConsensusServer.Hashes.TryRemove(key, out _);
                 }
 
-                var HashSource = new CancellationTokenSource();                
+                var HashSource = new CancellationTokenSource(HeartBeatTimeout);
                 _ = HashRequests(methodCode, Peers, Globals.Signers.Keys.ToArray(), HashSource);
                 
                 while (Height == Globals.LastBlock.Height + 1)
@@ -471,9 +471,9 @@ namespace ReserveBlockCore.P2P
                     LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + $"] Connection to consensus node {IPAddress} has been closed.");
                     return Task.CompletedTask;
-                };                
+                };
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
+                await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
 
                 var node = Globals.Nodes[IPAddress];
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(hubConnection);

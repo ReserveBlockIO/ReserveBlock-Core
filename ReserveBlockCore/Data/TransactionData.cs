@@ -155,11 +155,10 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
         {
             var result = false;
-
-            var transactions = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            if (transactions.Count() > 0)
+            
+            if (Globals.MemBlocks.Any())
             {
-                var txExist = transactions.Any(x => x.Hash == tx.Hash);
+                var txExist = Globals.MemBlocks.ContainsKey(tx.Hash);
                 if (txExist == true)
                 {
                     result = true;
@@ -453,11 +452,10 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> DoubleSpendReplayCheck(Transaction tx)
         {
             bool result = false;
-
-            var transactions = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            if (transactions.Count() > 0)
+            
+            if (Globals.MemBlocks.Any())
             {
-                var txExist = transactions.Any(x => x.Hash == tx.Hash);
+                var txExist = Globals.MemBlocks.ContainsKey(tx.Hash);
                 if (txExist)
                 {
                     result = true;//replay or douple spend has occured
