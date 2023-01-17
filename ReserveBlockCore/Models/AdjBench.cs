@@ -1,4 +1,7 @@
-﻿namespace ReserveBlockCore.Models
+﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.Utilities;
+
+namespace ReserveBlockCore.Models
 {
     public class AdjBench
     {
@@ -8,7 +11,35 @@
         public long TimeEntered { get; set; }
         public long TimeEligibleForConsensus { get; set; }
         public bool PulledFromBench { get; set; }
-        public string TXVoteHash { get; set; }
         public string TopicUID { get; set; }
+
+        public static LiteDB.ILiteCollection<AdjBench> GetBench()
+        {
+            try
+            {
+                return DbContext.DB_Config.GetCollection<AdjBench>(DbContext.RSRV_ADJ_BENCH);
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "AdjBench.GetBench()");
+                return null;
+            }
+        }
+
+        public static bool SaveToBench(AdjBench adjB)
+        {
+            var adjBenchDB = GetBench();
+            if(adjBenchDB != null)
+            {
+                var rec = adjBenchDB.Query().Where(x => x.RBXAddress == adjB.RBXAddress).FirstOrDefault();
+                if(rec == null)
+                {
+                    adjBenchDB.InsertSafe(adjB);
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

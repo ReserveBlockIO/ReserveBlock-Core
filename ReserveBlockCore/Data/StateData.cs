@@ -272,6 +272,8 @@ namespace ReserveBlockCore.Data
                                         topic.Id = 0;//save new
                                         topic.BlockHeight = tx.Height;
                                         TopicTrei.SaveTopic(topic);
+                                        if(topic.VoteTopicCategory == VoteTopicCategories.AdjVoteIn)
+                                            AdjVoteInQueue.SaveToQueue(topic);
                                     }
                                 }
                             }
