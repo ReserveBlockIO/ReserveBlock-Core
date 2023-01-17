@@ -409,6 +409,30 @@ namespace ReserveBlockCore.Services
 
                                                 if (txRequest.Amount < 1M)
                                                     return (txResult, "There must be at least 1 RBX to create a Topic.");
+
+                                                if(topic.VoteTopicCategory == VoteTopicCategories.AdjVoteIn)
+                                                {
+                                                    try
+                                                    {
+                                                        var adjVoteReq = JsonConvert.DeserializeObject<AdjVoteInReqs>(topic.TopicDescription);
+                                                        if (adjVoteReq != null)
+                                                        {
+                                                            var adjVoteReqResult = VoteValidatorService.ValidateAdjVoteIn(adjVoteReq);
+                                                            if(!adjVoteReqResult)
+                                                            {
+                                                                return (txResult, "You did not meet the required specs or information was not completed. This topic has been cancelled.");
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            return (txResult, "Topic description was missing the Adj Vote in Requirements.");
+                                                        }
+                                                    }
+                                                    catch
+                                                    {
+
+                                                    }
+                                                }
                                             }
                                             
              

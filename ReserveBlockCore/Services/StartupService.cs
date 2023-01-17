@@ -247,15 +247,15 @@ namespace ReserveBlockCore.Services
         }
         internal static void SetBlockchainChainRef()
         {
-            //mainnet
+            //58 mainnet b
             //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
-            //testnet
             BlockchainData.ChainRef = "m1_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
             LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
 
             if (Globals.IsTestNet)
             {
+                //testnet
                 BlockchainData.ChainRef = "t_testnet1";
             }
         }

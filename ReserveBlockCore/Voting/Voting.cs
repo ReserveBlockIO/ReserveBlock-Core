@@ -264,6 +264,16 @@ namespace ReserveBlockCore.Voting
 
                     var topicCat = Console.ReadLine();
 
+                    if(!string.IsNullOrEmpty(topicCat))
+                    {
+                        if(topicCat == "5")
+                        {
+                            await VoteMenu();
+                            Console.WriteLine("Adj Vote In must be started through GUI or API.");
+                            return;
+                        }
+                    }
+
                     Console.WriteLine("Please choose voting days for Topic:");
                     Console.WriteLine("1. Thirty Days (30)");
                     Console.WriteLine("2. Sixty Days (60)");

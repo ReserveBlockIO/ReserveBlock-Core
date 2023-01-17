@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -267,6 +268,25 @@ namespace ReserveBlockCore.Controllers
                     TopicName = topicCreate.TopicName,
                     TopicDescription = topicCreate.TopicDescription,
                 };
+
+                if(topicCreate.VoteTopicCategory == VoteTopicCategories.AdjVoteIn)
+                {
+                    var adjVoteReqs = JsonConvert.DeserializeObject<AdjVoteInReqs>(topic.TopicDescription);
+                    if(adjVoteReqs != null)
+                    {
+                        var voteReqsResult = VoteValidatorService.ValidateAdjVoteIn(adjVoteReqs);
+                        if(!voteReqsResult)
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "You did not meet the required specs or information was not completed. This topic has been cancelled." });
+                            return output;
+                        }
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "For this topic you must complete the Adj Vote in Requirements." });
+                        return output;
+                    }
+                }
 
                 topic.Build(topicCreate.VotingEndDays, topicCreate.VoteTopicCategory);
 

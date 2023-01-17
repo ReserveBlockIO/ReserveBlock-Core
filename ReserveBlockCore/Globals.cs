@@ -113,6 +113,7 @@ namespace ReserveBlockCore
 
         public static ConcurrentQueue<Block> MemBlocks = new ConcurrentQueue<Block>();
         public static ConcurrentDictionary<string, NodeInfo> Nodes = new ConcurrentDictionary<string, NodeInfo>(); // IP Address
+        public static ConcurrentDictionary<string, AdjBench> AdjBench = new ConcurrentDictionary<string, AdjBench>(); // IP Address:Key
         public static ConcurrentDictionary<string, Validators> InactiveValidators = new ConcurrentDictionary<string, Validators>(); // RBX address        
         //public static ConcurrentDictionary<string, string> Locators = new ConcurrentDictionary<string, string>(); // BeaconUID
         public static ConcurrentDictionary<string, Mother.Kids> MothersKids = new ConcurrentDictionary<string, Mother.Kids>(); //Mothers Children

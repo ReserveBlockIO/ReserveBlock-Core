@@ -91,6 +91,7 @@ namespace ReserveBlockCore.Data
             {
                 if (txCheck == null)
                 {
+                    //posible sub needed
                     transaction.TransactionStatus = txStatus;
                     transaction.Height = blockHeight;
                     txs.InsertSafe(transaction);
