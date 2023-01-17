@@ -471,9 +471,9 @@ namespace ReserveBlockCore.P2P
                     LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
                     Console.WriteLine("[" + DateTime.Now.ToString() + $"] Connection to consensus node {IPAddress} has been closed.");
                     return Task.CompletedTask;
-                };                
+                };
 
-                await hubConnection.StartAsync().WaitAsync(new TimeSpan(0, 0, 8));
+                await hubConnection.StartAsync(new CancellationTokenSource(8000).Token);
 
                 var node = Globals.Nodes[IPAddress];
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await P2PClient.GetNodeHeight(hubConnection);
