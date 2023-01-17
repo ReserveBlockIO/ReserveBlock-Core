@@ -44,6 +44,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<AdjPool>>();
                 c.DocumentFilter<SwaggerDocumentFilter<AdjudicatorPool>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Adjudicators>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjVoteInReqs>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Adnr>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Beacons>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
