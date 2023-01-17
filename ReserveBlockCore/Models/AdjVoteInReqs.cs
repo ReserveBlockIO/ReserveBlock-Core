@@ -18,8 +18,8 @@
         public int Bandwith { get; set; }
         public string TechnicalBackground { get; set; }
         public string ReasonForAdjJoin { get; set; }
-        public string GithubLink { get; set; }
-        public string SupplementalURLs { get; set; }    
+        public string? GithubLink { get; set; }
+        public string? SupplementalURLs { get; set; }    
     }
 
     public enum Provider
