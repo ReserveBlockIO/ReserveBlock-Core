@@ -1067,17 +1067,17 @@ namespace ReserveBlockCore.Services
                     var BadAddresses = ValidSubmissions.Select(x => x.RBXAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();
 
-                    foreach (var ip in BadIPs)
+                    Parallel.ForEach(BadIPs, ip =>
                     {
                         if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
                             _ = HadBadValidator(pool.Item2, ip, 0);
-                    }
+                    });
 
-                    foreach (var address in BadAddresses)
+                    Parallel.ForEach(BadAddresses, address =>
                     {
                         if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
                             _ = HadBadValidator(pool.Item2, address, 1);
-                    }
+                    });
 
                     ConsensusServer.UpdateState(isUsed: true);
                     var DecryptedAnswers = await ConsensusClient.ConsensusRun(2, MyDecryptedAnswer, MyEncryptedAnswer, 2000, RunType.Middle);
@@ -1130,17 +1130,18 @@ namespace ReserveBlockCore.Services
 
                     ConsoleWriterService.Output("Potential winners total: " + PotentialWinners.Length + 
                         ". Requesting total: " + WinnerPool.Length);
-                    foreach (var fortis in WinnerPool)
+
+                    Parallel.ForEach(WinnerPool, new ParallelOptions { MaxDegreeOfParallelism = 30 }, fortis =>
                     {
                         try
                         {
                             _ = HubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", "",
-                                new CancellationTokenSource(3000).Token);                                                               
+                                new CancellationTokenSource(3000).Token);
                         }
                         catch (Exception ex)
                         {
                         }
-                    }
+                    });
                     
                     await Task.Delay(3000);
                     var MySubmittedWinners = PotentialWinners.Select(x =>
@@ -1309,16 +1310,17 @@ namespace ReserveBlockCore.Services
                 var Now = TimeUtil.GetMillisecondTime();
                 Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
                 var data = JsonConvert.SerializeObject(block);
-                
-                foreach (var node in Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address))
+
+                Parallel.ForEach(Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address), new ParallelOptions { MaxDegreeOfParallelism = Globals.Signers.Count },
+                    node =>
                 {
                     try
-                    {                        
-                        _ = node.InvokeAsync<bool>("ReceiveBlock", new object?[] { block }, () => new CancellationTokenSource(5000).Token, 
+                    {
+                        _ = node.InvokeAsync<bool>("ReceiveBlock", new object?[] { block }, () => new CancellationTokenSource(5000).Token,
                             "ReceiveBlock");
                     }
-                    catch {}
-                }
+                    catch { }
+                });
 
                 if (HubContext?.Clients != null)
                     try
