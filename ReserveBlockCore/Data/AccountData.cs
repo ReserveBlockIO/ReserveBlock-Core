@@ -17,7 +17,7 @@ using System.Net.NetworkInformation;
 
 namespace ReserveBlockCore.Data
 {
-    internal static class AccountData
+    public static class AccountData
     {
 		public static Account CreateNewAccount(bool skipSave = false)
         {

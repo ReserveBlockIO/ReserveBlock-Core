@@ -190,7 +190,9 @@ namespace ReserveBlockCore.Services
 
                         Globals.ValidatorAddress = validator.Address;
 
-                        output = "Account found and activated as a validator! Thank you for service to the network!";                        
+                        output = "Account found and activated as a validator! Thank you for service to the network!";
+
+                        _ = StartupService.GetAdjudicatorPool();
                     }
                 }
                 else
