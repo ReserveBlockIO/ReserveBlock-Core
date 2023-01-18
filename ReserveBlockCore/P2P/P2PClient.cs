@@ -205,8 +205,8 @@ namespace ReserveBlockCore.P2P
 
                     if (walletVersion != null)
                     {
-                        peer.WalletVersion = walletVersion;
-                        node.WalletVersion = walletVersion;
+                        peer.WalletVersion = walletVersion.Substring(0,3);
+                        node.WalletVersion = walletVersion.Substring(0, 3);
 
                         Globals.Nodes.TryAdd(IPAddress, node);
 
@@ -226,6 +226,8 @@ namespace ReserveBlockCore.P2P
                     }
                     else
                     {
+                        peer.WalletVersion = "2.1";
+                        Peers.GetAll()?.UpdateSafe(peer);
                         //not on latest version. Disconnecting
                         await node.Connection.DisposeAsync();
                     }
@@ -449,11 +451,11 @@ namespace ReserveBlockCore.P2P
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
-                .Where(x => !SkipIPs.Contains(x.PeerIP))
+                .Where(x => !SkipIPs.Contains(x.PeerIP) && x.WalletVersion != "2.1")
                 .ToArray()
                 .OrderBy(x => rnd.Next())
                 .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
-                .Where(x => !SkipIPs.Contains(x.PeerIP))
+                .Where(x => !SkipIPs.Contains(x.PeerIP) && x.WalletVersion != "2.1")
                 .ToArray()
                 .OrderBy(x => rnd.Next()))
                 .ToArray();
