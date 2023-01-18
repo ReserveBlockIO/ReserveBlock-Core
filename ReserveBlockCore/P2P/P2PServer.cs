@@ -80,7 +80,7 @@ namespace ReserveBlockCore.P2P
         {
             var now = TimeUtil.GetMillisecondTime();
             var ipAddress = GetIP(context);
-            if(Globals.AdjudicateLock == null)
+            if(Globals.AdjudicateAccount == null)
             {
                 if (Globals.AdjNodes.ContainsKey(ipAddress))
                     return await func();
