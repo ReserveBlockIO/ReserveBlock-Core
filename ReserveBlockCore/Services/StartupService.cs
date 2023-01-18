@@ -168,7 +168,7 @@ namespace ReserveBlockCore.Services
 
         internal static void SetAdjudicatorAddresses()
         {
-            if(!Globals.IsTestNet)
+            if(!Globals.IsTestNet && Globals.LastBlock.Height >= Globals.BlockLock)
             {
                 Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
 
