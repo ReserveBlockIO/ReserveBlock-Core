@@ -55,7 +55,7 @@ namespace ReserveBlockCore.Utilities
                     {
                         var split = AddressSignature.Split(':');
                         var (Address, Signature) = (split[0], split[1]);
-                        if (!Globals.Signers.ContainsKey(Address) && Address != "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK" && Address != "xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr")
+                        if (!Globals.Signers.ContainsKey(Address))
                             return false;
                         if (!(SignatureService.VerifySignature(Address, block.Hash, Signature)))
                             return false;

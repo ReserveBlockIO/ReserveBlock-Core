@@ -273,7 +273,7 @@ namespace ReserveBlockCore.Services
                     AdjBench.SaveListToBench(mainList);
                 }
             }
-
+            
             foreach (var bench in AdjBench.GetBench().FindAll())
                 Globals.AdjBench[bench.RBXAddress] = bench;            
         }

@@ -11,7 +11,7 @@ namespace ReserveBlockCore.Models
 {
     public class Signer
     {
-        public string Id { get; set; }
+        public int Id { get; set; }
         public string Address { get; set; }
         public long StartHeight { get; set; }
         public long? EndHeight { get; set; }

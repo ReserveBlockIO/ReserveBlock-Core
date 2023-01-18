@@ -188,8 +188,8 @@ namespace ReserveBlockCore.Services
                     [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
                     [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
                     [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
-                    [("xHBG5xUbjTJ4hdhF5b2aEfo3VtH4qToe8h", 0)] = null,
-                    [("xS8CnrDN771UVdoyPn98iKnHwBywy4Jq51", 0)] = null,
+                    [("xHBG5xUbjTJ4hdhF5b2aEfo3VtH4qToe8h", 27150)] = null,
+                    [("xS8CnrDN771UVdoyPn98iKnHwBywy4Jq51", 27150)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
@@ -552,7 +552,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task UpdateBenchIpAndSigners()
         {
-            while(true)
+            while(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 foreach(var node in Globals.AdjNodes.Values.Where(x => x.IsConnected))
                 {

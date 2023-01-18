@@ -467,9 +467,7 @@ namespace ReserveBlockCore.P2P
                 };
 
                 hubConnection.Closed += (sender) =>
-                {
-                    LogUtility.Log("Closed to Adjudicator", "ConnectConsensusNode()");
-                    Console.WriteLine("[" + DateTime.Now.ToString() + $"] Connection to consensus node {IPAddress} has been closed.");
+                {                    
                     return Task.CompletedTask;
                 };
 
