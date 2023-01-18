@@ -401,8 +401,8 @@ namespace ReserveBlockCore.Services
 
         public static void SeedBench()
         {
-            var bench = AdjBench.GetBench().FindAll().ToList();
-            if(bench?.Count() >= 12)
+            var benches = AdjBench.GetBench().FindAll().ToList();
+            if(benches?.Count() <= 12)
             {
                 //main adjs
                 List<AdjBench> mainList = new List<AdjBench>{
@@ -428,6 +428,9 @@ namespace ReserveBlockCore.Services
                 AdjBench.SaveListToBench(mainList);
                 AdjBench.SaveListToBench(benchList);
             }
+
+            foreach (var bench in AdjBench.GetBench().FindAll())
+                Globals.AdjBench[bench.RBXAddress] = bench;            
         }
 
         public static List<SeedNode> SeedNodes()

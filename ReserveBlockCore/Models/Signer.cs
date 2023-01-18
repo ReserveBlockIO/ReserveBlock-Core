@@ -50,10 +50,10 @@ namespace ReserveBlockCore.Models
                     EndHeight = x.Value
                 }));
 
-                Globals.IpAddressCache = JsonConvert.SerializeObject(Globals.Nodes.Select(x => new
+                Globals.IpAddressCache = JsonConvert.SerializeObject(Globals.AdjBench.Select(x => new
                 {
-                    x.Value.Address,
-                    x.Value.NodeIP                    
+                    x.Value.RBXAddress,
+                    x.Value.IPAddress                    
                 }));
             }
 
