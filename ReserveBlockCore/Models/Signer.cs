@@ -11,7 +11,7 @@ namespace ReserveBlockCore.Models
 {
     public class Signer
     {
-        public string Id { get; set; }
+        public int Id { get; set; }
         public string Address { get; set; }
         public long StartHeight { get; set; }
         public long? EndHeight { get; set; }
@@ -50,10 +50,10 @@ namespace ReserveBlockCore.Models
                     EndHeight = x.Value
                 }));
 
-                Globals.IpAddressCache = JsonConvert.SerializeObject(Globals.Nodes.Select(x => new
+                Globals.IpAddressCache = JsonConvert.SerializeObject(Globals.AdjBench.Select(x => new
                 {
-                    x.Value.Address,
-                    x.Value.NodeIP                    
+                    x.Value.RBXAddress,
+                    x.Value.IPAddress                    
                 }));
             }
 

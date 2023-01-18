@@ -371,11 +371,13 @@ namespace ReserveBlockCore.P2P
                 if (string.IsNullOrEmpty(hubConnection.ConnectionId))
                     return false;
 
+                var bench = Globals.AdjBench.Values.Where(x => x.IPAddress == IPAddress).FirstOrDefault();
                 if (Globals.AdjNodes.TryGetValue(IPAddress, out var node))
                 {
                     node.Connection = hubConnection;
                     node.IpAddress = IPAddress;
                     node.AdjudicatorConnectDate = DateTime.UtcNow;
+                    node.Address = bench.RBXAddress;
                 }
                 else
                 {
@@ -383,7 +385,8 @@ namespace ReserveBlockCore.P2P
                     {
                         Connection = hubConnection,
                         IpAddress = IPAddress,
-                        AdjudicatorConnectDate = DateTime.UtcNow
+                        AdjudicatorConnectDate = DateTime.UtcNow,
+                        Address = bench.RBXAddress
                     };
                 }
 

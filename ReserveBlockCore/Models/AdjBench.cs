@@ -42,7 +42,7 @@ namespace ReserveBlockCore.Models
             return false;
         }
 
-        public static bool SaveListToBench(List<AdjBench> adjBList)
+        public static void SaveListToBench(List<AdjBench> adjBList)
         {
             var adjBenchDB = GetBench();
             if (adjBenchDB != null)
@@ -52,13 +52,10 @@ namespace ReserveBlockCore.Models
                     var rec = adjBenchDB.Query().Where(x => x.RBXAddress == adjB.RBXAddress).FirstOrDefault();
                     if (rec == null)
                     {
-                        adjBenchDB.InsertSafe(adjB);
-                        return true;
+                        adjBenchDB.InsertSafe(adjB);                        
                     }
                 }
-            }
-
-            return false;
+            }            
         }
     }
 }

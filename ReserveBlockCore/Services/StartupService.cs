@@ -169,63 +169,50 @@ namespace ReserveBlockCore.Services
 
         internal static void SetAdjudicatorAddresses()
         {
-            if(!Globals.IsTestNet && Globals.LastBlock.Height >= Globals.BlockLock)
+            Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
+
+            var signerDB = Signer.GetSigners();
+            var Signers = signerDB.FindAll().ToArray();
+
+            if (Signers.Any())
             {
-                Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
-
-                var signerDB = Signer.GetSigners();
-                var Signers = signerDB.FindAll().ToArray();
-
-                if(Signers.Any())
-                {
-                    Signer.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
-                        Signers.ToDictionary(x => (x.Address, x.StartHeight), x => x.EndHeight));
-                }
-                else
-                {
-                    Signer.Signers = new ConcurrentDictionary<(string, long), long?>
-                    {
-                        [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
-                        [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
-                        [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
-                        [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
-                        [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
-                    };
-
-                    foreach(var signer in Signer.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
-                        signerDB.InsertSafe(signer);                    
-                }
-                
-                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-                Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
-                if (Globals.AdjudicateAccount != null)
-                {
-                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
-                }
+                Signer.Signers = new ConcurrentDictionary<(string Address, long StartHeight), long?>(
+                    Signers.ToDictionary(x => (x.Address, x.StartHeight), x => x.EndHeight));
             }
             else
             {
-                Globals.LastBlock = BlockchainData.GetLastBlock() ?? new Block { Height = -1 };
-
-                Signer.Signers = new ConcurrentDictionary<(string, long), long?>
+                Signer.Signers = Globals.IsTestNet ? new ConcurrentDictionary<(string, long), long?>
                 {
                     [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
                     [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
                     [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
                     [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
                     [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
+                    [("xHBG5xUbjTJ4hdhF5b2aEfo3VtH4qToe8h", 27150)] = null,
+                    [("xS8CnrDN771UVdoyPn98iKnHwBywy4Jq51", 27150)] = null,
+                } :
+                new ConcurrentDictionary<(string, long), long?>
+                {
+                    [("RBxy1XGZ72f6YqktseaLJ1sJsE9u5DF3sp", 0)] = null,
+                    [("RBxkrs6snuTuHjAfzedXGzRixfeyvQfy7m", 0)] = null,
+                    [("RBxz1j5veSPrBg4RSyYD4CZ9BY6LPQ65gM", 0)] = null,
+                    [("RBx1FNEvjB97HRdreDg3zHCNCSSEvSyBTE", 0)] = null,
+                    [("RBxuRe1PorrpUCSbcmBk4JDHCxeADAkXyX", 0)] = null,
+                    [("RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", 0)] = null,
+                    [("RBxc2kz67W2zvb3yGxzACEQqgFiiBfYSTY", 0)] = null,
                 };
 
-                var Accounts = AccountData.GetAccounts().FindAll().ToArray();
-                Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
-                if (Globals.AdjudicateAccount != null)
-                {
-                    BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
-                }
+                foreach (var signer in Signer.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
+                    signerDB.InsertSafe(signer);
             }
-            
+
+            var Accounts = AccountData.GetAccounts().FindAll().ToArray();
+            Globals.AdjudicateAccount = Accounts.Where(x => Globals.Signers.ContainsKey(x.Address)).FirstOrDefault();
+            if (Globals.AdjudicateAccount != null)
+            {
+                BigInteger b1 = BigInteger.Parse(Globals.AdjudicateAccount.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                Globals.AdjudicatePrivateKey = new PrivateKey("secp256k1", b1);
+            }            
         }
 
         internal static void HDWalletCheck()
@@ -362,66 +349,6 @@ namespace ReserveBlockCore.Services
                     Globals.SelfBeacon = selfBeacon;
             }
         }
-
-        //This is just for the initial launch of chain to help bootstrap known validators. This method will eventually be not needed.
-        internal static void SetBootstrapAdjudicator()
-        {
-            var adjudicators = Adjudicators.AdjudicatorData.GetAll();
-            var adjudicator = adjudicators.FindOne(x => x.Address == "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY");
-            if(adjudicator == null)
-            {
-                Adjudicators adj1 = new Adjudicators {
-                    Address = "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY",
-                    IsActive = true,
-                    IsLeadAdjuidcator = true,
-                    LastChecked = DateTime.UtcNow,
-                    NodeIP = "173.254.253.106",
-                    Signature = "MEYCIQDCNDRZ7ovAH7/Ec3x0TP0i1S8OODWE4aKnxisnUnxP4QIhAI8WULPVZC8LZ+4GmQMmthN50WRZ3sswIXjIGoHMv7EE.2qwMbg8SyKNWj1zKLj8qosEMNDHXEpecL46sx8mkkE4E1V212UX6DcPTY6YSdgZLjbvjM5QBX9JDKPtu5wZh6qvj",
-                    UniqueName = "Trillium Adjudicator 1",
-                    WalletVersion = Globals.CLIVersion  
-                };
-
-                adjudicators.InsertSafe(adj1);
-            }
-
-            if(Globals.IsTestNet == true)
-            {
-                var test_adjudicator = adjudicators.FindOne(x => x.Address == "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj");
-                if (test_adjudicator == null)
-                {
-                    Adjudicators adjTest = new Adjudicators
-                    {
-                        Address = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj",
-                        IsActive = true,
-                        IsLeadAdjuidcator = true,
-                        LastChecked = DateTime.UtcNow,
-                        NodeIP = "144.126.156.102",                        
-                        UniqueName = "Trillium Adjudicator TestNet",
-                        WalletVersion = Globals.CLIVersion
-                    };
-
-                    adjudicators.InsertSafe(adjTest);
-                }
-            }
-
-            foreach(var adj in adjudicators.FindAll().ToArray())
-            {
-                if(Globals.IsTestNet)
-                {
-                    if(adj.Address.StartsWith("x"))
-                    {
-                        Globals.LeadAddress = "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj";
-                        Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
-                    }
-                        
-                }
-                else
-                {
-                    if (adj.Address.StartsWith("R"))
-                        Globals.AdjNodes[adj.NodeIP] = new AdjNodeInfo { Address = adj.Address, IpAddress = adj.NodeIP };
-                }
-            }
-        } 
 
         internal static void LoadBeacons()
         {
@@ -586,26 +513,89 @@ namespace ReserveBlockCore.Services
                 Globals.ValidatorAddress = myAccount.Address;
             }
         }
-        internal static async Task GetAdjudicatorPool()
+
+        public static async Task UpdateBenchIpAndSigners()
         {
-            await NodeConnector.StartNodeAdjPoolConnecting();
+            while(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                foreach(var node in Globals.AdjNodes.Values.Where(x => x.IsConnected))
+                {
+                    try
+                    {
+                        var benchDb = AdjBench.GetBench();
+                        var Result = await node.InvokeAsync<string>("IpAddresses", args: new object?[] { }, () => new CancellationTokenSource(8000).Token);
+                        var CurrentBench = JsonConvert.DeserializeObject<AdjBench[]>(Result);
+                        foreach (var bench in CurrentBench)
+                        {
+                            if (Globals.AdjBench.TryGetValue(bench.RBXAddress, out var cachedBench))
+                            {
+                                if (cachedBench.IPAddress != bench.IPAddress)
+                                {
+                                    cachedBench.IPAddress = bench.IPAddress;
+                                    var dbBench = benchDb.FindOne(x => x.RBXAddress == bench.RBXAddress);
+                                    dbBench.IPAddress = bench.IPAddress;
+                                    benchDb.UpdateSafe(dbBench);
+                                }
+                            }
+                        }
+
+                        var Result2 = await Globals.AdjNodes.Values.FirstOrDefault().Connection?.InvokeCoreAsync<string>("SignerInfo", args: new object?[] { }, new CancellationTokenSource(8000).Token);
+                        var CurrentSigners = JsonConvert.DeserializeObject<Signer[]>(Result2);
+                        foreach (var signer in CurrentSigners.Where(x => Globals.AdjBench.ContainsKey(x.Address)))
+                            if (Signer.Signers.TryAdd((signer.Address, signer.StartHeight), signer.EndHeight))
+                            {
+                                Signer.GetSigners().InsertSafe(signer);
+                            }
+
+                        break;
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                await Task.Delay(new TimeSpan(1, 0, 0));
+            }
         }
 
-        internal static async Task GetAdjudicatorPool_New()
+        internal static async Task GetAdjudicatorPool()
         {
-            bool isAdjudicate = false;
-            do
-            {
-                if(Globals.AdjudicateAccount != null)
-                    isAdjudicate = true;
+            if (Globals.AdjudicateAccount != null)
+                return;
 
-                var delay = Task.Delay(120000); //wait 2 mins to next call
-                await NodeConnector.StartNodeAdjPoolConnecting_New();
-
-                await delay;
-            }
-            while (isAdjudicate);
+            var account = AccountData.GetLocalValidator();
+            var validators = Validators.Validator.GetAll();
+            var validator = validators.FindOne(x => x.Address == account.Address);
+            if (validator == null)
+                return;
             
+            var time = TimeUtil.GetTime().ToString();
+            var signature = SignatureService.ValidatorSignature(validator.Address);
+            if (Globals.LastBlock.Height < Globals.BlockLock)
+            {                
+                var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
+                if (LeadAdjudicator != null)
+                {
+                    var url = "http://173.254.253.106:" + Globals.Port + "/adjudicator";
+                    await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
+                    _ = UpdateBenchIpAndSigners();
+                }
+            }
+            else
+            {
+                foreach(var signer in Globals.Signers) // use to populate database, pull from database
+                {
+                    if(Globals.AdjBench.TryGetValue(signer.Key, out var bench))
+                    {
+                        var url = "http://" + bench.IPAddress + ":" + Globals.Port + "/adjudicator";
+                        if(await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature))
+                        {
+                            _ = UpdateBenchIpAndSigners();
+                            break;
+                        }
+                    }
+                }
+            }           
         }
 
         internal static async Task SetLeadAdjudicator()
@@ -660,10 +650,21 @@ namespace ReserveBlockCore.Services
                 {
                     var SigningAddresses = Globals.Signers.Keys.ToHashSet();
                     var ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
-                                        
-                    if(SigningAddresses.Except(ConsensusAddresses).Any())
+
+                    var NewSigners = SigningAddresses.Except(ConsensusAddresses).ToArray();
+                    if (NewSigners.Any())
                     {
-                        await StartupService.GetAdjudicatorPool();
+                        foreach (var signer in NewSigners)
+                        {
+                            if (Globals.AdjBench.TryGetValue(signer, out var bench))
+                            {
+                                Globals.Nodes.TryAdd(bench.IPAddress, new NodeInfo
+                                {
+                                    Address = bench.RBXAddress,
+                                    NodeIP = bench.IPAddress
+                                });
+                            }
+                        }
                         ConsensusAddresses = Globals.Nodes.Values.Select(x => x.Address).ToHashSet();
                     }
                                         
@@ -722,9 +723,21 @@ namespace ReserveBlockCore.Services
                     var Majority = SigningAddresses.Count / 2 + 1;
                     var AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
 
-                    if (SigningAddresses.Except(AdjAddresses).Any())
+                    var NewSigners = SigningAddresses.Except(AdjAddresses).ToArray();
+                    if (NewSigners.Any())
                     {
-                        await StartupService.GetAdjudicatorPool();
+                        foreach (var signer in NewSigners)
+                        {
+                            if (Globals.AdjBench.TryGetValue(signer, out var bench))
+                            {
+                                Globals.AdjNodes.TryAdd(bench.IPAddress, new AdjNodeInfo
+                                {
+                                    Address = bench.RBXAddress,
+                                    IpAddress = bench.IPAddress
+                                });
+                            }
+                        }
+
                         AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
                     }
 

@@ -2,6 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
+using Spectre.Console;
 using System;
 using System.Net;
 
@@ -10,9 +11,7 @@ namespace ReserveBlockCore.Services
     public class SeedNodeService
     {
         public static List<SeedNode> SeedNodeList = new List<SeedNode>();
-
-        public static HashSet<string> TestNetIPs = new HashSet<string> { "144.126.156.102", "144.126.156.101", "66.94.124.3", "66.94.124.2", "66.175.236.113" };
-        //public static HashSet<string> TestNetIPs = new HashSet<string> { "144.126.156.102", "66.94.124.3", "66.94.124.2"};
+                        
         public static async Task<string> PingSeedNode()
         {
             bool nodeFound = false;
@@ -178,178 +177,7 @@ namespace ReserveBlockCore.Services
                 }
             }
         }
-
-        public static async Task GetAdjPoolList(string url)
-        {
-            if (Globals.IsTestNet == false)
-            {
-                try
-                {
-                    using (var client = Globals.HttpClientFactory.CreateClient())
-                    {
-                        string endpoint = url + "/api/V1/GetAdjPool";
-                        using (var Response = await client.GetAsync(endpoint))
-                        {
-                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
-                            {
-                                string data = await Response.Content.ReadAsStringAsync();
-
-                                var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
-                                if(Globals.AdjudicateAccount != null)
-                                {
-                                    foreach (var pool in result)
-                                        Globals.Nodes.TryAdd(pool.IPAddress, new NodeInfo
-                                        {
-                                            Address = pool.RBXAddress,
-                                            NodeIP = pool.IPAddress
-                                        });
-                                }
-                                else
-                                {
-                                    foreach (var pool in result)
-                                        Globals.AdjNodes.TryAdd(pool.IPAddress, new AdjNodeInfo
-                                        {
-                                            Address = pool.RBXAddress,
-                                            IpAddress = pool.IPAddress
-                                        });
-                                }
-
-                            }
-                            else
-                            {
-
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-            }
-            else
-            {
-                try
-                {
-                    using (var client = Globals.HttpClientFactory.CreateClient())
-                    {
-                        string endpoint = url + "/api/V1/GetAdjPool";
-                        using (var Response = await client.GetAsync(endpoint))
-                        {
-                            if (Response.StatusCode == System.Net.HttpStatusCode.OK)
-                            {
-                                string data = await Response.Content.ReadAsStringAsync();
-
-                                var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
-
-                                if (result != null)
-                                {
-                                    var testnetList = result.Where(x => TestNetIPs.Contains(x.IPAddress));
-                                    var dbPeers = Peers.GetAll();
-
-                                    foreach (var pool in testnetList)
-                                    {
-                                        if (Globals.AdjudicateAccount != null)
-                                        {
-                                            Globals.Nodes.TryAdd(pool.IPAddress, new NodeInfo
-                                            {
-                                                Address = pool.RBXAddress,
-                                                NodeIP = pool.IPAddress
-                                            });
-                                        }
-                                        else
-                                        {
-                                            Globals.AdjNodes.TryAdd(pool.IPAddress, new AdjNodeInfo
-                                            {
-                                                Address = pool.RBXAddress,
-                                                IpAddress = pool.IPAddress
-                                            });
-                                        }
-
-                                        var nPeer = new Peers
-                                        {
-                                            IsIncoming = false,
-                                            IsOutgoing = true,
-                                            PeerIP = pool.IPAddress,
-                                            FailCount = 0
-                                        };
-
-                                        var peerExist = dbPeers.FindOne(x => x.PeerIP == nPeer.PeerIP);
-                                        if (peerExist == null)
-                                        {
-                                            dbPeers.InsertSafe(nPeer);
-                                        }
-                                        else
-                                        {
-                                            peerExist.FailCount = 0;
-                                            dbPeers.UpdateSafe(peerExist);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-
-                }
-            }
-
-        }
-
-        public static async Task GetAdjPoolList_New(string url)
-        {
-            try
-            {
-                using (var client = Globals.HttpClientFactory.CreateClient())
-                {
-
-                    string endpoint = !Globals.IsTestNet ? url + "/api/V1/GetAdjPoolMainnet" : url + "/api/V1/GetAdjPoolTestnet";
-                    using (var Response = await client.GetAsync(endpoint))
-                    {
-                        if (Response.StatusCode == System.Net.HttpStatusCode.OK)
-                        {
-                            string data = await Response.Content.ReadAsStringAsync();
-
-                            var result = JsonConvert.DeserializeObject<List<AdjudicatorPool>>(data);
-                            if (Globals.AdjudicateAccount != null)
-                            {
-                                //Check to see if result is different than Globals.Nodes.
-                                //If no difference do nothing. If there is update list and perform action to disconnect from old IP
-                                foreach (var pool in result)
-                                    Globals.Nodes.TryAdd(pool.IPAddress, new NodeInfo
-                                    {
-                                        Address = pool.RBXAddress,
-                                        NodeIP = pool.IPAddress
-                                    });
-                            }
-                            else
-                            {
-                                //Check to see if result is different than Globals.AdjNodes.
-                                //If no difference do nothing. If there is update list and perform action to disconnect from old IP
-                                foreach (var pool in result)
-                                    Globals.AdjNodes.TryAdd(pool.IPAddress, new AdjNodeInfo
-                                    {
-                                        Address = pool.RBXAddress,
-                                        IpAddress = pool.IPAddress
-                                    });
-                            }
-
-                        }
-                        else
-                        {
-
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-
+        
         internal static async Task CallToSeed()
         {
             if (!Globals.RefuseToCallSeed)
@@ -401,33 +229,53 @@ namespace ReserveBlockCore.Services
 
         public static void SeedBench()
         {
-            var bench = AdjBench.GetBench().FindAll().ToList();
-            if(bench?.Count() >= 12)
+            var benches = AdjBench.GetBench().FindAll().ToList();
+            if(benches?.Count() <= 12)
             {
-                //main adjs
-                List<AdjBench> mainList = new List<AdjBench>{
-                    new AdjBench { IPAddress = "144.126.156.102", PulledFromBench= true, RBXAddress= "RBX1", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "144.126.156.101", PulledFromBench = true, RBXAddress = "RBX2", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "66.94.124.3", PulledFromBench = true, RBXAddress = "RBX3", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "66.94.124.2", PulledFromBench = true, RBXAddress = "RBX4", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "66.175.236.113", PulledFromBench = true, RBXAddress = "RBX5", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "154.12.251.106", PulledFromBench = true, RBXAddress = "RBX6", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "15.204.9.117", PulledFromBench = true, RBXAddress = "RBX7", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" }
-                };
-
-                //benched ADJS
-                List<AdjBench> benchList = new List<AdjBench>
+                if (!Globals.IsTestNet)
                 {
-                    new AdjBench { IPAddress = "154.12.251.107", PulledFromBench= false, RBXAddress= "RBX8", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "207.244.234.76", PulledFromBench= false, RBXAddress= "RBX9", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "207.244.230.235", PulledFromBench= false, RBXAddress= "RBX10", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "15.204.9.193", PulledFromBench= false, RBXAddress= "RBX11", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                    new AdjBench { IPAddress = "135.148.121.99", PulledFromBench= false, RBXAddress= "RBX12", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
-                };
+                    //main adjs
+                    List<AdjBench> mainList = new List<AdjBench>{
+                        new AdjBench { IPAddress = "144.126.156.102", PulledFromBench= true, RBXAddress= "RBX1", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "144.126.156.101", PulledFromBench = true, RBXAddress = "RBX2", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "66.94.124.3", PulledFromBench = true, RBXAddress = "RBX3", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "66.94.124.2", PulledFromBench = true, RBXAddress = "RBX4", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "66.175.236.113", PulledFromBench = true, RBXAddress = "RBX5", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "154.12.251.106", PulledFromBench = true, RBXAddress = "RBX6", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "15.204.9.117", PulledFromBench = true, RBXAddress = "RBX7", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" }
+                    };
 
-                AdjBench.SaveListToBench(mainList);
-                AdjBench.SaveListToBench(benchList);
+                    //benched ADJS
+                    List<AdjBench> benchList = new List<AdjBench>
+                    {
+                        new AdjBench { IPAddress = "154.12.251.107", PulledFromBench= false, RBXAddress= "RBX8", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "207.244.234.76", PulledFromBench= false, RBXAddress= "RBX9", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "207.244.230.235", PulledFromBench= false, RBXAddress= "RBX10", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "15.204.9.193", PulledFromBench= false, RBXAddress= "RBX11", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "135.148.121.99", PulledFromBench= false, RBXAddress= "RBX12", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                    };
+
+                    AdjBench.SaveListToBench(mainList);
+                    AdjBench.SaveListToBench(benchList);
+                }
+                else
+                {               
+                    List <AdjBench> mainList = new List<AdjBench>{
+                        new AdjBench { IPAddress = "144.126.156.102", PulledFromBench= true, RBXAddress= "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "144.126.156.101", PulledFromBench = true, RBXAddress = "xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "66.94.124.3", PulledFromBench = true, RBXAddress = "xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "66.94.124.2", PulledFromBench = true, RBXAddress = "xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "66.175.236.113", PulledFromBench = true, RBXAddress = "xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "154.12.251.106", PulledFromBench = true, RBXAddress = "xHBG5xUbjTJ4hdhF5b2aEfo3VtH4qToe8h", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "15.204.9.117", PulledFromBench = true, RBXAddress = "xS8CnrDN771UVdoyPn98iKnHwBywy4Jq51", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" }
+                    };
+
+                    AdjBench.SaveListToBench(mainList);
+                }
             }
+            
+            foreach (var bench in AdjBench.GetBench().FindAll())
+                Globals.AdjBench[bench.RBXAddress] = bench;            
         }
 
         public static List<SeedNode> SeedNodes()
