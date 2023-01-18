@@ -41,5 +41,24 @@ namespace ReserveBlockCore.Models
 
             return false;
         }
+
+        public static bool SaveListToBench(List<AdjBench> adjBList)
+        {
+            var adjBenchDB = GetBench();
+            if (adjBenchDB != null)
+            {
+                foreach(var adjB in adjBList)
+                {
+                    var rec = adjBenchDB.Query().Where(x => x.RBXAddress == adjB.RBXAddress).FirstOrDefault();
+                    if (rec == null)
+                    {
+                        adjBenchDB.InsertSafe(adjB);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
     }
 }

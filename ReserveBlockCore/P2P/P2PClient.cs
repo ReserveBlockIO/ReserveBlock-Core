@@ -206,7 +206,7 @@ namespace ReserveBlockCore.P2P
                     if (walletVersion != null)
                     {
                         peer.WalletVersion = walletVersion.Substring(0,3);
-                        node.WalletVersion = walletVersion.Substring(0, 3);
+                        node.WalletVersion = walletVersion.Substring(0,3);
 
                         Globals.Nodes.TryAdd(IPAddress, node);
 

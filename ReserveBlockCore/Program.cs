@@ -84,6 +84,7 @@ namespace ReserveBlockCore
             StartupService.HDWalletCheck();// checks for HD wallet
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
             SeedNodeService.SeedNodes();
+            SeedNodeService.SeedBench();
 
             Globals.BlockLock = Globals.IsTestNet == true ? 16 : 400000000;
 
