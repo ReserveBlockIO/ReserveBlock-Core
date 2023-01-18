@@ -393,7 +393,7 @@ namespace ReserveBlockCore.Services
                 var beacon1Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon1").Exists();
                 if(!beacon1Exist)
                 {
-                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson {IPAddress = "144.126.149.104", Port = Globals.Port + 20000, Name = "Lily Beacon", BeaconUID = "LilyBeacon1" };
+                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson {IPAddress = "162.248.14.123", Port = Globals.Port + 20000, Name = "Lily Beacon", BeaconUID = "LilyBeacon1" };
                     var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
                     Beacons beacon1 = new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon1", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = beaconLocJson1.ToBase64()};
                     beacons.InsertSafe(beacon1);
