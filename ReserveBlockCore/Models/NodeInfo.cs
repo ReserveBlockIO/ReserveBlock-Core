@@ -34,7 +34,8 @@ namespace ReserveBlockCore.Models
         public long TotalDataSent;              
         public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
         public bool IsValidator { get; set; }
-        public bool IsAdjudicator { get; set; }
+        public string? WalletVersion { get; set; }
+
 
         public string[] Queue { get
             {

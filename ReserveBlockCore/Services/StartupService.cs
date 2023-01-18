@@ -22,6 +22,7 @@ using ReserveBlockCore.Nodes;
 using System.Net;
 using System.Security;
 using System.Xml.Linq;
+using System.Data;
 
 namespace ReserveBlockCore.Services
 {
@@ -1222,7 +1223,8 @@ namespace ReserveBlockCore.Services
             }
         }
         internal static async Task StartupPeers()
-        {            
+        {
+            int failCount = 0;
             while (true)
             {
                 if (Globals.AdjudicateAccount != null)
@@ -1233,8 +1235,6 @@ namespace ReserveBlockCore.Services
                     var ConnectedCount = Globals.Nodes.Values.Where(x => x.IsConnected).Count();
                     if(ConnectedCount < Globals.MaxPeers)
                         await P2PClient.ConnectToPeers();
-                    if(!Globals.Nodes.Values.Where(x => x.IsConnected).Any())
-                        ConsoleWriterService.Output($"Failed to connect to any peers. trying again.");
                 }
                 catch (Exception ex)
                 {

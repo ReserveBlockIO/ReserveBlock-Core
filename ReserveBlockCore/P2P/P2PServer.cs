@@ -252,162 +252,162 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Beacon Locator Info
-        public async Task<string> SendBeaconInfo()
-        {
-            return await SignalRQueue(Context, 128, async () => {
-                var result = "";
+        //#region Send Beacon Locator Info
+        //public async Task<string> SendBeaconInfo()
+        //{
+        //    return await SignalRQueue(Context, 128, async () => {
+        //        var result = "";
 
-                var beaconInfo = BeaconInfo.GetBeaconInfo();
+        //        var beaconInfo = BeaconInfo.GetBeaconInfo();
 
-                if (beaconInfo == null)
-                    return "NA";
+        //        if (beaconInfo == null)
+        //            return "NA";
 
-                result = beaconInfo.BeaconLocator;
+        //        result = beaconInfo.BeaconLocator;
 
-                return result;
-            });
-        }
+        //        return result;
+        //    });
+        //}
 
-        #endregion
+        //#endregion
 
-        #region  ReceiveDownloadRequest
-        public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
-        {            
-            bool result = false;
-            var peerIP = GetIP(Context);
+        //#region  ReceiveDownloadRequest
+        //public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
+        //{            
+        //    bool result = false;
+        //    var peerIP = GetIP(Context);
 
-            try
-            {
-                if (bdd != null)
-                {
-                    var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
-                    if (scState == null)
-                    {
-                        return result; //fail
-                    }
+        //    try
+        //    {
+        //        if (bdd != null)
+        //        {
+        //            var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
+        //            if (scState == null)
+        //            {
+        //                return result; //fail
+        //            }
 
-                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
-                    if (sigCheck == false)
-                    {
-                        return result; //fail
-                    }
+        //            var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
+        //            if (sigCheck == false)
+        //            {
+        //                return result; //fail
+        //            }
 
-                    var beaconDatas = BeaconData.GetBeacon();
-                    var beaconData = BeaconData.GetBeaconData();
-                    foreach (var fileName in bdd.Assets)
-                    {
-                        if (beaconData != null)
-                        {
-                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
-                            if (bdCheck != null)
-                            {
-                                if (beaconDatas != null)
-                                {
-                                    bdCheck.DownloadIPAddress = peerIP;
-                                    beaconDatas.UpdateSafe(bdCheck);
-                                }
-                                else
-                                {
-                                    return result;//fail
-                                }
-                            }
-                            else
-                            {
-                                return result; //fail
-                            }
-                        }
-                        else
-                        {
-                            return result; //fail
-                        }
+        //            var beaconDatas = BeaconData.GetBeacon();
+        //            var beaconData = BeaconData.GetBeaconData();
+        //            foreach (var fileName in bdd.Assets)
+        //            {
+        //                if (beaconData != null)
+        //                {
+        //                    var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
+        //                    if (bdCheck != null)
+        //                    {
+        //                        if (beaconDatas != null)
+        //                        {
+        //                            bdCheck.DownloadIPAddress = peerIP;
+        //                            beaconDatas.UpdateSafe(bdCheck);
+        //                        }
+        //                        else
+        //                        {
+        //                            return result;//fail
+        //                        }
+        //                    }
+        //                    else
+        //                    {
+        //                        return result; //fail
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    return result; //fail
+        //                }
 
-                        result = true;
-                    }
+        //                result = true;
+        //            }
 
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
-        #endregion
+        //#endregion
 
-        #region ReceiveUploadRequest
-        public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
-        {            
-            bool result = false;
-            var peerIP = GetIP(Context);
-            try
-            {
-                if (bsd != null)
-                {
-                    var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
-                    if (scState == null)
-                    {
-                        return result;
-                    }
+        //#region ReceiveUploadRequest
+        //public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
+        //{            
+        //    bool result = false;
+        //    var peerIP = GetIP(Context);
+        //    try
+        //    {
+        //        if (bsd != null)
+        //        {
+        //            var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
+        //            if (scState == null)
+        //            {
+        //                return result;
+        //            }
 
-                    var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
-                    if (sigCheck == false)
-                    {
-                        return result;
-                    }
+        //            var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
+        //            if (sigCheck == false)
+        //            {
+        //                return result;
+        //            }
 
-                    var beaconData = BeaconData.GetBeaconData();
-                    foreach (var fileName in bsd.Assets)
-                    {
-                        if (beaconData == null)
-                        {
-                            var bd = new BeaconData
-                            {
-                                AssetExpireDate = 0,
-                                AssetReceiveDate = 0,
-                                AssetName = fileName,
-                                IPAdress = peerIP,
-                                NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                SmartContractUID = bsd.SmartContractUID
-                            };
+        //            var beaconData = BeaconData.GetBeaconData();
+        //            foreach (var fileName in bsd.Assets)
+        //            {
+        //                if (beaconData == null)
+        //                {
+        //                    var bd = new BeaconData
+        //                    {
+        //                        AssetExpireDate = 0,
+        //                        AssetReceiveDate = 0,
+        //                        AssetName = fileName,
+        //                        IPAdress = peerIP,
+        //                        NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+        //                        SmartContractUID = bsd.SmartContractUID
+        //                    };
 
-                            BeaconData.SaveBeaconData(bd);
-                        }
-                        else
-                        {
-                            var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
-                            if (bdCheck == null)
-                            {
-                                var bd = new BeaconData
-                                {
-                                    AssetExpireDate = 0,
-                                    AssetReceiveDate = 0,
-                                    AssetName = fileName,
-                                    IPAdress = peerIP,
-                                    NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                    SmartContractUID = bsd.SmartContractUID
-                                };
+        //                    BeaconData.SaveBeaconData(bd);
+        //                }
+        //                else
+        //                {
+        //                    var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
+        //                    if (bdCheck == null)
+        //                    {
+        //                        var bd = new BeaconData
+        //                        {
+        //                            AssetExpireDate = 0,
+        //                            AssetReceiveDate = 0,
+        //                            AssetName = fileName,
+        //                            IPAdress = peerIP,
+        //                            NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
+        //                            SmartContractUID = bsd.SmartContractUID
+        //                        };
 
-                                BeaconData.SaveBeaconData(bd);
-                            }
-                        }
-                    }
+        //                        BeaconData.SaveBeaconData(bd);
+        //                    }
+        //                }
+        //            }
 
-                    result = true;
+        //            result = true;
 
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
+        //    }
 
-            return result;            
-        }
+        //    return result;            
+        //}
 
-        #endregion
+        //#endregion
 
         #region Send Adjudicator
         public async Task<Adjudicators> SendLeadAdjudicator()
@@ -716,25 +716,15 @@ namespace ReserveBlockCore.P2P
         #region Get Validator Status
         public async Task<bool> GetValidatorStatus()
         {
-            var result = false;
-
-            if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
-                result = true;
-
-            return result;
+            return await SignalRQueue(Context, bool.FalseString.Length, async () => !string.IsNullOrEmpty(Globals.ValidatorAddress));
         }
 
         #endregion
 
-        #region Get Adjudicator Status
-        public async Task<bool> GetAdjudicatorStatus()
+        #region Get Wallet Version
+        public async Task<string> GetWalletVersion()
         {
-            var result = false;
-
-            if (Globals.AdjudicateAccount != null)
-                result = true;
-
-            return result;
+            return await SignalRQueue(Context, Globals.CLIVersion.Length, async () => Globals.CLIVersion);
         }
 
         #endregion

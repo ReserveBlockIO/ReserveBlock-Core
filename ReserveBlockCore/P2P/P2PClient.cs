@@ -198,23 +198,57 @@ namespace ReserveBlockCore.P2P
                 };
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
 
-                node.IsValidator = await GetValidatorStatus(node.Connection);
-                node.IsAdjudicator = await GetAdjudicatorStatus(node.Connection);
-                Globals.Nodes.TryAdd(IPAddress, node);
-
-                if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                if(Globals.LastBlock.Height >= Globals.BlockLock)
                 {
-                    currentNode.Connection = hubConnection;
-                    currentNode.NodeIP = IPAddress;
-                    currentNode.NodeHeight = node.NodeHeight;
-                    currentNode.NodeLastChecked = node.NodeLastChecked;
-                    currentNode.NodeLatency = node.NodeLatency;
-                }   
-                            
-                ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
-                peer.IsOutgoing = true;
-                peer.FailCount = 0; //peer responded. Reset fail count
-                Peers.GetAll().UpdateSafe(peer);
+                    node.IsValidator = await GetValidatorStatus(node.Connection);
+                    var walletVersion = await GetWalletVersion(node.Connection);
+
+                    if (walletVersion != null)
+                    {
+                        peer.WalletVersion = walletVersion;
+                        node.WalletVersion = walletVersion;
+
+                        Globals.Nodes.TryAdd(IPAddress, node);
+
+                        if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                        {
+                            currentNode.Connection = hubConnection;
+                            currentNode.NodeIP = IPAddress;
+                            currentNode.NodeHeight = node.NodeHeight;
+                            currentNode.NodeLastChecked = node.NodeLastChecked;
+                            currentNode.NodeLatency = node.NodeLatency;
+                        }
+
+                        ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                        peer.IsOutgoing = true;
+                        peer.FailCount = 0; //peer responded. Reset fail count
+                        Peers.GetAll()?.UpdateSafe(peer);
+                    }
+                    else
+                    {
+                        //not on latest version. Disconnecting
+                        await node.Connection.DisposeAsync();
+                    }
+                }
+                else
+                {
+                    Globals.Nodes.TryAdd(IPAddress, node);
+
+                    if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
+                    {
+                        currentNode.Connection = hubConnection;
+                        currentNode.NodeIP = IPAddress;
+                        currentNode.NodeHeight = node.NodeHeight;
+                        currentNode.NodeLastChecked = node.NodeLastChecked;
+                        currentNode.NodeLatency = node.NodeLatency;
+                    }
+
+                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                    peer.IsOutgoing = true;
+                    peer.FailCount = 0; //peer responded. Reset fail count
+                    Peers.GetAll()?.UpdateSafe(peer);
+                }
+                
             }
             catch { }
             finally
@@ -353,6 +387,7 @@ namespace ReserveBlockCore.P2P
 
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
                 {
+                    //Added for V3.0. Can be removed in next release. 
                     ValidatorProcessor.RandomNumberTaskV3(Globals.LastBlock.Height + 1);
                 }
                 else
@@ -435,6 +470,46 @@ namespace ReserveBlockCore.P2P
             }
 
             return Globals.MaxPeers != 0;         
+        }
+
+        public static async Task<bool> ConnectToPeersThroughFortis()
+        {
+            var fortisList = Globals.FortisPoolCache != "" ? JsonConvert.DeserializeObject<List<string>>(Globals.FortisPoolCache) : new List<string>();
+            if(fortisList?.Count() > 0)
+            {
+                var peerDB = Peers.GetAll();
+
+                await DropDisconnectedPeers();
+
+                var fortisOnlyIPs = new HashSet<string>(fortisList.Select(x => x))
+                    .Union(Globals.BannedIPs.Keys)
+                    .Union(Globals.ReportedIPs.Keys);
+
+                Random rnd = new Random();
+                var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
+                    .Where(x => fortisOnlyIPs.Contains(x.PeerIP))
+                    .ToArray()
+                    .OrderBy(x => rnd.Next())
+                    .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
+                    .Where(x => fortisOnlyIPs.Contains(x.PeerIP))
+                    .ToArray()
+                    .OrderBy(x => rnd.Next()))
+                    .ToArray();
+
+                foreach (var peer in newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count))
+                {
+                    try
+                    {
+                        _ = Connect(peer);
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+
+            }
+
+            return Globals.MaxPeers != 0;
         }
         public static async Task<bool> PingBackPeer(string peerIP)
         {
@@ -553,7 +628,8 @@ namespace ReserveBlockCore.P2P
                         else
                         {
                             var errorCodeDesc = await TaskAnswerCodeUtility.TaskAnswerCodeReason(result.AnswerCode);
-                            ConsoleWriterService.Output($"Task was not accpeted: From: {node.IpAddress} Error Code: {result.AnswerCode} - Reason: {errorCodeDesc} Attempt: {i}/3.");
+                            if(result.AnswerCode != 6)
+                                ConsoleWriterService.Output($"Task was not accpeted: From: {node.IpAddress} Error Code: {result.AnswerCode} - Reason: {errorCodeDesc} Attempt: {i}/3.");
                             ValidatorLogUtility.Log($"Task Answer was not accepted. Error Code: {result.AnswerCode} - Reason: {errorCodeDesc}", "P2PClient.SendTaskAnswer_New()");
                             node.LastTaskError = true;
    
@@ -1781,7 +1857,7 @@ namespace ReserveBlockCore.P2P
             }
             else
             {
-                var valAdjNodes = Globals.Nodes.Values.Where(x => x.IsValidator || x.IsAdjudicator).ToList();
+                var valAdjNodes = Globals.Nodes.Values.Where(x => x.IsValidator).ToList();
                 if (valAdjNodes.Count() > 0)
                 {
                     var successCount = 0;
@@ -1879,6 +1955,22 @@ namespace ReserveBlockCore.P2P
             catch { }
 
             return result;
+        }
+
+        #endregion
+
+        #region Get Node Wallet Version
+        private static async Task<string?> GetWalletVersion(HubConnection hubConnection)
+        {
+            try
+            {
+                var result = await hubConnection.InvokeAsync<string>("GetWalletVersion");
+                if (result != null)
+                    return result;
+            }
+            catch { }
+
+            return null;
         }
 
         #endregion

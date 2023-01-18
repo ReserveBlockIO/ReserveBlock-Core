@@ -26,7 +26,7 @@ namespace ReserveBlockCore
             string? valEncryptAddr = "";
 
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {
@@ -60,7 +60,7 @@ namespace ReserveBlockCore
             Globals.BuildVer = dateDiff;
 
             Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + Globals.BuildVer.ToString() + "-beta";
-            var logCLIVer = Globals.CLIVersion.ToString();
+            var logCLIVer = Globals.CLIVersion;
 
             LogUtility.Log(logCLIVer, "Main", true);
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
@@ -85,7 +85,7 @@ namespace ReserveBlockCore
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
             SeedNodeService.SeedNodes();
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 4000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 400000000;
 
             //BlockchainData.InitializeChain();
 
@@ -313,6 +313,7 @@ namespace ReserveBlockCore
             _ = BanService.PeerBanUnbanService();
             _ = BeaconService.BeaconRunService();
             _ = SeedNodeService.CallToSeed();
+            _ = FortisPoolService.PopulateFortisPoolCache();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {

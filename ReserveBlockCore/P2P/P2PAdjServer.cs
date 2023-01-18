@@ -201,6 +201,13 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Fortis Pool IPs
+        public async Task<string> FortisPool()
+        {
+            return await P2PServer.SignalRQueue(Context, Globals.FortisPoolCache.Length, async () => Globals.FortisPoolCache);
+        }
+        #endregion
+
         #region Signer Seed Info
         public async Task<string> SignerInfo()
         {

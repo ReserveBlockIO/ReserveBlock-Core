@@ -23,7 +23,7 @@
                     }
                     if (!Globals.IsTestNet)
                     {
-                        if (minor < 1)
+                        if (minor < 0)
                         {
                             return output;
                         }

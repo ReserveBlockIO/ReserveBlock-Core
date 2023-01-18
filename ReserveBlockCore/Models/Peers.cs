@@ -26,6 +26,7 @@ namespace ReserveBlockCore.Models
         public DateTime? NextUnbanDate { get; set; }
         public List<string>? BannedFromAreasList { get; set; }
         public string? LastBannedFromArea { get; set; }
+        public string? WalletVersion { get; set; }
         public static List<Peers> PeerList(bool isBanned = false)
         {
             var peerList = GetAll();
