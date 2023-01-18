@@ -186,7 +186,6 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //This is for consensus start.
-            StartupService.SetBootstrapAdjudicator(); //sets initial validators from bootstrap list.
             await StartupService.GetAdjudicatorPool();            
             StartupService.DisplayValidatorAddress();
             StartupService.CheckForDuplicateBlocks();
