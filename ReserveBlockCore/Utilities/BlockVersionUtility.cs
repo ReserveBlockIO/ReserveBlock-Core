@@ -30,9 +30,9 @@ namespace ReserveBlockCore.Utilities
         public static async Task<bool> Version2Rules(Block block)
         {
             bool result = false;
-            var leadAdjAddr = Globals.LeadAddress;
+            var leadAdjAddr = Globals.IsTestNet ? "xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj" : "RBXpH37qVvNwzLjtcZiwEnb3aPNG815TUY";
 
-            if(block.AdjudicatorSignature != null)
+            if (block.AdjudicatorSignature != null)
             {
                 var sigResult = SignatureService.VerifySignature(leadAdjAddr, block.Hash, block.AdjudicatorSignature);
                 result = sigResult;
