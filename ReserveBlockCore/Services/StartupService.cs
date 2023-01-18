@@ -466,46 +466,10 @@ namespace ReserveBlockCore.Services
                 var beacon1Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon1").Exists();
                 if(!beacon1Exist)
                 {
-                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
-                    {
-                        IPAddress = "162.248.14.123",
-                        Port = Globals.Port + 20000,
-                        Name = !Globals.IsTestNet ? "RBX Beacon 1" : "RBX Testnet Beacon 1",
-                        BeaconUID = "FoundationBeacon1"
-                    };
-
+                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson {IPAddress = "144.126.149.104", Port = Globals.Port + 20000, Name = "Lily Beacon", BeaconUID = "LilyBeacon1" };
                     var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
-                    //Globals.Locators.TryAdd(beaconLoc1.BeaconUID, beaconLocJson1.ToBase64());
-                    Beacons beacon1 = new Beacons
-                    {
-                        IPAddress = "162.248.14.123",
-                        Name = !Globals.IsTestNet ? "RBX Beacon 1" : "RBX Testnet Beacon 1",
-                        Port = Globals.Port + 20000,
-                        BeaconUID = "FoundationBeacon1",
-                        DefaultBeacon = true,
-                        AutoDeleteAfterDownload = true,
-                        FileCachePeriodDays = 2,
-                        IsPrivateBeacon = false,
-                        SelfBeacon = false,
-                        SelfBeaconActive = false,
-                        BeaconLocator = beaconLocJson1.ToBase64(),
-                    };
-
+                    Beacons beacon1 = new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon1", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = beaconLocJson1.ToBase64()};
                     beacons.InsertSafe(beacon1);
-                }
-                else
-                {
-                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
-                    {
-                        IPAddress = "162.248.14.123",
-                        Port = Globals.Port + 20000,
-                        Name = !Globals.IsTestNet ? "RBX Beacon 1" : "RBX Testnet Beacon 1",
-                        BeaconUID = "FoundationBeacon1"
-                    };
-
-                    var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
-
-                    //Globals.Locators.TryAdd(beaconLoc1.BeaconUID, beaconLocJson1.ToBase64());
                 }
 
                 var beacon2Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon2").Exists();
