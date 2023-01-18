@@ -565,7 +565,7 @@ namespace ReserveBlockCore.Services
 
             var account = AccountData.GetLocalValidator();
             var validators = Validators.Validator.GetAll();
-            var validator = validators.FindOne(x => x.Address == account.Address);
+            var validator = validators.Query().Where(x => x.Address == account.Address).FirstOrDefault();
             if (validator == null)
                 return;
             
