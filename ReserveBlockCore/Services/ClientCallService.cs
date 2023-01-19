@@ -992,7 +992,10 @@ namespace ReserveBlockCore.Services
 
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(20);
-            
+
+            var EpochTime = Globals.IsTestNet ? 1673397583280L : 1674162000000L;
+            var BeginBlock = Globals.IsTestNet ? 16L : 578575L;
+
             var PreviousHeight = -1L;            
             var BlockDelay = Task.CompletedTask;
             ConsoleWriterService.Output("Booting up consensus loop");            
@@ -1019,7 +1022,7 @@ namespace ReserveBlockCore.Services
                         PreviousHeight = Height;
                         await Task.WhenAll(BlockDelay, Task.Delay(3500));
                         var CurrentTime = TimeUtil.GetMillisecondTime();
-                        var DelayTimeCorrection = 25000 * (Height - 16L) - (CurrentTime - 1673397583280L);                        
+                        var DelayTimeCorrection = 25000 * (Height - BeginBlock) - (CurrentTime - 1673397583280L);                        
                         var DelayTime = Math.Min(Math.Max(25000 + DelayTimeCorrection, 20000), 30000);
                         BlockDelay = Task.Delay((int)DelayTime);
                         ConsoleWriterService.Output("\r\nNext Consensus Delay: " + DelayTime + " (" + DelayTimeCorrection +  ")");                        
