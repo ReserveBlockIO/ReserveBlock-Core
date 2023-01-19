@@ -454,11 +454,11 @@ namespace ReserveBlockCore.P2P
 
             Random rnd = new Random();
             var newPeers = peerDB.Find(x => x.IsOutgoing == true).ToArray()
-                .Where(x => !SkipIPs.Contains(x.PeerIP) && x.WalletVersion != "2.1")
+                .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
                 .OrderBy(x => rnd.Next())
                 .Concat(peerDB.Find(x => x.IsOutgoing == false).ToArray()
-                .Where(x => !SkipIPs.Contains(x.PeerIP) && x.WalletVersion != "2.1")
+                .Where(x => !SkipIPs.Contains(x.PeerIP))
                 .ToArray()
                 .OrderBy(x => rnd.Next()))
                 .ToArray();
