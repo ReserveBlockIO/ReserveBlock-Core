@@ -463,7 +463,8 @@ namespace ReserveBlockCore.P2P
                 .OrderBy(x => rnd.Next()))
                 .ToArray();
 
-            foreach (var peer in newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count))
+            var Diff = Globals.MaxPeers - Globals.Nodes.Count;
+            Parallel.ForEach(newPeers.Take(Diff), new ParallelOptions { MaxDegreeOfParallelism = Diff }, peer =>
             {
                 try
                 {
@@ -472,7 +473,7 @@ namespace ReserveBlockCore.P2P
                 catch (Exception ex)
                 {
                 }
-            }
+            });
 
             return Globals.MaxPeers != 0;         
         }
@@ -501,7 +502,8 @@ namespace ReserveBlockCore.P2P
                     .OrderBy(x => rnd.Next()))
                     .ToArray();
 
-                foreach (var peer in newPeers.Take(Globals.MaxPeers - Globals.Nodes.Count))
+                var Diff = Globals.MaxPeers - Globals.Nodes.Count;
+                Parallel.ForEach(newPeers.Take(Diff), new ParallelOptions { MaxDegreeOfParallelism = Diff }, peer =>
                 {
                     try
                     {
@@ -510,8 +512,7 @@ namespace ReserveBlockCore.P2P
                     catch (Exception ex)
                     {
                     }
-                }
-
+                });
             }
 
             return Globals.MaxPeers != 0;
@@ -595,7 +596,13 @@ namespace ReserveBlockCore.P2P
             if (taskAnswer == null)
                 return;
 
-            await Task.WhenAll(Globals.AdjNodes.Values.Where(x => x.IsConnected).Select(x => SendTaskAnswerV3(x, taskAnswer)));
+            var tasks = new List<Task>();
+            Parallel.ForEach(Globals.AdjNodes.Values.Where(x => x.IsConnected), new ParallelOptions { MaxDegreeOfParallelism = Globals.AdjNodes.Count }, x =>
+            {
+                tasks.Add(SendTaskAnswerV3(x, taskAnswer));
+            });
+
+            await Task.WhenAll(tasks);
         }
 
         private static async Task SendTaskAnswerV3(AdjNodeInfo node, string taskAnswer)
@@ -901,14 +908,14 @@ namespace ReserveBlockCore.P2P
                 {
                     Height = Globals.LastBlock.Height;
 
-                    foreach (var node in Globals.Nodes.Values)
+                    Parallel.ForEach(Globals.Nodes.Values, new ParallelOptions { MaxDegreeOfParallelism = Globals.Nodes.Count }, node =>
                     {
-                        if (node.Address == Address || UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
-                            continue;
-
-                        UpdateMethodCodeAddresses[node.NodeIP] = true;
-                        _ = UpdateMethodCode(node);
-                    }
+                        if (node.Address != Address && !UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
+                        {
+                            UpdateMethodCodeAddresses[node.NodeIP] = true;
+                            _ = UpdateMethodCode(node);
+                        }    
+                    });
                 }
 
                 await Task.Delay(1000);

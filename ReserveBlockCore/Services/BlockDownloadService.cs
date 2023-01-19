@@ -39,8 +39,10 @@ namespace ReserveBlockCore.Services
                             continue;
                         }
                         heightToDownload += heightsFromNodes.Length;
-                        foreach (var h in heightsFromNodes)
+                        Parallel.ForEach(heightsFromNodes, new ParallelOptions { MaxDegreeOfParallelism = heightsFromNodes.Length }, h =>
+                        {
                             taskDict[h.height] = (P2PClient.GetBlock(h.height, h.node), h.node.NodeIP);
+                        });                                                    
 
                         while (taskDict.Any())
                         {
