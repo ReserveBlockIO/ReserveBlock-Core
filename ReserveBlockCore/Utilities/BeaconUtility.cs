@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Utilities
     {
         public static async Task<bool> EstablishBeaconConnection(bool upload = false, bool download = false)
         {
-            var userInputedBeaconsFailed = false;
+            var userInputedBeaconsUsed = false;
             var selfBeacon = Globals.SelfBeacon;
             if (selfBeacon?.SelfBeaconActive == true)
             {
@@ -44,18 +44,15 @@ namespace ReserveBlockCore.Utilities
                 }
                 if(cResult)
                 {
+                    userInputedBeaconsUsed = true;
                     return true;
-                }
-                else
-                {
-                    userInputedBeaconsFailed = true;
                 }
             }
 
             //User provided beacons failed. Attempting default ones.
-            if(userInputedBeaconsFailed)
+            if(!userInputedBeaconsUsed)
             {
-                var pubBeaconList = Globals.Beacons.Values.Where(x => !x.SelfBeacon && x.DefaultBeacon != false).ToList();
+                var pubBeaconList = Globals.Beacons.Values.Where(x => !x.SelfBeacon && x.DefaultBeacon != false && x.Region != 0).OrderBy(x => x.Region).ToList();
                 pubBeaconList.Shuffle();
                 bool conResult = false;
                 foreach(var beacon in pubBeaconList)

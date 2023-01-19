@@ -10,7 +10,7 @@ namespace ReserveBlockCore.Services
         static SemaphoreSlim BanServiceLock = new SemaphoreSlim(1, 1);
         public static void BanPeer(string ipAddress, string message, string location)
         {
-            if (Globals.AdjudicateLock == null)
+            if (Globals.AdjudicateAccount == null)
             {
                 if (Globals.AdjNodes.ContainsKey(ipAddress))
                     return;
