@@ -65,6 +65,21 @@ namespace ReserveBlockCore.Commands
                     await Voting.Voting.StartVoteProgram();
                     Globals.StopConsoleOutput = false;
                     break;
+                case "/benchip":
+                    Globals.StopConsoleOutput = true;
+                    await BaseCommandServices.BenchIP();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "/addsigner":
+                    Globals.StopConsoleOutput = true;
+                    await BaseCommandServices.AddSigner();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "/removesigner":
+                    Globals.StopConsoleOutput = true;
+                    await BaseCommandServices.RemoveSigner();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/encrypt":
                     Globals.StopConsoleOutput = true;
                     await BaseCommandServices.EncryptWallet();

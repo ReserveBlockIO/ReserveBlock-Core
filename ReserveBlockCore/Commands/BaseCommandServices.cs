@@ -18,6 +18,7 @@ using System.IO;
 using System.Globalization;
 using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
+using System;
 
 namespace ReserveBlockCore.Commands
 {
@@ -951,6 +952,188 @@ namespace ReserveBlockCore.Commands
                 ConsoleWriterService.Output("Empty 2");
             }
         }
+
+        public static async Task BenchIP()
+        {
+            var benches = AdjBench.GetBench().FindAll().ToList();
+            if(benches.Count == 0)
+            {
+                Console.WriteLine("The bench database is empty.");
+                return;
+            }
+
+            var count = 0;
+            benches.ToList().ForEach(x => {                
+                Console.WriteLine("********************************************************************");
+                Console.WriteLine("Please choose an address below to update the ip address for.");
+
+                Console.WriteLine("\n #" + count.ToString());
+                Console.WriteLine("\nAddress :\n{0}", x.RBXAddress);
+                Console.WriteLine("\nIP Address:\n{0}", x.IPAddress);
+                count++;
+            });
+
+            int index = 0;
+            var benchChoice = await ReadLineUtility.ReadLine();
+            while (!int.TryParse(benchChoice, out index))
+            {
+                Console.WriteLine("You must choose an address. Type a number from above and press enter please.");
+                benchChoice = await ReadLineUtility.ReadLine();
+            }
+            var bench = benches[index];
+            Console.WriteLine("********************************************************************");
+            Console.WriteLine("The chosen bench address is:");
+            string benchAddress = bench.RBXAddress;
+            Console.WriteLine(benchAddress);
+            Console.WriteLine("Are you sure you want to update the ip address for this address? (Type 'y' for yes and 'n' for no.)");
+            var confirmChoice = await ReadLineUtility.ReadLine();
+
+            if (confirmChoice == null)
+            {
+                Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
+                Console.WriteLine("Returning you to main menu...");
+                await Task.Delay(5000);
+                StartupService.MainMenu();
+            }
+            else if (confirmChoice.ToLower() == "n")
+            {
+                Console.WriteLine("Returning you to main menu in 3 seconds...");
+                await Task.Delay(3000);
+                StartupService.MainMenu();
+            }
+            else if (confirmChoice.ToLower() == "y")
+            {
+                Console.Clear();
+                Console.WriteLine("Please type an ip address");
+                var ipAddress = await ReadLineUtility.ReadLine();
+                
+                if (string.IsNullOrWhiteSpace(ipAddress) || ipAddress.Where(x => x == '.').Count() != 3)
+                {
+                    Console.WriteLine("Not a valid ip address");
+                    StartupService.MainMenu();                  
+                    Console.WriteLine("Returned to main menu.");
+                }
+                else
+                {
+                    bench.IPAddress = ipAddress;
+                    AdjBench.GetBench().UpdateSafe(bench);
+                    if (Globals.AdjBench.TryGetValue(bench.RBXAddress, out var cacheBench))
+                        cacheBench.IPAddress = ipAddress;
+                    StartupService.MainMenu();
+                    Console.WriteLine("Ip updated.");
+                }
+            }
+            else
+            {
+                StartupService.MainMenu();
+                Console.WriteLine("Unexpected input detected.");
+                Console.WriteLine("Returned to main menu.");
+            }
+        }
+
+        public static async Task AddSigner()
+        {
+            var benches = AdjBench.GetBench().FindAll().ToList();
+            if (benches.Count == 0)
+            {
+                Console.WriteLine("The bench database is empty.");
+                return;
+            }
+
+            var count = 0;
+            benches.ToList().ForEach(x => {
+                Console.WriteLine("********************************************************************");
+                Console.WriteLine("Please choose an address below to add as a signer.");
+
+                Console.WriteLine("\n #" + count.ToString());
+                Console.WriteLine("\nAddress :\n{0}", x.RBXAddress);
+                Console.WriteLine("\nIP Address:\n{0}", x.IPAddress);
+                count++;
+            });
+
+            int index = 0;
+            var benchChoice = await ReadLineUtility.ReadLine();
+            while (!int.TryParse(benchChoice, out index))
+            {
+                Console.WriteLine("You must choose an address. Type a number from above and press enter please.");
+                benchChoice = await ReadLineUtility.ReadLine();
+            }
+            var bench = benches[index];
+            Console.WriteLine("********************************************************************");
+            Console.WriteLine("The chosen bench address is:");
+            string benchAddress = bench.RBXAddress;
+            Console.WriteLine(benchAddress);
+
+            Console.WriteLine("Specify a start height");
+            long height = 0;
+            var StartHeight = await ReadLineUtility.ReadLine();
+            if (string.IsNullOrWhiteSpace(StartHeight) || long.TryParse(StartHeight, out height))
+            {
+                Console.WriteLine("Invalid height.");
+                return;
+            }
+
+            var newSigner = new Signer
+            {
+                Address = benchAddress,
+                StartHeight = height,
+                EndHeight = null
+            };
+            Signer.GetSigners().InsertSafe(newSigner);
+            Signer.Signers[(benchAddress, height)] = null;
+
+            Console.WriteLine("Signer Added.");
+        }
+
+        public static async Task RemoveSigner()
+        {
+            var CurrentSigners = Signer.Signers.Where(x => x.Value == null).ToList();
+            if (CurrentSigners.Count == 0)
+            {
+                Console.WriteLine("There are no current signers.");
+                return;
+            }
+
+            var count = 0;
+            CurrentSigners.ToList().ForEach(x => {
+                Console.WriteLine("********************************************************************");
+                Console.WriteLine("Please choose an address below to add an end height to.");
+
+                Console.WriteLine("\n #" + count.ToString());
+                Console.WriteLine("\nAddress :\n{0}", x.Key.Address);
+                Console.WriteLine("\nStart Height:\n{0}", x.Key.StartHeight);
+                count++;
+            });
+
+            int index = 0;
+            var signerChoice = await ReadLineUtility.ReadLine();
+            while (!int.TryParse(signerChoice, out index))
+            {
+                Console.WriteLine("You must choose an address. Type a number from above and press enter please.");
+                signerChoice = await ReadLineUtility.ReadLine();
+            }
+            var signer = CurrentSigners[index];
+            Console.WriteLine("********************************************************************");
+            Console.WriteLine("The chosen address is:");
+            string Address = signer.Key.Address;
+            Console.WriteLine(Address);
+            
+            Console.WriteLine("Specify a end height");
+            long height = 0;
+            var EndHeight = await ReadLineUtility.ReadLine();
+            if (string.IsNullOrWhiteSpace(EndHeight) || long.TryParse(EndHeight, out height))
+            {
+                Console.WriteLine("Invalid height.");
+                return;
+            }
+            var dbSigner = Signer.GetSigners().FindOne(x => x.Address == Address && x.StartHeight == signer.Key.StartHeight);
+            dbSigner.EndHeight = height;            
+            Signer.GetSigners().UpdateSafe(dbSigner);
+            Signer.Signers[signer.Key] = height;
+
+            Console.WriteLine("Signer Updated.");
+        }
+
         public static async Task PeerInfo()
         {
             var peerNodes = Globals.Nodes.Values.ToList();
