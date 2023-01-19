@@ -377,7 +377,7 @@ namespace ReserveBlockCore.P2P
                     node.Connection = hubConnection;
                     node.IpAddress = IPAddress;
                     node.AdjudicatorConnectDate = DateTime.UtcNow;
-                    node.Address = bench.RBXAddress;
+                    node.Address = Globals.LastBlock.Height < Globals.BlockLock ? Globals.LeadAddress : bench.RBXAddress;
                 }
                 else
                 {
@@ -386,8 +386,8 @@ namespace ReserveBlockCore.P2P
                         Connection = hubConnection,
                         IpAddress = IPAddress,
                         AdjudicatorConnectDate = DateTime.UtcNow,
-                        Address = bench.RBXAddress
-                    };
+                        Address = Globals.LastBlock.Height < Globals.BlockLock ? Globals.LeadAddress : bench.RBXAddress
+                };
                 }
 
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
