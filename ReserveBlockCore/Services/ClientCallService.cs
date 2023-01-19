@@ -993,8 +993,8 @@ namespace ReserveBlockCore.Services
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(20);
 
-            var EpochTime = Globals.IsTestNet ? 1673397583280L : 1674162000000L;
-            var BeginBlock = Globals.IsTestNet ? 16L : 578575L;
+            var EpochTime = Globals.IsTestNet ? 1673397583280L : 1674165600000L;
+            var BeginBlock = Globals.IsTestNet ? 16L : Globals.V3Height;
 
             var PreviousHeight = -1L;            
             var BlockDelay = Task.CompletedTask;

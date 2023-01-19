@@ -193,13 +193,13 @@ namespace ReserveBlockCore.Services
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
-                    [("RBxy1XGZ72f6YqktseaLJ1sJsE9u5DF3sp", 0)] = null,
-                    [("RBxkrs6snuTuHjAfzedXGzRixfeyvQfy7m", 0)] = null,
-                    [("RBxz1j5veSPrBg4RSyYD4CZ9BY6LPQ65gM", 0)] = null,
-                    [("RBx1FNEvjB97HRdreDg3zHCNCSSEvSyBTE", 0)] = null,
-                    [("RBxuRe1PorrpUCSbcmBk4JDHCxeADAkXyX", 0)] = null,
-                    [("RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", 0)] = null,
-                    [("RBxc2kz67W2zvb3yGxzACEQqgFiiBfYSTY", 0)] = null,
+                    [("RBxy1XGZ72f6YqktseaLJ1sJsE9u5DF3sp", Globals.V3Height)] = null,
+                    [("RBxkrs6snuTuHjAfzedXGzRixfeyvQfy7m", Globals.V3Height)] = null,
+                    [("RBxz1j5veSPrBg4RSyYD4CZ9BY6LPQ65gM", Globals.V3Height)] = null,
+                    [("RBx1FNEvjB97HRdreDg3zHCNCSSEvSyBTE", Globals.V3Height)] = null,
+                    [("RBxuRe1PorrpUCSbcmBk4JDHCxeADAkXyX", Globals.V3Height)] = null,
+                    [("RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", Globals.V3Height)] = null,
+                    [("RBxc2kz67W2zvb3yGxzACEQqgFiiBfYSTY", Globals.V3Height)] = null,
                 };
 
                 foreach (var signer in Signer.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
