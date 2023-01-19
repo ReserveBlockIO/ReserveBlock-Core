@@ -17,8 +17,7 @@ namespace ReserveBlockCore.Models
                 return beaconRef;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "BeaconReference.GetBeaconReference()");
                 return null;
             }

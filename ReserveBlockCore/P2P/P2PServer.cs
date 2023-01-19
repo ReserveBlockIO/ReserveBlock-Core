@@ -24,8 +24,12 @@ namespace ReserveBlockCore.P2P
         public override async Task OnConnectedAsync()
         {            
             var peerIP = GetIP(Context);
-            if(Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
-                context.Abort();
+            if (Globals.BannedIPs.ContainsKey(peerIP))
+            {
+                Context.Abort();
+                return;
+            }
+
 
             Globals.P2PPeerDict[peerIP] = Context;
 
@@ -44,7 +48,12 @@ namespace ReserveBlockCore.P2P
 
                 peers.InsertSafe(nPeer);
             }
-                                    
+
+            if (Globals.P2PPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
+            {
+                context.Abort();
+            }
+
             await Clients.Caller.SendAsync("GetMessage", "IP", peerIP);
             await base.OnConnectedAsync();
         }
@@ -52,7 +61,7 @@ namespace ReserveBlockCore.P2P
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             var peerIP = GetIP(Context);
-            Globals.P2PPeerDict.TryRemove(peerIP, out var test);
+            Globals.P2PPeerDict.TryRemove(peerIP, out _);
         }
 
         #endregion
@@ -69,16 +78,24 @@ namespace ReserveBlockCore.P2P
        
         public static async Task<T> SignalRQueue<T>(HubCallerContext context, int sizeCost, Func<Task<T>> func)
         {
-            if (Globals.LastBlock.Height <= Globals.BlockLock)
-                return await func();
-
             var now = TimeUtil.GetMillisecondTime();
-            var ipAddress = GetIP(context);            
+            var ipAddress = GetIP(context);
+            if(Globals.AdjudicateAccount == null)
+            {
+                if (Globals.AdjNodes.ContainsKey(ipAddress))
+                    return await func();
+            }
+            else
+            {
+                if (Globals.Nodes.ContainsKey(ipAddress))
+                    return await func();
+            }
+
             if (Globals.MessageLocks.TryGetValue(ipAddress, out var Lock))
             {                               
                 var prev = Interlocked.Exchange(ref Lock.LastRequestTime, now);               
-                if (Lock.ConnectionCount > 20)                
-                    Peers.BanPeer(ipAddress, ipAddress + ": Connection count exceeded limit.  Peer failed to wait for responses before sending new requests.", func.Method.Name);                                        
+                if (Lock.ConnectionCount > 20)
+                    BanService.BanPeer(ipAddress, ipAddress + ": Connection count exceeded limit.  Peer failed to wait for responses before sending new requests.", func.Method.Name);                                        
                 
                 if (Lock.BufferCost + sizeCost > 5000000)
                 {
@@ -120,78 +137,70 @@ namespace ReserveBlockCore.P2P
         {
             Interlocked.Increment(ref Lock.ConnectionCount);
             Interlocked.Add(ref Lock.BufferCost, sizeCost);
-            await Lock.Semaphore.WaitAsync();
+            T Result = default;
             try
             {
+                await Lock.Semaphore.WaitAsync();
+                Interlocked.Decrement(ref Lock.ConnectionCount);
+                Interlocked.Add(ref Lock.BufferCost, -sizeCost);
+
                 var task = func();
                 if (Lock.DelayLevel == 0)
                     return await task;
 
-                var delayTask = Task.Delay(500 * (1 << (Lock.DelayLevel - 1)));                
+                var delayTask = Task.Delay(500 * (1 << (Lock.DelayLevel - 1)));
                 await Task.WhenAll(delayTask, task);
-                return await task;
+                Result = await task;
             }
+            catch { }
             finally
             {
-                if (Lock.Semaphore.CurrentCount == 0) // finally can be executed more than once
-                {
-                    Interlocked.Decrement(ref Lock.ConnectionCount);
-                    Interlocked.Add(ref Lock.BufferCost, -sizeCost);
-                    Lock.Semaphore.Release();
-                }
+                try { Lock.Semaphore.Release(); } catch { }
             }
-        }
-
-        public static async Task SignalRQueue(HubCallerContext context, int sizeCost, Func<Task> func)
-        {
-            var commandWrap = async () =>
-            {
-                await func();
-                return 1;
-            };
-            await SignalRQueue(context, sizeCost, commandWrap);
+                        
+            return Result;            
         }
 
         #endregion
 
         #region Receive Block
-        public async Task ReceiveBlock(Block nextBlock)
+        public async Task<bool> ReceiveBlock(Block nextBlock)
         {
             try
             {
-                await SignalRQueue(Context, (int)nextBlock.Size, async () =>
+                return await SignalRQueue(Context, (int)nextBlock.Size, async () =>
                 {
-                    if (Globals.BlocksDownloading == 0)
+                   
+                    if (nextBlock.ChainRefId == BlockchainData.ChainRef)
                     {
-                        if (nextBlock.ChainRefId == BlockchainData.ChainRef)
-                        {
-                            var IP = GetIP(Context);
-                            var nextHeight = Globals.LastBlock.Height + 1;
-                            var currentHeight = nextBlock.Height;
+                        var IP = GetIP(Context);
+                        var nextHeight = Globals.LastBlock.Height + 1;
+                        var currentHeight = nextBlock.Height;
+                        
+                        if (currentHeight >= nextHeight && BlockDownloadService.BlockDict.TryAdd(currentHeight, (nextBlock, IP)))
+                        {                            
+                            await BlockValidatorService.ValidateBlocks();
 
-                            var isNewBlock = currentHeight >= nextHeight && !BlockDownloadService.BlockDict.ContainsKey(currentHeight);
-
-                            if (isNewBlock)
-                            {
-                                BlockDownloadService.BlockDict[currentHeight] = (nextBlock, IP);
-                                await BlockValidatorService.ValidateBlocks();
-                            }
-
-                            if (nextHeight == currentHeight && isNewBlock)
+                            if (nextHeight == currentHeight)
                             {
                                 string data = "";
                                 data = JsonConvert.SerializeObject(nextBlock);
                                 await Clients.All.SendAsync("GetMessage", "blk", data);
                             }
 
-                            if (nextHeight < currentHeight && isNewBlock)
+                            if (nextHeight < currentHeight)
                                 await BlockDownloadService.GetAllBlocks();
+
+                            return true;
                         }
                     }
+
+                    return false;
                 });
             }
             catch { }
-            
+
+            return false;            
         }
 
         #endregion
@@ -227,7 +236,8 @@ namespace ReserveBlockCore.P2P
 
         public async Task<string> PingBackPeer()
         {
-            return await SignalRQueue(Context, 128, async () => {
+            return await SignalRQueue(Context, 1024, async () =>
+            {
                 return "HelloBackPeer";
             });
         }
@@ -242,171 +252,8 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Send Beacon Locator Info
-        public async Task<string> SendBeaconInfo()
-        {
-            return await SignalRQueue(Context, 128, async () => {
-                var result = "";
-
-                var beaconInfo = BeaconInfo.GetBeaconInfo();
-
-                if (beaconInfo == null)
-                    return "NA";
-
-                result = beaconInfo.BeaconLocator;
-
-                return result;
-            });
-        }
-
-        #endregion
-
-        #region  ReceiveDownloadRequest
-        public async Task<bool> ReceiveDownloadRequest(BeaconData.BeaconDownloadData bdd)
-        {
-            return await SignalRQueue(Context, 1024, async () =>
-            {
-                bool result = false;
-                var peerIP = GetIP(Context);
-
-                try
-                {
-                    if (bdd != null)
-                    {
-                        var scState = SmartContractStateTrei.GetSmartContractState(bdd.SmartContractUID);
-                        if (scState == null)
-                        {
-                            return result; //fail
-                        }
-
-                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bdd.SmartContractUID, bdd.Signature);
-                        if (sigCheck == false)
-                        {
-                            return result; //fail
-                        }
-
-                        var beaconDatas = BeaconData.GetBeacon();
-                        var beaconData = BeaconData.GetBeaconData();
-                        foreach (var fileName in bdd.Assets)
-                        {
-                            if (beaconData != null)
-                            {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
-                                if (bdCheck != null)
-                                {
-                                    if (beaconDatas != null)
-                                    {
-                                        bdCheck.DownloadIPAddress = peerIP;
-                                        beaconDatas.UpdateSafe(bdCheck);
-                                    }
-                                    else
-                                    {
-                                        return result;//fail
-                                    }
-                                }
-                                else
-                                {
-                                    return result; //fail
-                                }
-                            }
-                            else
-                            {
-                                return result; //fail
-                            }
-
-                            result = true;
-                        }
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ErrorLogUtility.LogError($"Error Creating BeaconData. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-                }
-
-                return result;
-            });
-        }
-
-        #endregion
-
-        #region ReceiveUploadRequest
-        public async Task<bool> ReceiveUploadRequest(BeaconData.BeaconSendData bsd)
-        {
-            return await SignalRQueue(Context, 1024, async () =>
-            {
-                bool result = false;
-                var peerIP = GetIP(Context);
-                try
-                {
-                    if (bsd != null)
-                    {
-                        var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
-                        if (scState == null)
-                        {
-                            return result;
-                        }
-
-                        var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
-                        if (sigCheck == false)
-                        {
-                            return result;
-                        }
-
-                        var beaconData = BeaconData.GetBeaconData();
-                        foreach (var fileName in bsd.Assets)
-                        {
-                            if (beaconData == null)
-                            {
-                                var bd = new BeaconData
-                                {
-                                    AssetExpireDate = 0,
-                                    AssetReceiveDate = 0,
-                                    AssetName = fileName,
-                                    IPAdress = peerIP,
-                                    NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                    SmartContractUID = bsd.SmartContractUID
-                                };
-
-                                BeaconData.SaveBeaconData(bd);
-                            }
-                            else
-                            {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && x.AssetName == fileName).FirstOrDefault();
-                                if (bdCheck == null)
-                                {
-                                    var bd = new BeaconData
-                                    {
-                                        AssetExpireDate = 0,
-                                        AssetReceiveDate = 0,
-                                        AssetName = fileName,
-                                        IPAdress = peerIP,
-                                        NextAssetOwnerAddress = bsd.NextAssetOwnerAddress,
-                                        SmartContractUID = bsd.SmartContractUID
-                                    };
-
-                                    BeaconData.SaveBeaconData(bd);
-                                }
-                            }
-                        }
-
-                        result = true;
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
-                }
-
-                return result;
-            });
-        }
-
-        #endregion
-
         #region Send Adjudicator
-        public async Task<Adjudicators?> SendLeadAdjudicator()
+        public async Task<Adjudicators> SendLeadAdjudicator()
         {
             return await SignalRQueue(Context, 128, async () =>
             {
@@ -489,7 +336,7 @@ namespace ReserveBlockCore.P2P
                             if (!isTxStale)
                             {
                                 var txResult = await TransactionValidatorService.VerifyTX(txReceived); //sends tx to connected peers
-                                if (txResult == false)
+                                if (txResult.Item1 == false)
                                 {
                                     try
                                     {
@@ -506,14 +353,18 @@ namespace ReserveBlockCore.P2P
                                 var rating = await TransactionRatingService.GetTransactionRating(txReceived);
                                 txReceived.TransactionRating = rating;
 
-                                if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                                if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                                 {
                                     mempool.InsertSafe(txReceived);
-                                    await P2PClient.SendTXToAdjudicator(txReceived);
-                                    if (Globals.Adjudicate)
+                                    if(Globals.AdjudicateAccount == null)
                                     {
-                                        //send message to peers
+                                        await P2PClient.SendTXToAdjudicator(txReceived);
                                     }
+                                    else
+                                    {
+                                        //this should not happen as no one should be connected to an ADJ through p2pserver
+                                    }
+                                    
                                     return "ATMP";//added to mempool
                                 }
                                 else
@@ -572,7 +423,7 @@ namespace ReserveBlockCore.P2P
                         if (!isTxStale)
                         {
                             var txResult = await TransactionValidatorService.VerifyTX(txReceived);
-                            if (!txResult)
+                            if (!txResult.Item1)
                             {
                                 try
                                 {
@@ -587,10 +438,10 @@ namespace ReserveBlockCore.P2P
                             var rating = await TransactionRatingService.GetTransactionRating(txReceived);
                             txReceived.TransactionRating = rating;
 
-                            if (txResult == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
+                            if (txResult.Item1 == true && dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
                             {
                                 mempool.InsertSafe(txReceived);
-                                if(!Globals.Adjudicate)
+                                if(Globals.AdjudicateAccount == null)
                                     await P2PClient.SendTXToAdjudicator(txReceived); //sends tx to connected peers
                                 return "ATMP";//added to mempool
                             }
@@ -683,9 +534,9 @@ namespace ReserveBlockCore.P2P
             {
                 //do check for validator. if yes return val otherwise return Hello.
                 var validators = Validators.Validator.GetAll();
-                var hasValidators = validators.FindAll().Where(x => x.NodeIP == "SELF").Count(); //revise this to use local account and IsValidating
+                var isValidator = !string.IsNullOrEmpty(Globals.ValidatorAddress) ? true : false;
 
-                if (hasValidators > 0)
+                if (isValidator)
                     return "HelloVal";
 
                 return "Hello";
@@ -701,6 +552,22 @@ namespace ReserveBlockCore.P2P
             var peerIP = feature.RemoteIpAddress.MapToIPv4().ToString();
 
             return peerIP;
+        }
+
+        #endregion
+
+        #region Get Validator Status
+        public async Task<bool> GetValidatorStatus()
+        {
+            return await SignalRQueue(Context, bool.FalseString.Length, async () => !string.IsNullOrEmpty(Globals.ValidatorAddress));
+        }
+
+        #endregion
+
+        #region Get Wallet Version
+        public async Task<string> GetWalletVersion()
+        {
+            return await SignalRQueue(Context, Globals.CLIVersion.Length, async () => Globals.CLIVersion);
         }
 
         #endregion

@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Extensions;
+using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Trillium.CodeAnalysis;
@@ -16,8 +17,8 @@ namespace ReserveBlockCore.Trillium
 		private bool _showTree;
 		private bool _showProgram;
 		private readonly Dictionary<VariableSymbol, object> _variables = new Dictionary<VariableSymbol, object>();
-
-		public TrilliumRepl()
+        private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+        public TrilliumRepl()
 		{
 			//LoadSubmissions();
 		}
@@ -124,15 +125,8 @@ namespace ReserveBlockCore.Trillium
 		[MetaCommand("exit", "Exits the Program")]
 		private void EvaluateExit()
 		{
-			Console.WriteLine("Trillium Exiting in 3 seconds...");
-			Console.WriteLine("» ...3");
-			Thread.Sleep(1000);
-			Console.WriteLine("» ...2");
-			Thread.Sleep(1000);
-			Console.WriteLine("» ...1");
-			Thread.Sleep(1000);
-			Console.WriteLine("» ...0");
-			Environment.Exit(0);
+			Console.WriteLine("Trillium Exiting");
+			//Environment.Exit(0);
 		}
 		protected override bool IsCompleteSubmission(string text)
 		{
@@ -196,37 +190,10 @@ namespace ReserveBlockCore.Trillium
 
 		private static string GetSubmissionsDirectory()
 		{
-			var databaseLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
+			var trilliumLocation = Globals.IsTestNet != true ? "Trillium" : "TrilliumTestNet";
 
-			string path = "";
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			{
-				string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-				path = homeDirectory + Path.DirectorySeparatorChar + "rbx" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
-						"Submissions" + Path.DirectorySeparatorChar;
-			}
-			else
-			{
-				if (Debugger.IsAttached)
-				{
-					path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar +
-						"Submissions" + Path.DirectorySeparatorChar;
-				}
-				else
-				{
-					path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + 
-						"RBX" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar + 
-						"Submissions" + Path.DirectorySeparatorChar;
-				}
-			}
-			if (!Directory.Exists(path))
-			{
-				Directory.CreateDirectory(path);
-			}
-			//var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-			//var submissionsDirectory = Path.Combine(localAppData, "Trillium", "Submissions");
-			//return submissionsDirectory;
-
+			string path = GetPathUtility.GetTrilliumPath();
+            
 			return path;
 		}
 

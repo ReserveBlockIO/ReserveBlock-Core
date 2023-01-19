@@ -7,18 +7,34 @@ using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
+using ReserveBlockCore.Services;
+using ReserveBlockCore.Voting;
 
 namespace ReserveBlockCore.Models
 {
     public class Account
     {
+        private string _privateKey;
         public long Id { get; set; }
-        public string PrivateKey { set; get; }
+        /// <summary>
+        /// This is where a private key is stored. Do not use this to get the private key. Instead use GetKey.
+        /// </summary>
+        public string PrivateKey { get; set; }
         public string PublicKey { set; get; }
         public string Address { get; set; }
         public string? ADNR { get; set; }
         public decimal Balance { get; set; }
         public bool IsValidating { get; set; }
+
+        /// <summary>
+        /// This will return your private key. It called the GetPrivateKey(PrivateKey, Address) method.
+        /// It will return either the private key, or the private key encrypted/decrypted depending if password is present.
+        /// </summary>
+        /// <returns>
+        /// public string PrivateKey
+        /// </returns>
+        /// <exception cref="PrivateKey"></exception>
+        public string GetKey{ get { return GetPrivateKey(PrivateKey, Address); } }
 
         public Account Build()
         {
@@ -27,7 +43,7 @@ namespace ReserveBlockCore.Models
             return account;
         }
 
-        public async Task<Account> Restore(string privKey)
+        public async static Task<Account> Restore(string privKey)
         {
             Account account = await AccountData.RestoreAccount(privKey);
             return account;
@@ -70,10 +86,71 @@ namespace ReserveBlockCore.Models
                         account.ADNR = adnr.Name;
                         accounts.UpdateSafe(account);
                     }
-
                 }
             }
-            
+        }
+
+        private string GetPrivateKey(string privkey, string address)
+        {
+            if (Globals.IsWalletEncrypted == true)
+            {
+                //decrypt private key for send
+                if (Globals.EncryptPassword.Length == 0)
+                {
+                    return privkey;
+                }
+                else
+                {
+                    try
+                    {
+                        var keystores = Keystore.GetKeystore();
+                        if (keystores != null)
+                        {
+                            var keystore = keystores.FindOne(x => x.Address == address);
+                            if (keystore != null)
+                            {
+                                var password = Globals.EncryptPassword.ToUnsecureString();
+                                var newPasswordArray = Encoding.ASCII.GetBytes(password);
+                                var passwordKey = new byte[32 - newPasswordArray.Length].Concat(newPasswordArray).ToArray();
+
+                                var key = Convert.FromBase64String(keystore.Key);
+                                var encryptedPrivKey = Convert.FromBase64String(privkey);
+
+                                var keyDecrypted = WalletEncryptionService.DecryptKey(key, passwordKey);
+                                var privKeyDecrypted = WalletEncryptionService.DecryptKey(encryptedPrivKey, Convert.FromBase64String(keyDecrypted));
+
+                                //clearing values
+                                password = "0";
+                                newPasswordArray = new byte[0];
+                                passwordKey = new byte[0];
+
+                                key = new byte[0];
+                                encryptedPrivKey = new byte[0];
+
+                                keyDecrypted = "0";
+                                return privKeyDecrypted;
+
+                            }
+                            else
+                            {
+                                return privkey;
+                            }
+                        }
+                        else
+                        {
+                            return privkey;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return privkey;
+                    }
+                }
+            }
+            else
+            {
+                return privkey;
+            }
         }
     }
 

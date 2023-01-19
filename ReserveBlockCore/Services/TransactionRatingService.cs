@@ -26,6 +26,14 @@ namespace ReserveBlockCore.Services
                 {
                     rating = await NFTRating(tx);
                 }
+                if(tx.TransactionType == TransactionType.VOTE_TOPIC)
+                {
+                    rating = await VoteTopicRating(tx);
+                }
+                if (tx.TransactionType == TransactionType.VOTE)
+                {
+                    rating = await VoteRating(tx);
+                }
 
                 return rating;
             }
@@ -45,14 +53,14 @@ namespace ReserveBlockCore.Services
 
             if (mempool != null)
             {
-                if (mempool.Count() > 10)
+                if (mempool.Count() > 25)
                 {
                     var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
                     (x.TransactionType == TransactionType.NFT_MINT ||
                         x.TransactionType == TransactionType.NFT_SALE ||
                         x.TransactionType == TransactionType.NFT_BURN ||
                         x.TransactionType == TransactionType.NFT_TX));
-                    if (txs.Count() > 10)
+                    if (txs.Count() > 25)
                     {
                         rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
                         txs.ForEach(x =>
@@ -106,6 +114,84 @@ namespace ReserveBlockCore.Services
             return rating;
         }
 
+        private static async Task<TransactionRating> VoteRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+
+            if (mempool != null)
+            {
+                if (mempool.Count() >= 2)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
+                    (x.TransactionType == TransactionType.VOTE ||
+                        x.TransactionType == TransactionType.VOTE_TOPIC));
+
+                    if (txs.Count() > 1)
+                    {
+                        rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
+                        txs.ForEach(x =>
+                        {
+                            x.TransactionRating = rating;
+                        });
+
+                        pool.UpdateSafe(txs);
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+
+        private static async Task<TransactionRating> VoteTopicRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+
+            if (mempool != null)
+            {
+                if (mempool.Count() >= 2)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress &&
+                    (x.TransactionType == TransactionType.VOTE ||
+                        x.TransactionType == TransactionType.VOTE_TOPIC));
+
+                    if (txs.Count() > 1)
+                    {
+                        rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
+                        txs.ForEach(x =>
+                        {
+                            x.TransactionRating = rating; 
+                        });
+
+                        pool.UpdateSafe(txs);
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+
         private static async Task<TransactionRating> TXRating(Transaction tx)
         {
             TransactionRating rating = TransactionRating.A;
@@ -132,10 +218,10 @@ namespace ReserveBlockCore.Services
             }
             if (mempool != null)
             {
-                if (mempool.Count() > 10)
+                if (mempool.Count() > 50)
                 {
                     var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.TX);
-                    if (txs.Count() > 10)
+                    if (txs.Count() > 50)
                     {
                         rating = TransactionRating.F; // Fail. Too many tx's being broadcasted from that address. 
                         txs.ForEach(x =>

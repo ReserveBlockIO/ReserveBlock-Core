@@ -3,6 +3,10 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
+using System.Numerics;
+using ReserveBlockCore.EllipticCurve;
+using System.Globalization;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace ReserveBlockCore.Services
 {
@@ -48,19 +52,19 @@ namespace ReserveBlockCore.Services
                     {
                         Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
                         Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                         StartupService.MainMenu();
                     }
                     else if (confirmChoice.ToLower() == "n")
                     {
                         Console.WriteLine("Returning you to main menu in 3 seconds...");
-                        Thread.Sleep(3000);
+                        await Task.Delay(3000);
                         StartupService.MainMenu();
                     }
                     else if (confirmChoice.ToLower() == "y")
                     {
                         Console.Clear();
-                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                         var nodeName = await ReadLineUtility.ReadLine();
 
                         if (!string.IsNullOrWhiteSpace(nodeName))
@@ -69,34 +73,31 @@ namespace ReserveBlockCore.Services
 
                             while (nodeNameCheck == false)
                             {
-                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                                 nodeName = await ReadLineUtility.ReadLine();
                                 nodeNameCheck = UniqueNameCheck(nodeName);
                             }
 
                             var result = await StartValidating(account, nodeName);
-                            Console.WriteLine(result);
-                            Console.WriteLine("Returning you to main menu in 10 seconds...");
-                            Thread.Sleep(10000);
                             StartupService.MainMenu();
+                            Console.WriteLine(result);
+                            Console.WriteLine("Returned to main menu.");
                         }
-
                     }
                     else
                     {
+                        StartupService.MainMenu();
                         Console.WriteLine("Unexpected input detected.");
-                        Console.WriteLine("Returning you to main menu in 5 seconds...");
-                        Thread.Sleep(5000);
+                        Console.WriteLine("Returned to main menu.");
                     }
 
                 }
                 else
                 {
+                    StartupService.MainMenu();
                     Console.WriteLine("********************************************************************");
                     Console.WriteLine("Insufficient balance to validate.");
-                    Console.WriteLine("Returning you to main menu in 5 seconds...");
-                    Thread.Sleep(5000);
-                    StartupService.MainMenu();
+                    Console.WriteLine("Returned to main menu.");
                 }
             }
             catch (Exception ex) { }
@@ -106,7 +107,7 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if (Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
+            if (Globals.StopAllTimers == true || Globals.BlocksDownloadSlim.CurrentCount == 0)
             {
                 output = "Wallet is still starting. Please wait";
                 return output;
@@ -191,7 +192,7 @@ namespace ReserveBlockCore.Services
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                        await StartupService.ConnectoToAdjudicator();
+                        _ = StartupService.GetAdjudicatorPool();
                     }
                 }
                 else
@@ -222,13 +223,54 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
+
+
                 Console.WriteLine("Validator database records have been reset.");
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
+            }
+        }
+
+        public static async Task<string?> SuspendMasterNode()
+        {
+            try
+            {
+                var accounts = AccountData.GetAccounts();
+                var valAccount = accounts.Query().Where(x => x.IsValidating == true).FirstOrDefault();
+
+                if (valAccount != null)
+                {
+                    valAccount.IsValidating = false;
+                    accounts.UpdateSafe(valAccount);
+                    Globals.ValidatorAddress = "";
+                    return valAccount.Address;
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
+            }
+
+            return null;
+        }
+
+
+        public static async Task PerformErrorCountCheck()
+        {
+            if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
+            {
+                var adjNodesWithErrors = Globals.AdjNodes.Values.Where(x => x.LastTaskErrorCount > 3).ToList();
+                foreach (var adjNode in adjNodesWithErrors)
+                {
+                    var result = await ResetAdjConnection(adjNode);
+                    if(!result)
+                    {
+                        ErrorLogUtility.LogError($"Failed to reset Adj connection to: {adjNode.Address} on IP: {adjNode.IpAddress}. See exception above.", "ValidatorService.PerformErrorCountCheck()");
+                    }
+                }
             }
         }
 
@@ -237,20 +279,41 @@ namespace ReserveBlockCore.Services
             //Disconnect from adj
             try
             {
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
-                Thread.Sleep(2000);
+                await Task.Delay(500);
                 //Reset validator variable.
                 StartupService.SetValidator();
-                //Reconnect
-                await StartupService.ConnectoToAdjudicator();
 
                 return true;
             }
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
+            }
+
+            return false;
+        }
+
+        public static async Task<bool> ResetAdjConnection(AdjNodeInfo adjInfo)
+        {
+            //Disconnect from adj
+            try
+            {
+                await adjInfo.Connection.DisposeAsync();
+                Globals.AdjNodes[adjInfo.IpAddress].LastTaskErrorCount = 0;
+                Globals.AdjNodes[adjInfo.IpAddress].LastTaskError = false;
+                Globals.AdjNodes[adjInfo.IpAddress].LastWinningTaskError = false;
+                //Do a block check to ensure all blocks are present.
+                await BlockDownloadService.GetAllBlocks();
+                await Task.Delay(500);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Running ResetAdjConnection(). Error: {ex.ToString()}", "ValidatorService.ResetAdjConnection()");
             }
 
             return false;
@@ -298,7 +361,7 @@ namespace ReserveBlockCore.Services
             var validators = Validators.Validator.GetAll();
             validators.Delete(validator.Id);
 
-            await P2PClient.DisconnectAdjudicator();
+            await P2PClient.DisconnectAdjudicators();
 
             ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
@@ -329,13 +392,12 @@ namespace ReserveBlockCore.Services
 
                     Globals.ValidatorAddress = "";
 
-                    await P2PClient.DisconnectAdjudicator();
+                    await P2PClient.DisconnectAdjudicators();
                 }
 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
             }
         }
 
@@ -381,8 +443,7 @@ namespace ReserveBlockCore.Services
                 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
             }
         }
 

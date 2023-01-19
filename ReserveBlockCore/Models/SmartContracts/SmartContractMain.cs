@@ -91,8 +91,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                     scs.DeleteManySafe(x => x.SmartContractUID == scUID);
                 }
                 catch(Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "SmartContractMain.DeleteSmartContract()");
                 }
             }

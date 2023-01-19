@@ -5,11 +5,13 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Services;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.Data
 {
     public class StateData
     {
+        
         public static void CreateGenesisWorldTrei(Block block)
         {
             var trxList = block.Transactions.ToList();
@@ -39,180 +41,322 @@ namespace ReserveBlockCore.Data
             aTrei.InsertBulkSafe(accStTrei);
         }
 
-        public static void UpdateAccountNonce(string address, long ?nonce = null)
+        public static async Task UpdateTreis(Block block)
         {
-            var account = GetSpecificAccountStateTrei(address);
-            if(nonce == null)
-            {
-                account.Nonce += 1;
-            }    
-            else
-            {
-                account.Nonce = nonce.Value;
-            }
-            var accountTrei = GetAccountStateTrei();
-            accountTrei.UpdateSafe(account);
-        }
-        public static void UpdateTreis(Block block)
-        {
+            Globals.TreisUpdating = true;
             var txList = block.Transactions.ToList();
+            var txCount = txList.Count();
+            int txTreiUpdateSuccessCount = 0;
+            var txFailList = new List<Transaction>();   
+
             var accStTrei = GetAccountStateTrei();
+            ConcurrentDictionary<string, StateTreiAuditData> StateTreiAuditDict = new ConcurrentDictionary<string, StateTreiAuditData>();
 
-            txList.ForEach(x => {
-                if (block.Height == 0)
+            foreach(var tx in txList)
+            {
+                try
                 {
-                    var acctStateTreiFrom = new AccountStateTrei
+                    if (block.Height == 0)
                     {
-                        Key = x.FromAddress,
-                        Nonce = x.Nonce + 1, //increase Nonce for next use
-                        Balance = 0, //subtract from the address
-                        StateRoot = block.StateRoot
-                    };
+                        var acctStateTreiFrom = new AccountStateTrei
+                        {
+                            Key = tx.FromAddress,
+                            Nonce = tx.Nonce + 1, //increase Nonce for next use
+                            Balance = 0, //subtract from the address
+                            StateRoot = block.StateRoot
+                        };
 
-                    accStTrei.InsertSafe(acctStateTreiFrom);
-                }
-                else
-                {
-                    if (x.FromAddress != "Coinbase_TrxFees" && x.FromAddress != "Coinbase_BlkRwd")
-                    {
-                        var from = GetSpecificAccountStateTrei(x.FromAddress);
-
-                        from.Nonce += 1;
-                        from.StateRoot = block.StateRoot;
-                        from.Balance -= (x.Amount + x.Fee);
-
-                        accStTrei.UpdateSafe(from);
+                        accStTrei.InsertSafe(acctStateTreiFrom);
                     }
                     else
                     {
-                        //do nothing as its the coinbase fee
-                    }
-                    
-                }
-
-                if(x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
-                {
-                    var to = GetSpecificAccountStateTrei(x.ToAddress);
-                    if(x.TransactionType == TransactionType.TX)
-                    {
-                        if (to == null)
+                        if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var acctStateTreiTo = new AccountStateTrei
+                            var from = GetSpecificAccountStateTrei(tx.FromAddress);
+
+                            var newRec = new StateTreiAuditData
                             {
-                                Key = x.ToAddress,
-                                Nonce = 0,
-                                Balance = x.Amount,
-                                StateRoot = block.StateRoot
+                                NewValue = (from.Balance - (tx.Amount + tx.Fee)),
+                                OldValue = from.Balance,
+                                NextNonce = from.Nonce + 1,
+                                Nonce = from.Nonce,
+                                Address = from.Key,
+                                StateRoot = block.StateRoot,
+                                StateRecordStatus = StateRecordStatus.Update
                             };
 
-                            accStTrei.InsertSafe(acctStateTreiTo);
+                            var stAD = StateTreiAuditDict.TryGet(from.Key);
+                            if (stAD != null)
+                            {
+                                var newOldValue = stAD.NewValue;
+                                var newOldNonce = stAD.NextNonce;
+                                stAD.OldValue = newOldValue;
+                                stAD.NewValue -= tx.Amount;
+                                stAD.Nonce = newOldNonce;
+                                stAD.NextNonce = stAD.NextNonce + 1;
+                                StateTreiAuditDict[from.Key] = stAD;
+                            }
+                            else
+                            {
+                                StateTreiAuditDict[from.Key] = newRec;
+                            }
+
+                            from.Nonce += 1;
+                            from.StateRoot = block.StateRoot;
+                            from.Balance -= (tx.Amount + tx.Fee);
+
+                            accStTrei.UpdateSafe(from);
                         }
                         else
                         {
-                            to.Balance += x.Amount;
-                            to.StateRoot = block.StateRoot;
-
-                            accStTrei.UpdateSafe(to);
+                            //do nothing as its the coinbase fee
                         }
 
                     }
-                    
-                }
 
-                if (x.TransactionType != TransactionType.TX)
+                    if (tx.ToAddress != "Adnr_Base" && tx.ToAddress != "DecShop_Base" && tx.ToAddress != "Topic_Base" && tx.ToAddress != "Vote_Base")
+                    {
+                        var to = GetSpecificAccountStateTrei(tx.ToAddress);
+                        if (tx.TransactionType == TransactionType.TX)
+                        {
+                            if (to == null)
+                            {
+                                var acctStateTreiTo = new AccountStateTrei
+                                {
+                                    Key = tx.ToAddress,
+                                    Nonce = 0,
+                                    Balance = tx.Amount,
+                                    StateRoot = block.StateRoot
+                                };
+
+                                var newRec = new StateTreiAuditData
+                                {
+                                    NewValue = tx.Amount,
+                                    OldValue = tx.Amount,
+                                    NextNonce = 0,
+                                    Nonce = 0,
+                                    Address = tx.ToAddress,
+                                    StateRoot = block.StateRoot,
+                                    StateRecordStatus = StateRecordStatus.Insert
+                                };
+
+                                var stAD = StateTreiAuditDict.TryGet(tx.ToAddress);
+                                if (stAD != null)
+                                {
+                                    var newOldValue = stAD.NewValue;
+                                    stAD.OldValue = newOldValue;
+                                    stAD.NewValue += tx.Amount;
+                                    StateTreiAuditDict[tx.ToAddress] = stAD;
+                                }
+                                else
+                                {
+                                    StateTreiAuditDict[tx.ToAddress] = newRec;
+                                }
+
+                                accStTrei.InsertSafe(acctStateTreiTo);
+                            }
+                            else
+                            {
+                                var newRec = new StateTreiAuditData
+                                {
+                                    NewValue = to.Balance + tx.Amount,
+                                    OldValue = to.Balance,
+                                    NextNonce = to.Nonce,
+                                    Nonce = to.Nonce,
+                                    Address = to.Key,
+                                    StateRoot = block.StateRoot,
+                                    StateRecordStatus = StateRecordStatus.Update
+                                };
+
+                                var stAD = StateTreiAuditDict.TryGet(to.Key);
+                                if (stAD != null)
+                                {
+                                    var newOldValue = stAD.NewValue;
+                                    stAD.OldValue = newOldValue;
+                                    stAD.NewValue += tx.Amount;
+                                    StateTreiAuditDict[to.Key] = stAD;
+                                }
+                                else
+                                {
+                                    StateTreiAuditDict[to.Key] = newRec;
+                                }
+
+                                to.Balance += tx.Amount;
+                                to.StateRoot = block.StateRoot;
+
+                                accStTrei.UpdateSafe(to);
+                            }
+
+                        }
+
+                    }
+
+                    if (tx.TransactionType != TransactionType.TX)
+                    {
+                        if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_MINT
+                            || tx.TransactionType == TransactionType.NFT_BURN)
+                        {
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            var scData = scDataArray[0];
+                            var function = (string?)scData["Function"];
+                            var scUID = (string?)scData["ContractUID"];
+
+                            if (!string.IsNullOrWhiteSpace(function))
+                            {
+                                switch (function)
+                                {
+                                    case "Mint()":
+                                        AddNewlyMintedContract(tx);
+                                        break;
+                                    case "Transfer()":
+                                        TransferSmartContract(tx);
+                                        break;
+                                    case "Burn()":
+                                        BurnSmartContract(tx);
+                                        break;
+                                    case "Evolve()":
+                                        EvolveSC(tx);
+                                        break;
+                                    case "Devolve()":
+                                        DevolveSC(tx);
+                                        break;
+                                    case "ChangeEvolveStateSpecific()":
+                                        EvolveDevolveSpecific(tx);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                        }
+
+                        if (tx.TransactionType == TransactionType.ADNR)
+                        {
+                            var txData = tx.Data;
+                            if (!string.IsNullOrWhiteSpace(txData))
+                            {
+                                var jobj = JObject.Parse(txData);
+                                var function = (string)jobj["Function"];
+                                if (!string.IsNullOrWhiteSpace(function))
+                                {
+                                    switch (function)
+                                    {
+                                        case "AdnrCreate()":
+                                            AddNewAdnr(tx);
+                                            break;
+                                        case "AdnrTransfer()":
+                                            TransferAdnr(tx);
+                                            break;
+                                        case "AdnrDelete()":
+                                            DeleteAdnr(tx);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (tx.TransactionType == TransactionType.VOTE_TOPIC)
+                        {
+                            var txData = tx.Data;
+                            if (!string.IsNullOrWhiteSpace(txData))
+                            {
+                                var jobj = JObject.Parse(txData);
+                                if (jobj != null)
+                                {
+                                    var function = (string)jobj["Function"];
+                                    TopicTrei topic = jobj["Topic"].ToObject<TopicTrei>();
+                                    if (topic != null)
+                                    {
+                                        topic.Id = 0;//save new
+                                        topic.BlockHeight = tx.Height;
+                                        TopicTrei.SaveTopic(topic);
+                                        if(topic.VoteTopicCategory == VoteTopicCategories.AdjVoteIn)
+                                            AdjVoteInQueue.SaveToQueue(topic);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (tx.TransactionType == TransactionType.VOTE)
+                        {
+                            var txData = tx.Data;
+                            if (!string.IsNullOrWhiteSpace(txData))
+                            {
+                                var jobj = JObject.Parse(txData);
+                                if (jobj != null)
+                                {
+                                    var function = (string)jobj["Function"];
+                                    Vote vote = jobj["Vote"].ToObject<Vote>();
+                                    if (vote != null)
+                                    {
+                                        vote.Id = 0;
+                                        vote.TransactionHash = tx.Hash;
+                                        vote.BlockHeight = tx.Height;
+                                        var result = Vote.SaveVote(vote);
+                                        if (result)
+                                        {
+                                            var topic = TopicTrei.GetSpecificTopic(vote.TopicUID);
+                                            if (topic != null)
+                                            {
+                                                if (vote.VoteType == VoteType.Yes)
+                                                    topic.VoteYes += 1;
+                                                if (vote.VoteType == VoteType.No)
+                                                    topic.VoteNo += 1;
+
+                                                TopicTrei.UpdateTopic(topic);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (tx.TransactionType == TransactionType.DSTR)
+                        {
+                            var txData = tx.Data;
+                            if (!string.IsNullOrWhiteSpace(txData))
+                            {
+                                var jobj = JObject.Parse(txData);
+                                var function = (string)jobj["Function"];
+                                if (!string.IsNullOrWhiteSpace(function))
+                                {
+                                    switch (function)
+                                    {
+                                        case "DecShopCreate()":
+                                            //AddNewDecShop(x);
+                                            break;
+                                        case "DecShopDelete()":
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    txTreiUpdateSuccessCount += 1;
+                }
+                catch(Exception ex)
                 {
-                    if (x.TransactionType == TransactionType.NFT_TX || x.TransactionType == TransactionType.NFT_MINT
-                        || x.TransactionType == TransactionType.NFT_BURN)
-                    {
-                        var scDataArray = JsonConvert.DeserializeObject<JArray>(x.Data);
-                        var scData = scDataArray[0];
-                        var function = (string?)scData["Function"];
-                        var scUID = (string?)scData["ContractUID"];
-
-                        if (!string.IsNullOrWhiteSpace(function))
-                        {
-                            switch (function)
-                            {
-                                case "Mint()":
-                                    AddNewlyMintedContract(x);
-                                    break;
-                                case "Transfer()":
-                                    TransferSmartContract(x);
-                                    break;
-                                case "Burn()":
-                                    BurnSmartContract(x);
-                                    break;
-                                case "Evolve()":
-                                    EvolveSC(x);
-                                    break;
-                                case "Devolve()":
-                                    DevolveSC(x);
-                                    break;
-                                case "ChangeEvolveStateSpecific()":
-                                    EvolveDevolveSpecific(x);
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-
-                    }
-
-                    if(x.TransactionType == TransactionType.ADNR)
-                    {
-                        var txData = x.Data;
-                        if (!string.IsNullOrWhiteSpace(txData))
-                        {
-                            var jobj = JObject.Parse(txData);
-                            var function = (string)jobj["Function"];
-                            if (!string.IsNullOrWhiteSpace(function))
-                            {
-                                switch (function)
-                                {
-                                    case "AdnrCreate()":
-                                        AddNewAdnr(x);
-                                        break;
-                                    case "AdnrTransfer()":
-                                        TransferAdnr(x);
-                                        break;
-                                    case "AdnrDelete()":
-                                        DeleteAdnr(x);
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
-                    }
-
-                    if(x.TransactionType == TransactionType.DSTR)
-                    {
-                        var txData = x.Data;
-                        if (!string.IsNullOrWhiteSpace(txData))
-                        {
-                            var jobj = JObject.Parse(txData);
-                            var function = (string)jobj["Function"];
-                            if (!string.IsNullOrWhiteSpace(function))
-                            {
-                                switch (function)
-                                {
-                                    case "DecShopCreate()":
-                                        //AddNewDecShop(x);
-                                        break;
-                                    case "DecShopDelete()":
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
-                    }
+                    txFailList.Add(tx);
+                    var txJson = JsonConvert.SerializeObject(tx);
+                    ErrorLogUtility.LogError($"Error Updating State Treis. Error: {ex.ToString()}", "StateData.UpdateTreis() - Part 1");
+                    ErrorLogUtility.LogError($"TX Info. TX: {txJson}", "StateData.UpdateTreis() - Part 2");
                 }
+            }
 
-            });
+            if(txTreiUpdateSuccessCount != txCount)
+            {
+                var txFailListJson = JsonConvert.SerializeObject(txFailList);
+                ErrorLogUtility.LogError($"TX Success Count Failed to match tx Count. TX Fail List: {txFailListJson}", "StateData.UpdateTreis() - Part 3");
+            }
 
             WorldTrei.UpdateWorldTrei(block);
-
+            Globals.TreisUpdating = false;
+            //await StateAuditUtility.AuditAccountStateTrei(StateTreiAuditDict);
         }
 
         public static LiteDB.ILiteCollection<AccountStateTrei> GetAccountStateTrei()
@@ -267,8 +411,7 @@ namespace ReserveBlockCore.Data
                 
             }
             catch(Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
             }
         }
@@ -300,8 +443,7 @@ namespace ReserveBlockCore.Data
                 Adnr.DeleteAdnr(tx.FromAddress);
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
             }
         }

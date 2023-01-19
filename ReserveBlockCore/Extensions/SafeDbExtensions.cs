@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
@@ -22,32 +23,37 @@ namespace ReserveBlockCore.Extensions
 
         public static S Command<S, T>(this ILiteCollection<T> col, Func<S> cmd)
         {
-            var DbSemaphore = col.GetSlim();
-            DbSemaphore.Wait();
+            SemaphoreSlim slim = null;
+            S Result = default;
             try
             {
-                return cmd();
+                slim = col.GetSlim();
+                slim.Wait();
+                Result =  cmd();
             }
-            finally
+            catch (Exception ex)
             {
-                if (DbSemaphore.CurrentCount == 0)
-                    DbSemaphore.Release();
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");                
             }
+
+            try { slim.Release(); } catch { }            
+            return Result;
         }
 
         public static void Command<T>(this ILiteCollection<T> col, Action cmd)
         {
-            var DbSemaphore = col.GetSlim();
-            DbSemaphore.Wait();
+            SemaphoreSlim slim = null;
             try
             {
+                slim.Wait();
                 cmd();
             }
-            finally
+            catch (Exception ex)
             {
-                if (DbSemaphore.CurrentCount == 0)
-                    DbSemaphore.Release();
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
             }
+
+            try { slim.Release(); } catch { }            
         }
 
         //
@@ -255,7 +261,7 @@ namespace ReserveBlockCore.Extensions
         //     was deleted
         public static bool DeleteSafe<T>(this ILiteCollection<T> col, BsonValue id)
         {
-            return Command(col, () => col.DeleteSafe(id));
+            return Command(col, () => col.Delete(id));
         }
 
         //

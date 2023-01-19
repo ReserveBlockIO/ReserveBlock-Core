@@ -34,6 +34,12 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
             }
+
+            if (!string.IsNullOrEmpty(Globals.CustomPath))
+            {
+                path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
+            }
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
@@ -293,11 +299,21 @@ namespace ReserveBlockCore.Utilities
                                     aq.IsComplete = true;
                                     aqDB.UpdateSafe(aq);
 
+                                    var beaconString = aq.Locator.ToStringFromBase64();
+                                    var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+                                    Globals.Beacon.TryGetValue(beacon.IPAddress, out var globalBeacon);
+                                    if(globalBeacon != null)
+                                    {
+                                        globalBeacon.Downloading = false;
+                                        Globals.Beacon[globalBeacon.IPAddress] = globalBeacon;
+                                    }
+
                                     foreach (string asset in assetList)
                                     {
                                         try
                                         {
-                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset);
+                                            await P2PClient.BeaconFileIsDownloaded(aq.SmartContractUID, asset, aq.Locator);
                                         }
                                         catch { }
                                     }

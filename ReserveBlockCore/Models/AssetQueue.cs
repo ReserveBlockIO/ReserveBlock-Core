@@ -38,8 +38,7 @@ namespace ReserveBlockCore.Models
                 return aq;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.GetAssetQueue()");
                 return null;
             }
@@ -81,8 +80,7 @@ namespace ReserveBlockCore.Models
                     
                 }
                 catch(Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError($"Failed to create asset queue item. Error:  {ex.ToString()}", "AssetQueue.CreateAssetQueueItem()");
                 }
                 
@@ -141,8 +139,7 @@ namespace ReserveBlockCore.Models
                     aq.DeleteSafe(aqa.Id);
                 }
                 catch (Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
                 }
             }
@@ -168,7 +165,7 @@ namespace ReserveBlockCore.Models
                     value = 300; //5 minutes
                     break;
                 case 4:
-                    value = 86400; //1 day
+                    value = 3600; //1 hour
                     break;
                 default:
                     value = 86400;

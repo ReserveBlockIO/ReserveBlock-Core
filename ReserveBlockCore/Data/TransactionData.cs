@@ -52,27 +52,127 @@ namespace ReserveBlockCore.Data
             }
 
         }
-        public static void AddTxToWallet(Transaction transaction)
+        public static void AddTxToWallet(Transaction transaction, bool subtract = false)
         {
             var txs = GetAll();
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
             if(txCheck== null)
             {
-                txs.InsertSafe(transaction);
+                Transaction tx = new Transaction { 
+                    Height = transaction.Height,
+                    Hash = transaction.Hash,
+                    Amount = transaction.Amount,
+                    FromAddress = transaction.FromAddress,
+                    ToAddress = transaction.ToAddress,
+                    Fee = transaction.Fee,
+                    Data = transaction.Data,
+                    Nonce = transaction.Nonce,
+                    Signature = transaction.Signature,
+                    Timestamp = transaction.Timestamp,
+                    TransactionRating = transaction.TransactionRating,
+                    TransactionStatus = transaction.TransactionStatus,
+                    TransactionType = transaction.TransactionType,
+                };
+                if (subtract)
+                {
+                    tx.Amount = (tx.Amount * -1M);
+                    tx.Fee = (tx.Fee * -1M);
+                }
+                    
+                txs.InsertSafe(tx);
+            }
+        }
+
+        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false)
+        {
+            var txs = GetAll();
+            var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
+            if(!sameWalletTX)
+            {
+                if (txCheck == null)
+                {
+                    //posible sub needed
+                    transaction.TransactionStatus = txStatus;
+                    transaction.Height = blockHeight;
+                    txs.InsertSafe(transaction);
+                }
+                else
+                {
+                    txCheck.TransactionStatus = txStatus;
+                    txCheck.Height = blockHeight;
+                    txs.UpdateSafe(txCheck);
+                }
+            }
+            else
+            {
+                if(txCheck != null)
+                {
+                    if(txCheck.Amount < 0)
+                    {
+                        transaction.TransactionStatus = txStatus;
+                        transaction.Height = blockHeight;
+                        transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
+                        transaction.Fee = transaction.Fee < 0 ? transaction.Fee * -1.0M : transaction.Fee;
+                        txs.InsertSafe(transaction);
+                    }
+                }
+            }
+            
+        }
+
+        public static async Task UpdateWalletTXTask()
+        {
+            var txs = GetAll();
+            var txList = txs.Find(x => x.TransactionStatus == TransactionStatus.Pending).ToList();
+            foreach(var tx in txList)
+            {
+                try
+                {
+                    var isTXCrafted = await HasTxBeenCraftedIntoBlock(tx);
+                    if (isTXCrafted)
+                    {
+                        tx.TransactionStatus = TransactionStatus.Success;
+                        txs.UpdateSafe(tx);
+                    }
+                    else
+                    {
+                        var isStale = await IsTxTimestampStale(tx);
+                        if (isStale)
+                        {
+                            tx.TransactionStatus = TransactionStatus.Failed;
+                            txs.UpdateSafe(tx);
+                            var account = AccountData.GetSingleAccount(tx.FromAddress);
+                            if (account != null)
+                            {
+                                var accountDb = AccountData.GetAccounts();
+                                var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                                if (stateTrei != null)
+                                {
+                                    account.Balance = stateTrei.Balance;
+                                    accountDb.UpdateSafe(account);
+                                }
+                            }
+                        }
+
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "TransactionData.UpdateWalletTXTask()");
+                }
             }
         }
 
         public static async Task<bool> HasTxBeenCraftedIntoBlock(Transaction tx)
         {
             var result = false;
-
-            var transactions = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            if (transactions.Count() > 0)
+            
+            if (Globals.MemBlocks.Any())
             {
-                var txExist = transactions.Any(x => x.Hash == tx.Hash);
+                var txExist = Globals.MemBlocks.ContainsKey(tx.Hash);
                 if (txExist == true)
                 {
-                    result = true;//douple spend has occured
+                    result = true;
                 }
             }
             return result;
@@ -86,7 +186,7 @@ namespace ReserveBlockCore.Data
             var timeDiff = currentTime - tx.Timestamp;
             var minuteDiff = timeDiff / 60M;
 
-            if (minuteDiff > 120.0M)
+            if (minuteDiff > 60.0M)
             {
                 result = true;
             }
@@ -109,7 +209,7 @@ namespace ReserveBlockCore.Data
             }
             catch(Exception ex)
             {
-                DbContext.Rollback();
+                DbContext.Rollback("TransactionData.GetPool()");
                 return null;
             }
             
@@ -174,7 +274,10 @@ namespace ReserveBlockCore.Data
                         if (!txExist)
                         {
                             var reject = false;
-                            if (tx.TransactionType != TransactionType.TX && tx.TransactionType != TransactionType.ADNR)
+                            if (tx.TransactionType != TransactionType.TX &&
+                                tx.TransactionType != TransactionType.ADNR &&
+                                tx.TransactionType != TransactionType.VOTE_TOPIC &&
+                                tx.TransactionType != TransactionType.VOTE)
                             {
                                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                                 if (scDataArray != null)
@@ -242,6 +345,32 @@ namespace ReserveBlockCore.Data
                                 }
                             }
 
+                            if(tx.TransactionType == TransactionType.VOTE_TOPIC)
+                            {
+                                var signature = tx.Signature;
+                                //the signature must be checked here to ensure someone isn't spamming bad TXs to invalidated votes/vote topics
+                                var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                                if (sigCheck)
+                                {
+                                    var topicAlreadyExist = approvedMemPoolList.Exists(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.VOTE_TOPIC);
+                                    if (topicAlreadyExist)
+                                        reject = true;
+                                }
+                            }
+
+                            if (tx.TransactionType == TransactionType.VOTE)
+                            {
+                                var signature = tx.Signature;
+                                //the signature must be checked here to ensure someone isn't spamming bad TXs to invalidated votes/vote topics
+                                var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                                if (sigCheck)
+                                {
+                                    var topicAlreadyExist = approvedMemPoolList.Exists(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.VOTE);
+                                    if (topicAlreadyExist)
+                                        reject = true;
+                                }
+                            }
+
                             if (reject == false)
                             {
                                 var signature = tx.Signature;
@@ -257,7 +386,7 @@ namespace ReserveBlockCore.Data
                                         var isCraftedIntoBlock = await HasTxBeenCraftedIntoBlock(tx);
                                         var txVerify = await TransactionValidatorService.VerifyTX(tx);
 
-                                        if (txVerify && !dblspndChk && !isCraftedIntoBlock)
+                                        if (txVerify.Item1 && !dblspndChk && !isCraftedIntoBlock)
                                             approvedMemPoolList.Add(tx);
                                     }
                                     else
@@ -271,7 +400,7 @@ namespace ReserveBlockCore.Data
                                             }
                                             catch (Exception ex)
                                             {
-                                                DbContext.Rollback();
+                                                DbContext.Rollback("TransactionData.ProcessTxPool()");
                                             }
                                         }
                                     }
@@ -287,7 +416,7 @@ namespace ReserveBlockCore.Data
                                         }
                                         catch (Exception ex)
                                         {
-                                            DbContext.Rollback();
+                                            DbContext.Rollback("TransactionData.ProcessTxPool()-2");
                                         }
                                     }
                                 }
@@ -303,7 +432,7 @@ namespace ReserveBlockCore.Data
                                     }
                                     catch (Exception ex)
                                     {
-                                        DbContext.Rollback();
+                                        DbContext.Rollback("TransactionData.ProcessTxPool()-3");
                                     }
                                 }
                             }
@@ -320,7 +449,7 @@ namespace ReserveBlockCore.Data
                             }
                             catch (Exception ex2)
                             {
-                                DbContext.Rollback();
+                                DbContext.Rollback("TransactionData.ProcessTxPool()-4");
                             }
                         }
                     }
@@ -334,11 +463,10 @@ namespace ReserveBlockCore.Data
         public static async Task<bool> DoubleSpendReplayCheck(Transaction tx)
         {
             bool result = false;
-
-            var transactions = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            if (transactions.Count() > 0)
+            
+            if (Globals.MemBlocks.Any())
             {
-                var txExist = transactions.Any(x => x.Hash == tx.Hash);
+                var txExist = Globals.MemBlocks.ContainsKey(tx.Hash);
                 if (txExist)
                 {
                     result = true;//replay or douple spend has occured
@@ -373,7 +501,10 @@ namespace ReserveBlockCore.Data
             }
 
             //double NFT transfer or burn check
-            if (tx.TransactionType != TransactionType.TX && tx.TransactionType != TransactionType.ADNR)
+            if (tx.TransactionType != TransactionType.TX && 
+                tx.TransactionType != TransactionType.ADNR && 
+                tx.TransactionType != TransactionType.VOTE_TOPIC && 
+                tx.TransactionType != TransactionType.VOTE)
             {
                 if(tx.Data != null)
                 {
@@ -469,39 +600,158 @@ namespace ReserveBlockCore.Data
             return collection;
         }
 
-        //Use this to see if any address has transactions against it. 
-        public static Transaction GetTxByAddress(string address)
+        public static List<Transaction> GetAllLocalTransactions(bool showFailed = false)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var tx = transactions.FindOne(x => x.FromAddress == address || x.ToAddress == address);
-            return tx;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus != TransactionStatus.Failed).ToList();
+
+            if (showFailed)
+                transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
         }
 
-        public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
+        public static Transaction? GetTxByHash(string hash)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var query = transactions.Query()
-                .OrderByDescending(x => x.Timestamp)
-                .Where(x => x.FromAddress == address || x.ToAddress == address)
-                .Limit(limit).ToList();
-            return query;
+            var transaction = GetAll().Query().Where(x => x.Hash == hash).FirstOrDefault();
+
+            return transaction;
         }
 
-        public static Transaction GetTxByHash(string hash)
+        public static List<Transaction> GetTxByBlock(long height)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var tx = transactions.FindOne(x => x.Hash == hash);
-            return tx;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Height == height).ToList();
+
+            return transactions;
         }
-        public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
+
+        public static List<Transaction> GetSuccessfulLocalTransactions(bool showFailed = false)
         {
-            var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-            var query = transactions.Query()
-                .OrderByDescending(x => x.Timestamp)
-                .Offset((pageNumber - 1) * resultPerPage)
-                .Limit(resultPerPage).ToList();
-            return query;
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Success).ToList();
+
+            if (showFailed)
+                transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
         }
+
+        public static List<Transaction> GetLocalMinedTransactions(bool showFailed = false)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x =>  x.FromAddress == "Coinbase_BlkRwd").ToList();
+
+            if (showFailed)
+                transactions = GetAll().Query().Where(x => true).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalPendingTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Pending).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalFailedTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Failed).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalTransactionsSinceBlock(long blockHeight)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Height >= blockHeight).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalTransactionsBeforeBlock(long blockHeight)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Height < blockHeight).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalTransactionsSinceDate(long timestamp)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Timestamp >= timestamp).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalTransactionsBeforeDate(long timestamp)
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.Timestamp < timestamp).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalVoteTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalVoteTopics()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE_TOPIC).ToList();
+
+            return transactions;
+        }
+
+        public static List<Transaction> GetLocalAdnrTransactions()
+        {
+            List<Transaction> transactions = new List<Transaction>();
+
+            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.ADNR).ToList();
+
+            return transactions;
+        }
+
+        //public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
+        //{
+        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
+        //    var query = transactions.Query()
+        //        .OrderByDescending(x => x.Timestamp)
+        //        .Where(x => x.FromAddress == address || x.ToAddress == address)
+        //        .Limit(limit).ToList();
+        //    return query;
+        //}
+
+        //public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
+        //{
+        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
+        //    var query = transactions.Query()
+        //        .OrderByDescending(x => x.Timestamp)
+        //        .Offset((pageNumber - 1) * resultPerPage)
+        //        .Limit(resultPerPage).ToList();
+        //    return query;
+        //}
 
     }
 

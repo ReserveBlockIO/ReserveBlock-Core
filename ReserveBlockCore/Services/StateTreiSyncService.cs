@@ -11,6 +11,7 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                Console.WriteLine("Syncing State Treis... This process may take a moment.");
                 DbContext.BeginTrans();
                 if (IsRunning == false)
                 {
@@ -55,7 +56,7 @@ namespace ReserveBlockCore.Services
                                 }
 
                             }
-                            if (x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base")
+                            if (x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base" && x.ToAddress != "Topic_Base" && x.ToAddress != "Vote_Base")
                             {
                                 if (x.TransactionType == TransactionType.TX)
                                 {
@@ -121,13 +122,13 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
-
+                Console.WriteLine("Done Syncing State Treis...");
                 IsRunning = false;
                 DbContext.Commit();
             }
             catch(Exception ex)
             {
-                DbContext.Rollback();
+                DbContext.Rollback("StateTreiSyncService.SyncAccountStateTrei()");
                 ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.ToString()}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }

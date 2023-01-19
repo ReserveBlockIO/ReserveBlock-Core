@@ -1,4 +1,8 @@
-﻿using System.IO.Compression;
+﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
+using System.IO.Compression;
+using System.Net;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
@@ -14,6 +18,12 @@ namespace ReserveBlockCore.Extensions
             {
                 foreach (var x in source) yield return x;
             }
+        }
+
+        public static long ToUnixTimeSeconds(this DateTime obj)
+        {
+            long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();
+            return unixTime;
         }
         public static int ToInt32(this string obj)
         {
@@ -34,7 +44,19 @@ namespace ReserveBlockCore.Extensions
                 }
             }
         }
-        
+
+        public static T[] Rotate<T>(this IEnumerable<T> list, int numberOfRotations)
+        {
+            var newEnd = list.Take(numberOfRotations);
+            var newBegin = list.Skip(numberOfRotations);
+            return newBegin.Union(newEnd).ToArray();
+        }
+
+        public static void AsParamater<T>(this T obj, Action<T> action)
+        {
+            action(obj);
+        }
+
         public static SecureString ToSecureString(this string source)
         {
             var secureStr = new SecureString();
@@ -74,6 +96,11 @@ namespace ReserveBlockCore.Extensions
 
                 return str1.Equals(str2);
             }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "GenericExtensions.SecureStringCompare()");
+                return false;
+            }            
             finally
             {
                 if (ss_bstr1_ptr != IntPtr.Zero)
@@ -95,6 +122,11 @@ namespace ReserveBlockCore.Extensions
             {
                 unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(source);
                 return Marshal.PtrToStringUni(unmanagedString);
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "GenericExtensions.ToUnsecureString()");
+                return null;
             }
             finally
             {
@@ -124,6 +156,26 @@ namespace ReserveBlockCore.Extensions
             return stringToBase64;
         }
 
+        public static string ToAddressNormalize(this string source)
+        {
+            var adnrCheck = source.ToLower().Contains(".rbx");
+
+            if (adnrCheck)
+            {
+                var result = Adnr.GetAddress(source);
+                if (result.Item1 == true)
+                {
+                    return result.Item2;
+                }
+                else
+                {
+                    return source;
+                }
+            }
+
+            return source;
+        }
+
         public static string ToStringFromBase64(this string source)
         {
             var base64EncodedString = Convert.FromBase64String(source);
@@ -149,7 +201,6 @@ namespace ReserveBlockCore.Extensions
                 return memoryStream.ToArray();
             }
         }
-
         public static TValue TryGet<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
         {
             TValue value;
@@ -278,12 +329,54 @@ namespace ReserveBlockCore.Extensions
                 return "Fail";
             }
         }
+
+        public static string ToCompress(this string s)
+        {
+            var bytes = Encoding.Unicode.GetBytes(s);
+            using (var msi = new MemoryStream(bytes))
+            using (var mso = new MemoryStream())
+            {
+                using (var gs = new GZipStream(mso, CompressionMode.Compress))
+                {
+                    msi.CopyTo(gs);
+                }
+                return Convert.ToBase64String(mso.ToArray());
+            }
+        }
+
+        public static string ToDecompress(this string s)
+        {
+            var bytes = Convert.FromBase64String(s);
+            using (var msi = new MemoryStream(bytes))
+            using (var mso = new MemoryStream())
+            {
+                using (var gs = new GZipStream(msi, CompressionMode.Decompress))
+                {
+                    gs.CopyTo(mso);
+                }
+                return Encoding.Unicode.GetString(mso.ToArray());
+            }
+        }
         private static byte[] GetKey(string password)
         {
             var keyBytes = Encoding.UTF8.GetBytes(password);
             using (var md5 = MD5.Create())
             {
                 return md5.ComputeHash(keyBytes);
+            }
+        }
+
+        private static Random rng = new Random();
+        public static void Shuffle<T>(this IList<T> list)
+        {
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = rng.Next(n + 1);
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
             }
         }
     }

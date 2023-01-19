@@ -16,21 +16,25 @@ namespace ReserveBlockCore.Models
 
         public static void UpdateWorldTrei(Block block)
         {
-            var wTrei = GetWorldTrei();
-            var record = wTrei.FindOne(x => true);
-            if (record == null)
+            try
             {
-                var worldTrei = new WorldTrei
+                var wTrei = GetWorldTrei();
+                var record = wTrei.FindOne(x => true);
+                if (record == null)
                 {
-                    StateRoot = block.StateRoot,
-                };
-                wTrei.InsertSafe(worldTrei);
+                    var worldTrei = new WorldTrei
+                    {
+                        StateRoot = block.StateRoot,
+                    };
+                    wTrei.InsertSafe(worldTrei);
+                }
+                else
+                {
+                    record.StateRoot = block.StateRoot;
+                    wTrei.UpdateSafe(record);
+                }
             }
-            else
-            {
-                record.StateRoot = block.StateRoot;
-                wTrei.UpdateSafe(record);
-            }
+            catch { }
         }
 
         public static LiteDB.ILiteCollection<WorldTrei> GetWorldTrei()

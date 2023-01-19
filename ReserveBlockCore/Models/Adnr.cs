@@ -30,8 +30,7 @@ namespace ReserveBlockCore.Models
                 return adnr;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "Adnr.GetAdnr()");
                 return null;
             }
@@ -133,9 +132,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrCreate()", Name = name });
@@ -174,12 +171,35 @@ namespace ReserveBlockCore.Models
                     adnrTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
                 if (result.Item1 == true)
                 {
-                    TransactionData.AddToPool(adnrTx);
-                    AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-                    P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    adnrTx.TransactionStatus = TransactionStatus.Pending;
+
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < 1000))
+                    {
+                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
+                        ValidatorService.StopValidating(validator);
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    }
+                    else if (account.IsValidating)
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
+                    }
+                    else
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    }
+
                     return (adnrTx, "Success");
                 }
                 else
@@ -189,8 +209,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 Console.WriteLine("Error: {0}", ex.ToString());
             }
 
@@ -214,9 +233,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrTransfer()", Name = account.ADNR });
@@ -255,12 +272,35 @@ namespace ReserveBlockCore.Models
                     adnrTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
                 if (result.Item1 == true)
                 {
-                    TransactionData.AddToPool(adnrTx);
-                    AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-                    P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    adnrTx.TransactionStatus = TransactionStatus.Pending;
+
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < 1000))
+                    {
+                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
+                        ValidatorService.StopValidating(validator);
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                                                              
+                    }
+                    else if (account.IsValidating)
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
+                    }
+                    else
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    }
                     return (adnrTx, "Success");
                 }
                 else
@@ -270,8 +310,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 Console.WriteLine("Error: {0}", ex.ToString());
                 ErrorLogUtility.LogError($"Unhandled Error: Message: {ex.ToString()}", "Adnr.TransferAdnrTx(string fromAddress, string toAddress)");
             }
@@ -295,9 +334,7 @@ namespace ReserveBlockCore.Models
             var txData = "";
             var timestamp = TimeUtil.GetTime();
 
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
             txData = JsonConvert.SerializeObject(new { Function = "AdnrDelete()", Name = account.ADNR });
@@ -336,17 +373,41 @@ namespace ReserveBlockCore.Models
                     adnrTx.TransactionRating = rating;
                 }
 
-                var result = await TransactionValidatorService.VerifyTXDetailed(adnrTx);
+                var result = await TransactionValidatorService.VerifyTX(adnrTx);
                 if (result.Item1 == true)
                 {
-                    TransactionData.AddToPool(adnrTx);
-                    AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
-                    P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    adnrTx.TransactionStatus = TransactionStatus.Pending;
+
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < 1000))
+                    {
+                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
+                        ValidatorService.StopValidating(validator);
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                                                              //await P2PClient.SendTXToAdjudicator(txRequest);
+                                                              //add method to send to nearest validators too
+                                                              //}
+                    }
+                    else if (account.IsValidating)
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXToAdjudicator(adnrTx);//send directly to adjs
+                    }
+                    else
+                    {
+                        TransactionData.AddToPool(adnrTx);
+                        TransactionData.AddTxToWallet(adnrTx, true);
+                        AccountData.UpdateLocalBalance(adnrTx.FromAddress, (adnrTx.Fee + adnrTx.Amount));
+                        await P2PClient.SendTXMempool(adnrTx);//send out to mempool
+                    }
                     return (adnrTx, "Success");
                 }
                 else
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.DeleteAdnrTx(string address)");
                     return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
                 }

@@ -21,17 +21,7 @@
                     {
                         return output;
                     }
-                    if (Globals.LastBlock.Height > Globals.BlockLock)
-                    {
-                        if (!Globals.IsTestNet)
-                        {
-                            if (minor < 1)
-                            {
-                                return output;
-                            }
-                        }
-                    }
-                    else
+                    if (!Globals.IsTestNet)
                     {
                         if (minor < 0)
                         {

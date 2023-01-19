@@ -17,7 +17,7 @@ using System.Net.NetworkInformation;
 
 namespace ReserveBlockCore.Data
 {
-    internal static class AccountData
+    public static class AccountData
     {
 		public static Account CreateNewAccount(bool skipSave = false)
         {
@@ -46,8 +46,11 @@ namespace ReserveBlockCore.Data
 						accountMade = true;
 					}
 				}
-				catch { }
-			}
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "AccountData.CreateNewAccount()");
+                }
+            }
 			
 
 			return account;
@@ -128,8 +131,7 @@ namespace ReserveBlockCore.Data
 			}
 			catch (Exception ex)
             {
-				//restore failed
-				DbContext.Rollback();
+				//restore failed				
 				Console.WriteLine("Account restore failed. Not a valid private key");
             }
 			
@@ -177,8 +179,7 @@ namespace ReserveBlockCore.Data
 			}
 			catch (Exception ex)
 			{
-				//restore failed
-				DbContext.Rollback();
+				//restore failed				
 				Console.WriteLine("Account restore failed. Not a valid private key");
 			}
 
@@ -189,9 +190,7 @@ namespace ReserveBlockCore.Data
 
 		public static PrivateKey GetPrivateKey(Account account)
         {
-            var accPrivateKey = GetPrivateKeyUtility.GetPrivateKey(account.PrivateKey, account.Address);
-
-            BigInteger b1 = BigInteger.Parse(accPrivateKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
 			return privateKey;
@@ -249,7 +248,8 @@ namespace ReserveBlockCore.Data
                 Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
                 Console.WriteLine("| 11. Stop Masternode                  |");
                 Console.WriteLine("| 12. Import Smart Contract (disabled) |");
-                Console.WriteLine("| 13. Exit                             |");
+                Console.WriteLine("| 13. Voting                           |");
+                Console.WriteLine("| 14. Exit                             |");
                 Console.WriteLine("|======================================|");
                 Console.WriteLine("|type /help for menu options           |");
                 Console.WriteLine("|type /menu to come back to main area  |");
@@ -269,7 +269,7 @@ namespace ReserveBlockCore.Data
 			Console.WriteLine("======================");
 			Console.WriteLine("\nAddress :\n{0}", account.Address);
 			Console.WriteLine("\nPublic Key (Uncompressed):\n{0}", account.PublicKey);
-			Console.WriteLine("\nPrivate Key:\n{0}", account.PrivateKey);
+			Console.WriteLine("\nPrivate Key:\n{0}", account.GetKey);
 			Console.WriteLine("\n - - - - - - - - - - - - - - - - - - - - - - ");
 			Console.WriteLine("*** Be sure to save private key!                   ***");
 			Console.WriteLine("*** Use your private key to restore account!       ***");
@@ -277,7 +277,7 @@ namespace ReserveBlockCore.Data
 		public static async void AddToAccount(Account account)
 		{
 			var accountList = GetAccounts();
-			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.PrivateKey);
+			var accountCheck = accountList.FindOne(x => x.PrivateKey == account.GetKey);
 
 			//This is checking in the event the user is restoring an account, and not creating a brand new one.
 			if(accountCheck == null)
@@ -315,6 +315,8 @@ namespace ReserveBlockCore.Data
 		{
 			var accountList = GetAccounts();
 			var localAccount = accountList.FindOne(x => x.Address == address);
+			if (amount < 0M)
+				amount = amount * -1.0M;
 			localAccount.Balance += amount;
 
 			accountList.UpdateSafe(localAccount);
@@ -327,8 +329,7 @@ namespace ReserveBlockCore.Data
 				return accounts;
 			}
 			catch(Exception ex)
-            {
-				DbContext.Rollback();
+            {				
 				ErrorLogUtility.LogError(ex.ToString(), "AccountData.GetAccounts()");
 				return null;
 			}			
