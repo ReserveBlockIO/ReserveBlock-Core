@@ -377,7 +377,7 @@ namespace ReserveBlockCore.P2P
                     node.Connection = hubConnection;
                     node.IpAddress = IPAddress;
                     node.AdjudicatorConnectDate = DateTime.UtcNow;
-                    node.Address = bench.RBXAddress;
+                    node.Address = Globals.LastBlock.Height < Globals.BlockLock ? Globals.LeadAddress : bench.RBXAddress;
                 }
                 else
                 {
@@ -386,8 +386,8 @@ namespace ReserveBlockCore.P2P
                         Connection = hubConnection,
                         IpAddress = IPAddress,
                         AdjudicatorConnectDate = DateTime.UtcNow,
-                        Address = bench.RBXAddress
-                    };
+                        Address = Globals.LastBlock.Height < Globals.BlockLock ? Globals.LeadAddress : bench.RBXAddress
+                };
                 }
 
                 if (Globals.LastBlock.Height >= Globals.BlockLock)
@@ -397,7 +397,7 @@ namespace ReserveBlockCore.P2P
                 }
                 else
                 {
-                    ValidatorProcessor.RandomNumberTask_New(Globals.LastBlock.Height + 1);
+                    //ValidatorProcessor.RandomNumberTask_New(Globals.LastBlock.Height + 1);
                 }
 
                 return true;
@@ -744,7 +744,7 @@ namespace ReserveBlockCore.P2P
                 {
                     if (i != 1)
                     {
-                        await Task.Delay(1500); // if failed after first attempt waits 1 seconds then tries again.
+                        await Task.Delay(3500); // if failed after first attempt waits 1 seconds then tries again.
                     }
                     else
                     {

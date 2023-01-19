@@ -26,7 +26,7 @@ namespace ReserveBlockCore
             string? valEncryptAddr = "";
 
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
             var argList = args.ToList();
             if (args.Length != 0)
             {
@@ -86,7 +86,7 @@ namespace ReserveBlockCore
             SeedNodeService.SeedNodes();
             SeedNodeService.SeedBench();
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 578150;
+            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 578573;
 
             //BlockchainData.InitializeChain();
 
