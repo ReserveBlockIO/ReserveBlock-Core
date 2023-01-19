@@ -59,7 +59,7 @@ namespace ReserveBlockCore
         public static int Port = 3338;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
-        public static int MinorVer = 0;
+        public static int MinorVer = 1;
         public static int BuildVer = 0;
 
         public static string Platform = "";

@@ -552,7 +552,7 @@ namespace ReserveBlockCore.Services
             if (Globals.LastBlock.Height < Globals.BlockLock)
             {                
                 var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
-                if (LeadAdjudicator != null)
+                if (LeadAdjudicator == null)
                 {
                     var url = "http://173.254.253.106:" + Globals.Port + "/adjudicator";
                     await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
@@ -719,13 +719,17 @@ namespace ReserveBlockCore.Services
                         AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
                     }
 
-                    var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
-                    foreach (var address in NodesToRemove)
+                    if(Globals.LastBlock.Height >= Globals.BlockLock)
                     {
-                        var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
-                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
-                            await node.Connection.DisposeAsync();
+                        var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
+                        foreach (var address in NodesToRemove)
+                        {
+                            var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                            if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
+                                await node.Connection.DisposeAsync();
+                        }
                     }
+                    
 
                     var rnd = new Random();                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
@@ -764,7 +768,7 @@ namespace ReserveBlockCore.Services
                             var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
                             if (LeadAdjudicator != null)
                             {
-                                var url = "http://" + LeadAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                                var url = "http://173.254.253.106:" + Globals.Port + "/adjudicator";
                                 await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                             }
                         }

@@ -397,7 +397,7 @@ namespace ReserveBlockCore.P2P
                 }
                 else
                 {
-                    ValidatorProcessor.RandomNumberTask_New(Globals.LastBlock.Height + 1);
+                    //ValidatorProcessor.RandomNumberTask_New(Globals.LastBlock.Height + 1);
                 }
 
                 return true;
@@ -744,7 +744,7 @@ namespace ReserveBlockCore.P2P
                 {
                     if (i != 1)
                     {
-                        await Task.Delay(1500); // if failed after first attempt waits 1 seconds then tries again.
+                        await Task.Delay(3500); // if failed after first attempt waits 1 seconds then tries again.
                     }
                     else
                     {

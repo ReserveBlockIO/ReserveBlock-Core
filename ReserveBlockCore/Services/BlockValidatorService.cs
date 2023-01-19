@@ -386,7 +386,7 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {
-                                ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
+                                //ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
                             }
                         }
 
