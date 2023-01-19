@@ -389,51 +389,28 @@ namespace ReserveBlockCore.Services
             var beacons = Beacons.GetBeacons();
             if(beacons != null )
             {
-                //should not exist but check to be safe.
-                var beacon1Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon1").Exists();
-                if(!beacon1Exist)
+                List<Beacons> beaconList = new List<Beacons> {
+                    new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                    new Beacons { IPAddress = "144.126.149.104",Name = "Wisteria Beacon", Port = Globals.Port + 20000, BeaconUID = "WisteriaBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                    new Beacons { IPAddress = "144.126.150.118", Name = "Tulip Beacon", Port = Globals.Port + 20000, BeaconUID = "TulipBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                    new Beacons { IPAddress = "89.117.21.39", Name = "Sunflower Beacon", Port = Globals.Port + 20000, BeaconUID = "SunflowerBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                    new Beacons { IPAddress = "89.117.21.40", Name = "Lavender Beacon", Port = Globals.Port + 20000, BeaconUID = "LavenderBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
+                    new Beacons { IPAddress = "209.126.11.92", Name = "Rose Beacon", Port = Globals.Port + 20000, BeaconUID = "RoseBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
+                    new Beacons { IPAddress = "149.102.144.58", Name = "Lupin Beacon", Port = Globals.Port + 20000, BeaconUID = "LupinBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                    new Beacons { IPAddress = "194.233.77.39", Name = "Orchid Beacon", Port = Globals.Port + 20000, BeaconUID = "OrchidBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                    new Beacons { IPAddress = "185.188.249.117", Name = "Lotus Beacon", Port = Globals.Port + 20000, BeaconUID = "LotusBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                    new Beacons { IPAddress = "154.26.155.35", Name = "Snapdragon Beacon", Port = Globals.Port + 20000, BeaconUID = "SnapdragonBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2}
+                };
+                
+                foreach(var beacon in beaconList)
                 {
-                    BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson {IPAddress = "162.248.14.123", Port = Globals.Port + 20000, Name = "Lily Beacon", BeaconUID = "LilyBeacon1" };
-                    var beaconLocJson1 = JsonConvert.SerializeObject(beaconLoc1);
-                    Beacons beacon1 = new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon1", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = beaconLocJson1.ToBase64()};
-                    beacons.InsertSafe(beacon1);
+                    beacon.BeaconLocator = Beacons.CreateBeaconLocator(beacon);
                 }
-
-                var beacon2Exist = beacons.Query().Where(x => x.BeaconUID == "FoundationBeacon2").Exists();
-                if(!beacon2Exist)
-                {
-                    BeaconInfo.BeaconInfoJson beaconLoc2 = new BeaconInfo.BeaconInfoJson
-                    {
-                        IPAddress = "135.148.121.99",
-                        Port = Globals.Port + 20000,
-                        Name = !Globals.IsTestNet ? "RBX Beacon 2" : "RBX Testnet Beacon 2",
-                        BeaconUID = "FoundationBeacon2"
-
-                    };
-                    var beaconLocJson2 = JsonConvert.SerializeObject(beaconLoc2);
-
-                    Beacons beacon2 = new Beacons
-                    {
-                        IPAddress = "135.148.121.99",
-                        Name = !Globals.IsTestNet ? "RBX Beacon 2" : "RBX Testnet Beacon 2",
-                        Port = Globals.Port + 20000,
-                        BeaconUID = "FoundationBeacon2",
-                        DefaultBeacon = true,
-                        AutoDeleteAfterDownload = true,
-                        FileCachePeriodDays = 2,
-                        IsPrivateBeacon = false,
-                        SelfBeacon = false,
-                        SelfBeaconActive = false,
-                        BeaconLocator = beaconLocJson2.ToBase64(),
-                    };
-
-                    beacons.InsertSafe(beacon2);
-                }    
-
-            }
-           
-            
+                
+                Beacons.SaveBeaconList(beaconList);
+            } 
         }
+
         internal static void ClearStaleMempool()
         {
             bool memTxDeleted = false;

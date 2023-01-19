@@ -86,7 +86,7 @@ namespace ReserveBlockCore
             SeedNodeService.SeedNodes();
             SeedNodeService.SeedBench();
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 400000000;
+            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 578150;
 
             //BlockchainData.InitializeChain();
 

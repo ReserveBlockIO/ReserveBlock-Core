@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 using System.Runtime.CompilerServices;
 
@@ -18,6 +19,7 @@ namespace ReserveBlockCore.Models
         public string BeaconLocator { get; set; }
         public bool SelfBeacon { get; set; }
         public bool SelfBeaconActive { get; set; }
+        public int Region { get; set; }
 
         public static LiteDB.ILiteCollection<Beacons>? GetBeacons()
         {
@@ -61,6 +63,7 @@ namespace ReserveBlockCore.Models
                         existingBeaconInfo.FileCachePeriodDays = beacon.FileCachePeriodDays;
                         existingBeaconInfo.IsPrivateBeacon = beacon.IsPrivateBeacon;
                         existingBeaconInfo.BeaconUID = beacon.BeaconUID;
+                        existingBeaconInfo.Region = beacon.Region;
 
                         beacons.UpdateSafe(existingBeaconInfo); //update existing record
                         return true;
@@ -73,6 +76,61 @@ namespace ReserveBlockCore.Models
             {
                 return false;
             }
+        }
+
+        public static void SaveBeaconList(List<Beacons> beaconList)
+        {
+            var beacons = GetBeacons();
+            if (beacons != null)
+            {
+                if(beaconList.Count() > 0)
+                {
+                    foreach(var beacon in beaconList) 
+                    {
+                        var existingBeaconInfo = beacons.Query().Where(x => x.IPAddress == beacon.IPAddress).FirstOrDefault();
+                        if (existingBeaconInfo == null)
+                        {
+                            beacons.InsertSafe(beacon); //inserts new record
+                            
+                        }
+                        else
+                        {
+                            existingBeaconInfo.Name = beacon.Name;
+                            existingBeaconInfo.Port = beacon.Port;
+                            existingBeaconInfo.SelfBeacon = beacon.SelfBeacon;
+                            existingBeaconInfo.SelfBeaconActive = beacon.SelfBeaconActive;
+                            existingBeaconInfo.BeaconLocator = beacon.BeaconLocator;
+                            existingBeaconInfo.AutoDeleteAfterDownload = beacon.AutoDeleteAfterDownload;
+                            existingBeaconInfo.FileCachePeriodDays = beacon.FileCachePeriodDays;
+                            existingBeaconInfo.IsPrivateBeacon = beacon.IsPrivateBeacon;
+                            existingBeaconInfo.BeaconUID = beacon.BeaconUID;
+                            existingBeaconInfo.DefaultBeacon = beacon.DefaultBeacon;
+                            existingBeaconInfo.Region = beacon.Region;
+
+                            beacons.UpdateSafe(existingBeaconInfo); //update existing record
+                        }
+                    }
+                }
+            }
+            else
+            {
+                ErrorLogUtility.LogError("GetBeacon() returned a null value.", "BeaconInfo.SaveBeaconInfo()");
+            }
+        }
+
+        public static string CreateBeaconLocator(Beacons beacon)
+        {
+            BeaconInfo.BeaconInfoJson beaconLoc = new BeaconInfo.BeaconInfoJson { 
+                IPAddress = beacon.IPAddress, 
+                Port = beacon.Port, 
+                Name = beacon.Name, 
+                BeaconUID = beacon.BeaconUID
+            };
+            var beaconLocJson = JsonConvert.SerializeObject(beaconLoc);
+
+            var beaconLocJsonBase64 = beaconLocJson.ToBase64();
+
+            return beaconLocJsonBase64;
         }
 
         public static bool DeleteBeacon(Beacons beacon)

@@ -62,6 +62,7 @@ namespace ReserveBlockCore.Controllers
                 SelfBeacon = true,
                 SelfBeaconActive = true,
                 BeaconLocator = beaconLocJson1.ToBase64(),
+                Region = 0
             };
 
             var result = Beacons.SaveBeacon(beacon);
@@ -124,7 +125,8 @@ namespace ReserveBlockCore.Controllers
                 FileCachePeriodDays = 0,
                 IsPrivateBeacon = false,
                 SelfBeacon = false,
-                SelfBeaconActive = false
+                SelfBeaconActive = false,
+                Region = 0
             };
 
             var result = Beacons.SaveBeacon(beacon);
