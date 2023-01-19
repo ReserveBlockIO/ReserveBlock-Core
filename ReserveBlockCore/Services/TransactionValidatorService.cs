@@ -142,120 +142,132 @@ namespace ReserveBlockCore.Services
                 if (txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT
                     || txRequest.TransactionType == TransactionType.NFT_BURN)
                 {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
-                    var scData = scDataArray[0];
-
-                    var function = (string?)scData["Function"];
-                    var scUID = (string?)scData["ContractUID"];
-
-                    if (!string.IsNullOrWhiteSpace(function))
+                    try
                     {
-                        switch (function)
+                        var txData = txRequest.Data;
+                        if(txData != null)
                         {
-                            case "Mint()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        return (txResult, "This smart contract has already been minted."); ;
-                                    }
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                            var scData = scDataArray[0];
 
-                                    break;
-                                }
+                            var function = (string?)scData["Function"];
+                            var scUID = (string?)scData["ContractUID"];
 
-                            case "Transfer()":
+                            if (!string.IsNullOrWhiteSpace(function))
+                            {
+                                switch (function)
                                 {
-                                    var toAddress = (string?)scData["ToAddress"];
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                    case "Mint()":
                                         {
-                                            return (txResult, "You are attempting to transfer a Smart contract you don't own.");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return (txResult, "SC does not exist.");
-                                    }
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                return (txResult, "This smart contract has already been minted.");
+                                            }
 
-                                    break;
-                                }
+                                            break;
+                                        }
 
-                            case "Burn()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                    case "Transfer()":
                                         {
-                                            return (txResult, "You are attempting to burn a Smart contract you don't own."); 
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return (txResult, "SC does not exist.");
-                                    }
+                                            var toAddress = (string?)scData["ToAddress"];
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to transfer a Smart contract you don't own.");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "SC does not exist.");
+                                            }
 
-                                    break;
-                                }
-                            case "Evolve()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return (txResult, "You are attempting to evolve a Smart contract you don't own.");
+                                            break;
                                         }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return (txResult, "You are attempting to evolve a Smart contract you don't own.");
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-                            case "Devolve()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve a Smart contract you don't own.");
-                                        }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve a Smart contract you don't own.");
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-                            case "ChangeEvolveStateSpecific()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
-                                        }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
 
-                            default:
-                                break;
+                                    case "Burn()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to burn a Smart contract you don't own.");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "SC does not exist.");
+                                            }
+
+                                            break;
+                                        }
+                                    case "Evolve()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                                {
+                                                    return (txResult, "You are attempting to evolve a Smart contract you don't own.");
+                                                }
+                                                if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to evolve a Smart contract you don't own.");
+                                                }
+                                            }
+                                            //Run the Trillium REPL To ensure new state is valid again.
+                                            break;
+                                        }
+                                    case "Devolve()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve a Smart contract you don't own.");
+                                                }
+                                                if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve a Smart contract you don't own.");
+                                                }
+                                            }
+                                            //Run the Trillium REPL To ensure new state is valid again.
+                                            break;
+                                        }
+                                    case "ChangeEvolveStateSpecific()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
+                                                }
+                                                if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
+                                                }
+                                            }
+                                            //Run the Trillium REPL To ensure new state is valid again.
+                                            break;
+                                        }
+
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return (txResult, $"TX Data cannot be null for transaction type: {txRequest.TransactionType}");
                         }
                     }
-
+                    catch { return (txResult, $"TX Could not be parsed. TX Hash: {txRequest.Hash}"); }
+                    
                 }
 
                 if (txRequest.TransactionType == TransactionType.ADNR)
@@ -538,15 +550,23 @@ namespace ReserveBlockCore.Services
             }
 
             //Signature Check - Final Check to return true.
-            var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
-            if (isTxValid)
+            if(!string.IsNullOrEmpty(txRequest.Signature))
             {
-                txResult = true;
+                var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
+                if (isTxValid)
+                {
+                    txResult = true;
+                }
+                else
+                {
+                    return (txResult, "Signature Failed to verify.");
+                }
             }
             else
             {
-                return (txResult, "Signature Failed to verify.");
+                return (txResult, "Signature cannot be null.");
             }
+            
 
             //Return verification result.
             return (txResult, "Transaction has been verified.");

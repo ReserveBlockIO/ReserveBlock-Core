@@ -411,7 +411,7 @@ namespace ReserveBlockCore.Services
             } 
         }
 
-        internal static void ClearStaleMempool()
+        internal static async Task ClearStaleMempool()
         {
             bool memTxDeleted = false;
             var pool = TransactionData.GetPool();

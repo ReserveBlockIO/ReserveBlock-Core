@@ -204,7 +204,7 @@ namespace ReserveBlockCore
                     _ = Task.Run(ClientCallService.DoWorkV3);
             }
 
-            StartupService.ClearStaleMempool();
+            await StartupService.ClearStaleMempool();
 
             StartupService.RunRules(); //rules for cleaning up wallet data.
             StartupService.ClearValidatorDups();
@@ -314,6 +314,7 @@ namespace ReserveBlockCore
             _ = BeaconService.BeaconRunService();
             _ = SeedNodeService.CallToSeed();
             _ = FortisPoolService.PopulateFortisPoolCache();
+            _ = MempoolBroadcastService.RunBroadcastService();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {

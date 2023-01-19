@@ -257,39 +257,42 @@ namespace ReserveBlockCore.Services
                                     {
                                         if (blkTransaction.Data != null)
                                         {
-                                            var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
-                                            if (scDataArray != null)
+                                            try
                                             {
-                                                var scData = scDataArray[0];
-
-                                                var function = (string?)scData["Function"];
-
-                                                if (!string.IsNullOrWhiteSpace(function))
+                                                var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
+                                                if (scDataArray != null)
                                                 {
-                                                    var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
-                                                    if (otherTxs.Count() > 0)
-                                                    {
-                                                        foreach (var otx in otherTxs)
-                                                        {
-                                                            if (otx.TransactionType == TransactionType.NFT_TX ||
-                                                                otx.TransactionType == TransactionType.NFT_BURN ||
-                                                                otx.TransactionType == TransactionType.NFT_MINT)
-                                                            {
-                                                                var scUID = (string?)scData["ContractUID"];
-                                                                if (otx.Data != null)
-                                                                {
-                                                                    var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
-                                                                    if (ottxDataArray != null)
-                                                                    {
-                                                                        var ottxData = ottxDataArray[0];
+                                                    var scData = scDataArray[0];
 
-                                                                        var ottxFunction = (string?)ottxData["Function"];
-                                                                        var ottxscUID = (string?)ottxData["ContractUID"];
-                                                                        if (!string.IsNullOrWhiteSpace(ottxFunction))
+                                                    var function = (string?)scData["Function"];
+
+                                                    if (!string.IsNullOrWhiteSpace(function))
+                                                    {
+                                                        var otherTxs = block.Transactions.Where(x => x.FromAddress == blkTransaction.FromAddress && x.Hash != blkTransaction.Hash).ToList();
+                                                        if (otherTxs.Count() > 0)
+                                                        {
+                                                            foreach (var otx in otherTxs)
+                                                            {
+                                                                if (otx.TransactionType == TransactionType.NFT_TX ||
+                                                                    otx.TransactionType == TransactionType.NFT_BURN ||
+                                                                    otx.TransactionType == TransactionType.NFT_MINT)
+                                                                {
+                                                                    var scUID = (string?)scData["ContractUID"];
+                                                                    if (otx.Data != null)
+                                                                    {
+                                                                        var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);
+                                                                        if (ottxDataArray != null)
                                                                         {
-                                                                            if (ottxscUID == scUID)
+                                                                            var ottxData = ottxDataArray[0];
+
+                                                                            var ottxFunction = (string?)ottxData["Function"];
+                                                                            var ottxscUID = (string?)ottxData["ContractUID"];
+                                                                            if (!string.IsNullOrWhiteSpace(ottxFunction))
                                                                             {
-                                                                                rejectBlock = true;
+                                                                                if (ottxscUID == scUID)
+                                                                                {
+                                                                                    rejectBlock = true;
+                                                                                }
                                                                             }
                                                                         }
                                                                     }
@@ -298,6 +301,10 @@ namespace ReserveBlockCore.Services
                                                         }
                                                     }
                                                 }
+                                            }
+                                            catch
+                                            {
+                                                rejectBlock = true;
                                             }
                                         }
                                     }
@@ -339,22 +346,31 @@ namespace ReserveBlockCore.Services
                                             Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
                                         }
                                     }
-                                    //Process transactions sent ->From<- wallet
-                                    var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localFromTransaction.FromAddress);
-                                    if (fromAccount != null)
+                                    try
                                     {
-                                        await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
+                                        //Process transactions sent ->From<- wallet
+                                        var fromAccount = AccountData.GetAccounts().FindOne(x => x.Address == localFromTransaction.FromAddress);
+                                        if (fromAccount != null)
+                                        {
+                                            await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
+                                        }
                                     }
+                                    catch { }
+                                    
                                 }
 
                                 foreach (var localToTransaction in block.Transactions)
                                 {
-                                    //Process transactions sent ->To<- wallet
-                                    var account = AccountData.GetAccounts().FindOne(x => x.Address == localToTransaction.ToAddress);
-                                    if (account != null)
+                                    try
                                     {
-                                        await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
+                                        //Process transactions sent ->To<- wallet
+                                        var account = AccountData.GetAccounts().FindOne(x => x.Address == localToTransaction.ToAddress);
+                                        if (account != null)
+                                        {
+                                            await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
+                                        }
                                     }
+                                    catch { }
                                 }
                             }
 

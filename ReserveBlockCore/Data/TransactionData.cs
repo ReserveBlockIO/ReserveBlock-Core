@@ -141,6 +141,17 @@ namespace ReserveBlockCore.Data
                         {
                             tx.TransactionStatus = TransactionStatus.Failed;
                             txs.UpdateSafe(tx);
+                            var account = AccountData.GetSingleAccount(tx.FromAddress);
+                            if (account != null)
+                            {
+                                var accountDb = AccountData.GetAccounts();
+                                var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                                if (stateTrei != null)
+                                {
+                                    account.Balance = stateTrei.Balance;
+                                    accountDb.UpdateSafe(account);
+                                }
+                            }
                         }
 
                     }
