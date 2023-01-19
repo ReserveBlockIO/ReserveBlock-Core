@@ -726,7 +726,7 @@ namespace ReserveBlockCore.Controllers
 
                                 if (aqResult)
                                 {
-                                    _ = SmartContractService.TransferSmartContract(sc, toAddress, connectedBeacon, md5List, backupURL);
+                                    _ = Task.Run(() => SmartContractService.TransferSmartContract(sc, toAddress, connectedBeacon, md5List, backupURL));
                                         
                                     var success = JsonConvert.SerializeObject(new {Result = "Success", Message = "NFT Transfer has been started." });
                                     output = success;
