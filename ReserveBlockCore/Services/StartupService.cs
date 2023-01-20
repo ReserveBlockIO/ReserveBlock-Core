@@ -561,7 +561,8 @@ namespace ReserveBlockCore.Services
             }
             else
             {
-                foreach(var signer in Globals.Signers) // use to populate database, pull from database
+                signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+                foreach (var signer in Globals.Signers) // use to populate database, pull from database
                 {
                     if(Globals.AdjBench.TryGetValue(signer.Key, out var bench))
                     {

@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Models
             }
         }
 
-        public static void InitiateShutdownUpdate()
+        public static async Task InitiateShutdownUpdate()
         {
             var settingsDb = GetSettingsDb();
 
@@ -91,6 +91,8 @@ namespace ReserveBlockCore.Models
                     settingsDb.UpdateSafe(settingRec);
 
                     DbContext.DB_Settings.Commit();
+
+                    await Task.Delay(500);
                 }
             }
         }

@@ -873,15 +873,22 @@ namespace ReserveBlockCore.Commands
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
-                {                    
+                {
+                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidatingSending = Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidatingReceiving = Globals.ValidatorReceiving ? "[green]Yes[/]" : "[red]No[/]";
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
-                    Console.WriteLine($"Validating? {account.IsValidating}");
+                    AnsiConsole.MarkupLine($"Validating? {isValidating}");
+                    AnsiConsole.MarkupLine($"Validator Sending? {isValidatingSending}");
+                    AnsiConsole.MarkupLine($"Validator Receiving? {isValidatingReceiving}");
+
+
                     foreach (var node in Globals.AdjNodes.Values)
                     {
-                        Console.WriteLine($"Last Task Received Time: {node.LastTaskResultTime} from {node.Address}");
-                        Console.WriteLine($"Last Task Sent Time: {node.LastTaskSentTime} from {node.Address}");
+                        AnsiConsole.MarkupLine($"Last Task Received Time: [yellow]{node.LastTaskResultTime}[/] from [purple]{node.Address}[/]");
+                        Console.WriteLine($"Last Task Sent Time: [yellow]{node.LastTaskSentTime}[/] from [purple]{node.Address}[/]");
                     }
                 }
                 else

@@ -62,6 +62,11 @@ namespace ReserveBlockCore
         public static int MajorVer = 3;
         public static int MinorVer = 1;
         public static int BuildVer = 0;
+        public static int ValidatorIssueCount = 0;
+        public static bool ValidatorSending = true;
+        public static bool ValidatorReceiving = true;
+        public static List<string> ValidatorErrorMessages = new List<string>();
+        public static long ValidatorLastBlockHeight = 0;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
