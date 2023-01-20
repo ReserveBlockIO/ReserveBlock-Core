@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Utilities
            
 
 
-            if (height > Globals.BlockLock)
+            if (height > Globals.V3Height)
                 return 3;
             else if (height > 294000)
                 return 2;

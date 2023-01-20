@@ -55,17 +55,14 @@ namespace ReserveBlockCore.P2P
                 conQueue.Address = address;
                 var SignedMessage = address;
                 var Now = TimeUtil.GetTime();
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
+                SignedMessage = address + ":" + time;
+                if (TimeUtil.GetTime() - long.Parse(time) > 300)
                 {
-                    SignedMessage = address + ":" + time;
-                    if (TimeUtil.GetTime() - long.Parse(time) > 300)
-                    {
-                        await EndOnConnect(peerIP, "20", startTime, conQueue, "Signature Bad time.", "Signature Bad time.");
-                        return;
-                    }
+                    await EndOnConnect(peerIP, "20", startTime, conQueue, "Signature Bad time.", "Signature Bad time.");
+                    return;
                 }
 
-                if(!Globals.Signatures.TryAdd(signature, Now))
+                if (!Globals.Signatures.TryAdd(signature, Now))
                 {
                     await EndOnConnect(peerIP, "40", startTime, conQueue, "Reused signature.", "Reused signature.");
                     return;
@@ -231,11 +228,6 @@ namespace ReserveBlockCore.P2P
 
             var ipAddress = GetIP(Context);
             if (request?.Length > 30)
-            {                
-                return new TaskAnswerResult { AnswerCode = 5 };
-            }
-
-            if (request?.Length > 200)
             {
                 BanService.BanPeer(ipAddress, "request too big", "ReceiveTaskAnswerV3");
                 return new TaskAnswerResult { AnswerCode = 5 };
@@ -293,72 +285,6 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Winning Task Block Answer V2
-        public async Task<bool> ReceiveWinningTaskBlock(TaskWinner winningTask)
-        {
-            try
-            {
-                var ipAddress = GetIP(Context);
-                if (Globals.LastBlock.Height > Globals.BlockLock)
-                {
-                    Context.Abort();
-                    return false;
-                }
-
-                if (winningTask != null)
-                {
-                    if(winningTask.WinningBlock != null)
-                    {
-                        if (winningTask.WinningBlock.Size > 1048576)
-                            return false;
-                        
-                        return await P2PServer.SignalRQueue(Context, (int)winningTask.WinningBlock.Size, async () =>
-                        {
-                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                            {
-                                if (Globals.AdjudicateAccount != null)
-                                {
-                                    //This will result in users not getting their answers chosen if they are not in list.                                    
-                                    if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
-                                    {
-                                        (winningTask.Address, _) = Out;                                        
-                                        if (Globals.TaskSelectedNumbersV2.TryGetValue(winningTask.Address, out var Winner))
-                                        {
-                                            if (winningTask.WinningBlock.Height == Globals.LastBlock.Height + 1 &&
-                                        winningTask.VerifySecret == Globals.VerifySecret)
-                                            {
-                                                Globals.TaskWinnerDictV2[winningTask.Address] = winningTask;
-                                                return true;
-                                            }
-                                            else
-                                            {
-                                                return false;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            return false;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return false;
-                                    }
-                                }
-                            }
-                            return false;
-                        });
-                    }
-                }
-
-                return false;
-            }
-            catch { }
-            return false;
-        }
-
-        #endregion
-
         #region Receive Winning Task Block Answer V3
         public async Task<bool> ReceiveWinningBlockV3(string blockString)
         {
@@ -402,82 +328,6 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-        #region Receive Block and Task Answer V2
-
-        public async Task<TaskAnswerResult> ReceiveTaskAnswer_New(TaskNumberAnswerV2 taskResult)
-        {
-            TaskAnswerResult taskAnsRes = new TaskAnswerResult();
-            try
-            {
-                var ipAddress = GetIP(Context);
-                if (Globals.LastBlock.Height > Globals.BlockLock)
-                {
-                    Context.Abort();
-                    return new TaskAnswerResult { AnswerCode = 4 };
-                }
-
-                if (taskResult != null)
-                {
-                    var answerSize = JsonConvert.SerializeObject(taskResult).Length;
-                    if (answerSize > 1048576)
-                    {
-                        taskAnsRes.AnswerCode = 1; //Answer too large
-                        return taskAnsRes;
-                    }
-                    
-                    return await P2PServer.SignalRQueue(Context, answerSize, async () =>
-                    {
-                        if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                        {
-                            if (Globals.AdjudicateAccount != null)
-                            {
-                                //This will result in users not getting their answers chosen if they are not in list.
-                                var fortisPool = Globals.FortisPool.Values;
-                                if (Globals.FortisPool.TryGetFromKey1(ipAddress, out var Out))
-                                {
-                                    (taskResult.Address, _) = Out;
-                                    if (taskResult.NextBlockHeight == Globals.LastBlock.Height + 1)
-                                    {
-                                        if (!Globals.TaskAnswerDict_New.TryGetValue(taskResult.Address, out var Answer))
-                                        {
-                                            taskResult.SubmitTime = DateTime.Now;
-                                            Globals.TaskAnswerDict_New[taskResult.Address] = taskResult;
-                                            taskAnsRes.AnswerAccepted = true;
-                                            taskAnsRes.AnswerCode = 0;
-                                            return taskAnsRes;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        var nextBlockHeight = Globals.LastBlock.Height + 1;
-                                        taskAnsRes.AnswerCode = 2; //Answers block height did not match the adjudicators next block height
-                                        return taskAnsRes;
-                                    }
-                                }
-                                else
-                                {
-                                    taskAnsRes.AnswerCode = 3; //address is not pressent in the fortis pool
-                                    return taskAnsRes;
-                                }
-                            }
-                        }
-                        taskAnsRes.AnswerCode = 4; //adjudicator is still booting up
-                        return taskAnsRes;
-                    });
-                }
-                taskAnsRes.AnswerCode = 5; // Task answer was null. Should not be possible.
-
-                return taskAnsRes;
-            }
-            catch (Exception ex)
-            {
-                ErrorLogUtility.LogError($"Error Processing Task - Error: {ex.ToString()}", "P2PAdjServer.ReceiveTaskAnswer_New()");
-            }
-            taskAnsRes.AnswerCode = 1337; // Unknown Error
-            return taskAnsRes;
-        }
-
-        #endregion
 
         #region Receive TX to relay
         public async Task<bool> ReceiveTX(Transaction transaction)

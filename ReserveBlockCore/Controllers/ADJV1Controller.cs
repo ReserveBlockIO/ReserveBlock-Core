@@ -185,27 +185,13 @@ namespace ReserveBlockCore.Controllers
 
             try
             {
-                if (Globals.LastBlock.Height < Globals.BlockLock)
-                {
-                    var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
-                        x.Address,
-                        x.Answer,
-                        x.NextBlockHeight,
-                        x.SubmitTime
+                var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
+                    Address = x.RBXAddress,
+                    Answer = x.Answer,
+                    IP = x.IPAddress                        
 
-                    });
-                    output = JsonConvert.SerializeObject(taskAnswerList);
-                }
-                else
-                {
-                    var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
-                        Address = x.RBXAddress,
-                        Answer = x.Answer,
-                        IP = x.IPAddress                        
-
-                    });
-                    output = JsonConvert.SerializeObject(taskAnswerList);
-                }
+                });
+                output = JsonConvert.SerializeObject(taskAnswerList);                
             }
             catch(Exception ex)
             {

@@ -380,14 +380,7 @@ namespace ReserveBlockCore.Services
                         
                         if (P2PClient.MaxHeight() <= block.Height)
                         {
-                            if (Globals.LastBlock.Height >= Globals.BlockLock)
-                            {
-                                ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
-                            }
-                            else
-                            {
-                                //ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
-                            }
+                            ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
                         }
 
                         Signer.UpdateSigningAddresses();

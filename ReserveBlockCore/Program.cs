@@ -201,8 +201,7 @@ namespace ReserveBlockCore
                 Globals.StopAllTimers = true;
                 _ = Task.Run(BlockHeightCheckLoop);
                 _ = StartupService.DownloadBlocksOnStart();
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
-                    _ = Task.Run(ClientCallService.DoWorkV3);
+                _ = Task.Run(ClientCallService.DoWorkV3);
             }
 
             await StartupService.ClearStaleMempool();
@@ -268,8 +267,7 @@ namespace ReserveBlockCore
                 Globals.StopAllTimers = true;
                 _ = Task.Run(BlockHeightCheckLoop);
                 _ = StartupService.DownloadBlocksOnStart();
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
-                    _ = Task.Run(ClientCallService.DoWorkV3);
+                _ = Task.Run(ClientCallService.DoWorkV3);
             }
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
