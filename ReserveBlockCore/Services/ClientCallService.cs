@@ -792,6 +792,7 @@ namespace ReserveBlockCore.Services
                         .GroupBy(x => x.Hash)
                         .Select(x => x.First())
                         .GroupBy(x => x.Validator)
+                        .Where(x => x.Count() == 1)
                         .Select(x => x.First())
                         .ToDictionary(x => x.Validator, x => x);
 
