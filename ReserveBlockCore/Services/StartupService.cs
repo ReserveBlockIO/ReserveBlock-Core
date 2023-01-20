@@ -667,7 +667,7 @@ namespace ReserveBlockCore.Services
                         var time = TimeUtil.GetTime().ToString();
                         var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
                         var ConnectTasks = new List<Task>();
-                        Parallel.ForEach(DisconnectedPeers, new ParallelOptions { MaxDegreeOfParallelism = DisconnectedPeers.Length }, peer =>
+                        DisconnectedPeers.ParallelLoop(peer =>
                         {
                             var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
                             ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));

@@ -464,15 +464,9 @@ namespace ReserveBlockCore.P2P
                 .ToArray();
 
             var Diff = Globals.MaxPeers - Globals.Nodes.Count;
-            Parallel.ForEach(newPeers.Take(Diff), new ParallelOptions { MaxDegreeOfParallelism = Diff }, peer =>
+            newPeers.Take(Diff).ToArray().ParallelLoop(peer =>
             {
-                try
-                {
-                    _ = Connect(peer);
-                }
-                catch (Exception ex)
-                {
-                }
+                _ = Connect(peer);
             });
 
             return Globals.MaxPeers != 0;         
@@ -503,15 +497,9 @@ namespace ReserveBlockCore.P2P
                     .ToArray();
 
                 var Diff = Globals.MaxPeers - Globals.Nodes.Count;
-                Parallel.ForEach(newPeers.Take(Diff), new ParallelOptions { MaxDegreeOfParallelism = Diff }, peer =>
+                newPeers.Take(Diff).ToArray().ParallelLoop(peer =>
                 {
-                    try
-                    {
-                        _ = Connect(peer);
-                    }
-                    catch (Exception ex)
-                    {
-                    }
+                    _ = Connect(peer);
                 });
             }
 
@@ -597,10 +585,10 @@ namespace ReserveBlockCore.P2P
                 return;
 
             var tasks = new List<Task>();
-            Parallel.ForEach(Globals.AdjNodes.Values.Where(x => x.IsConnected), new ParallelOptions { MaxDegreeOfParallelism = Globals.AdjNodes.Count }, x =>
+            Globals.AdjNodes.Values.Where(x => x.IsConnected).ToArray().ParallelLoop(x =>
             {
                 tasks.Add(SendTaskAnswerV3(x, taskAnswer));
-            });
+            });            
 
             await Task.WhenAll(tasks);
         }
@@ -908,13 +896,13 @@ namespace ReserveBlockCore.P2P
                 {
                     Height = Globals.LastBlock.Height;
 
-                    Parallel.ForEach(Globals.Nodes.Values, new ParallelOptions { MaxDegreeOfParallelism = Globals.Nodes.Count }, node =>
+                    Globals.Nodes.Values.ToArray().ParallelLoop(node =>
                     {
                         if (node.Address != Address && !UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
                         {
                             UpdateMethodCodeAddresses[node.NodeIP] = true;
                             _ = UpdateMethodCode(node);
-                        }    
+                        }
                     });
                 }
 

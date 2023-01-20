@@ -11,6 +11,20 @@ namespace ReserveBlockCore.Extensions
 {
     public static class TaskExtensions
     {
+		public static void ParallelLoop<T>(this ICollection<T> source, Action<T> func)
+		{
+			if (source.Count == 0)
+				return;
+			Parallel.ForEach(source, new ParallelOptions { MaxDegreeOfParallelism = source.Count }, x =>
+			{
+				try
+				{
+					func(x);
+				}
+				catch { }
+			});
+		}
+
 		public static async Task WhenAtLeast<T>(this IEnumerable<Task<T>> tasks, Func<T, bool> successPredicate, int atLeast)
 		{
 			var TaskSource = new TaskCompletionSource();

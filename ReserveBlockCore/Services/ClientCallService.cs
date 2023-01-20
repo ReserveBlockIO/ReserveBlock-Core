@@ -1070,13 +1070,13 @@ namespace ReserveBlockCore.Services
                     var BadAddresses = ValidSubmissions.Select(x => x.RBXAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();
 
-                    Parallel.ForEach(BadIPs, ip =>
+                    BadIPs.ParallelLoop(ip =>
                     {
                         if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
                             _ = HadBadValidator(pool.Item2, ip, 0);
                     });
 
-                    Parallel.ForEach(BadAddresses, address =>
+                    BadAddresses.ParallelLoop(address =>
                     {
                         if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
                             _ = HadBadValidator(pool.Item2, address, 1);

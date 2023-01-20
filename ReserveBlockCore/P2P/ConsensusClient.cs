@@ -239,7 +239,7 @@ namespace ReserveBlockCore.P2P
             var MyMessage = messages[Globals.AdjudicateAccount.Address];
             var ToSend = MyMessage.Message.Replace(":", "::") + ";:;" + MyMessage.Signature;
 
-            Parallel.ForEach(peers, new ParallelOptions { MaxDegreeOfParallelism = peers.Length }, peer =>
+            peers.ParallelLoop(peer =>
             {
                 _ = MessageRequest(peer, ToSend, currentHeight, methodCode, messages, addresses, cts);
             });            
@@ -338,10 +338,10 @@ namespace ReserveBlockCore.P2P
             var MyHash = hashes[Globals.AdjudicateAccount.Address];
             var ToSend = MyHash.Hash + ":" + MyHash.Signature;
 
-            Parallel.ForEach(peers, new ParallelOptions { MaxDegreeOfParallelism = peers.Length }, peer =>
+            peers.ParallelLoop(peer =>
             {
                 _ = HashRequest(peer, ToSend, currentHeight, methodCode, hashes, addresses, cts);
-            });                      
+            });                                  
         }
 
         private static async Task HashRequest(NodeInfo peer, string toSend, long currentHeight, int methodCode,
