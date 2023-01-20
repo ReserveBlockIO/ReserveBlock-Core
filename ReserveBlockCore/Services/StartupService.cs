@@ -546,19 +546,21 @@ namespace ReserveBlockCore.Services
                 return;
             
             var time = TimeUtil.GetTime().ToString();
-            var signature = SignatureService.ValidatorSignature(validator.Address);
+            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
 
             foreach(var signer in Globals.Signers) // use to populate database, pull from database
             {
-                if(Globals.AdjBench.TryGetValue(signer.Key, out var bench))
-                {
+
+                if (Globals.AdjBench.TryGetValue(signer.Key, out var bench))
+                {                    
                     var url = "http://" + bench.IPAddress + ":" + Globals.Port + "/adjudicator";
-                    if(await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature))
+                    if (await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature))
                     {
                         _ = UpdateBenchIpAndSigners();
                         break;
-                    }
+                    }                    
                 }
+
             }                       
         }
 

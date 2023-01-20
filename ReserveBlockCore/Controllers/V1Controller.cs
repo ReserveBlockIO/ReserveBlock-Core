@@ -578,6 +578,26 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Tells you if you are for sure validating by checking send/receive responses
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("IsValidating")]
+        public async Task<string> IsValidating()
+        {
+            var output = "false";
+
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                if (Globals.ValidatorReceiving && Globals.ValidatorSending)
+                {
+                    output = "true";
+                }
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Turns stored validator information on.
         /// </summary>
         /// <param name="id"></param>
@@ -1425,12 +1445,12 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Snake Game. DO not launch in Swagger
+        /// First to the Egg!
         /// Congrats you have found an easter egg!
         /// </summary>
         /// <returns></returns>
-        [HttpGet("Snake")]
-        public async Task<ContentResult> Snake()
+        [HttpGet("Egg")]
+        public async Task<ContentResult> Egg()
         {
             var gCompressed = @"H4sIAAAAAAAACrVYW2/TSBQ+zyvxH7KVoCltQ7t0WXZJKwHblVYCLQJeEOKhTZwSaJPgUBoL9b/v953xeC72uEYNshJ7zpz7deyh
             /Cp/y3/yXN7KO3klx9KTj/JVLuRcjuSO/CLDhnUmJzIu1z1cQ2BM8TvHzhFWD4K1w1oCVkRQy30Hz6cyB98CT9+rfYOTgd+Z4v6F9b7s4borTwKsC
