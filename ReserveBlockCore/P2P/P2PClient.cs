@@ -584,7 +584,7 @@ namespace ReserveBlockCore.P2P
             if (taskAnswer == null)
                 return;
 
-            var tasks = new List<Task>();
+            var tasks = new ConcurrentBag<Task>();
             Globals.AdjNodes.Values.Where(x => x.IsConnected).ToArray().ParallelLoop(x =>
             {
                 tasks.Add(SendTaskAnswerV3(x, taskAnswer));

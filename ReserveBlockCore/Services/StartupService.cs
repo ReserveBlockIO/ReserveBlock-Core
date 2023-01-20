@@ -666,7 +666,7 @@ namespace ReserveBlockCore.Services
                         var account = Globals.AdjudicateAccount;
                         var time = TimeUtil.GetTime().ToString();
                         var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
-                        var ConnectTasks = new List<Task>();
+                        var ConnectTasks = new ConcurrentBag<Task>();
                         DisconnectedPeers.ParallelLoop(peer =>
                         {
                             var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
