@@ -887,8 +887,12 @@ namespace ReserveBlockCore.Commands
 
                     foreach (var node in Globals.AdjNodes.Values)
                     {
-                        AnsiConsole.MarkupLine($"Last Task Received Time: [yellow]{node.LastTaskResultTime}[/] from [purple]{node.Address}[/]");
-                        AnsiConsole.MarkupLine($"Last Task Sent Time: [yellow]{node.LastTaskSentTime}[/] from [purple]{node.Address}[/]");
+                        if(node.IsConnected)
+                        {
+                            AnsiConsole.MarkupLine($"Last Task Received Time: [yellow]{node.LastTaskResultTime}[/] from [purple]{node.Address}[/]");
+                            AnsiConsole.MarkupLine($"Last Task Sent Time: [yellow]{node.LastTaskSentTime}[/] from [purple]{node.Address}[/]");
+                        }
+                        
                     }
                 }
                 else
