@@ -316,6 +316,7 @@ namespace ReserveBlockCore
             _ = SeedNodeService.CallToSeed();
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
+            _ = ValidatorService.ValidatingMonitorService();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
@@ -441,7 +442,7 @@ namespace ReserveBlockCore
                         //waiting for treis to stop
                     }
 
-                    Settings.InitiateShutdownUpdate();
+                    await Settings.InitiateShutdownUpdate();
                     Environment.Exit(0);
                 }
 

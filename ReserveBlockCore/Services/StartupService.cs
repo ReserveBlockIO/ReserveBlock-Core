@@ -561,7 +561,8 @@ namespace ReserveBlockCore.Services
             }
             else
             {
-                foreach(var signer in Globals.Signers) // use to populate database, pull from database
+                signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+                foreach (var signer in Globals.Signers) // use to populate database, pull from database
                 {
                     if(Globals.AdjBench.TryGetValue(signer.Key, out var bench))
                     {
@@ -666,7 +667,7 @@ namespace ReserveBlockCore.Services
                         var account = Globals.AdjudicateAccount;
                         var time = TimeUtil.GetTime().ToString();
                         var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
-                        var ConnectTasks = new List<Task>();
+                        var ConnectTasks = new ConcurrentBag<Task>();
                         DisconnectedPeers.ParallelLoop(peer =>
                         {
                             var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
