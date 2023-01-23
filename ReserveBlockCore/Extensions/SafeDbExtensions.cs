@@ -1,32 +1,43 @@
-﻿using AsyncKeyedLock;
-using LiteDB;
+﻿using LiteDB;
 using ReserveBlockCore.Utilities;
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
 namespace ReserveBlockCore.Extensions
 {
     public static class DbExtensions
     {
-        private static AsyncKeyedLocker<string> DbKeyedLocker = new(o =>
+        private static ConcurrentDictionary<string, SemaphoreSlim> DbSemaphores = new ConcurrentDictionary<string, SemaphoreSlim>();        
+
+        private static SemaphoreSlim GetSlim<T>(this ILiteCollection<T> col)
         {
-            o.PoolSize = 20;
-            o.PoolInitialFill = 1;
-        });
+            if (!DbSemaphores.TryGetValue(col.Name, out SemaphoreSlim DbSemaphore))
+            {
+                DbSemaphore = new SemaphoreSlim(1, 1);
+                if (!DbSemaphores.TryAdd(col.Name, DbSemaphore))
+                    DbSemaphores.TryGetValue(col.Name, out DbSemaphore);
+            }
+
+            return DbSemaphore;
+        }
 
         public static S Command<S, T>(this ILiteCollection<T> col, Func<S> cmd)
         {
+            SemaphoreSlim slim = null;
+            S Result = default;
             try
             {
-                using (DbKeyedLocker.Lock(col.Name))
-                {
-                    return cmd();
-                }
+                slim = col.GetSlim();
+                slim.Wait();
+                Result =  cmd();
             }
             catch (Exception ex)
             {
-                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");
-                return default;
+                ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "SafeDBExtensions.Command()");                
             }
+
+            try { slim.Release(); } catch { }            
+            return Result;
         }
 
         public static void Command<T>(this ILiteCollection<T> col, Action cmd)
