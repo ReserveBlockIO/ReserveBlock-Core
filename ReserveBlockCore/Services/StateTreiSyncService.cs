@@ -111,8 +111,8 @@ namespace ReserveBlockCore.Services
                                         processBlocks = false;
                                         task1.Increment(100);
                                         progress = (double)100;
-                                        var message = JsonConvert.SerializeObject(new { NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%") });
-                                        await StateTreiSyncLogUtility.Log(message);
+                                        var messageEnd = JsonConvert.SerializeObject(new { NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%") });
+                                        await StateTreiSyncLogUtility.Log(messageEnd);
                                         break;
                                     }
                                     
