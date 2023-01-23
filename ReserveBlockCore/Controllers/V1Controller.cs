@@ -1137,26 +1137,12 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            if(Globals.LastBlock.Height < Globals.BlockLock)
-            {
-                var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
-                    Address = x.Address,
-                    Answer = x.Answer,
-                    NextBlockHeight = x.NextBlockHeight,
-                    SubmitTime = x.SubmitTime
-
-                });
-                output = JsonConvert.SerializeObject(taskAnswerList);
-            }
-            else
-            {
-                var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
-                    Address = x.RBXAddress,
-                    Answer = x.Answer,
-                    IP = x.IPAddress,                    
-                });
-                output = JsonConvert.SerializeObject(taskAnswerList);
-            }
+            var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
+                Address = x.RBXAddress,
+                Answer = x.Answer,
+                IP = x.IPAddress,                    
+            });
+            output = JsonConvert.SerializeObject(taskAnswerList);            
 
             return output;
         }
@@ -1690,7 +1676,6 @@ namespace ReserveBlockCore.Controllers
         {
             //use Id to get specific commands
             var delay = Task.Delay(2000);
-            var output = "Starting Stop"; // this will only display if command not recognized.
             LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
             Globals.StopAllTimers = true;
             await delay;
@@ -1699,7 +1684,7 @@ namespace ReserveBlockCore.Controllers
                 await Task.Delay(300);
                 //waiting for treis to stop
             }
-            Settings.InitiateShutdownUpdate();
+            await Settings.InitiateShutdownUpdate();
 
             Environment.Exit(0);
         }

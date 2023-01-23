@@ -24,14 +24,7 @@ namespace ReserveBlockCore.Nodes
                 switch(taskQuestion.TaskType)
                 {
                     case "rndNum":
-                        if(Globals.LastBlock.Height >= Globals.BlockLock)
-                        {
-                            RandomNumberTaskV3(taskQuestion.BlockHeight);
-                        }
-                        else
-                        {
-                            RandomNumberTask_New(taskQuestion.BlockHeight);                                
-                        }
+                        RandomNumberTaskV3(taskQuestion.BlockHeight);
                         break;
                 }
             }
@@ -41,9 +34,8 @@ namespace ReserveBlockCore.Nodes
                 var verifySecret = data != null ? data : "Empty";
                 var taskWin = new TaskWinner();
                 var fortisPool = Globals.FortisPool.Values;
-                var answer = Globals.CurrentTaskNumberAnswerV3.Answer != null ? Globals.CurrentTaskNumberAnswerV3.Answer.ToString() 
-                    : Globals.CurrentTaskNumberAnswerV2.Item2?.Answer;
-                                
+                var answer = Globals.CurrentTaskNumberAnswerV3.Answer.ToString();
+
                 if (TimeUtil.GetTime() - node.LastWinningTaskRequestTime < 4)
                     return;
 
@@ -60,10 +52,7 @@ namespace ReserveBlockCore.Nodes
                             taskWin.WinningBlock = block;
                             Globals.CurrentWinner = taskWin;
                             node.LastWinningTaskRequestTime = TimeUtil.GetTime();
-                            if (block.Height > Globals.BlockLock)
-                                await P2PClient.SendWinningTaskV3(node, blockString, block.Height);
-                            else
-                                await P2PClient.SendWinningTask_New(taskWin);
+                            await P2PClient.SendWinningTaskV3(node, blockString, block.Height);
                         }
                         else
                         {
@@ -74,14 +63,9 @@ namespace ReserveBlockCore.Nodes
                 }
                 else
                 {
-                    if (Globals.CurrentWinner?.WinningBlock.Height > Globals.BlockLock)
-                    {
-                        node.LastWinningTaskRequestTime = TimeUtil.GetTime();
-                        var blockString = JsonConvert.SerializeObject(Globals.CurrentWinner.WinningBlock);
-                        await P2PClient.SendWinningTaskV3(node, blockString, Globals.CurrentWinner.WinningBlock.Height);
-                    }
-                    else
-                        await P2PClient.SendWinningTask_New(Globals.CurrentWinner);
+                    node.LastWinningTaskRequestTime = TimeUtil.GetTime();
+                    var blockString = JsonConvert.SerializeObject(Globals.CurrentWinner.WinningBlock);
+                    await P2PClient.SendWinningTaskV3(node, blockString, Globals.CurrentWinner.WinningBlock.Height);
                 }
             }
 
@@ -231,38 +215,6 @@ namespace ReserveBlockCore.Nodes
             }
 
             await P2PClient.SendTaskAnswerV3(Globals.CurrentTaskNumberAnswerV3.Answer + ":" + Globals.CurrentTaskNumberAnswerV3.Height);
-        }
-
-        public static async void RandomNumberTask_New(long blockHeight)
-        {
-            if (string.IsNullOrWhiteSpace(Globals.ValidatorAddress))
-                return;
-
-            var nextBlock = Globals.LastBlock.Height + 1;
-            if (nextBlock != blockHeight)
-            {
-                //download blocks
-                await BlockDownloadService.GetAllBlocks();
-            }
-
-            var taskAnswer = new TaskNumberAnswerV2();
-            if (Globals.CurrentTaskNumberAnswerV2.Item1 != blockHeight)
-            {
-                var num = TaskQuestionUtility.GenerateRandomNumber(blockHeight);
-                taskAnswer.Address = Globals.ValidatorAddress;
-                taskAnswer.Answer = num.ToString();
-                taskAnswer.SubmitTime = DateTime.Now;
-                taskAnswer.NextBlockHeight = blockHeight;
-                Globals.CurrentTaskNumberAnswerV2 = (blockHeight, taskAnswer, DateTime.Now);
-            }
-            else if((DateTime.Now - Globals.CurrentTaskNumberAnswerV2.Item3).Seconds < 5)
-            {
-                return;
-            }
-            else
-                taskAnswer = Globals.CurrentTaskNumberAnswerV2.Item2;
-            await P2PClient.SendTaskAnswer_New(taskAnswer);
-
         }
     }
 }
