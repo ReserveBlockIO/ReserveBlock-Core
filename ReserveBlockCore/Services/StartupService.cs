@@ -267,7 +267,10 @@ namespace ReserveBlockCore.Services
             if (settings != null)
             {
                 if (!settings.CorrectShutdown)
-                    RunStateSync();
+                {
+                    if (Globals.AdjudicateAccount == null)
+                        await StateTreiSyncService.SyncAccountStateTrei();
+                }
 
                 if (Globals.AdjudicateAccount == null)
                 {

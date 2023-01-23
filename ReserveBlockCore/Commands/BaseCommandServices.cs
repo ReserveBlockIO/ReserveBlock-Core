@@ -1885,7 +1885,10 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
             table.AddRow("[blue]/resetval[/]", "[green]Resets all validator and reconnects them.[/]");
+            table.AddRow("[blue]/findtx[/]", "[green]This is a heavy query to find a specific TX in all blocks.[/]");
+            table.AddRow("[blue]/vote[/]", "[green]This will start the voting program.[/]");
             table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
+            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
@@ -1900,7 +1903,8 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]10[/]", "[green]This will turn the wallet API on and off.[/]");
             table.AddRow("[blue]11[/]", "[green]This will stop your masternode.[/]");
             table.AddRow("[blue]12[/]", "[green]Reserved command. Coming soon.[/]");
-            table.AddRow("[blue]13[/]", "[green]This will also exit the wallet.[/]");
+            table.AddRow("[blue]13[/]", "[green]This will open the voting program.[/]");
+            table.AddRow("[blue]14[/]", "[green]This is the proper way to shutdown wallet with this command.[/]");
 
             table.Border(TableBorder.Rounded);
 
