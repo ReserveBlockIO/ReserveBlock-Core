@@ -27,6 +27,7 @@ namespace ReserveBlockCore.Services
                     double progress = new double();
                     double increment = ((double)interval / (double)height) * (double)100;
                     List<AccountStateTrei> blockBalances = new List<AccountStateTrei>();
+                    var blockChain = BlockchainData.GetBlocks();
 
                     await AnsiConsole.Progress()
                     .Columns(new ProgressColumn[] {
@@ -44,7 +45,8 @@ namespace ReserveBlockCore.Services
                             while (processBlocks)
                             {
                                 var heightSpan = currenRunHeight + interval;
-                                var blocks = BlockchainData.GetBlocks().Query().Where(x => x.Height >= currenRunHeight && x.Height < heightSpan).ToList();
+                                
+                                var blocks = blockChain.Query().Where(x => x.Height >= currenRunHeight && x.Height < heightSpan).Limit((int)heightSpan - (int)currenRunHeight).ToList();
                                 foreach (Block block in blocks)
                                 {
                                     var txList = block.Transactions.ToList();
