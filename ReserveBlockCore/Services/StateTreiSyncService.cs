@@ -17,6 +17,8 @@ namespace ReserveBlockCore.Services
                 AnsiConsole.MarkupLine("[red]Syncing State Treis... This process may take a moment.[/]");
                 AnsiConsole.MarkupLine("[yellow]This is running due to an incorrect shutdown of wallet.[/]");
                 AnsiConsole.MarkupLine("[yellow]During this time please do not close wallet, or click cursor into the CLI.[/]");
+
+                
                 
                 if (IsRunning == false)
                 {
@@ -120,7 +122,7 @@ namespace ReserveBlockCore.Services
                                         progress = (double)100;
                                         var messageEnd = JsonConvert.SerializeObject(new { NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%") });
                                         await StateTreiSyncLogUtility.Log(messageEnd);
-                                        break;
+                                        //break;
                                     }
                                     
                                 }
@@ -137,7 +139,7 @@ namespace ReserveBlockCore.Services
                         }
                     });
 
-                    
+                    DbContext.BeginTrans();
 
                     var stateTrei = StateData.GetAccountStateTrei();
                     
@@ -178,9 +180,11 @@ namespace ReserveBlockCore.Services
 
                 Console.WriteLine("Done Syncing State Treis...");
                 IsRunning = false;
+                DbContext.Commit();
             }
             catch(Exception ex)
             {
+                DbContext.Rollback("StateTreiSyncService.SyncAccountStateTrei()");
                 ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.ToString()}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }
