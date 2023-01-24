@@ -94,8 +94,8 @@ namespace ReserveBlockCore.Controllers
 
             if (beacons != null)
             {
-                var beaconList = beacons.FindAll().ToList();
-                if (beaconList.Count > 0)
+                var beaconList = beacons.Query().Where(x => true).ToEnumerable();
+                if (beaconList.Count() > 0)
                     output = JsonConvert.SerializeObject(beaconList);
             }
             return output;
@@ -279,7 +279,7 @@ namespace ReserveBlockCore.Controllers
             var aqDB = AssetQueue.GetAssetQueue();
             if(aqDB != null)
             {
-                var aqList = aqDB.FindAll().ToList();
+                var aqList = aqDB.Query().Where(x => true).ToEnumerable();
                 if(aqList.Count() > 0)
                 {
                     output = JsonConvert.SerializeObject(aqList);
@@ -302,7 +302,7 @@ namespace ReserveBlockCore.Controllers
             var aqDB = AssetQueue.GetAssetQueue();
             if (aqDB != null)
             {
-                var aqList = aqDB.FindAll().ToList();
+                var aqList = aqDB.Query().Where(x => true).ToEnumerable();
                 if (aqList.Count() > 0)
                 {
                     foreach(var item in aqList)

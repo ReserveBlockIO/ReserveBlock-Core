@@ -546,7 +546,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var accountList = accounts.FindAll().ToList();
+                var accountList = accounts.Query().Where(x => true).ToEnumerable();
                 output = JsonConvert.SerializeObject(accountList);
             }
 

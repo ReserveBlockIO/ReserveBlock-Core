@@ -17,7 +17,7 @@ namespace ReserveBlockCore.Services
                 AnsiConsole.MarkupLine("[red]Syncing State Treis... This process may take a moment.[/]");
                 AnsiConsole.MarkupLine("[yellow]This is running due to an incorrect shutdown of wallet.[/]");
                 AnsiConsole.MarkupLine("[yellow]During this time please do not close wallet, or click cursor into the CLI.[/]");
-                
+
                 if (IsRunning == false)
                 {
                     IsRunning = true;
@@ -120,24 +120,25 @@ namespace ReserveBlockCore.Services
                                         progress = (double)100;
                                         var messageEnd = JsonConvert.SerializeObject(new { NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%") });
                                         await StateTreiSyncLogUtility.Log(messageEnd);
-                                        break;
+                                        //break;
                                     }
                                     
                                 }
-                                //This is needed if ToList is used.
-                                //blocks.Clear();
-                                //blocks = new List<Block>();
-                                task1.Increment(increment);
-                                progress += increment;
-                                currenRunHeight += interval;
-
+                                if(processBlocks)
+                                {
+                                    //This is needed if ToList is used.
+                                    //blocks.Clear();
+                                    //blocks = new List<Block>();
+                                    task1.Increment(increment);
+                                    progress += increment;
+                                    currenRunHeight += interval;
+                                }
+                                
                                 var message = JsonConvert.SerializeObject(new {NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%")});
                                 await StateTreiSyncLogUtility.Log(message);
                             }
                         }
                     });
-
-                    
 
                     var stateTrei = StateData.GetAccountStateTrei();
                     

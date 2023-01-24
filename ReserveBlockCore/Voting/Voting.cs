@@ -391,9 +391,9 @@ namespace ReserveBlockCore.Voting
                         .Where(x => x.TopicOwnerAddress.ToLower().Contains(search) ||
                             x.TopicUID.ToLower().Contains(search) ||
                             x.TopicName.ToLower().Contains(search))
-                        .ToList();
+                        .ToEnumerable();
 
-                    if(results.Count > 0)
+                    if(results.Count() > 0)
                     {
                         var table = new Table();
 

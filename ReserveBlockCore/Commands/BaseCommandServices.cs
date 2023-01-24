@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Commands
         {
             var accounts = AccountData.GetAccounts();
 
-            var accountList = accounts.FindAll().ToList();
+            var accountList = accounts.Query().Where(x => true).ToEnumerable();
 
             if (accountList.Count() > 0)
             {
@@ -76,10 +76,11 @@ namespace ReserveBlockCore.Commands
                 table.AddColumn(new TableColumn(new Panel("Address")));
                 table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
 
-                accountList.ForEach(x => {
-                    table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.GetKey}[/]");
-                });
-
+                foreach(var account in accountList)
+                {
+                    table.AddRow($"[blue]{account.Address}[/]", $"[green]{account.GetKey}[/]");
+                }
+  
                 table.Border(TableBorder.Rounded);
 
                 AnsiConsole.Write(table);
@@ -1679,7 +1680,7 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                var transactionsList = transactions.FindAll().OrderByDescending(x => x.Timestamp).Take(10).ToList();
+                var transactionsList = transactions.Query().OrderByDescending(x => x.Timestamp).ToEnumerable().Take(10);
                 foreach(var tx in transactionsList)
                 {
                     var txStr = $"TxId: {tx.Hash} - From: {tx.FromAddress} - To: {tx.ToAddress} - Amount: {tx.Amount} - Time: {tx.Timestamp}";
