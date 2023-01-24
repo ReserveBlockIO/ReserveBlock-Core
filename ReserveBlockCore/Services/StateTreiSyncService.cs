@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using LiteDB;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
@@ -16,7 +17,7 @@ namespace ReserveBlockCore.Services
                 AnsiConsole.MarkupLine("[red]Syncing State Treis... This process may take a moment.[/]");
                 AnsiConsole.MarkupLine("[yellow]This is running due to an incorrect shutdown of wallet.[/]");
                 AnsiConsole.MarkupLine("[yellow]During this time please do not close wallet, or click cursor into the CLI.[/]");
-                DbContext.BeginTrans();
+                
                 if (IsRunning == false)
                 {
                     IsRunning = true;
@@ -46,7 +47,11 @@ namespace ReserveBlockCore.Services
                             {
                                 var heightSpan = currenRunHeight + interval;
                                 
-                                var blocks = blockChain.Query().Where(x => x.Height >= currenRunHeight && x.Height < heightSpan).Limit((int)heightSpan - (int)currenRunHeight).ToList();
+                                var blocks = blockChain.Query()
+                                .Where(x => x.Height >= currenRunHeight && x.Height < heightSpan)
+                                .Limit((int)heightSpan - (int)currenRunHeight)
+                                .ToEnumerable();
+
                                 foreach (Block block in blocks)
                                 {
                                     var txList = block.Transactions.ToList();
@@ -119,6 +124,9 @@ namespace ReserveBlockCore.Services
                                     }
                                     
                                 }
+                                //This is needed if ToList is used.
+                                //blocks.Clear();
+                                //blocks = new List<Block>();
                                 task1.Increment(increment);
                                 progress += increment;
                                 currenRunHeight += interval;
@@ -168,15 +176,11 @@ namespace ReserveBlockCore.Services
                     await StateTreiSyncLogUtility.DeleteLog();
                 }
 
-                
                 Console.WriteLine("Done Syncing State Treis...");
                 IsRunning = false;
-                DbContext.Commit();
-
             }
             catch(Exception ex)
             {
-                DbContext.Rollback("StateTreiSyncService.SyncAccountStateTrei()");
                 ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.ToString()}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }
