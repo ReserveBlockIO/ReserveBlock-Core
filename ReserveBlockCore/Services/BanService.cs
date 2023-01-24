@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Services
                             x.IsBanned &&
                             x.NextUnbanDate != null &&
                             x.NextUnbanDate.Value <= DateTime.UtcNow &&
-                            !x.IsPermaBanned).ToList();
+                            !x.IsPermaBanned).ToEnumerable();
 
                     if (bannedPeers.Count() > 0)
                     {
@@ -220,7 +220,7 @@ namespace ReserveBlockCore.Services
                         !x.IsBanned &&
                         !x.IsPermaBanned &&
                         x.NextUnbanDate != null &&
-                        x.NextUnbanDate.Value.AddHours(1) <= DateTime.UtcNow).ToList();
+                        x.NextUnbanDate.Value.AddHours(1) <= DateTime.UtcNow).ToEnumerable();
 
                     if (unbannedPeersWithCount.Count() > 0)
                     {
@@ -252,7 +252,7 @@ namespace ReserveBlockCore.Services
                     var permaBanList = peers.Query().Where(x =>
                         x.IsBanned &&
                         x.BanCount > 10 &&
-                        !x.IsPermaBanned).ToList();
+                        !x.IsPermaBanned).ToEnumerable();
 
                     if (permaBanList.Count() > 0)
                     {

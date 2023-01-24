@@ -356,12 +356,12 @@ namespace ReserveBlockCore.Services
             var beacons = Beacons.GetBeacons();
             if(beacons != null)
             {
-                var beaconList = beacons.Query().Where(x => true).ToList();
+                var beaconList = beacons.Query().Where(x => true).ToEnumerable();
                 if(beaconList.Count() == 0)
                 {
                     //seed beacons
                     BootstrapBeacons();
-                    beaconList = beacons.Query().Where(x => true).ToList();
+                    beaconList = beacons.Query().Where(x => true).ToEnumerable();
                     if(beaconList.Count() > 0)
                     {
                         foreach(var beacon in beaconList)

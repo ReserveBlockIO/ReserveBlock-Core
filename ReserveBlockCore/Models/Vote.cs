@@ -47,12 +47,12 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Get Specific Topic Votes
-        public static List<Vote>? GetSpecificTopicVotes(string tUID)
+        public static IEnumerable<Vote>? GetSpecificTopicVotes(string tUID)
         {
             var votes = GetVotes();
             if (votes != null)
             {
-                var voteList = votes.Query().Where(x => x.TopicUID == tUID).ToList();
+                var voteList = votes.Query().Where(x => x.TopicUID == tUID).ToEnumerable();
                 if (voteList.Count() > 0)
                 {
                     return voteList;
@@ -63,12 +63,12 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Get Specific Address Votes
-        public static List<Vote>? GetSpecificAddressVotes(string address)
+        public static IEnumerable<Vote>? GetSpecificAddressVotes(string address)
         {
             var votes = GetVotes();
             if (votes != null)
             {
-                var voteList = votes.Query().Where(x => x.Address == address).ToList();
+                var voteList = votes.Query().Where(x => x.Address == address).ToEnumerable();
                 if (voteList.Count() > 0)
                 {
                     return voteList;

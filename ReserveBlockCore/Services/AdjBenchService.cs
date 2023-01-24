@@ -28,7 +28,7 @@ namespace ReserveBlockCore.Services
             var adjVoteInQueue = AdjVoteInQueue.GetAdjVoteInQueue();
             if (adjVoteInQueue != null)
             {
-                var queueList = adjVoteInQueue.Query().Where(x => !x.IsVoteInFavor && !x.IsVoteAgainst && x.VoteIn).ToList();
+                var queueList = adjVoteInQueue.Query().Where(x => !x.IsVoteInFavor && !x.IsVoteAgainst && x.VoteIn).ToEnumerable();
                 if (queueList.Count() > 0)
                 {
                     foreach (var queue in queueList)

@@ -379,7 +379,7 @@ namespace ReserveBlockCore.Services
 
                                                 //checks if validator has solved block in past 30 days
                                                 var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
-                                                var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToList().Distinct();
+                                                var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToEnumerable().Distinct();
                                                 var valExist = validatorList.Where(x => x == txRequest.FromAddress).Any();
                                                 if (!valExist)
                                                     return (txResult, "Validator has not crafted a block. Please wait til you craft a block to create a topic.");

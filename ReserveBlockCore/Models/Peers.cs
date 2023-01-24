@@ -27,16 +27,16 @@ namespace ReserveBlockCore.Models
         public List<string>? BannedFromAreasList { get; set; }
         public string? LastBannedFromArea { get; set; }
         public string? WalletVersion { get; set; }
-        public static List<Peers> PeerList(bool isBanned = false)
+        public static IEnumerable<Peers> PeerList(bool isBanned = false)
         {
             var peerList = GetAll();
             if(peerList != null && !isBanned)
             {
-                return peerList.Query().Where(x => !x.IsBanned && !x.IsPermaBanned).ToList();
+                return peerList.Query().Where(x => !x.IsBanned && !x.IsPermaBanned).ToEnumerable();
             }
             else
             {
-                return peerList.FindAll().ToList();
+                return peerList.Query().Where(x => true).ToEnumerable();
             }
         }
 
@@ -101,9 +101,9 @@ namespace ReserveBlockCore.Models
             Globals.BannedIPs.Clear();
             Globals.MessageLocks.Clear();
             var peers = GetAll();
-            var bannedPeers = peers.Query().Where(x => x.IsBanned && !x.IsPermaBanned).ToList();
+            var bannedPeers = peers.Query().Where(x => x.IsBanned && !x.IsPermaBanned).ToEnumerable();
             if(unbanPerma)
-                bannedPeers = peers.Query().Where(x => x.IsBanned && x.IsPermaBanned).ToList();
+                bannedPeers = peers.Query().Where(x => x.IsBanned && x.IsPermaBanned).ToEnumerable();
             var count = 0;
             foreach(var peer in bannedPeers)
             {

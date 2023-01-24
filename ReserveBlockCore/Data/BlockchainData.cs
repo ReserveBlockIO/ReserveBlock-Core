@@ -342,7 +342,7 @@ namespace ReserveBlockCore.Data
             var query = blocks.Query()
                 .OrderByDescending(x => x.Height)
                 .Where(x => x.Validator == address)
-                .Limit(20).ToList();
+                .Limit(20).ToEnumerable();
             return query;
         }
 
