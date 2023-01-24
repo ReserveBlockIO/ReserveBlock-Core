@@ -30,7 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LiteDB" Version="5.0.12" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.12" />
@@ -45,6 +44,12 @@
 
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="LiteDB">
+      <HintPath>..\Assemblies\LiteDB.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

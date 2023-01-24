@@ -18,8 +18,6 @@ namespace ReserveBlockCore.Services
                 AnsiConsole.MarkupLine("[yellow]This is running due to an incorrect shutdown of wallet.[/]");
                 AnsiConsole.MarkupLine("[yellow]During this time please do not close wallet, or click cursor into the CLI.[/]");
 
-                
-                
                 if (IsRunning == false)
                 {
                     IsRunning = true;
@@ -126,20 +124,21 @@ namespace ReserveBlockCore.Services
                                     }
                                     
                                 }
-                                //This is needed if ToList is used.
-                                //blocks.Clear();
-                                //blocks = new List<Block>();
-                                task1.Increment(increment);
-                                progress += increment;
-                                currenRunHeight += interval;
-
+                                if(processBlocks)
+                                {
+                                    //This is needed if ToList is used.
+                                    //blocks.Clear();
+                                    //blocks = new List<Block>();
+                                    task1.Increment(increment);
+                                    progress += increment;
+                                    currenRunHeight += interval;
+                                }
+                                
                                 var message = JsonConvert.SerializeObject(new {NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%")});
                                 await StateTreiSyncLogUtility.Log(message);
                             }
                         }
                     });
-
-                    DbContext.BeginTrans();
 
                     var stateTrei = StateData.GetAccountStateTrei();
                     
@@ -180,11 +179,9 @@ namespace ReserveBlockCore.Services
 
                 Console.WriteLine("Done Syncing State Treis...");
                 IsRunning = false;
-                DbContext.Commit();
             }
             catch(Exception ex)
             {
-                DbContext.Rollback("StateTreiSyncService.SyncAccountStateTrei()");
                 ErrorLogUtility.LogError($"Erroring Running SyncAccountStateTrei. Error : {ex.ToString()}", "StateTreiSyncService.SyncAccountStateTrei()");
             }
         }
