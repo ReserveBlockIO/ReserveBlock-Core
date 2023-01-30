@@ -45,6 +45,11 @@ namespace ReserveBlockCore.Commands
                 case "/clear":
                     Console.Clear();
                     break;
+                case "/update":
+                    Globals.StopConsoleOutput = true;
+                    await VersionControlService.DownloadLatestRelease();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/val":
                     await BaseCommandServices.ValidatorInfo();
                     break;

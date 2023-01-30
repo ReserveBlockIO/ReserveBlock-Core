@@ -71,6 +71,8 @@ namespace ReserveBlockCore
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
+                if(Globals.APIToken?.Length > 0)
+                    c.OperationFilter<SwaggerHeaderFilter>();
             });
         }
 
@@ -124,8 +126,8 @@ namespace ReserveBlockCore
                 return Task.CompletedTask;
             });
 
-            if(Globals.TestURL)
-                app.UseHttpsRedirection();
+            //if(Globals.TestURL)
+                //app.UseHttpsRedirection();
 
             app.UseRouting();
 

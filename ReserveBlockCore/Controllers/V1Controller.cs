@@ -519,12 +519,62 @@ namespace ReserveBlockCore.Controllers
                 new { BlockHeight = blockHeight, PeerCount = peerCount, BlocksDownloading = (Globals.BlocksDownloadSlim.CurrentCount == 0).ToString(),
                     IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), 
                     ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString(), DuplicateValIP = Globals.DuplicateAdjIP, 
-                    DuplicateValAddress = Globals.DuplicateAdjAddr, NFTFilesReadyEPN = Globals.NFTFilesReadyEPN, ConnectedToMother = Globals.ConnectToMother.ToString()}
+                    DuplicateValAddress = Globals.DuplicateAdjAddr, NFTFilesReadyEPN = Globals.NFTFilesReadyEPN, ConnectedToMother = Globals.ConnectToMother.ToString(), UpToDate = Globals.UpToDate}
             };
 
             output = JsonConvert.SerializeObject(walletInfo);
 
             //output = blockHeight + ":" + peerCount + ":" + Globals.BlocksDownloading.ToString() + ":" + Globals.IsResyncing.ToString() + ":" + Globals.IsChainSynced.ToString();
+
+            return output;
+        }
+
+        /// <summary>
+        /// Gets the latest CLI release and downloads to default RBX location and installs if requested
+        /// </summary>
+        /// <param name="runUpdate"></param>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        [HttpGet("GetLatestRelease/{runUpdate}/{**fileName}")]
+        public async Task<string> GetLatestRelease(bool runUpdate, string fileName)
+        {
+            var output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Update was not successful." });
+            if (!Globals.UpToDate)
+            {
+                var result = await VersionControlService.DownloadLatestAndUpdate(fileName, runUpdate);
+
+                if (result)
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = "Update was successful. Please Restart CLI." });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = "CLI is up to date." });
+            }
+            
+            return output;
+        }
+
+        /// <summary>
+        /// Gets the latest CLI release and downloads to default RBX location and installs if requested
+        /// </summary>
+        /// <returns>
+        /// Returns a list of strings
+        /// </returns>
+        [HttpGet("GetLatestReleaseFiles")]
+        public async Task<string> GetLatestReleaseFiles()
+        {
+            var output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "Unknown Issue." });
+
+            var result = await VersionControlService.GetLatestDownloadFiles();
+
+            if (result?.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Success", Message = JsonConvert.SerializeObject(result) });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = "No Files Found." });
+            }
 
             return output;
         }
@@ -536,7 +586,6 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetAllAddresses")]
         public async Task<string> GetAllAddresses()
         {
-            //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
             var accounts = AccountData.GetAccounts();
 
@@ -560,7 +609,6 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetValidatorAddresses")]
         public async Task<string> GetValidatorAddresses()
         {
-            //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
             var accounts = AccountData.GetPossibleValidatorAccounts();
 
@@ -1686,6 +1734,30 @@ namespace ReserveBlockCore.Controllers
             }
             await Settings.InitiateShutdownUpdate();
 
+            
+            Environment.Exit(0);
+        }
+
+        /// <summary>
+        /// Sets restart variable and then stops all wallet functions and exits
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("SetRestartAndExit")]
+        public async Task SetRestartAndExit()
+        {
+            //use Id to get specific commands
+            var delay = Task.Delay(2000);
+            LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
+            Globals.StopAllTimers = true;
+            await delay;
+            while (Globals.TreisUpdating)
+            {
+                await Task.Delay(300);
+                //waiting for treis to stop
+            }
+            await Settings.InitiateShutdownUpdate();
+
+            Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
             Environment.Exit(0);
         }
 
