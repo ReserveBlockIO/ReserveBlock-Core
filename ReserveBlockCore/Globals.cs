@@ -67,6 +67,14 @@ namespace ReserveBlockCore
         public static bool ValidatorReceiving = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
+        public static string GitHubVersion = "beta2.3";
+        public static string GitHubApiURL = "https://api.github.com/";
+        public static string GitHubRBXRepoURL = "repos/ReserveBlockIO/ReserveBlock-Core/releases/latest";
+        public static string GitHubLatestReleaseVersion = "";
+        public static ConcurrentDictionary<string, string> GitHubLatestReleaseAssetsDict = new ConcurrentDictionary<string, string>();
+        public static bool UpToDate = true;
+        public static string StartArguments = "";
+        public static DateTime NewUpdateLastChecked = DateTime.UtcNow.AddHours(-2);
 
         public static string Platform = "";
         public static string ValidatorAddress = "";

@@ -2,7 +2,6 @@
 
 using ReserveBlockCore.Commands;
 using ReserveBlockCore.Data;
-using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
@@ -25,12 +24,28 @@ namespace ReserveBlockCore
             bool valEncryptCheck = false;
             string? valEncryptAddr = "";
 
+            var isRestarted = Environment.GetEnvironmentVariable("RBX-Restart", EnvironmentVariableTarget.User);
+            var isUpdated = Environment.GetEnvironmentVariable("RBX-Updated", EnvironmentVariableTarget.User);
+            if (isRestarted == "1")
+            {
+                Console.WriteLine("Restarted Detected!");
+                Environment.SetEnvironmentVariable("RBX-Restart", null, EnvironmentVariableTarget.User);
+            }
+            if (isUpdated == "1")
+            {
+                Console.WriteLine("Update Detected!");
+                await VersionControlService.DeleteOldFiles();
+                Environment.SetEnvironmentVariable("RBX-Updated", null, EnvironmentVariableTarget.User);
+            }
+
             //Forced Testnet
             //Globals.IsTestNet = true;
             var argList = args.ToList();
-            if (args.Length != 0)
+            if (argList.Count() > 0)
             {
-                argList.ForEach(x => {
+                Globals.StartArguments = args.ToStringFromArray();//store for later in case of update restart.
+
+                argList.ForEach(async x => {
                     var argC = x.ToLower();
                     if (argC == "testnet")
                     {
@@ -46,6 +61,10 @@ namespace ReserveBlockCore
                         var encPassSplit = argC.Split(new char[] { '=' });
                         var encPassword = encPassSplit[1];
                         Globals.EncryptPassword = encPassword.ToSecureString();
+                    }
+                    if(argC.Contains("updating"))
+                    {
+                        await Task.Delay(5000);//give previous session time to close.
                     }
                 });
             }
@@ -103,7 +122,7 @@ namespace ReserveBlockCore
                     if (argC == "hidecli")
                     {
                         ProcessStartInfo start = new ProcessStartInfo();
-                        start.FileName = Directory.GetCurrentDirectory() + @"\RBXCore\ReserveBlockCore.exe";
+                        start.FileName = Directory.GetCurrentDirectory() + @"\ReserveBlockCore.exe";
                         start.WindowStyle = ProcessWindowStyle.Hidden; //Hides GUI
                         start.CreateNoWindow = true; //Hides console
                         start.Arguments = "enableapi";
@@ -315,6 +334,7 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
+            _ = VersionControlService.RunVersionControl();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {

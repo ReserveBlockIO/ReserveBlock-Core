@@ -719,7 +719,7 @@ namespace ReserveBlockCore.Services
 
                     var rnd = new Random();                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                    if (NumAdjudicators >= Majority && rnd.Next(5, 10000) <= 5)
+                    if (NumAdjudicators >= Majority && rnd.Next(0, 10000) < 5)
                     {
                         var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, Majority)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
@@ -1247,7 +1247,7 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("|type /help for menu options           |");
             Console.WriteLine("|type /menu to come back to main area  |");
             Console.WriteLine("|======================================|");
-            
+
             if (Globals.DuplicateAdjAddr)
             { Console.WriteLine("|Duplicate Address Found Validating!   |"); }
             if (Globals.DuplicateAdjIP)
@@ -1256,6 +1256,11 @@ namespace ReserveBlockCore.Services
             {
                 ConsoleWriterService.OutputMarked("[red]| NFT Files awaiting download!         |[/]");
                 ConsoleWriterService.OutputMarked("[red]| Please input encrypt password        |[/]");
+            }
+            if(!Globals.UpToDate)
+            {
+                ConsoleWriterService.OutputMarked("[red]|          **CLI Is Outdated**         |[/]");
+                ConsoleWriterService.OutputMarked("[red]|Please type /update to download latest|[/]");
             }
 
         }
