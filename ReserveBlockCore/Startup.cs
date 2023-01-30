@@ -125,7 +125,7 @@ namespace ReserveBlockCore
             });
 
             //if(Globals.TestURL)
-                app.UseHttpsRedirection();
+                //app.UseHttpsRedirection();
 
             app.UseRouting();
 

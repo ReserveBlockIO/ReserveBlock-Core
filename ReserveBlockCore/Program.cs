@@ -271,8 +271,8 @@ namespace ReserveBlockCore
                 {
                     webBuilder.UseKestrel(options =>
                     {
-                        options.ListenLocalhost(Globals.APIPort, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
-                        //options.ListenLocalhost(Globals.APIPort);
+                        options.ListenLocalhost(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                        options.ListenLocalhost(Globals.APIPort);
                     })
                     .UseStartup<Startup>()
                     .UseUrls(new string[] {"http://*", "https://*" })
