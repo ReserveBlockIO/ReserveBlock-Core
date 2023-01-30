@@ -76,6 +76,19 @@ namespace ReserveBlockCore
                         var apiToken = apiTokens[1];
                         Globals.APIToken = apiToken.ToSecureString();
                     }
+                    if (argC.Contains("snapshot"))
+                    {
+                        var snapshot = argC.Split(new char[] { '=' });
+                        var response = snapshot[1];
+                        if(response == "0")
+                        {
+                            //download auto
+                        }
+                        if(response == "1")
+                        {
+                            //prompt cli commands here
+                        }
+                    }
                 });
             }
 
