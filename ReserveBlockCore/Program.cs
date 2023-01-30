@@ -10,6 +10,9 @@ using Spectre.Console.Rendering;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 
 namespace ReserveBlockCore
 {
@@ -45,7 +48,8 @@ namespace ReserveBlockCore
             {
                 Globals.StartArguments = args.ToStringFromArray();//store for later in case of update restart.
 
-                argList.ForEach(async x => {
+                argList.ForEach(async x =>
+                {
                     var argC = x.ToLower();
                     if (argC == "testnet")
                     {
@@ -56,13 +60,13 @@ namespace ReserveBlockCore
                     {
                         Globals.GUI = true;
                     }
-                    if(argC.Contains("encpass"))
+                    if (argC.Contains("encpass"))
                     {
                         var encPassSplit = argC.Split(new char[] { '=' });
                         var encPassword = encPassSplit[1];
                         Globals.EncryptPassword = encPassword.ToSecureString();
                     }
-                    if(argC.Contains("updating"))
+                    if (argC.Contains("updating"))
                     {
                         await Task.Delay(5000);//give previous session time to close.
                     }
@@ -85,7 +89,7 @@ namespace ReserveBlockCore
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
 
             NFTLogUtility.Log(logCLIVer, "Main", true);
-            
+
             NFTLogUtility.Log($"RBX NFT ver. - {logCLIVer}", "Main");
 
             APILogUtility.Log(logCLIVer, "Main", true);
@@ -113,7 +117,8 @@ namespace ReserveBlockCore
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
-                argList.ForEach(async x => {
+                argList.ForEach(async x =>
+                {
                     var argC = x.ToLower();
                     if (argC == "enableapi")
                     {
@@ -157,7 +162,7 @@ namespace ReserveBlockCore
                     }
                 });
             }
-            
+
             StartupService.SetValidator();
             StartupService.SetAdjudicatorAddresses();
             Signer.UpdateSigningAddresses();
@@ -206,7 +211,7 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //This is for consensus start.
-            await StartupService.GetAdjudicatorPool();            
+            await StartupService.GetAdjudicatorPool();
             StartupService.DisplayValidatorAddress();
             StartupService.CheckForDuplicateBlocks();
             await StartupService.SetSelfBeacon();
@@ -214,8 +219,8 @@ namespace ReserveBlockCore
             _ = Task.Run(LogUtility.LogLoop);
             _ = Task.Run(P2PClient.UpdateMethodCodes);
             _ = Task.Run(StartupService.StartupPeers);
-                   
-            if(Globals.AdjudicateAccount != null)
+
+            if (Globals.AdjudicateAccount != null)
             {
                 Globals.StopAllTimers = true;
                 _ = Task.Run(BlockHeightCheckLoop);
@@ -258,9 +263,12 @@ namespace ReserveBlockCore
             var builder = Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseKestrel()
+                    webBuilder.UseKestrel(options =>
+                    {
+                        options.ListenLocalhost(Globals.APIPort, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                    })
                     .UseStartup<Startup>()
-                    .UseUrls(url)
+                    .UseUrls(new string[] {"http://*", "https://*" })
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                 });
 
@@ -272,7 +280,8 @@ namespace ReserveBlockCore
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
-                    webBuilder.ConfigureKestrel(options => {
+                    webBuilder.ConfigureKestrel(options =>
+                    {
 
 
                     });
@@ -300,7 +309,7 @@ namespace ReserveBlockCore
                 }
             }
 
-            if(Globals.ConnectToMother)
+            if (Globals.ConnectToMother)
             {
                 //connect to mother
                 _ = StartupService.StartupMother();
@@ -308,7 +317,7 @@ namespace ReserveBlockCore
 
             if (valEncryptCheck && valEncryptAddr != null)
             {
-                while(Globals.EncryptPassword.Length == 0)
+                while (Globals.EncryptPassword.Length == 0)
                 {
                     await Task.Delay(1000);
                 }
@@ -323,9 +332,9 @@ namespace ReserveBlockCore
                     LogUtility.Log("Validator Address set: " + Globals.ValidatorAddress, "StartupService:StartupPeers()");
                 }
             }
-            
+
             await TransactionData.UpdateWalletTXTask();
-            
+
 
             _ = StartupService.ConnectToAdjudicators();
             _ = BanService.PeerBanUnbanService();
@@ -361,7 +370,7 @@ namespace ReserveBlockCore
         private static void CommandLoop(string url)
         {
             StartupService.StartupMenu();
-            if(Globals.AdjudicateAccount == null)
+            if (Globals.AdjudicateAccount == null)
                 StartupService.MainMenu();
 
             while (true)
@@ -454,7 +463,7 @@ namespace ReserveBlockCore
                 {
                     Globals.StopAllTimers = true;
                     Console.WriteLine("Closing and Exiting Wallet Application.");
-                    while(Globals.TreisUpdating)
+                    while (Globals.TreisUpdating)
                     {
                         await Task.Delay(100);
                         //waiting for treis to stop
@@ -488,7 +497,7 @@ namespace ReserveBlockCore
         {
             bool dupMessageShown = false;
 
-            while(true)
+            while (true)
             {
                 try
                 {
@@ -512,23 +521,23 @@ namespace ReserveBlockCore
                         if (node.NodeHeight < MaxHeight - 3)
                             await P2PClient.RemoveNode(node);
                     }
-                    
-                    DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
-                    if(Globals.DuplicateAdjAddr)
-                    {
-                        if(!dupMessageShown)
-                            StartupService.MainMenu();
-                        dupMessageShown = true;
-                    }
 
-                    if(Globals.DuplicateAdjIP)
+                    DebugUtility.WriteToDebugFile("debug.txt", await StaticVariableUtility.GetStaticVars());
+                    if (Globals.DuplicateAdjAddr)
                     {
                         if (!dupMessageShown)
                             StartupService.MainMenu();
                         dupMessageShown = true;
                     }
 
-                    if(!Globals.DuplicateAdjIP && !Globals.DuplicateAdjAddr)
+                    if (Globals.DuplicateAdjIP)
+                    {
+                        if (!dupMessageShown)
+                            StartupService.MainMenu();
+                        dupMessageShown = true;
+                    }
+
+                    if (!Globals.DuplicateAdjIP && !Globals.DuplicateAdjAddr)
                         dupMessageShown = false;
 
                     var Now = TimeUtil.GetTime();
@@ -541,7 +550,7 @@ namespace ReserveBlockCore
                     await Task.Delay(1000);
                 else
                     await Task.Delay(10000);
-            }           
+            }
         }
 
         #endregion
@@ -583,7 +592,37 @@ namespace ReserveBlockCore
         }
 
         #endregion
+
+        #region Self Signed Cert
+        private static X509Certificate2 GetSelfSignedCertificate()
+        {
+            var password = Guid.NewGuid().ToString();
+            var commonName = "RBXSelfSignedCertAPI";
+            var rsaKeySize = 2048;
+            var years = 100;
+            var hashAlgorithm = HashAlgorithmName.SHA256;
+
+            using (var rsa = RSA.Create(rsaKeySize))
+            {
+                var request = new CertificateRequest($"cn={commonName}", rsa, hashAlgorithm, RSASignaturePadding.Pkcs1);
+
+                request.CertificateExtensions.Add(
+                  new X509KeyUsageExtension(X509KeyUsageFlags.DataEncipherment | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false)
+                );
+                request.CertificateExtensions.Add(
+                  new X509EnhancedKeyUsageExtension(
+                    new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false)
+                );
+
+                var certificate = request.CreateSelfSigned(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddYears(years));
+                if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    certificate.FriendlyName = commonName;
+
+                // Return the PFX exported version that contains the key
+                return new X509Certificate2(certificate.Export(X509ContentType.Pfx, password), password, X509KeyStorageFlags.MachineKeySet);
+            }
+        }
+
+        #endregion
     }
-
-
 }
