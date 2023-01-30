@@ -198,42 +198,14 @@ namespace ReserveBlockCore.P2P
                 };
                 (node.NodeHeight, node.NodeLastChecked, node.NodeLatency) = await GetNodeHeight(hubConnection);
 
-                if(Globals.LastBlock.Height >= Globals.BlockLock)
+                node.IsValidator = await GetValidatorStatus(node.Connection);
+                var walletVersion = await GetWalletVersion(node.Connection);
+
+                if (walletVersion != null)
                 {
-                    node.IsValidator = await GetValidatorStatus(node.Connection);
-                    var walletVersion = await GetWalletVersion(node.Connection);
+                    peer.WalletVersion = walletVersion.Substring(0,3);
+                    node.WalletVersion = walletVersion.Substring(0,3);
 
-                    if (walletVersion != null)
-                    {
-                        peer.WalletVersion = walletVersion.Substring(0,3);
-                        node.WalletVersion = walletVersion.Substring(0,3);
-
-                        Globals.Nodes.TryAdd(IPAddress, node);
-
-                        if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
-                        {
-                            currentNode.Connection = hubConnection;
-                            currentNode.NodeIP = IPAddress;
-                            currentNode.NodeHeight = node.NodeHeight;
-                            currentNode.NodeLastChecked = node.NodeLastChecked;
-                            currentNode.NodeLatency = node.NodeLatency;
-                        }
-
-                        ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
-                        peer.IsOutgoing = true;
-                        peer.FailCount = 0; //peer responded. Reset fail count
-                        Peers.GetAll()?.UpdateSafe(peer);
-                    }
-                    else
-                    {
-                        peer.WalletVersion = "2.1";
-                        Peers.GetAll()?.UpdateSafe(peer);
-                        //not on latest version. Disconnecting
-                        await node.Connection.DisposeAsync();
-                    }
-                }
-                else
-                {
                     Globals.Nodes.TryAdd(IPAddress, node);
 
                     if (Globals.Nodes.TryGetValue(IPAddress, out var currentNode))
@@ -250,7 +222,13 @@ namespace ReserveBlockCore.P2P
                     peer.FailCount = 0; //peer responded. Reset fail count
                     Peers.GetAll()?.UpdateSafe(peer);
                 }
-                
+                else
+                {
+                    peer.WalletVersion = "2.1";
+                    Peers.GetAll()?.UpdateSafe(peer);
+                    //not on latest version. Disconnecting
+                    await node.Connection.DisposeAsync();
+                }                                
             }
             catch { }
             finally
@@ -286,22 +264,22 @@ namespace ReserveBlockCore.P2P
                 LogUtility.Log($"Connecting to Adjudicator {IPAddress}", "ConnectAdjudicator()");                
                 hubConnection.Reconnecting += (sender) =>
                 {
-                    LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
-                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} lost. Attempting to Reconnect.");
+                    //LogUtility.Log("Reconnecting to Adjudicator", "ConnectAdjudicator()");
+                    //ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} lost. Attempting to Reconnect.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Reconnected += (sender) =>
                 {
-                    LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
-                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} has been restored.");
+                    //LogUtility.Log("Success! Reconnected to Adjudicator", "ConnectAdjudicator()");
+                    //ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} has been restored.");
                     return Task.CompletedTask;
                 };
 
                 hubConnection.Closed += (sender) =>
                 {
-                    LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
-                    ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} has been closed.");
+                    //LogUtility.Log("Closed to Adjudicator", "ConnectAdjudicator()");
+                    //ConsoleWriterService.Output("[" + DateTime.Now.ToString() + $"] Connection to adjudicator {IPAddress} has been closed.");
                     return Task.CompletedTask;
                 };
                 
@@ -334,11 +312,11 @@ namespace ReserveBlockCore.P2P
                                     await ValidatorProcessor.ProcessData(message, data, IPAddress);
                                 break;
                             case "status":
-                                ConsoleWriterService.Output(data);
+                                //ConsoleWriterService.Output(data);
                                 if (data == "Connected")
                                 {
-                                    ValidatorLogUtility.Log("Connected to Validator Pool.", "P2PClient.ConnectAdjudicator()", true);
-                                    LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
+                                    //ValidatorLogUtility.Log("Connected to Validator Pool.", "P2PClient.ConnectAdjudicator()", true);
+                                    //LogUtility.Log("Success! Connected to Adjudicator", "ConnectAdjudicator()");
                                 }
                                 else
                                 {
@@ -377,7 +355,7 @@ namespace ReserveBlockCore.P2P
                     node.Connection = hubConnection;
                     node.IpAddress = IPAddress;
                     node.AdjudicatorConnectDate = DateTime.UtcNow;
-                    node.Address = Globals.LastBlock.Height < Globals.BlockLock ? Globals.LeadAddress : bench.RBXAddress;
+                    node.Address = bench.RBXAddress;
                 }
                 else
                 {
@@ -386,19 +364,11 @@ namespace ReserveBlockCore.P2P
                         Connection = hubConnection,
                         IpAddress = IPAddress,
                         AdjudicatorConnectDate = DateTime.UtcNow,
-                        Address = Globals.LastBlock.Height < Globals.BlockLock ? Globals.LeadAddress : bench.RBXAddress
+                        Address = bench.RBXAddress
                 };
                 }
 
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
-                {
-                    //Added for V3.0. Can be removed in next release. 
-                    ValidatorProcessor.RandomNumberTaskV3(Globals.LastBlock.Height + 1);
-                }
-                else
-                {
-                    //ValidatorProcessor.RandomNumberTask_New(Globals.LastBlock.Height + 1);
-                }
+                ValidatorProcessor.RandomNumberTaskV3(Globals.LastBlock.Height + 1);
 
                 return true;
             }
@@ -464,15 +434,9 @@ namespace ReserveBlockCore.P2P
                 .ToArray();
 
             var Diff = Globals.MaxPeers - Globals.Nodes.Count;
-            Parallel.ForEach(newPeers.Take(Diff), new ParallelOptions { MaxDegreeOfParallelism = Diff }, peer =>
+            newPeers.Take(Diff).ToArray().ParallelLoop(peer =>
             {
-                try
-                {
-                    _ = Connect(peer);
-                }
-                catch (Exception ex)
-                {
-                }
+                _ = Connect(peer);
             });
 
             return Globals.MaxPeers != 0;         
@@ -503,15 +467,9 @@ namespace ReserveBlockCore.P2P
                     .ToArray();
 
                 var Diff = Globals.MaxPeers - Globals.Nodes.Count;
-                Parallel.ForEach(newPeers.Take(Diff), new ParallelOptions { MaxDegreeOfParallelism = Diff }, peer =>
+                newPeers.Take(Diff).ToArray().ParallelLoop(peer =>
                 {
-                    try
-                    {
-                        _ = Connect(peer);
-                    }
-                    catch (Exception ex)
-                    {
-                    }
+                    _ = Connect(peer);
                 });
             }
 
@@ -596,11 +554,11 @@ namespace ReserveBlockCore.P2P
             if (taskAnswer == null)
                 return;
 
-            var tasks = new List<Task>();
-            Parallel.ForEach(Globals.AdjNodes.Values.Where(x => x.IsConnected), new ParallelOptions { MaxDegreeOfParallelism = Globals.AdjNodes.Count }, x =>
+            var tasks = new ConcurrentBag<Task>();
+            Globals.AdjNodes.Values.Where(x => x.IsConnected).ToArray().ParallelLoop(x =>
             {
                 tasks.Add(SendTaskAnswerV3(x, taskAnswer));
-            });
+            });            
 
             await Task.WhenAll(tasks);
         }
@@ -908,13 +866,13 @@ namespace ReserveBlockCore.P2P
                 {
                     Height = Globals.LastBlock.Height;
 
-                    Parallel.ForEach(Globals.Nodes.Values, new ParallelOptions { MaxDegreeOfParallelism = Globals.Nodes.Count }, node =>
+                    Globals.Nodes.Values.ToArray().ParallelLoop(node =>
                     {
                         if (node.Address != Address && !UpdateMethodCodeAddresses.ContainsKey(node.NodeIP))
                         {
                             UpdateMethodCodeAddresses[node.NodeIP] = true;
                             _ = UpdateMethodCode(node);
-                        }    
+                        }
                     });
                 }
 

@@ -86,7 +86,8 @@ namespace ReserveBlockCore
             SeedNodeService.SeedNodes();
             SeedNodeService.SeedBench();
 
-            Globals.BlockLock = Globals.IsTestNet == true ? 16 : 578573;
+            Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
+            Globals.BlockLock = (int)Globals.V3Height;
 
             //BlockchainData.InitializeChain();
 
@@ -137,7 +138,7 @@ namespace ReserveBlockCore
                     }
                 });
             }
-
+            
             StartupService.SetValidator();
             StartupService.SetAdjudicatorAddresses();
             Signer.UpdateSigningAddresses();
@@ -200,8 +201,7 @@ namespace ReserveBlockCore
                 Globals.StopAllTimers = true;
                 _ = Task.Run(BlockHeightCheckLoop);
                 _ = StartupService.DownloadBlocksOnStart();
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
-                    _ = Task.Run(ClientCallService.DoWorkV3);
+                _ = Task.Run(ClientCallService.DoWorkV3);
             }
 
             await StartupService.ClearStaleMempool();
@@ -267,8 +267,7 @@ namespace ReserveBlockCore
                 Globals.StopAllTimers = true;
                 _ = Task.Run(BlockHeightCheckLoop);
                 _ = StartupService.DownloadBlocksOnStart();
-                if (Globals.LastBlock.Height >= Globals.BlockLock)
-                    _ = Task.Run(ClientCallService.DoWorkV3);
+                _ = Task.Run(ClientCallService.DoWorkV3);
             }
 
             LogUtility.Log("Wallet Starting...", "Program:Before CheckLastBlock()");
@@ -315,6 +314,7 @@ namespace ReserveBlockCore
             _ = SeedNodeService.CallToSeed();
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
+            _ = ValidatorService.ValidatingMonitorService();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
@@ -440,7 +440,7 @@ namespace ReserveBlockCore
                         //waiting for treis to stop
                     }
 
-                    Settings.InitiateShutdownUpdate();
+                    await Settings.InitiateShutdownUpdate();
                     Environment.Exit(0);
                 }
 

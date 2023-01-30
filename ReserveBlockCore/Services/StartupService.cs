@@ -193,13 +193,13 @@ namespace ReserveBlockCore.Services
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
-                    [("RBxy1XGZ72f6YqktseaLJ1sJsE9u5DF3sp", 0)] = null,
-                    [("RBxkrs6snuTuHjAfzedXGzRixfeyvQfy7m", 0)] = null,
-                    [("RBxz1j5veSPrBg4RSyYD4CZ9BY6LPQ65gM", 0)] = null,
-                    [("RBx1FNEvjB97HRdreDg3zHCNCSSEvSyBTE", 0)] = null,
-                    [("RBxuRe1PorrpUCSbcmBk4JDHCxeADAkXyX", 0)] = null,
-                    [("RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", 0)] = null,
-                    [("RBxc2kz67W2zvb3yGxzACEQqgFiiBfYSTY", 0)] = null,
+                    [("RBxy1XGZ72f6YqktseaLJ1sJsE9u5DF3sp", Globals.V3Height)] = null,
+                    [("RBxkrs6snuTuHjAfzedXGzRixfeyvQfy7m", Globals.V3Height)] = null,
+                    [("RBxz1j5veSPrBg4RSyYD4CZ9BY6LPQ65gM", Globals.V3Height)] = null,
+                    [("RBx1FNEvjB97HRdreDg3zHCNCSSEvSyBTE", Globals.V3Height)] = null,
+                    [("RBxuRe1PorrpUCSbcmBk4JDHCxeADAkXyX", Globals.V3Height)] = null,
+                    [("RBxfsqZ28nZt9wM9rNeacfxqPFUkKfXWM7", Globals.V3Height)] = null,
+                    [("RBxc2kz67W2zvb3yGxzACEQqgFiiBfYSTY", Globals.V3Height)] = null,
                 };
 
                 foreach (var signer in Signer.Signers.Select(x => new Signer { Address = x.Key.Address, StartHeight = x.Key.StartHeight, EndHeight = x.Value }))
@@ -267,7 +267,9 @@ namespace ReserveBlockCore.Services
             if (settings != null)
             {
                 if (!settings.CorrectShutdown)
-                    RunStateSync();
+                {
+                    await StateTreiSyncService.SyncAccountStateTrei();
+                }
 
                 if (Globals.AdjudicateAccount == null)
                 {
@@ -308,9 +310,7 @@ namespace ReserveBlockCore.Services
             }
         }
         internal static async void RunStateSync()
-        {
-            //Use top method for mainnet
-            //if (Globals.LastBlock.Height < Globals.BlockLock && Globals.AdjudicateAccount == null)
+        {            
             if (Globals.AdjudicateAccount == null)
                 await StateTreiSyncService.SyncAccountStateTrei();
         }
@@ -355,12 +355,12 @@ namespace ReserveBlockCore.Services
             var beacons = Beacons.GetBeacons();
             if(beacons != null)
             {
-                var beaconList = beacons.Query().Where(x => true).ToList();
+                var beaconList = beacons.Query().Where(x => true).ToEnumerable();
                 if(beaconList.Count() == 0)
                 {
                     //seed beacons
                     BootstrapBeacons();
-                    beaconList = beacons.Query().Where(x => true).ToList();
+                    beaconList = beacons.Query().Where(x => true).ToEnumerable();
                     if(beaconList.Count() > 0)
                     {
                         foreach(var beacon in beaconList)
@@ -548,32 +548,22 @@ namespace ReserveBlockCore.Services
                 return;
             
             var time = TimeUtil.GetTime().ToString();
-            var signature = SignatureService.ValidatorSignature(validator.Address);
-            if (Globals.LastBlock.Height < Globals.BlockLock)
-            {                
-                var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
-                if (LeadAdjudicator == null)
-                {
-                    var url = "http://173.254.253.106:" + Globals.Port + "/adjudicator";
-                    await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
-                    _ = UpdateBenchIpAndSigners();
-                }
-            }
-            else
+            var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());
+
+            foreach(var signer in Globals.Signers) // use to populate database, pull from database
             {
-                foreach(var signer in Globals.Signers) // use to populate database, pull from database
-                {
-                    if(Globals.AdjBench.TryGetValue(signer.Key, out var bench))
+
+                if (Globals.AdjBench.TryGetValue(signer.Key, out var bench))
+                {                    
+                    var url = "http://" + bench.IPAddress + ":" + Globals.Port + "/adjudicator";
+                    if (await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature))
                     {
-                        var url = "http://" + bench.IPAddress + ":" + Globals.Port + "/adjudicator";
-                        if(await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature))
-                        {
-                            _ = UpdateBenchIpAndSigners();
-                            break;
-                        }
-                    }
+                        _ = UpdateBenchIpAndSigners();
+                        break;
+                    }                    
                 }
-            }           
+
+            }                       
         }
 
         internal static async Task SetLeadAdjudicator()
@@ -666,8 +656,8 @@ namespace ReserveBlockCore.Services
                         var account = Globals.AdjudicateAccount;
                         var time = TimeUtil.GetTime().ToString();
                         var signature = SignatureService.AdjudicatorSignature(account.Address + ":" + time);
-                        var ConnectTasks = new List<Task>();
-                        Parallel.ForEach(DisconnectedPeers, new ParallelOptions { MaxDegreeOfParallelism = DisconnectedPeers.Length }, peer =>
+                        var ConnectTasks = new ConcurrentBag<Task>();
+                        DisconnectedPeers.ParallelLoop(peer =>
                         {
                             var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
                             ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
@@ -719,21 +709,17 @@ namespace ReserveBlockCore.Services
                         AdjAddresses = Globals.AdjNodes.Values.Select(x => x.Address).ToHashSet();
                     }
 
-                    if(Globals.LastBlock.Height >= Globals.BlockLock)
+                    var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
+                    foreach (var address in NodesToRemove)
                     {
-                        var NodesToRemove = AdjAddresses.Except(SigningAddresses).ToArray();
-                        foreach (var address in NodesToRemove)
-                        {
-                            var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
-                            if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
-                                await node.Connection.DisposeAsync();
-                        }
+                        var ip = Globals.AdjNodes.Values.Where(x => x.Address == address).Select(x => x.IpAddress).First();
+                        if (Globals.AdjNodes.TryRemove(ip, out var node) && node.Connection != null)
+                            await node.Connection.DisposeAsync();
                     }
-                    
 
                     var rnd = new Random();                    
                     var NumAdjudicators = Globals.AdjNodes.Values.Where(x => x.IsConnected).Count();
-                    if (NumAdjudicators >= Majority && Globals.LastBlock.Height > Globals.BlockLock + 10 && rnd.Next(5, 10000) <= 5)
+                    if (NumAdjudicators >= Majority && rnd.Next(5, 10000) <= 5)
                     {
                         var ip = Globals.AdjNodes.Values.Where(x => x.IsConnected).Skip(rnd.Next(0, Majority)).FirstOrDefault()?.IpAddress;
                         if (Globals.AdjNodes.TryGetValue(ip, out var node) && node.Connection != null)
@@ -762,39 +748,27 @@ namespace ReserveBlockCore.Services
                     if (validator != null)
                     {
                         var time = TimeUtil.GetTime().ToString();                            
-                        if (Globals.LastBlock.Height < Globals.BlockLock)
-                        {
-                            var signature = SignatureService.ValidatorSignature(validator.Address);
-                            var LeadAdjudicator = Globals.AdjNodes.Values.Where(x => !x.IsConnected && x.Address == Globals.LeadAddress).FirstOrDefault();
-                            if (LeadAdjudicator != null)
-                            {
-                                var url = "http://173.254.253.106:" + Globals.Port + "/adjudicator";
-                                await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
-                            }
-                        }
-                        else
-                        {
+
                             var signature = SignatureService.ValidatorSignature(validator.Address + ":" + TimeUtil.GetTime());                            
                             var NewAdjudicators = Globals.AdjNodes.Values
                                 .OrderBy(x => rnd.Next())                                
                                 .ToArray();
 
-                            for(var i = 0; i < NewAdjudicators.Length; i++)
-                            {
-                                var NewAdjudicator = NewAdjudicators[i];
-                                if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= Majority)
-                                    break;
+                        for(var i = 0; i < NewAdjudicators.Length; i++)
+                        {
+                            var NewAdjudicator = NewAdjudicators[i];
+                            if (Globals.AdjNodes.Values.Where(x => x.IsConnected).Count() >= Majority)
+                                break;
 
-                                if (NewAdjudicator.IsConnected)
-                                    continue;
+                            if (NewAdjudicator.IsConnected)
+                                continue;
 
-                                var url = "http://" + NewAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
-                                await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
-                            }
-
-                            if (!Globals.AdjNodes.Any())
-                                Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");
+                            var url = "http://" + NewAdjudicator.IpAddress + ":" + Globals.Port + "/adjudicator";
+                            await P2PClient.ConnectAdjudicator(url, validator.Address, time, validator.UniqueName, signature);
                         }
+
+                        if (!Globals.AdjNodes.Any())
+                            Console.WriteLine("You have no adjudicators. You will not be able to solve blocks.");                        
                     }
 
                     await ValidatorService.PerformErrorCountCheck();
@@ -1027,7 +1001,7 @@ namespace ReserveBlockCore.Services
                 var result = await BlockchainRescanUtility.ValidateBlock(block, true);
                 if(result != false)
                 {
-                    StateData.UpdateTreis(block);
+                    await StateData.UpdateTreis(block);
 
                     foreach (Transaction transaction in block.Transactions)
                     {

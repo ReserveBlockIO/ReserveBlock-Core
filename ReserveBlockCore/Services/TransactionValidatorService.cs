@@ -34,12 +34,8 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             {
-                //Testnet block add.
-                if(Globals.LastBlock.Height > Globals.BlockLock)
-                {
-                    if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
-                        return (txResult, "Address failed to validate");
-                }
+                if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
+                    return (txResult, "Address failed to validate");
             }
 
             //Timestamp Check
@@ -383,7 +379,7 @@ namespace ReserveBlockCore.Services
 
                                                 //checks if validator has solved block in past 30 days
                                                 var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
-                                                var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToList().Distinct();
+                                                var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToEnumerable().Distinct();
                                                 var valExist = validatorList.Where(x => x == txRequest.FromAddress).Any();
                                                 if (!valExist)
                                                     return (txResult, "Validator has not crafted a block. Please wait til you craft a block to create a topic.");

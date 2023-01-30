@@ -11,7 +11,7 @@ namespace ReserveBlockCore.Utilities
             //testnet
             if(Globals.IsTestNet)
             {
-                if (height > Globals.BlockLock)
+                if (height > Globals.V3Height)
                     return 3;
                 if (height < 15)
                     return 2;
@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Utilities
            
 
 
-            if (height > Globals.BlockLock)
+            if (height > Globals.V3Height)
                 return 3;
             else if (height > 294000)
                 return 2;

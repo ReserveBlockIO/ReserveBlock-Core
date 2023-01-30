@@ -123,7 +123,7 @@ namespace ReserveBlockCore.Services
                         //Genesis Block
                         result = true;
                         BlockchainData.AddBlock(block);
-                        StateData.UpdateTreis(block);
+                        await StateData.UpdateTreis(block);
                         foreach (Transaction transaction in block.Transactions)
                         {
                             //Adds receiving TX to wallet
@@ -329,7 +329,6 @@ namespace ReserveBlockCore.Services
                             UpdateMemBlocks(block);//update mem blocks
                             await StateData.UpdateTreis(block); //update treis
 
-                            DbContext.Commit();
                             var mempool = TransactionData.GetPool();
 
                             if (block.Transactions.Count() > 0)
@@ -377,17 +376,12 @@ namespace ReserveBlockCore.Services
                         }
 
                         await TransactionData.UpdateWalletTXTask();
-                        
+
+                        DbContext.Commit();
+
                         if (P2PClient.MaxHeight() <= block.Height)
                         {
-                            if (Globals.LastBlock.Height >= Globals.BlockLock)
-                            {
-                                ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
-                            }
-                            else
-                            {
-                                //ValidatorProcessor.RandomNumberTask_New(block.Height + 1);
-                            }
+                            ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);
                         }
 
                         Signer.UpdateSigningAddresses();
@@ -401,7 +395,7 @@ namespace ReserveBlockCore.Services
                         //Genesis Block
                         result = true;
                         BlockchainData.AddBlock(block);
-                        StateData.UpdateTreis(block);
+                        await StateData.UpdateTreis(block);
                         DbContext.Commit();
                         return result;
                     }

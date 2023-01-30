@@ -45,6 +45,7 @@ namespace ReserveBlockCore.Extensions
             SemaphoreSlim slim = null;
             try
             {
+                slim = col.GetSlim();
                 slim.Wait();
                 cmd();
             }

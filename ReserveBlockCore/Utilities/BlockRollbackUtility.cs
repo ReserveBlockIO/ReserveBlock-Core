@@ -64,7 +64,7 @@ namespace ReserveBlockCore.Utilities
                 var result = await BlockchainRescanUtility.ValidateBlock(block, true);
                 if (result != false)
                 {
-                    StateData.UpdateTreis(block);
+                    await StateData.UpdateTreis(block);
 
                     foreach (Transaction transaction in block.Transactions)
                     {

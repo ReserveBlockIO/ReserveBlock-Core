@@ -546,7 +546,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var accountList = accounts.FindAll().ToList();
+                var accountList = accounts.Query().Where(x => true).ToEnumerable();
                 output = JsonConvert.SerializeObject(accountList);
             }
 
@@ -572,6 +572,26 @@ namespace ReserveBlockCore.Controllers
             {
                 var accountList = accounts.ToList();
                 output = JsonConvert.SerializeObject(accountList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Tells you if you are for sure validating by checking send/receive responses
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("IsValidating")]
+        public async Task<string> IsValidating()
+        {
+            var output = "false";
+
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                if (Globals.ValidatorReceiving && Globals.ValidatorSending)
+                {
+                    output = "true";
+                }
             }
 
             return output;
@@ -1117,26 +1137,12 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            if(Globals.LastBlock.Height < Globals.BlockLock)
-            {
-                var taskAnswerList = Globals.TaskAnswerDict_New.Values.Select(x => new {
-                    Address = x.Address,
-                    Answer = x.Answer,
-                    NextBlockHeight = x.NextBlockHeight,
-                    SubmitTime = x.SubmitTime
-
-                });
-                output = JsonConvert.SerializeObject(taskAnswerList);
-            }
-            else
-            {
-                var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
-                    Address = x.RBXAddress,
-                    Answer = x.Answer,
-                    IP = x.IPAddress,                    
-                });
-                output = JsonConvert.SerializeObject(taskAnswerList);
-            }
+            var taskAnswerList = Globals.TaskAnswerDictV3.Values.Select(x => new {
+                Address = x.RBXAddress,
+                Answer = x.Answer,
+                IP = x.IPAddress,                    
+            });
+            output = JsonConvert.SerializeObject(taskAnswerList);            
 
             return output;
         }
@@ -1439,12 +1445,12 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Snake Game. DO not launch in Swagger
+        /// First to the Egg!
         /// Congrats you have found an easter egg!
         /// </summary>
         /// <returns></returns>
-        [HttpGet("Snake")]
-        public async Task<ContentResult> Snake()
+        [HttpGet("Egg")]
+        public async Task<ContentResult> Egg()
         {
             var gCompressed = @"H4sIAAAAAAAACrVYW2/TSBQ+zyvxH7KVoCltQ7t0WXZJKwHblVYCLQJeEOKhTZwSaJPgUBoL9b/v953xeC72uEYNshJ7zpz7deyh
             /Cp/y3/yXN7KO3klx9KTj/JVLuRcjuSO/CLDhnUmJzIu1z1cQ2BM8TvHzhFWD4K1w1oCVkRQy30Hz6cyB98CT9+rfYOTgd+Z4v6F9b7s4borTwKsC
@@ -1670,7 +1676,6 @@ namespace ReserveBlockCore.Controllers
         {
             //use Id to get specific commands
             var delay = Task.Delay(2000);
-            var output = "Starting Stop"; // this will only display if command not recognized.
             LogUtility.Log("Send exit has been called. Closing Wallet.", "V1Controller.SendExit()");
             Globals.StopAllTimers = true;
             await delay;
@@ -1679,7 +1684,7 @@ namespace ReserveBlockCore.Controllers
                 await Task.Delay(300);
                 //waiting for treis to stop
             }
-            Settings.InitiateShutdownUpdate();
+            await Settings.InitiateShutdownUpdate();
 
             Environment.Exit(0);
         }

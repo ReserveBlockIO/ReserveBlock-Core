@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Commands
         {
             var accounts = AccountData.GetAccounts();
 
-            var accountList = accounts.FindAll().ToList();
+            var accountList = accounts.Query().Where(x => true).ToEnumerable();
 
             if (accountList.Count() > 0)
             {
@@ -76,10 +76,11 @@ namespace ReserveBlockCore.Commands
                 table.AddColumn(new TableColumn(new Panel("Address")));
                 table.AddColumn(new TableColumn(new Panel("Private Key"))).Centered();
 
-                accountList.ForEach(x => {
-                    table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.GetKey}[/]");
-                });
-
+                foreach(var account in accountList)
+                {
+                    table.AddRow($"[blue]{account.Address}[/]", $"[green]{account.GetKey}[/]");
+                }
+  
                 table.Border(TableBorder.Rounded);
 
                 AnsiConsole.Write(table);
@@ -873,15 +874,26 @@ namespace ReserveBlockCore.Commands
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
-                {                    
+                {
+                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidatingSending = Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidatingReceiving = Globals.ValidatorReceiving ? "[green]Yes[/]" : "[red]No[/]";
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
-                    Console.WriteLine($"Validating? {account.IsValidating}");
+                    AnsiConsole.MarkupLine($"Validating? {isValidating}");
+                    AnsiConsole.MarkupLine($"Validator Sending? {isValidatingSending}");
+                    AnsiConsole.MarkupLine($"Validator Receiving? {isValidatingReceiving}");
+
+
                     foreach (var node in Globals.AdjNodes.Values)
                     {
-                        Console.WriteLine($"Last Task Received Time: {node.LastTaskResultTime} from {node.Address}");
-                        Console.WriteLine($"Last Task Sent Time: {node.LastTaskSentTime} from {node.Address}");
+                        if(node.IsConnected)
+                        {
+                            AnsiConsole.MarkupLine($"Last Task Received Time: [yellow]{node.LastTaskResultTime}[/] from [purple]{node.Address}[/]");
+                            AnsiConsole.MarkupLine($"Last Task Sent Time: [yellow]{node.LastTaskSentTime}[/] from [purple]{node.Address}[/]");
+                        }
+                        
                     }
                 }
                 else
@@ -1668,7 +1680,7 @@ namespace ReserveBlockCore.Commands
             }
             else
             {
-                var transactionsList = transactions.FindAll().OrderByDescending(x => x.Timestamp).Take(10).ToList();
+                var transactionsList = transactions.Query().OrderByDescending(x => x.Timestamp).ToEnumerable().Take(10);
                 foreach(var tx in transactionsList)
                 {
                     var txStr = $"TxId: {tx.Hash} - From: {tx.FromAddress} - To: {tx.ToAddress} - Amount: {tx.Amount} - Time: {tx.Timestamp}";
@@ -1874,7 +1886,10 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/trillium[/]", "[green]This will let you execute Trillium code.[/]");
             table.AddRow("[blue]/val[/]", "[green]This will show you your current validator information.[/]");
             table.AddRow("[blue]/resetval[/]", "[green]Resets all validator and reconnects them.[/]");
+            table.AddRow("[blue]/findtx[/]", "[green]This is a heavy query to find a specific TX in all blocks.[/]");
+            table.AddRow("[blue]/vote[/]", "[green]This will start the voting program.[/]");
             table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
+            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
@@ -1889,7 +1904,8 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]10[/]", "[green]This will turn the wallet API on and off.[/]");
             table.AddRow("[blue]11[/]", "[green]This will stop your masternode.[/]");
             table.AddRow("[blue]12[/]", "[green]Reserved command. Coming soon.[/]");
-            table.AddRow("[blue]13[/]", "[green]This will also exit the wallet.[/]");
+            table.AddRow("[blue]13[/]", "[green]This will open the voting program.[/]");
+            table.AddRow("[blue]14[/]", "[green]This is the proper way to shutdown wallet with this command.[/]");
 
             table.Border(TableBorder.Rounded);
 

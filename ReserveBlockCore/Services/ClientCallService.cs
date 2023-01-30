@@ -31,8 +31,7 @@ namespace ReserveBlockCore.Services
         public static IHubContext<P2PAdjServer> HubContext;
         private readonly IHubContext<P2PAdjServer> _hubContext;
         private readonly IHostApplicationLifetime _appLifetime;
-        private int executionCount = 0;
-        private Timer _timer = null!;
+        private int executionCount = 0;        
         private Timer _fortisPoolTimer = null!;
         private Timer _checkpointTimer = null!;
         private Timer _blockStateSyncTimer = null!;
@@ -53,9 +52,6 @@ namespace ReserveBlockCore.Services
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(40),
-                TimeSpan.FromSeconds(2));
-
             _fortisPoolTimer = new Timer(DoFortisPoolTXBroadcastWork, null, TimeSpan.FromSeconds(90),
                 TimeSpan.FromSeconds(60));
 
@@ -565,393 +561,6 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region Do work V2
-        private async Task DoWork_New()
-        {
-            try
-            {
-                if (Globals.StopAllTimers == false)
-                {
-                    if (Globals.AdjudicateAccount?.Address == Globals.LeadAddress)
-                    {
-                        var fortisPool = Globals.FortisPool.Values;
-
-                        if (Globals.FortisPool.Count > 0)
-                        {
-                            if (FirstRun == false)
-                            {
-                                //
-                                FirstRun = true;
-                                Console.WriteLine("Doing the work **New**");
-                            }
-                            //get last block timestamp and current timestamp if they are more than 1 mins apart start new task
-                            var lastBlockSubmitUnixTime = Globals.LastAdjudicateTime;
-                            var currentUnixTime = TimeUtil.GetTime();
-                            var timeDiff = (currentUnixTime - lastBlockSubmitUnixTime);
-                            if (timeDiff > 20)
-                            {
-                                if (Globals.AdjudicateLockV2 == false)
-                                {
-                                    Globals.AdjudicateLockV2 = true;
-
-                                    var taskAnswerList = Globals.TaskAnswerDict_New.Values.ToList();                                    
-                                    List<TaskNumberAnswerV2>? failedTaskAnswersList = null;
-
-                                    if (taskAnswerList.Count() > 0)
-                                    {
-                                        await ProcessFortisPoolV2(taskAnswerList);
-                                        ConsoleWriterService.Output("Beginning Solve. Received Answers: " + taskAnswerList.Count().ToString());
-                                        bool findWinner = true;
-                                        int taskFindCount = 0;
-                                        while (findWinner)
-                                        {
-                                            taskFindCount += 1;
-                                            ConsoleWriterService.Output($"Current Task Find Count: {taskFindCount}");
-                                            var taskWinner = await TaskWinnerUtility.TaskWinner_New(taskAnswerList, failedTaskAnswersList);
-                                            if (taskWinner != null)
-                                            {
-                                                var taskWinnerAddr = taskWinner.Address;
-                                                var acctStateTreiBalance = AccountStateTrei.GetAccountBalance(taskWinnerAddr);
-
-                                                if (acctStateTreiBalance < 1000)
-                                                {
-                                                    if (Globals.FortisPool.TryRemoveFromKey2(taskWinnerAddr, out var Out))
-                                                        Out.Item2.Context?.Abort();
-
-                                                    ConsoleWriterService.Output("Address failed validation. Balance is too low.");
-                                                    if (failedTaskAnswersList == null)
-                                                    {
-                                                        failedTaskAnswersList = new List<TaskNumberAnswerV2>();
-                                                    }
-                                                    failedTaskAnswersList.Add(taskWinner);
-                                                }
-                                                else
-                                                {
-                                                    ConsoleWriterService.Output("Task Winner was Found! " + taskWinner.Address);
-                                                    List<FortisPool> winners = new List<FortisPool>();
-                                                    var winner = fortisPool.Where(x => x.Address == taskWinner.Address).FirstOrDefault();
-                                                    if (winner != null)
-                                                    {
-                                                        winners.Add(winner);
-                                                    }
-                                                    foreach (var chosen in Globals.TaskSelectedNumbersV2.Values)
-                                                    {
-                                                        var fortisRec = fortisPool.Where(x => x.Address == chosen.Address).FirstOrDefault();
-                                                        if (fortisRec != null)
-                                                        {
-                                                            var alreadyIn = winners.Exists(x => x.Address == chosen.Address);
-                                                            if (!alreadyIn)
-                                                                winners.Add(fortisRec);
-                                                        }
-                                                    }
-
-                                                    var secret = TaskWinnerUtility.GetVerifySecret();
-                                                    Globals.VerifySecret = secret;
-
-                                                    foreach (var fortis in winners)
-                                                    {
-                                                        //Give winners time to respond - exactly 3 seconds in total with 100ms response times per.
-                                                        try
-                                                        {
-                                                            _ = _hubContext.Clients.Client(fortis.Context.ConnectionId).SendAsync("GetAdjMessage", "sendWinningBlock", secret)
-                                                                .WaitAsync(new TimeSpan(0, 0, 0, 0, 10000));
-                                                        }
-                                                        catch (Exception ex)
-                                                        {
-
-                                                        }
-
-                                                    }
-
-                                                    //Give users time for responses to complete. They have 100ms + 3 secs here. Max 30 responses coming
-                                                    await Task.Delay(3000);
-
-                                                    while (!Globals.TaskWinnerDictV2.Any())
-                                                        await Task.Delay(4);
-
-                                                    var winningBlocks = Globals.TaskWinnerDictV2;
-                                                    if (winningBlocks.TryGetValue(taskWinner.Address, out var winnersBlock))
-                                                    {
-                                                        //process winners block
-                                                        //1.                                                         
-                                                        var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
-                                                        winnersBlock.WinningBlock.AdjudicatorSignature = signature;
-                                                        var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock, true);
-                                                        if (result == true)
-                                                        {
-                                                            var nextBlock = winnersBlock.WinningBlock;
-                                                            ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                            ConsoleWriterService.Output(DateTime.Now.ToString());
-                                                            string data = "";
-                                                            data = JsonConvert.SerializeObject(nextBlock);
-
-                                                            ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
-                                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-                                                            ConsoleWriterService.Output("Done sending - Height: " + nextBlock.Height.ToString());
-
-                                                            string taskQuestionStr = "";
-                                                            TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                                            ConsoleWriterService.Output("New Task Created.");
-                                                            
-                                                            TaskQuestion nSTaskQuestion = new TaskQuestion();
-                                                            nSTaskQuestion.TaskType = "rndNum";
-                                                            nSTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
-
-                                                            taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-
-                                                            await ProcessFortisPoolV2(taskAnswerList);
-                                                            ConsoleWriterService.Output("Fortis Pool Processed");
-
-                                                            foreach (var answer in Globals.TaskAnswerDict_New.Values)
-                                                                if (answer.NextBlockHeight <= nextBlock.Height)
-                                                                    Globals.TaskAnswerDict_New.TryRemove(answer.Address, out _);
-
-                                                            foreach (var number in Globals.TaskSelectedNumbersV2.Values)
-                                                                if (number.NextBlockHeight <= nextBlock.Height)
-                                                                    Globals.TaskSelectedNumbersV2.TryRemove(number.Address, out _);
-
-                                                            foreach (var number in Globals.TaskWinnerDictV2.Values)
-                                                                if (number.WinningBlock.Height <= nextBlock.Height)
-                                                                    Globals.TaskWinnerDictV2.TryRemove(number.Address, out _);
-
-                                                            await Task.Delay(100);
-
-                                                            Globals.VerifySecret = "";
-
-                                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-                                                            ConsoleWriterService.Output("Task Sent.");
-
-                                                            findWinner = false;
-                                                            taskFindCount = 0;
-                                                            Globals.AdjudicateLockV2 = false;
-                                                            Globals.LastAdjudicateTime = TimeUtil.GetTime();
-
-                                                            Globals.BroadcastedTrxDict.Clear();
-
-                                                        }
-                                                        else
-                                                        {
-                                                            ConsoleWriterService.Output("Block failed validation");
-                                                            if (failedTaskAnswersList == null)
-                                                            {
-                                                                failedTaskAnswersList = new List<TaskNumberAnswerV2>();
-                                                            }
-                                                            failedTaskAnswersList.Add(taskWinner);
-
-                                                            while (findWinner)
-                                                            {
-                                                                var randChoice = new Random();
-                                                                int index = randChoice.Next(winningBlocks.Count());
-                                                                //winners block missing, process others randomly
-                                                                var randomChosen = winningBlocks.Skip(index).First().Value;
-
-                                                                if (randomChosen != null)
-                                                                {
-                                                                    winnersBlock = null;
-                                                                    winnersBlock = randomChosen;
-                                                                    var rSignature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
-                                                                    winnersBlock.WinningBlock.AdjudicatorSignature = rSignature;
-                                                                    var nResult = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock, true);
-                                                                    if (nResult == true)
-                                                                    {
-                                                                        var nextBlock = winnersBlock.WinningBlock;
-                                                                        ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                                        ConsoleWriterService.Output(DateTime.Now.ToString());
-                                                                        string data = "";
-                                                                        data = JsonConvert.SerializeObject(nextBlock);
-
-                                                                        ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
-                                                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-                                                                        ConsoleWriterService.Output("Done sending - Height: " + nextBlock.Height.ToString());
-
-                                                                        string taskQuestionStr = "";
-                                                                        TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                                                        ConsoleWriterService.Output("New Task Created.");                                                                        
-                                                                        TaskQuestion nSTaskQuestion = new TaskQuestion();
-                                                                        nSTaskQuestion.TaskType = "rndNum";
-                                                                        nSTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
-
-                                                                        taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                                        //await ProcessFortisPool_New(taskAnswerList);
-                                                                        ConsoleWriterService.Output("Fortis Pool Processed");
-
-                                                                        foreach (var answer in Globals.TaskAnswerDict_New.Values)
-                                                                            if (answer.NextBlockHeight <= nextBlock.Height)
-                                                                                Globals.TaskAnswerDict_New.TryRemove(answer.Address, out _);
-
-                                                                        foreach (var number in Globals.TaskSelectedNumbersV2.Values)
-                                                                            if (number.NextBlockHeight <= nextBlock.Height)
-                                                                                Globals.TaskSelectedNumbersV2.TryRemove(number.Address, out _);
-
-                                                                        foreach (var number in Globals.TaskWinnerDictV2.Values)
-                                                                            if (number.WinningBlock.Height <= nextBlock.Height)
-                                                                                Globals.TaskWinnerDictV2.TryRemove(number.Address, out _);
-
-                                                                        await Task.Delay(100);
-
-                                                                        Globals.VerifySecret = "";
-
-                                                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-                                                                        ConsoleWriterService.Output("Task Sent.");
-
-                                                                        findWinner = false;
-                                                                        taskFindCount = 0;
-                                                                        Globals.AdjudicateLockV2 = false;
-                                                                        Globals.LastAdjudicateTime = TimeUtil.GetTime();
-
-                                                                        Globals.BroadcastedTrxDict.Clear();
-
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        var nTaskNumAnswer = taskAnswerList.Where(x => x.Address == winnersBlock.Address).FirstOrDefault();
-                                                                        ConsoleWriterService.Output("Block failed validation");
-                                                                        if (nTaskNumAnswer != null)
-                                                                        {
-                                                                            if (failedTaskAnswersList == null)
-                                                                            {
-                                                                                failedTaskAnswersList = new List<TaskNumberAnswerV2>();
-                                                                            }
-                                                                            failedTaskAnswersList.Add(nTaskNumAnswer);
-                                                                        }
-                                                                        winningBlocks.TryRemove(randomChosen.Address, out _);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        //Selecting the other closest from winning numbers
-                                                        //2.
-                                                        while (findWinner)
-                                                        {
-                                                            var randChoice = new Random();
-                                                            int index = randChoice.Next(winningBlocks.Count());
-                                                            //winners block missing, process others randomly
-                                                            var randomChosen = winningBlocks.Skip(index).First().Value;
-
-                                                            if (randomChosen != null)
-                                                            {
-                                                                winnersBlock = randomChosen;
-                                                                var signature = await AdjudicatorSignBlock(winnersBlock.WinningBlock.Hash, Globals.LeadAddress);
-                                                                winnersBlock.WinningBlock.AdjudicatorSignature = signature;
-                                                                var result = await BlockValidatorService.ValidateBlock(winnersBlock.WinningBlock, true);
-                                                                if (result == true)
-                                                                {
-                                                                    var nextBlock = winnersBlock.WinningBlock;
-                                                                    ConsoleWriterService.Output("Task Completed and Block Found: " + nextBlock.Height.ToString());
-                                                                    ConsoleWriterService.Output(DateTime.Now.ToString());
-                                                                    string data = "";
-                                                                    data = JsonConvert.SerializeObject(nextBlock);
-
-                                                                    ConsoleWriterService.Output("Sending Blocks Now - Height: " + nextBlock.Height.ToString());
-                                                                    await _hubContext.Clients.All.SendAsync("GetAdjMessage", "taskResult", data);
-                                                                    ConsoleWriterService.Output("Done sending - Height: " + nextBlock.Height.ToString());
-
-                                                                    string taskQuestionStr = "";
-                                                                    TaskQuestionUtility.CreateTaskQuestion("rndNum");
-                                                                    ConsoleWriterService.Output("New Task Created.");
-                                                                    TaskQuestion nSTaskQuestion = new TaskQuestion();
-                                                                    nSTaskQuestion.TaskType = "rndNum";
-                                                                    nSTaskQuestion.BlockHeight = Globals.LastBlock.Height + 1;
-
-                                                                    taskQuestionStr = JsonConvert.SerializeObject(nSTaskQuestion);
-                                                                    //await ProcessFortisPool_New(taskAnswerList);
-                                                                    ConsoleWriterService.Output("Fortis Pool Processed");
-
-                                                                    foreach (var answer in Globals.TaskAnswerDict_New.Values)
-                                                                        if (answer.NextBlockHeight <= nextBlock.Height)
-                                                                            Globals.TaskAnswerDict_New.TryRemove(answer.Address, out _);
-
-                                                                    foreach (var number in Globals.TaskSelectedNumbersV2.Values)
-                                                                        if (number.NextBlockHeight <= nextBlock.Height)
-                                                                            Globals.TaskSelectedNumbersV2.TryRemove(number.Address, out _);
-
-                                                                    foreach (var number in Globals.TaskWinnerDictV2.Values)
-                                                                        if (number.WinningBlock.Height <= nextBlock.Height)
-                                                                            Globals.TaskWinnerDictV2.TryRemove(number.Address, out _);
-
-                                                                    await Task.Delay(100);
-
-                                                                    Globals.VerifySecret = "";
-
-                                                                    await _hubContext.Clients.All.SendAsync("GetAdjMessage", "task", taskQuestionStr);
-                                                                    ConsoleWriterService.Output("Task Sent.");
-
-                                                                    findWinner = false;
-                                                                    taskFindCount = 0;
-                                                                    Globals.AdjudicateLockV2 = false;
-                                                                    Globals.LastAdjudicateTime = TimeUtil.GetTime();
-
-                                                                    Globals.BroadcastedTrxDict.Clear();
-
-                                                                }
-                                                                else
-                                                                {
-                                                                    var nTaskNumAnswer = taskAnswerList.Where(x => x.Address == winnersBlock.Address).FirstOrDefault();
-                                                                    ConsoleWriterService.Output("Block failed validation");
-                                                                    if (nTaskNumAnswer != null)
-                                                                    {
-                                                                        if (failedTaskAnswersList == null)
-                                                                        {
-                                                                            failedTaskAnswersList = new List<TaskNumberAnswerV2>();
-                                                                        }
-                                                                        failedTaskAnswersList.Add(nTaskNumAnswer);
-                                                                    }
-                                                                    winningBlocks.TryRemove(randomChosen.Address, out _);
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                ConsoleWriterService.Output("Task Winner was Not Found!");
-                                                if (failedTaskAnswersList != null)
-                                                {
-                                                    List<TaskNumberAnswerV2> validTaskAnswerList = taskAnswerList.Except(failedTaskAnswersList).ToList();
-                                                    if (validTaskAnswerList.Count() == 0)
-                                                    {
-                                                        ConsoleWriterService.Output("Error in task list");
-                                                        //If this happens that means not a single task answer yielded a validatable block.
-                                                        //If this happens chain must be corrupt or zero validators are online.
-                                                        findWinner = false;
-                                                        Globals.AdjudicateLockV2 = false;
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    ConsoleWriterService.Output("Task list failed to find winner");
-                                                    failedTaskAnswersList = new List<TaskNumberAnswerV2>();
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Globals.AdjudicateLockV2 = false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        //dipose timer.
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error: " + ex.ToString());
-                Console.WriteLine("Client Call Service");
-                Globals.AdjudicateLockV2 = false;
-            }
-        }
-
-        #endregion
 
         #region Do work V3
         private static async Task SendDuplicateMessage(string conId, int dupType)
@@ -992,7 +601,10 @@ namespace ReserveBlockCore.Services
 
             while (Globals.Nodes.Count == 0 || Globals.StopAllTimers)
                 await Task.Delay(20);
-            
+
+            var EpochTime = Globals.IsTestNet ? 1673397583280L : 1674172800000L;
+            var BeginBlock = Globals.IsTestNet ? 16L : Globals.V3Height;
+
             var PreviousHeight = -1L;            
             var BlockDelay = Task.CompletedTask;
             ConsoleWriterService.Output("Booting up consensus loop");            
@@ -1019,7 +631,7 @@ namespace ReserveBlockCore.Services
                         PreviousHeight = Height;
                         await Task.WhenAll(BlockDelay, Task.Delay(3500));
                         var CurrentTime = TimeUtil.GetMillisecondTime();
-                        var DelayTimeCorrection = 25000 * (Height - 16L) - (CurrentTime - 1673397583280L);                        
+                        var DelayTimeCorrection = 25000 * (Height - BeginBlock) - (CurrentTime - EpochTime);                        
                         var DelayTime = Math.Min(Math.Max(25000 + DelayTimeCorrection, 20000), 30000);
                         BlockDelay = Task.Delay((int)DelayTime);
                         ConsoleWriterService.Output("\r\nNext Consensus Delay: " + DelayTime + " (" + DelayTimeCorrection +  ")");                        
@@ -1067,13 +679,13 @@ namespace ReserveBlockCore.Services
                     var BadAddresses = ValidSubmissions.Select(x => x.RBXAddress).GroupBy(x => x).Where(x => x.Count() > 1)
                         .Select(x => x.First()).ToHashSet();
 
-                    Parallel.ForEach(BadIPs, ip =>
+                    BadIPs.ParallelLoop(ip =>
                     {
                         if (Globals.FortisPool.TryRemoveFromKey1(ip, out var pool))
                             _ = HadBadValidator(pool.Item2, ip, 0);
                     });
 
-                    Parallel.ForEach(BadAddresses, address =>
+                    BadAddresses.ParallelLoop(address =>
                     {
                         if (Globals.FortisPool.TryRemoveFromKey2(address, out var pool))
                             _ = HadBadValidator(pool.Item2, address, 1);
@@ -1180,6 +792,7 @@ namespace ReserveBlockCore.Services
                         .GroupBy(x => x.Hash)
                         .Select(x => x.First())
                         .GroupBy(x => x.Validator)
+                        .Where(x => x.Count() == 1)
                         .Select(x => x.First())
                         .ToDictionary(x => x.Validator, x => x);
 
@@ -1378,22 +991,6 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region Do Work()
-
-        private async void DoWork(object? state)
-        {
-            if(Globals.LastBlock.Height < Globals.BlockLock)
-            {
-                await DoWork_New();
-            }
-            else
-            {
-                await DoWorkV3();
-            }
-        }
-
-        #endregion
-
         #region Adjudicator Sign Block 
 
         private async Task<string> AdjudicatorSignBlock(string message, string address)
@@ -1475,8 +1072,7 @@ namespace ReserveBlockCore.Services
         }
 
         public void Dispose()
-        {
-            _timer.Dispose();
+        {            
             _fortisPoolTimer.Dispose();
             _blockStateSyncTimer.Dispose();
             _checkpointTimer.Dispose();

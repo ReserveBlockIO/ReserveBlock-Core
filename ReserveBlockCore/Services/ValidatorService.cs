@@ -7,11 +7,13 @@ using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Net;
 
 namespace ReserveBlockCore.Services
 {
     public class ValidatorService
     {
+        static SemaphoreSlim ValidatorMonitorServiceLock = new SemaphoreSlim(1, 1);
         public static async void DoValidate()
         {
             try
@@ -458,6 +460,130 @@ namespace ReserveBlockCore.Services
 
             return output;
 
+        }
+
+        public static async Task ValidatingMonitorService()
+        {
+            if (Globals.AdjudicateAccount != null)
+                return;
+
+            while(true)
+            {
+                var delay = Task.Delay(120000);
+
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+
+                if(string.IsNullOrEmpty(Globals.ValidatorAddress))
+                {
+                    await delay;
+                    continue;
+                }
+
+                if(Globals.AdjNodes.Count == 0)
+                {
+                    await delay;
+                    continue;
+                }
+
+                await ValidatorMonitorServiceLock.WaitAsync();
+                try
+                {
+                    if(Globals.ValidatorLastBlockHeight != 0)
+                    {
+                        if(Globals.LastBlock.Height - Globals.ValidatorLastBlockHeight <= 2)
+                        {
+                            //potentiall issue
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Block Heights are behind.");
+                        }
+                        else
+                        {
+                            Globals.ValidatorLastBlockHeight = Globals.LastBlock.Height;
+                            Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Block Heights are behind."));
+                        }
+
+                        var adjNodes = Globals.AdjNodes.Values.Where(x => x.IsConnected).ToList();
+                        if(adjNodes.Count < 3)
+                        {
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 2 or less.");
+                        }
+                        else
+                        {
+                            Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("ADJ Connections are 2 or less."));
+                            var currentTime = DateTime.Now.AddMinutes(-2);
+
+                            var lastSendTime = adjNodes.Max(x => x.LastTaskSentTime);
+                            var lastReceiveTime = adjNodes.Max(x => x.LastTaskResultTime);
+
+                            if(lastSendTime != null && lastReceiveTime != null)
+                            {
+                                if (lastSendTime < currentTime) 
+                                { 
+                                    Globals.ValidatorSending = false; 
+                                    Globals.ValidatorIssueCount += 1; 
+                                    Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Behind on sending Task to ADJs."); 
+                                }
+                                else 
+                                { 
+                                    Globals.ValidatorSending = true; 
+                                    Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Behind on sending Task to ADJs.")); 
+                                }
+
+                                if (lastReceiveTime < currentTime) 
+                                { 
+                                    Globals.ValidatorReceiving = false; 
+                                    Globals.ValidatorIssueCount += 1;
+                                    Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Behind on receiving Task Answers from ADJs.");
+                                }
+                                else 
+                                { 
+                                    Globals.ValidatorReceiving = true; 
+                                    Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Behind on receiving Task Answers from ADJs.")); 
+                                }
+                            }
+                            else
+                            {
+                                if (lastSendTime == null)
+                                    Globals.ValidatorSending = false;
+                                if (lastReceiveTime == null)
+                                    Globals.ValidatorReceiving = false;
+                                //send variable to false that sending and receiving is not happening.
+                                Globals.ValidatorIssueCount += 1;
+                            }
+
+                            
+                        }
+                        
+                    }
+                    else
+                    {
+                        Globals.ValidatorLastBlockHeight = Globals.LastBlock.Height;
+                    }
+
+                    if(Globals.ValidatorIssueCount >= 10)
+                    {
+                        ConsoleWriterService.OutputMarked("[red]Validator has had the following issues to report. Please ensure node is operating correctly[/]");
+                        foreach (var issue in Globals.ValidatorErrorMessages)
+                        {
+
+                            ConsoleWriterService.OutputMarked($"[yellow]{issue}[/]");
+                        }
+
+                        Globals.ValidatorIssueCount = 0;
+                    }
+                }
+                finally
+                {
+                    ValidatorMonitorServiceLock.Release();
+                }
+
+                await delay;
+            }
         }
 
     }

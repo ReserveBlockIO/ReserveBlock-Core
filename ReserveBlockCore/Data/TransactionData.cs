@@ -600,14 +600,12 @@ namespace ReserveBlockCore.Data
             return collection;
         }
 
-        public static List<Transaction> GetAllLocalTransactions(bool showFailed = false)
+        public static IEnumerable<Transaction> GetAllLocalTransactions(bool showFailed = false)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionStatus != TransactionStatus.Failed).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionStatus != TransactionStatus.Failed).ToEnumerable();
 
             if (showFailed)
-                transactions = GetAll().Query().Where(x => true).ToList();
+                transactions = GetAll().Query().Where(x => true).ToEnumerable();
 
             return transactions;
         }
@@ -619,116 +617,92 @@ namespace ReserveBlockCore.Data
             return transaction;
         }
 
-        public static List<Transaction> GetTxByBlock(long height)
+        public static IEnumerable<Transaction> GetTxByBlock(long height)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.Height == height).ToList();
+            var transactions = GetAll().Query().Where(x => x.Height == height).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetSuccessfulLocalTransactions(bool showFailed = false)
+        public static IEnumerable<Transaction> GetSuccessfulLocalTransactions(bool showFailed = false)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Success).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Success).ToEnumerable();
 
             if (showFailed)
-                transactions = GetAll().Query().Where(x => true).ToList();
+                transactions = GetAll().Query().Where(x => true).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalMinedTransactions(bool showFailed = false)
+        public static IEnumerable<Transaction> GetLocalMinedTransactions(bool showFailed = false)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x =>  x.FromAddress == "Coinbase_BlkRwd").ToList();
+            var transactions = GetAll().Query().Where(x =>  x.FromAddress == "Coinbase_BlkRwd").ToEnumerable();
 
             if (showFailed)
-                transactions = GetAll().Query().Where(x => true).ToList();
+                transactions = GetAll().Query().Where(x => true).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalPendingTransactions()
+        public static IEnumerable<Transaction> GetLocalPendingTransactions()
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Pending).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Pending).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalFailedTransactions()
+        public static IEnumerable<Transaction> GetLocalFailedTransactions()
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Failed).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Failed).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalTransactionsSinceBlock(long blockHeight)
+        public static IEnumerable<Transaction> GetLocalTransactionsSinceBlock(long blockHeight)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.Height >= blockHeight).ToList();
+            var transactions = GetAll().Query().Where(x => x.Height >= blockHeight).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalTransactionsBeforeBlock(long blockHeight)
+        public static IEnumerable<Transaction> GetLocalTransactionsBeforeBlock(long blockHeight)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.Height < blockHeight).ToList();
+            var transactions = GetAll().Query().Where(x => x.Height < blockHeight).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalTransactionsSinceDate(long timestamp)
+        public static IEnumerable<Transaction> GetLocalTransactionsSinceDate(long timestamp)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.Timestamp >= timestamp).ToList();
+            var transactions = GetAll().Query().Where(x => x.Timestamp >= timestamp).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalTransactionsBeforeDate(long timestamp)
+        public static IEnumerable<Transaction> GetLocalTransactionsBeforeDate(long timestamp)
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.Timestamp < timestamp).ToList();
+            var transactions = GetAll().Query().Where(x => x.Timestamp < timestamp).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalVoteTransactions()
+        public static IEnumerable<Transaction> GetLocalVoteTransactions()
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalVoteTopics()
+        public static IEnumerable<Transaction> GetLocalVoteTopics()
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE_TOPIC).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.VOTE_TOPIC).ToEnumerable();
 
             return transactions;
         }
 
-        public static List<Transaction> GetLocalAdnrTransactions()
+        public static IEnumerable<Transaction> GetLocalAdnrTransactions()
         {
-            List<Transaction> transactions = new List<Transaction>();
-
-            transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.ADNR).ToList();
+            var transactions = GetAll().Query().Where(x => x.TransactionType == TransactionType.ADNR).ToEnumerable();
 
             return transactions;
         }
