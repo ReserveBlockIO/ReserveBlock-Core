@@ -32,6 +32,15 @@ namespace ReserveBlockCore.Controllers
                     }
                 }
 
+                if(Globals.APIToken != null)
+                {
+                    var apiToken = filterContext.HttpContext.Request.Headers["apitoken"];
+                    if(apiToken != Globals.APIToken.ToUnsecureString())
+                    {
+                        filterContext.Result = new StatusCodeResult(403);
+                    }
+                }
+
                 if (Globals.IsWalletEncrypted)
                 {
                     if (Globals.EncryptPassword.Length == 0)

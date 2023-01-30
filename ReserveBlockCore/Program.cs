@@ -70,6 +70,12 @@ namespace ReserveBlockCore
                     {
                         await Task.Delay(5000);//give previous session time to close.
                     }
+                    if(argC.Contains("apitoken"))
+                    {
+                        var apiTokens = argC.Split(new char[] { '=' });
+                        var apiToken = apiTokens[1];
+                        Globals.APIToken = apiToken.ToSecureString();
+                    }
                 });
             }
 
@@ -266,6 +272,7 @@ namespace ReserveBlockCore
                     webBuilder.UseKestrel(options =>
                     {
                         options.ListenLocalhost(Globals.APIPort, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                        //options.ListenLocalhost(Globals.APIPort);
                     })
                     .UseStartup<Startup>()
                     .UseUrls(new string[] {"http://*", "https://*" })

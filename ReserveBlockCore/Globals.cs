@@ -75,6 +75,7 @@ namespace ReserveBlockCore
         public static bool UpToDate = true;
         public static string StartArguments = "";
         public static DateTime NewUpdateLastChecked = DateTime.UtcNow.AddHours(-2);
+        public static SecureString? APIToken = null;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
