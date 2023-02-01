@@ -155,7 +155,7 @@ namespace ReserveBlockCore.Models
         }
         #endregion
 
-        #region Create Topic Transaction
+        #region Create Vote Transaction
         public static async Task<(Transaction?, string)> CreateVoteTx(Vote vote)
         {
             Transaction? voteTx = null;

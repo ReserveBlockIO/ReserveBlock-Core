@@ -13,6 +13,7 @@ using System.Numerics;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
+using Spectre.Console;
 
 namespace ReserveBlockCore
 {
@@ -83,10 +84,25 @@ namespace ReserveBlockCore
                         if(response == "0")
                         {
                             //download auto
+                            await SnapshotService.RunSnapshot();
                         }
                         if(response == "1")
                         {
                             //prompt cli commands here
+                            AnsiConsole.MarkupLine($"You have added the snapshot param. Do you want to download snapshot? ([green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/])");
+                            AnsiConsole.MarkupLine($"[yellow]Please note this will completely wipe out your database folder. Please make sure you have your private keys backed up.[/])");
+                            var snapshotResponse = Console.ReadLine();
+                            if(!string.IsNullOrEmpty(snapshotResponse))
+                            {
+                                if(snapshotResponse == "y")
+                                {
+                                    await SnapshotService.RunSnapshot();
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Snapshot Cancelled.");
+                                }
+                            }
                         }
                     }
                 });

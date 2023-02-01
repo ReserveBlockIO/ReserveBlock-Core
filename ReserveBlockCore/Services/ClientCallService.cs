@@ -52,8 +52,8 @@ namespace ReserveBlockCore.Services
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _fortisPoolTimer = new Timer(DoFortisPoolTXBroadcastWork, null, TimeSpan.FromSeconds(90),
-                TimeSpan.FromSeconds(60));
+            _fortisPoolTimer = new Timer(DoFortisPoolBroadcastWork, null, TimeSpan.FromSeconds(90),
+                TimeSpan.FromSeconds(90));
 
             if (Globals.ChainCheckPoint == true)
             {
@@ -295,10 +295,14 @@ namespace ReserveBlockCore.Services
                     var txsToBroadcastAdj = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToAdj).ToList();
                     var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
 
+                    //Might need to pre-filter. Testing initial deletes before doing unwanted work.
+                    //Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+                    //Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+
                     if (txsToBroadcastAdj.Count() > 0)
                     {
                         var txHashes = JsonConvert.SerializeObject(txsToBroadcastAdj.Select(x => x.Hash).ToArray());
-                        AdjLogUtility.Log($"UTC: {DateTime.UtcNow} - Sending TX List to Other Nodes: {txHashes}", "ClientCallService.DoConsensusBroadcastWork()");
+                        AdjLogUtility.Log($"UTC: {DateTime.UtcNow} - Sending TX List to Other Nodes: {txHashes}", "ClientCallService.DoConsensusBroadcastWork()-1");
 
                         int count = 1;
                         var nodes = Globals.Nodes.Values.Where(x => x.IsConnected).ToList();
@@ -306,7 +310,7 @@ namespace ReserveBlockCore.Services
                         {
                             var source = new CancellationTokenSource(5000);
                             var result = await node.Connection.InvokeCoreAsync<bool>("GetBroadcastedTx", args: new object?[] { txsToBroadcastAdj }, source.Token);
-                            AdjLogUtility.Log($"{count}. UTC: {DateTime.UtcNow} - TX List Sent to: {node.NodeIP}. Result: {result}", "ClientCallService.DoConsensusBroadcastWork()");
+                            AdjLogUtility.Log($"{count}. UTC: {DateTime.UtcNow} - TX List Sent to: {node.NodeIP}. Result: {result}", "ClientCallService.DoConsensusBroadcastWork()-2");
                             count += 1;
                         }
 
@@ -317,10 +321,11 @@ namespace ReserveBlockCore.Services
                         }
                     }
 
-                    //Txs will need to be wrapped into a batch or this process will need to operate slowly.
                     var mempool = TransactionData.GetPool();
                     if (txsToBroadcastVal.Count() > 0)
                     {
+                        var txHashes = JsonConvert.SerializeObject(txsToBroadcastVal.Select(x => x.Hash).ToArray());
+                        AdjLogUtility.Log($"UTC: {DateTime.UtcNow} - Sending TX List to Validators: {txHashes}", "ClientCallService.DoConsensusBroadcastWork()-3");
                         foreach (var transaction in txsToBroadcastVal)
                         {
                             var isTxStale = await TransactionData.IsTxTimestampStale(transaction.Transaction);
@@ -331,32 +336,20 @@ namespace ReserveBlockCore.Services
                                     var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
                                     if (txFound == null)
                                     {
-
-                                        var txResult = await TransactionValidatorService.VerifyTX(transaction.Transaction);
-                                        if (txResult.Item1 == true)
+                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
+                                        if (!isCraftedIntoBlock)
                                         {
-                                            var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction.Transaction);
-                                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
-                                            var rating = await TransactionRatingService.GetTransactionRating(transaction.Transaction);
-                                            transaction.Transaction.TransactionRating = rating;
-
-                                            if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
-                                            {
-                                                mempool.InsertSafe(transaction.Transaction);
-                                                var txOutput = "";
-                                                txOutput = JsonConvert.SerializeObject(transaction.Transaction);
-                                                await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
-                                            }
-                                            else
-                                            {
-                                                Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
-                                            }
+                                            mempool.InsertSafe(transaction.Transaction);
+                                            var txOutput = "";
+                                            txOutput = JsonConvert.SerializeObject(transaction.Transaction);
+                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                            await Task.Delay(400);
                                         }
                                         else
                                         {
                                             Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                            Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                         }
-
                                     }
                                     else
                                     {
@@ -364,20 +357,21 @@ namespace ReserveBlockCore.Services
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
                                         if (!isCraftedIntoBlock)
                                         {
-                                            if (!Globals.BroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
+                                            if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
                                             {
                                                 var txOutput = "";
                                                 txOutput = JsonConvert.SerializeObject(transaction.Transaction);
                                                 await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                                await Task.Delay(400);
                                             }
                                         }
                                         else
                                         {
                                             try
                                             {
-                                                mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
                                                 Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
-                                                
+                                                Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
                                             }
                                             catch (Exception ex)
                                             {
@@ -388,30 +382,20 @@ namespace ReserveBlockCore.Services
                                 }
                                 else
                                 {
+                                    var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
 
-                                    var txResult = await TransactionValidatorService.VerifyTX(transaction.Transaction);
-                                    if (txResult.Item1 == true)
+                                    if (!isCraftedIntoBlock)
                                     {
-                                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(transaction.Transaction);
-                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
-                                        var rating = await TransactionRatingService.GetTransactionRating(transaction.Transaction);
-                                        transaction.Transaction.TransactionRating = rating;
-
-                                        if (dblspndChk == false && isCraftedIntoBlock == false && rating != TransactionRating.F)
-                                        {
-                                            mempool.InsertSafe(transaction.Transaction);
-                                            var txOutput = "";
-                                            txOutput = JsonConvert.SerializeObject(transaction.Transaction);
-                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
-                                        }
-                                        else
-                                        {
-                                            Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
-                                        }
+                                        mempool.InsertSafe(transaction.Transaction);
+                                        var txOutput = "";
+                                        txOutput = JsonConvert.SerializeObject(transaction.Transaction);
+                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                        await Task.Delay(400);
                                     }
                                     else
                                     {
                                         Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                        Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                     }
                                 }
                             }
@@ -433,8 +417,8 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region Fortis Pool and TX Broadcast Work
-        private async void DoFortisPoolTXBroadcastWork(object? state)
+        #region Fortis Pool Broadcast
+        private async void DoFortisPoolBroadcastWork(object? state)
         {
             try
             {
@@ -480,7 +464,7 @@ namespace ReserveBlockCore.Services
                         }
                         catch(Exception ex)
                         {
-                            ErrorLogUtility.LogError($"Unknown Error: {ex.ToString()}", "ClientCallService.DoFortisPoolWork()");
+                            ErrorLogUtility.LogError($"Failed to send validator list to explorer API. Error: {ex.ToString()}", "ClientCallService.DoFortisPoolWork()");
                             Globals.ExplorerValDataLastSendSuccess = false;
                         }
                         
@@ -491,65 +475,65 @@ namespace ReserveBlockCore.Services
                 //{
                 //}
                 //rebroadcast TXs
-                var pool = TransactionData.GetPool();
-                var mempool = TransactionData.GetMempool();
-                var blockHeight = Globals.LastBlock.Height;
-                if(mempool != null)
-                {
-                    var currentTime = TimeUtil.GetTime(-120);
-                    if (mempool.Count() > 0)
-                    {
-                        foreach(var tx in mempool)
-                        {
-                            var txBeenBroadcasted = Globals.BroadcastedTrxDict.ContainsKey(tx.Hash);
-                            if(!txBeenBroadcasted)
-                            {
-                                var txTime = tx.Timestamp;
-                                var sendTx = currentTime > txTime ? true : false;
-                                if (sendTx)
-                                {
-                                    var txResult = await TransactionValidatorService.VerifyTX(tx);
-                                    if (txResult.Item1 == true)
-                                    {
-                                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(tx);
-                                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(tx);
+                //var pool = TransactionData.GetPool();
+                //var mempool = TransactionData.GetMempool();
+                //var blockHeight = Globals.LastBlock.Height;
+                //if(mempool != null)
+                //{
+                //    var currentTime = TimeUtil.GetTime(-120);
+                //    if (mempool.Count() > 0)
+                //    {
+                //        foreach(var tx in mempool)
+                //        {
+                //            var txBeenBroadcasted = Globals.BroadcastedTrxDict.ContainsKey(tx.Hash);
+                //            if(!txBeenBroadcasted)
+                //            {
+                //                var txTime = tx.Timestamp;
+                //                var sendTx = currentTime > txTime ? true : false;
+                //                if (sendTx)
+                //                {
+                //                    var txResult = await TransactionValidatorService.VerifyTX(tx);
+                //                    if (txResult.Item1 == true)
+                //                    {
+                //                        var dblspndChk = await TransactionData.DoubleSpendReplayCheck(tx);
+                //                        var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(tx);
 
-                                        if (dblspndChk == false && isCraftedIntoBlock == false && tx.TransactionRating != TransactionRating.F)
-                                        {
-                                            var txOutput = "";
-                                            txOutput = JsonConvert.SerializeObject(tx);
-                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);//sends messages to all in fortis pool
-                                            Globals.BroadcastedTrxDict[tx.Hash] = tx;
-                                        }
-                                        else
-                                        {
-                                            try
-                                            {
-                                                pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
-                                            }
-                                            catch (Exception ex)
-                                            {                                                
-                                                //delete failed
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        try
-                                        {
-                                            pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
-                                        }
-                                        catch (Exception ex)
-                                        {                                            
-                                            //delete failed
-                                        }
-                                    }
+                //                        if (dblspndChk == false && isCraftedIntoBlock == false && tx.TransactionRating != TransactionRating.F)
+                //                        {
+                //                            var txOutput = "";
+                //                            txOutput = JsonConvert.SerializeObject(tx);
+                //                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);//sends messages to all in fortis pool
+                //                            Globals.BroadcastedTrxDict[tx.Hash] = tx;
+                //                        }
+                //                        else
+                //                        {
+                //                            try
+                //                            {
+                //                                pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
+                //                            }
+                //                            catch (Exception ex)
+                //                            {                                                
+                //                                //delete failed
+                //                            }
+                //                        }
+                //                    }
+                //                    else
+                //                    {
+                //                        try
+                //                        {
+                //                            pool.DeleteManySafe(x => x.Hash == tx.Hash);// tx has been crafted into block. Remove.
+                //                        }
+                //                        catch (Exception ex)
+                //                        {                                            
+                //                            //delete failed
+                //                        }
+                //                    }
 
-                                }
-                            }
-                        }
-                }
-                }
+                //                }
+                //            }
+                //        }
+                //    }
+                //}
                 
             }
             catch (Exception ex)
@@ -560,7 +544,6 @@ namespace ReserveBlockCore.Services
         }
 
         #endregion
-
 
         #region Do work V3
         private static async Task SendDuplicateMessage(string conId, int dupType)

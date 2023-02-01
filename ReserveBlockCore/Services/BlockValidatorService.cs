@@ -335,14 +335,15 @@ namespace ReserveBlockCore.Services
                             {
                                 foreach (var localFromTransaction in block.Transactions)
                                 {
+                                    Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+                                    Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
+
                                     if (mempool != null)
                                     {
                                         var mempoolTx = mempool.FindAll().Where(x => x.Hash == localFromTransaction.Hash);
                                         if (mempoolTx.Count() > 0)
                                         {
                                             mempool.DeleteManySafe(x => x.Hash == localFromTransaction.Hash);
-                                            Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
-                                            Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
                                         }
                                     }
                                     try
