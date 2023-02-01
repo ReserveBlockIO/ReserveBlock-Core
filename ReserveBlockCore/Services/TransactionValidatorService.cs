@@ -269,7 +269,8 @@ namespace ReserveBlockCore.Services
                 if (txRequest.TransactionType == TransactionType.ADNR)
                 {
                     var txData = txRequest.Data;
-                    if (txData != null)
+                    var badTx = Globals.BadADNRTxList.Exists(x => x == txRequest.Hash);
+                    if (txData != null && !badTx)
                     {
                         try
                         {
