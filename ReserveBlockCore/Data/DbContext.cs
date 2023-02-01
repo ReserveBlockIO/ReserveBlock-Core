@@ -97,6 +97,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_MOTHER = "rsrv_mother";
         public const string RSRV_ADJ_BENCH = "rsrv_adj_bench";
         public const string RSRV_ADJ_BENCH_QUEUE = "rsrv_adj_bench_queue";
+        public const string RSRV_BAD_TX = "rsrv_bad_tx";
 
         internal static void Initialize()
         {
