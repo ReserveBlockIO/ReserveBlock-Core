@@ -369,7 +369,7 @@ namespace ReserveBlockCore.P2P
                                                     Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
                                                     if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
                                                     {
-                                                        Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                        Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = false, Transaction = transaction };
                                                     }
                                                     output = true;
                                                 }
@@ -399,7 +399,7 @@ namespace ReserveBlockCore.P2P
                                                     Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
                                                     if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
                                                     {
-                                                        Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                        Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = false, Transaction = transaction };
                                                     }
                                                 }
                                             }

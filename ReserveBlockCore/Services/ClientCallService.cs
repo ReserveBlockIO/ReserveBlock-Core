@@ -343,6 +343,8 @@ namespace ReserveBlockCore.Services
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction.Transaction);
                                             await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                            if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
+                                                Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                                             await Task.Delay(400);
                                         }
                                         else
@@ -357,13 +359,12 @@ namespace ReserveBlockCore.Services
                                         var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction.Transaction);
                                         if (!isCraftedIntoBlock)
                                         {
-                                            if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
-                                            {
-                                                var txOutput = "";
-                                                txOutput = JsonConvert.SerializeObject(transaction.Transaction);
-                                                await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
-                                                await Task.Delay(400);
-                                            }
+                                            var txOutput = "";
+                                            txOutput = JsonConvert.SerializeObject(transaction.Transaction);
+                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                            if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
+                                                Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
+                                            await Task.Delay(400);
                                         }
                                         else
                                         {
@@ -390,6 +391,8 @@ namespace ReserveBlockCore.Services
                                         var txOutput = "";
                                         txOutput = JsonConvert.SerializeObject(transaction.Transaction);
                                         await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                        if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
+                                            Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                                         await Task.Delay(400);
                                     }
                                     else
@@ -399,9 +402,6 @@ namespace ReserveBlockCore.Services
                                     }
                                 }
                             }
-
-                            if(Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
-                                Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                         }
                     }
                 }
