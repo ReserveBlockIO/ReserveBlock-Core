@@ -1789,6 +1789,10 @@ namespace ReserveBlockCore.Commands
             var osDesc = RuntimeInformation.OSDescription;
             var processArch = RuntimeInformation.ProcessArchitecture;
             var netFramework = RuntimeInformation.FrameworkDescription;
+            var programPath = Directory.GetCurrentDirectory();
+            var refProgramPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string strWorkPath = Path.GetDirectoryName(refProgramPath);
+            
 
             var threadCount = Environment.ProcessorCount;
 
@@ -1833,7 +1837,8 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue].Net Core[/]", $"[green]{netFramework}[/]");
             table.AddRow("[blue]External IP[/]", $"[green]{mostLikelyIP}[/]");
             table.AddRow("[blue]HD Wallet?[/]", $"[green]{Globals.HDWallet}[/]");
-            table.AddRow("[blue]Folder Path[/]", $"[green]{path}[/]");
+            table.AddRow("[blue]Program Path[/]", $"[green]{strWorkPath}[/]");
+            table.AddRow("[blue]Database Folder Path[/]", $"[green]{path}[/]");
             table.AddRow("[blue]System Time[/]", $"[green]{DateTime.Now}[/]");
             table.AddRow("[blue]Timestamp[/]", $"[green]{TimeUtil.GetTime()}[/]");
             
@@ -1867,6 +1872,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");
             table.AddRow("[blue]/menu[/]", "[green]This will return you to the main menu[/]");
             table.AddRow("[blue]/clear[/]", "[green]This will clear the current console window.[/]");
+            table.AddRow("[blue]/update[/]", "[green]This will download latest CLI client to RBX folder location under 'Download'.[/]");
             table.AddRow("[blue]/mempool[/]", "[green]This will print out the current state of the mempool.[/]");
             table.AddRow("[blue]/recp[/]", "[green]This will attempt to perform a reconnect to peers.[/]");
             table.AddRow("[blue]/optlog[/]", "[green]Turns on optional logging for adjudicators.[/]");

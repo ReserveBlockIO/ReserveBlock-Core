@@ -49,25 +49,28 @@ namespace ReserveBlockCore.Services
             }
             else
             {
-                if (peer.BannedFromAreasList != null)
+                if(!peer.IsPermaBanned)
                 {
-                    peer.BannedFromAreasList.Add(location);
-                }
-                else
-                {
-                    peer.BannedFromAreasList = new List<string> { location };
-                }
-                peer.BanCount += 1;
-                peer.NextUnbanDate = GetNextUnbanDate(peer.BanCount);
-                peer.LastBannedFromArea = location;
-                peer.LastBanDate = DateTime.UtcNow;
-                peer.IsBanned = true;
+                    if (peer.BannedFromAreasList != null)
+                    {
+                        peer.BannedFromAreasList.Add(location);
+                    }
+                    else
+                    {
+                        peer.BannedFromAreasList = new List<string> { location };
+                    }
+                    peer.BanCount += 1;
+                    peer.NextUnbanDate = GetNextUnbanDate(peer.BanCount);
+                    peer.LastBannedFromArea = location;
+                    peer.LastBanDate = DateTime.UtcNow;
+                    peer.IsBanned = true;
 
-                if (peers != null)
-                {
-                    peers.UpdateSafe(peer);
+                    if (peers != null)
+                    {
+                        peers.UpdateSafe(peer);
+                    }
                 }
-
+                
                 Globals.BannedIPs[ipAddress] = peer;
             }
 

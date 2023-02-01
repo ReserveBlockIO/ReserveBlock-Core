@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -154,6 +155,17 @@ namespace ReserveBlockCore.Extensions
             var stringToBase64 = Convert.ToBase64String(plainTextBytes);
 
             return stringToBase64;
+        }
+
+        /// <summary>
+        /// Converts a string array into a space delimited string
+        /// </summary>
+        /// <returns>Space delimited string</returns>
+        public static string ToStringFromArray(this string[] source)
+        {
+            var output = string.Join(" ", source);
+
+            return output;
         }
 
         public static string ToAddressNormalize(this string source)

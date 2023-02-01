@@ -9,6 +9,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Concurrent;
+using System.Data.Common;
 using System.Net;
 using System.Transactions;
 using System.Xml.Linq;
@@ -320,13 +321,40 @@ namespace ReserveBlockCore.P2P
                 {
                     if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(txBroadcast.Hash, out _))
                     {
-                        Globals.ConsensusBroadcastedTrxDict[txBroadcast.Hash] = new TransactionBroadcast { Hash = txBroadcast.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = false, Transaction = txBroadcast.Transaction };
-                        result = true;
+                        var isTxStale = await TransactionData.IsTxTimestampStale(txBroadcast.Transaction);
+                        if(!isTxStale)
+                        {
+                            var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(txBroadcast.Transaction);
+
+                            if (!isCraftedIntoBlock)
+                            {
+                                Globals.ConsensusBroadcastedTrxDict[txBroadcast.Hash] = new TransactionBroadcast
+                                {
+                                    Hash = txBroadcast.Hash,
+                                    IsBroadcastedToAdj = false,
+                                    IsBroadcastedToVal = false,
+                                    Transaction = txBroadcast.Transaction
+                                };
+                            }
+                            else
+                            {
+                                Globals.BroadcastedTrxDict.TryRemove(txBroadcast.Hash, out _);
+                                Globals.ConsensusBroadcastedTrxDict.TryRemove(txBroadcast.Hash, out _);
+                            }
+                        }
+                        else
+                        {
+                            Globals.BroadcastedTrxDict.TryRemove(txBroadcast.Hash, out _);
+                            Globals.ConsensusBroadcastedTrxDict.TryRemove(txBroadcast.Hash, out _);
+                        }
                     }
                 }
+
+                result = true;
             }
             catch(Exception ex)
             {
+                result = false;
                 AdjLogUtility.Log($"Error receiving broadcasted TX. Error: {ex.ToString()}", "ConsensusServer.GetBroadcastedTx()");
                 ErrorLogUtility.LogError($"Error receiving broadcasted TX. Error: {ex.ToString()}", "ConsensusServer.GetBroadcastedTx()");
             }

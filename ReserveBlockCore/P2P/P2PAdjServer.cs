@@ -328,7 +328,6 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
-
         #region Receive TX to relay
         public async Task<bool> ReceiveTX(Transaction transaction)
         {
@@ -366,17 +365,29 @@ namespace ReserveBlockCore.P2P
                                                     mempool.InsertSafe(transaction);
                                                     var txOutput = "";
                                                     txOutput = JsonConvert.SerializeObject(transaction);
-                                                    await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                                    //await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
                                                     Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
-                                                    Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                    if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
+                                                    {
+                                                        Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                    }
                                                     output = true;
                                                 }
+                                                else
+                                                {
+                                                    Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                    Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                             }
 
                                         }
                                         else
                                         {
-
                                             var isCraftedIntoBlock = await TransactionData.HasTxBeenCraftedIntoBlock(transaction);
                                             if (!isCraftedIntoBlock)
                                             {
@@ -384,9 +395,12 @@ namespace ReserveBlockCore.P2P
                                                 {
                                                     var txOutput = "";
                                                     txOutput = JsonConvert.SerializeObject(transaction);
-                                                    await SendAdjMessageAll("tx", txOutput);
+                                                    //await SendAdjMessageAll("tx", txOutput);
                                                     Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
-                                                    Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                    if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
+                                                    {
+                                                        Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                    }
                                                 }
                                             }
                                             else
@@ -394,10 +408,14 @@ namespace ReserveBlockCore.P2P
                                                 try
                                                 {
                                                     mempool.DeleteManySafe(x => x.Hash == transaction.Hash);// tx has been crafted into block. Remove.
+                                                    Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                    Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                                 }
                                                 catch (Exception ex)
-                                                {                                                    
-                                                    //delete failed
+                                                {
+                                                    //delete failed - may not be present
+                                                    Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                    Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                                 }
                                             }
                                         }
@@ -418,13 +436,31 @@ namespace ReserveBlockCore.P2P
                                                 mempool.InsertSafe(transaction);
                                                 var txOutput = "";
                                                 txOutput = JsonConvert.SerializeObject(transaction);
-                                                await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
+                                                //await SendAdjMessageAll("tx", txOutput);//sends messages to all in fortis pool
                                                 Globals.BroadcastedTrxDict[transaction.Hash] = transaction;
-                                                Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                if (!Globals.ConsensusBroadcastedTrxDict.TryGetValue(transaction.Hash, out _))
+                                                {
+                                                    Globals.ConsensusBroadcastedTrxDict[transaction.Hash] = new TransactionBroadcast { Hash = transaction.Hash, IsBroadcastedToAdj = false, IsBroadcastedToVal = true, Transaction = transaction };
+                                                }
                                                 output = true;
                                             }
+                                            else
+                                            {
+                                                Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                                Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                            Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                         }
                                     }
+                                }
+                                else
+                                {
+                                    Globals.BroadcastedTrxDict.TryRemove(transaction.Hash, out _);
+                                    Globals.ConsensusBroadcastedTrxDict.TryRemove(transaction.Hash, out _);
                                 }
 
                             }

@@ -283,12 +283,16 @@ namespace ReserveBlockCore.Services
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
                                 {
-                                    var nameCheck = adnrList.FindOne(x => x.Name == name);
-                                    if (nameCheck != null)
+                                    if(!string.IsNullOrEmpty(name))
                                     {
-                                        return (txResult, "Name has already been taken.");
+                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameCheck = adnrList.FindOne(x => x.Name == name || x.Name == nameRBX);
+                                        if (nameCheck != null)
+                                        {
+                                            return (txResult, "Name has already been taken.");
+                                        }
                                     }
-
+                                    
                                     var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
                                     if (addressCheck != null)
                                     {
@@ -311,6 +315,11 @@ namespace ReserveBlockCore.Services
                                     if (addressCheck == null)
                                     {
                                         return (txResult, "Address is not associated with a DNR.");
+                                    }
+
+                                    if (txRequest.ToAddress != "Adnr_Base")
+                                    {
+                                        return (txResult, "To Address was not the Adnr_Base.");
                                     }
                                 }
                             }
@@ -363,6 +372,12 @@ namespace ReserveBlockCore.Services
                                     if (topic == null)
                                         return (txResult, "Topic trei record cannot be null.");
 
+                                    if(txRequest.ToAddress != "Topic_Base")
+                                        return (txResult, "To Address must be Topic_Base.");
+
+                                    if (txRequest.Amount < 1M)
+                                        return (txResult, "There must be at least 1 RBX to create a Topic.");
+
                                     var topicSig = topic.TopicOwnerSignature;
                                     if(!string.IsNullOrEmpty(topicSig))
                                     {
@@ -414,9 +429,7 @@ namespace ReserveBlockCore.Services
                                                 if (activeTopics != null)
                                                     return (txResult, "Only one active topic per address is allowed.");
 
-                                                if (txRequest.Amount < 1M)
-                                                    return (txResult, "There must be at least 1 RBX to create a Topic.");
-
+                                                
                                                 if(topic.VoteTopicCategory == VoteTopicCategories.AdjVoteIn)
                                                 {
                                                     try
@@ -447,8 +460,6 @@ namespace ReserveBlockCore.Services
                                                     }
                                                 }
                                             }
-                                            
-             
                                         }
                                         else
                                         {
@@ -459,7 +470,6 @@ namespace ReserveBlockCore.Services
                                     {
                                         return (txResult, "Topic missing signature. A signature is required to send a voting topic.");
                                     }
-
                                 }
                             }
                         }
@@ -492,6 +502,9 @@ namespace ReserveBlockCore.Services
                                 {
                                     if (vote == null)
                                         return (txResult, "Vote record cannot be null.");
+
+                                    if (txRequest.ToAddress != "Vote_Base")
+                                        return (txResult, "To Address must be Vote_Base.");
 
                                     var topic = TopicTrei.GetSpecificTopic(vote.TopicUID);
                                     if(topic == null)
