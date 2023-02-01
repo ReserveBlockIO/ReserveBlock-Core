@@ -159,11 +159,7 @@ namespace ReserveBlockCore.Data
             DB_Vote.Pragma("UTC_DATE", true);
         }        
         public static void BeginTrans()
-        {
-            if (Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) && hasTransaction)
-                return;
-            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = true;
-            
+        {                    
             DB.BeginTrans();
             DB_Mempool.BeginTrans();
             DB_Assets.BeginTrans();
@@ -187,17 +183,10 @@ namespace ReserveBlockCore.Data
         public static void Commit()
         {
             bool isStateUpdating = Globals.TreisUpdating;
-
-            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
+            if (isStateUpdating)
             {
-                if(isStateUpdating)
-                {
-                    ErrorLogUtility.LogError("Commit failed to happen!", "DbContext.Commit()");
-                }
-                return;
+                ErrorLogUtility.LogError("Commit failed to happen!", "DbContext.Commit()");
             }
-                
-            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
 
             DB.Commit();
             DB_Mempool.Commit();
@@ -223,10 +212,6 @@ namespace ReserveBlockCore.Data
         public static void Rollback(string location = "")
         {
             bool isStateUpdating = Globals.TreisUpdating;
-
-            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
-                return;
-            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
 
             if(isStateUpdating)
             {
