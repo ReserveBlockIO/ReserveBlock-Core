@@ -187,11 +187,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, TransactionBroadcast> ConsensusBroadcastedTrxDict = new ConcurrentDictionary<string, TransactionBroadcast>(); //TX Hash
         public static ConcurrentDictionary<string, DuplicateValidators> DuplicatesBroadcastedDict= new ConcurrentDictionary<string, DuplicateValidators>();
 
-        #endregion
-
-        #region DbContext Variables
-        public static ConcurrentDictionary<int, bool> HasTransactionDict = new ConcurrentDictionary<int, bool>();
-        #endregion
+        #endregion        
 
         #region Bad TX Ignore List
 
