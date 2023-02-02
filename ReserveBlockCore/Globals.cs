@@ -2,6 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Security;
@@ -41,6 +42,8 @@ namespace ReserveBlockCore
         public static BeaconReference BeaconReference = new BeaconReference();
         public static Process proc = new Process();
         public static Beacons? SelfBeacon = null;
+        public static long LastBlockAddedTimestamp = TimeUtil.GetTime();
+        public static long BlockTimeDiff = 0;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
@@ -187,19 +190,17 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, TransactionBroadcast> ConsensusBroadcastedTrxDict = new ConcurrentDictionary<string, TransactionBroadcast>(); //TX Hash
         public static ConcurrentDictionary<string, DuplicateValidators> DuplicatesBroadcastedDict= new ConcurrentDictionary<string, DuplicateValidators>();
 
-        #endregion
-
-        #region DbContext Variables
-        public static ConcurrentDictionary<int, bool> HasTransactionDict = new ConcurrentDictionary<int, bool>();
-        #endregion
+        #endregion        
 
         #region Bad TX Ignore List
 
         public static List<string> BadADNRTxList = new List<string> { "9ebe7eb08abcf35f7e5cad6a5346babcb045f0e52732cdfddd021296331c2056" };
-        public static List<string> BadNFTTxList = new List<string> { "na" };
-        public static List<string> BadTopicTxList = new List<string> { "na" };
-        public static List<string> BadVoteTxList = new List<string> { "na" };
-        public static List<string> BadTxList = new List<string> { "na" };
+        public static List<string> BadNFTTxList = new List<string>();
+        public static List<string> BadTopicTxList = new List<string>();
+        public static List<string> BadVoteTxList = new List<string>();
+        public static List<string> BadTxList = new List<string>();
+        public static List<string> BadDSTList = new List<string>();
+        public static List<string> BadNodeList = new List<string>();
 
         #endregion
 

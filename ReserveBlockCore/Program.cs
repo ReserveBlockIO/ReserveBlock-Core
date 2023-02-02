@@ -14,6 +14,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Spectre.Console;
+using System.Security.AccessControl;
+using System.Net.Sockets;
+using System.Net.Http;
 
 namespace ReserveBlockCore
 {
@@ -34,6 +37,26 @@ namespace ReserveBlockCore
             {
                 Console.WriteLine("Restarted Detected!");
                 Environment.SetEnvironmentVariable("RBX-Restart", null, EnvironmentVariableTarget.User);
+                bool exit = false;
+                while(!exit)
+                {
+                    using (TcpClient tcpClient = new TcpClient())
+                    {
+                        try
+                        {
+                            var port = Globals.Port;
+                            tcpClient.Connect("127.0.0.1", port);
+                            //LogUtility.Log($"CLI Already Running on port {port}. Closing new instance.", "StartupService.AnotherInstanceCheck()");
+                            //Environment.Exit(0);
+                        }
+                        catch (Exception)
+                        {
+                            exit = true;
+                            Console.WriteLine("Application Starting...");
+                        }
+                    }
+                    await Task.Delay(400);
+                }
             }
             if (isUpdated == "1")
             {
@@ -42,6 +65,11 @@ namespace ReserveBlockCore
                 Environment.SetEnvironmentVariable("RBX-Updated", null, EnvironmentVariableTarget.User);
             }
 
+            //to enable again right click the cmd -> Properties -> check Quick Edit 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                WindowsUtilities.DisableConsoleQuickEdit.Go();
+
+            
             //Forced Testnet
             //Globals.IsTestNet = true;
             var argList = args.ToList();
@@ -143,6 +171,7 @@ namespace ReserveBlockCore
             StartupService.EncryptedWalletCheck(); //checks if wallet is encrypted
             SeedNodeService.SeedNodes();
             SeedNodeService.SeedBench();
+            await BadTransaction.PopulateBadTXList();
 
             Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
@@ -380,6 +409,9 @@ namespace ReserveBlockCore
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
             _ = VersionControlService.RunVersionControl();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                _ = WindowsUtilities.AdjAutoRestart();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {

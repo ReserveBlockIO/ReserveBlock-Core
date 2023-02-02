@@ -342,7 +342,7 @@ namespace ReserveBlockCore.Services
                                             mempool.InsertSafe(transaction.Transaction);
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction.Transaction);
-                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput).WaitAsync(new TimeSpan(0,0,25));
                                             if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
                                                 Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                                             await Task.Delay(400);
@@ -361,7 +361,7 @@ namespace ReserveBlockCore.Services
                                         {
                                             var txOutput = "";
                                             txOutput = JsonConvert.SerializeObject(transaction.Transaction);
-                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                            await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput).WaitAsync(new TimeSpan(0, 0, 25));
                                             if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
                                                 Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                                             await Task.Delay(400);
@@ -390,7 +390,7 @@ namespace ReserveBlockCore.Services
                                         mempool.InsertSafe(transaction.Transaction);
                                         var txOutput = "";
                                         txOutput = JsonConvert.SerializeObject(transaction.Transaction);
-                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput);
+                                        await _hubContext.Clients.All.SendAsync("GetAdjMessage", "tx", txOutput).WaitAsync(new TimeSpan(0, 0, 25));
                                         if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(transaction.Hash))
                                             Globals.ConsensusBroadcastedTrxDict[transaction.Hash].IsBroadcastedToVal = true;
                                         await Task.Delay(400);

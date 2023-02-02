@@ -81,7 +81,7 @@ namespace ReserveBlockCore.Services
                         else
                         {
                             if (Globals.IsChainSynced)
-                                ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] was added from: [purple]{block.Validator}[/] "));
+                                ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] added from: [purple]{block.Validator}[/] | Delay: [aqua]{Globals.BlockTimeDiff}[/]/s"));
                             else
                                 ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} ");
                         }
@@ -248,6 +248,11 @@ namespace ReserveBlockCore.Services
                                 if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                                 {
                                     var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
+                                    if(!Globals.GUI)
+                                    {
+                                        if(!txResult.Item1)
+                                            await TransactionValidatorService.BadTXDetected(blkTransaction);
+                                    }
                                     rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;
                                     //check for duplicate tx
                                     if (blkTransaction.TransactionType != TransactionType.TX &&

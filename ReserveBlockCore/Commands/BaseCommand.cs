@@ -192,6 +192,27 @@ namespace ReserveBlockCore.Commands
                     Globals.StopConsoleOutput = false;
                     StartupService.MainMenu();
                     break;
+                case "/addbadtx":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.AddBadTx();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "/removebadtx":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.RemoveBadTx();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "/restart":
+                    Globals.StopConsoleOutput = true;
+                    await WindowsUtilities.ClientRestart();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "/entercode":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.EnterCode();
+                    Globals.StopConsoleOutput = false;
+                    StartupService.MainMenu();
+                    break;
                 case "/trillium":
                     Globals.StopConsoleOutput = true;
                     //start trillium

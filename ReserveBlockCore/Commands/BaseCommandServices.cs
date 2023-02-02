@@ -90,6 +90,21 @@ namespace ReserveBlockCore.Commands
 
             }
         }
+
+        public static async Task EnterCode()
+        {
+            Console.Clear();
+            Console.WriteLine("Press ESC to Exit");
+            Console.WriteLine(("UGxlYXNlIGVudGVyIHRoZSBjb2RlIGJlbG93LiBQbGVhc2Ugbm90ZSB5b3Ugd2lsbCBub3Qgc2VlIHRoZSB" +
+                "jb2RlLCBidXQgc2hvdWxkIGl0IGJlIGNvcnJlY3QgeW91IHdpbGwgd2luIHRoZSBwcml6ZSE=").ToStringFromBase64());
+
+            var taskKeys = ReadKeyUtility.ReadKeys();
+
+            taskKeys.Start();
+
+            var tasks = new[] { taskKeys };
+            Task.WaitAll(tasks);
+        }
         public static async Task EncryptWallet()
         {
             if(Globals.HDWallet == true)
@@ -1690,6 +1705,65 @@ namespace ReserveBlockCore.Commands
             }
         }
 
+        public static void AddBadTx()
+        {
+            Console.WriteLine("Please paste in the bad TX's Hash:");
+            var badTxHash = Console.ReadLine();
+
+            Console.WriteLine("Please paste in the bad TX's From Address:");
+            var badTxFromAddr = Console.ReadLine();
+
+            Console.WriteLine("Please choose the number of the bad TX's Transaction Type:");
+
+            int count = 0;
+            foreach (int i in Enum.GetValues(typeof(TransactionType)))
+            {
+                Console.WriteLine($"{count} - {i}");
+            }
+
+            var badTxTranType = Console.ReadLine();
+
+            if(!string.IsNullOrEmpty(badTxHash) && !string.IsNullOrEmpty(badTxFromAddr) && !string.IsNullOrEmpty(badTxTranType))
+            {
+                int.TryParse(badTxTranType.Replace(" ", "").Replace(".", ""), out var txTranType);
+
+                var badTx = new BadTransaction {FromAddress = badTxFromAddr, Hash = badTxHash, TransactionType = (TransactionType)txTranType };
+
+                var result = BadTransaction.SaveBadTransaction(badTx);
+
+                if(result)
+                {
+                    Console.WriteLine("Bad TX has been added.");
+                }
+                else
+                {
+                    StartupService.MainMenu();
+                    Console.WriteLine("Failed to add bad TX. Please ensure all information was entered properly.");
+                }
+            }
+        }
+
+        public static void RemoveBadTx()
+        {
+            Console.WriteLine("Please paste in the bad TX's Hash:");
+            var badTxHash = Console.ReadLine();
+
+            if (!string.IsNullOrEmpty(badTxHash))
+            {
+                var result = BadTransaction.DeleteBadTransaction(badTxHash);
+
+                if (result)
+                {
+                    Console.WriteLine("Bad TX has been removed from database.");
+                }
+                else
+                {
+                    StartupService.MainMenu();
+                    Console.WriteLine("Failed to remove bad TX from database. Please ensure all information was entered properly.");
+                }
+            }
+        }
+
         public static void RPS()
         {
             Random random = new();
@@ -1700,6 +1774,7 @@ namespace ReserveBlockCore.Commands
             {
                 Console.Clear();
                 Console.WriteLine(("Um9jaywgUGFwZXIsIFNjaXNzb3Jz").ToStringFromBase64());
+                Console.WriteLine(("Q29uZ3JhdHMgb24gZmluZGluZyBhbiBlZ2cuIEhlcmUgaXMgeW91ciBrZXk6IHJwc2tleTc3Nw==").ToStringFromBase64());
                 Console.WriteLine();
             GetInput:
                 Console.Write(("Q2hvb3NlIFtyXW9jaywgW3BdYXBlciwgW3NdY2lzc29ycywgb3IgW2VdeGl0Og==").ToStringFromBase64());
