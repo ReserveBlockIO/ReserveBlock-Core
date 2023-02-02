@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AdjAutoRestart()
         {
-            if(true) //Globals.AdjudicateAccount != null
+            if(Globals.AdjudicateAccount != null)
             {
                 while (true)
                 {
