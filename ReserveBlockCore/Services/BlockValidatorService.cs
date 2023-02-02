@@ -81,7 +81,7 @@ namespace ReserveBlockCore.Services
                         else
                         {
                             if (Globals.IsChainSynced)
-                                ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] was added from: [purple]{block.Validator}[/] "));
+                                ConsoleWriterService.OutputSameLineMarked(($"Time: [yellow]{DateTime.Now}[/] | Block [green]({block.Height})[/] added from: [purple]{block.Validator}[/] | Delay: [aqua]{Globals.BlockTimeDiff}[/]/s"));
                             else
                                 ConsoleWriterService.OutputSameLine($"\rBlocks Syncing... Current Block: {block.Height} ");
                         }

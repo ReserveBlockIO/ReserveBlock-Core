@@ -314,7 +314,11 @@ namespace ReserveBlockCore.Data
             if (blockCheck == null)
             {
                 //Update in memory fields.
+                
                 Globals.LastBlock = block;
+                var currentTime = TimeUtil.GetTime();
+                Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
+                Globals.LastBlockAddedTimestamp = currentTime;
                 blocks.InsertSafe(block);
             }
             else

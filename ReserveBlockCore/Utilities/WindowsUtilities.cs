@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AdjAutoRestart()
         {
-            if(Globals.AdjudicateAccount != null)
+            if(Globals.AdjudicateAccount != null) 
             {
                 while (true)
                 {
@@ -93,9 +93,8 @@ namespace ReserveBlockCore.Utilities
                     await AdjAutoRestartLock.WaitAsync();
                     try
                     {
-                        var currentTime = TimeUtil.GetTime();
-                        var lastBlockTime = Globals.LastBlock.Timestamp;
-                        if(currentTime - lastBlockTime > 80) 
+                        var timeDiff = Globals.BlockTimeDiff;
+                        if (timeDiff > 80) 
                         {
                             var shutDownDelay = Task.Delay(2000);
                             LogUtility.Log("Send exit has been called. Closing Wallet.", "WindowsUtilities.AdjAutoRestart()");
@@ -106,9 +105,10 @@ namespace ReserveBlockCore.Utilities
                                 await Task.Delay(300);
                                 //waiting for treis to stop
                             }
-                            await Settings.InitiateShutdownUpdate();
-                            await BaseCommandServices.ConsensusNodeInfo();
 
+                            await BaseCommandServices.ConsensusNodeInfo();
+                            await Settings.InitiateShutdownUpdate();
+                            
                             Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
                             var exeLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 
@@ -116,7 +116,6 @@ namespace ReserveBlockCore.Utilities
                             Process.Start(path);
 
                             Environment.Exit(0);
-
                         }
                     }
                     finally

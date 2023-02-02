@@ -2,6 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Security;
@@ -41,6 +42,8 @@ namespace ReserveBlockCore
         public static BeaconReference BeaconReference = new BeaconReference();
         public static Process proc = new Process();
         public static Beacons? SelfBeacon = null;
+        public static long LastBlockAddedTimestamp = TimeUtil.GetTime();
+        public static long BlockTimeDiff = 0;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
