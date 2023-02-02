@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AdjAutoRestart()
         {
-            if(Globals.AdjudicateAccount != null) 
+            if(Globals.AdjudicateAccount != null)
             {
                 while (true)
                 {
@@ -93,7 +93,9 @@ namespace ReserveBlockCore.Utilities
                     await AdjAutoRestartLock.WaitAsync();
                     try
                     {
-                        var timeDiff = Globals.BlockTimeDiff;
+                        var currentTime = TimeUtil.GetTime();
+                        var lastBlockTime = Globals.LastBlockAddedTimestamp;
+                        var timeDiff = currentTime - lastBlockTime;
                         if (timeDiff > 80) 
                         {
                             var shutDownDelay = Task.Delay(2000);
