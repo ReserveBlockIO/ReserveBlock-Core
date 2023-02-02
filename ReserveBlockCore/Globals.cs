@@ -191,7 +191,7 @@ namespace ReserveBlockCore
 
         #region Bad TX Ignore List
 
-        public static List<string> BadADNRTxList = new List<string>();
+        public static List<string> BadADNRTxList = new List<string> { "9ebe7eb08abcf35f7e5cad6a5346babcb045f0e52732cdfddd021296331c2056" };
         public static List<string> BadNFTTxList = new List<string>();
         public static List<string> BadTopicTxList = new List<string>();
         public static List<string> BadVoteTxList = new List<string>();

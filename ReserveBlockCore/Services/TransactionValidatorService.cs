@@ -5,6 +5,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Services
 {
@@ -580,6 +581,33 @@ namespace ReserveBlockCore.Services
 
             //Return verification result.
             return (txResult, "Transaction has been verified.");
+
+        }
+
+        public static async Task BadTXDetected(Transaction Tx)
+        {
+            Console.WriteLine("A Transaction has failed validation. Would you like to ignore this transaction to move on?");
+            AnsiConsole.MarkupLine($"[green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/]");
+            AnsiConsole.MarkupLine($"[yellow]Please note you may need to type 'y' and press enter twice.[/]");
+
+            var answer = Console.ReadLine();
+
+            if(!string.IsNullOrEmpty(answer)) 
+            {
+                if(answer.ToLower() == "y")
+                {
+                    var badTx = new BadTransaction {FromAddress = Tx.FromAddress, Hash = Tx.Hash, TransactionType = Tx.TransactionType };
+                    var result = BadTransaction.SaveBadTransaction(badTx);
+                    if(result)
+                    {
+                        AnsiConsole.MarkupLine($"[green]Bad Transaction has been added.[/]");
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine($"[red]Failed to add bad transaction.[/]");
+                    }
+                }
+            }
 
         }
 

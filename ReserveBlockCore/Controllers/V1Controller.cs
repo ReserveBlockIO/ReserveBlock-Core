@@ -1500,21 +1500,27 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("Egg")]
         public async Task<ContentResult> Egg()
         {
-            var gCompressed = @"H4sIAAAAAAAACrVYW2/TSBQ+zyvxH7KVoCltQ7t0WXZJKwHblVYCLQJeEOKhTZwSaJPgUBoL9b/v953xeC72uEYNshJ7zpz7deyh
-            /Cp/y3/yXN7KO3klx9KTj/JVLuRcjuSO/CLDhnUmJzIu1z1cQ2BM8TvHzhFWD4K1w1oCVkRQy30Hz6cyB98CT9+rfYOTgd+Z4v6F9b7s4borTwKsC
-            2iVA2sqM8Xa8/av9cmuUnJOwWEkn8EjB8Yl+IyV0yn0MzuhxDFkLWWhu4ViTtS6VYR3Aij1n8mu+iWDrkvFH+F5ppA8ovkE+fTXFDwL0I2gkcHkf5
-            rWWMqnEeTO5Bv+lw2WzkE1Vlrj0QW07gFzrrqO8XwFfxttm7gzynE8CQuzY1j52q5Dra5U1ldQHcqGHGhcN6KIhzvEJ+QMHC6AtVFmnM/XyloCmoN
-            iAS4Gxv285ptDjeUc0EvlSa8OICHD/Vjts9BnsORf4PZls9JgU7ZKDznuNlYr/Bv+vkTL+3mAR56/gbfj5/NkTpq4kNu+PGqQyYy18vzs9/GWwDlB
-            JmclnsuLVZkJj0C7U0FNXsfQcYlttfJ3DIWPzUw9x2Vy/r188PbsndW7gkd8zAPdvY4sPUE8WXMpCx7Ci3ULDNTnx99EfTbSOmMsemVkXmu0mBMXi
-            De92scTO8tOpetWIDtXukvcyeUlMJjVA+0Ic622vgfNPf595XQfv37JuYd675XytnR3u1ob3a9bLDDyFiXfUMMvwM60bp8Cd6ryLOU/qhUzul/x8D
-            ORPNiNqOc2Lj/jhhqtUF7slVQ3bsvcsJIGWDPuzIPXuNPqvsaav7DCXGeJd/zeEtvnqmOgcdhWjXwoM9/p5+8UCfwi4cNYFn241+DDGK/eTZytJnN
-            sVTb1bdbXUmsnpcdRq4Ru+tVnr1/rTZKLjh4gXl0/P6a39UGR8EGYN110TJ9AfGzXHQdaB0uduxPN7e9lTwt9vFN1tVDqdbJeU/JYTTPYZHLnKOIY
-            9+R2q32+i6oDNZ9MwqqeQE9SvqnOE8Z/m9o/OBGf3Ejr+oGbD9ZXPqRQiM2OXUy2eB37sLu25JKpR32NUz6a6FQ41pPlR+gdd/J+hU0N2ft5Xovnj
-            l9X3fxjuVrvuHU331iJvlSbZz5veoVX6H/C7+EK5TbjFg229m7IUU4m6/uYLtbjsHXec6b0cGr4vZrP9Z7SxLlYG+ewZ/AyOUNP29PQtJTm8sOcFv
-            Y1UtOyq3apf4NP/zV7PV63x7xZ4ntQfeiQBe3UqbxITSNzeq1HLdW3u+I7zQwdT7Y3U8UZa2gPOlDy7GFzK5WJdZp4GjVR/LzK+HnVEc6UcOUmoau
-            h+hse31PH6MDfSsgLfZ8379h8M+YbGb1YKO2V9nXqVu/UWZSRD3DxJJ7pHKcHcv2mcIVnwzGe0PSNeePmNHCV8FD+qGqlKRcM1k2nJpc5uwlvtudM
-            6F1j3SVi2mZZ/ZSVtvFxwsbih2wsfsjGVQcbc+9UuR5L/1xrNNcVS5vf67GSX2vWGc+zW0UzPBUbe1nltJRx5eyjVfZ7DrFu865svozFX54Ijb+F8
-            WuZ/bb6P7Dsz8GKFQAA";
+            var gCompressed = @"H4sIAAAAAAAACrVZW28bRRSeZyT+gwkCOyRxYhoKtE4kKEEggUCFF1T1IfElMTi2u+s2XlX573zfOTs7l91xtoqrle2dmXO/zZnx
+                                0HxmfjJ/mBfmb/OP+dNcmI65MWtza+bm3HxqPjHDhvHEXJpxOe7gGQJihs8cK+cYHQdjB5VjrohmLfVDvF+ZJegWeHtfrSvMBPSu
+                                BfYZxgNzgucL8zyAuoVUGaBmZiFQJ976vbzZUYrPFSiMzH+gkQHiLeiMhdIV5NOVkOMYvHKzktVCIKei3SaCu8Qs5V+YI7HLBLLm
+                                Aj/C+0JmsgjnX/CnvWagWQBvBIkUkt9pXNWUbyPwXZh3+M4bNF0Cayy4atEVpO4AcimyjvF+B3urtE3U6eXYn5wLo2NY2VrHOhdK
+                                dif81sA8M3vmVHy7F3k9XCE8Z65B4RZQe2XU+XR9fjlWMmCtQEnnCZPVbHQmPl1i9q3QpXX74DLB74XoaWd/hEa/ArZnupUUXbNf
+                                WspRtz7b4Fvp+xwt7RcBHGl+DdqOnk+Tsan+IbWBedrAk5Fr+flZ4MPlgLlERE9KOBcfmzIingL3sJrV+I5n7e8xnpDmO3zPxZaM
+                                oQK6MkOXMk9bU+NJoA/tu8CYkdDBOyEzydIpftXG9P1CVkmVEUJd9I2Sky5nijI7M8yPJIvIz0o7LnW0vJ0+jFStHSkdqd0EkUSu
+                                WVkVyHVa5vnco5t7svm2cfWH9mG0rQBPu7jcpfXmZZV4ZV43yMN6t0Hs+JCnsnofxcQl6LNKpXz9BPFW97XO+vT4mUp0OZt2yhh+
+                                KXHN7LlFZjD+enijtw4rWfcD3vTNGtQyofI7IGirvtTQpfix581mHv2eUPoKn15JuYMK2Sn57cvqQTVW2e+3aKD8ViXdUMI3gKZn
+                                1uYHwM6En8X8uYrLXkXDz1nSYP2mnAd4/NwcirdCfrFVUvvXthwPa04fY/qdcfCyzIWe+JqfsBa5Ohyv+JU41s/FdV/8cCAS+bPM
+                                Niefv1Ik4IuEDWNetOFJgw1juHrddbpq5NiMbdrpmF95WXua5TjfyqGdfPVuxc/1Js5FSwsQri6f79PH2qBI2CCMmzYypns2H9pV
+                                x77kQS6dylRi+31Z00IbH1ZVLeR6n8zXFL9wlzqPKMY1ebvWPt1VVYFSFtD9Zyw15y6o6qncn0Ib0v+r6tPUyuxZWGeoSXdL7bD4
+                                rnI4ntaq/kwhMzaOjtAtxOPY2u0lXklNVE6+zCl7TmUHuZAd+gaSx1W/V0FTRu4T7IbjPcrPwXYWslStfdy4nXUsR5+rjUmfNu3C
+                                J/QA57/EE/Jthi0adO08EM/cxaztY7xYjrOtvQH3nw46jG+qvbxef5ooFzujHGYXH40ZWtp2TrOSm4sP7SwG4qlZWYHb1AqFp/2a
+                                rR6Pt/u8meMrYL1uEQXbsVNxkdq59ExQ91qqxreFd5IpHrvgh7HiiFXc0xaY7FNsbKUisY4T71xNGB8vMz5edoT7fzhyu6bLId2d
+                                eHfAXplxz7PPEt+0VCFnHubUuDrbUZ68grJnw6YTE+nXz+W8ZRijwltav3m8eS7kOVp5E/dO9jrqXt8JJlHEqy4r2SMt9fAExxMp
+                                rerujNxpkLXiGit6tuA5lZ3TXPL5SjzEHWkSwFJnnisUvit2CaVZgN66PGNSLmpfVHYLeToL2lMzc4LWYUVRvXI8Fouxw+7J3vno
+                                vutTDmXx4cmxK++0MjktIBclUEztERiFnQbOmdeDpng7fvFtw42cg+agbWUgJH8LWdH9mnWA8U267Mq1c1MI1niNDXcq30+c/J3W
+                                jGP6n12YRljcPTIXVR/62lXeJ+bbqjY31R6Feqijd5XqKJG922tUmM2qHe8gtmlWPwGkdfwuoWPxQToWH6TjpoWOfrTtRtPvd+rN
+                                XfnS1rvdaMl7113683HeDE9sthKsRdO1V/vsrSyhHnOPo/fc8f3xUHpFVuQJVvz/OG7Q36hEen7hPbVWIfaWz8znwHTPc7m71vtf
+                                2oUy2dtR7jLad9o6yDpKz13j4X3qL8JdfUgsV9PU1+F5V+cGiFpWIb2rHwSyHzdoxdmmO3xi2/+F/gcqZ+CqRhoAAA==";
 
             var gDecompressed = gCompressed.ToDecompress();
 

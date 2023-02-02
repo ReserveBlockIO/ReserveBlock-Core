@@ -457,7 +457,7 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
-            }           
+            }
         }
 
         internal static void SetValidator()
