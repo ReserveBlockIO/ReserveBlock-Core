@@ -604,6 +604,23 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Dumps out network metrics
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("NetworkMetrics")]
+        public async Task<string> NetworkMetrics()
+        {
+            var output = "[]"; // this will only display if command not recognized.
+            var currentTime = TimeUtil.GetTime();
+            var currentDiff = (currentTime - Globals.LastBlockAddedTimestamp).ToString();
+
+            output = JsonConvert.SerializeObject(new { BlockDiffAvg = BlockDiffService.CalculateAverage().ToString("#.##"), BlockLastReceived = Globals.LastBlockAddedTimestamp.ToLocalDateTimeFromUnix(),
+            BlockLastDelay = Globals.BlockTimeDiff.ToString(), TimeSinceLastBlockSeconds = currentDiff, BlocksAveraged = $"{Globals.BlockDiffQueue.Count().ToString()}/3456"});
+
+            return output;
+        }
+
+        /// <summary>
         /// Dumps out a validator owned address.
         /// </summary>
         /// <returns></returns>

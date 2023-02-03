@@ -302,6 +302,63 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns transaction from entire chain.
+        /// Warning this uses parallelism so only use if you system can handle this.
+        /// </summary>
+        /// <param name="txHash"></param>
+        /// <returns></returns>
+        [HttpGet("GetNetworkTXByHash/{txHash}")]
+        public async Task<string> GetNetworkTXByHash(string txHash)
+        {
+            var output = "";
+            var coreCount = Environment.ProcessorCount;
+            if (coreCount >= 4)
+            {
+                if (!string.IsNullOrEmpty(txHash))
+                {
+                    try
+                    {
+                        txHash = txHash.Replace(" ", "");//removes any whitespace before or after in case left in.
+                        var blocks = BlockchainData.GetBlocks();
+                        var height = Convert.ToInt32(Globals.LastBlock.Height);
+                        bool resultFound = false;
+
+                        var integerList = Enumerable.Range(0, height + 1);
+                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount == 4 ? 2 : 4 }, (blockHeight, loopState) =>
+                        {
+                            var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
+                            if (block != null)
+                            {
+                                var txs = block.Transactions.ToList();
+                                var result = txs.Where(x => x.Hash == txHash).FirstOrDefault();
+                                if (result != null)
+                                {
+                                    resultFound = true;
+                                    output = JsonConvert.SerializeObject(new { Success = true, Message = result });
+                                    loopState.Break();
+                                }
+                            }
+                        });
+
+                        if (!resultFound)
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "No transaction found with that hash." });
+                    }
+                    catch (Exception ex)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = $"Error Performing Query: {ex.ToString()}" });
+                    }
+
+                }
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude." });
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Creates a minting tranasctions
         /// </summary>
         /// <param name="jsonData"></param>

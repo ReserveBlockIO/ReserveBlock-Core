@@ -105,7 +105,7 @@ namespace ReserveBlockCore.Utilities
             var blockLastSentText = $"Block last sent at: {blockLastSent}";
             var lastDiffText = $"Block last delay: {lastDiff}";
             var currentDiffText = $"Current block delay: {currentDiff}";
-            var blockDiffAvg = $"Block Diff Avg: {BlockDiffService.CalculateAverage()} secs. Avg of: {Globals.BlockDiffQueue.Count()}/3456 Blocks.";
+            var blockDiffAvg = $"Block Diff Avg: {BlockDiffService.CalculateAverage().ToString("#.##")} secs. Avg of: {Globals.BlockDiffQueue.Count()}/3456 Blocks.";
 
             var cliVersionText = $"CLI Version: {Globals.CLIVersion}";
             var githubVersionTag = $"GitHub Version: {Globals.GitHubVersion}";

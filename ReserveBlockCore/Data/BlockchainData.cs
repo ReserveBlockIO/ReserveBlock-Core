@@ -370,6 +370,15 @@ namespace ReserveBlockCore.Data
             Console.WriteLine(" * Size............: {0}", block.Size);
             Console.WriteLine(" * Craft Time      : {0}", block.BCraftTime);
 
+            Console.WriteLine($"");
+            Console.WriteLine("\n===========\nBlock Metrics:");
+            var currentTime = TimeUtil.GetTime();
+            var currentDiff = (currentTime - Globals.LastBlockAddedTimestamp).ToString();
+            Console.WriteLine($"Block Diff Avg: {BlockDiffService.CalculateAverage().ToString("#.##")} secs. Avg of: {Globals.BlockDiffQueue.Count()}/3456 Blocks.");
+            Console.WriteLine($"Block Last Received: {Globals.LastBlockAddedTimestamp.ToLocalDateTimeFromUnix()}");
+            Console.WriteLine($"Block Last Delay: {Globals.BlockTimeDiff}");
+            Console.WriteLine($"Current block delay: {currentDiff}");
+            
 
         }
     }
