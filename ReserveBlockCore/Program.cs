@@ -95,6 +95,10 @@ namespace ReserveBlockCore
                         var encPassword = encPassSplit[1];
                         Globals.EncryptPassword = encPassword.ToSecureString();
                     }
+                    if(argC.Contains("openapi"))
+                    {
+                        Globals.OpenAPI = true;
+                    }
                     if (argC.Contains("updating"))
                     {
                         await Task.Delay(5000);//give previous session time to close.
@@ -329,8 +333,17 @@ namespace ReserveBlockCore
                 {
                     webBuilder.UseKestrel(options =>
                     {
-                        options.ListenLocalhost(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
-                        options.ListenLocalhost(Globals.APIPort);
+                        if(Globals.OpenAPI)
+                        {
+                            options.ListenAnyIP(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                            options.ListenAnyIP(Globals.APIPort);
+                        }
+                        else
+                        {
+                            options.ListenLocalhost(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                            options.ListenLocalhost(Globals.APIPort);
+                        }
+                        
                     })
                     .UseStartup<Startup>()
                     .UseUrls(new string[] {"http://*", "https://*" })

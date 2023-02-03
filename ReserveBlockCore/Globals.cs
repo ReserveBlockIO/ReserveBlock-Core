@@ -127,6 +127,7 @@ namespace ReserveBlockCore
         public static bool ExplorerValDataLastSendSuccess = false;
         public static bool LogAPI = false;
         public static bool RefuseToCallSeed = false;
+        public static bool OpenAPI = false;
         public static bool NFTFilesReadyEPN = false; // nft files ready, encryption password needed
         public static bool NFTsDownloading = false;
 
@@ -142,6 +143,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, Beacons> Beacons = new ConcurrentDictionary<string, Beacons>();
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
+        public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
 
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;

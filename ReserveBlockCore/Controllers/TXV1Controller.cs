@@ -601,7 +601,7 @@ namespace ReserveBlockCore.Controllers
                     tx.ToAddress = tx.ToAddress.ToAddressNormalize();
                     tx.Build();
 
-                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"TX Fee Calculated", Hash = tx.Hash });
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Hash Calculated.", Hash = tx.Hash });
                 }
                 else
                 {

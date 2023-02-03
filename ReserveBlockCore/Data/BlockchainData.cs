@@ -319,6 +319,7 @@ namespace ReserveBlockCore.Data
                 var currentTime = TimeUtil.GetTime();
                 Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
                 Globals.LastBlockAddedTimestamp = currentTime;
+                _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
                 blocks.InsertSafe(block);
             }
             else

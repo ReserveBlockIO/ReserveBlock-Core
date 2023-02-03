@@ -26,6 +26,13 @@ namespace ReserveBlockCore.Extensions
             long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();
             return unixTime;
         }
+
+        public static DateTime ToLocalDateTimeFromUnix(this long unixTime)
+        {
+            DateTime frDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            frDateTime = frDateTime.AddSeconds(unixTime).ToLocalTime();
+            return frDateTime;
+        }
         public static int ToInt32(this string obj)
         {
             int value;
