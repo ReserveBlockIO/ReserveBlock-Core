@@ -25,6 +25,17 @@ namespace ReserveBlockCore
         #region Main
         static async Task Main(string[] args)
         {
+            //force culture info to US
+            var culture = CultureInfo.GetCultureInfo("en-US");
+            if (Thread.CurrentThread.CurrentCulture.Name != "en-US")
+            {
+                CultureInfo.DefaultThreadCurrentCulture = culture;
+                CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+                Thread.CurrentThread.CurrentCulture = culture;
+                Thread.CurrentThread.CurrentUICulture = culture;
+            }
+
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
