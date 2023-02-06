@@ -63,14 +63,14 @@ namespace ReserveBlockCore
         public static int Port = 3338;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
-        public static int MinorVer = 1;
+        public static int MinorVer = 2;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
         public static bool ValidatorReceiving = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
-        public static string GitHubVersion = "beta2.3";
+        public static string GitHubVersion = "beta2.4";
         public static string GitHubApiURL = "https://api.github.com/";
         public static string GitHubRBXRepoURL = "repos/ReserveBlockIO/ReserveBlock-Core/releases/latest";
         public static string GitHubLatestReleaseVersion = "";
@@ -79,6 +79,8 @@ namespace ReserveBlockCore
         public static string StartArguments = "";
         public static DateTime NewUpdateLastChecked = DateTime.UtcNow.AddHours(-2);
         public static SecureString? APIToken = null;
+        public static int TimeSyncDiff = 0;
+        public static DateTime TimeSyncLastDate = DateTime.Now;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
@@ -130,6 +132,8 @@ namespace ReserveBlockCore
         public static bool OpenAPI = false;
         public static bool NFTFilesReadyEPN = false; // nft files ready, encryption password needed
         public static bool NFTsDownloading = false;
+        public static bool TimeInSync = true;
+        public static bool TimeSyncError = false;
 
         public static CancellationToken CancelledToken;
 

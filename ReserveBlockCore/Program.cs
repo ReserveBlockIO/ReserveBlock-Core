@@ -39,6 +39,11 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+            //Perform network time sync
+            _ = NetworkTimeService.Run();
+
+            await Task.Delay(800);
+
             bool valEncryptCheck = false;
             string? valEncryptAddr = "";
 

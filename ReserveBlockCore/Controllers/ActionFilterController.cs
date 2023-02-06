@@ -98,7 +98,7 @@ namespace ReserveBlockCore.Controllers
                     "GetAllLocalTX", "GetSuccessfulLocalTX", "GetFailedLocalTX", "GetPendingLocalTX", "GetMinedLocalTX", "GetAllTopics", 
                     "GetActiveTopics", "GetInactiveTopics", "GetMyTopics", "GetAllSmartContracts", "GetMintedSmartContracts", "CheckStatus", 
                     "GetIsWalletEncrypted", "GetMyVotes", "GetSingleSmartContract", "GetNFTAssetLocation", "GetCLIVersion", "CheckPasswordNeeded",
-                    "GetBeacons", "GetValidatorInfo"};
+                    "GetBeacons", "GetValidatorInfo", "IsValidating"};
 
                 if(!APIExclusionList.Contains(action))
                 {

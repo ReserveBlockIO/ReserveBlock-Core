@@ -1198,7 +1198,7 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("Wallet Started. Awaiting Command...");
         }
 
-        internal static void MainMenu()
+        internal static void MainMenu(bool noAccountMessage = false)
         {
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
@@ -1254,15 +1254,41 @@ namespace ReserveBlockCore.Services
             { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
             if(Globals.NFTFilesReadyEPN)
             {
-                ConsoleWriterService.OutputMarked("[red]| NFT Files awaiting download!         |[/]");
-                ConsoleWriterService.OutputMarked("[red]| Please input encrypt password        |[/]");
+                AnsiConsole.MarkupLine("[red]| NFT Files awaiting download!         |[/]");
+                AnsiConsole.MarkupLine("[red]| Please input encrypt password        |[/]");
             }
             if(!Globals.UpToDate)
             {
-                ConsoleWriterService.OutputMarked("[red]|          **CLI Is Outdated**         |[/]");
-                ConsoleWriterService.OutputMarked("[red]|Please type /update to download latest|[/]");
+                AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
+                AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
             }
-
+            else
+            {
+                AnsiConsole.MarkupLine("[green]|         **CLI Is Up To Date**        |[/]");
+            }
+            if(noAccountMessage)
+            {
+                Console.WriteLine("********************************************************************");
+                AnsiConsole.MarkupLine("[yellow]You do not have any accounts yet. Please choose option 2 to create a new account.[/]");
+            }
+            if(!Globals.TimeInSync)
+            {
+                AnsiConsole.MarkupLine("********************************************************************");
+                AnsiConsole.MarkupLine("[red]|             **Time is out of sync**            |[/]");
+                AnsiConsole.MarkupLine("[red]|Please ensure your system clock is in sync      |[/]");
+                AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[green]| **Time Server shows time is synced** |[/]");
+            }
+            if(Globals.TimeSyncError)
+            {
+                AnsiConsole.MarkupLine("********************************************************************");
+                AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
+                AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
+                AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+            }
         }
     }
 }

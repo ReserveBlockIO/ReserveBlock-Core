@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
@@ -109,6 +110,11 @@ namespace ReserveBlockCore.Utilities
 
             var cliVersionText = $"CLI Version: {Globals.CLIVersion}";
             var githubVersionTag = $"GitHub Version: {Globals.GitHubVersion}";
+
+            var timeSyncError = $"Time Sync Error? {Globals.TimeSyncError}. (If true please check system clock and ensure its working)";
+            var timeSync = $"Time in Sync? {Globals.TimeInSync}";
+            var lastSyncDiff = $"Last Time Sync Diff: {Globals.TimeSyncDiff}";
+            var lastSyncTime = $"Last Time Sync Date: {Globals.TimeSyncLastDate}";
 
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
@@ -229,7 +235,17 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastBlockInfo);
             strBld.AppendLine("---------------------------------------------------------------------");
-               
+
+            strBld.AppendLine("-------------------------------Time Sync-----------------------------");
+            strBld.AppendLine(timeSyncError);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(timeSync);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastSyncDiff);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastSyncTime);
+            strBld.AppendLine("---------------------------------------------------------------------");
+
             return strBld.ToString();
         }
 

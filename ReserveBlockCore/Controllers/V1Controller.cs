@@ -520,7 +520,8 @@ namespace ReserveBlockCore.Controllers
                     IsResyncing = Globals.IsResyncing.ToString(), IsChainSynced =  Globals.IsChainSynced.ToString(), 
                     ChainCorrupted = Globals.DatabaseCorruptionDetected.ToString(), DuplicateValIP = Globals.DuplicateAdjIP, 
                     DuplicateValAddress = Globals.DuplicateAdjAddr, NFTFilesReadyEPN = Globals.NFTFilesReadyEPN, 
-                    ConnectedToMother = Globals.ConnectToMother.ToString(), UpToDate = Globals.UpToDate, BlockVersion = BlockVersionUtility.GetBlockVersion(Globals.LastBlock.Height)}
+                    ConnectedToMother = Globals.ConnectToMother.ToString(), UpToDate = Globals.UpToDate, BlockVersion = BlockVersionUtility.GetBlockVersion(Globals.LastBlock.Height),
+                    TimeInSync = Globals.TimeInSync.ToString(), TimeSyncError = Globals.TimeSyncError }
             };
 
             output = JsonConvert.SerializeObject(walletInfo);
