@@ -39,6 +39,7 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+
             var httpClientBuilder = Host.CreateDefaultBuilder(args)
                      .ConfigureServices(services =>
                      {
@@ -49,6 +50,10 @@ namespace ReserveBlockCore
 
             await httpClientBuilder.StartAsync();
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
+
+
+            //Forced Testnet
+            Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -97,9 +102,7 @@ namespace ReserveBlockCore
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsUtilities.DisableConsoleQuickEdit.Go();
 
-            
-            //Forced Testnet
-            //Globals.IsTestNet = true;
+
             var argList = args.ToList();
             if (argList.Count() > 0)
             {
@@ -205,7 +208,7 @@ namespace ReserveBlockCore
             SeedNodeService.SeedBench();
             await BadTransaction.PopulateBadTXList();
 
-            Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
+            Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
 
             var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
