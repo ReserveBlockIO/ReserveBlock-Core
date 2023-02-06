@@ -288,16 +288,11 @@ namespace ReserveBlockCore.Services
                     await Task.Delay(500);
                 }
                     
-
                 if (!BroadcastLock)
                 {
                     BroadcastLock = true;
                     var txsToBroadcastAdj = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToAdj).ToList();
                     var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
-
-                    //Might need to pre-filter. Testing initial deletes before doing unwanted work.
-                    //Globals.BroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
-                    //Globals.ConsensusBroadcastedTrxDict.TryRemove(localFromTransaction.Hash, out _);
 
                     if (txsToBroadcastAdj.Count() > 0)
                     {
@@ -322,6 +317,37 @@ namespace ReserveBlockCore.Services
                     }
 
                     var mempool = TransactionData.GetPool();
+
+                    //Attempt to rebroadcast a stale tx to get it confirmed
+                    //Putting in try catch for now to ensure normal TXs still move.
+                    try
+                    {
+                        var currentTimeLessThree = TimeUtil.GetTime(-120);
+                        var rebroadcastTxs = mempool.Query().Where(x => x.Timestamp <= currentTimeLessThree).ToEnumerable();
+
+                        if (rebroadcastTxs.Count() > 0)
+                        {
+                            foreach (var tx in rebroadcastTxs)
+                            {
+                                if (Globals.ConsensusBroadcastedTrxDict.ContainsKey(tx.Hash))
+                                {
+                                    if (Globals.ConsensusBroadcastedTrxDict[tx.Hash].RebroadcastCount < 3)
+                                    {
+                                        Globals.ConsensusBroadcastedTrxDict[tx.Hash].RebroadcastCount += 1; //add to attempts
+                                        Globals.ConsensusBroadcastedTrxDict[tx.Hash].IsBroadcastedToVal = false; //attempt rebroadcast
+                                    }
+                                }
+                            }
+                            txsToBroadcastVal.Clear();
+                            txsToBroadcastVal = new List<TransactionBroadcast>();
+                            txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        AdjLogUtility.Log($"Error Doing Rebroadcast. Error: {ex.ToString()}", "ClientCallService.DoConsensusBroadcastWork()-E1");
+                    }
+
                     if (txsToBroadcastVal.Count() > 0)
                     {
                         var txHashes = JsonConvert.SerializeObject(txsToBroadcastVal.Select(x => x.Hash).ToArray());

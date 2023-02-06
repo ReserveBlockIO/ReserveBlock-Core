@@ -333,7 +333,8 @@ namespace ReserveBlockCore.P2P
                                     Hash = txBroadcast.Hash,
                                     IsBroadcastedToAdj = false,
                                     IsBroadcastedToVal = false,
-                                    Transaction = txBroadcast.Transaction
+                                    Transaction = txBroadcast.Transaction,
+                                    RebroadcastCount = 0
                                 };
                             }
                             else
