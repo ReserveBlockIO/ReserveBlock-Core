@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ReserveBlockCore.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,28 +9,42 @@ namespace ReserveBlockCore.Utilities
 {
     internal class TimeUtil
     {
-        public static long GetTime(int addTime = 0)
+        public static long GetTime(int addSeconds = 0)
         {
-            long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddSeconds(addTime).Ticks;
-            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerSecond);
-            return timeStamp;//returns time in ticks from Epoch Time
+            return DateTimeOffset.UtcNow.AddSeconds(addSeconds).ToUnixTimeSeconds();
         }
 
-        public static long GetMillisecondTime(int addTime = 0)
+        public static long GetMillisecondTime()
         {
-            long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddSeconds(addTime).Ticks;
-            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerMillisecond);
-            return timeStamp;//returns time in ticks from Epoch Time
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();            
+        }
+
+        public static long GetTimeFromDateTime(DateTime date)
+        {
+            return ((DateTimeOffset)date).ToUnixTimeSeconds();
         }
 
         public static long GetTimeForBeaconRelease()
         {
-            long epochTicks = new DateTime(1970, 1, 1).Ticks;
-            long nowTicks = DateTime.UtcNow.AddDays(5).Ticks;
-            long timeStamp = ((nowTicks - epochTicks) / TimeSpan.TicksPerSecond);
-            return timeStamp;//returns time in ticks from Epoch Time
+            var beacons = Beacons.GetBeacons();
+            if(beacons != null)
+            {
+                var selfBeacon = Globals.SelfBeacon;
+                if(selfBeacon != null)
+                {
+                    if(selfBeacon.FileCachePeriodDays > 0)
+                    {
+                        return DateTimeOffset.UtcNow.AddDays(selfBeacon.FileCachePeriodDays).ToUnixTimeSeconds();
+                    }
+                    else
+                    {
+                        return DateTimeOffset.UtcNow.AddYears(7777).ToUnixTimeSeconds();
+                    }
+                }
+            }
+
+            //default to 5 days
+            return DateTimeOffset.UtcNow.AddDays(5).ToUnixTimeSeconds();
         }
 
         public static DateTime ToDateTime(long unixTime)

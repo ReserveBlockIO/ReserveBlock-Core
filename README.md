@@ -6,7 +6,7 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/ReserveBlockIO/ReserveBlock-Core)
 
 ![license](https://img.shields.io/github/license/ReserveBlockIO/ReserveBlock-Core)
-![build](https://img.shields.io/github/workflow/status/ReserveBlockIO/ReserveBlock-Core/.NET)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/ReserveBlockIO/ReserveBlock-Core/dotnet.yml)
 ![issues](https://img.shields.io/github/issues/ReserveBlockIO/ReserveBlock-Core)
 ![Discord](https://img.shields.io/discord/917499597692211260?label=discord)
 

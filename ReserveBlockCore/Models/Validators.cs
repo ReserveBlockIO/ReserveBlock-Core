@@ -45,8 +45,7 @@ namespace ReserveBlockCore.Models
                     return validators;
                 }
                 catch (Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "Validators.GetAll()");
                     return null;
                 }
@@ -61,8 +60,7 @@ namespace ReserveBlockCore.Models
                     return validators;
                 }
                 catch (Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "Validators.GetAll()");
                     return null;
                 }

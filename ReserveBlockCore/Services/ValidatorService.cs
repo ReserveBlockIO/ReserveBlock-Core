@@ -3,11 +3,17 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
+using System.Numerics;
+using ReserveBlockCore.EllipticCurve;
+using System.Globalization;
+using Microsoft.AspNetCore.SignalR.Client;
+using System.Net;
 
 namespace ReserveBlockCore.Services
 {
     public class ValidatorService
     {
+        static SemaphoreSlim ValidatorMonitorServiceLock = new SemaphoreSlim(1, 1);
         public static async void DoValidate()
         {
             try
@@ -48,19 +54,19 @@ namespace ReserveBlockCore.Services
                     {
                         Console.WriteLine("You must only type 'y' or 'n'. Please choose the correct option. (Type 'y' for yes and 'n' for no.)");
                         Console.WriteLine("Returning you to main menu...");
-                        Thread.Sleep(5000);
+                        await Task.Delay(5000);
                         StartupService.MainMenu();
                     }
                     else if (confirmChoice.ToLower() == "n")
                     {
                         Console.WriteLine("Returning you to main menu in 3 seconds...");
-                        Thread.Sleep(3000);
+                        await Task.Delay(3000);
                         StartupService.MainMenu();
                     }
                     else if (confirmChoice.ToLower() == "y")
                     {
                         Console.Clear();
-                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                        Console.WriteLine("Please type a unique name for your node to be known by. If you do not want a name leave this blank and one will be assigned. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                         var nodeName = await ReadLineUtility.ReadLine();
 
                         if (!string.IsNullOrWhiteSpace(nodeName))
@@ -69,34 +75,31 @@ namespace ReserveBlockCore.Services
 
                             while (nodeNameCheck == false)
                             {
-                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.");
+                                Console.WriteLine("Please choose another name as we show that as taken. (Ex. NodeSwarm_1, TexasNodes, Node1337, AaronsNode, etc.)");
                                 nodeName = await ReadLineUtility.ReadLine();
                                 nodeNameCheck = UniqueNameCheck(nodeName);
                             }
 
                             var result = await StartValidating(account, nodeName);
-                            Console.WriteLine(result);
-                            Console.WriteLine("Returning you to main menu in 10 seconds...");
-                            Thread.Sleep(10000);
                             StartupService.MainMenu();
+                            Console.WriteLine(result);
+                            Console.WriteLine("Returned to main menu.");
                         }
-
                     }
                     else
                     {
+                        StartupService.MainMenu();
                         Console.WriteLine("Unexpected input detected.");
-                        Console.WriteLine("Returning you to main menu in 5 seconds...");
-                        Thread.Sleep(5000);
+                        Console.WriteLine("Returned to main menu.");
                     }
 
                 }
                 else
                 {
+                    StartupService.MainMenu();
                     Console.WriteLine("********************************************************************");
                     Console.WriteLine("Insufficient balance to validate.");
-                    Console.WriteLine("Returning you to main menu in 5 seconds...");
-                    Thread.Sleep(5000);
-                    StartupService.MainMenu();
+                    Console.WriteLine("Returned to main menu.");
                 }
             }
             catch (Exception ex) { }
@@ -106,7 +109,7 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if (Globals.StopAllTimers == true || Globals.BlocksDownloading == 1)
+            if (Globals.StopAllTimers == true || Globals.BlocksDownloadSlim.CurrentCount == 0)
             {
                 output = "Wallet is still starting. Please wait";
                 return output;
@@ -191,7 +194,7 @@ namespace ReserveBlockCore.Services
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                        await StartupService.ConnectoToAdjudicator();
+                        _ = StartupService.GetAdjudicatorPool();
                     }
                 }
                 else
@@ -222,13 +225,54 @@ namespace ReserveBlockCore.Services
                 var validators = Validators.Validator.GetAll();
                 validators.DeleteAllSafe();
 
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
+
+
                 Console.WriteLine("Validator database records have been reset.");
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
+            }
+        }
+
+        public static async Task<string?> SuspendMasterNode()
+        {
+            try
+            {
+                var accounts = AccountData.GetAccounts();
+                var valAccount = accounts.Query().Where(x => x.IsValidating == true).FirstOrDefault();
+
+                if (valAccount != null)
+                {
+                    valAccount.IsValidating = false;
+                    accounts.UpdateSafe(valAccount);
+                    Globals.ValidatorAddress = "";
+                    return valAccount.Address;
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Clearing Validator Info. Error message: {ex.ToString()}", "ValidatorService.DoMasterNodeStop()");
+            }
+
+            return null;
+        }
+
+
+        public static async Task PerformErrorCountCheck()
+        {
+            if (Globals.AdjNodes.Values.Any(x => x.LastTaskErrorCount > 3))
+            {
+                var adjNodesWithErrors = Globals.AdjNodes.Values.Where(x => x.LastTaskErrorCount > 3).ToList();
+                foreach (var adjNode in adjNodesWithErrors)
+                {
+                    var result = await ResetAdjConnection(adjNode);
+                    if(!result)
+                    {
+                        ErrorLogUtility.LogError($"Failed to reset Adj connection to: {adjNode.Address} on IP: {adjNode.IpAddress}. See exception above.", "ValidatorService.PerformErrorCountCheck()");
+                    }
+                }
             }
         }
 
@@ -237,20 +281,41 @@ namespace ReserveBlockCore.Services
             //Disconnect from adj
             try
             {
-                await P2PClient.DisconnectAdjudicator();
+                await P2PClient.DisconnectAdjudicators();
                 //Do a block check to ensure all blocks are present.
                 await BlockDownloadService.GetAllBlocks();
-                Thread.Sleep(2000);
+                await Task.Delay(500);
                 //Reset validator variable.
                 StartupService.SetValidator();
-                //Reconnect
-                await StartupService.ConnectoToAdjudicator();
 
                 return true;
             }
             catch(Exception ex)
             {
                 ErrorLogUtility.LogError($"Error Running ValidatorErrorReset(). Error: {ex.ToString()}", "ValidatorService.ValidatorErrorReset()");
+            }
+
+            return false;
+        }
+
+        public static async Task<bool> ResetAdjConnection(AdjNodeInfo adjInfo)
+        {
+            //Disconnect from adj
+            try
+            {
+                await adjInfo.Connection.DisposeAsync();
+                Globals.AdjNodes[adjInfo.IpAddress].LastTaskErrorCount = 0;
+                Globals.AdjNodes[adjInfo.IpAddress].LastTaskError = false;
+                Globals.AdjNodes[adjInfo.IpAddress].LastWinningTaskError = false;
+                //Do a block check to ensure all blocks are present.
+                await BlockDownloadService.GetAllBlocks();
+                await Task.Delay(500);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Running ResetAdjConnection(). Error: {ex.ToString()}", "ValidatorService.ResetAdjConnection()");
             }
 
             return false;
@@ -298,7 +363,7 @@ namespace ReserveBlockCore.Services
             var validators = Validators.Validator.GetAll();
             validators.Delete(validator.Id);
 
-            await P2PClient.DisconnectAdjudicator();
+            await P2PClient.DisconnectAdjudicators();
 
             ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
@@ -329,13 +394,12 @@ namespace ReserveBlockCore.Services
 
                     Globals.ValidatorAddress = "";
 
-                    await P2PClient.DisconnectAdjudicator();
+                    await P2PClient.DisconnectAdjudicators();
                 }
 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
             }
         }
 
@@ -381,8 +445,7 @@ namespace ReserveBlockCore.Services
                 
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
             }
         }
 
@@ -397,6 +460,130 @@ namespace ReserveBlockCore.Services
 
             return output;
 
+        }
+
+        public static async Task ValidatingMonitorService()
+        {
+            if (Globals.AdjudicateAccount != null)
+                return;
+
+            while(true)
+            {
+                var delay = Task.Delay(120000);
+
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+
+                if(string.IsNullOrEmpty(Globals.ValidatorAddress))
+                {
+                    await delay;
+                    continue;
+                }
+
+                if(Globals.AdjNodes.Count == 0)
+                {
+                    await delay;
+                    continue;
+                }
+
+                await ValidatorMonitorServiceLock.WaitAsync();
+                try
+                {
+                    if(Globals.ValidatorLastBlockHeight != 0)
+                    {
+                        if(Globals.LastBlock.Height - Globals.ValidatorLastBlockHeight <= 2)
+                        {
+                            //potentiall issue
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Block Heights are behind.");
+                        }
+                        else
+                        {
+                            Globals.ValidatorLastBlockHeight = Globals.LastBlock.Height;
+                            Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Block Heights are behind."));
+                        }
+
+                        var adjNodes = Globals.AdjNodes.Values.Where(x => x.IsConnected).ToList();
+                        if(adjNodes.Count < 3)
+                        {
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 2 or less.");
+                        }
+                        else
+                        {
+                            Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("ADJ Connections are 2 or less."));
+                            var currentTime = DateTime.Now.AddMinutes(-2);
+
+                            var lastSendTime = adjNodes.Max(x => x.LastTaskSentTime);
+                            var lastReceiveTime = adjNodes.Max(x => x.LastTaskResultTime);
+
+                            if(lastSendTime != null && lastReceiveTime != null)
+                            {
+                                if (lastSendTime < currentTime) 
+                                { 
+                                    Globals.ValidatorSending = false; 
+                                    Globals.ValidatorIssueCount += 1; 
+                                    Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Behind on sending Task to ADJs."); 
+                                }
+                                else 
+                                { 
+                                    Globals.ValidatorSending = true; 
+                                    Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Behind on sending Task to ADJs.")); 
+                                }
+
+                                if (lastReceiveTime < currentTime) 
+                                { 
+                                    Globals.ValidatorReceiving = false; 
+                                    Globals.ValidatorIssueCount += 1;
+                                    Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Behind on receiving Task Answers from ADJs.");
+                                }
+                                else 
+                                { 
+                                    Globals.ValidatorReceiving = true; 
+                                    Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Behind on receiving Task Answers from ADJs.")); 
+                                }
+                            }
+                            else
+                            {
+                                if (lastSendTime == null)
+                                    Globals.ValidatorSending = false;
+                                if (lastReceiveTime == null)
+                                    Globals.ValidatorReceiving = false;
+                                //send variable to false that sending and receiving is not happening.
+                                Globals.ValidatorIssueCount += 1;
+                            }
+
+                            
+                        }
+                        
+                    }
+                    else
+                    {
+                        Globals.ValidatorLastBlockHeight = Globals.LastBlock.Height;
+                    }
+
+                    if(Globals.ValidatorIssueCount >= 10)
+                    {
+                        ConsoleWriterService.OutputMarked("[red]Validator has had the following issues to report. Please ensure node is operating correctly[/]");
+                        foreach (var issue in Globals.ValidatorErrorMessages)
+                        {
+
+                            ConsoleWriterService.OutputMarked($"[yellow]{issue}[/]");
+                        }
+
+                        Globals.ValidatorIssueCount = 0;
+                    }
+                }
+                finally
+                {
+                    ValidatorMonitorServiceLock.Release();
+                }
+
+                await delay;
+            }
         }
 
     }

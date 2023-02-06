@@ -29,8 +29,50 @@ namespace ReserveBlockCore
         {
             services.AddControllers();
 
+            //services.AddApiVersioning(options =>
+            //{
+            //    options.ReportApiVersions = true;
+            //    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+            //});
+
             services.AddSwaggerGen(c => {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ReserveBlock CLI API", Version = "v1" });
+                c.DocumentFilter<SwaggerDocumentFilter<Account>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AccountKeystore>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AccountStateTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjNodeInfo>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjPool>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjudicatorPool>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Adjudicators>>();
+                c.DocumentFilter<SwaggerDocumentFilter<AdjVoteInReqs>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Adnr>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Beacons>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Block>>();
+                c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
+                c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
+                c.DocumentFilter<SwaggerDocumentFilter<HDWallet>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Keystore>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother.Kids>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherJoinPayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherStartPayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<NodeInfo>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Peers>>();
+                c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskAnswerResult>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskNumberAnswerV2>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskQuestion>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TaskWinner>>();
+                c.DocumentFilter<SwaggerDocumentFilter<TopicTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Transaction>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Validators>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Vote>>();
+                c.DocumentFilter<SwaggerDocumentFilter<WorldTrei>>();
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+                if(Globals.APIToken?.Length > 0)
+                    c.OperationFilter<SwaggerHeaderFilter>();
             });
         }
 
@@ -45,7 +87,9 @@ namespace ReserveBlockCore
             app.UseSwagger();
             app.UseSwaggerUI(c => {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "ReserveBlock API v1");
+                c.DisplayRequestDuration();
             });
+
 
             app.Use((context, func) =>
             {
@@ -82,8 +126,8 @@ namespace ReserveBlockCore
                 return Task.CompletedTask;
             });
 
-            if(Globals.TestURL)
-                app.UseHttpsRedirection();
+            //if(Globals.TestURL)
+                //app.UseHttpsRedirection();
 
             app.UseRouting();
 

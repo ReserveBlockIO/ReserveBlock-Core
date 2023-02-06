@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Models
         public string MD5List { get; set; }
         public bool IsReady { get; set; }
         public bool IsDownloaded { get; set; }
+        public bool DeleteAfterDownload { get; set; }
 
         public class BeaconSendData
         {
@@ -50,8 +51,7 @@ namespace ReserveBlockCore.Models
                 return beacon;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "BeaconData.GetBeacon()");
                 return null;
             }
@@ -72,8 +72,7 @@ namespace ReserveBlockCore.Models
                 return beaconInfo;
             }
             catch (Exception ex)
-            {
-                DbContext.Rollback();
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "BeaconData.GetBeaconData()");
                 return null;
             }

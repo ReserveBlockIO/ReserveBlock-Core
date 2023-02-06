@@ -5,12 +5,13 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Services
 {
     public class TransactionValidatorService
     {
-        public static async Task<bool> VerifyTX(Transaction txRequest, bool blockDownloads = false)
+        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false)
         {
             bool txResult = false;
 
@@ -18,36 +19,41 @@ namespace ReserveBlockCore.Services
             var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
             //Balance Check
-            if(from == null)
+            if (from == null)
             {
                 //They may also just need the block that contains this TX.
                 //We might want to queue a block check and download.
-                return txResult;
+                return (txResult, "This is a new account with no balance.");
             }
             else
             {
-                if(from.Balance < (txRequest.Amount + txRequest.Fee))
+                if (from.Balance < (txRequest.Amount + txRequest.Fee))
                 {
-                    return txResult;//balance was less than the amount they are trying to send.
+                    return (txResult, "The balance of this account is less than the amount being sent.");//balance was less than the amount they are trying to send.
                 }
             }
 
+            if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
+            {
+                if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
+                    return (txResult, "Address failed to validate");
+            }
+
             //Timestamp Check
-            if(!blockDownloads)
+            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
             {
                 var currentTime = TimeUtil.GetTime();
                 var timeDiff = currentTime - txRequest.Timestamp;
                 var minuteDiff = timeDiff / 60M;
 
-                if (minuteDiff > 120.0M)
+                if (minuteDiff > 60.0M)
                 {
-                    return txResult;
+                    return (txResult, "The timestamp of this transactions is too old to be sent now.");
                 }
             }
 
-            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Globals.MemBlocks.SelectMany(x => x.Transactions).ToArray();
-            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
+            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again            
+            var txExist = Globals.MemBlocks.ContainsKey(txRequest.Hash);
             if (txExist)
             {
                 var mempool = TransactionData.GetPool();
@@ -55,13 +61,14 @@ namespace ReserveBlockCore.Services
                 {
                     mempool.DeleteManySafe(x => x.Hash == txRequest.Hash);
                 }
-                return txResult;
+                return (txResult, "This transactions has already been sent.");
             }
 
             var checkSize = await VerifyTXSize(txRequest);
-            if(checkSize == false)
+
+            if (checkSize == false)
             {
-                return txResult;
+                return (txResult, $"This transactions is too large. Max size allowed is 30 kb.");
             }
 
             //Hash Check
@@ -121,464 +128,150 @@ namespace ReserveBlockCore.Services
 
                     if (!newTxnModZero.Hash.Equals(txRequest.Hash))
                     {
-                        return txResult;
-                    }
-                }
-                
-            }
-
-            if(txRequest.TransactionType != TransactionType.TX)
-            {
-                if(txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT 
-                    || txRequest.TransactionType == TransactionType.NFT_BURN)
-                {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
-                    var scData = scDataArray[0];
-
-                    var function = (string?)scData["Function"];
-                    var scUID = (string?)scData["ContractUID"];
-
-                    if (!string.IsNullOrWhiteSpace(function))
-                    {
-                        switch (function)
-                        {
-                            case "Mint()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        return txResult;
-                                    }
-
-                                    break;
-                                }
-
-                            case "Transfer()":
-                                {
-                                    var toAddress = (string?)scData["ToAddress"];
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return txResult;
-                                    }
-
-                                    break;
-                                }
-
-                            case "Burn()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return txResult;
-                                    }
-
-                                    break;
-                                }
-                            case "Evolve()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                        if(txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-                            case "Devolve()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-                            case "ChangeEvolveStateSpecific()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return txResult;
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-
-                            default:
-                                break;
-                        }
-                    }
-
-                }
-
-                if(txRequest.TransactionType == TransactionType.ADNR)
-                {
-                    var txData = txRequest.Data;
-                    if(txData != null)
-                    {
-                        try
-                        {
-                            var jobj = JObject.Parse(txData);
-
-                            var function = (string)jobj["Function"];
-                            if (function == "AdnrCreate()")
-                            {
-                                var name = (string)jobj["Name"];
-                                var adnrList = Adnr.GetAdnr();
-                                if(adnrList != null)
-                                {
-                                    var nameCheck = adnrList.FindOne(x => x.Name == name);
-                                    if (nameCheck != null)
-                                    {
-                                        return txResult;
-                                    }
-
-                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
-                                    if(addressCheck != null)
-                                    {
-                                        return txResult;
-                                    }
-
-                                    if(txRequest.ToAddress != "Adnr_Base")
-                                    {
-                                        return txResult;
-                                    }
-                                }
-                            }
-
-                            if (function == "AdnrDelete()")
-                            {
-                                var adnrList = Adnr.GetAdnr();
-                                if (adnrList != null)
-                                {
-                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
-                                    if (addressCheck == null)
-                                    {
-                                        return txResult;
-                                    }
-                                }
-                            }
-
-                            if (function == "AdnrTransfer()")
-                            {
-                                var adnrList = Adnr.GetAdnr();
-                                if (adnrList != null)
-                                {
-                                    var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
-                                    if (addressCheck == null)
-                                    {
-                                        return txResult;
-                                    }
-
-                                    var toAddressCheck = adnrList.FindOne(x => x.Address == txRequest.ToAddress);
-                                    if (toAddressCheck != null)
-                                    {
-                                        return txResult;
-                                    }
-                                }
-                            }
-                        }
-                        catch(Exception ex)
-                        {
-                            DbContext.Rollback();
-                            ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
-                            return txResult;
-                        }
+                        return (txResult, "This transactions hash is not equal to the original hash.");
                     }
                 }
 
-                if(txRequest.TransactionType == TransactionType.DSTR)
-                {
-                    //PERFORM DSTR HERE
-                }
-            }
-
-            //Signature Check - Final Check to return true.
-            var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
-            if (isTxValid)
-            {
-                txResult = true;
-            }
-            else
-            {
-                return txResult;
-            }
-
-            //Return verification result.
-            return txResult;
-
-        }
-
-        public static async Task<(bool, string)> VerifyTXDetailed(Transaction txRequest, bool blockDownloads = false)
-        {
-            bool txResult = false;
-
-            var accStTrei = StateData.GetAccountStateTrei();
-            var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
-
-            //Balance Check
-            if (from == null)
-            {
-                //They may also just need the block that contains this TX.
-                //We might want to queue a block check and download.
-                return (txResult, "This is a new account with no balance.");
-            }
-            else
-            {
-                if (from.Balance < (txRequest.Amount + txRequest.Fee))
-                {
-                    return (txResult, "The balance of this account is less than the amount being sent.");//balance was less than the amount they are trying to send.
-                }
-            }
-
-            //Timestamp Check
-            if (!blockDownloads)
-            {
-                var currentTime = TimeUtil.GetTime();
-                var timeDiff = currentTime - txRequest.Timestamp;
-                var minuteDiff = timeDiff / 60M;
-
-                if (minuteDiff > 120.0M)
-                {
-                    return (txResult, "The timestamp of this transactions is too old to be sent now.");
-                }
-            }
-
-            //Prev Tx in Block Check - this is to prevent someone sending a signed TX again
-            var memBlocksTxs = Globals.MemBlocks.ToArray().SelectMany(x => x.Transactions).ToArray();
-            var txExist = memBlocksTxs.Any(x => x.Hash == txRequest.Hash);
-            if (txExist)
-            {
-                var mempool = TransactionData.GetPool();
-                if (mempool.Count() > 0)
-                {
-                    mempool.DeleteManySafe(x => x.Hash == txRequest.Hash);
-                }
-                return (txResult, "This transactions has already been sent.");
-            }
-
-            var checkSize = await VerifyTXSize(txRequest);
-
-            if (checkSize == false)
-            {
-                return (txResult, $"This transactions is too large. Max size allowed is 30 kb.");
-            }
-
-            //Hash Check
-            var newTxn = new Transaction()
-            {
-                Timestamp = txRequest.Timestamp,
-                FromAddress = txRequest.FromAddress,
-                ToAddress = txRequest.ToAddress,
-                Amount = txRequest.Amount,
-                Fee = txRequest.Fee,
-                Nonce = txRequest.Nonce,
-                TransactionType = txRequest.TransactionType,
-                Data = txRequest.Data,
-            };
-
-            newTxn.Build();
-
-            if (!newTxn.Hash.Equals(txRequest.Hash))
-            {
-                if(txRequest.Amount != 0)
-                {
-                    var amountCheck = txRequest.Amount % 1 == 0;
-                    var amountFormat = 0M;
-                    if (amountCheck)
-                    {
-                        var amountStr = txRequest.Amount.ToString("#");
-                        amountFormat = decimal.Parse(amountStr);
-                    }
-
-                    var newTxnMod = new Transaction()
-                    {
-                        Timestamp = txRequest.Timestamp,
-                        FromAddress = txRequest.FromAddress,
-                        ToAddress = txRequest.ToAddress,
-                        Amount = amountFormat,
-                        Fee = txRequest.Fee,
-                        Nonce = txRequest.Nonce,
-                        TransactionType = txRequest.TransactionType,
-                        Data = txRequest.Data,
-                    };
-
-                    newTxnMod.Build();
-
-                    if (!newTxnMod.Hash.Equals(txRequest.Hash))
-                    {
-                        return (txResult, "This transactions hash is not equal to the original hash."); 
-                    }
-                }
-                else
-                {
-                    return (txResult, "This transactions hash is not equal to the original hash.");
-                }
             }
 
             if (txRequest.TransactionType != TransactionType.TX)
-
             {
                 if (txRequest.TransactionType == TransactionType.NFT_TX || txRequest.TransactionType == TransactionType.NFT_MINT
                     || txRequest.TransactionType == TransactionType.NFT_BURN)
                 {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
-                    var scData = scDataArray[0];
-
-                    var function = (string?)scData["Function"];
-                    var scUID = (string?)scData["ContractUID"];
-
-                    if (!string.IsNullOrWhiteSpace(function))
+                    try
                     {
-                        switch (function)
+                        var txData = txRequest.Data;
+                        if(txData != null)
                         {
-                            case "Mint()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        return (txResult, "This smart contract has already been minted."); ;
-                                    }
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                            var scData = scDataArray[0];
 
-                                    break;
-                                }
+                            var function = (string?)scData["Function"];
+                            var scUID = (string?)scData["ContractUID"];
 
-                            case "Transfer()":
+                            if (!string.IsNullOrWhiteSpace(function))
+                            {
+                                switch (function)
                                 {
-                                    var toAddress = (string?)scData["ToAddress"];
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                    case "Mint()":
                                         {
-                                            return (txResult, "You are attempting to transfer a Smart contract you don't own.");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return (txResult, "SC does not exist.");
-                                    }
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                return (txResult, "This smart contract has already been minted.");
+                                            }
 
-                                    break;
-                                }
+                                            break;
+                                        }
 
-                            case "Burn()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                    case "Transfer()":
                                         {
-                                            return (txResult, "You are attempting to burn a Smart contract you don't own."); 
-                                        }
-                                    }
-                                    else
-                                    {
-                                        return (txResult, "SC does not exist.");
-                                    }
+                                            var toAddress = (string?)scData["ToAddress"];
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to transfer a Smart contract you don't own.");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "SC does not exist.");
+                                            }
 
-                                    break;
-                                }
-                            case "Evolve()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return (txResult, "You are attempting to evolve a Smart contract you don't own.");
+                                            break;
                                         }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return (txResult, "You are attempting to evolve a Smart contract you don't own.");
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-                            case "Devolve()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve a Smart contract you don't own.");
-                                        }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve a Smart contract you don't own.");
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
-                            case "ChangeEvolveStateSpecific()":
-                                {
-                                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
-                                    if (scStateTreiRec != null)
-                                    {
-                                        if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
-                                        }
-                                        if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
-                                        {
-                                            return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
-                                        }
-                                    }
-                                    //Run the Trillium REPL To ensure new state is valid again.
-                                    break;
-                                }
 
-                            default:
-                                break;
+                                    case "Burn()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to burn a Smart contract you don't own.");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "SC does not exist.");
+                                            }
+
+                                            break;
+                                        }
+                                    case "Evolve()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                                {
+                                                    return (txResult, "You are attempting to evolve a Smart contract you don't own.");
+                                                }
+                                                if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to evolve a Smart contract you don't own.");
+                                                }
+                                            }
+                                            //Run the Trillium REPL To ensure new state is valid again.
+                                            break;
+                                        }
+                                    case "Devolve()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve a Smart contract you don't own.");
+                                                }
+                                                if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve a Smart contract you don't own.");
+                                                }
+                                            }
+                                            //Run the Trillium REPL To ensure new state is valid again.
+                                            break;
+                                        }
+                                    case "ChangeEvolveStateSpecific()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                            {
+                                                if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
+                                                }
+                                                if (txRequest.ToAddress != scStateTreiRec.OwnerAddress)
+                                                {
+                                                    return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
+                                                }
+                                            }
+                                            //Run the Trillium REPL To ensure new state is valid again.
+                                            break;
+                                        }
+
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return (txResult, $"TX Data cannot be null for transaction type: {txRequest.TransactionType}");
                         }
                     }
-
+                    catch { return (txResult, $"TX Could not be parsed. TX Hash: {txRequest.Hash}"); }
+                    
                 }
 
                 if (txRequest.TransactionType == TransactionType.ADNR)
                 {
                     var txData = txRequest.Data;
-                    if (txData != null)
+                    var badTx = Globals.BadADNRTxList.Exists(x => x == txRequest.Hash);
+                    if (txData != null && !badTx)
                     {
                         try
                         {
@@ -592,16 +285,25 @@ namespace ReserveBlockCore.Services
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
                                 {
-                                    var nameCheck = adnrList.FindOne(x => x.Name == name);
-                                    if (nameCheck != null)
+                                    if(!string.IsNullOrEmpty(name))
                                     {
-                                        return (txResult, "Name has already been taken.");
+                                        var nameRBX = name.ToLower() + ".rbx";
+                                        var nameCheck = adnrList.FindOne(x => x.Name == name || x.Name == nameRBX);
+                                        if (nameCheck != null)
+                                        {
+                                            return (txResult, "Name has already been taken.");
+                                        }
                                     }
-
+                                    
                                     var addressCheck = adnrList.FindOne(x => x.Address == txRequest.FromAddress);
                                     if (addressCheck != null)
                                     {
                                         return (txResult, "Address is already associated with an active DNR");
+                                    }
+
+                                    if (txRequest.ToAddress != "Adnr_Base")
+                                    {
+                                        return (txResult, "To Address was not the Adnr_Base.");
                                     }
                                 }
                             }
@@ -615,6 +317,11 @@ namespace ReserveBlockCore.Services
                                     if (addressCheck == null)
                                     {
                                         return (txResult, "Address is not associated with a DNR.");
+                                    }
+
+                                    if (txRequest.ToAddress != "Adnr_Base")
+                                    {
+                                        return (txResult, "To Address was not the Adnr_Base.");
                                     }
                                 }
                             }
@@ -638,30 +345,269 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
+                            if (txRequest.Amount < 1M)
+                                return (txResult, "There must be at least 1 RBX to perform an ADNR Function.");
+
                         }
                         catch (Exception ex)
-                        {
-                            DbContext.Rollback();
+                        {                            
                             ErrorLogUtility.LogError("Failed to deserialized TX Data for ADNR", "TransactionValidatorService.VerifyTx()");
                             return (txResult, "Failed to deserialized TX Data for ADNR");
                         }
                     }
                 }
+
+                if(txRequest.TransactionType == TransactionType.VOTE_TOPIC)
+                {
+                    var txData = txRequest.Data;
+                    if(txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if(jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                TopicTrei topic = jobj["Topic"].ToObject<TopicTrei>();//review this to ensure deserialization works.
+                                if (function == "TopicAdd()")
+                                {
+                                    if (topic == null)
+                                        return (txResult, "Topic trei record cannot be null.");
+
+                                    if(txRequest.ToAddress != "Topic_Base")
+                                        return (txResult, "To Address must be Topic_Base.");
+
+                                    if (txRequest.Amount < 1M)
+                                        return (txResult, "There must be at least 1 RBX to create a Topic.");
+
+                                    var topicSig = topic.TopicOwnerSignature;
+                                    if(!string.IsNullOrEmpty(topicSig))
+                                    {
+                                        var isTopicSigValid = SignatureService.VerifySignature(txRequest.FromAddress, topic.TopicUID, topicSig);
+                                        if(isTopicSigValid)
+                                        {
+                                            if(!blockDownloads)
+                                            {
+                                                //checks if topic height is within realm of mem blocks
+                                                if (!Globals.MemBlocks.Values.Where(x => x == topic.BlockHeight).Any())
+                                                {
+                                                    return (txResult, "Your topic was not created within the realm of memblocks.");
+                                                }
+
+                                                //checks if validator has solved block in past 30 days
+                                                var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
+                                                var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToEnumerable().Distinct();
+                                                var valExist = validatorList.Where(x => x == txRequest.FromAddress).Any();
+                                                if (!valExist)
+                                                    return (txResult, "Validator has not crafted a block. Please wait til you craft a block to create a topic.");
+
+                                                if (topic.VoterType == TopicVoterType.Validator)
+                                                {
+                                                    var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
+                                                    if (stAcct != null)
+                                                    {
+                                                        var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
+                                                        if (balance < 1000)
+                                                        {
+                                                            return (txResult, "Balance is under 1000. Topic will not be allowed.");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        return (txResult, "Could not locate account in state trei.");
+                                                    }
+                                                }
+                                                if (topic.VoterType == TopicVoterType.Adjudicator)
+                                                {
+                                                    var adjs = Globals.AdjNodes.Values.ToList();
+                                                    var isAdj = adjs.Exists(x => x.Address == txRequest.FromAddress);
+                                                    if (!isAdj)
+                                                    {
+                                                        return (txResult, $"The from addesss ({txRequest.FromAddress}) is not in the adjudicator pool.");
+                                                    }
+                                                }
+
+                                                var activeTopics = TopicTrei.GetSpecificTopicByAddress(txRequest.FromAddress, true);
+                                                if (activeTopics != null)
+                                                    return (txResult, "Only one active topic per address is allowed.");
+
+                                                
+                                                if(topic.VoteTopicCategory == VoteTopicCategories.AdjVoteIn)
+                                                {
+                                                    try
+                                                    {
+                                                        var adjVoteReq = JsonConvert.DeserializeObject<AdjVoteInReqs>(topic.TopicDescription);
+                                                        if (adjVoteReq != null)
+                                                        {
+                                                            var adjVoteReqResult = VoteValidatorService.ValidateAdjVoteIn(adjVoteReq);
+                                                            if(!adjVoteReqResult)
+                                                            {
+                                                                return (txResult, "You did not meet the required specs or information was not completed. This topic has been cancelled.");
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            return (txResult, "Topic description was missing the Adj Vote in Requirements.");
+                                                        }
+
+                                                        var topicSize = topic.TopicDescription.Length + topic.TopicName.Length;
+                                                        if(topicSize > 2800)
+                                                        {
+                                                            return (txResult, "Topic is larger than the 2800 limit.");
+                                                        }
+                                                    }
+                                                    catch
+                                                    {
+
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "Topic Signature was not valid.");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (txResult, "Topic missing signature. A signature is required to send a voting topic.");
+                                    }
+                                }
+                            }
+                        }
+                        catch(Exception ex)
+                        {                            
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for Topic", "TransactionValidatorService.VerifyTx()");
+                            return (txResult, "Failed to deserialized TX Data for Topic");
+                        }
+                    }
+                    else
+                    {
+                        return (txResult, "TX Data cannot be null on a vote Topic.");
+                    }
+                    
+                }
+
+                if (txRequest.TransactionType == TransactionType.VOTE)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                Vote vote = jobj["Vote"].ToObject<Vote>();//review this to ensure deserialization works.
+                                if (function == "TopicVote()")
+                                {
+                                    if (vote == null)
+                                        return (txResult, "Vote record cannot be null.");
+
+                                    if (txRequest.ToAddress != "Vote_Base")
+                                        return (txResult, "To Address must be Vote_Base.");
+
+                                    var topic = TopicTrei.GetSpecificTopic(vote.TopicUID);
+                                    if(topic == null)
+                                        return (txResult, "Topic does not exist.");
+
+                                    var currentTime = DateTime.UtcNow;
+                                    if(currentTime > topic.VotingEndDate)
+                                        return (txResult, "Voting for this topic has ended.");
+
+                                    //from address must equal vote address
+                                    //validator address must equal vote address
+                                    if (txRequest.FromAddress != vote.Address)
+                                        return (txResult, "Vote address must match the transactions From Address.");
+
+                                    var voteExixt = Vote.CheckSpecificAddressVoteOnTopic(vote.Address, vote.TopicUID);
+
+                                    if(voteExixt)
+                                        return (txResult, "You have already voted on this topic and may not do so again.");
+
+                                    if(Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                    {
+                                        var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
+                                        if (stAcct != null)
+                                        {
+                                            var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
+                                            if (balance < 1000)
+                                            {
+                                                return (txResult, "Balance is under 1000. Vote will not be allowed.");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "Could not locate account in state trei.");
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {                            
+                            ErrorLogUtility.LogError("Failed to deserialized TX Data for Topic", "TransactionValidatorService.VerifyTx()");
+                            return (txResult, "Failed to deserialized TX Data for Topic");
+                        }
+                    }
+                    else
+                    {
+                        return (txResult, "TX Data cannot be null on a vote Topic.");
+                    }
+
+                }
             }
 
             //Signature Check - Final Check to return true.
-            var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
-            if (isTxValid)
+            if(!string.IsNullOrEmpty(txRequest.Signature))
             {
-                txResult = true;
+                var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
+                if (isTxValid)
+                {
+                    txResult = true;
+                }
+                else
+                {
+                    return (txResult, "Signature Failed to verify.");
+                }
             }
             else
             {
-                return (txResult, "Signature Failed to verify.");
+                return (txResult, "Signature cannot be null.");
             }
+            
 
             //Return verification result.
             return (txResult, "Transaction has been verified.");
+
+        }
+
+        public static async Task BadTXDetected(Transaction Tx)
+        {
+            Console.WriteLine("A Transaction has failed validation. Would you like to ignore this transaction to move on?");
+            AnsiConsole.MarkupLine($"[green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/]");
+            AnsiConsole.MarkupLine($"[yellow]Please note you may need to type 'y' and press enter twice.[/]");
+
+            var answer = Console.ReadLine();
+
+            if(!string.IsNullOrEmpty(answer)) 
+            {
+                if(answer.ToLower() == "y")
+                {
+                    var badTx = new BadTransaction {FromAddress = Tx.FromAddress, Hash = Tx.Hash, TransactionType = Tx.TransactionType };
+                    var result = BadTransaction.SaveBadTransaction(badTx);
+                    if(result)
+                    {
+                        AnsiConsole.MarkupLine($"[green]Bad Transaction has been added.[/]");
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine($"[red]Failed to add bad transaction.[/]");
+                    }
+                }
+            }
 
         }
 

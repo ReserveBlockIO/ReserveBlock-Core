@@ -2,12 +2,78 @@
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using System.Transactions;
 
 namespace ReserveBlockCore.Utilities
 {
     public class BeaconUtility
     {
-        public static async Task<bool> SendAssets(string scUID, string assetName)
+        public static async Task<bool> EstablishBeaconConnection(bool upload = false, bool download = false)
+        {
+            var userInputedBeaconsUsed = false;
+            var selfBeacon = Globals.SelfBeacon;
+            if (selfBeacon?.SelfBeaconActive == true)
+            {
+                var url = "http://" + selfBeacon.IPAddress + ":" + Globals.Port + "/beacon";
+                var result = await P2PClient.ConnectBeacon_New(url, selfBeacon, upload ? "y" : "n", download ? "y" : "n");
+                if(result)
+                {
+                    return true;
+                }
+                else
+                {
+                    ErrorLogUtility.LogError("There was an issue with your self hosted beacon. Please ensure all ports are open and the beacon is properly configured.", "BeaconUtility.EstablishBeaconConnection()");
+                    return false;
+                }
+            }
+            else if(Globals.Beacons.Values.Where(x => x.DefaultBeacon == false && !x.SelfBeacon).Any())
+            {
+                var nonDefaultBeacon = Globals.Beacons.Values.Where(x => x.DefaultBeacon == false && !x.SelfBeacon).ToList();
+                nonDefaultBeacon.Shuffle();
+                var cResult = false;
+                foreach(var beacon in nonDefaultBeacon)
+                {
+                    var pubBeacon = beacon;
+                    var url = "http://" + pubBeacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    var result = await P2PClient.ConnectBeacon_New(url, pubBeacon, upload ? "y" : "n", download ? "y" : "n");
+                    if (result)
+                    {
+                        cResult = true;
+                        break;
+                    }
+                }
+                if(cResult)
+                {
+                    userInputedBeaconsUsed = true;
+                    return true;
+                }
+            }
+
+            //User provided beacons failed. Attempting default ones.
+            if(!userInputedBeaconsUsed)
+            {
+                var pubBeaconList = Globals.Beacons.Values.Where(x => !x.SelfBeacon && x.DefaultBeacon != false && x.Region != 0).OrderBy(x => x.Region).ToList();
+                pubBeaconList.Shuffle();
+                bool conResult = false;
+                foreach(var beacon in pubBeaconList)
+                {
+                    var pubBeacon = beacon;
+                    var url = "http://" + pubBeacon.IPAddress + ":" + Globals.Port + "/beacon";
+                    var result = await P2PClient.ConnectBeacon_New(url, pubBeacon, upload ? "y" : "n", download ? "y" : "n");
+                    if (result)
+                    {
+                        conResult = true;
+                        break;
+                    }
+                }
+
+                return conResult;
+            }
+
+            ErrorLogUtility.LogError("Failed to connect to every beacon stored in wallet. Please ensure you are not blocking outside connections to 3338, 13338, 23338, or 33338.", "BeaconUtility.EstablishBeaconConnection()");
+            return false; //something failed if we reach here. This means ZERO connections were made to beacon
+        }
+        public static async Task<bool> SendAssets(string scUID, string assetName, string locator)
         {
             bool retry = true;
             int retryCount = 0;
@@ -19,9 +85,10 @@ namespace ReserveBlockCore.Utilities
                     if(retryCount < 4)
                     {
                         var filePath = NFTAssetFileUtility.NFTAssetPath(assetName, scUID);
-                        var beaconString = Globals.Locators.Values.FirstOrDefault().ToStringFromBase64();
+                        var beaconString = locator.ToStringFromBase64();
                         var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
+                        NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.ProcessData() - send");
                         BeaconResponse rsp = BeaconClient.Send(filePath, beacon.IPAddress, beacon.Port);
                         if (rsp.Status == 1)
                         {
@@ -41,7 +108,7 @@ namespace ReserveBlockCore.Utilities
                             }
                             NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
 
-                            await P2PClient.BeaconFileIsReady(scUID, assetName);
+                            await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
                             result = true;
                         }
@@ -62,14 +129,14 @@ namespace ReserveBlockCore.Utilities
                             }
                             NFTLogUtility.Log($"Asset already existed: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
 
-                            await P2PClient.BeaconFileIsReady(scUID, assetName);
+                            await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
                             result = true;
                         }
                         else
                         {
                             retryCount += 1;
-                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed.", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
                         }
                     }
                     else

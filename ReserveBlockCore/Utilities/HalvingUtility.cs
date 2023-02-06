@@ -34,7 +34,7 @@ namespace ReserveBlockCore.Utilities
         {
             decimal blockReward = 32.00M;
             int currentBlockHeight = Globals.LastBlock.Height != -1 ? (int)Globals.LastBlock.Height : 1;
-            int blockHalvingInterval = 4730400; // Roughly every 3 year halving
+            int blockHalvingInterval = currentBlockHeight >= 4730400 ? 4730400 : 4449129; // Roughly every 3 year halving. 
 
             //An int will always result in a rounded down whole number. 4730399 / 4730400   = 0 | 9,460,799 / 4730400  = 1
             int halving = currentBlockHeight / blockHalvingInterval;

@@ -26,37 +26,21 @@ namespace ReserveBlockCore.Models
                     return adjudicators;
                 }
                 catch (Exception ex)
-                {
-                    DbContext.Rollback();
+                {                    
                     ErrorLogUtility.LogError(ex.ToString(), "Adjudicators.GetAll()");
                     return null;
                 }
 
             }
 
-            public static Adjudicators? GetLeadAdjudicator()
+            public static Adjudicators GetLeadAdjudicator()
             {
                 var adjudicators = GetAll();
-                if (adjudicators.Count() > 0)
-                {
-                    if (Globals.IsTestNet == true)
-                    {
-                        var leaderTest = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true && x.Address.StartsWith("x"));
-                        if(leaderTest != null)
-                        {
-                            return leaderTest;
-                        }
-                    }
-                
-                    var leader = adjudicators.FindOne(x => x.IsLeadAdjuidcator == true);
+                if (Globals.IsTestNet == true)
+                    return adjudicators.FindOne(x => x.IsLeadAdjuidcator && x.Address.StartsWith("x"));
 
-                    if(leader != null)
-                    {
-                        return leader;
-                    }
-                }
 
-                return null;
+                return adjudicators.FindOne(x => x.IsLeadAdjuidcator);
             }
 
             public static Guid GetAdjudicatorKey()

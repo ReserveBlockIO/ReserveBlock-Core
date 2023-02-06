@@ -29,8 +29,14 @@ namespace ReserveBlockCore.Config
 		public int PasswordClearTime { get; set; }
         public bool AutoDownloadNFTAsset { get; set; }
         public bool IgnoreIncomingNFTs { get; set; }
+		public string? MotherAddress { get; set; }
+		public string? MotherPassword { get; set; }
         public List<string> RejectAssetExtensionTypes { get; set; }
 		public List<string> AllowedExtensionsTypes { get; set; }
+		public string? CustomPath { get; set; }
+		public bool LogAPI { get; set; }
+		public bool RefuseToCallSeed { get; set; }
+		public bool OpenAPI { get; set; }
 
         public static Config ReadConfigFile()
         {
@@ -54,8 +60,14 @@ namespace ReserveBlockCore.Config
 					dict[tmp[0]] = tmp[1];
 				}
 
-				// Assign the values that you need:
-				config.Port = dict.ContainsKey("Port") ? Convert.ToInt32(dict["Port"]) : 3338;
+                config.CustomPath = dict.ContainsKey("CustomPath") ? dict["CustomPath"] : null;
+                if (!string.IsNullOrEmpty(config.CustomPath))
+                {
+                    Globals.CustomPath = config.CustomPath;
+                    _  = GetPathUtility.GetConfigPath();
+                }
+                // Assign the values that you need:
+                config.Port = dict.ContainsKey("Port") ? Convert.ToInt32(dict["Port"]) : 3338;
 				config.APIPort = dict.ContainsKey("APIPort") ? Convert.ToInt32(dict["APIPort"]) : 7292;
 				config.TestNet = dict.ContainsKey("TestNet") ? Convert.ToBoolean(dict["TestNet"]) : false;
 				config.NFTTimeout = dict.ContainsKey("NFTTimeout") ? Convert.ToInt32(dict["NFTTimeout"]) : 15;
@@ -73,6 +85,10 @@ namespace ReserveBlockCore.Config
 				config.ChainCheckPointRetain = dict.ContainsKey("ChainCheckPointRetain") ? Convert.ToInt32(dict["ChainCheckPointRetain"]) : 2;
 				config.ChainCheckpointLocation = dict.ContainsKey("ChainCheckpointLocation") ? dict["ChainCheckpointLocation"] : GetPathUtility.GetCheckpointPath();
 				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
+                config.LogAPI = dict.ContainsKey("LogAPI") ? Convert.ToBoolean(dict["LogAPI"]) : false;
+                config.RefuseToCallSeed = dict.ContainsKey("RefuseToCallSeed") ? Convert.ToBoolean(dict["RefuseToCallSeed"]) : false;
+                config.OpenAPI = dict.ContainsKey("OpenAPI") ? Convert.ToBoolean(dict["OpenAPI"]) : false;
+
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
                 config.IgnoreIncomingNFTs = dict.ContainsKey("IgnoreIncomingNFTs") ? Convert.ToBoolean(dict["IgnoreIncomingNFTs"]) : false;
@@ -91,7 +107,10 @@ namespace ReserveBlockCore.Config
 					".xtbl", ".fag", ".oar", ".ceo", ".tko", ".uzy", ".bll", ".dbd", ".plc", ".smm", ".ssy", ".blf", ".zvz", ".cc", ".ce0", 
 					".nls", ".ctbl", ".crypt1", ".hsq", ".iws", ".vzr", ".lkh", ".ezt", ".rna", ".aepl", ".hts", ".atm", ".fuj", ".aut", 
 					".fjl", ".delf", ".buk", ".bmw", ".capxml", ".bps", ".cyw", ".iva", ".pid", ".lpaq5", ".dx", ".bqf", ".qit", ".pr", ".lok", 
-					"xnt"};
+					".xnt"};
+
+                config.MotherAddress = dict.ContainsKey("MotherAddress") ? dict["MotherAddress"] : null;
+                config.MotherPassword = dict.ContainsKey("MotherPassword") ? dict["MotherPassword"] : null;
 
                 if (dict.ContainsKey("RejectAssetExtensionTypes"))
 				{
@@ -122,8 +141,6 @@ namespace ReserveBlockCore.Config
 						}
 					}
                 }
-
-
             }
 
 			return config;
@@ -142,15 +159,19 @@ namespace ReserveBlockCore.Config
 					Globals.RejectAssetExtensionTypes.Add(type);
 			Globals.IgnoreIncomingNFTs = config.IgnoreIncomingNFTs;
 			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
+			Globals.LogAPI = config.LogAPI;
+			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
+			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 
-			if(config.TestNet == true)
+
+            if (config.TestNet == true)
             {
 				Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
 				Globals.Port = 13338;
 				Globals.APIPort = 17292;
 				Globals.AddressPrefix = 0x89; //address prefix 'x'
-				Globals.BlockLock = 300;
+				Globals.BlockLock = 15;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))
@@ -183,6 +204,14 @@ namespace ReserveBlockCore.Config
 				Globals.ConfigValidator = config.ValidatorAddress;
 				Globals.ConfigValidatorName = config.ValidatorName;
             }
+
+			if(!string.IsNullOrEmpty(config.MotherAddress))
+			{
+				Globals.MotherAddress = config.MotherAddress;
+				Globals.MotherPassword = config.MotherPassword != null ? config.MotherPassword.ToSecureString() : null;
+				Globals.ConnectToMother = true;
+			}
+			
         }
 
 		public static async void EstablishConfigFile()

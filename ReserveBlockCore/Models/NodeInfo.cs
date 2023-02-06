@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
+using ReserveBlockCore.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +14,16 @@ namespace ReserveBlockCore.Models
     {
         public HubConnection Connection;
         public string NodeIP { get; set; } 
+
+        public string Address { get; set; }
+
         public long NodeHeight { get; set; }
+
+        public int MethodCode = -100;
+
+        public bool IsFinalized = false;
+
+        public long LastMethodCodeTime { get; set; }
         public int NodeLatency { get; set; }
         public DateTime? NodeLastChecked { get; set; }
 
@@ -19,28 +31,93 @@ namespace ReserveBlockCore.Models
         
         public long SendingBlockTime;
         
-        public long TotalDataSent;
+        public long TotalDataSent;              
+        public bool IsConnected { get { return Connection?.State == HubConnectionState.Connected; } }
+        public bool IsValidator { get; set; }
+        public string? WalletVersion { get; set; }
 
-        public long PreviousReceiveTime;
 
-        public long SecondPreviousReceiveTime;
+        public string[] Queue { get
+            {
+                return invokeQueue.Select(x => x.Item4).ToArray();
+            } }
 
-        public readonly SemaphoreSlim APILock = new SemaphoreSlim(1, 1);
+        private Task InvokeDelay = Task.CompletedTask;
 
-        public async Task<T> InvokeAsync<T>(string method, object[] args = null, CancellationToken ct = default)
+        private int ProcessQueueLock = 0;
+
+        private ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult, string)> invokeQueue =
+            new ConcurrentQueue<(Func<CancellationToken, Task<object>> invokeFunc, Func<CancellationToken> ctFunc, Action<object> setResult, string)>();
+
+        private async Task ProcessQueue()
         {
-            await APILock.WaitAsync();
-            var delay = Task.Delay(1000);
+            if (Interlocked.Exchange(ref ProcessQueueLock, 1) == 1)
+                return;
+
+            while(invokeQueue.Count != 0)
+            {
+                try
+                {
+                    if (invokeQueue.TryDequeue(out var RequestInfo))
+                    {
+                        var Fail = true;
+                        try
+                        {
+                            var token = RequestInfo.ctFunc();
+                            if(token.IsCancellationRequested)
+                            {
+                                RequestInfo.setResult(default);
+                                continue;
+                            }
+
+                            if (Globals.AdjudicateAccount == null)
+                            {
+                                await InvokeDelay;                                
+                            }
+
+                            var timer = new Stopwatch();
+                            timer.Start();
+                            var Result = await RequestInfo.invokeFunc(token);
+                            timer.Stop();
+                            InvokeDelay = Task.Delay(1000);
+
+                            if (timer.ElapsedMilliseconds > 3000)
+                                LogUtility.LogQueue(RequestInfo.Item4 + " " + timer.ElapsedMilliseconds, "ProcessQueue", "slowrequest.txt", true);
+                            RequestInfo.setResult(Result);                            
+                            Fail = false;
+                        }
+                        catch { }
+                        if (Fail)
+                            RequestInfo.setResult(default);
+                    }
+                }
+                catch { }
+            }
+
+            Interlocked.Exchange(ref ProcessQueueLock, 0);
+            if (invokeQueue.Count != 0)
+                await ProcessQueue();
+        }
+
+        public async Task<T> InvokeAsync<T>(string method, object[] args, Func<CancellationToken> ctFunc, string description)
+        {
             try
             {
-                return await Connection.InvokeCoreAsync<T>(method, args ?? Array.Empty<object>(), ct);
+                if (Globals.AdjudicateAccount != null)
+                    return await Connection.InvokeCoreAsync<T>(method, args, ctFunc());
+                var Source = new TaskCompletionSource<T>();
+                var InvokeFunc = async (CancellationToken ct) => {
+                    try { return Connection != null ? (object)(await Connection.InvokeCoreAsync<T>(method, args, ct)) : (object)default(T); }
+                    catch { } return (object)default(T); };
+                invokeQueue.Enqueue((InvokeFunc, ctFunc, (object x) => Source.SetResult((T)x), TimeUtil.GetMillisecondTime() + " " + description));
+                _ = ProcessQueue();
+
+                var Result = await Source.Task;                
+                return Result;
             }
-            finally
-            {
-                await delay;
-                if (APILock.CurrentCount == 0)
-                    APILock.Release();
-            }
+            catch { }
+
+            return default;
         }
     }
 }

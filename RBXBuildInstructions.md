@@ -58,3 +58,70 @@ Once that is installed follow steps below.
 6. dotnet publish -c Release -r osx-x64 --output ./rbxpublished **please note the 'osx-x64' can be changed if you are on a different architecture like arm.
 7. cd rbxpublished
 8. dotnet ReserveBlockCore
+
+
+## Build RIDs
+
+## Windows ##
+
+### Windows, not version-specific ### 
+* win-x64
+* win-x86
+* win-arm64
+### Windows 7 / Windows Server 2008 R2 ###
+* win7-x64
+* win7-x86
+### Windows 8.1 / Windows Server 2012 R2 ###
+* win81-x64
+* win81-x86
+### Windows 11 / Windows Server 2022 / Windows 10 / Windows Server 2016 ###
+* win10-x64
+* win10-x86
+* win10-arm64
+
+## Linux ##
+
+### Linux, not distribution-specific ### 
+* linux-x64 (Most desktop distributions like CentOS, Debian, Fedora, Ubuntu, and derivatives)
+* linux-musl-x64 (Lightweight distributions using musl like Alpine Linux)
+* linux-arm (Linux distributions running on Arm like Raspbian on Raspberry Pi Model 2+)
+* linux-arm64 (Linux distributions running on 64-bit Arm like Ubuntu Server 64-bit on Raspberry Pi Model 3+)
+
+### Red Hat Enterprise Linux ### 
+* rhel-x64 (Superseded by linux-x64 for RHEL above version 6)
+* rhel.6-x64
+
+### Tizen ###
+* tizen
+* tizen.4.0.0
+* tizen.5.0.0
+* tizen.5.5.0
+* tizen.6.0.0
+* tizen.6.5.0
+* tizen.7.0.0
+
+## Mac ##
+
+### macOS, not version-specific ###
+* osx-x64 (Minimum OS version is macOS 10.12 Sierra)
+### macOS 10.10 Yosemite ### 
+* osx.10.10-x64
+### macOS 10.11 El Capitan ### 
+* osx.10.11-x64
+### macOS 10.12 Sierra ### 
+* osx.10.12-x64
+### macOS 10.13 High Sierra ### 
+* osx.10.13-x64
+### macOS 10.14 Mojave ### 
+* osx.10.14-x64
+### macOS 10.15 Catalina ### 
+* osx.10.15-x64
+### macOS 11.0 Big Sur ### 
+* osx.11.0-x64
+* osx.11.0-arm64
+### macOS 12 Monterey ### 
+* osx.12-x64
+* osx.12-arm64
+### macOS 13 Ventura ### 
+* osx.13-x64
+* osx.13-arm64

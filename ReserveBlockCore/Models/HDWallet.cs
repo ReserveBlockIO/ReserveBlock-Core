@@ -20,13 +20,13 @@ namespace ReserveBlockCore.Models
                 return hdwallet;
             }
 
-            public static string CreateHDWallet(int amount, BIP39Wordlist wordList, string password = "")
+            public static (bool,string) CreateHDWallet(int amount, BIP39Wordlist wordList, string password = "")
             {
                 var hd = GetHDWalletData();
                 var hdwExist = GetHDWallet();
                 if(hdwExist != null)
                 {
-                    return "HD Wallet Already Exist";
+                    return (false, "HD wallet exist");
                 }
 
                 int strength = 256;
@@ -48,7 +48,7 @@ namespace ReserveBlockCore.Models
 
                 hd.InsertSafe(hdw);
 
-                return myMnemonic;
+                return (true,myMnemonic);
             }
 
             public static string RestoreHDWallet(string mnemonicStr, string password = "")

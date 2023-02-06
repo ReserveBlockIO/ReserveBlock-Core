@@ -33,6 +33,10 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_Config { get; set; }
         public static LiteDatabase DB_DNR { get; set; }
         public static LiteDatabase DB_Keystore { get; set; }
+        public static LiteDatabase DB_TopicTrei { set; get; }
+        public static LiteDatabase DB_Vote { set; get; }
+        public static LiteDatabase DB_Settings { set; get; }
+
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
@@ -51,6 +55,9 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_CONFIG = @"rsrvconfig.db";
         public const string RSRV_DB_DNR = @"rsrvdnr.db";
         public const string RSRV_DB_KEYSTORE = @"rsrvkeystore.db";
+        public const string RSRV_DB_TOPIC_TREI = @"rsrvtopictrei.db";
+        public const string RSRV_DB_VOTE = @"rsrvvote.db";
+        public const string RSRV_DB_SETTINGS = @"rsrvsettings.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -74,6 +81,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_ASSETS = "rsrv_assets";
         public const string RSRV_ASSET_QUEUE = "rsrv_asset_queue";
         public const string RSRV_SCSTATE_TREI = "rsrv_scstate_trei";
+        public const string RSRV_BEACONS = "rsrv_beacons";
         public const string RSRV_BEACON_INFO = "rsrv_beacon_info";
         public const string RSRV_BEACON_DATA = "rsrv_beacon_data";
         public const string RSRV_BEACON_REF = "rsrv_beacon_ref";
@@ -81,33 +89,19 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DECSHOP = "rsrv_decshop";
         public const string RSRV_DECSHOPSTATE_TREI = "rsrv_decshopstate_trei";
         public const string RSRV_KEYSTORE = "rsrv_keystore";
+        public const string RSRV_SIGNER = "rsrv_signer";
+        public const string RSRV_LOCAL_TIMES = "rsrv_local_time";
+        public const string RSRV_TOPIC_TREI = "rsrv_topic_trei";
+        public const string RSRV_VOTE = "rsrv_vote";
+        public const string RSRV_SETTINGS = "rsrv_settings";
+        public const string RSRV_MOTHER = "rsrv_mother";
+        public const string RSRV_ADJ_BENCH = "rsrv_adj_bench";
+        public const string RSRV_ADJ_BENCH_QUEUE = "rsrv_adj_bench_queue";
+        public const string RSRV_BAD_TX = "rsrv_bad_tx";
 
         internal static void Initialize()
         {
-            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
-
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if(Debugger.IsAttached)
-                {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            string path = GetPathUtility.GetDatabasePath();
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -133,9 +127,14 @@ namespace ReserveBlockCore.Data
             DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_TopicTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_TOPIC_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Vote = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_VOTE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
+            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
+            localTimeDb.EnsureIndexSafe(x => x.Height, true);
 
             var transactionPool = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
             transactionPool.EnsureIndexSafe(x => x.Hash, false);
@@ -156,13 +155,11 @@ namespace ReserveBlockCore.Data
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
+            DB_TopicTrei.Pragma("UTC_DATE", true);
+            DB_Vote.Pragma("UTC_DATE", true);
         }        
         public static void BeginTrans()
-        {
-            if (Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) && hasTransaction)
-                return;
-            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = true;
-            
+        {                    
             DB.BeginTrans();
             DB_Mempool.BeginTrans();
             DB_Assets.BeginTrans();
@@ -179,12 +176,17 @@ namespace ReserveBlockCore.Data
             DB_Config.BeginTrans();
             DB_DNR.BeginTrans();
             DB_Keystore.BeginTrans();
+            DB_TopicTrei.BeginTrans();
+            DB_Vote.BeginTrans();
+            DB_Settings.BeginTrans();
         }
         public static void Commit()
         {
-            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
-                return;
-            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+            bool isStateUpdating = Globals.TreisUpdating;
+            if (isStateUpdating)
+            {
+                ErrorLogUtility.LogError("Commit failed to happen!", "DbContext.Commit()");
+            }
 
             DB.Commit();
             DB_Mempool.Commit();
@@ -202,13 +204,24 @@ namespace ReserveBlockCore.Data
             DB_Config.Commit();
             DB_DNR.Commit();
             DB_Keystore.Commit();
+            DB_TopicTrei.Commit();
+            DB_Vote.Commit();
+            DB_Settings.Commit();
         }
 
-        public static void Rollback()
+        public static void Rollback(string location = "")
         {
-            if (!Globals.HasTransactionDict.TryGetValue(Environment.CurrentManagedThreadId, out var hasTransaction) || !hasTransaction)
-                return;
-            Globals.HasTransactionDict[Environment.CurrentManagedThreadId] = false;
+            bool isStateUpdating = Globals.TreisUpdating;
+
+            if(isStateUpdating)
+            {
+                ErrorLogUtility.LogError("Rollback Has Occurred during Trei Update!", location);
+            }
+            else
+            {
+                ErrorLogUtility.LogError("Rollback Has Occurred!", location);
+            }
+            
 
             DB.Rollback();
             DB_Mempool.Rollback();
@@ -226,34 +239,14 @@ namespace ReserveBlockCore.Data
             DB_Config.Rollback();
             DB_DNR.Rollback();
             DB_Keystore.Rollback();
+            DB_TopicTrei.Rollback();
+            DB_Vote.Rollback();
+            DB_Settings.Rollback();
         }
 
         public static void DeleteCorruptDb()
         {
-            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
-
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if (Debugger.IsAttached)
-                {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            string path = GetPathUtility.GetDatabasePath();
 
             DB.Dispose();
 
@@ -265,30 +258,7 @@ namespace ReserveBlockCore.Data
 
         public static void MigrateDbNewChainRef()
         {
-            var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
-            var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
-
-            string path = "";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-            }
-            else
-            {
-                if (Debugger.IsAttached)
-                {
-                    path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-                else
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
-                }
-            }
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
+            string path = GetPathUtility.GetDatabasePath();
 
             DB.Commit();
             DB_Mempool.Commit();
@@ -306,6 +276,9 @@ namespace ReserveBlockCore.Data
             DB_Config.Commit();
             DB_DNR.Commit();
             DB_Keystore.Commit();
+            DB_TopicTrei.Commit();
+            DB_Vote.Commit();
+            DB_Settings.Commit();
 
             //dispose connection to DB
             CloseDB();
@@ -345,6 +318,9 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_DNR);
             File.Delete(path + RSRV_DB_DECSHOPSTATE_TREI);
             File.Delete(path + RSRV_DB_KEYSTORE);
+            File.Delete(path + RSRV_DB_TOPIC_TREI);
+            File.Delete(path + RSRV_DB_VOTE);
+            File.Delete(path + RSRV_DB_SETTINGS);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -371,10 +347,15 @@ namespace ReserveBlockCore.Data
             DB_DNR = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DNR, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_DecShopStateTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_DECSHOPSTATE_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Keystore = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_KEYSTORE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_TopicTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_TOPIC_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Vote = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_VOTE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
+            DB_TopicTrei.Pragma("UTC_DATE", true);
+            DB_Vote.Pragma("UTC_DATE", true);
         }
 
         public static void CloseDB()
@@ -395,6 +376,9 @@ namespace ReserveBlockCore.Data
             DB_DNR.Dispose();
             DB_DecShopStateTrei.Dispose();
             DB_Keystore.Dispose();
+            DB_TopicTrei.Dispose();
+            DB_Vote.Dispose();
+            DB_Settings.Dispose();
         }
 
         public static async Task CheckPoint()
@@ -472,6 +456,21 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB_Keystore.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_TopicTrei.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Vote.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Settings.Checkpoint();
             }
             catch { }
         }

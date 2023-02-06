@@ -18,13 +18,18 @@ namespace ReserveBlockCore.Nodes
 
             if(peers.Count == 0)
             {
+                SeedNodeService.SeedNodes();
                 var nodeIp = await SeedNodeService.PingSeedNode();
-                await SeedNodeService.GetSeedNodePeers(nodeIp);
+                if (Globals.IsTestNet == false)
+                    await SeedNodeService.GetSeedNodePeers(nodeIp);
                 alreadyCalled = true;
             }
 
+            if(Globals.IsTestNet)
+                await SeedNodeService.GetSeedNodePeersTestnet();
+
             peers = Peers.GetAll().FindAll().ToList();
-            if(peers.Count <= 8)
+            if(peers.Count <= 8 && !Globals.IsTestNet)
             {
                 //request peers from other nodes
                 //Then request from seeds
@@ -39,6 +44,6 @@ namespace ReserveBlockCore.Nodes
             {
                 //No peers available. You will have to manually add them.
             }
-        }
+        }       
     }
 }

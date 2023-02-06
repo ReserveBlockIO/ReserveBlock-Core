@@ -8,6 +8,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -19,7 +20,10 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class TXV1Controller : ControllerBase
     {
-        //Step 1.
+        /// <summary>
+        /// Returns the timestamp of the given wallet.
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetTimestamp")]
         public async Task<string> GetTimestamp()
         {
@@ -33,7 +37,257 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Step 2.
+        /// <summary>
+        /// Returns a list of successful transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetSuccessfulLocalTX")]
+        public async Task<string> GetSuccessfulLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetSuccessfulLocalTransactions();
+
+            if(txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+            
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a list of mined reward transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetMinedLocalTX")]
+        public async Task<string> GetMinedLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalMinedTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a list of all transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetAllLocalTX")]
+        public async Task<string> GetAllLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetAllLocalTransactions(true);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a list of pending transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetPendingLocalTX")]
+        public async Task<string> GetPendingLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalPendingTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a list of failed transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetFailedLocalTX")]
+        public async Task<string> GetFailedLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalFailedTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a single transaction with hash as the search
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxByHash/{hash}")]
+        public async Task<string> GetLocalTxByHash(string hash)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetTxByHash(hash);
+
+            if (txList != null)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a single transaction with height as the search
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxByBlock/{height}")]
+        public async Task<string> GetLocalTxByBlock(long height)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetTxByBlock(height);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions before a block height as the search
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxBeforeBlock/{height}")]
+        public async Task<string> GetLocalTxBeforeBlock(long height)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsBeforeBlock(height);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions after a block height as the search
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxAfterBlock/{height}")]
+        public async Task<string> GetLocalTxAfterBlock(long height)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsSinceBlock(height);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions before a timestamp height as the search
+        /// </summary>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxBeforeTimestamp/{timestamp}")]
+        public async Task<string> GetLocalTxBeforeTimestamp(long timestamp)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsBeforeDate(timestamp);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions after a timestamp height as the search
+        /// </summary>
+        /// <param name="timestamp"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxAfterTimestamp/{timestamp}")]
+        public async Task<string> GetLocalTxAfterTimestamp(long timestamp)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalTransactionsSinceDate(timestamp);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns all transactions for ADNR
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetLocalADNRTX")]
+        public async Task<string> GetLocalADNRTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetLocalAdnrTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns and Address Nonce
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
         [HttpGet("GetAddressNonce/{address}")]
         public async Task<string> GetAddressNonce(string address)
         {
@@ -47,7 +301,68 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //step 2b if its NFT Minting
+        /// <summary>
+        /// Returns transaction from entire chain.
+        /// Warning this uses parallelism so only use if you system can handle this.
+        /// </summary>
+        /// <param name="txHash"></param>
+        /// <returns></returns>
+        [HttpGet("GetNetworkTXByHash/{txHash}")]
+        public async Task<string> GetNetworkTXByHash(string txHash)
+        {
+            var output = "";
+            var coreCount = Environment.ProcessorCount;
+            if (coreCount >= 4)
+            {
+                if (!string.IsNullOrEmpty(txHash))
+                {
+                    try
+                    {
+                        txHash = txHash.Replace(" ", "");//removes any whitespace before or after in case left in.
+                        var blocks = BlockchainData.GetBlocks();
+                        var height = Convert.ToInt32(Globals.LastBlock.Height);
+                        bool resultFound = false;
+
+                        var integerList = Enumerable.Range(0, height + 1);
+                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount == 4 ? 2 : 4 }, (blockHeight, loopState) =>
+                        {
+                            var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
+                            if (block != null)
+                            {
+                                var txs = block.Transactions.ToList();
+                                var result = txs.Where(x => x.Hash == txHash).FirstOrDefault();
+                                if (result != null)
+                                {
+                                    resultFound = true;
+                                    output = JsonConvert.SerializeObject(new { Success = true, Message = result });
+                                    loopState.Break();
+                                }
+                            }
+                        });
+
+                        if (!resultFound)
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "No transaction found with that hash." });
+                    }
+                    catch (Exception ex)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = $"Error Performing Query: {ex.ToString()}" });
+                    }
+
+                }
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude." });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Creates a minting tranasctions
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("GetNFTMintData")]
         public async Task<string> GetNFTMintData([FromBody] object jsonData)
         {
@@ -86,12 +401,18 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2c - Skip this if you are needing to move files and use beacons.
+        /// <summary>
+        /// Creates a beacon upload request transactions
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="signature"></param>
+        /// <returns></returns>
         [HttpGet("CreateBeaconUploadRequest/{scUID}/{toAddress}/{**signature}")]
         public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
         {
             var output = "";
-
+            toAddress = toAddress.ToAddressNormalize();
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
             if (scStateTrei != null)
             {
@@ -100,14 +421,26 @@ namespace ReserveBlockCore.Controllers
                 {
                     if (sc.IsPublished == true)
                     {
-                        //Get beacons here!                        
-                        if (!Globals.Locators.Any())
+                        //Get beacons here!
+                        if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
                         {
-                            output = "You are not connected to any beacons.";
+                            var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                            if (!beaconConnectionResult)
+                            {
+                                output = "You are not connected to any beacons.";
+                                NFTLogUtility.Log("Error - You failed to connect to any beacons.", "TXV1Controller.CreateBeaconUploadRequest()");
+                                return output;
+                            }
                         }
                         else
                         {
-                            var locators = Globals.Locators.Values.FirstOrDefault();
+                            var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+                            if (connectedBeacon == null)
+                            {
+                                output = "You have lost connection to beacons. Please attempt to resend.";
+                                NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
+                                return output;
+                            }
                             List<string> assets = new List<string>();
 
                             if (sc.SmartContractAsset != null)
@@ -160,15 +493,12 @@ namespace ReserveBlockCore.Controllers
                                     }
                                 }
                             }
-
-                            var result = await P2PClient.BeaconUploadRequest(locators, assets, sc.SmartContractUID, toAddress, signature);
+                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
+                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
-                                var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-
-                                var finalOutput = JsonConvert.SerializeObject(new { Locators = result, MD5List = md5List });
+                                var finalOutput = JsonConvert.SerializeObject(new { Locators = connectedBeacon.Beacons.BeaconUID, MD5List = md5List });
                                 output = finalOutput;
-
                             }
                         }
                     }
@@ -178,12 +508,19 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2d if its NFT Transfers. This = Transaction.Data 
+        /// <summary>
+        /// Creates a NFT transfer transaction
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="locators"></param>
+        /// <returns></returns>
         [HttpGet("GetNFTTransferData/{scUID}/{toAddress}/{locators}")]
         public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators)
         {
             var output = "";
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            toAddress = toAddress.ToAddressNormalize();
 
             var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
             try
@@ -216,7 +553,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //2e if its NFT Burn. This = Transaction.Data 
+        /// <summary>
+        /// Creates a NFT Burn data transactions
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="fromAddress"></param>
+        /// <returns></returns>
         [HttpGet("GetNFTBurnData/{scUID}/{fromAddress}/")]
         public async Task<string> GetNFTBurnData(string scUID, string fromAddress)
         {
@@ -252,7 +594,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Step 3.
+        /// <summary>
+        /// Produces the estimated fee for a transaction
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("GetRawTxFee")]
         public async Task<string> GetRawTxFee([FromBody] object jsonData)
         {
@@ -269,7 +615,7 @@ namespace ReserveBlockCore.Controllers
                 {
                     Timestamp = tx.Timestamp,
                     FromAddress = tx.FromAddress,
-                    ToAddress = tx.ToAddress,
+                    ToAddress = tx.ToAddress.ToAddressNormalize(),
                     Amount = tx.Amount + 0.0M,
                     Fee = 0,
                     Nonce = AccountStateTrei.GetNextNonce(tx.FromAddress),
@@ -290,7 +636,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
-        //Step 4.
+        /// <summary>
+        /// Produces the TX Hash
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
         [HttpPost("GetTxHash")]
         public async Task<string> GetTxHash([FromBody] object jsonData)
         {
@@ -303,9 +653,19 @@ namespace ReserveBlockCore.Controllers
                 txJToken["Data"] = dataTest;
                 var tx = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
 
-                tx.Build();
+                if(tx != null)
+                {
+                    tx.ToAddress = tx.ToAddress.ToAddressNormalize();
+                    tx.Amount = tx.Amount.ToNormalizeDecimal();
 
-                output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"TX Fee Calculated", Hash = tx.Hash });
+                    tx.Build();
+
+                    output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Hash Calculated.", Hash = tx.Hash });
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Could not deserialize raw TX." });
+                }
             }
             catch (Exception ex)
             {
@@ -318,7 +678,13 @@ namespace ReserveBlockCore.Controllers
         //Step 5.
         //You create the signature now in your application.
 
-        //Step 6.
+        /// <summary>
+        /// Validate a signature
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="address"></param>
+        /// <param name="sigScript"></param>
+        /// <returns></returns>
         [HttpGet("ValidateSignature/{message}/{address}/{**sigScript}")]
         public async Task<string> ValidateSignature(string message, string address, string sigScript)
         {
@@ -347,6 +713,10 @@ namespace ReserveBlockCore.Controllers
 
         //If validation was true
         //Step 7.
+        /// <summary>
+        /// Verify a raw transaction
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("VerifyRawTransaction")]
         public async Task<string> VerifyRawTransaction([FromBody] object jsonData)
         {
@@ -361,7 +731,10 @@ namespace ReserveBlockCore.Controllers
 
                 if (transaction != null)
                 {
-                    var result = await TransactionValidatorService.VerifyTXDetailed(transaction);
+                    transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
+                    transaction.Amount = transaction.Amount.ToNormalizeDecimal();
+
+                    var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
 
@@ -387,6 +760,10 @@ namespace ReserveBlockCore.Controllers
         }
 
         //Step 8.
+        /// <summary>
+        /// Sends a raw TX over the network
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("SendRawTransaction")]
         public async Task<string> SendRawTransaction([FromBody] object jsonData)
         {
@@ -398,14 +775,22 @@ namespace ReserveBlockCore.Controllers
                 var dataTest = txJToken["Data"] != null ? txJToken["Data"].ToString(Formatting.None) : null;//sometest["Data"].ToObject<string>();
                 txJToken["Data"] = dataTest;
                 var transaction = JsonConvert.DeserializeObject<Transaction>(txJToken.ToString());
-
                 if (transaction != null)
                 {
+                    transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
+                    transaction.Amount = transaction.Amount.ToNormalizeDecimal();
+
                     var result = await TransactionValidatorService.VerifyTX(transaction);
-                    if (result == true)
+                    if (result.Item1 == true)
                     {
+                        if (transaction.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(transaction);
+                            transaction.TransactionRating = rating;
+                        }
+
                         TransactionData.AddToPool(transaction);
-                        P2PClient.SendTXMempool(transaction);//send out to mempool
+                        await P2PClient.SendTXMempool(transaction);//send out to mempool
 
                         output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Transaction has been broadcasted.", Hash = transaction.Hash });
                     }
@@ -429,6 +814,10 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Test raw transaction is received and return the input
+        /// </summary>
+        /// <returns></returns>
         [HttpPost("TestRawTransaction")]
         public string TestRawTransaction([FromBody] object jsonData)
         {
@@ -449,6 +838,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Create an ADNR and associate it to address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         [HttpGet("CreateAdnr/{address}/{name}")]
         public async Task<string> CreateAdnr(string address, string name)
         {
@@ -532,6 +927,12 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Transfer ADNR from one address to another
+        /// </summary>
+        /// <param name="fromAddress"></param>
+        /// <param name="toAddress"></param>
+        /// <returns></returns>
         [HttpGet("TransferAdnr/{fromAddress}/{toAddress}")]
         public async Task<string> TransferAdnr(string fromAddress, string toAddress)
         {
@@ -601,6 +1002,11 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Permanently remove ADNR from address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
         [HttpGet("DeleteAdnr/{address}")]
         public async Task<string> DeleteAdnr(string address)
         {
@@ -647,6 +1053,33 @@ namespace ReserveBlockCore.Controllers
             return output;
         }
 
+        /// <summary>
+        /// Shows the fortis pool work broadcast list of txs
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetFortisBroadcastTx")]
+        public async Task<string> GetFortisBroadcastTx()
+        {
+            var output = "";
+
+            var txlist = Globals.BroadcastedTrxDict.Values.ToList();
+
+            if (txlist.Count > 0)
+            {
+                output = JsonConvert.SerializeObject(txlist);
+            }
+
+            return output;
+        }
+
+
+        /// <summary>
+        /// Send a transaction. Specify from, to, and amount
+        /// </summary>
+        /// <param name="faddr"></param>
+        /// <param name="taddr"></param>
+        /// <param name="amt"></param>
+        /// <returns></returns>
         [HttpGet("SendTransaction/{faddr}/{taddr}/{amt}")]
         public async Task<string> SendTransaction(string faddr, string taddr, string amt)
         {
