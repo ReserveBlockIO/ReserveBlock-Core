@@ -194,7 +194,7 @@ namespace ReserveBlockCore
             SeedNodeService.SeedBench();
             await BadTransaction.PopulateBadTXList();
 
-            Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
+            Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
 
             var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
