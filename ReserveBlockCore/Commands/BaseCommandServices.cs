@@ -1904,6 +1904,7 @@ namespace ReserveBlockCore.Commands
             table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
 
             table.AddRow("[blue]CLI Version[/]", $"[green]{Globals.CLIVersion}[/]");
+            table.AddRow("[blue]GitHub Version[/]", $"[green]{Globals.GitHubVersion}[/]");
             table.AddRow("[blue]Network[/]", $"[green]{network}[/]");
             table.AddRow("[blue]Port[/]", $"[green]{Globals.Port}[/]");
             table.AddRow("[blue]OS[/]", $"[green]{osDesc}[/]");

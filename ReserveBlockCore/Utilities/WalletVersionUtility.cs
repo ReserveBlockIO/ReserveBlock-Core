@@ -21,13 +21,15 @@
                     {
                         return output;
                     }
-                    if (!Globals.IsTestNet)
-                    {
-                        if (minor < 0)
-                        {
-                            return output;
-                        }
-                    }
+
+                    //removing this as minor releases should never be breaking. If they are then we need to increase the majorver and blocklock
+                    //if (!Globals.IsTestNet)
+                    //{
+                    //    if (minor < 0)
+                    //    {
+                    //        return output;
+                    //    }
+                    //}
 
                     output = true;
                 }

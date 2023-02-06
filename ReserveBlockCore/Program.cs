@@ -25,8 +25,36 @@ namespace ReserveBlockCore
         #region Main
         static async Task Main(string[] args)
         {
+            //force culture info to US
+            var culture = CultureInfo.GetCultureInfo("en-US");
+            if (Thread.CurrentThread.CurrentCulture.Name != "en-US")
+            {
+                CultureInfo.DefaultThreadCurrentCulture = culture;
+                CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+                Thread.CurrentThread.CurrentCulture = culture;
+                Thread.CurrentThread.CurrentUICulture = culture;
+            }
+
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
+
+            var httpClientBuilder = Host.CreateDefaultBuilder(args)
+                     .ConfigureServices(services =>
+                     {
+                         services.AddHttpClient();
+                         services.AddTransient<HttpService>();
+                     })
+                     .Build();
+
+            await httpClientBuilder.StartAsync();
+            Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
+
+            //Perform network time sync
+            _ = NetworkTimeService.Run();
+            _ = VersionControlService.RunVersionControl();
+
+            await Task.Delay(800);
 
             bool valEncryptCheck = false;
             string? valEncryptAddr = "";
@@ -94,6 +122,10 @@ namespace ReserveBlockCore
                         var encPassSplit = argC.Split(new char[] { '=' });
                         var encPassword = encPassSplit[1];
                         Globals.EncryptPassword = encPassword.ToSecureString();
+                    }
+                    if(argC.Contains("openapi"))
+                    {
+                        Globals.OpenAPI = true;
                     }
                     if (argC.Contains("updating"))
                     {
@@ -176,7 +208,9 @@ namespace ReserveBlockCore
             Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
 
-            //BlockchainData.InitializeChain();
+            var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
+            if(adjGenAccount != null)
+                await BlockchainData.InitializeChain();
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -263,17 +297,6 @@ namespace ReserveBlockCore
             StartupService.SetLastBlock();
             StartupService.StartupMemBlocks();
 
-            var httpClientBuilder = Host.CreateDefaultBuilder(args)
-                     .ConfigureServices(services =>
-                     {
-                         services.AddHttpClient();
-                         services.AddTransient<HttpService>();
-                     })
-                     .Build();
-
-            await httpClientBuilder.StartAsync();
-            Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
-
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();
             StartupService.DisplayValidatorAddress();
@@ -329,11 +352,20 @@ namespace ReserveBlockCore
                 {
                     webBuilder.UseKestrel(options =>
                     {
-                        options.ListenLocalhost(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
-                        options.ListenLocalhost(Globals.APIPort);
+                        if(Globals.OpenAPI)
+                        {
+                            options.ListenAnyIP(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                            options.ListenAnyIP(Globals.APIPort);
+                        }
+                        else
+                        {
+                            options.ListenLocalhost(Globals.APIPort + 1, listenOption => { listenOption.UseHttps(GetSelfSignedCertificate()); });
+                            options.ListenLocalhost(Globals.APIPort);
+                        }
+                        
                     })
                     .UseStartup<Startup>()
-                    .UseUrls(new string[] {"http://*", "https://*" })
+                    //.UseUrls(new string[] {$"http://*:{Globals.APIPort}", $"https://*:{Globals.APIPort}" })
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                 });
 
@@ -408,7 +440,7 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
-            _ = VersionControlService.RunVersionControl();
+            
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();

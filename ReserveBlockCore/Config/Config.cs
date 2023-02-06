@@ -36,6 +36,7 @@ namespace ReserveBlockCore.Config
 		public string? CustomPath { get; set; }
 		public bool LogAPI { get; set; }
 		public bool RefuseToCallSeed { get; set; }
+		public bool OpenAPI { get; set; }
 
         public static Config ReadConfigFile()
         {
@@ -86,6 +87,7 @@ namespace ReserveBlockCore.Config
 				config.PasswordClearTime = dict.ContainsKey("PasswordClearTime") ? Convert.ToInt32(dict["PasswordClearTime"]) : 10;
                 config.LogAPI = dict.ContainsKey("LogAPI") ? Convert.ToBoolean(dict["LogAPI"]) : false;
                 config.RefuseToCallSeed = dict.ContainsKey("RefuseToCallSeed") ? Convert.ToBoolean(dict["RefuseToCallSeed"]) : false;
+                config.OpenAPI = dict.ContainsKey("OpenAPI") ? Convert.ToBoolean(dict["OpenAPI"]) : false;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -159,6 +161,7 @@ namespace ReserveBlockCore.Config
 			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
 			Globals.LogAPI = config.LogAPI;
 			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
+			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 
 
             if (config.TestNet == true)

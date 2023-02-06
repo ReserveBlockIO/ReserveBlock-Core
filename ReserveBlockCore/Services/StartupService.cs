@@ -183,13 +183,10 @@ namespace ReserveBlockCore.Services
             {
                 Signer.Signers = Globals.IsTestNet ? new ConcurrentDictionary<(string, long), long?>
                 {
-                    [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
-                    [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
-                    [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
-                    [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
-                    [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
-                    [("xHBG5xUbjTJ4hdhF5b2aEfo3VtH4qToe8h", 27150)] = null,
-                    [("xS8CnrDN771UVdoyPn98iKnHwBywy4Jq51", 27150)] = null,
+                    [("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8", 0)] = null,
+                    [("xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", 0)] = null,
+                    [("xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", 0)] = null,
+                    [("xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", 0)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
@@ -389,25 +386,44 @@ namespace ReserveBlockCore.Services
             var beacons = Beacons.GetBeacons();
             if(beacons != null )
             {
-                List<Beacons> beaconList = new List<Beacons> {
-                    new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                    new Beacons { IPAddress = "144.126.149.104",Name = "Wisteria Beacon", Port = Globals.Port + 20000, BeaconUID = "WisteriaBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                    new Beacons { IPAddress = "144.126.150.118", Name = "Tulip Beacon", Port = Globals.Port + 20000, BeaconUID = "TulipBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                    new Beacons { IPAddress = "89.117.21.39", Name = "Sunflower Beacon", Port = Globals.Port + 20000, BeaconUID = "SunflowerBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                    new Beacons { IPAddress = "89.117.21.40", Name = "Lavender Beacon", Port = Globals.Port + 20000, BeaconUID = "LavenderBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
-                    new Beacons { IPAddress = "209.126.11.92", Name = "Rose Beacon", Port = Globals.Port + 20000, BeaconUID = "RoseBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
-                    new Beacons { IPAddress = "149.102.144.58", Name = "Lupin Beacon", Port = Globals.Port + 20000, BeaconUID = "LupinBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
-                    new Beacons { IPAddress = "194.233.77.39", Name = "Orchid Beacon", Port = Globals.Port + 20000, BeaconUID = "OrchidBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
-                    new Beacons { IPAddress = "185.188.249.117", Name = "Lotus Beacon", Port = Globals.Port + 20000, BeaconUID = "LotusBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
-                    new Beacons { IPAddress = "154.26.155.35", Name = "Snapdragon Beacon", Port = Globals.Port + 20000, BeaconUID = "SnapdragonBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2}
-                };
-                
-                foreach(var beacon in beaconList)
+                if(!Globals.IsTestNet)
                 {
-                    beacon.BeaconLocator = Beacons.CreateBeaconLocator(beacon);
+                    List<Beacons> beaconList = new List<Beacons> 
+                    {
+                        new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "144.126.149.104",Name = "Wisteria Beacon", Port = Globals.Port + 20000, BeaconUID = "WisteriaBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "144.126.150.118", Name = "Tulip Beacon", Port = Globals.Port + 20000, BeaconUID = "TulipBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "89.117.21.39", Name = "Sunflower Beacon", Port = Globals.Port + 20000, BeaconUID = "SunflowerBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "89.117.21.40", Name = "Lavender Beacon", Port = Globals.Port + 20000, BeaconUID = "LavenderBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
+                        new Beacons { IPAddress = "209.126.11.92", Name = "Rose Beacon", Port = Globals.Port + 20000, BeaconUID = "RoseBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
+                        new Beacons { IPAddress = "149.102.144.58", Name = "Lupin Beacon", Port = Globals.Port + 20000, BeaconUID = "LupinBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                        new Beacons { IPAddress = "194.233.77.39", Name = "Orchid Beacon", Port = Globals.Port + 20000, BeaconUID = "OrchidBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                        new Beacons { IPAddress = "185.188.249.117", Name = "Lotus Beacon", Port = Globals.Port + 20000, BeaconUID = "LotusBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                        new Beacons { IPAddress = "154.26.155.35", Name = "Snapdragon Beacon", Port = Globals.Port + 20000, BeaconUID = "SnapdragonBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2}
+                    };
+
+                    foreach (var beacon in beaconList)
+                    {
+                        beacon.BeaconLocator = Beacons.CreateBeaconLocator(beacon);
+                    }
+
+                    Beacons.SaveBeaconList(beaconList);
                 }
-                
-                Beacons.SaveBeaconList(beaconList);
+                else
+                {
+                    //add testnet beacons
+                    List<Beacons> beaconList = new List<Beacons>
+                    {
+                        new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon TESTNET", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                    };
+
+                    foreach (var beacon in beaconList)
+                    {
+                        beacon.BeaconLocator = Beacons.CreateBeaconLocator(beacon);
+                    }
+
+                    Beacons.SaveBeaconList(beaconList);
+                }
             } 
         }
 
@@ -1198,7 +1214,7 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("Wallet Started. Awaiting Command...");
         }
 
-        internal static void MainMenu()
+        internal static void MainMenu(bool noAccountMessage = false)
         {
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
@@ -1233,7 +1249,7 @@ namespace ReserveBlockCore.Services
             Console.WriteLine("| 3. Restore Account                   |");
             Console.WriteLine("| 3hd. Restore HD Wallet               |");
             Console.WriteLine("| 4. Send Coins                        |");
-            Console.WriteLine("| 5. Get Latest Block                  |");
+            Console.WriteLine("| 5. Get Latest Block & Metrics        |");
             Console.WriteLine("| 6. Transaction History               |");
             Console.WriteLine("| 7. Wallet Address(es) Info           |");
             Console.WriteLine("| 8. Startup Masternode                |");
@@ -1254,15 +1270,41 @@ namespace ReserveBlockCore.Services
             { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
             if(Globals.NFTFilesReadyEPN)
             {
-                ConsoleWriterService.OutputMarked("[red]| NFT Files awaiting download!         |[/]");
-                ConsoleWriterService.OutputMarked("[red]| Please input encrypt password        |[/]");
+                AnsiConsole.MarkupLine("[red]| NFT Files awaiting download!         |[/]");
+                AnsiConsole.MarkupLine("[red]| Please input encrypt password        |[/]");
             }
             if(!Globals.UpToDate)
             {
-                ConsoleWriterService.OutputMarked("[red]|          **CLI Is Outdated**         |[/]");
-                ConsoleWriterService.OutputMarked("[red]|Please type /update to download latest|[/]");
+                AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
+                AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
             }
-
+            else
+            {
+                AnsiConsole.MarkupLine("[green]|         **CLI Is Up To Date**        |[/]");
+            }
+            if(noAccountMessage)
+            {
+                Console.WriteLine("********************************************************************");
+                AnsiConsole.MarkupLine("[yellow]You do not have any accounts yet. Please choose option 2 to create a new account.[/]");
+            }
+            if(!Globals.TimeInSync)
+            {
+                AnsiConsole.MarkupLine("********************************************************************");
+                AnsiConsole.MarkupLine("[red]|             **Time is out of sync**            |[/]");
+                AnsiConsole.MarkupLine("[red]|Please ensure your system clock is in sync      |[/]");
+                AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[green]| **Time Server shows time is synced** |[/]");
+            }
+            if(Globals.TimeSyncError)
+            {
+                AnsiConsole.MarkupLine("********************************************************************");
+                AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
+                AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
+                AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+            }
         }
     }
 }

@@ -210,6 +210,7 @@ namespace ReserveBlockCore.Services
                 else
                 {
                     Console.WriteLine("Client is already up to date.");
+                    AnsiConsole.MarkupLine($"Client Version: [blue]{Globals.CLIVersion}[/] | GitHub Tag: [green]{Globals.GitHubVersion}[/]");
                 }
             }
             catch(Exception ex)
@@ -434,8 +435,6 @@ namespace ReserveBlockCore.Services
 
                                     Globals.NewUpdateLastChecked = DateTime.UtcNow;
                                 }
-
-
                             }
                             else
                             {

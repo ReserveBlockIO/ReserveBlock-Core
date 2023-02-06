@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
@@ -21,6 +22,7 @@ namespace ReserveBlockCore.Utilities
         }
         public static async Task<string> GetStaticVars()
         {
+            var currentTime = TimeUtil.GetTime();
             var peersConnected = await P2PClient.ArePeersConnected();
             var bannedPeers = Peers.BannedPeers();
             var blockHeight = Globals.LastBlock.Height;
@@ -44,6 +46,9 @@ namespace ReserveBlockCore.Utilities
             var dupAddr = Globals.DuplicateAdjAddr.ToString();
             var explorerData = Globals.ExplorerValDataLastSendSuccess.ToString();
             var explorerDataLastSent = Globals.ExplorerValDataLastSend.ToString();
+            var blockLastSent = Globals.LastBlockAddedTimestamp.ToLocalDateTimeFromUnix().ToString();
+            var lastDiff = Globals.BlockTimeDiff.ToString();
+            var currentDiff = (currentTime - Globals.LastBlockAddedTimestamp).ToString();
 
             var balance = "Total Balance: " + accounts.FindAll().Sum(x => x.Balance);
             var validatorAddress = "Validator Address: " + Globals.ValidatorAddress;            
@@ -62,6 +67,7 @@ namespace ReserveBlockCore.Utilities
             var isResyncing = "Chain Resyncing? : " + Globals.IsResyncing.ToString();
             var isCorrupt = "Database Corruption Detected? : " + Globals.DatabaseCorruptionDetected.ToString();
             var adjConnection = "Adjudicator Connected?: " + adjudicatorConnection;
+
             
             //adj only info
             var adjudicatorText = "Is Adjudicating?: " + adjudicator;
@@ -97,11 +103,29 @@ namespace ReserveBlockCore.Utilities
             var explorerDataText = $"Explorer Last Send Success? {explorerData}";
             var explorerLastSendText = $"Explorer Last Send Date: {explorerDataLastSent}";
 
+            var blockLastSentText = $"Block last sent at: {blockLastSent}";
+            var lastDiffText = $"Block last delay: {lastDiff}";
+            var currentDiffText = $"Current block delay: {currentDiff}";
+            var blockDiffAvg = $"Block Diff Avg: {BlockDiffService.CalculateAverage().ToString("#.##")} secs. Avg of: {Globals.BlockDiffQueue.Count()}/3456 Blocks.";
+
+            var cliVersionText = $"CLI Version: {Globals.CLIVersion}";
+            var githubVersionTag = $"GitHub Version: {Globals.GitHubVersion}";
+
+            var timeSyncError = $"Time Sync Error? {Globals.TimeSyncError}. (If true please check system clock and ensure its working)";
+            var timeSync = $"Time in Sync? {Globals.TimeInSync}";
+            var lastSyncDiff = $"Last Time Sync Diff: {Globals.TimeSyncDiff}";
+            var lastSyncTime = $"Last Time Sync Date: {Globals.TimeSyncLastDate}";
+
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 
             StringBuilder strBld = new StringBuilder();
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(cliVersionText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(githubVersionTag);
+            strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(validatorAddress);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(hdWalletText);
@@ -201,9 +225,27 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(externalIPText);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine("-------------------------------Block Info----------------------------");
+            strBld.AppendLine(blockDiffAvg);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(blockLastSentText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastDiffText);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(currentDiffText);
+            strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(lastBlockInfo);
             strBld.AppendLine("---------------------------------------------------------------------");
-               
+
+            strBld.AppendLine("-------------------------------Time Sync-----------------------------");
+            strBld.AppendLine(timeSyncError);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(timeSync);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastSyncDiff);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(lastSyncTime);
+            strBld.AppendLine("---------------------------------------------------------------------");
+
             return strBld.ToString();
         }
 

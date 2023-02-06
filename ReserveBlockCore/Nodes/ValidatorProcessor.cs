@@ -138,7 +138,6 @@ namespace ReserveBlockCore.Nodes
                             var txFound = mempool.FindOne(x => x.Hash == transaction.Hash);
                             if (txFound == null)
                             {
-
                                 var txResult = await TransactionValidatorService.VerifyTX(transaction);
                                 if (txResult.Item1 == true)
                                 {
@@ -172,7 +171,6 @@ namespace ReserveBlockCore.Nodes
                         }
                         else
                         {
-
                             var txResult = await TransactionValidatorService.VerifyTX(transaction);
                             if (txResult.Item1 == true)
                             {
