@@ -656,6 +656,8 @@ namespace ReserveBlockCore.Controllers
                 if(tx != null)
                 {
                     tx.ToAddress = tx.ToAddress.ToAddressNormalize();
+                    tx.Amount = tx.Amount.ToNormalizeDecimal();
+
                     tx.Build();
 
                     output = JsonConvert.SerializeObject(new { Result = "Success", Message = $"Hash Calculated.", Hash = tx.Hash });
@@ -730,6 +732,8 @@ namespace ReserveBlockCore.Controllers
                 if (transaction != null)
                 {
                     transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
+                    transaction.Amount = transaction.Amount.ToNormalizeDecimal();
+
                     var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
@@ -774,6 +778,8 @@ namespace ReserveBlockCore.Controllers
                 if (transaction != null)
                 {
                     transaction.ToAddress = transaction.ToAddress.ToAddressNormalize();
+                    transaction.Amount = transaction.Amount.ToNormalizeDecimal();
+
                     var result = await TransactionValidatorService.VerifyTX(transaction);
                     if (result.Item1 == true)
                     {
