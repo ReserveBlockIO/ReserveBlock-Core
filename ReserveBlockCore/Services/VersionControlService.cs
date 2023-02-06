@@ -435,8 +435,6 @@ namespace ReserveBlockCore.Services
 
                                     Globals.NewUpdateLastChecked = DateTime.UtcNow;
                                 }
-
-
                             }
                             else
                             {

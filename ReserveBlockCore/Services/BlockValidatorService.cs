@@ -105,10 +105,10 @@ namespace ReserveBlockCore.Services
                 try
                 {
 
-                    //if(block?.Height % 1000 == 0)
-                    //{
-                    //    await DbContext.CheckPoint();
-                    //}
+                    if (block?.Height % 1000 == 0)
+                    {
+                        await DbContext.CheckPoint();
+                    }
 
                     DbContext.BeginTrans();
                     bool result = false;

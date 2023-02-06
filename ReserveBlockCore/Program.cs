@@ -39,8 +39,20 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+            var httpClientBuilder = Host.CreateDefaultBuilder(args)
+                     .ConfigureServices(services =>
+                     {
+                         services.AddHttpClient();
+                         services.AddTransient<HttpService>();
+                     })
+                     .Build();
+
+            await httpClientBuilder.StartAsync();
+            Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
+
             //Perform network time sync
             _ = NetworkTimeService.Run();
+            _ = VersionControlService.RunVersionControl();
 
             await Task.Delay(800);
 
@@ -285,17 +297,6 @@ namespace ReserveBlockCore
             StartupService.SetLastBlock();
             StartupService.StartupMemBlocks();
 
-            var httpClientBuilder = Host.CreateDefaultBuilder(args)
-                     .ConfigureServices(services =>
-                     {
-                         services.AddHttpClient();
-                         services.AddTransient<HttpService>();
-                     })
-                     .Build();
-
-            await httpClientBuilder.StartAsync();
-            Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
-
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();
             StartupService.DisplayValidatorAddress();
@@ -439,7 +440,7 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
-            _ = VersionControlService.RunVersionControl();
+            
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
