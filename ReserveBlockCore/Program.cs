@@ -39,6 +39,9 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+            //Forced Testnet
+            Globals.IsTestNet = true;
+            
             //Perform network time sync
             _ = NetworkTimeService.Run();
 
@@ -85,9 +88,7 @@ namespace ReserveBlockCore
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsUtilities.DisableConsoleQuickEdit.Go();
 
-            
-            //Forced Testnet
-            //Globals.IsTestNet = true;
+
             var argList = args.ToList();
             if (argList.Count() > 0)
             {
