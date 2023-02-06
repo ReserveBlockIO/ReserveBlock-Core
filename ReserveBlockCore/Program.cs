@@ -196,7 +196,9 @@ namespace ReserveBlockCore
             Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
 
-            //BlockchainData.InitializeChain();
+            var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
+            if(adjGenAccount != null)
+                await BlockchainData.InitializeChain();
 
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
@@ -362,7 +364,7 @@ namespace ReserveBlockCore
                         
                     })
                     .UseStartup<Startup>()
-                    .UseUrls(new string[] {"http://*", "https://*" })
+                    //.UseUrls(new string[] {$"http://*:{Globals.APIPort}", $"https://*:{Globals.APIPort}" })
                     .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
                 });
 

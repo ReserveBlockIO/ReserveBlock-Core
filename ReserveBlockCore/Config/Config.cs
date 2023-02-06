@@ -161,7 +161,7 @@ namespace ReserveBlockCore.Config
 			Globals.AutoDownloadNFTAsset = config.AutoDownloadNFTAsset;
 			Globals.LogAPI = config.LogAPI;
 			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
-			Globals.OpenAPI = config.OpenAPI;
+			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 
 
             if (config.TestNet == true)

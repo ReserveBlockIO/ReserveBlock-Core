@@ -183,13 +183,10 @@ namespace ReserveBlockCore.Services
             {
                 Signer.Signers = Globals.IsTestNet ? new ConcurrentDictionary<(string, long), long?>
                 {
-                    [("xBRzJUZiXjE3hkrpzGYMSpYCHU1yPpu8cj", 0)] = null,
-                    [("xBRNST9oL8oW6JctcyumcafsnWCVXbzZnr", 0)] = null,
-                    [("xBRKXKyYQU5k24Rmoj5uRkqNCqJxxci5tC", 0)] = null,
-                    [("xBRqxLS81HrR3bGRpDa4xTfAEvx7skYDGq", 0)] = null,
-                    [("xBRS3SxqLQtEtmqZ1BUJiobjUzwufwaAnK", 0)] = null,
-                    [("xHBG5xUbjTJ4hdhF5b2aEfo3VtH4qToe8h", 27150)] = null,
-                    [("xS8CnrDN771UVdoyPn98iKnHwBywy4Jq51", 27150)] = null,
+                    [("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8", 0)] = null,
+                    [("xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", 0)] = null,
+                    [("xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", 0)] = null,
+                    [("xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", 0)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
