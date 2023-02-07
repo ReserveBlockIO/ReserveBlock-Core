@@ -32,6 +32,13 @@ namespace ReserveBlockCore.Commands
                 case "/printkeys":
                     BaseCommandServices.PrintKeys();
                     break;
+                case "/basic":
+                    Globals.BasicCLI = !Globals.BasicCLI;
+                    var state = Globals.BasicCLI ? "-->ON<--" : "-->OFF<--";
+                    if (!Globals.BasicCLI)
+                        StartupService.MainMenu();
+                    Console.WriteLine($"Reserveblock Basic CLI has been turned {state}...");
+                    break;
                 case "/stopco":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     Console.WriteLine($"Stop Console Output set to: {Globals.StopConsoleOutput}");

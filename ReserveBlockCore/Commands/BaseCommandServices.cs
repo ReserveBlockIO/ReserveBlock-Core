@@ -1945,6 +1945,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/info[/]", "[green]This will print out the RBX wallet client information.[/]");
             table.AddRow("[blue]/debug[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
             table.AddRow("[blue]/stopco[/]", "[green]This will stop the automatic printout of text in CLI.[/]");
+            table.AddRow("[blue]/basic[/]", "[green]This will turn the basic CLI menu on/off[/]");
             table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");
             table.AddRow("[blue]/menu[/]", "[green]This will return you to the main menu[/]");
             table.AddRow("[blue]/clear[/]", "[green]This will clear the current console window.[/]");
