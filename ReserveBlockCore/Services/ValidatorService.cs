@@ -104,7 +104,7 @@ namespace ReserveBlockCore.Services
             }
             catch (Exception ex) { }
         }
-        public static async Task<string> StartValidating(Account account, string uName = "")
+        public static async Task<string> StartValidating(Account account, string uName = "", bool argsPassed = false)
         {
             string output = "";
             Validators validator = new Validators();
@@ -188,13 +188,14 @@ namespace ReserveBlockCore.Services
 
                         account.IsValidating = true;
                         var accountTable = AccountData.GetAccounts();
-                        accountTable.UpdateSafe(account);
+                        var saveResult = accountTable.UpdateSafe(account);
 
                         Globals.ValidatorAddress = validator.Address;
 
                         output = "Account found and activated as a validator! Thank you for service to the network!";
 
-                        _ = StartupService.GetAdjudicatorPool();
+                        if(!argsPassed)
+                            _ = StartupService.GetAdjudicatorPool();
                     }
                 }
                 else

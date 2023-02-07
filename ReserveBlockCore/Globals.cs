@@ -134,6 +134,7 @@ namespace ReserveBlockCore
         public static bool NFTsDownloading = false;
         public static bool TimeInSync = true;
         public static bool TimeSyncError = false;
+        public static bool BasicCLI = false;
 
         public static CancellationToken CancelledToken;
 
