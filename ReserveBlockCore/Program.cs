@@ -17,6 +17,7 @@ using Spectre.Console;
 using System.Security.AccessControl;
 using System.Net.Sockets;
 using System.Net.Http;
+using System.Security.Principal;
 
 namespace ReserveBlockCore
 {
@@ -39,6 +40,7 @@ namespace ReserveBlockCore
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
 
+
             var httpClientBuilder = Host.CreateDefaultBuilder(args)
                      .ConfigureServices(services =>
                      {
@@ -49,6 +51,10 @@ namespace ReserveBlockCore
 
             await httpClientBuilder.StartAsync();
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
+
+
+            //Forced Testnet
+            //Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -97,9 +103,7 @@ namespace ReserveBlockCore
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 WindowsUtilities.DisableConsoleQuickEdit.Go();
 
-            
-            //Forced Testnet
-            //Globals.IsTestNet = true;
+
             var argList = args.ToList();
             if (argList.Count() > 0)
             {
@@ -126,6 +130,10 @@ namespace ReserveBlockCore
                     if(argC.Contains("openapi"))
                     {
                         Globals.OpenAPI = true;
+                    }
+                    if (argC.Contains("basic"))
+                    {
+                        Globals.BasicCLI = true;//give previous session time to close.
                     }
                     if (argC.Contains("updating"))
                     {
@@ -205,13 +213,14 @@ namespace ReserveBlockCore
             SeedNodeService.SeedBench();
             await BadTransaction.PopulateBadTXList();
 
-            Globals.V3Height = Globals.IsTestNet == true ? 16 : (int)Globals.V3Height;
+            Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
 
-            var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
-            if(adjGenAccount != null)
-                await BlockchainData.InitializeChain();
+            //var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
+            //if(adjGenAccount != null)
+            // await BlockchainData.InitializeChain();
 
+            StartupService.SetValidator();
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
@@ -250,8 +259,38 @@ namespace ReserveBlockCore
                             if (account != null)
                             {
                                 Console.WriteLine("Account Loaded: " + account.Address);
-                            }
 
+                                if (argList.Exists(x => x.ToLower() == "start-validator"))
+                                {
+                                    var name = argList.Where(x => x.ToLower().Contains("validator-name=")).FirstOrDefault();
+                                    if(name != null)
+                                    {
+                                        if(string.IsNullOrEmpty(Globals.ValidatorAddress))
+                                        {
+                                            var nameSplit = name.Split(new char[] { '=' });
+                                            var validatorName = nameSplit[1];
+                                            var validatorAddress = account.Address;
+                                            var accountDB = AccountData.GetAccounts();
+                                            var accountRec = accountDB.Query().Where(x => x.Address == account.Address).FirstOrDefault();
+
+                                            var valResult = await ValidatorService.StartValidating(accountRec, validatorName, true);
+                                            Console.WriteLine(valResult);
+
+                                            await Task.Delay(1000);
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"Validator Active: {Globals.ValidatorAddress}");
+                                        }
+                                        
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Error: 'start-validator' was present, but no name was entered");
+                                    }
+                                    
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -261,7 +300,7 @@ namespace ReserveBlockCore
                 });
             }
 
-            StartupService.SetValidator();
+            
             StartupService.SetAdjudicatorAddresses();
             Signer.UpdateSigningAddresses();
 

@@ -159,6 +159,7 @@ namespace ReserveBlockCore.Controllers
         /// Returns the state of a wallets encryption and if password is present
         /// </summary>
         /// <returns></returns>
+        [HttpGet("GetCheckEncryptionStatus")]
         public static async Task<string> GetCheckEncryptionStatus()
         {
             string output = "";

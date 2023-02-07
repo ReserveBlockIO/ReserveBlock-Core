@@ -1216,64 +1216,127 @@ namespace ReserveBlockCore.Services
 
         internal static void MainMenu(bool noAccountMessage = false)
         {
+            if (Globals.BasicCLI)
+            {
+                MainMenuBasic();
+            }
+            else
+            {
+                Console.Clear();
+                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+                if (Globals.IsTestNet != true)
+                {
+                    AnsiConsole.Write(
+                    new FigletText("RBX Wallet")
+                    .LeftAligned()
+                    .Color(Color.Blue));
+                }
+                else
+                {
+                    AnsiConsole.Write(
+                    new FigletText("RBX Wallet - TestNet")
+                    .LeftAligned()
+                    .Color(Color.Green));
+                }
+
+                if (Globals.IsTestNet != true)
+                {
+                    Console.WriteLine("ReserveBlock Main Menu");
+                }
+                else
+                {
+                    Console.WriteLine("ReserveBlock Main Menu **TestNet**");
+                }
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("| 1. Genesis Block (Check)             |");
+                Console.WriteLine("| 2. Create Account                    |");
+                Console.WriteLine("| 2hd. Create HD Wallet                |");
+                Console.WriteLine("| 3. Restore Account                   |");
+                Console.WriteLine("| 3hd. Restore HD Wallet               |");
+                Console.WriteLine("| 4. Send Coins                        |");
+                Console.WriteLine("| 5. Get Latest Block & Metrics        |");
+                Console.WriteLine("| 6. Transaction History               |");
+                Console.WriteLine("| 7. Wallet Address(es) Info           |");
+                Console.WriteLine("| 8. Startup Masternode                |");
+                Console.WriteLine("| 9. Search Block                      |");
+                Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
+                Console.WriteLine("| 11. Stop Masternode                  |");
+                Console.WriteLine("| 12. Import Smart Contract (disabled) |");
+                Console.WriteLine("| 13. Voting                           |");
+                Console.WriteLine("| 14. Exit                             |");
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("|type /help for menu options           |");
+                Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|======================================|");
+
+                if (Globals.DuplicateAdjAddr)
+                { Console.WriteLine("|Duplicate Address Found Validating!   |"); }
+                if (Globals.DuplicateAdjIP)
+                { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
+                if (Globals.NFTFilesReadyEPN)
+                {
+                    AnsiConsole.MarkupLine("[red]| NFT Files awaiting download!         |[/]");
+                    AnsiConsole.MarkupLine("[red]| Please input encrypt password        |[/]");
+                }
+                if (!Globals.UpToDate)
+                {
+                    AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("[green]|         **CLI Is Up To Date**        |[/]");
+                }
+
+                if (noAccountMessage)
+                {
+                    Console.WriteLine("********************************************************************");
+                    AnsiConsole.MarkupLine("[yellow]You do not have any accounts yet. Please choose option 2 to create a new account.[/]");
+                }
+                if (!Globals.TimeInSync)
+                {
+                    AnsiConsole.MarkupLine("********************************************************************");
+                    AnsiConsole.MarkupLine("[red]|             **Time is out of sync**            |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock is in sync      |[/]");
+                    AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("[green]| **Time Server shows time is synced** |[/]");
+                }
+                if (Globals.TimeSyncError)
+                {
+                    AnsiConsole.MarkupLine("********************************************************************");
+                    AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
+                    AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+                }
+                if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                {
+                    AnsiConsole.MarkupLine("[blue]|          **Validator Active**        |[/]");
+                    AnsiConsole.MarkupLine($"[blue]|  {Globals.ValidatorAddress}  |[/]");
+                }
+            }
+
+            
+        }
+
+        internal static void MainMenuBasic(bool noAccountMessage = false)
+        {
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
-
-            if(Globals.IsTestNet != true)
-            {
-                AnsiConsole.Write(
-                new FigletText("RBX Wallet")
-                .LeftAligned()
-                .Color(Color.Blue));
-            }
-            else
-            {
-                AnsiConsole.Write(
-                new FigletText("RBX Wallet - TestNet")
-                .LeftAligned()
-                .Color(Color.Green));
-            }
-            
-            if(Globals.IsTestNet != true)
-            {
-                Console.WriteLine("ReserveBlock Main Menu");
-            }
-            else
-            {
-                Console.WriteLine("ReserveBlock Main Menu **TestNet**");
-            }
-            Console.WriteLine("|======================================|");
-            Console.WriteLine("| 1. Genesis Block (Check)             |");
-            Console.WriteLine("| 2. Create Account                    |");
-            Console.WriteLine("| 2hd. Create HD Wallet                |");
-            Console.WriteLine("| 3. Restore Account                   |");
-            Console.WriteLine("| 3hd. Restore HD Wallet               |");
-            Console.WriteLine("| 4. Send Coins                        |");
-            Console.WriteLine("| 5. Get Latest Block & Metrics        |");
-            Console.WriteLine("| 6. Transaction History               |");
-            Console.WriteLine("| 7. Wallet Address(es) Info           |");
-            Console.WriteLine("| 8. Startup Masternode                |");
-            Console.WriteLine("| 9. Search Block                      |");
-            Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-            Console.WriteLine("| 11. Stop Masternode                  |");
-            Console.WriteLine("| 12. Import Smart Contract (disabled) |");
-            Console.WriteLine("| 13. Voting                           |");
-            Console.WriteLine("| 14. Exit                             |");
-            Console.WriteLine("|======================================|");
-            Console.WriteLine("|type /help for menu options           |");
-            Console.WriteLine("|type /menu to come back to main area  |");
-            Console.WriteLine("|======================================|");
 
             if (Globals.DuplicateAdjAddr)
             { Console.WriteLine("|Duplicate Address Found Validating!   |"); }
             if (Globals.DuplicateAdjIP)
             { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
-            if(Globals.NFTFilesReadyEPN)
+            if (Globals.NFTFilesReadyEPN)
             {
                 AnsiConsole.MarkupLine("[red]| NFT Files awaiting download!         |[/]");
                 AnsiConsole.MarkupLine("[red]| Please input encrypt password        |[/]");
             }
-            if(!Globals.UpToDate)
+            if (!Globals.UpToDate)
             {
                 AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
                 AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
@@ -1282,12 +1345,13 @@ namespace ReserveBlockCore.Services
             {
                 AnsiConsole.MarkupLine("[green]|         **CLI Is Up To Date**        |[/]");
             }
-            if(noAccountMessage)
+
+            if (noAccountMessage)
             {
                 Console.WriteLine("********************************************************************");
                 AnsiConsole.MarkupLine("[yellow]You do not have any accounts yet. Please choose option 2 to create a new account.[/]");
             }
-            if(!Globals.TimeInSync)
+            if (!Globals.TimeInSync)
             {
                 AnsiConsole.MarkupLine("********************************************************************");
                 AnsiConsole.MarkupLine("[red]|             **Time is out of sync**            |[/]");
@@ -1298,12 +1362,17 @@ namespace ReserveBlockCore.Services
             {
                 AnsiConsole.MarkupLine("[green]| **Time Server shows time is synced** |[/]");
             }
-            if(Globals.TimeSyncError)
+            if (Globals.TimeSyncError)
             {
                 AnsiConsole.MarkupLine("********************************************************************");
                 AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
                 AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
                 AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+            }
+            if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                AnsiConsole.MarkupLine("[blue]|          **Validator Active**        |[/]");
+                AnsiConsole.MarkupLine($"[blue]|  {Globals.ValidatorAddress}  |[/]");
             }
         }
     }
