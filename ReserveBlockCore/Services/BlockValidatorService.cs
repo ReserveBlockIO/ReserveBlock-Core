@@ -267,9 +267,9 @@ namespace ReserveBlockCore.Services
                                 if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                                 {
                                     var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
-                                    if(!Globals.GUI)
+                                    if(!Globals.GUI && !Globals.BasicCLI && !blockDownloads)
                                     {
-                                        if(!txResult.Item1)
+                                        if (!txResult.Item1)
                                             await TransactionValidatorService.BadTXDetected(blkTransaction);
                                     }
                                     rejectBlock = txResult.Item1 == false ? rejectBlock = true : false;

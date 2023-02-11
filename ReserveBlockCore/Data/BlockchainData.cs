@@ -316,6 +316,8 @@ namespace ReserveBlockCore.Data
                 //Update in memory fields.
                 
                 Globals.LastBlock = block;
+                if (Globals.ValidatorAddress == block.Validator)
+                    Globals.LastWonBlock = block;
                 var currentTime = TimeUtil.GetTime();
                 Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
                 Globals.LastBlockAddedTimestamp = currentTime;

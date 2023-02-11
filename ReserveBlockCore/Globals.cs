@@ -44,6 +44,7 @@ namespace ReserveBlockCore
         public static Beacons? SelfBeacon = null;
         public static long LastBlockAddedTimestamp = TimeUtil.GetTime();
         public static long BlockTimeDiff = 0;
+        public static Block? LastWonBlock = null;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
