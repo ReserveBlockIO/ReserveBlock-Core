@@ -48,6 +48,12 @@ namespace ReserveBlockCore.Extensions
             frDateTime = frDateTime.AddSeconds(unixTime).ToLocalTime();
             return frDateTime;
         }
+        public static DateTime ToUTCDateTimeFromUnix(this long unixTime)
+        {
+            DateTime frDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            frDateTime = frDateTime.AddSeconds(unixTime).ToUniversalTime();
+            return frDateTime;
+        }
         public static int ToInt32(this string obj)
         {
             int value;
