@@ -216,6 +216,10 @@ namespace ReserveBlockCore
 
             await DbContext.CheckPoint();
 
+            StartupService.SetBlockHeight();
+            StartupService.SetLastBlock();
+            StartupService.StartupMemBlocks();
+
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
@@ -342,10 +346,6 @@ namespace ReserveBlockCore
             }
 
             await StartupService.RunSettingChecks();
-
-            StartupService.SetBlockHeight();
-            StartupService.SetLastBlock();
-            StartupService.StartupMemBlocks();
 
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();

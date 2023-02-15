@@ -62,8 +62,6 @@ namespace ReserveBlockCore.Services
             var peerDb = Peers.GetAll();
             Globals.BannedIPs = new ConcurrentDictionary<string, Peers>(
                 peerDb.Find(x => x.IsBanned || x.IsPermaBanned).ToArray().ToDictionary(x => x.PeerIP, x => x));
-            var localBlockTime = BlockLocalTime.GetBlockLocalTimes();
-            localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
         }
 
         public static async void EncryptedPasswordEntry()
