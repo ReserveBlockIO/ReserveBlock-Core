@@ -133,8 +133,6 @@ namespace ReserveBlockCore.Data
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
-            var localTimeDb = BlockLocalTime.GetBlockLocalTimes();
-            localTimeDb.EnsureIndexSafe(x => x.Height, true);
 
             var transactionPool = DbContext.DB.GetCollection<Transaction>(DbContext.RSRV_TRANSACTION_POOL);
             transactionPool.EnsureIndexSafe(x => x.Hash, false);
