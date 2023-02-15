@@ -18,6 +18,7 @@ using System.Security.AccessControl;
 using System.Net.Sockets;
 using System.Net.Http;
 using System.Security.Principal;
+using System;
 
 namespace ReserveBlockCore
 {
@@ -26,6 +27,8 @@ namespace ReserveBlockCore
         #region Main
         static async Task Main(string[] args)
         {
+            bool keslog = false;
+            bool signalrLog = false;
             //force culture info to US
             var culture = CultureInfo.GetCultureInfo("en-US");
             if (Thread.CurrentThread.CurrentCulture.Name != "en-US")
@@ -144,6 +147,14 @@ namespace ReserveBlockCore
                         var apiTokens = argC.Split(new char[] { '=' });
                         var apiToken = apiTokens[1];
                         Globals.APIToken = apiToken.ToSecureString();
+                    }
+                    if(argC.Contains("keslog"))
+                    {
+                        keslog = true;
+                    }
+                    if (argC.Contains("signalrlog"))
+                    {
+                        signalrLog = true;
                     }
                     if (argC.Contains("snapshot"))
                     {
@@ -405,7 +416,7 @@ namespace ReserveBlockCore
                     })
                     .UseStartup<Startup>()
                     //.UseUrls(new string[] {$"http://*:{Globals.APIPort}", $"https://*:{Globals.APIPort}" })
-                    .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                    .ConfigureLogging(!keslog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
                 });
 
             //for p2p using signalr
@@ -415,7 +426,7 @@ namespace ReserveBlockCore
                     webBuilder.UseKestrel()
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
-                    .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                    .ConfigureLogging(!signalrLog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
                     webBuilder.ConfigureKestrel(options =>
                     {
 
