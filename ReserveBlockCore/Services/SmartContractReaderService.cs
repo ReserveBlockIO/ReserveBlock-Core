@@ -335,6 +335,11 @@ namespace ReserveBlockCore.Services
                 strBuild.AppendLine(("let FileName = \"" + scAsset.Name + "\""));
                 strBuild.AppendLine(("let AssetAuthorName = \"" + scAsset.AssetAuthorName + "\""));
 
+                if (scMain.Properties != null)
+                {
+                    strBuild.AppendLine("let Properties = \"" + scMain.Properties.ToTrilliumStringFromDict() + "\"");
+                }
+
                 strBuild.AppendLine("function NftMain(data : string) : string");
                 strBuild.AppendLine("{");
                 strBuild.AppendLine(@"  if data == ""nftdata""");

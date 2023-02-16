@@ -3,6 +3,7 @@ using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -194,6 +195,17 @@ namespace ReserveBlockCore.Extensions
             var output = string.Join(" ", source);
 
             return output;
+        }
+
+        /// <summary>
+        /// Converts a dictionary into a char delimited string
+        /// </summary>
+        /// <param name="dict">Dictionary string, string</param>
+        /// <returns>Char delimited string</returns>
+        public static string ToTrilliumStringFromDict(this Dictionary<string, string> dict)
+        {
+            var result = string.Join("<|>", dict.Select(m => m.Key + ":" + m.Value).ToArray());
+            return result;
         }
 
         public static string ToAddressNormalize(this string source)
