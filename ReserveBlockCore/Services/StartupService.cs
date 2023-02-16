@@ -286,8 +286,11 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
-                        await Task.Delay(15000);
+                        if (!Debugger.IsAttached)
+                        {
+                            Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
+                            await Task.Delay(15000);
+                        }
                     }
                 }
 

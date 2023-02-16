@@ -89,6 +89,10 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
             evolve.OrderBy(x => x.EvolutionState).ToList().ForEach(x =>
             {
                 var evoLetter = FunctionNameUtility.GetFunctionLetter(x.EvolutionState);
+                if (x.Properties != null)
+                {
+                    strEvolveBld.AppendLine($"let EvolveState{evoLetter}Properties = \"{x.Properties.ToTrilliumStringFromDict()}\"");
+                }
                 strEvolveBld.AppendLine("function EvolveState" + evoLetter + "() : string");
                 strEvolveBld.AppendLine("{");
                 strEvolveBld.AppendLine(@"  var evoState = " + "\"" + x.EvolutionState.ToString() + "\"");

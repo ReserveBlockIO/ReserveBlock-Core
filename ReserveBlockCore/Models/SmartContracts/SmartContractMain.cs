@@ -222,14 +222,21 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 case FeatureName.Evolving:
                                     var evolveList = new List<string>();
                                     var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
+                                    Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                                     for (int i = 1; i <= evolveCount; i++)
                                     {
                                         var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                        var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                        evolveList.Add(ma);
+                                        var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                        evolveList.Add(ev);
+
+                                        var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                        if (evP != null)
+                                        {
+                                            evoPropertiesDict.Add(i, evP);
+                                        }
                                     }
 
-                                    var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                    var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict);
                                     var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
                                     if (isDynamic == true)
@@ -285,15 +292,22 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 break;
                             case FeatureName.Evolving:
                                 var evolveList = new List<string>();
+                                Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                                 var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
                                 for (int i = 1; i <= evolveCount; i++)
                                 {
                                     var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                    var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                    evolveList.Add(ma);
+                                    var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                    evolveList.Add(ev);
+
+                                    var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                    if (evP != null)
+                                    {
+                                        evoPropertiesDict.Add(i, evP);
+                                    }
                                 }
 
-                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict);
 
                                 var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
@@ -413,6 +427,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 break;
                             case FeatureName.Evolving:
                                 var evolveList = new List<string>();
+                                Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                                 var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
 
                                 var evolveState = repl.Run(@"GetCurrentEvolveState()");
@@ -422,11 +437,17 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 for (int i = 1; i <= evolveCount; i++)
                                 {
                                     var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                    var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                    evolveList.Add(ma);
+                                    var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                    evolveList.Add(ev);
+
+                                    var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                    if (evP != null)
+                                    {
+                                        evoPropertiesDict.Add(i, evP);
+                                    }
                                 }
 
-                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
+                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict, evoStateNum > 0 ? evoStateNum : null);
 
                                 var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
@@ -491,18 +512,25 @@ namespace ReserveBlockCore.Models.SmartContracts
                             break;
                         case FeatureName.Evolving:
                             var evolveList = new List<string>();
+                            Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                             var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
                             for (int i = 1; i <= evolveCount; i++)
                             {
                                 var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                evolveList.Add(ma);
+                                var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                evolveList.Add(ev);
+
+                                var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                if (evP != null)
+                                {
+                                    evoPropertiesDict.Add(i, evP);
+                                }
                             }
                             var evolveState = repl.Run(@"GetCurrentEvolveState()");
                             var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
                             var evoStateNum = Convert.ToInt32(evoStateString);
 
-                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
+                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict, evoStateNum > 0 ? evoStateNum : null);
 
                             var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
