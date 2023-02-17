@@ -35,6 +35,8 @@ namespace ReserveBlockCore.Models
             var NewSigners = Signers.Where(x => x.Key.StartHeight <= Height && (x.Value == null || x.Value >= Height))
                .Select(x => x.Key.Address)
                .ToHashSet();
+            if (Globals.IsTestNet)
+                NewSigners = Signers.Where(x => true).Select(x => x.Key.Address).ToHashSet();
             foreach (var signer in NewSigners)
                 Globals.Signers[signer] = true;
             foreach (var singer in Globals.Signers.Keys)
