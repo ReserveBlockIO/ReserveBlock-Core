@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Trillium;
 using ReserveBlockCore.P2P;
+using System.Runtime.InteropServices;
 
 namespace ReserveBlockCore.Commands
 {
@@ -22,9 +23,6 @@ namespace ReserveBlockCore.Commands
             {
                 case "/help":
                     BaseCommandServices.PrintHelpMenu();
-                    break;
-                case "/linuxt":
-                    await LinuxUtilities.TestMethod();
                     break;
                 case "/info":
                     BaseCommandServices.PrintInfo();
@@ -214,7 +212,22 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/restart":
                     Globals.StopConsoleOutput = true;
-                    await WindowsUtilities.ClientRestart();
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        await WindowsUtilities.ClientRestart();
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        await LinuxUtilities.ClientRestart();
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        Console.WriteLine("No restart command for OSX yet.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("OS Not detected.");
+                    }
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/entercode":

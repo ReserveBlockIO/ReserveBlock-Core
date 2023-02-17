@@ -1220,8 +1220,14 @@ namespace ReserveBlockCore.Services
             }
             else
             {
-                Console.Clear();
-                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+                
+                try
+                {
+                    Console.Clear();
+                    Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+                }
+                catch { }
+                
 
                 if (Globals.IsTestNet != true)
                 {
@@ -1322,8 +1328,12 @@ namespace ReserveBlockCore.Services
 
         internal static void MainMenuBasic(bool noAccountMessage = false)
         {
-            Console.Clear();
-            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+            try
+            {
+                Console.Clear();
+                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+            }
+            catch { }
 
             if (Globals.DuplicateAdjAddr)
             { Console.WriteLine("|Duplicate Address Found Validating!   |"); }

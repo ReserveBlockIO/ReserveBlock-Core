@@ -1,8 +1,10 @@
 ﻿using ReserveBlockCore.Commands;
 using ReserveBlockCore.Models;
+using Spectre.Console.Cli;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ReserveBlockCore.Utilities
 {
@@ -12,50 +14,87 @@ namespace ReserveBlockCore.Utilities
         
         public static async Task ClientRestart()
         {
-            var shutDownDelay = Task.Delay(2000);
-            LogUtility.Log("Send exit has been called. Closing Wallet.", "WindowsUtilities.ClientRestart()");
-            Globals.StopAllTimers = true;
-            await shutDownDelay;
-            while (Globals.TreisUpdating)
+            try
             {
-                await Task.Delay(300);
-                //waiting for treis to stop
+                var shutDownDelay = Task.Delay(2000);
+                LogUtility.Log("Send exit has been called. Closing Wallet.", "WindowsUtilities.AdjAutoRestart()");
+                Globals.StopAllTimers = true;
+                await shutDownDelay;
+                while (Globals.TreisUpdating)
+                {
+                    await Task.Delay(300);
+                    //waiting for treis to stop
+                }
+
+                await Settings.InitiateShutdownUpdate();
+
+                Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
+                var exeLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+
+                var path = exeLocation + @$"{Path.DirectorySeparatorChar}ReserveBlockCore.dll";
+                var command = $"clear; echo 'Hello, World!'; sleep 2; echo 'Goodbye, World!'; screen -S mainnet -p 0 -X stuff \"dotnet {path}^M\"";
+
+                var escapedArgs = command.Replace("\"", "\\\"");
+
+                ProcessStartInfo info = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    UseShellExecute = false,
+                    WorkingDirectory = Path.GetDirectoryName(exeLocation),
+                    Arguments = $"-c \"{escapedArgs}\"",
+                };
+                //info.Arguments = path;
+                Process.Start(info);
+
+                Environment.Exit(0);
             }
-            await Settings.InitiateShutdownUpdate();
-            await BaseCommandServices.ConsensusNodeInfo();
-
-            Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
-            var exeLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);   
-            var path = exeLocation + @"ReserveBlockCore.exe";
-            ProcessStartInfo info = new ProcessStartInfo(path);
-            Process.Start(info);
-
-            Environment.Exit(0);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.ToString()}");
+            }
         }
         
         public static async Task TestMethod()
         {
-            var shutDownDelay = Task.Delay(2000);
-            LogUtility.Log("Send exit has been called. Closing Wallet.", "WindowsUtilities.AdjAutoRestart()");
-            Globals.StopAllTimers = true;
-            await shutDownDelay;
-            while (Globals.TreisUpdating)
+            try
             {
-                await Task.Delay(300);
-                //waiting for treis to stop
+                var shutDownDelay = Task.Delay(2000);
+                LogUtility.Log("Send exit has been called. Closing Wallet.", "WindowsUtilities.AdjAutoRestart()");
+                Globals.StopAllTimers = true;
+                await shutDownDelay;
+                while (Globals.TreisUpdating)
+                {
+                    await Task.Delay(300);
+                    //waiting for treis to stop
+                }
+
+                await Settings.InitiateShutdownUpdate();
+
+                Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
+                var exeLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+
+                var path = exeLocation + @$"{Path.DirectorySeparatorChar}ReserveBlockCore.dll";
+                var command = $"clear; echo 'Hello, World!'; sleep 2; echo 'Goodbye, World!'; screen -S mainnet -p 0 -X stuff \"dotnet {path}^M\"";
+
+                var escapedArgs = command.Replace("\"", "\\\"");
+
+                ProcessStartInfo info = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    UseShellExecute = false,
+                    WorkingDirectory = Path.GetDirectoryName(exeLocation),
+                    Arguments = $"-c \"{escapedArgs}\"",
+                };
+                //info.Arguments = path;
+                Process.Start(info);
+
+                Environment.Exit(0);
             }
-
-            await Settings.InitiateShutdownUpdate();
-
-            Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
-            var exeLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-
-            var path = exeLocation + @"/ReserveBlockCore.dll";
-            ProcessStartInfo info = new ProcessStartInfo("dotnet");
-            info.Arguments = path;
-            Process.Start(info);
-
-            Environment.Exit(0);
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.ToString()}");
+            }
+            
         }
 
         public static async Task AdjAutoRestart()
@@ -88,15 +127,24 @@ namespace ReserveBlockCore.Utilities
                                 //waiting for treis to stop
                             }
 
-                            await BaseCommandServices.ConsensusNodeInfo();
                             await Settings.InitiateShutdownUpdate();
-                            
+
                             Environment.SetEnvironmentVariable("RBX-Restart", "1", EnvironmentVariableTarget.User);
                             var exeLocation = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
 
-                            var path = exeLocation + @"/ReserveBlockCore.dll";
-                            ProcessStartInfo info = new ProcessStartInfo("dotnet");
-                            info.Arguments = path;
+                            var path = exeLocation + @$"{Path.DirectorySeparatorChar}ReserveBlockCore.dll";
+                            var command = $"clear; echo 'Hello, World!'; sleep 2; echo 'Goodbye, World!'; screen -S mainnet -p 0 -X stuff \"dotnet {path}^M\"";
+
+                            var escapedArgs = command.Replace("\"", "\\\"");
+
+                            ProcessStartInfo info = new ProcessStartInfo
+                            {
+                                FileName = "/bin/bash",
+                                UseShellExecute = false,
+                                WorkingDirectory = Path.GetDirectoryName(exeLocation),
+                                Arguments = $"-c \"{escapedArgs}\"",
+                            };
+                            //info.Arguments = path;
                             Process.Start(info);
 
                             Environment.Exit(0);
