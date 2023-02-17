@@ -23,6 +23,9 @@ namespace ReserveBlockCore.Commands
                 case "/help":
                     BaseCommandServices.PrintHelpMenu();
                     break;
+                case "/linuxt":
+                    await LinuxUtilities.TestMethod();
+                    break;
                 case "/info":
                     BaseCommandServices.PrintInfo();
                     break;

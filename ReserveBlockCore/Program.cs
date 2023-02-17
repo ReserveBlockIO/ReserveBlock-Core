@@ -484,6 +484,9 @@ namespace ReserveBlockCore
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                _ = LinuxUtilities.AdjAutoRestart();
+
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
                 StartupService.SetConfigValidator();
