@@ -115,7 +115,7 @@ namespace ReserveBlockCore.Utilities
                         var currentTime = TimeUtil.GetTime();
                         var lastBlockTime = Globals.LastBlockAddedTimestamp;
                         var timeDiff = currentTime - lastBlockTime;
-                        if (timeDiff > 80) 
+                        if (timeDiff > 88) 
                         {
                             var shutDownDelay = Task.Delay(2000);
                             LogUtility.Log("Send exit has been called. Closing Wallet.", "WindowsUtilities.AdjAutoRestart()");

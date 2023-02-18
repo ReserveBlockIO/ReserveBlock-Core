@@ -292,7 +292,8 @@ namespace ReserveBlockCore.Services
                 {
                     BroadcastLock = true;
                     var txsToBroadcastAdj = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToAdj).ToList();
-                    var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
+                    //Throttled to 10 per send for now.
+                    var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).OrderBy(x => x.Transaction.Timestamp).Take(10).ToList();
 
                     if (txsToBroadcastAdj.Count() > 0)
                     {
