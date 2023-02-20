@@ -1197,6 +1197,38 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Finds a specific block by height.
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        [HttpGet("GetBlockByHeight")]
+        public async Task<string> GetBlockByHeight(long height)
+        {
+            string output = "";
+            var block = BlockchainData.GetBlockByHeight(height);
+            if(block != null)
+                output = JsonConvert.SerializeObject(block);
+
+            return output;
+        }
+
+        /// <summary>
+        /// Finds a specific block by hash.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        [HttpGet("GetBlockByHash")]
+        public async Task<string> GetBlockByHash(string hash)
+        {
+            string output = "";
+            var block = BlockchainData.GetBlockByHash(hash);
+            if (block != null)
+                output = JsonConvert.SerializeObject(block);
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns a task answer list
         /// </summary>
         /// <returns></returns>
