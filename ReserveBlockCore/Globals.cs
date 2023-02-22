@@ -40,7 +40,6 @@ namespace ReserveBlockCore
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
         public static BeaconReference BeaconReference = new BeaconReference();
-        public static Process proc = new Process();
         public static Beacons? SelfBeacon = null;
         public static long LastBlockAddedTimestamp = TimeUtil.GetTime();
         public static long BlockTimeDiff = 0;
@@ -82,6 +81,9 @@ namespace ReserveBlockCore
         public static SecureString? APIToken = null;
         public static int TimeSyncDiff = 0;
         public static DateTime TimeSyncLastDate = DateTime.Now;
+        public static decimal StartMemory = 0;
+        public static decimal CurrentMemory = 0;
+        public static decimal ProjectedMemory = 0;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
@@ -123,6 +125,7 @@ namespace ReserveBlockCore
         public static bool OptionalLogging = false;
         public static bool AdjPoolCheckLock = false;
         public static bool GUI = false;
+        public static bool RunUnsafeCode = false;
         public static bool GUIPasswordNeeded = false;
         public static bool TreisUpdating = false;
         public static bool DuplicateAdjIP = false;

@@ -18,7 +18,9 @@ using System.Security.AccessControl;
 using System.Net.Sockets;
 using System.Net.Http;
 using System.Security.Principal;
-using System;
+using System.Runtime.Intrinsics.Arm;
+using System.Reflection;
+
 
 namespace ReserveBlockCore
 {
@@ -42,7 +44,6 @@ namespace ReserveBlockCore
 
             DateTime originDate = new DateTime(2022, 1, 1);
             DateTime currentDate = DateTime.Now;
-
 
             var httpClientBuilder = Host.CreateDefaultBuilder(args)
                      .ConfigureServices(services =>
@@ -123,6 +124,10 @@ namespace ReserveBlockCore
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
+                    }
+                    if (argC == "unsafe")
+                    {
+                        Globals.RunUnsafeCode = true;
                     }
                     if (argC.Contains("encpass"))
                     {
@@ -248,16 +253,7 @@ namespace ReserveBlockCore
                     }
                     if (argC == "hidecli")
                     {
-                        ProcessStartInfo start = new ProcessStartInfo();
-                        start.FileName = Directory.GetCurrentDirectory() + @"\ReserveBlockCore.exe";
-                        start.WindowStyle = ProcessWindowStyle.Hidden; //Hides GUI
-                        start.CreateNoWindow = true; //Hides console
-                        start.Arguments = "enableapi";
-
-                        Globals.proc.StartInfo = start;
-                        Globals.proc.Start();
-
-                        Environment.Exit(0);
+                        
                     }
                     if (argC == "testurl")
                     {
@@ -343,6 +339,24 @@ namespace ReserveBlockCore
                 Globals.GUIPasswordNeeded = true;
                 valEncryptAddr = await ValidatorService.SuspendMasterNode();//investigate this and ensure startup happens after suspend
                 valEncryptCheck = true;
+            }
+
+            BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public;
+            List<string> IgnoreList = new List<string> { "BlocksDownloadSlim", "CancelledToken" };
+
+            foreach (FieldInfo field in typeof(Globals).GetFields(bindingFlags))
+            {
+                var fieldName = field.Name;
+                if(!IgnoreList.Contains(fieldName))
+                {
+                    var fieldValue = field.GetValue(null);
+                    var itemByte = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(fieldValue);
+                    var memoryInMB = Math.Round((decimal)itemByte.Count() / 1024 / 1024, 8); ;
+
+                    var result = MemoryService.GlobalMemoryDict.TryAdd(fieldName, memoryInMB);
+                    if (!result)
+                        MemoryService.GlobalMemoryDict[fieldName] = memoryInMB;
+                }
             }
 
             await StartupService.RunSettingChecks();
@@ -490,7 +504,8 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
-            
+            _ = MemoryService.Run();
+            _ = MemoryService.RunGlobals();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
@@ -510,6 +525,12 @@ namespace ReserveBlockCore
                 commandLoopTask2, //awaiting parameters
                 commandLoopTask3//Beacon client/server
             };
+
+            Process proc = Process.GetCurrentProcess();
+            var workingSetMem = proc.WorkingSet64;
+
+            Globals.StartMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
+            Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
 
             await Task.WhenAll(tasks);
 

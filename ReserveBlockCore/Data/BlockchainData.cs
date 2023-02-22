@@ -225,18 +225,18 @@ namespace ReserveBlockCore.Data
             var block = GetBlocks().FindOne(x => true);
             return block;
         }
-        public static Block GetBlockByHeight(long height)
+        public static Block? GetBlockByHeight(long height)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
+            var blocks = GetBlocks();           
             var block = blocks.Query().Where(x => x.Height == height).FirstOrDefault();
             return block;
         }
 
 
-        public static Block GetBlockByHash(string hash)
+        public static Block? GetBlockByHash(string hash)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
-            var block = blocks.FindOne(x => x.Hash == hash);
+            var blocks = GetBlocks();
+            var block = blocks.Query().Where(x => x.Hash == hash).FirstOrDefault();
             return block;
         }
         public static Block GetLastBlock()

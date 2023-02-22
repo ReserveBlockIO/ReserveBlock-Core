@@ -33,6 +33,11 @@ namespace ReserveBlockCore.Services
                 }
             }
 
+            if(txRequest.Fee <= 0)
+            {
+                return (txResult, "Fee cannot be less than or equal to zero.");
+            }
+
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))

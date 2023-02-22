@@ -37,7 +37,7 @@ namespace ReserveBlockCore.Config
 		public bool LogAPI { get; set; }
 		public bool RefuseToCallSeed { get; set; }
 		public bool OpenAPI { get; set; }
-
+		public bool RunUnsafeCode { get; set; }
         public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();
@@ -88,6 +88,7 @@ namespace ReserveBlockCore.Config
                 config.LogAPI = dict.ContainsKey("LogAPI") ? Convert.ToBoolean(dict["LogAPI"]) : false;
                 config.RefuseToCallSeed = dict.ContainsKey("RefuseToCallSeed") ? Convert.ToBoolean(dict["RefuseToCallSeed"]) : false;
                 config.OpenAPI = dict.ContainsKey("OpenAPI") ? Convert.ToBoolean(dict["OpenAPI"]) : false;
+                config.RunUnsafeCode = dict.ContainsKey("RunUnsafeCode") ? Convert.ToBoolean(dict["RunUnsafeCode"]) : false;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -162,7 +163,7 @@ namespace ReserveBlockCore.Config
 			Globals.LogAPI = config.LogAPI;
 			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
 			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
-
+			Globals.RunUnsafeCode = config.RunUnsafeCode;
 
             if (config.TestNet == true)
             {

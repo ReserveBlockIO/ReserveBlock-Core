@@ -236,7 +236,7 @@ namespace ReserveBlockCore.Commands
         public static async Task FindTXByHash()
         {
             var coreCount = Environment.ProcessorCount;
-            if (coreCount >= 4)
+            if (coreCount >= 4 || Globals.RunUnsafeCode)
             {
                 Console.WriteLine("Please enter the TX Hash you are looking for...");
                 var txHash = Console.ReadLine();
@@ -1859,6 +1859,7 @@ namespace ReserveBlockCore.Commands
             var mostLikelyIP = P2PClient.MostLikelyIP();
 
             var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var configLocation = Globals.IsTestNet != true ? "Config" : "ConfigTestNet";
             var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             var osDesc = RuntimeInformation.OSDescription;
@@ -1872,22 +1873,27 @@ namespace ReserveBlockCore.Commands
             var threadCount = Environment.ProcessorCount;
 
             string path = "";
+            string configPath = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                 path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                configPath = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
             }
             else
             {
                 if (Debugger.IsAttached)
                 {
                     path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    configPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    configPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
                 }
             }
+
 
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
@@ -1915,6 +1921,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]HD Wallet?[/]", $"[green]{Globals.HDWallet}[/]");
             table.AddRow("[blue]Program Path[/]", $"[green]{strWorkPath}[/]");
             table.AddRow("[blue]Database Folder Path[/]", $"[green]{path}[/]");
+            table.AddRow("[blue]Config Folder Path[/]", $"[green]{configPath}[/]");
             table.AddRow("[blue]System Time[/]", $"[green]{DateTime.Now}[/]");
             table.AddRow("[blue]Timestamp[/]", $"[green]{TimeUtil.GetTime()}[/]");
             

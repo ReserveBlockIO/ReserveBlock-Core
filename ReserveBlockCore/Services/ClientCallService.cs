@@ -293,7 +293,8 @@ namespace ReserveBlockCore.Services
                     BroadcastLock = true;
                     var txsToBroadcastAdj = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToAdj).ToList();
                     //Throttled to 10 per send for now.
-                    var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).OrderBy(x => x.Transaction.Timestamp).Take(10).ToList();
+                    Random rnd = new Random();
+                    var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).OrderBy(x => rnd.Next()).Take(10).ToList();
 
                     if (txsToBroadcastAdj.Count() > 0)
                     {
@@ -341,7 +342,7 @@ namespace ReserveBlockCore.Services
                             }
                             txsToBroadcastVal.Clear();
                             txsToBroadcastVal = new List<TransactionBroadcast>();
-                            txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
+                            txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).OrderBy(x => rnd.Next()).Take(10).ToList();
                         }
                     }
                     catch(Exception ex)
