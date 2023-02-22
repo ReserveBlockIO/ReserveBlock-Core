@@ -17,10 +17,11 @@ namespace ReserveBlockCore.Models.SmartContracts
         public DateTime? EvolveDate { get; set; }
         public long? EvolveBlockHeight { get; set; }
         public SmartContractAsset? SmartContractAsset { get; set; }
+        public Dictionary<string, string>? Properties { get; set; }
 
         #region GetEvolveFeature
 
-        public static List<EvolvingFeature> GetEvolveFeature(List<string> eList, int? currentEvoState = null)
+        public static List<EvolvingFeature> GetEvolveFeature(List<string> eList, Dictionary<int, object?> evoPropDict, int? currentEvoState = null)
         {
             List<EvolvingFeature> evolveFeatures = new List<EvolvingFeature>();
 
@@ -32,6 +33,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 evolveFeature.EvolutionState = Convert.ToInt32(evArray[0].ToString());
                 evolveFeature.Name = evArray[1].ToString();
                 evolveFeature.Description = evArray[2].ToString();
+                evolveFeature.Properties = evoPropDict.ContainsKey(evolveFeature.EvolutionState) ? (Dictionary<string, string>)evoPropDict[evolveFeature.EvolutionState] : null;
                 if (currentEvoState != null)
                 {
                     if(evolveFeature.EvolutionState == currentEvoState)

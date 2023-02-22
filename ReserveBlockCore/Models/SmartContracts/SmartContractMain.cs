@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         public string SmartContractUID { get; set; }//System Set
         public bool IsMinter { get; set; }
         public bool IsPublished { get; set; }
+        public Dictionary<string, string>? Properties { get; set; }
         public List<SmartContractFeatures>? Features { get; set; }
 
         public class SmartContractData
@@ -160,14 +161,10 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var name = repl.Run(@"Name").Value.ToString();
                 var description = repl.Run(@"Description").Value.ToString();
                 var minterAddress = repl.Run(@"MinterAddress").Value.ToString();
-                //var address = repl.Run(@"Address").Value.ToString();
-                //var signature = repl.Run(@"Signature").Value.ToString();
-
-                //var extension = repl.Run(@"Extension").Value.ToString();
                 var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
-                //var location = repl.Run(@"Location").Value.ToString();
                 var fileName = repl.Run(@"FileName").Value.ToString();
                 var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
+                var properties = repl.Run(@"getProperties(Properties)").Value;
 
                 var mainData = repl.Run(@"NftMain(""nftdata"")").Value.ToString();
                 var mainDataArray = mainData.Split(new string[] { "|->" }, StringSplitOptions.None);
@@ -177,6 +174,10 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                 var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
                 var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
+                if(properties!= null)
+                {
+                    smartContractMain.Properties = (Dictionary<string, string>)properties;
+                }
                 var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
                 smartContractMain.SmartContractAsset = smartContractAssset;
 
@@ -221,14 +222,21 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 case FeatureName.Evolving:
                                     var evolveList = new List<string>();
                                     var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
+                                    Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                                     for (int i = 1; i <= evolveCount; i++)
                                     {
                                         var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                        var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                        evolveList.Add(ma);
+                                        var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                        evolveList.Add(ev);
+
+                                        var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                        if (evP != null)
+                                        {
+                                            evoPropertiesDict.Add(i, evP);
+                                        }
                                     }
 
-                                    var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                    var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict);
                                     var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
                                     if (isDynamic == true)
@@ -284,15 +292,22 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 break;
                             case FeatureName.Evolving:
                                 var evolveList = new List<string>();
+                                Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                                 var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
                                 for (int i = 1; i <= evolveCount; i++)
                                 {
                                     var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                    var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                    evolveList.Add(ma);
+                                    var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                    evolveList.Add(ev);
+
+                                    var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                    if (evP != null)
+                                    {
+                                        evoPropertiesDict.Add(i, evP);
+                                    }
                                 }
 
-                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList);
+                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict);
 
                                 var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
@@ -355,14 +370,10 @@ namespace ReserveBlockCore.Models.SmartContracts
             var name = repl.Run(@"Name").Value.ToString();
             var description = repl.Run(@"Description").Value.ToString();
             var minterAddress = repl.Run(@"MinterAddress").Value.ToString();
-            //var address = repl.Run(@"Address").Value.ToString();
-            //var signature = repl.Run(@"Signature").Value.ToString();
-
-            //var extension = repl.Run(@"Extension").Value.ToString();
             var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
-            //var location = repl.Run(@"Location").Value.ToString();
             var fileName = repl.Run(@"FileName").Value.ToString();
             var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
+            var properties = repl.Run(@"getProperties(Properties)");
 
             var mainData = repl.Run(@"NftMain(""nftdata"")").Value.ToString();
             var mainDataArray = mainData.Split(new string[] { "|->" }, StringSplitOptions.None);
@@ -416,6 +427,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 break;
                             case FeatureName.Evolving:
                                 var evolveList = new List<string>();
+                                Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                                 var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
 
                                 var evolveState = repl.Run(@"GetCurrentEvolveState()");
@@ -425,11 +437,17 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 for (int i = 1; i <= evolveCount; i++)
                                 {
                                     var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                    var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                    evolveList.Add(ma);
+                                    var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                    evolveList.Add(ev);
+
+                                    var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                    if (evP != null)
+                                    {
+                                        evoPropertiesDict.Add(i, evP);
+                                    }
                                 }
 
-                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
+                                var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict, evoStateNum > 0 ? evoStateNum : null);
 
                                 var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 
@@ -494,18 +512,25 @@ namespace ReserveBlockCore.Models.SmartContracts
                             break;
                         case FeatureName.Evolving:
                             var evolveList = new List<string>();
+                            Dictionary<int, object?> evoPropertiesDict = new Dictionary<int, object?>();
                             var evolveCount = Convert.ToInt32(repl.Run(@"EvolveStates()").Value.ToString());
                             for (int i = 1; i <= evolveCount; i++)
                             {
                                 var funcLetter = FunctionNameUtility.GetFunctionLetter(i);
-                                var ma = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
-                                evolveList.Add(ma);
+                                var ev = repl.Run(@"EvolveState" + funcLetter + "()").Value.ToString();
+                                evolveList.Add(ev);
+
+                                var evP = repl.Run($"getProperties(EvolveState{funcLetter}Properties)").Value;
+                                if (evP != null)
+                                {
+                                    evoPropertiesDict.Add(i, evP);
+                                }
                             }
                             var evolveState = repl.Run(@"GetCurrentEvolveState()");
                             var evoStateString = evolveState.Value.ToString().Replace("{*", "").Replace("}", "");
                             var evoStateNum = Convert.ToInt32(evoStateString);
 
-                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoStateNum > 0 ? evoStateNum : null);
+                            var evolveFeatureList = EvolvingFeature.GetEvolveFeature(evolveList, evoPropertiesDict, evoStateNum > 0 ? evoStateNum : null);
 
                             var isDynamic = (bool)repl.Run(@"EvolveDynamic").Value;
 

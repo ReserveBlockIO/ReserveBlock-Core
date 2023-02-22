@@ -23,6 +23,7 @@ using System.Net;
 using System.Security;
 using System.Xml.Linq;
 using System.Data;
+using System.Diagnostics;
 
 namespace ReserveBlockCore.Services
 {
@@ -263,7 +264,10 @@ namespace ReserveBlockCore.Services
             {
                 if (!settings.CorrectShutdown)
                 {
-                    await StateTreiSyncService.SyncAccountStateTrei();
+                    if(!Debugger.IsAttached)
+                    {
+                        await StateTreiSyncService.SyncAccountStateTrei();
+                    }
                 }
 
                 if (Globals.AdjudicateAccount == null)
@@ -282,8 +286,11 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
-                        await Task.Delay(15000);
+                        if (!Debugger.IsAttached)
+                        {
+                            Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
+                            await Task.Delay(15000);
+                        }
                     }
                 }
 
