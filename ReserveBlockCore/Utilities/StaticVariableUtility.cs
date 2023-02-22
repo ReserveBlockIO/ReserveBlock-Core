@@ -115,6 +115,8 @@ namespace ReserveBlockCore.Utilities
             var timeSync = $"Time in Sync? {Globals.TimeInSync}";
             var lastSyncDiff = $"Last Time Sync Diff: {Globals.TimeSyncDiff}";
             var lastSyncTime = $"Last Time Sync Date: {Globals.TimeSyncLastDate}";
+            var startMemory = $"Start Memory: {Globals.StartMemory}";
+            var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
 
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
@@ -127,6 +129,10 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(githubVersionTag);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(validatorAddress);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(startMemory);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(currentMemory);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(hdWalletText);
             strBld.AppendLine("---------------------------------------------------------------------");

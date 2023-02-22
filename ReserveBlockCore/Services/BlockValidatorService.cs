@@ -35,6 +35,7 @@ namespace ReserveBlockCore.Services
             while (ValidateBlocksSemaphore.CurrentCount == 0 || Globals.BlocksDownloadSlim.CurrentCount == 0)
                 await Task.Delay(4);
         }
+
         public static async Task ValidateBlocks()
         {
             try
