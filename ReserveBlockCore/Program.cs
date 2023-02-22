@@ -122,6 +122,10 @@ namespace ReserveBlockCore
                     {
                         Globals.GUI = true;
                     }
+                    if (argC == "unsafe")
+                    {
+                        Globals.RunUnsafeCode = true;
+                    }
                     if (argC.Contains("encpass"))
                     {
                         var encPassSplit = argC.Split(new char[] { '=' });

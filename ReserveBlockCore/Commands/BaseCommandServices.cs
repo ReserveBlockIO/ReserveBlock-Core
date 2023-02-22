@@ -236,7 +236,7 @@ namespace ReserveBlockCore.Commands
         public static async Task FindTXByHash()
         {
             var coreCount = Environment.ProcessorCount;
-            if (coreCount >= 4)
+            if (coreCount >= 4 || Globals.RunUnsafeCode)
             {
                 Console.WriteLine("Please enter the TX Hash you are looking for...");
                 var txHash = Console.ReadLine();

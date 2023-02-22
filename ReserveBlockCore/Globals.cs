@@ -125,6 +125,7 @@ namespace ReserveBlockCore
         public static bool OptionalLogging = false;
         public static bool AdjPoolCheckLock = false;
         public static bool GUI = false;
+        public static bool RunUnsafeCode = false;
         public static bool GUIPasswordNeeded = false;
         public static bool TreisUpdating = false;
         public static bool DuplicateAdjIP = false;

@@ -312,7 +312,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
             var coreCount = Environment.ProcessorCount;
-            if (coreCount >= 4)
+            if (coreCount >= 4 || Globals.RunUnsafeCode)
             {
                 if (!string.IsNullOrEmpty(txHash))
                 {
@@ -352,7 +352,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude." });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude. You must enable 'RunUnsafeCode' in config file or add 'unsafe' to your start up parameters." });
             }
 
             return output;
