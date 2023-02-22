@@ -58,7 +58,7 @@ namespace ReserveBlockCore
 
 
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
