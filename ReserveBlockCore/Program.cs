@@ -341,24 +341,6 @@ namespace ReserveBlockCore
                 valEncryptCheck = true;
             }
 
-            BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public;
-            List<string> IgnoreList = new List<string> { "BlocksDownloadSlim", "CancelledToken" };
-
-            foreach (FieldInfo field in typeof(Globals).GetFields(bindingFlags))
-            {
-                var fieldName = field.Name;
-                if(!IgnoreList.Contains(fieldName))
-                {
-                    var fieldValue = field.GetValue(null);
-                    var itemByte = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(fieldValue);
-                    var memoryInMB = Math.Round((decimal)itemByte.Count() / 1024 / 1024, 8); ;
-
-                    var result = MemoryService.GlobalMemoryDict.TryAdd(fieldName, memoryInMB);
-                    if (!result)
-                        MemoryService.GlobalMemoryDict[fieldName] = memoryInMB;
-                }
-            }
-
             await StartupService.RunSettingChecks();
 
             //This is for consensus start.
@@ -526,12 +508,16 @@ namespace ReserveBlockCore
                 commandLoopTask3//Beacon client/server
             };
 
-            Process proc = Process.GetCurrentProcess();
-            var workingSetMem = proc.WorkingSet64;
+            try
+            {
+                Process proc = Process.GetCurrentProcess();
+                var workingSetMem = proc.WorkingSet64;
 
-            Globals.StartMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
-            Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
-
+                Globals.StartMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
+                Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
+            }
+            catch { }
+            
             await Task.WhenAll(tasks);
 
             LogUtility.Log("Line Reached. Should not be reached Program.cs", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
