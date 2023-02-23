@@ -186,6 +186,7 @@ namespace ReserveBlockCore.Services
                     [("xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", 0)] = null,
                     [("xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", 0)] = null,
                     [("xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", 0)] = null,
+                    [("xBRgsdHnRBnpbBNTfWPk2dKdNbfKs9GDWK", 0)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {

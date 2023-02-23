@@ -97,7 +97,7 @@ namespace ReserveBlockCore.Services
                     }
                 }
 
-                var orderedDict = GlobalMemoryDict.OrderBy(x => x.Key).ToList();
+                var orderedDict = GlobalMemoryDict.OrderBy(x => x.Value < 1M).ThenBy(x => x.Key).ToList();
                 StringBuilder strBld = new StringBuilder();
                 strBld.AppendLine("------------------------App Memory Usage-----------------------------");
                 strBld.AppendLine($"Start Memory: {Globals.StartMemory} | Current Memory: {Globals.CurrentMemory}");
