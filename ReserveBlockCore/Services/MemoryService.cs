@@ -79,12 +79,21 @@ namespace ReserveBlockCore.Services
                     if (!IgnoreList.Contains(fieldName))
                     {
                         var fieldValue = field.GetValue(null);
-                        var itemByte = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(fieldValue);
-                        var memoryInMB = Math.Round((decimal)itemByte.Count() / 1024 / 1024, 8); ;
+                        if(fieldValue != null)
+                        {
+                            var itemByte = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(fieldValue);
+                            var memoryInMB = Math.Round((decimal)itemByte.Count() / 1024 / 1024, 8); ;
 
-                        var result = GlobalMemoryDict.TryAdd(fieldName, memoryInMB);
-                        if (!result)
-                            GlobalMemoryDict[fieldName] = memoryInMB;
+                            var result = GlobalMemoryDict.TryAdd(fieldName, memoryInMB);
+                            if (!result)
+                                GlobalMemoryDict[fieldName] = memoryInMB;
+                        }
+                        else
+                        {
+                            var result = GlobalMemoryDict.TryAdd(fieldName, 0M);
+                            if (!result)
+                                GlobalMemoryDict[fieldName] = 0M;
+                        }
                     }
                 }
 
