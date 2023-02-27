@@ -798,9 +798,10 @@ namespace ReserveBlockCore.Controllers
         /// Imports a private key.
         /// </summary>
         /// <param name="id"></param>
+        /// <param name="scan"></param>
         /// <returns></returns>
-        [HttpGet("ImportPrivateKey/{id}")]
-        public async Task<string> ImportPrivateKey(string id)
+        [HttpGet("ImportPrivateKey/{id}/{scan?}")]
+        public async Task<string> ImportPrivateKey(string id, bool scan = false)
         {
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
@@ -808,7 +809,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if(Globals.EncryptPassword.Length > 0)
                 {
-                    var account = await AccountData.RestoreAccount(id);
+                    var account = await AccountData.RestoreAccount(id, scan);
 
                     if (account == null)
                     {
@@ -830,7 +831,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var account = await AccountData.RestoreAccount(id);
+                var account = await AccountData.RestoreAccount(id, scan);
 
                 if (account == null)
                 {
@@ -846,6 +847,62 @@ namespace ReserveBlockCore.Controllers
                 }
             }
             
+
+            return output;
+        }
+
+        /// <summary>
+        /// Rescan for TXs
+        /// </summary>
+        /// <param name="walletAddr"></param>
+        /// <returns></returns>
+        [HttpGet("RescanForTx/{walletAddr}")]
+        public async Task<string> RescanForTx(string walletAddr)
+        {
+            var output = "";
+            var account = AccountData.GetSingleAccount(walletAddr);
+            if(account != null)
+            {
+                _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address));
+                output = JsonConvert.SerializeObject(new { Sucesss = true, Message = $"Rescan has started." });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Sucesss = false, Message = $"Account was not found locally." });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Syncs account balances
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("SyncBalances")]
+        public async Task<string> SyncBalances()
+        {
+            var output = "";
+
+            var accountsDb = AccountData.GetAccounts();
+            var accounts = accountsDb.Query().Where(x => true).ToEnumerable();
+
+            if (accounts.Count() > 0)
+            {
+                foreach(var account in accounts)
+                {
+                    var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if(stateTrei != null)
+                    {
+                        account.Balance = stateTrei.Balance;
+                        accountsDb.UpdateSafe(account);
+                    }
+                }
+                output = JsonConvert.SerializeObject(new { Sucesss = true, Message = $"Balance resync completed" });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Sucesss = false, Message = $"No Accounts were found locally." });
+            }
 
             return output;
         }

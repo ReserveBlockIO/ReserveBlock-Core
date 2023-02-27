@@ -95,6 +95,17 @@ namespace ReserveBlockCore.Data
                     transaction.TransactionStatus = txStatus;
                     transaction.Height = blockHeight;
                     txs.InsertSafe(transaction);
+                    var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                    if (account != null)
+                    {
+                        var accountDb = AccountData.GetAccounts();
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                        if (stateTrei != null)
+                        {
+                            account.Balance = stateTrei.Balance;
+                            accountDb.UpdateSafe(account);
+                        }
+                    }
                 }
                 else
                 {
@@ -114,6 +125,18 @@ namespace ReserveBlockCore.Data
                         transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
                         transaction.Fee = transaction.Fee < 0 ? transaction.Fee * -1.0M : transaction.Fee;
                         txs.InsertSafe(transaction);
+
+                        var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                        if (account != null)
+                        {
+                            var accountDb = AccountData.GetAccounts();
+                            var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                            if (stateTrei != null)
+                            {
+                                account.Balance = stateTrei.Balance;
+                                accountDb.UpdateSafe(account);
+                            }
+                        }
                     }
                 }
             }

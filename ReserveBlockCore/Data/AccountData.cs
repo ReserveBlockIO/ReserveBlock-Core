@@ -14,6 +14,7 @@ using Spectre.Console;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Models.SmartContracts;
 using System.Net.NetworkInformation;
+using System.Net;
 
 namespace ReserveBlockCore.Data
 {
@@ -121,7 +122,8 @@ namespace ReserveBlockCore.Data
 					AddToAccount(account); //only add if not already in accounts
 					if(rescanForTx == true)
                     {
-						//rescan for all tx's sent out and all tx's received.
+						//fire and forget
+                        _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address));
                     }
 					if(Globals.IsWalletEncrypted == true)
 					{

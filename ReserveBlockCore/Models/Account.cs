@@ -43,9 +43,9 @@ namespace ReserveBlockCore.Models
             return account;
         }
 
-        public async static Task<Account> Restore(string privKey)
+        public async static Task<Account> Restore(string privKey, bool rescanForTx = false)
         {
-            Account account = await AccountData.RestoreAccount(privKey);
+            Account account = await AccountData.RestoreAccount(privKey, rescanForTx);
             return account;
         }
         public static async Task AddAdnrToAccount(string address, string name)
