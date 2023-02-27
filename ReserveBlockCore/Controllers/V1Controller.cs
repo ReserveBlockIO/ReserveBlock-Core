@@ -864,11 +864,11 @@ namespace ReserveBlockCore.Controllers
             if(account != null)
             {
                 _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address));
-                output = JsonConvert.SerializeObject(new { Sucesss = true, Message = $"Rescan has started." });
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Rescan has started." });
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Sucesss = false, Message = $"Account was not found locally." });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Account was not found locally." });
             }
 
             return output;
@@ -897,11 +897,11 @@ namespace ReserveBlockCore.Controllers
                         accountsDb.UpdateSafe(account);
                     }
                 }
-                output = JsonConvert.SerializeObject(new { Sucesss = true, Message = $"Balance resync completed" });
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Balance resync completed" });
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Sucesss = false, Message = $"No Accounts were found locally." });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"No Accounts were found locally." });
             }
 
             return output;
