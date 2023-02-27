@@ -10,6 +10,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Trillium;
 using ReserveBlockCore.P2P;
 using System.Runtime.InteropServices;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Commands
 {
@@ -284,10 +285,17 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter private key... ");
                             try
                             {
+                                var rescanForTx = false;
                                 var privKey = await ReadLineUtility.ReadLine();
                                 if(!string.IsNullOrEmpty(privKey))
                                 {
-                                    var restoredAccount = await Account.Restore(privKey);
+                                    AnsiConsole.MarkupLine("Would you like to rescan block chain to find transactions? ('[bold green]y[/]' for yes and '[bold red]n[/]' for no).");
+                                    var rescan = await ReadLineUtility.ReadLine();
+                                    if(!string.IsNullOrEmpty(rescan))
+                                    {
+                                        rescanForTx = rescan.ToLower() == "y" ? true : false;
+                                    }
+                                    var restoredAccount = await Account.Restore(privKey, rescanForTx);
                                     AccountData.WalletInfo(restoredAccount);
                                 }
                             }
