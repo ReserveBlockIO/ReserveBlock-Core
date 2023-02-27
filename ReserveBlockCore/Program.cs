@@ -56,7 +56,6 @@ namespace ReserveBlockCore
             await httpClientBuilder.StartAsync();
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
-
             //Forced Testnet
             Globals.IsTestNet = true;
 
@@ -450,8 +449,12 @@ namespace ReserveBlockCore
 
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
-            _ = builder3.RunConsoleAsync();
 
+            if(Globals.AdjudicateAccount != null)
+            {
+                _ = builder3.RunConsoleAsync();
+            }
+            
             if (Globals.AdjudicateAccount == null)
             {
                 Globals.StopAllTimers = true;

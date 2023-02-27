@@ -1241,14 +1241,14 @@ namespace ReserveBlockCore.Services
                 {
                     AnsiConsole.Write(
                     new FigletText("RBX Wallet")
-                    .LeftAligned()
+                    .LeftJustified()
                     .Color(Color.Blue));
                 }
                 else
                 {
                     AnsiConsole.Write(
                     new FigletText("RBX Wallet - TestNet")
-                    .LeftAligned()
+                    .LeftJustified()
                     .Color(Color.Green));
                 }
 

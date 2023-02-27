@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,12 +47,15 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Adjudicators>>();
                 c.DocumentFilter<SwaggerDocumentFilter<AdjVoteInReqs>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Adnr>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Auction>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Beacons>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Bid>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
                 c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
                 c.DocumentFilter<SwaggerDocumentFilter<HDWallet>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Keystore>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Listing>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Mother>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Mother.Kids>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherJoinPayload>>();
@@ -59,6 +63,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<NodeInfo>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Peers>>();
                 c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Store>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskAnswerResult>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskNumberAnswerV2>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskQuestion>>();
