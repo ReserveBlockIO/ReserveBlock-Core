@@ -910,6 +910,12 @@ namespace ReserveBlockCore.Commands
                         }
                         
                     }
+
+                    var lastBlockWon = Globals.LastWonBlock;
+                    if(lastBlockWon != null)
+                    {
+                        AnsiConsole.MarkupLine($"Last Block Won: [green]{lastBlockWon.Height}[/] | Time: [yellow]{lastBlockWon.Timestamp.ToLocalDateTimeFromUnix()}[/]");
+                    }
                 }
                 else
                 {
@@ -1979,7 +1985,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/findtx[/]", "[green]This is a heavy query to find a specific TX in all blocks.[/]");
             table.AddRow("[blue]/vote[/]", "[green]This will start the voting program.[/]");
             table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
-            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host.[/]");
+            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host. This will also take you main screen for mother after setup.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
