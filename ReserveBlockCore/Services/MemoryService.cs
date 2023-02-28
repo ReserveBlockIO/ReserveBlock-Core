@@ -11,6 +11,9 @@ namespace ReserveBlockCore.Services
     {
         static SemaphoreSlim MemoryServiceLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim GlobalMemoryServiceLock = new SemaphoreSlim(1, 1);
+        private static bool GetMemoryInfoError = false;
+        private static bool GetGlobalMemoryInfoError = false;
+        private static long LogNameAttribute = TimeUtil.GetTime();
         public static ConcurrentDictionary<string, decimal> GlobalMemoryDict = new ConcurrentDictionary<string, decimal>();
 
         public static async Task Run()
@@ -37,7 +40,7 @@ namespace ReserveBlockCore.Services
         {
             while (true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 30));
+                var delay = Task.Delay(new TimeSpan(0, 0, 20));
 
                 await GlobalMemoryServiceLock.WaitAsync();
                 try
@@ -62,7 +65,15 @@ namespace ReserveBlockCore.Services
 
                 Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
             }
-            catch { }
+            catch(Exception ex) 
+            {
+                if(!GetMemoryInfoError)
+                {
+                    GetMemoryInfoError = true;
+                    ErrorLogUtility.LogError($"Error Logging. Error: {ex.ToString()}", "MemoryService.GetMemoryInfo()");
+                }
+                
+            }
             
         }
 
@@ -75,32 +86,37 @@ namespace ReserveBlockCore.Services
 
                 foreach (FieldInfo field in typeof(Globals).GetFields(bindingFlags))
                 {
-                    var fieldName = field.Name;
-                    if (!IgnoreList.Contains(fieldName))
+                    try
                     {
-                        var fieldValue = field.GetValue(null);
-                        if(fieldValue != null)
+                        var fieldName = field.Name;
+                        if (!IgnoreList.Contains(fieldName))
                         {
-                            var itemByte = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(fieldValue);
-                            var memoryInMB = Math.Round((decimal)itemByte.Count() / 1024 / 1024, 8); ;
+                            var fieldValue = field.GetValue(null);
+                            if (fieldValue != null)
+                            {
+                                var itemByte = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(fieldValue);
+                                var memoryInMB = Math.Round((decimal)itemByte.Count() / 1024 / 1024, 8); ;
 
-                            var result = GlobalMemoryDict.TryAdd(fieldName, memoryInMB);
-                            if (!result)
-                                GlobalMemoryDict[fieldName] = memoryInMB;
-                        }
-                        else
-                        {
-                            var result = GlobalMemoryDict.TryAdd(fieldName, 0M);
-                            if (!result)
-                                GlobalMemoryDict[fieldName] = 0M;
+                                var result = GlobalMemoryDict.TryAdd(fieldName, memoryInMB);
+                                if (!result)
+                                    GlobalMemoryDict[fieldName] = memoryInMB;
+                            }
+                            else
+                            {
+                                var result = GlobalMemoryDict.TryAdd(fieldName, 0M);
+                                if (!result)
+                                    GlobalMemoryDict[fieldName] = 0M;
+                            }
                         }
                     }
+                    catch { }
                 }
 
                 var orderedDict = GlobalMemoryDict.OrderBy(x => x.Key).ToList();
                 StringBuilder strBld = new StringBuilder();
                 strBld.AppendLine("------------------------App Memory Usage-----------------------------");
                 strBld.AppendLine($"Start Memory: {Globals.StartMemory} | Current Memory: {Globals.CurrentMemory}");
+                strBld.AppendLine($"Last Time Logged: {DateTime.UtcNow}");
                 strBld.AppendLine("---------------------------------------------------------------------");
                 foreach (var globalMemItem in orderedDict)
                 {
@@ -110,11 +126,24 @@ namespace ReserveBlockCore.Services
                     strBld.AppendLine($"Name: {globalMemItem.Key} | {memoryText}");
                 }
 
-                MemoryLogUtility.WriteToMemLog("memorylog.txt", strBld.ToString());
+                if(Globals.AdjudicateAccount == null)
+                {
+                    MemoryLogUtility.WriteToMemLog($"memorylog_{LogNameAttribute}.txt", strBld.ToString());
+                }
+                else
+                {
+                    MemoryLogUtility.WriteToMemLog($"memorylog.txt", strBld.ToString());
+                }
+               
             }
-            catch { }
-            
-
+            catch (Exception ex)
+            {
+                if (!GetGlobalMemoryInfoError)
+                {
+                    GetGlobalMemoryInfoError = true;
+                    ErrorLogUtility.LogError($"Error Logging. Error: {ex.ToString()}", "MemoryService.GetGlobalMemoryInfo()");
+                }
+            }
         }
 
     }

@@ -12,6 +12,7 @@ using System.Xml.Linq;
 
 namespace ReserveBlockCore.Services
 {
+    
     public class VersionControlService
     {
         #region GitHub Classes
@@ -446,7 +447,7 @@ namespace ReserveBlockCore.Services
             }
             catch(Exception ex) 
             {
-                ConsoleWriterService.Output($"Error Checking GitHub for update. Error: {ex.ToString()}");
+                //ConsoleWriterService.Output($"Error Checking GitHub for update. Error: {ex.ToString()}");
             }
         }
 

@@ -478,7 +478,6 @@ namespace ReserveBlockCore
 
             await TransactionData.UpdateWalletTXTask();
 
-
             _ = StartupService.ConnectToAdjudicators();
             _ = BanService.PeerBanUnbanService();
             _ = BeaconService.BeaconRunService();
@@ -486,9 +485,7 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
-            _ = MemoryService.Run();
-            _ = MemoryService.RunGlobals();
-
+            
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
 
@@ -517,7 +514,10 @@ namespace ReserveBlockCore
                 Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
             }
             catch { }
-            
+
+            _ = MemoryService.Run();
+            _ = MemoryService.RunGlobals();
+
             await Task.WhenAll(tasks);
 
             LogUtility.Log("Line Reached. Should not be reached Program.cs", "Program:Before Task.WaitAll(commandLoopTask, commandLoopTask2)");
