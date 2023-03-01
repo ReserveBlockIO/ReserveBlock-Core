@@ -166,9 +166,9 @@ namespace ReserveBlockCore.Data
         public static void BeginTrans()
         {                    
             DB.BeginTrans();
-            DB_Mempool.BeginTrans();
-            DB_Assets.BeginTrans();
-            DB_AssetQueue.BeginTrans();
+            //DB_Mempool.BeginTrans();
+            //DB_Assets.BeginTrans();
+            //DB_AssetQueue.BeginTrans();
             DB_Wallet.BeginTrans();
             DB_HD_Wallet.BeginTrans();
             DB_Peers.BeginTrans();
@@ -178,13 +178,13 @@ namespace ReserveBlockCore.Data
             DB_SmartContractStateTrei.BeginTrans();
             DB_DST.BeginTrans();
             DB_DecShopStateTrei.BeginTrans();
-            DB_Beacon.BeginTrans();
-            DB_Config.BeginTrans();
+            //DB_Beacon.BeginTrans();
+            //DB_Config.BeginTrans();
             DB_DNR.BeginTrans();
-            DB_Keystore.BeginTrans();
+            //DB_Keystore.BeginTrans();
             DB_TopicTrei.BeginTrans();
             DB_Vote.BeginTrans();
-            DB_Settings.BeginTrans();
+            //DB_Settings.BeginTrans();
         }
         public static void Commit()
         {
@@ -231,9 +231,9 @@ namespace ReserveBlockCore.Data
             
 
             DB.Rollback();
-            DB_Mempool.Rollback();
-            DB_Assets.Rollback();
-            DB_AssetQueue.Rollback();
+            //DB_Mempool.Rollback();
+            //DB_Assets.Rollback();
+            //DB_AssetQueue.Rollback();
             DB_Wallet.Rollback();
             DB_HD_Wallet.Rollback();
             DB_Peers.Rollback();
@@ -243,13 +243,13 @@ namespace ReserveBlockCore.Data
             DB_SmartContractStateTrei.Rollback();
             DB_DST.Rollback();
             DB_DecShopStateTrei.Rollback();
-            DB_Beacon.Rollback();
-            DB_Config.Rollback();
+            //DB_Beacon.Rollback();
+            //DB_Config.Rollback();
             DB_DNR.Rollback();
-            DB_Keystore.Rollback();
+            //DB_Keystore.Rollback();
             DB_TopicTrei.Rollback();
             DB_Vote.Rollback();
-            DB_Settings.Rollback();
+            //DB_Settings.Rollback();
         }
 
         public static void DeleteCorruptDb()

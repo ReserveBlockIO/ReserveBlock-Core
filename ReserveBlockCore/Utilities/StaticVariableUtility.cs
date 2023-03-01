@@ -120,6 +120,7 @@ namespace ReserveBlockCore.Utilities
             var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
 
             var lastBlockWon = Globals.LastWonBlock != null ? $"Last Block Won: {Globals.LastWonBlock.Height}" : "No blocks reported yet.";
+
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 

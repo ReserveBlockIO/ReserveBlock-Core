@@ -92,6 +92,7 @@ namespace ReserveBlockCore.Data
                 if (txCheck == null)
                 {
                     //posible sub needed
+                    transaction.Id = new LiteDB.ObjectId();
                     transaction.TransactionStatus = txStatus;
                     transaction.Height = blockHeight;
                     txs.InsertSafe(transaction);
@@ -120,6 +121,7 @@ namespace ReserveBlockCore.Data
                 {
                     if(txCheck.Amount < 0)
                     {
+                        transaction.Id = new LiteDB.ObjectId();
                         transaction.TransactionStatus = txStatus;
                         transaction.Height = blockHeight;
                         transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
