@@ -118,7 +118,6 @@ namespace ReserveBlockCore.Utilities
             var startMemory = $"Start Memory: {Globals.StartMemory}";
             var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
 
-
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
 

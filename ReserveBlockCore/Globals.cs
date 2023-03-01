@@ -18,6 +18,14 @@ namespace ReserveBlockCore
             CancelledToken = Source.Token;
         }
 
+        public class MethodCallCount
+        {
+            public int Enters { get; set; }
+            public int Exits { get; set; }
+            public int Exceptions { get; set; }
+        }
+
+
         #region Timers
         public static bool IsTestNet = false;
 
@@ -32,6 +40,7 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'        
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address        
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
+        public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();
@@ -63,7 +72,7 @@ namespace ReserveBlockCore
         public static int Port = 3338;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
-        public static int MinorVer = 2;
+        public static int MinorVer = 3;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
@@ -139,6 +148,7 @@ namespace ReserveBlockCore
         public static bool TimeInSync = true;
         public static bool TimeSyncError = false;
         public static bool BasicCLI = false;
+        public static bool MemoryOverload = false;
 
         public static CancellationToken CancelledToken;
 
