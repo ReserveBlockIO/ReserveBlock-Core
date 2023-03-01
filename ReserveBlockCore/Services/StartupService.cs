@@ -1328,6 +1328,17 @@ namespace ReserveBlockCore.Services
                     AnsiConsole.MarkupLine("[blue]|          **Validator Active**        |[/]");
                     AnsiConsole.MarkupLine($"[blue]|  {Globals.ValidatorAddress}  |[/]");
                 }
+                if(!Globals.MemoryOverload)
+                {
+
+                    AnsiConsole.MarkupLine($"[darkorange]|            **Memory Usage**          |[/]");
+                    AnsiConsole.MarkupLine($"[darkorange]|               {Globals.CurrentMemory} MB              |[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[red]| *Memory Overload Restart Recommended*|[/]");
+                    AnsiConsole.MarkupLine($"[red]|               {Globals.CurrentMemory} MB              |[/]");
+                }
             }
 
             

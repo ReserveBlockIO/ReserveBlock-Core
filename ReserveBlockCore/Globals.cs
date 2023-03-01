@@ -148,6 +148,7 @@ namespace ReserveBlockCore
         public static bool TimeInSync = true;
         public static bool TimeSyncError = false;
         public static bool BasicCLI = false;
+        public static bool MemoryOverload = false;
 
         public static CancellationToken CancelledToken;
 

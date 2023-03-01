@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -64,6 +65,9 @@ namespace ReserveBlockCore.Services
                 var workingSetMem = proc.WorkingSet64;
 
                 Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
+
+                if (Globals.CurrentMemory >= 800M){ Globals.MemoryOverload = true; }
+                else{ Globals.MemoryOverload = false; }
             }
             catch(Exception ex) 
             {
@@ -114,9 +118,11 @@ namespace ReserveBlockCore.Services
 
                 var orderedDict = GlobalMemoryDict.OrderBy(x => x.Key).ToList();
                 StringBuilder strBld = new StringBuilder();
+                var gcMemInfo = GC.GetGCMemoryInfo();
                 strBld.AppendLine("------------------------App Memory Usage-----------------------------");
                 strBld.AppendLine($"Start Memory: {Globals.StartMemory} | Current Memory: {Globals.CurrentMemory}");
                 strBld.AppendLine($"Last Time Logged: {DateTime.UtcNow}");
+                strBld.AppendLine($"GC Generation: {gcMemInfo.Generation}");
                 strBld.AppendLine("---------------------------------------------------------------------");
                 foreach (var globalMemItem in orderedDict)
                 {
@@ -128,6 +134,7 @@ namespace ReserveBlockCore.Services
 
                 if(Globals.AdjudicateAccount == null)
                 {
+                    
                     MemoryLogUtility.WriteToMemLog($"memorylog_{LogNameAttribute}.txt", strBld.ToString());
                 }
                 else

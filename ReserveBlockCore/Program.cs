@@ -509,7 +509,6 @@ namespace ReserveBlockCore
             {
                 Process proc = Process.GetCurrentProcess();
                 var workingSetMem = proc.WorkingSet64;
-
                 Globals.StartMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
                 Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
             }
