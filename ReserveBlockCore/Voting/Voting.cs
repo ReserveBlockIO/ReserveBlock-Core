@@ -569,14 +569,14 @@ namespace ReserveBlockCore.Voting
             {
                 AnsiConsole.Write(
                 new FigletText("RBX Voting")
-                .LeftAligned()
+                .LeftJustified()
                 .Color(Color.Blue));
             }
             else
             {
                 AnsiConsole.Write(
                 new FigletText("RBX Voting - TestNet")
-                .LeftAligned()
+                .LeftJustified()
                 .Color(Color.Green));
             }
 

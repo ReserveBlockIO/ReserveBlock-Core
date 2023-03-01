@@ -1,6 +1,5 @@
 ﻿using ReserveBlockCore.Commands;
 using ReserveBlockCore.Models;
-using Spectre.Console.Cli;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;

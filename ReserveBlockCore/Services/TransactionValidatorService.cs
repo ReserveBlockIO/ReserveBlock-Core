@@ -18,12 +18,11 @@ namespace ReserveBlockCore.Services
             var accStTrei = StateData.GetAccountStateTrei();
             var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
+            
             //Balance Check
             if (from == null)
             {
-                //They may also just need the block that contains this TX.
-                //We might want to queue a block check and download.
-                return (txResult, "This is a new account with no balance.");
+                return (txResult, "This is a new account with no balance, or your wallet does not have all the blocks in the chain.");
             }
             else
             {
@@ -33,11 +32,11 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            if(txRequest.Fee <= 0)
+            if (txRequest.Fee <= 0)
             {
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
-
+            
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
