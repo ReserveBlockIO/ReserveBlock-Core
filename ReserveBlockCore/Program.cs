@@ -31,6 +31,9 @@ namespace ReserveBlockCore
         {
             bool keslog = false;
             bool signalrLog = false;
+            bool runSingleRequest = false;
+
+            var argList = args.ToList();
             //force culture info to US
             var culture = CultureInfo.GetCultureInfo("en-US");
             if (Thread.CurrentThread.CurrentCulture.Name != "en-US")
@@ -41,9 +44,6 @@ namespace ReserveBlockCore
                 Thread.CurrentThread.CurrentCulture = culture;
                 Thread.CurrentThread.CurrentUICulture = culture;
             }
-
-            DateTime originDate = new DateTime(2022, 1, 1);
-            DateTime currentDate = DateTime.Now;
 
             var httpClientBuilder = Host.CreateDefaultBuilder(args)
                      .ConfigureServices(services =>
@@ -108,7 +108,11 @@ namespace ReserveBlockCore
                 WindowsUtilities.DisableConsoleQuickEdit.Go();
 
 
-            var argList = args.ToList();
+            Globals.BuildVer = WalletVersionUtility.GetBuildVersion();
+
+            Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + WalletVersionUtility.GetBuildVersion().ToString() + "-beta";
+            var logCLIVer = Globals.CLIVersion;
+
             if (argList.Count() > 0)
             {
                 Globals.StartArguments = args.ToStringFromArray();//store for later in case of update restart.
@@ -116,6 +120,11 @@ namespace ReserveBlockCore
                 argList.ForEach(async x =>
                 {
                     var argC = x.ToLower();
+                    if(argC == "version")
+                    {
+                        Console.WriteLine(Globals.CLIVersion);
+                        runSingleRequest = true;
+                    }
                     if (argC == "testnet")
                     {
                         //Launch testnet
@@ -192,17 +201,18 @@ namespace ReserveBlockCore
                 });
             }
 
+            if(runSingleRequest)
+            {
+                Console.WriteLine("Press 'Enter' to exit...");
+                var exit = Console.ReadLine();
+                Environment.Exit(0);
+            }
+
             Globals.Platform = PlatformUtility.GetPlatform();
 
             Config.Config.EstablishConfigFile();
             var config = Config.Config.ReadConfigFile();
             Config.Config.ProcessConfig(config);
-
-            var dateDiff = (int)Math.Round((currentDate - originDate).TotalDays);
-            Globals.BuildVer = dateDiff;
-
-            Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + Globals.BuildVer.ToString() + "-beta";
-            var logCLIVer = Globals.CLIVersion;
 
             LogUtility.Log(logCLIVer, "Main", true);
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
