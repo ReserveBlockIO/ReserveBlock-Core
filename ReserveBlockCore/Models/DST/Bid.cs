@@ -19,7 +19,7 @@ namespace ReserveBlockCore.Models.DST
         public long BidSendTime { get; set; }
         public bool? IsProcessed { get; set; }// Bid Queue Item
         public int ListingId { get; set; }
-        public int StoreId { get; set; }
+        public int CollectionId { get; set; }
 
         #region Get Bid Db
         public static LiteDB.ILiteCollection<Bid>? GetBidDb()
@@ -157,15 +157,15 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
-        #region Delete All Bids By Store
-        public static async Task<(bool, string)> DeleteAllBidsByStore(int storeId)
+        #region Delete All Bids By Collection
+        public static async Task<(bool, string)> DeleteAllBidsByCollection(int collectionId)
         {
             try
             {
                 var bidDb = GetBidDb();
                 if (bidDb != null)
                 {
-                    bidDb.DeleteManySafe(x => x.StoreId == storeId);
+                    bidDb.DeleteManySafe(x => x.CollectionId == collectionId);
                     return (true, "Bids deleted.");
                 }
                 else

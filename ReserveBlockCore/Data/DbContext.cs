@@ -100,7 +100,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_ADJ_BENCH = "rsrv_adj_bench";
         public const string RSRV_ADJ_BENCH_QUEUE = "rsrv_adj_bench_queue";
         public const string RSRV_BAD_TX = "rsrv_bad_tx";
-        public const string RSRV_STORE = "rsrv_store";
+        public const string RSRV_COLLECTION = "rsrv_collection";
         public const string RSRV_AUCTION = "rsrv_auction";
         public const string RSRV_BID = "rsrv_bid";
         public const string RSRV_LISTING = "rsrv_listing";

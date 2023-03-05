@@ -63,7 +63,7 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<NodeInfo>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Peers>>();
                 c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
-                c.DocumentFilter<SwaggerDocumentFilter<Store>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Collection>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskAnswerResult>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskNumberAnswerV2>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskQuestion>>();

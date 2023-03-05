@@ -7,21 +7,25 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Globalization;
 using System.Numerics;
+using System.Text.RegularExpressions;
+using System.Data.SqlTypes;
+using LiteDB;
 
 namespace ReserveBlockCore.Models
 {
     public class DecShop
     {
+        [BsonId]
         public int Id { get; set; }
         public string Name { get; set; }
+        public string DecShopURL { get; set; }
         public string Description { get; set; }
-        public string ShopUID { get; set; }
-        public string Locator { get; set; }
+        public DecShopHostingType HostingType { get; set; }
+        public string? IP { get; set; } = null;
         public string Address { get; set; }
         public bool IsOffline { get; set; }
-        public string Signature { get; set; }
 
-        public static LiteDB.ILiteCollection<DecShop>? DecShops()
+        public static LiteDB.ILiteCollection<DecShop>? DecShopTreiDb()
         {
             try
             {
@@ -36,7 +40,7 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static LiteDB.ILiteCollection<DecShop>? MyDecShop()
+        public static LiteDB.ILiteCollection<DecShop>? DecShopLocalDB()
         {
             try
             {
@@ -55,7 +59,7 @@ namespace ReserveBlockCore.Models
         {
             try
             {
-                var decshop = MyDecShop();
+                var decshop = DecShopLocalDB();
 
                 if(decshop == null)
                 {
@@ -76,42 +80,60 @@ namespace ReserveBlockCore.Models
             }
         }
 
-        public static async Task<string> SaveMyDecShopInfo(DecShop decshop)
+        public static async Task<(bool, string)> SaveMyDecShopLocal(DecShop decshop)
         {
-            var decshops = MyDecShop();
-            if (decshops == null)
+            try
             {
-                ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveMyDecShopInfo()");
-                return "Failed to call database.";
-            }
-            else
-            {
-                var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
-                if (existingDecShopInfo == null)
+                var decshops = DecShopLocalDB();
+                if (decshops == null)
                 {
-                    decshops.InsertSafe(decshop); //inserts new record
-                    return $"Decentralized Sales Shop has been created with name {decshop.Name}";
+                    ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveMyDecShopInfo()");
+                    return (false, "Failed to call database.");
                 }
                 else
                 {
-                    //record exist
-                    return "Shop already exist.";
+                    var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
+                    if (existingDecShopInfo == null)
+                    {
+                        var result = CheckURL(decshop.DecShopURL);
+                        if (!result)
+                            return (false, "URL does not meet requirements.");
+
+                        decshops.InsertSafe(decshop); //inserts new record
+                        return (true, $"Decentralized Sales Shop has been created with name {decshop.Name}");
+                    }
+                    else
+                    {
+                        var result = CheckURL(decshop.DecShopURL);
+                        if (!result)
+                            return (false, "URL does not meet requirements.");
+
+                        decshops.UpdateSafe(decshop);
+                        return (true, $"Decentralized Sales Shop has been updated with name {decshop.Name}");
+                    }
                 }
             }
+            catch(Exception ex)
+            {
+                ErrorLogUtility.LogError($"Error Saving: {ex.ToString()}", "DecShop.SaveMyDecShopLocal()");
+                return (false, $"Unknown Error Saving/Updating Dec Shop. Error: {ex.ToString()}");
+            }
+            
         }
 
-        public static void SaveDecShopInfo(DecShop decshop)
+        public static void SaveDecShopStateTrei(DecShop decshop)
         {
-            var decshops = DecShops();
+            var decshops = DecShopTreiDb();
             if (decshops == null)
             {
                 ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveDecShopInfo()");
             }
             else
             {
-                var existingDecShopInfo = decshops.FindAll().Where(x => x.Locator == decshop.Locator);
+                var existingDecShopInfo = decshops.Query().Where(x => x.DecShopURL == decshop.DecShopURL).FirstOrDefault();
                 if (existingDecShopInfo == null)
                 {
+                    decshop.Id = 0;
                     decshops.InsertSafe(decshop); //inserts new record
                 }
                 else
@@ -130,7 +152,7 @@ namespace ReserveBlockCore.Models
             }
             else
             {
-                var decshop = MyDecShop();
+                var decshop = DecShopLocalDB();
                 if(decshop != null)
                 {
                     myDecShop.IsOffline = !myDecShop.IsOffline;
@@ -142,11 +164,27 @@ namespace ReserveBlockCore.Models
             return null;
         }
 
+        public static bool ValidStateTreiURL(string url)
+        {
+            var output = false;
+            var db = DecShopTreiDb();
+            var result = db.Query().Where(x => x.DecShopURL == url).FirstOrDefault();
+
+            if (result == null)
+                output = true;
+
+            return output;  
+        }
+
         public static async Task<(Transaction?, string)> CreateDecShopTx(DecShop decshop)
         {
             Transaction? decShopTx = null;
             var address = decshop.Address;
             var name = decshop.Name;
+
+            var urlValid = ValidStateTreiURL(decshop.DecShopURL);
+            if (!urlValid)
+                return (null, "The URL in this TX has already been used. URLs must be unique.");
 
             var account = AccountData.GetSingleAccount(address);
             if (account == null)
@@ -160,30 +198,18 @@ namespace ReserveBlockCore.Models
 
             BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-            var signature = SignatureService.CreateSignature(decshop.ShopUID, privateKey, account.PublicKey);
-            var hash = GetHash(address, name, signature, timestamp);
 
-            txData = JsonConvert.SerializeObject(new { Function = "DecShopCreate()", 
-                Address = address, 
-                Name = name, 
-                Timestamp = timestamp, 
-                Hash = hash, 
-                Signature = signature,
-                Description = decshop.Description,
-                ShopUID = decshop.ShopUID,
-                Locator = decshop.Locator,
-                IsOffline = decshop.IsOffline
-            });
+            txData = JsonConvert.SerializeObject(new { Function = "DecShopCreate()", DecShop = decshop});
 
             decShopTx = new Transaction
             {
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = address,
                 ToAddress = "DecShop_Base",
-                Amount = 0.0M,
+                Amount = 1.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
-                TransactionType = TransactionType.ADNR,
+                TransactionType = TransactionType.DSTR,
                 Data = txData
             };
 
@@ -209,7 +235,7 @@ namespace ReserveBlockCore.Models
                     TransactionData.AddToPool(decShopTx);
                     AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
                     //P2PClient.SendTXMempool(decShopTx);//send out to mempool
-                    return (decShopTx, "Success");
+                    return (decShopTx, "CHANGE TO HASH!");
                 }
                 else
                 {
@@ -229,12 +255,31 @@ namespace ReserveBlockCore.Models
             var data = address + name + signature + timestamp;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
-        public class DecShopInfoJson
+        public class DecShopTxData
         {
-            public string IPAddress { get; set; }
-            public int Port { get; set; }
-            public string Name { get; set; }
-            public string ShopUID { get; set; }
+            public string Function { get; set; }
+            public DecShop DecShop { get; set; }
         }
+
+        #region Check URL Regex
+        private static bool CheckURL(string url)
+        {
+            bool output = false;
+
+            string pattern = @"^[A-Za-z][a-zA-Z0-9-.]{0,62}\z(?<=[a-zA-Z0-9])*$";
+            Regex reg = new Regex(pattern);
+
+            output = reg.IsMatch(url);
+
+            return output;
+        }
+        #endregion
+    }
+
+    public enum DecShopHostingType
+    {
+        Network,
+        PublicBeacon,
+        SelfHosted
     }
 }

@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Models.DST
         public bool IsReserveMet { get; set; }
         public bool IsAuctionOver { get; set; }
         public int ListingId { get; set; }
-        public int StoreId { get; set; }
+        public int CollectionId { get; set; }
 
         #region Get Auction Db
         public static LiteDB.ILiteCollection<Auction>? GetAuctionDb()
@@ -152,15 +152,15 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
-        #region Delete All Auctions By Store
-        public static async Task<(bool, string)> DeleteAllAuctionsByStore(int storeId)
+        #region Delete All Auctions By Collection
+        public static async Task<(bool, string)> DeleteAllAuctionsByCollection(int collectionId)
         {
             try
             {
                 var auctionDb = GetAuctionDb();
                 if (auctionDb != null)
                 {
-                    auctionDb.DeleteManySafe(x => x.StoreId == storeId);
+                    auctionDb.DeleteManySafe(x => x.CollectionId == collectionId);
                     return (true, "Auction deleted.");
                 }
                 else

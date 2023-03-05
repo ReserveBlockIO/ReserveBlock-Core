@@ -23,7 +23,7 @@ namespace ReserveBlockCore.Models.DST
         public bool IsVisibleAfterEndDate { get; set; }
         public decimal? FinalPrice { get; set; }
         public string? WinningAddress { get; set; }
-        public int StoreId { get; set; }
+        public int CollectionId { get; set; }
 
         #region Get Listing Db
         public static LiteDB.ILiteCollection<Listing>? GetListingDb()
@@ -89,14 +89,14 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
-        #region Get All Store Listing
-        public static IEnumerable<Listing>? GetStoreListings(int storeId)
+        #region Get All Collection Listing
+        public static IEnumerable<Listing>? GetCollectionListings(int collectionId)
         {
             var listingDb = GetListingDb();
 
             if (listingDb != null)
             {
-                var listings = listingDb.Query().Where(x => x.StoreId == storeId).ToEnumerable();
+                var listings = listingDb.Query().Where(x => x.CollectionId == collectionId).ToEnumerable();
                 if (listings.Count() == 0)
                 {
                     return null;
@@ -162,14 +162,14 @@ namespace ReserveBlockCore.Models.DST
         #endregion
 
         #region Delete All Listing
-        public static async Task<(bool, string)> DeleteAllListingsByStore(int storeId)
+        public static async Task<(bool, string)> DeleteAllListingsByCollection(int collectionId)
         {
             try
             {
                 var listingDb = GetListingDb();
                 if (listingDb != null)
                 {
-                    listingDb.DeleteManySafe(x => x.StoreId == storeId);
+                    listingDb.DeleteManySafe(x => x.CollectionId == collectionId);
                     return (true, "Listing deleted.");
                 }
                 else

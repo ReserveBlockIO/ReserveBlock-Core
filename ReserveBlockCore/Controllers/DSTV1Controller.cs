@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Controllers
@@ -22,22 +23,22 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Saves or Updates store data. For Id please put 0 for new inserts
+        /// Saves or Updates Collection data. For Id please put 0 for new inserts
         /// </summary>
         /// <param name="jsonData"></param>
         /// <returns></returns>
-        [HttpPost("SaveStore")]
-        public async Task<string> SaveStore([FromBody] object jsonData)
+        [HttpPost("SaveCollection")]
+        public async Task<string> SaveCollection([FromBody] object jsonData)
         {
             var output = "";
             try
             {
                 if (jsonData != null)
                 {
-                    var store = JsonConvert.DeserializeObject<Store>(jsonData.ToString());
-                    if(store != null)
+                    var collection = JsonConvert.DeserializeObject<Collection>(jsonData.ToString());
+                    if(collection != null)
                     {
-                        var result = await Store.SaveStore(store);
+                        var result = await Collection.SaveCollection(collection);
                         if(result.Item1)
                         {
                             output = JsonConvert.SerializeObject(new { Success = true, Message = result.Item2 });
@@ -65,33 +66,33 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets store information
+        /// Gets collection information
         /// </summary>
-        /// <param name="storeId"></param>
+        /// <param name="collectionId"></param>
         /// <returns></returns>
-        [HttpGet("GetStore/{storeId}")]
-        public async Task<string> GetStore(int storeId)
+        [HttpGet("GetCollection/{collectionId}")]
+        public async Task<string> GetCollection(int collectionId)
         {
             var output = "";
             try
             {
-                if (storeId != 0)
+                if (collectionId != 0)
                 {
-                    var store = Store.GetSingleStore(storeId);
-                    if(store != null)
+                    var collection = Collection.GetSingleCollection(collectionId);
+                    if(collection != null)
                     {
-                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Store Found", Store = store });
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Collection Found", Collection = collection });
                         return output;
                     }
                     else
                     {
-                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Store was not found." });
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection was not found." });
                         return output;
                     }
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Store Id cannot be null or 0" });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection Id cannot be null or 0" });
                     return output;
                 }
 
@@ -105,24 +106,24 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets All store information
+        /// Gets All Collection information
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetAllStores")]
-        public async Task<string> GetAllStores()
+        [HttpGet("GetAllCollections")]
+        public async Task<string> GetAllCollections()
         {
             var output = "";
             try
             {
-                var stores = Store.GetAllStores();
-                if (stores != null)
+                var collections = Collection.GetAllCollections();
+                if (collections != null)
                 {
-                    output = JsonConvert.SerializeObject(new { Success = true, Message = "Stores Found", Stores = stores });
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = "Collections Found", Collections = collections });
                     return output;
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Store was not found." });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection was not found." });
                     return output;
                 }
             }
@@ -135,24 +136,24 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets the default stores information
+        /// Gets the default Collection information
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetDefaultStore")]
-        public async Task<string> GetDefaultStore()
+        [HttpGet("GetDefaultCollection")]
+        public async Task<string> GetDefaultCollection()
         {
             var output = "";
             try
             {
-                var store = Store.GetDefaultStore();
-                if (store != null)
+                var collection = Collection.GetDefaultCollection();
+                if (collection != null)
                 {
-                    output = JsonConvert.SerializeObject(new { Success = true, Message = "Default Store Found", Store = store });
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = "Default Collection Found", Collection = collection });
                     return output;
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Default Store was not found." });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Default Collection was not found." });
                     return output;
                 }
             }
@@ -165,19 +166,19 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Updates default store
+        /// Updates default collection
         /// </summary>
-        /// <param name="storeId"></param>
+        /// <param name="collectionId"></param>
         /// <returns></returns>
-        [HttpGet("GetDefaultStoreChange/{storeId}")]
-        public async Task<string> GetDefaultStoreChange(int storeId)
+        [HttpGet("GetDefaultCollectionChange/{collectionId}")]
+        public async Task<string> GetDefaultCollectionChange(int collectionId)
         {
             var output = "";
             try
             {
-                if (storeId != 0)
+                if (collectionId != 0)
                 {
-                    var result = Store.ChangeDefaultStore(storeId);
+                    var result = Collection.ChangeDefaultCollection(collectionId);
                     if (result.Item1)
                     {
                         output = JsonConvert.SerializeObject(new { Success = true, Message = result.Item2});
@@ -191,7 +192,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Store Id cannot be null or 0" });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection Id cannot be null or 0" });
                     return output;
                 }
 
@@ -205,28 +206,28 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Deletes a Store and all associated records with it
+        /// Deletes a Collection and all associated records with it
         /// </summary>
-        /// <param name="storeId"></param>
+        /// <param name="collectionId"></param>
         /// <returns></returns>
-        [HttpGet("DeleteStore/{storeId}")]
-        public async Task<string> DeleteStore(int storeId)
+        [HttpGet("DeleteCollection/{collectionId}")]
+        public async Task<string> DeleteCollection(int collectionId)
         {
             var output = "";
             try
             {
-                if (storeId != 0)
+                if (collectionId != 0)
                 {
-                    var listings = Listing.GetStoreListings(storeId);
-                    var result = await Store.DeleteStore(storeId);
+                    var listings = Listing.GetCollectionListings(collectionId);
+                    var result = await Collection.DeleteCollection(collectionId);
                     if (result.Item1)
                     {
                         if(listings?.Count() > 0)
                         {
 
-                            var listingDeleteResult = await Listing.DeleteAllListingsByStore(storeId);
-                            var auctionsDeleteResult = await Auction.DeleteAllAuctionsByStore(storeId);
-                            var bidDeleteResult = await Bid.DeleteAllBidsByStore(storeId);
+                            var listingDeleteResult = await Listing.DeleteAllListingsByCollection(collectionId);
+                            var auctionsDeleteResult = await Auction.DeleteAllAuctionsByCollection(collectionId);
+                            var bidDeleteResult = await Bid.DeleteAllBidsByCollection(collectionId);
                         }
                         
                         output = JsonConvert.SerializeObject(new { Success = true, Message = result.Item2 });
@@ -238,15 +239,12 @@ namespace ReserveBlockCore.Controllers
                         output = JsonConvert.SerializeObject(new { Success = false, Message = result.Item2 });
                         return output;
                     }
-                    
-                    
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Store Id cannot be null or 0" });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection Id cannot be null or 0" });
                     return output;
                 }
-
             }
             catch (Exception ex)
             {
@@ -300,19 +298,19 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets store listings
+        /// Gets Collection listings
         /// </summary>
-        /// <param name="storeId"></param>
+        /// <param name="collectionId"></param>
         /// <returns></returns>
-        [HttpGet("GetStoreListings/{storeId}")]
-        public async Task<string> GetStoreListings(int storeId)
+        [HttpGet("GetCollectionListings/{collectionId}")]
+        public async Task<string> GetCollectionListings(int collectionId)
         {
             var output = "";
             try
             {
-                if (storeId != 0)
+                if (collectionId != 0)
                 {
-                    var listings = Listing.GetStoreListings(storeId);
+                    var listings = Listing.GetCollectionListings(collectionId);
                     if (listings != null)
                     {
                         output = JsonConvert.SerializeObject(new { Success = true, Message = "Listings Found", Listings = listings });
@@ -326,7 +324,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Store Id cannot be null or 0" });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection Id cannot be null or 0" });
                     return output;
                 }
 
@@ -369,7 +367,7 @@ namespace ReserveBlockCore.Controllers
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Store Id cannot be null or 0" });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Collection Id cannot be null or 0" });
                     return output;
                 }
 
@@ -476,6 +474,94 @@ namespace ReserveBlockCore.Controllers
             {
                 output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
             }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Saves a shop to allow for the sale of items in collections
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
+        [HttpPost("SaveDecShop")]
+        public async Task<string> SaveDecShop([FromBody] object jsonData)
+        {
+            var output = "";
+
+            var myDS = DecShop.GetMyDecShopInfo();
+            if(jsonData != null)
+            {
+                var decShop = JsonConvert.DeserializeObject<DecShop>(jsonData.ToString());
+
+                if (myDS == null)
+                {
+                    if(decShop != null)
+                    {
+                        var wordCount = decShop.Description.ToWordCountCheck(200);
+                        var descLength = decShop.Description.ToLengthCheck(1200);
+
+                        if(!wordCount || !descLength)
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = $"Description Word Count Allowed: {200}. Description length allowed: {1200}" });
+                            return output;
+                        }
+
+                        var urlCheck = DecShop.ValidStateTreiURL(decShop.DecShopURL);
+
+                        if(!urlCheck)
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = $"URL: {decShop.DecShopURL} has already been taken." });
+                            return output;
+                        }
+
+                        var result = await DecShop.SaveMyDecShopLocal(decShop);
+                        output = JsonConvert.SerializeObject(new {Success = result.Item1, Message = result.Item2 });
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Was not able to deserialize json payload." });
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "A local decshop already exist." });
+                }
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "JSON payload was null." });
+            }
+            
+            return output;
+        }
+
+        /// <summary>
+        /// Publishes Dec Shop to network
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetPublishDecShop")]
+        public async Task<string> GetPublishDecShop()
+        {
+            string output = "";
+
+            try
+            {
+                var localShop = DecShop.GetMyDecShopInfo();
+                if(localShop != null)
+                {
+                    var txResult = await DecShop.CreateDecShopTx(localShop);
+                    if(txResult.Item1 != null)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "A local decshop does not exist." });
+                }
+            }
+            catch { }
 
             return output;
         }
