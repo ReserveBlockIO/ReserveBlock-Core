@@ -1,6 +1,8 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Utilities;
+using System.Drawing;
 
 namespace ReserveBlockCore.Models.DST
 {
@@ -184,6 +186,23 @@ namespace ReserveBlockCore.Models.DST
             
         }
 
+        #endregion
+
+        #region Produce Thumbnails
+        public static async Task GenerateThumbnails(string scUID)
+        {
+            List<string> ImageExtensionList = new List<string> { 
+                "jpg", "png", "gif", "webp", "tiff", "psd", "raw", "bmp", "heif", "indd", "jpeg2000", "svg", "eps", "ai"
+            };
+
+            //need util that gets all assets for an NFT.
+            //create a folder inside NFT folder called Thumbs that will contain all thumbnails.
+            //below code works. Just need pathing modifications.
+
+            //Image image = Image.FromFile(fileName);
+            //Image thumb = image.GetThumbnailImage(120, 120, () => false, IntPtr.Zero);
+            //thumb.Save(Path.ChangeExtension(fileName, "thumb"));
+        }
         #endregion
 
     }

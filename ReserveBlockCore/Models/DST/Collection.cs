@@ -148,6 +148,17 @@ namespace ReserveBlockCore.Models.DST
             var singleCollection = GetSingleCollection(collection.Id);
             var collectionDb = GetCollectionDb();
             var defaultCollection = GetDefaultCollection();
+
+            var wordCount = collection.Description.ToWordCountCheck(200);
+            var descLength = collection.Description.ToLengthCheck(1200);
+            var nameLength = collection.Name.ToLengthCheck(64);
+
+            if (!wordCount || !descLength)
+                return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+            if(!nameLength)
+                return (false, $"Failed to insert/update. Name length allowed: {64}");
+
             if (singleCollection == null)
             {
                 if (collectionDb != null)

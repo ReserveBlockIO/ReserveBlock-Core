@@ -428,6 +428,9 @@ namespace ReserveBlockCore.Extensions
                 // skip whitespace until next word
                 while (index < text.Length && char.IsWhiteSpace(text[index]))
                     index++;
+
+                if (wordCount > count)
+                    break;
             }
 
             if(wordCount > count)

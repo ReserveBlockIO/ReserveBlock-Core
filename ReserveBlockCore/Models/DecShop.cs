@@ -17,12 +17,16 @@ namespace ReserveBlockCore.Models
     {
         [BsonId]
         public int Id { get; set; }
+        public string UniqueId { get; set; }
         public string Name { get; set; }
         public string DecShopURL { get; set; }
         public string Description { get; set; }
         public DecShopHostingType HostingType { get; set; }
         public string? IP { get; set; } = null;
+        public long? BlockHeight { get; set; }
+        public long? TXHash { get; set; }
         public string Address { get; set; }
+        public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
 
         public static LiteDB.ILiteCollection<DecShop>? DecShopTreiDb()
@@ -92,24 +96,48 @@ namespace ReserveBlockCore.Models
                 }
                 else
                 {
+                    var result = CheckURL(decshop.DecShopURL);
+                    if (!result)
+                        return (false, "URL does not meet requirements.");
+
+                    var wordCount = decshop.Description.ToWordCountCheck(200);
+                    var descLength = decshop.Description.ToLengthCheck(1200);
+                    var nameLength = decshop.Name.ToLengthCheck(64);
+
+                    if (!wordCount || !descLength)
+                        return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+                    if (!nameLength)
+                        return (false, $"Failed to insert/update. Name length allowed: {64}");
+
+                    decshop.NeedsPublishToNetwork = true;
+
                     var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
                     if (existingDecShopInfo == null)
                     {
-                        var result = CheckURL(decshop.DecShopURL);
-                        if (!result)
-                            return (false, "URL does not meet requirements.");
+                        var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
+
+                        if (!urlvalidCheck)
+                            return (false, "URL is already taken");
+
+                        var timestamp = TimeUtil.GetTime().ToString();
+                        decshop.UniqueId = $"{RandomStringUtility.GetRandomStringOnlyLetters(timestamp.Length)}{timestamp}";
 
                         decshops.InsertSafe(decshop); //inserts new record
-                        return (true, $"Decentralized Sales Shop has been created with name {decshop.Name}");
+                        return (true, $"Decentralized Auction Shop has been created with name {decshop.Name}");
                     }
                     else
                     {
-                        var result = CheckURL(decshop.DecShopURL);
-                        if (!result)
-                            return (false, "URL does not meet requirements.");
+                        if(decshop.DecShopURL != existingDecShopInfo.DecShopURL)
+                        {
+                            var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
+
+                            if (!urlvalidCheck)
+                                return (false, "URL is already taken");
+                        }
 
                         decshops.UpdateSafe(decshop);
-                        return (true, $"Decentralized Sales Shop has been updated with name {decshop.Name}");
+                        return (true, $"Decentralized Auction Shop has been updated with name {decshop.Name}");
                     }
                 }
             }
@@ -121,26 +149,84 @@ namespace ReserveBlockCore.Models
             
         }
 
-        public static void SaveDecShopStateTrei(DecShop decshop)
+        public static async Task<(bool,string)> SaveDecShopStateTrei(DecShop decshop)
         {
-            var decshops = DecShopTreiDb();
-            if (decshops == null)
+            try
             {
-                ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveDecShopInfo()");
-            }
-            else
-            {
-                var existingDecShopInfo = decshops.Query().Where(x => x.DecShopURL == decshop.DecShopURL).FirstOrDefault();
-                if (existingDecShopInfo == null)
+                var decshops = DecShopTreiDb();
+                if (decshops == null)
                 {
-                    decshop.Id = 0;
-                    decshops.InsertSafe(decshop); //inserts new record
+                    ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveDecShopInfo()");
+                    return (false, $"DB Error");
                 }
                 else
                 {
-                    //record exist
+                    var existingDecShopInfo = decshops.Query().Where(x => x.UniqueId == decshop.UniqueId).FirstOrDefault();
+                    if (existingDecShopInfo == null)
+                    {
+                        var result = CheckURL(decshop.DecShopURL);
+                        if (!result)
+                            return (false, "URL does not meet requirements.");
+
+                        var wordCount = decshop.Description.ToWordCountCheck(200);
+                        var descLength = decshop.Description.ToLengthCheck(1200);
+                        var nameLength = decshop.Name.ToLengthCheck(64);
+
+                        if (!wordCount || !descLength)
+                            return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+                        if (!nameLength)
+                            return (false, $"Failed to insert/update. Name length allowed: {64}");
+
+                        decshop.Id = 0;
+                        decshops.InsertSafe(decshop); //inserts new record
+
+                        return (true, $"Success");
+                    }
+                    return (false, $"Account Already Exist");
                 }
             }
+            catch { return (false, "Unhandled Exception"); }
+        }
+
+        public static async Task<(bool,string)> UpdateDecShopStateTrei(DecShop decshop)
+        {
+            try
+            {
+                var decshops = DecShopTreiDb();
+                if (decshops == null)
+                {
+                    ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveDecShopInfo()");
+                    return (false, $"DB Error");
+                }
+                else
+                {
+                    var existingDecShopInfo = decshops.Query().Where(x => x.UniqueId == decshop.UniqueId).FirstOrDefault();
+                    if (existingDecShopInfo != null)
+                    {
+                        var urlvalidCheck = ValidStateTreiURL(existingDecShopInfo.DecShopURL);
+                        if (urlvalidCheck)
+                        {
+                            var result = CheckURL(decshop.DecShopURL);
+                            if (!result)
+                                return (false, "URL does not meet requirements.");
+
+                            var wordCount = decshop.Description.ToWordCountCheck(200);
+                            var descLength = decshop.Description.ToLengthCheck(1200);
+                            var nameLength = decshop.Name.ToLengthCheck(64);
+
+                            if (!wordCount || !descLength)
+                                return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+                            if (!nameLength)
+                                return (false, $"Failed to insert/update. Name length allowed: {64}");
+                        }
+                        return (false, $"URL already exist");
+                    }
+                    return (false, $"Trei record does not exist.");
+                }
+            }
+            catch { return (false, "Unhandled Exception"); }
         }
 
         public static bool? SetDecShopStatus()
