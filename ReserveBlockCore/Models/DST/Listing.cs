@@ -200,7 +200,7 @@ namespace ReserveBlockCore.Models.DST
             //below code works. Just need pathing modifications.
 
             //Image image = Image.FromFile(fileName);
-            //Image thumb = image.GetThumbnailImage(120, 120, () => false, IntPtr.Zero);
+            //Image thumb = image.GetThumbnailImage(256, 256, () => false, IntPtr.Zero);
             //thumb.Save(Path.ChangeExtension(fileName, "thumb"));
         }
         #endregion

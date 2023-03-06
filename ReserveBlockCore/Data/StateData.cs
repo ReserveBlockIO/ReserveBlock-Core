@@ -327,7 +327,11 @@ namespace ReserveBlockCore.Data
                                         case "DecShopCreate()":
                                             //AddNewDecShop(x);
                                             break;
+                                        case "DecShopUpdate()":
+                                            //UpdateDecShop(x);
+                                            break;
                                         case "DecShopDelete()":
+                                            //DeleteDecShop(x);
                                             break;
                                         default:
                                             break;

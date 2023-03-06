@@ -15,6 +15,7 @@ namespace ReserveBlockCore.Models
 {
     public class DecShop
     {
+        #region Class Variables
         [BsonId]
         public int Id { get; set; }
         public string UniqueId { get; set; }
@@ -29,7 +30,16 @@ namespace ReserveBlockCore.Models
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
 
-        public static LiteDB.ILiteCollection<DecShop>? DecShopTreiDb()
+        public class DecShopTxData
+        {
+            public string Function { get; set; }
+            public DecShop DecShop { get; set; }
+        }
+
+        #endregion
+
+        #region DecShop State Trei DB
+        public static ILiteCollection<DecShop>? DecShopTreiDb()
         {
             try
             {
@@ -44,7 +54,10 @@ namespace ReserveBlockCore.Models
 
         }
 
-        public static LiteDB.ILiteCollection<DecShop>? DecShopLocalDB()
+        #endregion
+
+        #region DecShop Local DB
+        public static ILiteCollection<DecShop>? DecShopLocalDB()
         {
             try
             {
@@ -59,6 +72,9 @@ namespace ReserveBlockCore.Models
 
         }
 
+        #endregion
+
+        #region Get Local DecShop Info
         public static DecShop? GetMyDecShopInfo()
         {
             try
@@ -84,7 +100,27 @@ namespace ReserveBlockCore.Models
             }
         }
 
-        public static async Task<(bool, string)> SaveMyDecShopLocal(DecShop decshop)
+        #endregion
+
+        #region Get DecShop State Trei Leaf
+        public static async Task<DecShop?> GetDecShopStateTreiLeaf(string dsUID)
+        {
+            var dstDB = DecShopTreiDb();
+            if(dstDB != null)
+            {
+                var rec = dstDB.Query().Where(x => x.UniqueId == dsUID).FirstOrDefault();
+                return rec;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Save/Update Local DecShop
+        public static async Task<(bool, string)> SaveMyDecShopLocal(DecShop decshop, bool needsPublish = true, bool isImport = false)
         {
             try
             {
@@ -110,18 +146,22 @@ namespace ReserveBlockCore.Models
                     if (!nameLength)
                         return (false, $"Failed to insert/update. Name length allowed: {64}");
 
-                    decshop.NeedsPublishToNetwork = true;
+                    decshop.NeedsPublishToNetwork = needsPublish;
 
                     var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
                     if (existingDecShopInfo == null)
                     {
-                        var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
+                        if(!isImport)
+                        {
+                            var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
 
-                        if (!urlvalidCheck)
-                            return (false, "URL is already taken");
+                            if (!urlvalidCheck)
+                                return (false, "URL is already taken");
 
-                        var timestamp = TimeUtil.GetTime().ToString();
-                        decshop.UniqueId = $"{RandomStringUtility.GetRandomStringOnlyLetters(timestamp.Length)}{timestamp}";
+                            var timestamp = TimeUtil.GetTime().ToString();
+                            decshop.UniqueId = $"{RandomStringUtility.GetRandomStringOnlyLetters(timestamp.Length)}{timestamp}";
+                        }
+                        
 
                         decshops.InsertSafe(decshop); //inserts new record
                         return (true, $"Decentralized Auction Shop has been created with name {decshop.Name}");
@@ -149,6 +189,9 @@ namespace ReserveBlockCore.Models
             
         }
 
+        #endregion
+
+        #region Save DecShop State Trei Leaf
         public static async Task<(bool,string)> SaveDecShopStateTrei(DecShop decshop)
         {
             try
@@ -189,6 +232,9 @@ namespace ReserveBlockCore.Models
             catch { return (false, "Unhandled Exception"); }
         }
 
+        #endregion
+
+        #region Update DecShop State Trei Leaf
         public static async Task<(bool,string)> UpdateDecShopStateTrei(DecShop decshop)
         {
             try
@@ -229,6 +275,9 @@ namespace ReserveBlockCore.Models
             catch { return (false, "Unhandled Exception"); }
         }
 
+        #endregion
+
+        #region Set DecShop Status
         public static bool? SetDecShopStatus()
         {
             var myDecShop = GetMyDecShopInfo();
@@ -250,6 +299,9 @@ namespace ReserveBlockCore.Models
             return null;
         }
 
+        #endregion
+
+        #region Validate URL Unique against State Trei
         public static bool ValidStateTreiURL(string url)
         {
             var output = false;
@@ -262,6 +314,9 @@ namespace ReserveBlockCore.Models
             return output;  
         }
 
+        #endregion
+
+        #region Create DecShop TX
         public static async Task<(Transaction?, string)> CreateDecShopTx(DecShop decshop)
         {
             Transaction? decShopTx = null;
@@ -318,10 +373,10 @@ namespace ReserveBlockCore.Models
                 var result = await TransactionValidatorService.VerifyTX(decShopTx);
                 if (result.Item1 == true)
                 {
-                    TransactionData.AddToPool(decShopTx);
-                    AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
+                    //TransactionData.AddToPool(decShopTx);
+                    //AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
                     //P2PClient.SendTXMempool(decShopTx);//send out to mempool
-                    return (decShopTx, "CHANGE TO HASH!");
+                    return (decShopTx, "TX Has Verified - Testing. Replace with TXID for mainnet");
                 }
                 else
                 {
@@ -336,19 +391,159 @@ namespace ReserveBlockCore.Models
 
             return (null, "Error. Please see message above.");
         }
-        private static string GetHash(string address, string name, string signature, long timestamp)
+
+        #endregion
+
+        #region Update DecShop TX
+        public static async Task<(Transaction?, string)> UpdateDecShopTx(DecShop decshop)
         {
-            var data = address + name + signature + timestamp;
-            return HashingService.GenerateHash(HashingService.GenerateHash(data));
-        }
-        public class DecShopTxData
-        {
-            public string Function { get; set; }
-            public DecShop DecShop { get; set; }
+            Transaction? decShopTx = null;
+            var address = decshop.Address;
+            var name = decshop.Name;
+
+            var urlValid = ValidStateTreiURL(decshop.DecShopURL);
+            if (!urlValid)
+                return (null, "The URL in this TX has already been used. URLs must be unique.");
+
+            var account = AccountData.GetSingleAccount(address);
+            if (account == null)
+            {
+                return (null, $"Address is not found for : {address}");
+            }
+
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            txData = JsonConvert.SerializeObject(new { Function = "DecShopUpdate()", DecShop = decshop });
+
+            decShopTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = address,
+                ToAddress = "DecShop_Base",
+                Amount = 1.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(address),
+                TransactionType = TransactionType.DSTR,
+                Data = txData
+            };
+
+            decShopTx.Fee = FeeCalcService.CalculateTXFee(decShopTx);
+
+            decShopTx.Build();
+
+            var txHash = decShopTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for Decentralized Shop Request on address {address} for name {name}", "DecShop.UpdateDecShopTx()-1");
+                return (null, $"Signing TX failed for DecShop Request on address {address} for name {name}");
+            }
+
+            decShopTx.Signature = sig;
+
+            try
+            {
+                var result = await TransactionValidatorService.VerifyTX(decShopTx);
+                if (result.Item1 == true)
+                {
+                    //TransactionData.AddToPool(decShopTx);
+                    //AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
+                    //P2PClient.SendTXMempool(decShopTx);//send out to mempool
+                    return (decShopTx, "TX Has Verified - Testing. Replace with TXID for mainnet");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.UpdateDecShopTx()-2");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+
+            return (null, "Error. Please see message above.");
         }
 
+        #endregion
+
+        #region Delete DecShop TX
+        public static async Task<(Transaction?, string)> DeleteDecShopTx(string dsUID, string address)
+        {
+            Transaction? decShopTx = null;
+
+            var account = AccountData.GetSingleAccount(address);
+            if (account == null)
+            {
+                return (null, $"Address is not found for : {address}");
+            }
+
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            txData = JsonConvert.SerializeObject(new { Function = "DecShopDelete()", UniqueId = dsUID });
+
+            decShopTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = address,
+                ToAddress = "DecShop_Base",
+                Amount = 1.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(address),
+                TransactionType = TransactionType.DSTR,
+                Data = txData
+            };
+
+            decShopTx.Fee = FeeCalcService.CalculateTXFee(decShopTx);
+
+            decShopTx.Build();
+
+            var txHash = decShopTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for Decentralized Shop Request.", "DecShop.DeleteDecShopTx()-1");
+                return (null, $"Signing TX failed for DecShop Request.");
+            }
+
+            decShopTx.Signature = sig;
+
+            try
+            {
+                var result = await TransactionValidatorService.VerifyTX(decShopTx);
+                if (result.Item1 == true)
+                {
+                    //TransactionData.AddToPool(decShopTx);
+                    //AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
+                    //P2PClient.SendTXMempool(decShopTx);//send out to mempool
+                    return (decShopTx, "TX Has Verified - Testing. Replace with TXID for mainnet");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.DeleteDecShopTx()-2");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+
+            return (null, "Error. Please see message above.");
+        }
+
+        #endregion
+
         #region Check URL Regex
-        private static bool CheckURL(string url)
+        public static bool CheckURL(string url)
         {
             bool output = false;
 
@@ -360,6 +555,7 @@ namespace ReserveBlockCore.Models
             return output;
         }
         #endregion
+
     }
 
     public enum DecShopHostingType

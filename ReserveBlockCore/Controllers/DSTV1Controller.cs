@@ -565,5 +565,96 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
+
+        /// <summary>
+        /// Updates Dec Shop on network
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetUpdateDecShop")]
+        public async Task<string> GetUpdateDecShop()
+        {
+            string output = "";
+
+            try
+            {
+                var localShop = DecShop.GetMyDecShopInfo();
+                if (localShop != null)
+                {
+                    var txResult = await DecShop.UpdateDecShopTx(localShop);
+                    if (txResult.Item1 != null)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "A local decshop does not exist." });
+                }
+            }
+            catch { }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Deletes Dec Shop on network
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDeleteDecShop")]
+        public async Task<string> GetDeleteDecShop()
+        {
+            string output = "";
+
+            try
+            {
+                var localShop = DecShop.GetMyDecShopInfo();
+                if (localShop != null)
+                {
+                    var txResult = await DecShop.DeleteDecShopTx(localShop.UniqueId, localShop.Address);
+                    if (txResult.Item1 != null)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "A local decshop does not exist." });
+                }
+            }
+            catch { }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Gets dec shop from network
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet("GetImportDecShopFromNetwork/{address}")]
+        public async Task<string> GetImportDecShopFromNetwork(string address)
+        {
+            var output = "";
+            var dcStateTreiDb = DecShop.DecShopTreiDb();
+            var leaf = dcStateTreiDb.Query().Where(x => x.Address == address).FirstOrDefault();
+            if(leaf != null)
+            {
+                var decShopExist = DecShop.GetMyDecShopInfo();
+                if(decShopExist == null)
+                {
+                    leaf.Id = 0;
+                    var result = await DecShop.SaveMyDecShopLocal(leaf, false, true);
+                    output = JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
+                    return output;
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." });
+                    return output;
+                }
+            }
+            output = JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find the DecShop leaf for address: {address}." });
+            return output;
+        }
     }
 }

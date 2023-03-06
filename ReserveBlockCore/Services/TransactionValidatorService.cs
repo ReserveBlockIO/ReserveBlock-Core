@@ -562,6 +562,99 @@ namespace ReserveBlockCore.Services
                     }
 
                 }
+                if (txRequest.TransactionType == TransactionType.DSTR)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            if (txRequest.ToAddress != "DecShop_Base")
+                                return (txResult, "To Address must be DecShop_Base.");
+
+                            if (txRequest.Amount < 1M)
+                                return (txResult, "There must be at least 1 RBX to create a Auction House.");
+
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string)jobj["Function"];
+                                if (function == "DecShopDelete()")
+                                {
+                                    string dsUID = jobj["UniqueId"].ToObject<string>();
+                                    if(!string.IsNullOrEmpty(dsUID))
+                                    {
+                                        //ensure they own the shop
+                                        var treiRec = await DecShop.GetDecShopStateTreiLeaf(dsUID);
+                                        if (treiRec != null)
+                                        {
+                                            if (treiRec.Address != txRequest.FromAddress)
+                                                return (txResult, "You must be the valid owner of this shop.");
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "No record found to delete.");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    DecShop decshop = jobj["DecShop"].ToObject<DecShop>();
+
+                                    if (decshop == null)
+                                        return (txResult, "DecShop record cannot be null.");
+
+                                    var result = DecShop.CheckURL(decshop.DecShopURL);
+                                    if (!result)
+                                        return (txResult, "URL does not meet requirements.");
+
+                                    var wordCount = decshop.Description.ToWordCountCheck(200);
+                                    var descLength = decshop.Description.ToLengthCheck(1200);
+                                    var nameLength = decshop.Name.ToLengthCheck(64);
+
+                                    if (!wordCount || !descLength)
+                                        return (txResult, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+                                    if (!nameLength)
+                                        return (txResult, $"Failed to insert/update. Name length allowed: {64}");
+
+                                    if (function == "DecShopCreate()")
+                                    {
+                                        var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
+                                        if (!urlValid)
+                                            return (txResult, "The URL in this TX has already been used. URLs must be unique.");
+                                        var recExist = await DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
+                                        if (recExist != null)
+                                            return (txResult, "This record has already been inserted to trei. Rejecting.");
+                                    }
+                                    if (function == "DecShopUpdate()")
+                                    {
+                                        //ensure they own the shop
+                                        var treiRec = await DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
+                                        if (treiRec != null)
+                                        {
+                                            if (decshop.DecShopURL.ToLower() != treiRec.DecShopURL.ToLower())
+                                            {
+                                                var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
+                                                if (!urlValid)
+                                                    return (txResult, "The URL in this TX has already been used. URLs must be unique.");
+                                            }
+
+                                            if (treiRec.Address != txRequest.FromAddress)
+                                                return (txResult, "You must be the valid owner of this shop.");
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "No record found to update.");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch { return (txResult, $"TX not formatted properly."); }
+                    }
+                }
+
             }
 
             //Signature Check - Final Check to return true.
