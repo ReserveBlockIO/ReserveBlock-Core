@@ -1,6 +1,7 @@
 ﻿namespace ReserveBlockCore.DST
 {
-    public class ChatService
+    public class MessageService
     {
+
     }
 }

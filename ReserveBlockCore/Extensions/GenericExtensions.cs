@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -22,6 +23,17 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
+        public static string ToHash(this string source)
+        {
+            if (!string.IsNullOrEmpty(source))
+            {
+                return HashingService.GenerateHash(HashingService.GenerateHash(source));
+            }
+            else
+            {
+                return "NA";
+            }
+        }
         public static long ToUnixTimeSeconds(this DateTime obj)
         {
             long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();

@@ -3,6 +3,8 @@ using System.Net;
 using System.Text;
 using ReserveBlockCore.P2P;
 using Newtonsoft.Json;
+using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.DST
 {
@@ -88,16 +90,17 @@ namespace ReserveBlockCore.DST
                 {
                     if (message.Type != MessageType.KeepAlive)
                     {
+                        message.ReceivedTimestamp = TimeUtil.GetTime();
+
                         ConsoleHelper.ClearCurrentLine();
                         if(!string.IsNullOrEmpty(message.Address))
                         {
-
+                            Console.Write($"{message.Address}: {message.Data}\n> ");
                         }
                         else
                         {
                             Console.Write($"peer: {message.Data}\n> ");
                         }
-                        
                     }
                 }
             }
@@ -126,7 +129,7 @@ namespace ReserveBlockCore.DST
         internal static string GenerateMessage(Message message)
         {
             var output = "";
-            message.IPAddress = message.Type == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
+            message.Build();
             output = JsonConvert.SerializeObject(message);
 
             return output;
@@ -140,33 +143,12 @@ namespace ReserveBlockCore.DST
             nMessage.Type = mType;
             nMessage.Data = message;
             nMessage.Address = address;
-            nMessage.IPAddress = mType == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
 
+            nMessage.Build();
             output = JsonConvert.SerializeObject(nMessage);
 
             return output;
         }
 
-        
-
-        public class Message
-        { 
-            public MessageType Type { get; set; }
-            public string Data { get; set; }
-            public string? Address { get; set; } = null;
-            public string IPAddress { get; set; }
-            public string? Signature { get; set; } = null;
-            public string? SigMessage { get; set; } = null;
-        }
-
-    }
-
-    public enum MessageType
-    {
-        KeepAlive,
-        Chat,
-        ActionItem,
-        Rejected,
-        Typing
     }
 }

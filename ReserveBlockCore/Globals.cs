@@ -2,6 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -224,6 +225,15 @@ namespace ReserveBlockCore
         public static List<string> BadTxList = new List<string>();
         public static List<string> BadDSTList = new List<string>();
         public static List<string> BadNodeList = new List<string>();
+
+        #endregion
+
+        #region DST Variables
+
+        public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentDictionary<string, Message> ClientMessageDict = new ConcurrentDictionary<string, Message>();
+        public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
 
         #endregion
 
