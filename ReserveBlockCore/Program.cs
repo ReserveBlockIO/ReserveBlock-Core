@@ -20,7 +20,7 @@ using System.Net.Http;
 using System.Security.Principal;
 using System.Runtime.Intrinsics.Arm;
 using System.Reflection;
-
+using ReserveBlockCore.DST;
 
 namespace ReserveBlockCore
 {
@@ -395,7 +395,7 @@ namespace ReserveBlockCore
             //P2P Port URL
             string url2 = "http://*:" + Globals.Port;               
             //Consensus Port URL
-            string url3 = "http://*:" + Globals.Port + 1;
+            string url3 = "http://*:" + Globals.ADJPort;
 
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
@@ -530,6 +530,8 @@ namespace ReserveBlockCore
             }
 
             await Task.Delay(2000);
+
+            //_ = DSTServer.Run();
 
             var tasks = new Task[] {
                 commandLoopTask, //CLI console

@@ -70,6 +70,8 @@ namespace ReserveBlockCore
         public static int PasswordClearTime = 10;
         public static int NFTTimeout = 0;
         public static int Port = 3338;
+        public static int ADJPort = 3339;
+        public static int DSTPort = 3340;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
         public static int MinorVer = 3;

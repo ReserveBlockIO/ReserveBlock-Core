@@ -479,6 +479,27 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Publishes local Dec Shop
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDecShop")]
+        public async Task<string> GetDecShop()
+        {
+            string output = "";
+
+            var decshop = DecShop.GetMyDecShopInfo();
+
+            if (decshop != null)
+            {
+                output = JsonConvert.SerializeObject(new { Success = true, Message = "DecShop Found", DecShop = decshop });
+                return output;
+            }
+
+            output = JsonConvert.SerializeObject(new { Success = false, Message = "No DecShop Found." });
+            return output;
+        }
+
+        /// <summary>
         /// Saves a shop to allow for the sale of items in collections
         /// </summary>
         /// <param name="jsonData"></param>

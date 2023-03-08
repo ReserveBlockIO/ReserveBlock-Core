@@ -11,6 +11,7 @@ using ReserveBlockCore.Trillium;
 using ReserveBlockCore.P2P;
 using System.Runtime.InteropServices;
 using Spectre.Console;
+using ReserveBlockCore.DST;
 
 namespace ReserveBlockCore.Commands
 {
@@ -53,6 +54,12 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/clear":
                     Console.Clear();
+                    break;
+                case "/chat":
+                    Console.Clear();
+                    Globals.StopConsoleOutput = true;
+                    await DSTClient.Run();
+                    Globals.StopConsoleOutput = false;
                     break;
                 case "/update":
                     Globals.StopConsoleOutput = true;
