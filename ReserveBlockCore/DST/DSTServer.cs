@@ -24,6 +24,7 @@ namespace ReserveBlockCore.DST
                 var (endPoint, group) = ReadData();
                 Console.WriteLine($"received {group} from {endPoint}");
 
+                //need to check ownership. If they are owner of domain. set them as primary. If not set them as secondary.
                 if (!peersData.ContainsKey(group))
                 {
                     peersData[group] = new List<IPEndPoint>();

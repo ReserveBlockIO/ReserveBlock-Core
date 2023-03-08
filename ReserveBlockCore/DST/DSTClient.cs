@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using ReserveBlockCore.P2P;
+using Newtonsoft.Json;
 
 namespace ReserveBlockCore.DST
 {
@@ -42,28 +43,63 @@ namespace ReserveBlockCore.DST
             var listenerThread = new Thread(Listen);
             listenerThread.Start();
 
+            _ = KeepAlive(10, peerEndPoint);
+
             while (true)
             {
                 Console.Write("> ");
                 var message = Console.ReadLine();
                 if (!string.IsNullOrEmpty(message))
                 {
-                    var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                    var payload = new Message { Type = MessageType.Chat, Data = message, Address = "AaronRBX" };
+                    var payloadJson = GenerateMessage(payload);
+                    var messageDataBytes = Encoding.UTF8.GetBytes(payloadJson);
                     udpClient.Send(messageDataBytes, peerEndPoint);
                 }
             }
+        }
+
+        private static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint)
+        {
+            while (true)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 0, seconds));
+                var payload = new Message { Type = MessageType.KeepAlive, Data = "" };
+                var message = GenerateMessage(payload);
+                var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                udpClient.Send(messageDataBytes, peerEndPoint);
+
+                await delay;
+            }
+            
         }
         static void Listen()
         {
             while (true)
             {
                 var messageBytes = udpClient.Receive(ref RemoteEndPoint);
-                var message = Encoding.UTF8.GetString(messageBytes);
+                var payload = Encoding.UTF8.GetString(messageBytes);
 
-                if (string.IsNullOrEmpty(message)) continue;
+                if (string.IsNullOrEmpty(payload)) continue;
 
-                ConsoleHelper.ClearCurrentLine();
-                Console.Write($"peer: {message}\n> ");
+                var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                if(message != null)
+                {
+                    if (message.Type != MessageType.KeepAlive)
+                    {
+                        ConsoleHelper.ClearCurrentLine();
+                        if(!string.IsNullOrEmpty(message.Address))
+                        {
+
+                        }
+                        else
+                        {
+                            Console.Write($"peer: {message.Data}\n> ");
+                        }
+                        
+                    }
+                }
             }
         }
 
@@ -87,5 +123,50 @@ namespace ReserveBlockCore.DST
                 Console.SetCursorPosition(0, currentLineCursor);
             }
         }
+        internal static string GenerateMessage(Message message)
+        {
+            var output = "";
+            message.IPAddress = message.Type == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
+            output = JsonConvert.SerializeObject(message);
+
+            return output;
+        }
+
+        internal static string GenerateMessage(MessageType mType, string message, string address)
+        {
+            var output = "";
+
+            var nMessage = new Message();
+            nMessage.Type = mType;
+            nMessage.Data = message;
+            nMessage.Address = address;
+            nMessage.IPAddress = mType == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
+
+            output = JsonConvert.SerializeObject(nMessage);
+
+            return output;
+        }
+
+        
+
+        public class Message
+        { 
+            public MessageType Type { get; set; }
+            public string Data { get; set; }
+            public string? Address { get; set; } = null;
+            public string IPAddress { get; set; }
+            public string? Signature { get; set; } = null;
+            public string? SigMessage { get; set; } = null;
+        }
+
+    }
+
+    public enum MessageType
+    {
+        KeepAlive,
+        Chat,
+        ActionItem,
+        Rejected,
+        Typing
     }
 }
