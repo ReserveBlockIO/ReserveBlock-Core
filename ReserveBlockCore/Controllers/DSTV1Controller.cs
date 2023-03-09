@@ -509,49 +509,85 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
 
-            var myDS = DecShop.GetMyDecShopInfo();
-            if(jsonData != null)
+            try
             {
-                var decShop = JsonConvert.DeserializeObject<DecShop>(jsonData.ToString());
-
-                if (myDS == null)
+                var myDS = DecShop.GetMyDecShopInfo();
+                if (jsonData != null)
                 {
-                    if(decShop != null)
+                    var decShop = JsonConvert.DeserializeObject<DecShop>(jsonData.ToString());
+
+                    if (myDS == null)
                     {
-                        var wordCount = decShop.Description.ToWordCountCheck(200);
-                        var descLength = decShop.Description.ToLengthCheck(1200);
-
-                        if(!wordCount || !descLength)
+                        if (decShop != null)
                         {
-                            output = JsonConvert.SerializeObject(new { Success = false, Message = $"Description Word Count Allowed: {200}. Description length allowed: {1200}" });
+                            var wordCount = decShop.Description.ToWordCountCheck(200);
+                            var descLength = decShop.Description.ToLengthCheck(1200);
+
+                            if (!wordCount || !descLength)
+                            {
+                                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Description Word Count Allowed: {200}. Description length allowed: {1200}" });
+                                return output;
+                            }
+
+                            var urlCheck = DecShop.ValidStateTreiURL(decShop.DecShopURL);
+
+                            if (!urlCheck)
+                            {
+                                output = JsonConvert.SerializeObject(new { Success = false, Message = $"URL: {decShop.DecShopURL} has already been taken." });
+                                return output;
+                            }
+
+                            var buildResult = decShop.Build();
+
+                            if (!buildResult.Item1)
+                            {
+                                output = JsonConvert.SerializeObject(new { Success = buildResult.Item1, Message = buildResult.Item2 });
+                                return output;
+                            }
+
+                            var result = await DecShop.SaveMyDecShopLocal(decShop);
+                            output = JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
                             return output;
                         }
-
-                        var urlCheck = DecShop.ValidStateTreiURL(decShop.DecShopURL);
-
-                        if(!urlCheck)
+                        else
                         {
-                            output = JsonConvert.SerializeObject(new { Success = false, Message = $"URL: {decShop.DecShopURL} has already been taken." });
-                            return output;
-                        }
 
-                        var result = await DecShop.SaveMyDecShopLocal(decShop);
-                        output = JsonConvert.SerializeObject(new {Success = result.Item1, Message = result.Item2 });
-                        return output;
+                        }
                     }
                     else
                     {
-                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Was not able to deserialize json payload." });
+                        if (decShop != null)
+                        {
+                            myDS.Name = decShop.Name;
+                            myDS.Description = decShop.Description;
+                            myDS.DecShopURL = $"rbx://{decShop.DecShopURL}";
+                            myDS.IsOffline = decShop.IsOffline;
+                            myDS.AutoUpdateNetworkDNS = decShop.AutoUpdateNetworkDNS;
+
+                            if (decShop.HostingType == DecShopHostingType.SelfHosted)
+                            {
+                                myDS.IP = decShop.IP;
+                                myDS.Port = decShop.Port;
+                            }
+
+                            var result = await DecShop.SaveMyDecShopLocal(myDS);
+                            output = JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
+                            return output;
+                        }
+                        else
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "Was not able to deserialize json payload." });
+                        }
                     }
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "A local decshop already exist." });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "JSON payload was null." });
                 }
             }
-            else
+            catch(Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = "JSON payload was null." });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" });
             }
             
             return output;
@@ -574,7 +610,12 @@ namespace ReserveBlockCore.Controllers
                     var txResult = await DecShop.CreateDecShopTx(localShop);
                     if(txResult.Item1 != null)
                     {
-                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item1.Hash}", Hash = txResult.Item1.Hash });
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = $"{txResult.Item2}" });
                     }
                 }
                 else
@@ -626,12 +667,22 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
+            //var decshopdb = DecShop.DecShopLocalDB();
+            //var mydec = DecShop.GetMyDecShopInfo();
+            //if(decshopdb != null)
+            //{
+            //    if(mydec != null)
+            //    {
+            //        decshopdb.DeleteSafe(mydec.Id);
+            //    }
+            //}
+
             try
             {
                 var localShop = DecShop.GetMyDecShopInfo();
                 if (localShop != null)
                 {
-                    var txResult = await DecShop.DeleteDecShopTx(localShop.UniqueId, localShop.Address);
+                    var txResult = await DecShop.DeleteDecShopTx(localShop.UniqueId, localShop.OwnerAddress);
                     if (txResult.Item1 != null)
                     {
                         output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
@@ -657,7 +708,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
             var dcStateTreiDb = DecShop.DecShopTreiDb();
-            var leaf = dcStateTreiDb.Query().Where(x => x.Address == address).FirstOrDefault();
+            var leaf = dcStateTreiDb.Query().Where(x => x.OwnerAddress == address).FirstOrDefault();
             if(leaf != null)
             {
                 var decShopExist = DecShop.GetMyDecShopInfo();

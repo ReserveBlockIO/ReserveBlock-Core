@@ -572,15 +572,15 @@ namespace ReserveBlockCore.Services
                             if (txRequest.ToAddress != "DecShop_Base")
                                 return (txResult, "To Address must be DecShop_Base.");
 
-                            if (txRequest.Amount < 1M)
-                                return (txResult, "There must be at least 1 RBX to create a Auction House.");
-
                             var jobj = JObject.Parse(txData);
                             if (jobj != null)
                             {
                                 var function = (string)jobj["Function"];
                                 if (function == "DecShopDelete()")
                                 {
+                                    if (txRequest.Amount < 1M)
+                                        return (txResult, "There must be at least 1 RBX to create a Auction House.");
+
                                     string dsUID = jobj["UniqueId"].ToObject<string>();
                                     if(!string.IsNullOrEmpty(dsUID))
                                     {
@@ -588,7 +588,7 @@ namespace ReserveBlockCore.Services
                                         var treiRec = await DecShop.GetDecShopStateTreiLeaf(dsUID);
                                         if (treiRec != null)
                                         {
-                                            if (treiRec.Address != txRequest.FromAddress)
+                                            if (treiRec.OwnerAddress != txRequest.FromAddress)
                                                 return (txResult, "You must be the valid owner of this shop.");
                                         }
                                         else
@@ -620,6 +620,9 @@ namespace ReserveBlockCore.Services
 
                                     if (function == "DecShopCreate()")
                                     {
+                                        if (txRequest.Amount < 1M)
+                                            return (txResult, "There must be at least 1 RBX to create a Auction House.");
+
                                         var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
                                         if (!urlValid)
                                             return (txResult, "The URL in this TX has already been used. URLs must be unique.");
@@ -633,6 +636,19 @@ namespace ReserveBlockCore.Services
                                         var treiRec = await DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
                                         if (treiRec != null)
                                         {
+                                            //86400 seconds in a day
+                                            var currentTime = TimeUtil.GetTime();
+                                            var lastUpdateTime = currentTime - treiRec.UpdateTimestamp;
+                                            var updateCount = treiRec.UpdateCount;
+
+                                            if(lastUpdateTime < 86400)
+                                            {
+                                                if(updateCount > 2)
+                                                {
+                                                    if (txRequest.Amount < 1M)
+                                                        return (txResult, "There must be at least 1 RBX to Update an Auction House more than 2 times in 24 hours.");
+                                                }
+                                            }
                                             if (decshop.DecShopURL.ToLower() != treiRec.DecShopURL.ToLower())
                                             {
                                                 var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
@@ -640,7 +656,7 @@ namespace ReserveBlockCore.Services
                                                     return (txResult, "The URL in this TX has already been used. URLs must be unique.");
                                             }
 
-                                            if (treiRec.Address != txRequest.FromAddress)
+                                            if (treiRec.OwnerAddress != txRequest.FromAddress)
                                                 return (txResult, "You must be the valid owner of this shop.");
                                         }
                                         else

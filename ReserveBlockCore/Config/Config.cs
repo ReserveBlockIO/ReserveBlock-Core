@@ -38,6 +38,7 @@ namespace ReserveBlockCore.Config
 		public bool RefuseToCallSeed { get; set; }
 		public bool OpenAPI { get; set; }
 		public bool RunUnsafeCode { get; set; }
+		public int DSTClientPort { get; set; }
         public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();
@@ -89,6 +90,7 @@ namespace ReserveBlockCore.Config
                 config.RefuseToCallSeed = dict.ContainsKey("RefuseToCallSeed") ? Convert.ToBoolean(dict["RefuseToCallSeed"]) : false;
                 config.OpenAPI = dict.ContainsKey("OpenAPI") ? Convert.ToBoolean(dict["OpenAPI"]) : false;
                 config.RunUnsafeCode = dict.ContainsKey("RunUnsafeCode") ? Convert.ToBoolean(dict["RunUnsafeCode"]) : false;
+                config.DSTClientPort = dict.ContainsKey("DSTClientPort") ? Convert.ToInt32(dict["DSTClientPort"]) : 3341;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -164,6 +166,7 @@ namespace ReserveBlockCore.Config
 			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
 			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 			Globals.RunUnsafeCode = config.RunUnsafeCode;
+			Globals.DSTClientPort = config.DSTClientPort;
 
             if (config.TestNet == true)
             {
@@ -173,6 +176,7 @@ namespace ReserveBlockCore.Config
 				Globals.APIPort = 17292;
 				Globals.AddressPrefix = 0x89; //address prefix 'x'
 				Globals.BlockLock = 15;
+				Globals.DSTClientPort = 13341;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))

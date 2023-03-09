@@ -10,6 +10,8 @@ using System.Numerics;
 using System.Text.RegularExpressions;
 using System.Data.SqlTypes;
 using LiteDB;
+using System.Net;
+using Trillium.Syntax;
 
 namespace ReserveBlockCore.Models
 {
@@ -22,11 +24,17 @@ namespace ReserveBlockCore.Models
         public string Name { get; set; }
         public string DecShopURL { get; set; }
         public string Description { get; set; }
+        public string OwnerAddress { get; set; }
         public DecShopHostingType HostingType { get; set; }
-        public string? IP { get; set; } = null;
-        public long? BlockHeight { get; set; }
-        public long? TXHash { get; set; }
-        public string Address { get; set; }
+        public string IP { get; set; }
+        public int Port { get; set; } //only let them change this if they are wanting to custom host on different port.
+        public long OriginalBlockHeight { get; set; }
+        public string? OriginalTXHash { get; set; } = null;
+        public long LatestBlockHeight { get; set; }
+        public string? LatestTXHash { get; set; } = null;
+        public long UpdateTimestamp { get; set; }
+        public int UpdateCount { get; set; }
+        public bool AutoUpdateNetworkDNS { get; set; }
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
 
@@ -34,6 +42,33 @@ namespace ReserveBlockCore.Models
         {
             public string Function { get; set; }
             public DecShop DecShop { get; set; }
+        }
+
+        #endregion
+
+        #region Build
+        public (bool, string) Build()
+        {
+            var timestamp = TimeUtil.GetTime().ToString();
+            UniqueId = $"{RandomStringUtility.GetRandomStringOnlyLetters(timestamp.Length)}{timestamp}";
+
+            if (HostingType == DecShopHostingType.Network)
+            {
+                IP = P2PClient.MostLikelyIP();
+                if(IP == "NA")
+                {
+                    return (false, "Could not find IP automatically.");
+                }
+
+                Port = Globals.DSTClientPort;
+            }
+
+            if (DecShopURL.ToLower().Contains("rbx://"))
+                return (false, "Please do not include 'rbx://' in your URL. It is automatically added.");
+
+            DecShopURL = $"rbx://{DecShopURL}";
+
+            return (true, "");
         }
 
         #endregion
@@ -139,12 +174,20 @@ namespace ReserveBlockCore.Models
                     var wordCount = decshop.Description.ToWordCountCheck(200);
                     var descLength = decshop.Description.ToLengthCheck(1200);
                     var nameLength = decshop.Name.ToLengthCheck(64);
+                    var urlLength = decshop.DecShopURL.ToLengthCheck(64);
+                    var ipLength = decshop.IP.ToLengthCheck(32);
 
                     if (!wordCount || !descLength)
                         return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
 
                     if (!nameLength)
                         return (false, $"Failed to insert/update. Name length allowed: {64}");
+
+                    if (!urlLength)
+                        return (false, $"Failed to insert/update. URL length allowed: {64}");
+
+                    if (!ipLength)
+                        return (false, $"Failed to insert/update. IP length allowed: {64}");
 
                     decshop.NeedsPublishToNetwork = needsPublish;
 
@@ -157,12 +200,8 @@ namespace ReserveBlockCore.Models
 
                             if (!urlvalidCheck)
                                 return (false, "URL is already taken");
-
-                            var timestamp = TimeUtil.GetTime().ToString();
-                            decshop.UniqueId = $"{RandomStringUtility.GetRandomStringOnlyLetters(timestamp.Length)}{timestamp}";
                         }
                         
-
                         decshops.InsertSafe(decshop); //inserts new record
                         return (true, $"Decentralized Auction Shop has been created with name {decshop.Name}");
                     }
@@ -192,7 +231,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Save DecShop State Trei Leaf
-        public static async Task<(bool,string)> SaveDecShopStateTrei(DecShop decshop)
+        public static (bool,string) SaveDecShopStateTrei(DecShop decshop)
         {
             try
             {
@@ -235,7 +274,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Update DecShop State Trei Leaf
-        public static async Task<(bool,string)> UpdateDecShopStateTrei(DecShop decshop)
+        public static (bool,string) UpdateDecShopStateTrei(DecShop decshop)
         {
             try
             {
@@ -291,6 +330,14 @@ namespace ReserveBlockCore.Models
                 if(decshop != null)
                 {
                     myDecShop.IsOffline = !myDecShop.IsOffline;
+                    if(myDecShop.IsOffline)
+                    {
+                        //turn off STUN UDP Logic
+                    }
+                    else
+                    {
+                        //Turn on STUN UDP Logic
+                    }
                     decshop.UpdateSafe(myDecShop);
                     return myDecShop.IsOffline;
                 }
@@ -320,7 +367,7 @@ namespace ReserveBlockCore.Models
         public static async Task<(Transaction?, string)> CreateDecShopTx(DecShop decshop)
         {
             Transaction? decShopTx = null;
-            var address = decshop.Address;
+            var address = decshop.OwnerAddress;
             var name = decshop.Name;
 
             var urlValid = ValidStateTreiURL(decshop.DecShopURL);
@@ -370,17 +417,24 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (decShopTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(decShopTx, true);
+                    decShopTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(decShopTx);
                 if (result.Item1 == true)
                 {
-                    //TransactionData.AddToPool(decShopTx);
-                    //AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
-                    //P2PClient.SendTXMempool(decShopTx);//send out to mempool
-                    return (decShopTx, "TX Has Verified - Testing. Replace with TXID for mainnet");
+                    decShopTx.TransactionStatus = TransactionStatus.Pending;
+
+                    await WalletService.SendTransaction(decShopTx, account);
+
+                    return (decShopTx, "");
                 }
                 else
                 {
-                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "Adnr.CreateAdnrTx(string address, string name)");
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.CreateDecShopTx()");
                     return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
                 }
             }
@@ -398,7 +452,7 @@ namespace ReserveBlockCore.Models
         public static async Task<(Transaction?, string)> UpdateDecShopTx(DecShop decshop)
         {
             Transaction? decShopTx = null;
-            var address = decshop.Address;
+            var address = decshop.OwnerAddress;
             var name = decshop.Name;
 
             var urlValid = ValidStateTreiURL(decshop.DecShopURL);
@@ -447,17 +501,24 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (decShopTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(decShopTx, true);
+                    decShopTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(decShopTx);
                 if (result.Item1 == true)
                 {
-                    //TransactionData.AddToPool(decShopTx);
-                    //AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
-                    //P2PClient.SendTXMempool(decShopTx);//send out to mempool
-                    return (decShopTx, "TX Has Verified - Testing. Replace with TXID for mainnet");
+                    decShopTx.TransactionStatus = TransactionStatus.Pending;
+
+                    await WalletService.SendTransaction(decShopTx, account);
+
+                    return (decShopTx, "");
                 }
                 else
                 {
-                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.UpdateDecShopTx()-2");
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.UpdateDecShopTx()");
                     return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
                 }
             }
@@ -518,17 +579,24 @@ namespace ReserveBlockCore.Models
 
             try
             {
+                if (decShopTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(decShopTx, true);
+                    decShopTx.TransactionRating = rating;
+                }
+
                 var result = await TransactionValidatorService.VerifyTX(decShopTx);
                 if (result.Item1 == true)
                 {
-                    //TransactionData.AddToPool(decShopTx);
-                    //AccountData.UpdateLocalBalance(decShopTx.FromAddress, (decShopTx.Fee + decShopTx.Amount));
-                    //P2PClient.SendTXMempool(decShopTx);//send out to mempool
-                    return (decShopTx, "TX Has Verified - Testing. Replace with TXID for mainnet");
+                    decShopTx.TransactionStatus = TransactionStatus.Pending;
+
+                    await WalletService.SendTransaction(decShopTx, account);
+
+                    return (decShopTx, "");
                 }
                 else
                 {
-                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.DeleteDecShopTx()-2");
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "DecShop.DeleteDecShopTx()");
                     return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
                 }
             }
@@ -547,6 +615,8 @@ namespace ReserveBlockCore.Models
         {
             bool output = false;
 
+            url = url.ToLower().Replace("rbx://", "");
+
             string pattern = @"^[A-Za-z][a-zA-Z0-9-.]{0,62}\z(?<=[a-zA-Z0-9])*$";
             Regex reg = new Regex(pattern);
 
@@ -561,7 +631,6 @@ namespace ReserveBlockCore.Models
     public enum DecShopHostingType
     {
         Network,
-        PublicBeacon,
         SelfHosted
     }
 }

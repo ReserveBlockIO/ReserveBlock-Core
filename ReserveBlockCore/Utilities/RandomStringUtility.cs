@@ -2,7 +2,7 @@
 {
     public class RandomStringUtility
     {
-        public static string GetRandomString(int numOfChars, bool addTimeStamp = false)
+        public static string GetRandomString(int numOfChars, bool dontAddTimestamp = false)
         {
             var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             var stringChars = new char[numOfChars];
@@ -13,7 +13,7 @@
                 stringChars[i] = chars[random.Next(chars.Length)];
             }
 
-            var finalString = addTimeStamp == false ? (new string(stringChars)) + TimeUtil.GetTime().ToString() : new string(stringChars);
+            var finalString = dontAddTimestamp == false ? (new string(stringChars)) + TimeUtil.GetTime().ToString() : new string(stringChars);
 
             return finalString;
         }
@@ -29,7 +29,7 @@
                 stringChars[i] = chars[random.Next(chars.Length)];
             }
 
-            var finalString = addTimeStamp == false ? (new string(stringChars)) + TimeUtil.GetTime().ToString() : new string(stringChars);
+            var finalString = addTimeStamp == true ? (new string(stringChars)) + TimeUtil.GetTime().ToString() : new string(stringChars);
 
             return finalString;
         }

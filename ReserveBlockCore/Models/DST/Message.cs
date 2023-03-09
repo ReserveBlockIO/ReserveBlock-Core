@@ -83,6 +83,12 @@ namespace ReserveBlockCore.Models.DST
         }
     }
 
+    public enum MessageComType
+    {
+        Sender,
+        Receiver
+    }
+
     public enum MessageType
     {
         KeepAlive,

@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Services;
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Data
 {
@@ -319,19 +320,19 @@ namespace ReserveBlockCore.Data
                             if (!string.IsNullOrWhiteSpace(txData))
                             {
                                 var jobj = JObject.Parse(txData);
-                                var function = (string)jobj["Function"];
+                                var function = (string?)jobj["Function"];
                                 if (!string.IsNullOrWhiteSpace(function))
                                 {
                                     switch (function)
                                     {
                                         case "DecShopCreate()":
-                                            //AddNewDecShop(x);
+                                            AddNewDecShop(tx);
                                             break;
                                         case "DecShopUpdate()":
-                                            //UpdateDecShop(x);
+                                            UpdateDecShop(tx);
                                             break;
                                         case "DecShopDelete()":
-                                            //DeleteDecShop(x);
+                                            DeleteDecShop(tx);
                                             break;
                                         default:
                                             break;
@@ -396,6 +397,74 @@ namespace ReserveBlockCore.Data
             {
                 return account;
             }
+        }
+
+        private static void AddNewDecShop(Transaction tx)
+        {
+            try
+            {
+                if (tx.Data != null)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    if (jobj != null)
+                    {
+                        DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
+                        if (decshop != null)
+                        {
+                            var result = DecShop.SaveDecShopStateTrei(decshop);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void UpdateDecShop(Transaction tx)
+        {
+            try
+            {
+                if (tx.Data != null)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    if (jobj != null)
+                    {
+                        DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
+                        if (decshop != null)
+                        {
+                            var result = DecShop.UpdateDecShopStateTrei(decshop);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void DeleteDecShop(Transaction tx)
+        {
+            try
+            {
+                if (tx.Data != null)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    if(jobj != null)
+                    {
+                        var uId = (string?)jobj["UniqueId"];
+                        if(!string.IsNullOrEmpty(uId))
+                        {
+                            var db = DecShop.DecShopTreiDb();
+                            var decShop = DecShop.GetDecShopStateTreiLeaf(uId);
+                            if(db != null)
+                            {
+                                if(decShop != null)
+                                {
+                                    db.DeleteSafe(decShop.Id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private static void AddNewAdnr(Transaction tx)

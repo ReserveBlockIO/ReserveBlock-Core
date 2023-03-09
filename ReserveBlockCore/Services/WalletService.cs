@@ -273,5 +273,33 @@ namespace ReserveBlockCore.Services
             return txResult;
 
         }
+
+        //Needs refactor to use maximum peer spread.
+        public static async Task SendTransaction(Transaction txRequest, Account account)
+        {
+            if (account.IsValidating == true && (account.Balance - (txRequest.Fee + txRequest.Amount) < 1000))
+            {
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == txRequest.FromAddress.ToLower());
+                ValidatorService.StopValidating(validator);
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+            else if (account.IsValidating)
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+        }
     }
 }

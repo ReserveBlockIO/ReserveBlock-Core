@@ -10,7 +10,7 @@ namespace ReserveBlockCore.DST
 {
     public class DSTClient
     {
-        static int Port = Globals.IsTestNet ? Globals.DSTPort + 10000 : Globals.DSTPort;
+        static int Port = Globals.DSTClientPort;
         static UdpClient udpClient;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         public static async Task Run()
@@ -18,9 +18,10 @@ namespace ReserveBlockCore.DST
             var successful = Encoding.UTF8.GetBytes("successful");
             var remoteEndPoint = RemoteEndPoint;
 
-            var stunEndPoint = IPEndPoint.Parse("185.199.226.121:13340" ?? "");
+            //This will eventually pull from a network of IPs Anything will work so long as its port is open and running the DSTServer interface
+            var stunEndPoint = IPEndPoint.Parse($"185.199.226.121:{Globals.DSTPort}" ?? "");
 
-            var portNumber = Port + 1;
+            var portNumber = Port;
             udpClient = new UdpClient(portNumber);
 
             Console.Write("> add ");
@@ -47,16 +48,25 @@ namespace ReserveBlockCore.DST
 
             _ = KeepAlive(10, peerEndPoint);
 
-            while (true)
+            bool _exit = false;
+
+            while (!_exit)
             {
                 Console.Write("> ");
                 var message = Console.ReadLine();
-                if (!string.IsNullOrEmpty(message))
+                if(message == "/exit")
                 {
-                    var payload = new Message { Type = MessageType.Chat, Data = message, Address = "AaronRBX" };
-                    var payloadJson = GenerateMessage(payload);
-                    var messageDataBytes = Encoding.UTF8.GetBytes(payloadJson);
-                    udpClient.Send(messageDataBytes, peerEndPoint);
+                    _exit = true;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        var payload = new Message { Type = MessageType.Chat, Data = message, Address = "AaronRBX" };
+                        var payloadJson = GenerateMessage(payload);
+                        var messageDataBytes = Encoding.UTF8.GetBytes(payloadJson);
+                        udpClient.Send(messageDataBytes, peerEndPoint);
+                    }
                 }
             }
         }

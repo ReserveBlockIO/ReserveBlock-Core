@@ -278,7 +278,8 @@ namespace ReserveBlockCore.Services
                                     if (blkTransaction.TransactionType != TransactionType.TX &&
                                         blkTransaction.TransactionType != TransactionType.ADNR &&
                                         blkTransaction.TransactionType != TransactionType.VOTE &&
-                                        blkTransaction.TransactionType != TransactionType.VOTE_TOPIC)
+                                        blkTransaction.TransactionType != TransactionType.VOTE_TOPIC &&
+                                        blkTransaction.TransactionType != TransactionType.DSTR)
                                     {
                                         if (blkTransaction.Data != null)
                                         {
