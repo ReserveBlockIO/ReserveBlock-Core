@@ -360,6 +360,10 @@ namespace ReserveBlockCore.Services
                                     {
                                         if (decshop.UniqueId == myDecShop.UniqueId)
                                         {
+                                            myDecShop.OriginalBlockHeight = tx.Height;
+                                            myDecShop.OriginalTXHash = tx.Hash;
+                                            myDecShop.LatestBlockHeight = tx.Height;
+                                            myDecShop.LatestTXHash = tx.Hash;
                                             myDecShop.NeedsPublishToNetwork = false;
                                             await DecShop.SaveMyDecShopLocal(myDecShop, false);
                                         }
@@ -376,6 +380,9 @@ namespace ReserveBlockCore.Services
                                     {
                                         if (decshop.UniqueId == myDecShop.UniqueId)
                                         {
+                                            myDecShop.LatestBlockHeight = tx.Height;
+                                            myDecShop.LatestTXHash = tx.Hash;
+                                            myDecShop.UpdateTimestamp = TimeUtil.GetTime();
                                             myDecShop.NeedsPublishToNetwork = false;
                                             await DecShop.SaveMyDecShopLocal(myDecShop, false);
                                         }

@@ -543,7 +543,8 @@ namespace ReserveBlockCore.Data
             if (tx.TransactionType != TransactionType.TX && 
                 tx.TransactionType != TransactionType.ADNR && 
                 tx.TransactionType != TransactionType.VOTE_TOPIC && 
-                tx.TransactionType != TransactionType.VOTE)
+                tx.TransactionType != TransactionType.VOTE && 
+                tx.TransactionType != TransactionType.DSTR)
             {
                 if(tx.Data != null)
                 {

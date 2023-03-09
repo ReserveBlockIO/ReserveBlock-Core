@@ -136,13 +136,30 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
-        #region Get DecShop State Trei Leaf
+        #region Get DecShop State Trei Leaf by UID
         public static async Task<DecShop?> GetDecShopStateTreiLeaf(string dsUID)
         {
             var dstDB = DecShopTreiDb();
             if(dstDB != null)
             {
                 var rec = dstDB.Query().Where(x => x.UniqueId == dsUID).FirstOrDefault();
+                return rec;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Get DecShop State Trei Leaf By URL
+        public static async Task<DecShop?> GetDecShopStateTreiLeafByURL(string url)
+        {
+            var dstDB = DecShopTreiDb();
+            if (dstDB != null)
+            {
+                var rec = dstDB.Query().Where(x => x.DecShopURL.ToLower() == url.ToLower()).FirstOrDefault();
                 return rec;
             }
             else

@@ -479,6 +479,27 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Gets dec shop info from Network 
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDecShopByURL/{**url}")]
+        public async Task<string> GetDecShopByURL(string url)
+        {
+            string output = "";
+
+            var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
+
+            if (decshop != null)
+            {
+                output = JsonConvert.SerializeObject(new { Success = true, Message = "DecShop Found", DecShop = decshop });
+                return output;
+            }
+
+            output = JsonConvert.SerializeObject(new { Success = false, Message = "No DecShop Found." });
+            return output;
+        }
+
+        /// <summary>
         /// Publishes local Dec Shop
         /// </summary>
         /// <returns></returns>
