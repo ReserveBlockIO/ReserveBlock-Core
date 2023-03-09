@@ -385,6 +385,7 @@ namespace ReserveBlockCore.Services
                                             myDecShop.LatestTXHash = tx.Hash;
                                             myDecShop.UpdateTimestamp = TimeUtil.GetTime();
                                             myDecShop.NeedsPublishToNetwork = false;
+                                            myDecShop.IsPublished = true;
                                             await DecShop.SaveMyDecShopLocal(myDecShop, false);
                                         }
                                     }
