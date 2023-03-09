@@ -500,6 +500,31 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Sets the shop status for being off and online
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetSetShopStatus")]
+        public async Task<string> GetSetShopStatus()
+        {
+            string output = "";
+
+            var decshop = DecShop.GetMyDecShopInfo();
+
+            if (decshop != null)
+            {
+                var result = DecShop.SetDecShopStatus();
+                if(result != null)
+                {
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"Is Offline? {result}" });
+                    return output;
+                }
+            }
+
+            output = JsonConvert.SerializeObject(new { Success = false, Message = "No DecShop Found." });
+            return output;
+        }
+
+        /// <summary>
         /// Saves a shop to allow for the sale of items in collections
         /// </summary>
         /// <param name="jsonData"></param>

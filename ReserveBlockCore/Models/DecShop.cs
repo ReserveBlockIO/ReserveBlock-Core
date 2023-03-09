@@ -21,19 +21,19 @@ namespace ReserveBlockCore.Models
         [BsonId]
         public int Id { get; set; }
         public string UniqueId { get; set; }
-        public string Name { get; set; }
-        public string DecShopURL { get; set; }
-        public string Description { get; set; }
-        public string OwnerAddress { get; set; }
-        public DecShopHostingType HostingType { get; set; }
-        public string IP { get; set; }
-        public int Port { get; set; } //only let them change this if they are wanting to custom host on different port.
+        public string Name { get; set; } //User Submitted - 64 length
+        public string DecShopURL { get; set; } //User Submitted - 64 length - Do not add rbx://
+        public string Description { get; set; } //User Submitted - 200 words, or 1200 in length
+        public string OwnerAddress { get; set; } //User Submitted -starts with R
+        public DecShopHostingType HostingType { get; set; } //User Submitted
+        public string IP { get; set; } //User Submitted if HostingType  == SelfHosted - 32 length
+        public int Port { get; set; } //User Submitted if HostingType  == SelfHosted
         public long OriginalBlockHeight { get; set; }
         public string? OriginalTXHash { get; set; } = null;
         public long LatestBlockHeight { get; set; }
         public string? LatestTXHash { get; set; } = null;
         public long UpdateTimestamp { get; set; }
-        public bool AutoUpdateNetworkDNS { get; set; }
+        public bool AutoUpdateNetworkDNS { get; set; } //User Submitted - recommend defaulting to true
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
 

@@ -23,11 +23,11 @@ namespace ReserveBlockCore.Services
                 {
                     if(dstShopTx)
                     {
-
+                        rating = await DecShopRating(tx);
                     }
                     else
                     {
-                        rating = await DecShopRating(tx);
+                        
                     }
                     
                 }
