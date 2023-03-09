@@ -585,7 +585,7 @@ namespace ReserveBlockCore.Services
                                     if(!string.IsNullOrEmpty(dsUID))
                                     {
                                         //ensure they own the shop
-                                        var treiRec = await DecShop.GetDecShopStateTreiLeaf(dsUID);
+                                        var treiRec = DecShop.GetDecShopStateTreiLeaf(dsUID);
                                         if (treiRec != null)
                                         {
                                             if (treiRec.OwnerAddress != txRequest.FromAddress)
@@ -626,14 +626,14 @@ namespace ReserveBlockCore.Services
                                         var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
                                         if (!urlValid)
                                             return (txResult, "The URL in this TX has already been used. URLs must be unique.");
-                                        var recExist = await DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
+                                        var recExist = DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
                                         if (recExist != null)
                                             return (txResult, "This record has already been inserted to trei. Rejecting.");
                                     }
                                     if (function == "DecShopUpdate()")
                                     {
                                         //ensure they own the shop
-                                        var treiRec = await DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
+                                        var treiRec = DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
                                         if (treiRec != null)
                                         {
                                             //86400 seconds in a day

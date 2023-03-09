@@ -730,16 +730,6 @@ namespace ReserveBlockCore.Controllers
         {
             string output = "";
 
-            //var decshopdb = DecShop.DecShopLocalDB();
-            //var mydec = DecShop.GetMyDecShopInfo();
-            //if(decshopdb != null)
-            //{
-            //    if(mydec != null)
-            //    {
-            //        decshopdb.DeleteSafe(mydec.Id);
-            //    }
-            //}
-
             try
             {
                 var localShop = DecShop.GetMyDecShopInfo();

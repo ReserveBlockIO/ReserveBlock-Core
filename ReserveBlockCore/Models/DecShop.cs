@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Models
             }
             catch (Exception ex)
             {                
-                ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetDecShops()");
+                ErrorLogUtility.LogError(ex.ToString(), "DecShop.DecShopTreiDb()");
                 return null;
             }
 
@@ -138,7 +138,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Get DecShop State Trei Leaf by UID
-        public static async Task<DecShop?> GetDecShopStateTreiLeaf(string dsUID)
+        public static DecShop? GetDecShopStateTreiLeaf(string dsUID)
         {
             var dstDB = DecShopTreiDb();
             if(dstDB != null)
@@ -306,24 +306,33 @@ namespace ReserveBlockCore.Models
                     var existingDecShopInfo = decshops.Query().Where(x => x.UniqueId == decshop.UniqueId).FirstOrDefault();
                     if (existingDecShopInfo != null)
                     {
-                        var urlvalidCheck = ValidStateTreiURL(existingDecShopInfo.DecShopURL);
-                        if (urlvalidCheck)
+                        if(existingDecShopInfo.DecShopURL != decshop.DecShopURL)
                         {
-                            var result = CheckURL(decshop.DecShopURL);
-                            if (!result)
-                                return (false, "URL does not meet requirements.");
-
-                            var wordCount = decshop.Description.ToWordCountCheck(200);
-                            var descLength = decshop.Description.ToLengthCheck(1200);
-                            var nameLength = decshop.Name.ToLengthCheck(64);
-
-                            if (!wordCount || !descLength)
-                                return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
-
-                            if (!nameLength)
-                                return (false, $"Failed to insert/update. Name length allowed: {64}");
+                            var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
+                            if (!urlvalidCheck)
+                                return (false, $"URL already exist");
                         }
-                        return (false, $"URL already exist");
+                        
+                        var result = CheckURL(decshop.DecShopURL);
+                        if (!result)
+                            return (false, "URL does not meet requirements.");
+
+                        var wordCount = decshop.Description.ToWordCountCheck(200);
+                        var descLength = decshop.Description.ToLengthCheck(1200);
+                        var nameLength = decshop.Name.ToLengthCheck(64);
+
+                        if (!wordCount || !descLength)
+                            return (false, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+                        if (!nameLength)
+                            return (false, $"Failed to insert/update. Name length allowed: {64}");
+
+                        decshop.OriginalBlockHeight = existingDecShopInfo.OriginalBlockHeight;
+                        decshop.OriginalTXHash = existingDecShopInfo.OriginalTXHash;
+
+                        decshops.UpdateSafe(decshop); //inserts new record
+
+                        return (true, $"Success");
                     }
                     return (false, $"Trei record does not exist.");
                 }
