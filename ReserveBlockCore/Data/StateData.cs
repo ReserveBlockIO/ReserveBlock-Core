@@ -411,6 +411,10 @@ namespace ReserveBlockCore.Data
                         DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
                         if (decshop != null)
                         {
+                            decshop.OriginalBlockHeight = tx.Height;
+                            decshop.OriginalTXHash = tx.Hash;
+                            decshop.LatestBlockHeight = tx.Height;
+                            decshop.LatestTXHash = tx.Hash;
                             var result = DecShop.SaveDecShopStateTrei(decshop);
                         }
                     }
@@ -431,6 +435,9 @@ namespace ReserveBlockCore.Data
                         DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
                         if (decshop != null)
                         {
+                            decshop.LatestBlockHeight = tx.Height;
+                            decshop.LatestTXHash = tx.Hash;
+                            decshop.UpdateTimestamp = TimeUtil.GetTime();
                             var result = DecShop.UpdateDecShopStateTrei(decshop);
                         }
                     }

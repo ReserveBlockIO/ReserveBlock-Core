@@ -639,15 +639,11 @@ namespace ReserveBlockCore.Services
                                             //86400 seconds in a day
                                             var currentTime = TimeUtil.GetTime();
                                             var lastUpdateTime = currentTime - treiRec.UpdateTimestamp;
-                                            var updateCount = treiRec.UpdateCount;
 
-                                            if(lastUpdateTime < 86400)
+                                            if(lastUpdateTime < 43200)
                                             {
-                                                if(updateCount > 2)
-                                                {
-                                                    if (txRequest.Amount < 1M)
-                                                        return (txResult, "There must be at least 1 RBX to Update an Auction House more than 2 times in 24 hours.");
-                                                }
+                                                if (txRequest.Amount < 1M)
+                                                    return (txResult, "There must be at least 1 RBX to Update an Auction House more than 1 time in 12 hours.");
                                             }
                                             if (decshop.DecShopURL.ToLower() != treiRec.DecShopURL.ToLower())
                                             {

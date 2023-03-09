@@ -33,7 +33,6 @@ namespace ReserveBlockCore.Models
         public long LatestBlockHeight { get; set; }
         public string? LatestTXHash { get; set; } = null;
         public long UpdateTimestamp { get; set; }
-        public int UpdateCount { get; set; }
         public bool AutoUpdateNetworkDNS { get; set; }
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
