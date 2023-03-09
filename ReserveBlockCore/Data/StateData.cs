@@ -415,6 +415,8 @@ namespace ReserveBlockCore.Data
                             decshop.OriginalTXHash = tx.Hash;
                             decshop.LatestBlockHeight = tx.Height;
                             decshop.LatestTXHash = tx.Hash;
+                            decshop.IsPublished = true;
+                            decshop.NeedsPublishToNetwork = false;
                             var result = DecShop.SaveDecShopStateTrei(decshop);
                         }
                     }
@@ -438,6 +440,8 @@ namespace ReserveBlockCore.Data
                             decshop.LatestBlockHeight = tx.Height;
                             decshop.LatestTXHash = tx.Hash;
                             decshop.UpdateTimestamp = TimeUtil.GetTime();
+                            decshop.NeedsPublishToNetwork = false;
+                            decshop.IsPublished = true;
                             var result = DecShop.UpdateDecShopStateTrei(decshop);
                         }
                     }

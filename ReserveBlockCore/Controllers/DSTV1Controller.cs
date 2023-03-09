@@ -479,7 +479,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets dec shop info from Network 
+        /// Gets dec shop info from Network. Example : 'rbx://someurlgoeshere'
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetDecShopByURL/{**url}")]
@@ -653,6 +653,11 @@ namespace ReserveBlockCore.Controllers
                 var localShop = DecShop.GetMyDecShopInfo();
                 if(localShop != null)
                 {
+                    if(localShop.IsPublished)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = $"Shop has already been created. Please use /GetUpdateDecShop to update your shop." });
+                        return output;
+                    }
                     var txResult = await DecShop.CreateDecShopTx(localShop);
                     if(txResult.Item1 != null)
                     {

@@ -365,6 +365,7 @@ namespace ReserveBlockCore.Services
                                             myDecShop.LatestBlockHeight = tx.Height;
                                             myDecShop.LatestTXHash = tx.Hash;
                                             myDecShop.NeedsPublishToNetwork = false;
+                                            myDecShop.IsPublished = true;
                                             await DecShop.SaveMyDecShopLocal(myDecShop, false);
                                         }
                                     }

@@ -36,6 +36,7 @@ namespace ReserveBlockCore.Models
         public bool AutoUpdateNetworkDNS { get; set; } //User Submitted - recommend defaulting to true
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
+        public bool IsPublished { get; set; }
 
         public class DecShopTxData
         {
@@ -470,10 +471,6 @@ namespace ReserveBlockCore.Models
             Transaction? decShopTx = null;
             var address = decshop.OwnerAddress;
             var name = decshop.Name;
-
-            var urlValid = ValidStateTreiURL(decshop.DecShopURL);
-            if (!urlValid)
-                return (null, "The URL in this TX has already been used. URLs must be unique.");
 
             var account = AccountData.GetSingleAccount(address);
             if (account == null)
