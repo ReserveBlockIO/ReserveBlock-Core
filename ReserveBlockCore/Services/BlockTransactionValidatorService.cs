@@ -341,6 +341,69 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
+
+                if(tx.TransactionType == TransactionType.DSTR)
+                {
+                    if(!string.IsNullOrEmpty(tx.Data))
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        var function = (string?)jobj["Function"];
+                        if (!string.IsNullOrWhiteSpace(function))
+                        {
+                            if (function == "DecShopCreate()")
+                            {
+                                DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
+                                if (decshop != null)
+                                {
+                                    var myDecShop = DecShop.GetMyDecShopInfo();
+                                    if(myDecShop != null)
+                                    {
+                                        if (decshop.UniqueId == myDecShop.UniqueId)
+                                        {
+                                            myDecShop.NeedsPublishToNetwork = false;
+                                            await DecShop.SaveMyDecShopLocal(myDecShop, false);
+                                        }
+                                    }
+                                }
+                            }
+                            if (function == "DecShopUpdate()")
+                            {
+                                DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
+                                if (decshop != null)
+                                {
+                                    var myDecShop = DecShop.GetMyDecShopInfo();
+                                    if (myDecShop != null)
+                                    {
+                                        if (decshop.UniqueId == myDecShop.UniqueId)
+                                        {
+                                            myDecShop.NeedsPublishToNetwork = false;
+                                            await DecShop.SaveMyDecShopLocal(myDecShop, false);
+                                        }
+                                    }
+                                }
+                            }
+                            if (function == "DecShopDelete()")
+                            {
+                                var myDecShop = DecShop.GetMyDecShopInfo();
+                                if (myDecShop != null)
+                                {
+                                    var uId = (string?)jobj["UniqueId"];
+                                    if (!string.IsNullOrEmpty(uId))
+                                    {
+                                        if(myDecShop.UniqueId == uId)
+                                        {
+                                            var db = DecShop.DecShopLocalDB();
+                                            if(db != null)
+                                            {
+                                                db.Delete(myDecShop.Id);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

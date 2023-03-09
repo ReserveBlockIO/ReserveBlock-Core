@@ -642,11 +642,19 @@ namespace ReserveBlockCore.Controllers
                 var localShop = DecShop.GetMyDecShopInfo();
                 if (localShop != null)
                 {
-                    var txResult = await DecShop.UpdateDecShopTx(localShop);
-                    if (txResult.Item1 != null)
+                    if(localShop.NeedsPublishToNetwork)
                     {
-                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                        var txResult = await DecShop.UpdateDecShopTx(localShop);
+                        if (txResult.Item1 != null)
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                        }
                     }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "No update is pending." });
+                    }
+                    
                 }
                 else
                 {
