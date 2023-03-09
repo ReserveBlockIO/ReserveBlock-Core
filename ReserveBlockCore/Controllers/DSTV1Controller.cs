@@ -606,9 +606,13 @@ namespace ReserveBlockCore.Controllers
                         {
                             myDS.Name = decShop.Name;
                             myDS.Description = decShop.Description;
-                            myDS.DecShopURL = $"rbx://{decShop.DecShopURL}";
                             myDS.IsOffline = decShop.IsOffline;
                             myDS.AutoUpdateNetworkDNS = decShop.AutoUpdateNetworkDNS;
+
+                            if(myDS.DecShopURL != decShop.DecShopURL)
+                            {
+                                myDS.DecShopURL = $"rbx://{decShop.DecShopURL}";
+                            }
 
                             if (decShop.HostingType == DecShopHostingType.SelfHosted)
                             {
@@ -698,7 +702,7 @@ namespace ReserveBlockCore.Controllers
                         var txResult = await DecShop.UpdateDecShopTx(localShop);
                         if (txResult.Item1 != null)
                         {
-                            output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                            output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item1.Hash}" });
                         }
                     }
                     else
@@ -744,7 +748,7 @@ namespace ReserveBlockCore.Controllers
                     var txResult = await DecShop.DeleteDecShopTx(localShop.UniqueId, localShop.OwnerAddress);
                     if (txResult.Item1 != null)
                     {
-                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item2}" });
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {txResult.Item1.Hash}" });
                     }
                 }
                 else
