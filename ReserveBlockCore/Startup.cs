@@ -62,6 +62,10 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherStartPayload>>();
                 c.DocumentFilter<SwaggerDocumentFilter<NodeInfo>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Peers>>();
+                c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount>>();
+                c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.ReserveAccountInfo>>();
+                c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.ReserveAccountCreatePayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.ReserveAccountRestorePayload>>();
                 c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Collection>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskAnswerResult>>();

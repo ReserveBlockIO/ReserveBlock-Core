@@ -169,6 +169,7 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
 
         public static SecureString EncryptPassword = new SecureString();
+        public static SecureString DecryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;
 
         public static IHttpClientFactory HttpClientFactory;        

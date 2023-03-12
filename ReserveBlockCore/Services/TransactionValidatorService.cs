@@ -86,6 +86,7 @@ namespace ReserveBlockCore.Services
                 Nonce = txRequest.Nonce,
                 TransactionType = txRequest.TransactionType,
                 Data = txRequest.Data,
+                UnlockTime = txRequest.UnlockTime,
             };
 
             newTxn.Build();
@@ -110,6 +111,7 @@ namespace ReserveBlockCore.Services
                     Nonce = txRequest.Nonce,
                     TransactionType = txRequest.TransactionType,
                     Data = txRequest.Data,
+                    UnlockTime = txRequest.UnlockTime,
                 };
 
                 newTxnMod.Build();
@@ -126,6 +128,7 @@ namespace ReserveBlockCore.Services
                         Nonce = txRequest.Nonce,
                         TransactionType = txRequest.TransactionType,
                         Data = txRequest.Data,
+                        UnlockTime = txRequest.UnlockTime,
                     };
 
                     newTxnModZero.Build();

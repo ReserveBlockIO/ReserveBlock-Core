@@ -781,5 +781,20 @@ namespace ReserveBlockCore.Controllers
             output = JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find the DecShop leaf for address: {address}." });
             return output;
         }
+
+        /// <summary>
+        /// Connects to a shop : 'rbx://someurlgoeshere'
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ConnectToDecShop/{**url}")]
+        public async Task ConnectToDecShop(string url)
+        {
+            var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
+
+            if (decshop != null)
+            {
+               //start STUN Logic Here!     
+            }
+        }
     }
 }

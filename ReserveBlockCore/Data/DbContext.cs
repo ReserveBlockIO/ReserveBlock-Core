@@ -37,6 +37,7 @@ namespace ReserveBlockCore.Data
         public static LiteDatabase DB_TopicTrei { set; get; }
         public static LiteDatabase DB_Vote { set; get; }
         public static LiteDatabase DB_Settings { set; get; }
+        public static LiteDatabase DB_Reserve { set; get; }
 
 
         //Database names
@@ -60,6 +61,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_DB_TOPIC_TREI = @"rsrvtopictrei.db";
         public const string RSRV_DB_VOTE = @"rsrvvote.db";
         public const string RSRV_DB_SETTINGS = @"rsrvsettings.db";
+        public const string RSRV_DB_RESERVE = @"rsrvreserve.db";
 
         //Database tables
         public const string RSRV_BLOCKCHAIN = "rsrv_blockchain";
@@ -71,6 +73,8 @@ namespace ReserveBlockCore.Data
         public const string RSRV_HD_WALLET = "rsrv_hd_wallet";
         public const string RSRV_ACCOUNTS = "rsrv_account";
         public const string RSRV_ACCOUNT_KEYSTORE = "rsrv_account_keystore";
+        public const string RSRV_RESERVE_ACCOUNTS = "rsrv_reserve_account";
+        public const string RSRV_RESERVE_TRANSACTIONS = "rsrv_reserve_transactions";
         public const string RSRV_WALLET_SETTINGS = "rsrv_wallet_settings";
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
         public const string RSRV_PEERS = "rsrv_peers";
@@ -137,6 +141,7 @@ namespace ReserveBlockCore.Data
             DB_TopicTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_TOPIC_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Vote = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_VOTE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Reserve = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_RESERVE, Connection = ConnectionType.Direct, ReadOnly = false });
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
@@ -175,6 +180,7 @@ namespace ReserveBlockCore.Data
             DB_Banlist.BeginTrans();
             DB_WorldStateTrei.BeginTrans();
             DB_AccountStateTrei.BeginTrans();
+            DB_Reserve.BeginTrans();
             DB_SmartContractStateTrei.BeginTrans();
             DB_DST.BeginTrans();
             DB_DecShopStateTrei.BeginTrans();
@@ -214,6 +220,7 @@ namespace ReserveBlockCore.Data
             DB_TopicTrei.Commit();
             DB_Vote.Commit();
             DB_Settings.Commit();
+            DB_Reserve.Commit();
         }
 
         public static void Rollback(string location = "")
@@ -250,6 +257,7 @@ namespace ReserveBlockCore.Data
             DB_TopicTrei.Rollback();
             DB_Vote.Rollback();
             //DB_Settings.Rollback();
+            DB_Reserve.Rollback();
         }
 
         public static void DeleteCorruptDb()
@@ -288,6 +296,7 @@ namespace ReserveBlockCore.Data
             DB_TopicTrei.Commit();
             DB_Vote.Commit();
             DB_Settings.Commit();
+            DB_Reserve.Commit();
 
             //dispose connection to DB
             CloseDB();
@@ -331,6 +340,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_TOPIC_TREI);
             File.Delete(path + RSRV_DB_VOTE);
             File.Delete(path + RSRV_DB_SETTINGS);
+            File.Delete(path + RSRV_DB_RESERVE);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -361,6 +371,7 @@ namespace ReserveBlockCore.Data
             DB_TopicTrei = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_TOPIC_TREI, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Vote = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_VOTE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Reserve = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_RESERVE, Connection = ConnectionType.Direct, ReadOnly = false });
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
@@ -391,6 +402,7 @@ namespace ReserveBlockCore.Data
             DB_TopicTrei.Dispose();
             DB_Vote.Dispose();
             DB_Settings.Dispose();
+            DB_Reserve.Dispose();
         }
 
         public static async Task CheckPoint()
@@ -488,6 +500,11 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB_Settings.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Reserve.Checkpoint();
             }
             catch { }
         }

@@ -1264,10 +1264,8 @@ namespace ReserveBlockCore.Services
                 }
                 Console.WriteLine("|======================================|");
                 Console.WriteLine("| 1. Genesis Block (Check)             |");
-                Console.WriteLine("| 2. Create Account                    |");
-                Console.WriteLine("| 2hd. Create HD Wallet                |");
-                Console.WriteLine("| 3. Restore Account                   |");
-                Console.WriteLine("| 3hd. Restore HD Wallet               |");
+                Console.WriteLine("| 2/2r/2hd. Create Account/Reserve/HD  |");
+                Console.WriteLine("| 3/3r/3hd. Restore Account/Reserve/HD |");
                 Console.WriteLine("| 4. Send Coins                        |");
                 Console.WriteLine("| 5. Get Latest Block & Metrics        |");
                 Console.WriteLine("| 6. Transaction History               |");

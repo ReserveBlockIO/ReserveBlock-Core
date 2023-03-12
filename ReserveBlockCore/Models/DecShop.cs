@@ -37,6 +37,7 @@ namespace ReserveBlockCore.Models
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsIPDifferent { get { return P2PClient.MostLikelyIP() == IP ? false : true; } }
 
         public class DecShopTxData
         {

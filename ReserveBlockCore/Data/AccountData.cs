@@ -201,9 +201,10 @@ namespace ReserveBlockCore.Data
         {
 			Console.Clear();
 			var accounts = GetAccounts();
+			var reserveAccounts = ReserveAccount.GetReserveAccounts();
 
-			var accountList = accounts.FindAll().ToList();
-
+            var accountList = accounts.FindAll().ToList();
+			
 			if (accountList.Count() > 0)
             {
 				Console.Clear();
@@ -223,6 +224,13 @@ namespace ReserveBlockCore.Data
 				accountList.ForEach(x => {
 					table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
 				});
+
+				if(reserveAccounts?.Count() > 0)
+				{
+                    reserveAccounts.ForEach(x => {
+                        table.AddRow($"[purple]{x.Address}[/]", $"[green]{x.AvailableBalance}[/]");
+                    });
+                }
 
 				table.Border(TableBorder.Rounded);
 

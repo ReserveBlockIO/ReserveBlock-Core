@@ -209,6 +209,7 @@ namespace ReserveBlockCore.Services
                 Fee = txRequest.Fee,
                 Nonce = txRequest.Nonce,
                 Data = txRequest.Data,
+                UnlockTime = txRequest.UnlockTime,
             };
 
             newTxn.Build();
