@@ -213,7 +213,10 @@ namespace ReserveBlockCore.Models
                 var localAccount = accountList.Where(x => x.Address == address).FirstOrDefault();
                 if (localAccount != null)
                 {
-                    if(isReserveSend)
+                    if (amount < 0M)
+                        amount = amount * -1.0M;
+
+                    if (isReserveSend)
                     {
                         localAccount.LockedBalance += amount;
                     }
