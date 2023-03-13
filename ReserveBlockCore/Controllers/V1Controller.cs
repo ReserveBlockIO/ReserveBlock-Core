@@ -893,6 +893,7 @@ namespace ReserveBlockCore.Controllers
 
             var accountsDb = AccountData.GetAccounts();
             var accounts = accountsDb.Query().Where(x => true).ToEnumerable();
+            var rAccount = ReserveAccount.GetReserveAccounts();
 
             if (accounts.Count() > 0)
             {
@@ -906,6 +907,20 @@ namespace ReserveBlockCore.Controllers
                     }
                 }
                 output = JsonConvert.SerializeObject(new { Success = true, Message = $"Balance resync completed" });
+            }
+
+            if(rAccount.Count() > 0)
+            {
+                foreach (var account in rAccount)
+                {
+                    var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if (stateTrei != null)
+                    {
+                        account.AvailableBalance = stateTrei.Balance;
+                        account.LockedBalance = stateTrei.LockedBalance;
+                        ReserveAccount.SaveReserveAccount(account);
+                    }
+                }
             }
             else
             {

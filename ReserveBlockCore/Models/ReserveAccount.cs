@@ -16,7 +16,6 @@ namespace ReserveBlockCore.Models
 {
     public class ReserveAccount
     {
-
         #region Variables
 
         [BsonId]
@@ -31,7 +30,7 @@ namespace ReserveBlockCore.Models
         public string? RecoveryPrivateKey { get; set; } = null;
         public string? RecoveryEncryptedDecryptKey { get; set; } = null;
         public string EncryptedDecryptKey { get; set; }
-        public decimal AvailableBalance { get; set; } //funds reserved or locked
+        public decimal AvailableBalance { get; set; } //funds reserved or locked must always be above 0.5 RBX
         public decimal LockedBalance { get; set; } //funds currently pending use
         public bool IsNetworkProtected { get; set; } // this is set once 4 RBX has been sent.
         public string GetKey { get { return GetPrivateKey(PrivateKey, Address, EncryptedDecryptKey); } }
@@ -71,6 +70,8 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
+        #region Get Private Key
+
         public static string? GetPrivateKey(string address, string passkey)
         {
             var account = GetReserveAccountSingle(address);
@@ -97,6 +98,8 @@ namespace ReserveBlockCore.Models
                 return null;
             }
         }
+
+        #endregion
 
         #region Get Reserve Accounts Db
         public static LiteDB.ILiteCollection<ReserveAccount>? GetReserveAccountsDb()
