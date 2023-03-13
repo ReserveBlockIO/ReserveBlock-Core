@@ -73,10 +73,10 @@ namespace ReserveBlockCore.Data
                     {
                         if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd")
                         {
-                            if(!tx.FromAddress.StartsWith("xRBX"))
-                            {
-                                var from = GetSpecificAccountStateTrei(tx.FromAddress);
+                            var from = GetSpecificAccountStateTrei(tx.FromAddress);
 
+                            if (!tx.FromAddress.StartsWith("xRBX"))
+                            {
                                 from.Nonce += 1;
                                 from.StateRoot = block.StateRoot;
                                 from.Balance -= (tx.Amount + tx.Fee);
@@ -85,7 +85,22 @@ namespace ReserveBlockCore.Data
                             }
                             else
                             {
-                                //this is from a ReserveAccount and must be treated differently. 
+                                ReserveTransactions rTx = new ReserveTransactions {
+                                    ConfirmTimestamp = (long)tx.UnlockTime,
+                                    FromAddress = tx.FromAddress,
+                                    ToAddress = tx.ToAddress,
+                                    Transaction = tx,
+                                    Hash = tx.Hash
+                                };
+
+                                ReserveTransactions.SaveReserveTx(rTx);
+
+                                from.Nonce += 1;
+                                from.StateRoot = block.StateRoot;
+                                from.Balance -= (tx.Amount + tx.Fee);
+                                from.LockedBalance += tx.Amount;
+
+                                accStTrei.UpdateSafe(from);
                             }
                             
                         }
@@ -106,22 +121,36 @@ namespace ReserveBlockCore.Data
                                 {
                                     Key = tx.ToAddress,
                                     Nonce = 0,
-                                    Balance = tx.Amount,
+                                    Balance = 0.0M,
                                     StateRoot = block.StateRoot
                                 };
+
+                                if (!tx.FromAddress.StartsWith("xRBX"))
+                                {
+                                    acctStateTreiTo.Balance += tx.Amount;
+                                }
+                                else
+                                {
+                                    acctStateTreiTo.LockedBalance += tx.Amount;
+                                }
 
                                 accStTrei.InsertSafe(acctStateTreiTo);
                             }
                             else
                             {
-                                to.Balance += tx.Amount;
                                 to.StateRoot = block.StateRoot;
-
+                                if (!tx.FromAddress.StartsWith("xRBX"))
+                                {
+                                    to.Balance += tx.Amount;
+                                }
+                                else
+                                {
+                                    to.LockedBalance += tx.Amount;
+                                }
+                                
                                 accStTrei.UpdateSafe(to);
                             }
-
                         }
-
                     }
 
                     if (tx.TransactionType != TransactionType.TX)
@@ -272,6 +301,33 @@ namespace ReserveBlockCore.Data
                                 }
                             }
                         }
+
+                        if(tx.TransactionType == TransactionType.RESERVE)
+                        {
+                            var txData = tx.Data;
+                            if (!string.IsNullOrWhiteSpace(txData))
+                            {
+                                var jobj = JObject.Parse(txData);
+                                var function = (string?)jobj["Function"];
+                                if (!string.IsNullOrWhiteSpace(function))
+                                {
+                                    switch (function)
+                                    {
+                                        case "Register()":
+                                            RegisterReserveAccount(tx);
+                                            break;
+                                        case "CallBack()":
+                                            CallBackReserveAccountTx(tx);
+                                            break;
+                                        case "Recover()":
+                                            RecoverReserveAccountTx(tx);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     txTreiUpdateSuccessCount += 1;
@@ -329,7 +385,40 @@ namespace ReserveBlockCore.Data
                 return account;
             }
         }
+        private static void RegisterReserveAccount(Transaction tx)
+        {
+            try
+            {
+                if (tx.Data != null)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    if (jobj != null)
+                    {
+                        var recoveryAddress = (string?)jobj["RecoveryAddress"];
+                        if (recoveryAddress != null)
+                        {
+                            var stateDB = GetAccountStateTrei();
+                            var reserveAccountLeaf = GetSpecificAccountStateTrei(tx.FromAddress);
+                            if (reserveAccountLeaf != null)
+                            {
+                                reserveAccountLeaf.RecoveryAccount = recoveryAddress;
+                                stateDB.UpdateSafe(reserveAccountLeaf);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
 
+        private static void CallBackReserveAccountTx(Transaction tx)
+        {
+            
+        }
+        private static void RecoverReserveAccountTx(Transaction tx)
+        {
+
+        }
         private static void AddNewDecShop(Transaction tx)
         {
             try
@@ -355,7 +444,6 @@ namespace ReserveBlockCore.Data
             }
             catch { }
         }
-
         private static void UpdateDecShop(Transaction tx)
         {
             try

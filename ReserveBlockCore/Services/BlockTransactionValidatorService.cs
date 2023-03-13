@@ -16,17 +16,21 @@ namespace ReserveBlockCore.Services
         {
             if (tx.TransactionType == TransactionType.TX)
             {
-                AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount);
+                var isReserveSend = tx.FromAddress.StartsWith("xRBX") ? true : false;
+
+                AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, isReserveSend);
 
                 var fromAccount = AccountData.GetSingleAccount(tx.FromAddress);
+                
+                var status = tx.FromAddress.StartsWith("xRBX") ? TransactionStatus.Reserved : TransactionStatus.Success;
                 if(fromAccount == null)
                 {
-                    TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight);
+                    TransactionData.UpdateTxStatusAndHeight(tx, status, blockHeight, false);
                 }
                 else
                 {
                     //same wallet TX detected. This will ensure the To TX is also added.
-                    TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight, true);
+                    TransactionData.UpdateTxStatusAndHeight(tx, status, blockHeight, true);
                 }
                 
             }
@@ -419,14 +423,17 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region Process Incoming (to) ReserveTransactions
-        public static async Task ProcessIncomingReserveTransactions(Transaction tx, Account account, long blockHeight)
+        public static async Task ProcessIncomingReserveTransactions(Transaction tx, ReserveAccount account, long blockHeight)
         {
             if (tx.TransactionType == TransactionType.TX)
             {
-                AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount);
+                var isReserveSend = tx.FromAddress.StartsWith("xRBX") ? true : false;
+
+                ReserveAccount.UpdateOnlyBalanceAdd(tx.ToAddress, tx.Amount, isReserveSend);
 
                 var fromAccount = AccountData.GetSingleAccount(tx.FromAddress);
-                if (fromAccount == null)
+                var fromReserveAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                if (fromAccount == null && fromReserveAccount == null)
                 {
                     TransactionData.UpdateTxStatusAndHeight(tx, TransactionStatus.Success, blockHeight);
                 }
@@ -633,13 +640,14 @@ namespace ReserveBlockCore.Services
 
         #region Process Outgoing (from) Reserve Transactions
 
-        public static async Task ProcessOutgoingReserveTransaction(Transaction tx, Account account, long blockHeight)
+        public static async Task ProcessOutgoingReserveTransaction(Transaction tx, ReserveAccount account, long blockHeight)
         {
             var fromTx = tx;
             fromTx.Amount = tx.Amount * -1M;
             fromTx.Fee = tx.Fee * -1M;
 
-            TransactionData.UpdateTxStatusAndHeight(fromTx, TransactionStatus.Success, blockHeight);
+            var status = tx.TransactionType == TransactionType.RESERVE ? TransactionStatus.Success : TransactionStatus.Reserved;
+            TransactionData.UpdateTxStatusAndHeight(fromTx, status, blockHeight);
 
             if (tx.TransactionType != TransactionType.TX)
             {
@@ -718,109 +726,30 @@ namespace ReserveBlockCore.Services
                             }
                         }
                     }
-
                 }
 
-                if (tx.TransactionType == TransactionType.ADNR)
+                if (tx.TransactionType == TransactionType.RESERVE)
                 {
                     var scData = JObject.Parse(tx.Data);
 
                     var function = (string?)scData["Function"];
-                    var name = (string?)scData["Name"];
-                    if (!string.IsNullOrWhiteSpace(function))
+                    if(function == "Register()")
                     {
-                        if (function == "AdnrCreate()")
-                        {
-                            if (!string.IsNullOrWhiteSpace(name))
-                            {
-                                if (!name.Contains(".rbx"))
-                                    name = name + ".rbx";
-                                await Account.AddAdnrToAccount(tx.FromAddress, name);
-                            }
-                        }
-                        if (function == "AdnrDelete()")
-                        {
-                            await Account.DeleteAdnrFromAccount(tx.FromAddress);
-                        }
-                        if (function == "AdnrTransfer()")
-                        {
-                            await Account.DeleteAdnrFromAccount(tx.FromAddress);
-                        }
+                        account.IsNetworkProtected = true;
+                        ReserveAccount.SaveReserveAccount(account);
                     }
-                }
-
-                if (tx.TransactionType == TransactionType.DSTR)
-                {
-                    if (!string.IsNullOrEmpty(tx.Data))
+                    if(function == "CallBack()")
                     {
-                        var jobj = JObject.Parse(tx.Data);
-                        var function = (string?)jobj["Function"];
-                        if (!string.IsNullOrWhiteSpace(function))
-                        {
-                            if (function == "DecShopCreate()")
-                            {
-                                DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
-                                if (decshop != null)
-                                {
-                                    var myDecShop = DecShop.GetMyDecShopInfo();
-                                    if (myDecShop != null)
-                                    {
-                                        if (decshop.UniqueId == myDecShop.UniqueId)
-                                        {
-                                            myDecShop.OriginalBlockHeight = tx.Height;
-                                            myDecShop.OriginalTXHash = tx.Hash;
-                                            myDecShop.LatestBlockHeight = tx.Height;
-                                            myDecShop.LatestTXHash = tx.Hash;
-                                            myDecShop.NeedsPublishToNetwork = false;
-                                            myDecShop.IsPublished = true;
-                                            await DecShop.SaveMyDecShopLocal(myDecShop, false);
-                                        }
-                                    }
-                                }
-                            }
-                            if (function == "DecShopUpdate()")
-                            {
-                                DecShop? decshop = jobj["DecShop"]?.ToObject<DecShop>();
-                                if (decshop != null)
-                                {
-                                    var myDecShop = DecShop.GetMyDecShopInfo();
-                                    if (myDecShop != null)
-                                    {
-                                        if (decshop.UniqueId == myDecShop.UniqueId)
-                                        {
-                                            myDecShop.LatestBlockHeight = tx.Height;
-                                            myDecShop.LatestTXHash = tx.Hash;
-                                            myDecShop.UpdateTimestamp = TimeUtil.GetTime();
-                                            myDecShop.NeedsPublishToNetwork = false;
-                                            myDecShop.IsPublished = true;
-                                            await DecShop.SaveMyDecShopLocal(myDecShop, false);
-                                        }
-                                    }
-                                }
-                            }
-                            if (function == "DecShopDelete()")
-                            {
-                                var myDecShop = DecShop.GetMyDecShopInfo();
-                                if (myDecShop != null)
-                                {
-                                    var uId = (string?)jobj["UniqueId"];
-                                    if (!string.IsNullOrEmpty(uId))
-                                    {
-                                        if (myDecShop.UniqueId == uId)
-                                        {
-                                            var db = DecShop.DecShopLocalDB();
-                                            if (db != null)
-                                            {
-                                                db.Delete(myDecShop.Id);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        //merge from repo - 3fd78xa
+                    }
+                    if(function == "Recover()")
+                    {
+                        //merge from repo - 3fd78xa
                     }
                 }
             }
+
+
         }
 
         #endregion

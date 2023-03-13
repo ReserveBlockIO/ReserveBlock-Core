@@ -386,7 +386,7 @@ namespace ReserveBlockCore.Services
                                         if (reserveAccount != null)
                                         {
                                             //change account types
-                                            //await BlockTransactionValidatorService.ProcessOutgoingReserveTransaction(localFromTransaction, fromAccount, block.Height);
+                                            await BlockTransactionValidatorService.ProcessOutgoingReserveTransaction(localFromTransaction, reserveAccount, block.Height);
                                         }
                                     }
                                     catch { }
@@ -407,7 +407,7 @@ namespace ReserveBlockCore.Services
                                         if(reserveAccount != null)
                                         {
                                             //change accounts types
-                                            //await BlockTransactionValidatorService.ProcessIncomingReserveTransactions(localToTransaction, account, block.Height);
+                                            await BlockTransactionValidatorService.ProcessIncomingReserveTransactions(localToTransaction, reserveAccount, block.Height);
                                         }
                                     }
                                     catch { }

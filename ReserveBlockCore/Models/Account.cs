@@ -24,6 +24,7 @@ namespace ReserveBlockCore.Models
         public string Address { get; set; }
         public string? ADNR { get; set; }
         public decimal Balance { get; set; }
+        public decimal LockedBalance { get; set; }
         public bool IsValidating { get; set; }
 
         /// <summary>

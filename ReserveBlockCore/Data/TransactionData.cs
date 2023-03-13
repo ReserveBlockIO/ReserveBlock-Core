@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false)
+        public static void UpdateTxStatusAndHeightXXXX(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false, bool isReserveSend = false)
         {
             var txs = GetAll();
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
@@ -143,6 +143,92 @@ namespace ReserveBlockCore.Data
                 }
             }
             
+        }
+
+        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false)
+        {
+            var txs = GetAll();
+            var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
+            if (!sameWalletTX)
+            {
+                if (txCheck == null)
+                {
+                    //posible sub needed
+                    transaction.Id = new LiteDB.ObjectId();
+                    transaction.TransactionStatus = txStatus;
+                    transaction.Height = blockHeight;
+                    txs.InsertSafe(transaction);
+                    var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                    var rAccount = ReserveAccount.GetReserveAccountSingle(transaction.FromAddress);
+                    if (account != null)
+                    {
+                        var accountDb = AccountData.GetAccounts();
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                        if (stateTrei != null)
+                        {
+                            account.Balance = stateTrei.Balance;
+                            accountDb.UpdateSafe(account);
+                        }
+                    }
+                    if(rAccount != null)
+                    {
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                        if (stateTrei != null)
+                        {
+                            rAccount.AvailableBalance = stateTrei.Balance;
+                            rAccount.LockedBalance = stateTrei.LockedBalance;
+                            ReserveAccount.SaveReserveAccount(rAccount);
+                        }
+                    }
+                }
+                else
+                {
+                    txCheck.TransactionStatus = txStatus;
+                    txCheck.Height = blockHeight;
+                    txs.UpdateSafe(txCheck);
+                }
+            }
+            else
+            {
+                if (txCheck != null)
+                {
+                    if (txCheck.Amount < 0)
+                    {
+                        transaction.Id = new LiteDB.ObjectId();
+                        transaction.TransactionStatus = txStatus;
+                        transaction.Height = blockHeight;
+                        transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
+                        transaction.Fee = transaction.Fee < 0 ? transaction.Fee * -1.0M : transaction.Fee;
+                        txs.InsertSafe(transaction);
+
+                        var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                        var rAccount = ReserveAccount.GetReserveAccountSingle(transaction.FromAddress);
+
+                        if (account != null)
+                        {
+                            var accountDb = AccountData.GetAccounts();
+                            var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                            if (stateTrei != null)
+                            {
+                                account.Balance = stateTrei.Balance;
+                                accountDb.UpdateSafe(account);
+                            }
+                        }
+
+                        if (rAccount != null)
+                        {
+                            var stateTrei = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                            if (stateTrei != null)
+                            {
+                                rAccount.AvailableBalance = stateTrei.Balance;
+                                rAccount.LockedBalance = stateTrei.LockedBalance;
+                                ReserveAccount.SaveReserveAccount(rAccount);
+                            }
+                        }
+                    }
+                }
+            }
+
         }
 
         public static async Task UpdateWalletTXTask()

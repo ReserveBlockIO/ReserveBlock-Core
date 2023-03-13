@@ -686,6 +686,9 @@ namespace ReserveBlockCore.Services
                             if (txRequest.ToAddress != "Reserve_Base")
                                 return (txResult, "To Address must be Reserve_Base.");
 
+                            if (!txRequest.FromAddress.StartsWith("xRBX"))
+                                return (txResult, "Not a valid Reserve Account address. Must start with 'xRBX'");
+
                             var jobj = JObject.Parse(txData);
                             if (jobj != null)
                             {
@@ -694,10 +697,12 @@ namespace ReserveBlockCore.Services
                                 {
                                     if (function == "Register()")
                                     {
+                                        runReserveCheck = false;
+
                                         if (txRequest.Amount < 4M)
                                             return (txResult, "There must be at least 4 RBX to register a Reserve Account on network.");
 
-                                        string reserveAddress = jobj["Address"].ToObject<string>();
+                                        string reserveAddress = txRequest.FromAddress;
                                         string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
                                         if(!string.IsNullOrEmpty(reserveAddress) && !string.IsNullOrEmpty(recoveryAddress))
                                         {
@@ -748,6 +753,14 @@ namespace ReserveBlockCore.Services
                 var balanceTooLow = from.Balance - (txRequest.Fee + txRequest.Amount) < 0.5M ? true : false;
                 if (balanceTooLow)
                     return (txResult, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
+
+                if(txRequest.UnlockTime == null)
+                    return (txResult, "There must be an unlock time for this transaction");
+
+                var validUnlockTime = TimeUtil.GetReserveTime(-3);
+
+                if(txRequest.UnlockTime.Value < validUnlockTime)
+                    return (txResult, "Unlock time does not meet 24 hour requirement.");
             }
 
             //Signature Check - Final Check to return true.

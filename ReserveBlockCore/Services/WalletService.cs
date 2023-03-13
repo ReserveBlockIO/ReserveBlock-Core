@@ -305,10 +305,34 @@ namespace ReserveBlockCore.Services
 
         public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account)
         {
-            //TransactionData.AddToPool(txRequest);
-            //TransactionData.AddTxToWallet(txRequest, true);
-            //ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
-            //await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                if (txRequest.TransactionType == TransactionType.RESERVE)
+                {
+                    ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                else
+                {
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                if(txRequest.TransactionType == TransactionType.RESERVE)
+                {
+                    ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                else
+                {
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
         }
     }
 }

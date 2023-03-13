@@ -293,13 +293,22 @@ namespace ReserveBlockCore.Data
 			accountList.UpdateSafe(localAccount);
 		}
 
-		public static void UpdateLocalBalanceAdd(string address, decimal amount)
+		public static void UpdateLocalBalanceAdd(string address, decimal amount, bool isReserveSend = false)
 		{
 			var accountList = GetAccounts();
 			var localAccount = accountList.FindOne(x => x.Address == address);
 			if (amount < 0M)
 				amount = amount * -1.0M;
-			localAccount.Balance += amount;
+
+			if(isReserveSend)
+			{
+                localAccount.LockedBalance += amount;
+            }
+			else
+			{
+                localAccount.Balance += amount;
+            }
+			
 
 			accountList.UpdateSafe(localAccount);
 		}

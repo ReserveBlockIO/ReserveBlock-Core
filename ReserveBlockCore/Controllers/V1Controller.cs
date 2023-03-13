@@ -599,6 +599,14 @@ namespace ReserveBlockCore.Controllers
             else
             {
                 var accountList = accounts.Query().Where(x => true).ToEnumerable();
+                //var reserveAccounts = ReserveAccount.GetReserveAccounts();
+                //if(reserveAccounts?.Count() > 0)
+                //{
+                //    foreach(var rA in reserveAccounts)
+                //    {
+
+                //    }
+                //}
                 output = JsonConvert.SerializeObject(accountList);
             }
 

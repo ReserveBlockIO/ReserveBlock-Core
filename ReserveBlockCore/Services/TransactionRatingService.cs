@@ -31,6 +31,10 @@ namespace ReserveBlockCore.Services
                     }
                     
                 }
+                if (tx.TransactionType == TransactionType.RESERVE)
+                {
+                    rating = await ReserveRating(tx);
+                }
                 if (tx.TransactionType == TransactionType.NFT_MINT ||
                     tx.TransactionType == TransactionType.NFT_SALE ||
                     tx.TransactionType == TransactionType.NFT_BURN ||
@@ -107,6 +111,34 @@ namespace ReserveBlockCore.Services
                 if (mempool.Count() > 0)
                 {
                     var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.DSTR);
+                    if (txs.Count() > 0)
+                    {
+                        rating = TransactionRating.F; // Fail. you can only have 1 dec shop mempool item per address 
+                    }
+                    else
+                    {
+                        rating = TransactionRating.A;
+                    }
+                }
+                else
+                {
+                    rating = TransactionRating.A;
+                }
+            }
+
+            return rating;
+        }
+
+        private static async Task<TransactionRating> ReserveRating(Transaction tx)
+        {
+            TransactionRating rating = TransactionRating.A;
+            var mempool = TransactionData.GetMempool();
+            var pool = TransactionData.GetPool();
+            if (mempool != null)
+            {
+                if (mempool.Count() > 0)
+                {
+                    var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.RESERVE);
                     if (txs.Count() > 0)
                     {
                         rating = TransactionRating.F; // Fail. you can only have 1 dec shop mempool item per address 
