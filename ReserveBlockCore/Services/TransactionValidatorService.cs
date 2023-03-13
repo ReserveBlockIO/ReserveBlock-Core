@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Services
 {
@@ -14,6 +15,7 @@ namespace ReserveBlockCore.Services
         public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false)
         {
             bool txResult = false;
+            bool runReserveCheck = true;
 
             var accStTrei = StateData.GetAccountStateTrei();
             var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
@@ -37,10 +39,14 @@ namespace ReserveBlockCore.Services
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
             
-            if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
+            if (txRequest.ToAddress != "Adnr_Base" && 
+                txRequest.ToAddress != "DecShop_Base" && 
+                txRequest.ToAddress != "Topic_Base" && 
+                txRequest.ToAddress != "Vote_Base" && 
+                txRequest.ToAddress != "Reserve_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
-                    return (txResult, "Address failed to validate");
+                    return (txResult, "To Address failed to validate");
             }
 
             //Timestamp Check
@@ -578,7 +584,7 @@ namespace ReserveBlockCore.Services
                             var jobj = JObject.Parse(txData);
                             if (jobj != null)
                             {
-                                var function = (string)jobj["Function"];
+                                var function = (string?)jobj["Function"];
                                 if (function == "DecShopDelete()")
                                 {
                                     if (txRequest.Amount < 1M)
@@ -670,10 +676,82 @@ namespace ReserveBlockCore.Services
                     }
                 }
 
+                if(txRequest.TransactionType == TransactionType.RESERVE)
+                {
+                    var txData = txRequest.Data;
+                    if (txData != null)
+                    {
+                        try
+                        {
+                            if (txRequest.ToAddress != "Reserve_Base")
+                                return (txResult, "To Address must be Reserve_Base.");
+
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string?)jobj["Function"];
+                                if(function != null)
+                                {
+                                    if (function == "Register()")
+                                    {
+                                        if (txRequest.Amount < 4M)
+                                            return (txResult, "There must be at least 4 RBX to register a Reserve Account on network.");
+
+                                        string reserveAddress = jobj["Address"].ToObject<string>();
+                                        string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
+                                        if(!string.IsNullOrEmpty(reserveAddress) && !string.IsNullOrEmpty(recoveryAddress))
+                                        {
+                                            var stateRec = StateData.GetSpecificAccountStateTrei(reserveAddress);
+                                            if(stateRec != null)
+                                            {
+                                                if (stateRec.RecoveryAccount != null)
+                                                    return (txResult, $"Address already has a recovery account: {stateRec.RecoveryAccount}");
+
+                                                if (stateRec.Balance - (txRequest.Amount + txRequest.Fee) < 0.5M)
+                                                    return (txResult, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "Could not find a state trei leaf record.");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "Could not find a proper reserve address and recovery address");
+                                        }
+                                    }
+
+                                    if(function == "CallBack()")
+                                    {
+                                        runReserveCheck = false;
+                                    }
+
+                                    if (function == "Recover()")
+                                    {
+                                        runReserveCheck = false;
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
+                }
+            }
+
+
+            if (txRequest.FromAddress.StartsWith("xRBX") && runReserveCheck)
+            {
+                if (txRequest.TransactionType != TransactionType.TX || txRequest.TransactionType != TransactionType.RESERVE || txRequest.TransactionType != TransactionType.NFT_TX)
+                    return (txResult, "Invalid Transaction Type was selected.");
+
+                var balanceTooLow = from.Balance - (txRequest.Fee + txRequest.Amount) < 0.5M ? true : false;
+                if (balanceTooLow)
+                    return (txResult, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
             }
 
             //Signature Check - Final Check to return true.
-            if(!string.IsNullOrEmpty(txRequest.Signature))
+            if (!string.IsNullOrEmpty(txRequest.Signature))
             {
                 var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
                 if (isTxValid)
@@ -690,7 +768,6 @@ namespace ReserveBlockCore.Services
                 return (txResult, "Signature cannot be null.");
             }
             
-
             //Return verification result.
             return (txResult, "Transaction has been verified.");
 

@@ -303,7 +303,8 @@ namespace ReserveBlockCore.Data
                                 tx.TransactionType != TransactionType.ADNR &&
                                 tx.TransactionType != TransactionType.VOTE_TOPIC &&
                                 tx.TransactionType != TransactionType.VOTE && 
-                                tx.TransactionType != TransactionType.DSTR)
+                                tx.TransactionType != TransactionType.DSTR &&
+                                tx.TransactionType != TransactionType.RESERVE)
                             {
                                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                                 if (scDataArray != null)
@@ -544,7 +545,8 @@ namespace ReserveBlockCore.Data
                 tx.TransactionType != TransactionType.ADNR && 
                 tx.TransactionType != TransactionType.VOTE_TOPIC && 
                 tx.TransactionType != TransactionType.VOTE && 
-                tx.TransactionType != TransactionType.DSTR)
+                tx.TransactionType != TransactionType.DSTR &&
+                tx.TransactionType != TransactionType.RESERVE)
             {
                 if(tx.Data != null)
                 {
@@ -747,25 +749,46 @@ namespace ReserveBlockCore.Data
             return transactions;
         }
 
-        //public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
-        //{
-        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    var query = transactions.Query()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Where(x => x.FromAddress == address || x.ToAddress == address)
-        //        .Limit(limit).ToList();
-        //    return query;
-        //}
+        public static IEnumerable<Transaction> GetAllLocalTransactionsByAddress(string address)
+        {
+            var transactions = GetAll().Query().Where(x => x.FromAddress == address || x.ToAddress == address).ToEnumerable();
 
-        //public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
-        //{
-        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    var query = transactions.Query()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Offset((pageNumber - 1) * resultPerPage)
-        //        .Limit(resultPerPage).ToList();
-        //    return query;
-        //}
+            return transactions;
+        }
+        public static IEnumerable<Transaction> GetAccountTransactionsLimit(string address, int limit = 50)
+        {
+            var transactions = GetAll();
+            var query = transactions.Query()
+                .OrderByDescending(x => x.Timestamp)
+                .Where(x => x.FromAddress == address || x.ToAddress == address)
+                .Limit(limit).ToEnumerable();
+            return query;
+        }
+
+        public static IEnumerable<Transaction> GetTransactionsPaginated(int pageNumber, int resultPerPage, string? address = null)
+        {
+            var transactions = GetAll();
+            if(address == null)
+            {
+                var query = transactions.Query()
+                    .OrderByDescending(x => x.Timestamp)
+                    .Offset((pageNumber - 1) * resultPerPage)
+                    .Limit(resultPerPage).ToEnumerable();
+
+                return query;
+            }
+            else
+            {
+                var query = transactions.Query()
+                    .Where(x => x.FromAddress == address || x.ToAddress == address)
+                    .OrderByDescending(x => x.Timestamp)
+                    .Offset((pageNumber - 1) * resultPerPage)
+                    .Limit(resultPerPage).ToEnumerable();
+
+                return query;
+            }
+            
+        }
 
     }
 

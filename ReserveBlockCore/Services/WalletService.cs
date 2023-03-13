@@ -302,5 +302,13 @@ namespace ReserveBlockCore.Services
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
         }
+
+        public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account)
+        {
+            //TransactionData.AddToPool(txRequest);
+            //TransactionData.AddTxToWallet(txRequest, true);
+            //ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+            //await P2PClient.SendTXMempool(txRequest);//send out to mempool
+        }
     }
 }

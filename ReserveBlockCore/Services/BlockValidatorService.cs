@@ -8,6 +8,7 @@ using ReserveBlockCore.Nodes;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Security.Principal;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -279,7 +280,8 @@ namespace ReserveBlockCore.Services
                                         blkTransaction.TransactionType != TransactionType.ADNR &&
                                         blkTransaction.TransactionType != TransactionType.VOTE &&
                                         blkTransaction.TransactionType != TransactionType.VOTE_TOPIC &&
-                                        blkTransaction.TransactionType != TransactionType.DSTR)
+                                        blkTransaction.TransactionType != TransactionType.DSTR &&
+                                        blkTransaction.TransactionType != TransactionType.RESERVE)
                                     {
                                         if (blkTransaction.Data != null)
                                         {
@@ -380,6 +382,12 @@ namespace ReserveBlockCore.Services
                                         {
                                             await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
                                         }
+                                        var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localFromTransaction.FromAddress).FirstOrDefault();
+                                        if (reserveAccount != null)
+                                        {
+                                            //change account types
+                                            //await BlockTransactionValidatorService.ProcessOutgoingReserveTransaction(localFromTransaction, fromAccount, block.Height);
+                                        }
                                     }
                                     catch { }
                                     
@@ -394,6 +402,12 @@ namespace ReserveBlockCore.Services
                                         if (account != null)
                                         {
                                             await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
+                                        }
+                                        var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localToTransaction.ToAddress).FirstOrDefault();
+                                        if(reserveAccount != null)
+                                        {
+                                            //change accounts types
+                                            //await BlockTransactionValidatorService.ProcessIncomingReserveTransactions(localToTransaction, account, block.Height);
                                         }
                                     }
                                     catch { }

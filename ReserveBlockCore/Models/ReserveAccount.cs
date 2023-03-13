@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models.SmartContracts;
@@ -32,7 +33,7 @@ namespace ReserveBlockCore.Models
         public string EncryptedDecryptKey { get; set; }
         public decimal AvailableBalance { get; set; } //funds reserved or locked
         public decimal LockedBalance { get; set; } //funds currently pending use
-        public bool IsNetworkProtected { get; set; } // this is set once 1 RBX has been sent.
+        public bool IsNetworkProtected { get; set; } // this is set once 4 RBX has been sent.
         public string GetKey { get { return GetPrivateKey(PrivateKey, Address, EncryptedDecryptKey); } }
         public decimal TotalBalance { get { return AvailableBalance + LockedBalance; } }
 
@@ -59,7 +60,43 @@ namespace ReserveBlockCore.Models
             public bool RescanForTx { get; set; }
         }
 
+        public class SendTransactionPayload
+        {
+            public string FromAddress { get; set; }
+            public string ToAddress { get; set; }
+            public decimal Amount { get; set; }
+            public string DecryptPassword { get; set; }
+            public int UnlockDelayHours { get; set; }
+        }
+
         #endregion
+
+        public static string? GetPrivateKey(string address, string passkey)
+        {
+            var account = GetReserveAccountSingle(address);
+            if (account == null)
+            {
+                return null;
+            }
+            try
+            {
+                var password = passkey;
+                var newPasswordArray = Encoding.ASCII.GetBytes(password);
+                var passwordKey = new byte[32 - newPasswordArray.Length].Concat(newPasswordArray).ToArray();
+
+                var keys = Convert.FromBase64String(account.EncryptedDecryptKey);
+                var encryptedPrivKey = Convert.FromBase64String(account.PrivateKey);
+
+                var keyDecrypted = WalletEncryptionService.DecryptKey(keys, passwordKey);
+                var privKeyDecrypted = WalletEncryptionService.DecryptKey(encryptedPrivKey, Convert.FromBase64String(keyDecrypted));
+
+                return privKeyDecrypted;
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         #region Get Reserve Accounts Db
         public static LiteDB.ILiteCollection<ReserveAccount>? GetReserveAccountsDb()
@@ -97,7 +134,6 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Get Reserve Accounts List
-
         public static List<ReserveAccount>? GetReserveAccounts()
         {
             var db = GetReserveAccountsDb();
@@ -108,6 +144,22 @@ namespace ReserveBlockCore.Models
                 {
                     return accountList;
                 }
+            }
+
+            return null;
+        }
+
+        #endregion
+
+        #region Get Reserve Account
+
+        public static ReserveAccount? GetReserveAccountSingle(string address)
+        {
+            var db = GetReserveAccountsDb();
+            if (db != null)
+            {
+                var account = db.Query().Where(x => x.Address == address).FirstOrDefault();
+                return account;
             }
 
             return null;
@@ -162,7 +214,6 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Create New Reserve Account
-
         public static ReserveAccountInfo CreateNewReserveAccount(string encryptionPassword, bool storeRecoveryKey = false)
         {
             ReserveAccount rAccount = new ReserveAccount();
@@ -228,16 +279,6 @@ namespace ReserveBlockCore.Models
                         rAccount.RecoveryPrivateKey = Convert.ToBase64String(encrypted2);
                         rAccount.RecoveryEncryptedDecryptKey = Convert.ToBase64String(keyEncrypted2);
                     }
-
-                    //var password = "Hey";
-                    //var newPasswordArrays = Encoding.ASCII.GetBytes(password);
-                    //var passwordKeys = new byte[32 - newPasswordArray.Length].Concat(newPasswordArray).ToArray();
-
-                    //var keys = Convert.FromBase64String(rAccount.EncryptedDecryptKey);
-                    //var encryptedPrivKey = Convert.FromBase64String(rAccount.PrivateKey);
-
-                    //var keyDecrypted = WalletEncryptionService.DecryptKey(keys, passwordKeys);
-                    //var privKeyDecrypted = WalletEncryptionService.DecryptKey(encryptedPrivKey, Convert.FromBase64String(keyDecrypted));
 
                     var sigScript = SignatureService.CreateSignature("test", privateKey, rAccount.PublicKey);
                     var verify = SignatureService.VerifySignature(rAccount.Address, "test", sigScript);
@@ -730,6 +771,92 @@ namespace ReserveBlockCore.Models
 
             return plaintext;
 
+        }
+
+        #endregion
+
+        #region Create ReserveTx TX
+        public static async Task<(Transaction?, string)> CreateReserveTx(SendTransactionPayload sendTxData)
+        {
+            var account = GetReserveAccountSingle(sendTxData.FromAddress);
+            if (account == null)
+            {
+                ErrorLogUtility.LogError($"Address is not found for : {sendTxData.FromAddress}", "ReserveAccount.CreateReserveTx()");
+                return (null, $"Address is not found for : {sendTxData.FromAddress}");
+            }
+
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+            var key = GetPrivateKey(account.Address, sendTxData.DecryptPassword);
+
+            if(key == null)
+            {
+                return (null, $"Could not decrypt private key for send.");
+            }
+
+            BigInteger b1 = BigInteger.Parse(key, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            var tx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = sendTxData.ToAddress,
+                Amount = sendTxData.Amount * 1.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.DSTR,
+                UnlockTime = TimeUtil.GetReserveTime(sendTxData.UnlockDelayHours),
+                Data = null
+            };
+
+            tx.Fee = FeeCalcService.CalculateTXFee(tx);
+
+            tx.Build();
+
+            var txHash = tx.Hash;
+
+            var balanceTooLow = account.AvailableBalance - (tx.Fee + tx.Amount) < 0.5M ? true : false;
+            if (balanceTooLow)
+                return (null, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
+
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                return (null, $"Signing TX failed for Tranasaction on address {account.Address}.");
+            }
+
+            tx.Signature = sig;
+
+            try
+            {
+                if (tx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(tx, true);
+                    tx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(tx);
+                if (result.Item1 == true)
+                {
+                    tx.TransactionStatus = TransactionStatus.Pending;
+
+                    await WalletService.SendReserveTransaction(tx, account);
+
+                    return (tx, "");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "ReserveAccount.CreateReserveTx()");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+
+            return (null, "Error. Please see message above.");
         }
 
         #endregion

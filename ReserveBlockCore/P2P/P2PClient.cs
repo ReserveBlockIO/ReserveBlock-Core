@@ -663,8 +663,9 @@ namespace ReserveBlockCore.P2P
         #region Get Block
         public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
         {
-            if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
-                return null;
+            //if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
+            //    return null;
+
             var startTime = DateTime.Now;
             long blockSize = 0;
             Block Block = null;

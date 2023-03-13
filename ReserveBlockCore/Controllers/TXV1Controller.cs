@@ -264,6 +264,72 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns a all transactions for a specific address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxByAddress/{address}")]
+        public async Task<string> GetLocalTxByAddress(string address)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetAllLocalTransactionsByAddress(address);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions for a specific address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxByAddressLimit/{address}/{limit?}")]
+        public async Task<string> GetLocalTxByAddressLimit(string address, int limit = 50)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetAccountTransactionsLimit(address, limit);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions for by page and limit per page
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="page"></param>
+        /// <param name="amountPerPage"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxPaginated/{page}/{amountPerPage}/{address?}")]
+        public async Task<string> GetLocalTxByAddressPaginated(int page, int amountPerPage, string? address = null)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetTransactionsPaginated(page, amountPerPage, address);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns all transactions for ADNR
         /// </summary>
         /// <returns></returns>

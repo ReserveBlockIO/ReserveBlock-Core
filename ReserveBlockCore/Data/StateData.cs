@@ -48,7 +48,7 @@ namespace ReserveBlockCore.Data
             var txList = block.Transactions.ToList();
             var txCount = txList.Count();
             int txTreiUpdateSuccessCount = 0;
-            var txFailList = new List<Transaction>();   
+            var txFailList = new List<Transaction>();
 
             var accStTrei = GetAccountStateTrei();
             ConcurrentDictionary<string, StateTreiAuditData> StateTreiAuditDict = new ConcurrentDictionary<string, StateTreiAuditData>();
@@ -73,49 +73,29 @@ namespace ReserveBlockCore.Data
                     {
                         if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd")
                         {
-                            var from = GetSpecificAccountStateTrei(tx.FromAddress);
-
-                            var newRec = new StateTreiAuditData
+                            if(!tx.FromAddress.StartsWith("xRBX"))
                             {
-                                NewValue = (from.Balance - (tx.Amount + tx.Fee)),
-                                OldValue = from.Balance,
-                                NextNonce = from.Nonce + 1,
-                                Nonce = from.Nonce,
-                                Address = from.Key,
-                                StateRoot = block.StateRoot,
-                                StateRecordStatus = StateRecordStatus.Update
-                            };
+                                var from = GetSpecificAccountStateTrei(tx.FromAddress);
 
-                            var stAD = StateTreiAuditDict.TryGet(from.Key);
-                            if (stAD != null)
-                            {
-                                var newOldValue = stAD.NewValue;
-                                var newOldNonce = stAD.NextNonce;
-                                stAD.OldValue = newOldValue;
-                                stAD.NewValue -= tx.Amount;
-                                stAD.Nonce = newOldNonce;
-                                stAD.NextNonce = stAD.NextNonce + 1;
-                                StateTreiAuditDict[from.Key] = stAD;
+                                from.Nonce += 1;
+                                from.StateRoot = block.StateRoot;
+                                from.Balance -= (tx.Amount + tx.Fee);
+
+                                accStTrei.UpdateSafe(from);
                             }
                             else
                             {
-                                StateTreiAuditDict[from.Key] = newRec;
+                                //this is from a ReserveAccount and must be treated differently. 
                             }
-
-                            from.Nonce += 1;
-                            from.StateRoot = block.StateRoot;
-                            from.Balance -= (tx.Amount + tx.Fee);
-
-                            accStTrei.UpdateSafe(from);
+                            
                         }
-                        else
-                        {
-                            //do nothing as its the coinbase fee
-                        }
-
                     }
 
-                    if (tx.ToAddress != "Adnr_Base" && tx.ToAddress != "DecShop_Base" && tx.ToAddress != "Topic_Base" && tx.ToAddress != "Vote_Base")
+                    if (tx.ToAddress != "Adnr_Base" && 
+                        tx.ToAddress != "DecShop_Base" && 
+                        tx.ToAddress != "Topic_Base" && 
+                        tx.ToAddress != "Vote_Base" && 
+                        tx.ToAddress != "Reserve_Base")
                     {
                         var to = GetSpecificAccountStateTrei(tx.ToAddress);
                         if (tx.TransactionType == TransactionType.TX)
@@ -130,58 +110,10 @@ namespace ReserveBlockCore.Data
                                     StateRoot = block.StateRoot
                                 };
 
-                                var newRec = new StateTreiAuditData
-                                {
-                                    NewValue = tx.Amount,
-                                    OldValue = tx.Amount,
-                                    NextNonce = 0,
-                                    Nonce = 0,
-                                    Address = tx.ToAddress,
-                                    StateRoot = block.StateRoot,
-                                    StateRecordStatus = StateRecordStatus.Insert
-                                };
-
-                                var stAD = StateTreiAuditDict.TryGet(tx.ToAddress);
-                                if (stAD != null)
-                                {
-                                    var newOldValue = stAD.NewValue;
-                                    stAD.OldValue = newOldValue;
-                                    stAD.NewValue += tx.Amount;
-                                    StateTreiAuditDict[tx.ToAddress] = stAD;
-                                }
-                                else
-                                {
-                                    StateTreiAuditDict[tx.ToAddress] = newRec;
-                                }
-
                                 accStTrei.InsertSafe(acctStateTreiTo);
                             }
                             else
                             {
-                                var newRec = new StateTreiAuditData
-                                {
-                                    NewValue = to.Balance + tx.Amount,
-                                    OldValue = to.Balance,
-                                    NextNonce = to.Nonce,
-                                    Nonce = to.Nonce,
-                                    Address = to.Key,
-                                    StateRoot = block.StateRoot,
-                                    StateRecordStatus = StateRecordStatus.Update
-                                };
-
-                                var stAD = StateTreiAuditDict.TryGet(to.Key);
-                                if (stAD != null)
-                                {
-                                    var newOldValue = stAD.NewValue;
-                                    stAD.OldValue = newOldValue;
-                                    stAD.NewValue += tx.Amount;
-                                    StateTreiAuditDict[to.Key] = stAD;
-                                }
-                                else
-                                {
-                                    StateTreiAuditDict[to.Key] = newRec;
-                                }
-
                                 to.Balance += tx.Amount;
                                 to.StateRoot = block.StateRoot;
 
@@ -361,7 +293,6 @@ namespace ReserveBlockCore.Data
 
             WorldTrei.UpdateWorldTrei(block);
             Globals.TreisUpdating = false;
-            //await StateAuditUtility.AuditAccountStateTrei(StateTreiAuditDict);
         }
 
         public static LiteDB.ILiteCollection<AccountStateTrei> GetAccountStateTrei()
@@ -371,9 +302,9 @@ namespace ReserveBlockCore.Data
             
         }
 
-        public static AccountStateTrei GetSpecificAccountStateTrei(string address)
+        public static AccountStateTrei? GetSpecificAccountStateTrei(string address)
         {
-            var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
+            var aTrei = GetAccountStateTrei();
             var account = aTrei.FindOne(x => x.Key == address);
             if (account == null)
             {
