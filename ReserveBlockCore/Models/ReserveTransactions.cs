@@ -31,6 +31,27 @@ namespace ReserveBlockCore.Models
         }
 
         #endregion
+        #region Get ReserveTransactions transaction
+        public static ReserveTransactions? GetTransactions(string hash)
+        {
+            try
+            {
+                var db = GetReserveTransactionsDb();
+                var rec = db.Query().Where(x => x.Hash == hash).FirstOrDefault();
+                if (rec != null)
+                {
+                    return rec;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return null;
+        }
+
+        #endregion
 
         #region Get ReserveTransactions DB
         public static void SaveReserveTx(ReserveTransactions rTx)

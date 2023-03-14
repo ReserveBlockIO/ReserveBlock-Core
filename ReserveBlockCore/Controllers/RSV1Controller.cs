@@ -183,6 +183,8 @@ namespace ReserveBlockCore.Controllers
         /// <summary>
         /// Send a reserve transaction. Specify from, to, and amount
         /// </summary>
+        /// <param name="address"></param>
+        /// <param name="password"></param>
         /// <returns></returns>
         [HttpGet("PublishReserveAccount/{address}/{**password}")]
         public async Task<string> PublishReserveAccount(string address, string password)
@@ -204,6 +206,46 @@ namespace ReserveBlockCore.Controllers
                 var result = await ReserveAccount.CreateReservePublishTx(account, password);
 
                 if(result.Item1 == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"{result.Item2}" });
+
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {result.Item1.Hash}", result.Item1.Hash });
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Cancel a Reserve Account Transaction
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpGet("CallBackReserveAccountTx/{hash}/{**password}")]
+        public async Task<string> CallBackReserveAccountTx(string hash, string password)
+        {
+            var output = "";
+            try
+            {
+                var tx = ReserveTransactions.GetTransactions(hash);
+
+                if(tx == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find a Reserve TX with the hash: {hash}" });
+
+                var address = tx.FromAddress;
+
+                var account = ReserveAccount.GetReserveAccountSingle(address);
+
+                if (account == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account cannot be null." });
+
+
+                var result = await ReserveAccount.CreateReserveCallBackTx(account, password, tx.Hash);
+
+                if (result.Item1 == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"{result.Item2}" });
 
                 output = JsonConvert.SerializeObject(new { Success = true, Message = $"Success! TX ID: {result.Item1.Hash}", result.Item1.Hash });

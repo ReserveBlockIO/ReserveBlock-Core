@@ -517,6 +517,7 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
+            _ = ReserveService.Run();
             
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();

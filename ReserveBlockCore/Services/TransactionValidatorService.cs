@@ -729,11 +729,47 @@ namespace ReserveBlockCore.Services
                                     if(function == "CallBack()")
                                     {
                                         runReserveCheck = false;
+                                        string hash = jobj["Hash"].ToObject<string>();
+                                        if(!string.IsNullOrEmpty(hash))
+                                        {
+                                            var currentTime = TimeUtil.GetTime();
+                                            var rTx = ReserveTransactions.GetTransactions(hash);
+                                            if(rTx == null)
+                                                return (txResult, "Could not find a reserve transaction with that hash.");
+
+                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
+                                                return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
+
+                                            if (rTx.ConfirmTimestamp <= currentTime)
+                                                return (txResult, "This TX has already passed and can no longer be called back.");
+                                        }
                                     }
 
                                     if (function == "Recover()")
                                     {
                                         runReserveCheck = false;
+                                        string hash = jobj["Hash"].ToObject<string>();
+                                        if (!string.IsNullOrEmpty(hash))
+                                        {
+                                            var currentTime = TimeUtil.GetTime();
+                                            var rTx = ReserveTransactions.GetTransactions(hash);
+                                            if (rTx == null)
+                                                return (txResult, "Could not find a reserve transaction with that hash.");
+
+                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
+                                                return (txResult, "From address does not match the reserve tx from address. Cannot recover.");
+
+                                            if (rTx.ConfirmTimestamp <= currentTime)
+                                                return (txResult, "This TX has already passed and can no longer be recovered.");
+
+                                            var stateRec = StateData.GetSpecificAccountStateTrei(rTx.FromAddress);
+
+                                            if (stateRec == null) 
+                                                return (txResult, "State record cannot be null.");
+                                            
+                                            if (stateRec.RecoveryAccount == null)
+                                                return (txResult, $"Reserve account does not have a recovery address.");
+                                        }
                                     }
                                 }
                             }

@@ -355,6 +355,69 @@ namespace ReserveBlockCore.Data
             Globals.TreisUpdating = false;
         }
 
+        public static void UpdateTreiFromReserve(List<ReserveTransactions> txList)
+        {
+            var accStTrei = GetAccountStateTrei();
+            var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
+            var txDb = Transaction.GetAll();
+
+            foreach(var rtx in  txList)
+            {
+                try
+                {
+                    var tx = rtx.Transaction;
+
+                    if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd" && tx.ToAddress != "Reserve_Base")
+                    {
+                        var from = GetSpecificAccountStateTrei(tx.FromAddress);
+                        if (from != null)
+                        {
+                            from.LockedBalance -= tx.Amount;
+                            accStTrei.UpdateSafe(from);
+                        }
+
+                    }
+
+                    if (tx.ToAddress != "Adnr_Base" &&
+                        tx.ToAddress != "DecShop_Base" &&
+                        tx.ToAddress != "Topic_Base" &&
+                        tx.ToAddress != "Vote_Base" &&
+                        tx.ToAddress != "Reserve_Base")
+                    {
+                        var to = GetSpecificAccountStateTrei(tx.ToAddress);
+                        if (tx.TransactionType == TransactionType.TX)
+                        {
+                            if (to != null)
+                            {
+                                if (tx.FromAddress.StartsWith("xRBX"))
+                                {
+                                    to.Balance += tx.Amount;
+                                    to.LockedBalance -= tx.Amount;
+
+                                    accStTrei.UpdateSafe(to);
+                                }
+                            }
+                        }
+                    }
+
+                    var rtxRec = rtxDb.Query().Where(x => x.Id == rtx.Id).FirstOrDefault();
+                    var hash = tx.Hash;
+
+                    if (rtxRec != null)
+                    {
+                        rtxDb.DeleteSafe(rtxRec.Id);
+                    }
+
+                    var txRec = TransactionData.GetTxByHash(hash);
+                    if (txRec != null)
+                    {
+                        txDb.DeleteSafe(txRec.Id);
+                    }
+                }
+                catch {  }
+            }
+        }
+
         public static LiteDB.ILiteCollection<AccountStateTrei> GetAccountStateTrei()
         {
             var aTrei = DbContext.DB_AccountStateTrei.GetCollection<AccountStateTrei>(DbContext.RSRV_ASTATE_TREI);
