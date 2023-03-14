@@ -21,9 +21,10 @@ namespace ReserveBlockCore.Services
                 AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, isReserveSend);
 
                 var fromAccount = AccountData.GetSingleAccount(tx.FromAddress);
+                var fromAccountReserve = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
                 
                 var status = tx.FromAddress.StartsWith("xRBX") ? TransactionStatus.Reserved : TransactionStatus.Success;
-                if(fromAccount == null)
+                if(fromAccount == null && fromAccountReserve == null)
                 {
                     TransactionData.UpdateTxStatusAndHeight(tx, status, blockHeight, false);
                 }
