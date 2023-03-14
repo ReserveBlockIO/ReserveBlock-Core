@@ -757,10 +757,13 @@ namespace ReserveBlockCore.Services
                 if(txRequest.UnlockTime == null)
                     return (txResult, "There must be an unlock time for this transaction");
 
-                var validUnlockTime = TimeUtil.GetReserveTime(-3);
+                if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                {
+                    var validUnlockTime = TimeUtil.GetReserveTime(-3);
 
-                if(txRequest.UnlockTime.Value < validUnlockTime)
-                    return (txResult, "Unlock time does not meet 24 hour requirement.");
+                    if (txRequest.UnlockTime.Value < validUnlockTime)
+                        return (txResult, "Unlock time does not meet 24 hour requirement.");
+                }
             }
 
             //Signature Check - Final Check to return true.
