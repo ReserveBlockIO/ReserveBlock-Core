@@ -12,7 +12,7 @@ namespace ReserveBlockCore.Services
         {
             while (true)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 2));
+                var delay = Task.Delay(new TimeSpan(0, 2, 0));
                 await ReserveServiceLock.WaitAsync();
                 try
                 {

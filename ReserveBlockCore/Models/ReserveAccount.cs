@@ -380,9 +380,6 @@ namespace ReserveBlockCore.Models
                 account.PublicKey = "04" + ByteToHex(recPubKey.toString());
                 account.Address = AccountData.GetHumanAddress(account.PublicKey);
 
-                var scStateTrei = SmartContractStateTrei.GetSCST();
-                var scs = scStateTrei.Query().Where(x => x.OwnerAddress == rAccount.Address).ToEnumerable();
-
                 rAccount = new ReserveAccount();
                 rAccountInfo = new ReserveAccountInfo();
 
@@ -443,10 +440,14 @@ namespace ReserveBlockCore.Models
                     {
                         rAccount.AvailableBalance = accountStateTrei.Balance;
                         rAccount.LockedBalance = accountStateTrei.LockedBalance;
+                        rAccount.IsNetworkProtected = accountStateTrei.RecoveryAccount != null ? true : false;
                     }
 
                     SaveReserveAccount(rAccount);
                 }
+
+                var scStateTrei = SmartContractStateTrei.GetSCST();
+                var scs = scStateTrei.Query().Where(x => x.OwnerAddress == rAccount.Address).ToEnumerable();
 
                 if (scs.Count() > 0)
                 {
@@ -473,20 +474,17 @@ namespace ReserveBlockCore.Models
                     }
                 }
 
-                var accountCheck = AccountData.GetSingleAccount(account.Address);
-                if (accountCheck == null)
+                //AddToAccount(account); //only add if not already in accounts
+                if (rescanForTx == true)
                 {
-                    //AddToAccount(account); //only add if not already in accounts
-                    if (rescanForTx == true)
-                    {
-                        //fire and forget
-                        _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address, rAccount.Address));
-                    }
-                    if (Globals.IsWalletEncrypted == true)
-                    {
-                        await WalletEncryptionService.EncryptWallet(account, true);
-                    }
+                    //fire and forget
+                    _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address, rAccount.Address));
                 }
+                if (Globals.IsWalletEncrypted == true)
+                {
+                    await WalletEncryptionService.EncryptWallet(account, true);
+                }
+                
             }
             catch (Exception ex)
             {

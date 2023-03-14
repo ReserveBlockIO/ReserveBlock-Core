@@ -58,6 +58,26 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns a list of reserved transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetReserveLocalTX")]
+        public async Task<string> GetReserveLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetReserveLocalTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns a list of mined reward transactions that are local to wallet
         /// </summary>
         /// <returns></returns>

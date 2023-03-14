@@ -77,6 +77,10 @@ namespace ReserveBlockCore.Controllers
                 {
                     output = JsonConvert.SerializeObject(new { Success = true, Message = $"{rtxList?.Count()} Found!", ReserveTransactions = rtxList });
                 }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "No TXs" });
+                }
                 
             }
             else
@@ -274,7 +278,7 @@ namespace ReserveBlockCore.Controllers
                 
                 var rsrvAccountPayload = JsonConvert.DeserializeObject<ReserveAccount.ReserveAccountRestorePayload>(jsonData.ToString());
                 if (rsrvAccountPayload == null)
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" });
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" });
                 
                 var result = ReserveAccount.RestoreReserveAccount(rsrvAccountPayload.RestoreCode, rsrvAccountPayload.Password, rsrvAccountPayload.StoreRecoveryAccount, rsrvAccountPayload.RescanForTx);
                 if (result != null)

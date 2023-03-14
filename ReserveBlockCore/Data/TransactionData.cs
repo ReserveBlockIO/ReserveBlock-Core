@@ -761,6 +761,12 @@ namespace ReserveBlockCore.Data
 
             return transactions;
         }
+        public static IEnumerable<Transaction> GetReserveLocalTransactions(bool showFailed = false)
+        {
+            var transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Reserved).ToEnumerable();
+
+            return transactions;
+        }
 
         public static IEnumerable<Transaction> GetLocalMinedTransactions(bool showFailed = false)
         {
