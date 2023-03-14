@@ -85,15 +85,19 @@ namespace ReserveBlockCore.Data
                             }
                             else
                             {
-                                ReserveTransactions rTx = new ReserveTransactions {
-                                    ConfirmTimestamp = (long)tx.UnlockTime,
-                                    FromAddress = tx.FromAddress,
-                                    ToAddress = tx.ToAddress,
-                                    Transaction = tx,
-                                    Hash = tx.Hash
-                                };
+                                if(tx.TransactionType != TransactionType.RESERVE)
+                                {
+                                    ReserveTransactions rTx = new ReserveTransactions
+                                    {
+                                        ConfirmTimestamp = (long)tx.UnlockTime,
+                                        FromAddress = tx.FromAddress,
+                                        ToAddress = tx.ToAddress,
+                                        Transaction = tx,
+                                        Hash = tx.Hash
+                                    };
 
-                                ReserveTransactions.SaveReserveTx(rTx);
+                                    ReserveTransactions.SaveReserveTx(rTx);
+                                }
 
                                 from.Nonce += 1;
                                 from.StateRoot = block.StateRoot;

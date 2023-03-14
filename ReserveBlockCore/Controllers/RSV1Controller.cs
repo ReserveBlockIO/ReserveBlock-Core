@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Dumps out all reserve accounts locally stored.
+        /// Dumps out a specific reserve account locally stored.
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
@@ -55,6 +55,33 @@ namespace ReserveBlockCore.Controllers
             else
             {
                 output = JsonConvert.SerializeObject(new { Success = false, Message = "No Account Found." });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Dumps out all reserve transactions locally stored.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetReserveTransactions")]
+        public async Task<string> GetReserveTransactions()
+        {
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            var rTXs = ReserveTransactions.GetReserveTransactionsDb();
+            if (rTXs != null)
+            {
+                var rtxList = rTXs.Query().Where(x => true).ToEnumerable();
+                if(rtxList.Any())
+                {
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"{rtxList?.Count()} Found!", ReserveTransactions = rtxList });
+                }
+                
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "No TXs" });
             }
 
             return output;

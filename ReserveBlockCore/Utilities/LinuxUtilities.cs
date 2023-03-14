@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Utilities
                 while (true)
                 {
                     var delay = Task.Delay(4000);
-                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced && !Globals.IsTestNet)
                     {
                         await delay;
                         continue;
