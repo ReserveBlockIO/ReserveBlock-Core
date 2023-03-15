@@ -326,7 +326,7 @@ namespace ReserveBlockCore.Data
                                             break;
                                         case "Recover()":
                                             var restoreHash = (string?)jobj["Hash"];
-                                            RecoverReserveAccountTx(restoreHash);
+                                            RecoverReserveAccountTx(restoreHash, block.StateRoot);
                                             break;
                                         default:
                                             break;
@@ -529,7 +529,7 @@ namespace ReserveBlockCore.Data
             }
             catch { }
         }
-        private static void RecoverReserveAccountTx(string restoreHash)
+        private static void RecoverReserveAccountTx(string? restoreHash, string stateRoot)
         {
             try
             {
@@ -558,6 +558,21 @@ namespace ReserveBlockCore.Data
                                     stateTreiRecovery.Balance += tx.Amount;
                                     if (stDb != null)
                                         stDb.UpdateSafe(stateTreiFrom);
+                                }
+                                else
+                                {
+                                    var acctStateTreiTo = new AccountStateTrei
+                                    {
+                                        Key = recoveryAddress,
+                                        Nonce = 0,
+                                        Balance = tx.Amount, //subtract from the address
+                                        StateRoot = stateRoot
+                                    };
+
+                                    if(stDb!= null)
+                                        stDb.InsertSafe(acctStateTreiTo);
+
+
                                 }
                             }
                         }
