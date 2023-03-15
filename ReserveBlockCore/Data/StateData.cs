@@ -321,7 +321,8 @@ namespace ReserveBlockCore.Data
                                             RegisterReserveAccount(tx);
                                             break;
                                         case "CallBack()":
-                                            CallBackReserveAccountTx(tx);
+                                            var callBackHash = (string?)jobj["Hash"];
+                                            CallBackReserveAccountTx(callBackHash);
                                             break;
                                         case "Recover()":
                                             RecoverReserveAccountTx(tx);
@@ -408,11 +409,11 @@ namespace ReserveBlockCore.Data
                         rtxDb.DeleteSafe(rtxRec.Id);
                     }
 
-                    var txRec = TransactionData.GetTxByHash(hash);
-                    if (txRec != null)
-                    {
-                        txDb.DeleteSafe(txRec.Id);
-                    }
+                    //var txRec = TransactionData.GetTxByHash(hash);
+                    //if (txRec != null)
+                    //{
+                    //    txDb.DeleteSafe(txRec.Id);
+                    //}
                 }
                 catch {  }
             }
@@ -478,9 +479,54 @@ namespace ReserveBlockCore.Data
             catch { }
         }
 
-        private static void CallBackReserveAccountTx(Transaction tx)
+        private static void CallBackReserveAccountTx(string? callBackHash)
         {
-            
+            try
+            {
+                if(callBackHash != null)
+                {
+                    var rTX = ReserveTransactions.GetTransactions(callBackHash);
+                    if (rTX != null)
+                    {
+                        var tx = rTX.Transaction;
+                        var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
+                        var stDb = GetAccountStateTrei();
+                        var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
+                        var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
+
+                        if (stateTreiFrom != null)
+                        {
+                            //return amount to From address
+                            stateTreiFrom.LockedBalance -= tx.Amount;
+                            stateTreiFrom.Balance += tx.Amount;
+                            if (stDb != null)
+                                stDb.UpdateSafe(stateTreiFrom);
+                        }
+                        if (stateTreiTo != null)
+                        {
+                            //remove amount from locked To address
+                            stateTreiTo.LockedBalance -= tx.Amount;
+                            if (stDb != null)
+                                stDb.UpdateSafe(stateTreiTo);
+                        }
+
+                        var localTx = TransactionData.GetTxByHash(tx.Hash);
+                        if(localTx != null)
+                        {
+                            //Change TX status to CalledBack
+                            var txDB = Transaction.GetAll();
+                            localTx.TransactionStatus = TransactionStatus.CalledBack;
+                            if(txDB != null)
+                                txDB.UpdateSafe(localTx);
+                        }
+
+                        //Delete from Reserve Transaction List
+                        if (rtxDb != null)
+                            rtxDb.DeleteSafe(rTX.Id);
+                    }
+                }
+            }
+            catch { }
         }
         private static void RecoverReserveAccountTx(Transaction tx)
         {

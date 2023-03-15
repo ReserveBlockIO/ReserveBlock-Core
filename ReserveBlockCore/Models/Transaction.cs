@@ -79,7 +79,9 @@ namespace ReserveBlockCore.Models
         Pending,
         Success,
         Failed,
-        Reserved
+        Reserved,
+        CalledBack,
+        Recovered
     }
 
     public enum TransactionRating

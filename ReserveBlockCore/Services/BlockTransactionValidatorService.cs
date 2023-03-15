@@ -741,7 +741,7 @@ namespace ReserveBlockCore.Services
                     }
                     if(function == "CallBack()")
                     {
-                        //merge from repo - 3fd78xa
+                        //Nothing extra needed. Locally handled in state data.
                     }
                     if(function == "Recover()")
                     {
