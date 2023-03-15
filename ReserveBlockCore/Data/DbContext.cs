@@ -18,6 +18,7 @@ namespace ReserveBlockCore.Data
     internal static class DbContext
     {
         public static LiteDatabase DB { set; get; }// stores blocks
+        public static LiteDatabase DB_Chain_Size { set; get; }// stores block size and current chain length
         public static LiteDatabase DB_Mempool { set; get; }// stores blocks
         public static LiteDatabase DB_Assets { set; get; }// stores Assets (Smart Contracts)       
         public static LiteDatabase DB_AssetQueue { set; get; }// stores Asset Queue      
@@ -42,6 +43,7 @@ namespace ReserveBlockCore.Data
 
         //Database names
         public const string RSRV_DB_NAME = @"rsrvblkdata.db";
+        public const string RSRV_DB_CHAIN_SIZE = @"rsrvchainsize.db";
         public const string RSRV_DB_MEMPOOL = @"rsrvmempooldata.db";
         public const string RSRV_DB_ASSETS = @"rsrvassetdata.db";
         public const string RSRV_DB_ASSET_QUEUE = @"rsrvassetqueue.db";
@@ -108,6 +110,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_AUCTION = "rsrv_auction";
         public const string RSRV_BID = "rsrv_bid";
         public const string RSRV_LISTING = "rsrv_listing";
+        public const string RSRV_CHAIN_SIZE = "rsrv_chain_size";
 
         internal static void Initialize()
         {
@@ -142,6 +145,7 @@ namespace ReserveBlockCore.Data
             DB_Vote = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_VOTE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Reserve = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_RESERVE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Chain_Size = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CHAIN_SIZE, Connection = ConnectionType.Direct, ReadOnly = false });
 
             var blocks = DB.GetCollection<Block>(RSRV_BLOCKS);
             blocks.EnsureIndexSafe(x => x.Height);
@@ -182,7 +186,7 @@ namespace ReserveBlockCore.Data
             DB_AccountStateTrei.BeginTrans();
             DB_Reserve.BeginTrans();
             DB_SmartContractStateTrei.BeginTrans();
-            DB_DST.BeginTrans();
+            //DB_DST.BeginTrans();
             DB_DecShopStateTrei.BeginTrans();
             //DB_Beacon.BeginTrans();
             //DB_Config.BeginTrans();
@@ -221,6 +225,7 @@ namespace ReserveBlockCore.Data
             DB_Vote.Commit();
             DB_Settings.Commit();
             DB_Reserve.Commit();
+            DB_Chain_Size.Commit();
         }
 
         public static void Rollback(string location = "")
@@ -248,7 +253,7 @@ namespace ReserveBlockCore.Data
             DB_WorldStateTrei.Rollback();
             DB_AccountStateTrei.Rollback();
             DB_SmartContractStateTrei.Rollback();
-            DB_DST.Rollback();
+            //DB_DST.Rollback();
             DB_DecShopStateTrei.Rollback();
             //DB_Beacon.Rollback();
             //DB_Config.Rollback();
@@ -297,6 +302,7 @@ namespace ReserveBlockCore.Data
             DB_Vote.Commit();
             DB_Settings.Commit();
             DB_Reserve.Commit();
+            DB_Chain_Size.Commit();
 
             //dispose connection to DB
             CloseDB();
@@ -341,6 +347,7 @@ namespace ReserveBlockCore.Data
             File.Delete(path + RSRV_DB_VOTE);
             File.Delete(path + RSRV_DB_SETTINGS);
             File.Delete(path + RSRV_DB_RESERVE);
+            File.Delete(path + RSRV_DB_CHAIN_SIZE);
 
             var mapper = new BsonMapper();
             mapper.RegisterType<DateTime>(
@@ -372,6 +379,8 @@ namespace ReserveBlockCore.Data
             DB_Vote = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_VOTE, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Settings = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_SETTINGS, Connection = ConnectionType.Direct, ReadOnly = false });
             DB_Reserve = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_RESERVE, Connection = ConnectionType.Direct, ReadOnly = false });
+            DB_Chain_Size = new LiteDatabase(new ConnectionString { Filename = path + RSRV_DB_CHAIN_SIZE, Connection = ConnectionType.Direct, ReadOnly = false });
+
 
             DB_Assets.Pragma("UTC_DATE", true);
             DB_AssetQueue.Pragma("UTC_DATE", true);
@@ -403,6 +412,7 @@ namespace ReserveBlockCore.Data
             DB_Vote.Dispose();
             DB_Settings.Dispose();
             DB_Reserve.Dispose();
+            DB_Chain_Size.Dispose();
         }
 
         public static async Task CheckPoint()
@@ -505,6 +515,11 @@ namespace ReserveBlockCore.Data
             try
             {
                 DB_Reserve.Checkpoint();
+            }
+            catch { }
+            try
+            {
+                DB_Chain_Size.Checkpoint();
             }
             catch { }
         }

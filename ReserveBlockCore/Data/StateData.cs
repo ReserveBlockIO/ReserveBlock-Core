@@ -325,7 +325,8 @@ namespace ReserveBlockCore.Data
                                             CallBackReserveAccountTx(callBackHash);
                                             break;
                                         case "Recover()":
-                                            RecoverReserveAccountTx(tx);
+                                            var restoreHash = (string?)jobj["Hash"];
+                                            RecoverReserveAccountTx(restoreHash);
                                             break;
                                         default:
                                             break;
@@ -528,9 +529,63 @@ namespace ReserveBlockCore.Data
             }
             catch { }
         }
-        private static void RecoverReserveAccountTx(Transaction tx)
+        private static void RecoverReserveAccountTx(string restoreHash)
         {
+            try
+            {
+                if (restoreHash != null)
+                {
+                    var rTX = ReserveTransactions.GetTransactions(restoreHash);
+                    if(rTX != null)
+                    {
+                        var tx = rTX.Transaction;
+                        var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
+                        var stDb = GetAccountStateTrei();
+                        var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
+                        var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
+                        
+                        if(stateTreiFrom != null)
+                        {
+                            var recoveryAddress = stateTreiFrom.RecoveryAccount;
+                            if(recoveryAddress != null)
+                            {
+                                stateTreiFrom.LockedBalance -= tx.Amount;
+                                if (stDb != null)
+                                    stDb.UpdateSafe(stateTreiFrom);
+                                var stateTreiRecovery = GetSpecificAccountStateTrei(recoveryAddress);
+                                if(stateTreiRecovery != null)
+                                {
+                                    stateTreiRecovery.Balance += tx.Amount;
+                                    if (stDb != null)
+                                        stDb.UpdateSafe(stateTreiFrom);
+                                }
+                            }
+                        }
 
+                        if(stateTreiTo != null)
+                        {
+                            stateTreiTo.LockedBalance -= tx.Amount;
+                            if (stDb != null)
+                                stDb.UpdateSafe(stateTreiTo);
+                        }
+
+                        var localTx = TransactionData.GetTxByHash(tx.Hash);
+                        if (localTx != null)
+                        {
+                            //Change TX status to CalledBack
+                            var txDB = Transaction.GetAll();
+                            localTx.TransactionStatus = TransactionStatus.Recovered;
+                            if (txDB != null)
+                                txDB.UpdateSafe(localTx);
+                        }
+
+                        //Delete from Reserve Transaction List
+                        if (rtxDb != null)
+                            rtxDb.DeleteSafe(rTX.Id);
+                    }
+                }
+            }
+            catch { }
         }
         private static void AddNewDecShop(Transaction tx)
         {

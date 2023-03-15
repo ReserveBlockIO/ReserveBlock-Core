@@ -330,6 +330,7 @@ namespace ReserveBlockCore.Models
 
                         decshop.OriginalBlockHeight = existingDecShopInfo.OriginalBlockHeight;
                         decshop.OriginalTXHash = existingDecShopInfo.OriginalTXHash;
+                        decshop.Id = existingDecShopInfo.Id;
 
                         decshops.UpdateSafe(decshop); //inserts new record
 

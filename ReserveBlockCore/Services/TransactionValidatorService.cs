@@ -17,10 +17,13 @@ namespace ReserveBlockCore.Services
             bool txResult = false;
             bool runReserveCheck = true;
 
+            var badTx = Globals.BadTxList.Exists(x => x == txRequest.Hash);
+            if (badTx)
+                return (true, "");
+
             var accStTrei = StateData.GetAccountStateTrei();
             var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
-            
             //Balance Check
             if (from == null)
             {
@@ -283,8 +286,8 @@ namespace ReserveBlockCore.Services
                 if (txRequest.TransactionType == TransactionType.ADNR)
                 {
                     var txData = txRequest.Data;
-                    var badTx = Globals.BadADNRTxList.Exists(x => x == txRequest.Hash);
-                    if (txData != null && !badTx)
+                    var badAdnrTx = Globals.BadADNRTxList.Exists(x => x == txRequest.Hash);
+                    if (txData != null && !badAdnrTx)
                     {
                         try
                         {
@@ -573,8 +576,9 @@ namespace ReserveBlockCore.Services
                 }
                 if (txRequest.TransactionType == TransactionType.DSTR)
                 {
+                    var badDSTTx = Globals.BadDSTList.Exists(x => x == txRequest.Hash);
                     var txData = txRequest.Data;
-                    if (txData != null)
+                    if (txData != null && !badDSTTx)
                     {
                         try
                         {
@@ -740,8 +744,11 @@ namespace ReserveBlockCore.Services
                                             if (rTx.Transaction.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
 
-                                            if (rTx.ConfirmTimestamp <= currentTime)
-                                                return (txResult, "This TX has already passed and can no longer be called back.");
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            {
+                                                if (rTx.ConfirmTimestamp <= currentTime)
+                                                    return (txResult, "This TX has already passed and can no longer be called back.");
+                                            }
                                         }
                                     }
 
@@ -759,9 +766,11 @@ namespace ReserveBlockCore.Services
                                             if (rTx.Transaction.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot recover.");
 
-                                            if (rTx.ConfirmTimestamp <= currentTime)
-                                                return (txResult, "This TX has already passed and can no longer be recovered.");
-
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            {
+                                                if (rTx.ConfirmTimestamp <= currentTime)
+                                                    return (txResult, "This TX has already passed and can no longer be recovered.");
+                                            }
                                             var stateRec = StateData.GetSpecificAccountStateTrei(rTx.FromAddress);
 
                                             if (stateRec == null) 

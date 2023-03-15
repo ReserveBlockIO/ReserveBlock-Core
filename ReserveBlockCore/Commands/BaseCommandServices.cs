@@ -1857,6 +1857,7 @@ namespace ReserveBlockCore.Commands
             foreach (int i in Enum.GetValues(typeof(TransactionType)))
             {
                 Console.WriteLine($"{count} - {i}");
+                count += 1;
             }
 
             var badTxTranType = Console.ReadLine();

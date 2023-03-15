@@ -1061,5 +1061,82 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
+        #region Create Reserve Recover TX
+        public static async Task<(Transaction?, string)> CreateReserveRecoverTx(ReserveAccount account, string password, string hash)
+        {
+            var txData = "";
+            var timestamp = TimeUtil.GetTime();
+            var key = GetPrivateKey(account.Address, password);
+
+            if (key == null)
+                return (null, $"Could not decrypt private key for send.");
+
+            BigInteger b1 = BigInteger.Parse(key, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            txData = JsonConvert.SerializeObject(new { Function = "Recover()", Hash = hash });
+
+            var tx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = "Reserve_Base",
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.RESERVE,
+                UnlockTime = 0,
+                Data = txData
+            };
+
+            tx.Fee = FeeCalcService.CalculateTXFee(tx);
+
+            tx.Build();
+
+            var txHash = tx.Hash;
+
+            //var balanceTooLow = account.AvailableBalance - (tx.Fee + tx.Amount) < 0.5M ? true : false;
+            //if (balanceTooLow)
+            //    return (null, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
+
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+                return (null, $"Signing TX failed for Tranasaction on address {account.Address}.");
+
+            tx.Signature = sig;
+
+            try
+            {
+                if (tx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(tx, true);
+                    tx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(tx);
+                if (result.Item1 == true)
+                {
+                    tx.TransactionStatus = TransactionStatus.Pending;
+
+                    await WalletService.SendReserveTransaction(tx, account);
+
+                    return (tx, "");
+                }
+                else
+                {
+                    ErrorLogUtility.LogError($"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}", "ReserveAccount.CreateReservePublishTx()");
+                    return (null, $"Transaction Failed Verify and was not Sent to Mempool. Error: {result.Item2}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+
+            return (null, "Error. Please see message above.");
+        }
+
+        #endregion
+
     }
 }
