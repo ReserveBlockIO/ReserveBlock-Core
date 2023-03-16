@@ -72,6 +72,7 @@ namespace ReserveBlockCore.Data
                     TransactionRating = transaction.TransactionRating,
                     TransactionStatus = transaction.TransactionStatus,
                     TransactionType = transaction.TransactionType,
+                    UnlockTime = transaction.UnlockTime
                 };
                 if (subtract)
                 {
