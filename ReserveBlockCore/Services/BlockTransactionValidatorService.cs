@@ -741,29 +741,29 @@ namespace ReserveBlockCore.Services
                     }
                     if(function == "CallBack()")
                     {
-                        var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
-                        if(rAccount != null)
-                        {
-                            var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
-                            if( rStateTrei != null )
-                            {
-                                rAccount.AvailableBalance = rStateTrei.Balance;
-                                rAccount.LockedBalance = rStateTrei.LockedBalance;
-                            }
-                        }
+                        //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                        //if(rAccount != null)
+                        //{
+                        //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                        //    if( rStateTrei != null )
+                        //    {
+                        //        rAccount.AvailableBalance = rStateTrei.Balance;
+                        //        rAccount.LockedBalance = rStateTrei.LockedBalance;
+                        //    }
+                        //}
                     }
                     if(function == "Recover()")
                     {
-                        var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
-                        if (rAccount != null)
-                        {
-                            var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
-                            if (rStateTrei != null)
-                            {
-                                rAccount.AvailableBalance = rStateTrei.Balance;
-                                rAccount.LockedBalance = rStateTrei.LockedBalance;
-                            }
-                        }
+                        //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                        //if (rAccount != null)
+                        //{
+                        //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                        //    if (rStateTrei != null)
+                        //    {
+                        //        rAccount.AvailableBalance = rStateTrei.Balance;
+                        //        rAccount.LockedBalance = rStateTrei.LockedBalance;
+                        //    }
+                        //}
                     }
                 }
             }

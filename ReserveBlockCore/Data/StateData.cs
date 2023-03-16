@@ -502,6 +502,16 @@ namespace ReserveBlockCore.Data
                             stateTreiFrom.Balance += tx.Amount;
                             if (stDb != null)
                                 stDb.UpdateSafe(stateTreiFrom);
+
+                            var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiFrom.Key);
+                            if (rLocalAccount != null)
+                            {
+                                var rDb = ReserveAccount.GetReserveAccountsDb();
+                                rLocalAccount.LockedBalance -= tx.Amount;
+                                rLocalAccount.AvailableBalance += tx.Amount;
+                                if (rDb != null)
+                                    rDb.UpdateSafe(rLocalAccount);
+                            }
                         }
                         if (stateTreiTo != null)
                         {
@@ -517,6 +527,15 @@ namespace ReserveBlockCore.Data
                                 localAccount.LockedBalance -= tx.Amount;
                                 if (accountDB != null)
                                     accountDB.UpdateSafe(localAccount);
+                            }
+
+                            var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiTo.Key);
+                            if (rLocalAccount != null)
+                            {
+                                var rDb = ReserveAccount.GetReserveAccountsDb();
+                                rLocalAccount.LockedBalance -= tx.Amount;
+                                if (rDb != null)
+                                    rDb.UpdateSafe(rLocalAccount);
                             }
                         }
 
