@@ -903,13 +903,14 @@ namespace ReserveBlockCore.Controllers
                     if(stateTrei != null)
                     {
                         account.Balance = stateTrei.Balance;
+                        account.LockedBalance = stateTrei.LockedBalance;
                         accountsDb.UpdateSafe(account);
                     }
                 }
                 output = JsonConvert.SerializeObject(new { Success = true, Message = $"Balance resync completed" });
             }
 
-            if(rAccount.Count() > 0)
+            if(rAccount?.Count() > 0)
             {
                 foreach (var account in rAccount)
                 {
@@ -922,10 +923,7 @@ namespace ReserveBlockCore.Controllers
                     }
                 }
             }
-            else
-            {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = $"No Accounts were found locally." });
-            }
+
 
             return output;
         }

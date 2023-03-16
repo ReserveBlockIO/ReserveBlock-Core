@@ -6,7 +6,7 @@ namespace ReserveBlockCore.Controllers
 {
     public class ActionFilterController : ActionFilterAttribute 
     {
-        public static List<string> ApprovedMethodList = new List<string> { "GetDebugInfo", "Mother", "Egg", "CheckStatus", "GetCLIVersion", "GetWalletInfo", "NetworkMetrics" };
+        public static List<string> ApprovedMethodList = new List<string> { "GetDebugInfo", "Mother", "Egg", "CheckStatus", "GetCLIVersion", "GetWalletInfo", "NetworkMetrics", "SyncBalances" };
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             try

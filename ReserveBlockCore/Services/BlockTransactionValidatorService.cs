@@ -741,11 +741,29 @@ namespace ReserveBlockCore.Services
                     }
                     if(function == "CallBack()")
                     {
-                        //Nothing extra needed. Locally handled in state data.
+                        var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                        if(rAccount != null)
+                        {
+                            var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                            if( rStateTrei != null )
+                            {
+                                rAccount.AvailableBalance = rStateTrei.Balance;
+                                rAccount.LockedBalance = rStateTrei.LockedBalance;
+                            }
+                        }
                     }
                     if(function == "Recover()")
                     {
-                        //Nothing extra needed. Locally handled in state data.
+                        var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                        if (rAccount != null)
+                        {
+                            var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                            if (rStateTrei != null)
+                            {
+                                rAccount.AvailableBalance = rStateTrei.Balance;
+                                rAccount.LockedBalance = rStateTrei.LockedBalance;
+                            }
+                        }
                     }
                 }
             }

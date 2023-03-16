@@ -509,6 +509,15 @@ namespace ReserveBlockCore.Data
                             stateTreiTo.LockedBalance -= tx.Amount;
                             if (stDb != null)
                                 stDb.UpdateSafe(stateTreiTo);
+
+                            var localAccount = AccountData.GetSingleAccount(stateTreiTo.Key);
+                            if(localAccount != null)
+                            {
+                                var accountDB = AccountData.GetAccounts();
+                                localAccount.LockedBalance -= tx.Amount;
+                                if (accountDB != null)
+                                    accountDB.UpdateSafe(localAccount);
+                            }
                         }
 
                         var localTx = TransactionData.GetTxByHash(tx.Hash);
@@ -572,7 +581,15 @@ namespace ReserveBlockCore.Data
                                     if(stDb!= null)
                                         stDb.InsertSafe(acctStateTreiTo);
 
+                                }
 
+                                var localAccount = AccountData.GetSingleAccount(recoveryAddress);
+                                if (localAccount != null)
+                                {
+                                    var accountDB = AccountData.GetAccounts();
+                                    localAccount.LockedBalance += tx.Amount;
+                                    if (accountDB != null)
+                                        accountDB.UpdateSafe(localAccount);
                                 }
                             }
                         }
