@@ -580,6 +580,16 @@ namespace ReserveBlockCore.Data
                                 stateTreiFrom.LockedBalance -= tx.Amount;
                                 if (stDb != null)
                                     stDb.UpdateSafe(stateTreiFrom);
+
+                                var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiFrom.Key);
+                                if (rLocalAccount != null)
+                                {
+                                    var rDb = ReserveAccount.GetReserveAccountsDb();
+                                    rLocalAccount.LockedBalance -= tx.Amount;
+                                    if (rDb != null)
+                                        rDb.UpdateSafe(rLocalAccount);
+                                }
+
                                 var stateTreiRecovery = GetSpecificAccountStateTrei(recoveryAddress);
                                 if(stateTreiRecovery != null)
                                 {
