@@ -587,7 +587,7 @@ namespace ReserveBlockCore.Data
                                 if (localAccount != null)
                                 {
                                     var accountDB = AccountData.GetAccounts();
-                                    localAccount.LockedBalance += tx.Amount;
+                                    localAccount.Balance += tx.Amount;
                                     if (accountDB != null)
                                         accountDB.UpdateSafe(localAccount);
                                 }
