@@ -66,6 +66,8 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.ReserveAccountInfo>>();
                 c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.ReserveAccountCreatePayload>>();
                 c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.ReserveAccountRestorePayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.SendNFTTransferPayload>>();
+                c.DocumentFilter<SwaggerDocumentFilter<ReserveAccount.SendTransactionPayload>>();
                 c.DocumentFilter<SwaggerDocumentFilter<SmartContractStateTrei>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Collection>>();
                 c.DocumentFilter<SwaggerDocumentFilter<TaskAnswerResult>>();

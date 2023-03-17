@@ -303,13 +303,13 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account)
+        public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account, bool noLockUp = false)
         {
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
-                if (txRequest.TransactionType == TransactionType.RESERVE)
+                if (txRequest.TransactionType == TransactionType.RESERVE || noLockUp)
                 {
                     ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
                 }
@@ -323,7 +323,7 @@ namespace ReserveBlockCore.Services
             {
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
-                if(txRequest.TransactionType == TransactionType.RESERVE)
+                if(txRequest.TransactionType == TransactionType.RESERVE || noLockUp)
                 {
                     ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
                 }

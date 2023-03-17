@@ -147,7 +147,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region TransferSmartContract
-        public static async Task TransferSmartContract(SmartContractMain scMain, string toAddress, BeaconNodeInfo beaconNodeInfo, string md5List = "NA", string backupURL = "")
+        public static async Task TransferSmartContract(SmartContractMain scMain, string toAddress, BeaconNodeInfo beaconNodeInfo, string md5List = "NA", string backupURL = "", bool isReserveAccount = false, PrivateKey? reserveAccountKey = null, int unlockTime = 0)
         {
             var scTx = new Transaction();
             try
@@ -177,18 +177,20 @@ namespace ReserveBlockCore.Services
                     if (scst == null)
                     {
                         NFTLogUtility.Log($"Failed to find SC Locally. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
-                        //return null;
+                        return;
                     }
 
                     toAddress = toAddress.Replace(" ", "");
 
                     var account = AccountData.GetSingleAccount(scst.OwnerAddress);
-                    if (account == null)
+                    var rAccount = isReserveAccount ? ReserveAccount.GetReserveAccountSingle(scst.OwnerAddress) : null;
+                    if (account == null && rAccount == null)
                     {
                         NFTLogUtility.Log($"Minter address not found. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
-                        //return null;//Minter address is not found
+                        return;
                     }
-                    var fromAddress = account.Address;
+                    var fromAddress = !isReserveAccount ? account?.Address : rAccount?.Address;
+                    var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
 
                     var scData = SmartContractReaderService.ReadSmartContract(scMain);
 
@@ -211,39 +213,40 @@ namespace ReserveBlockCore.Services
                     scTx = new Transaction
                     {
                         Timestamp = TimeUtil.GetTime(),
-                        FromAddress = account.Address,
+                        FromAddress = fromAddress,
                         ToAddress = toAddress,
                         Amount = 0.0M,
                         Fee = 0,
-                        Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                        Nonce = AccountStateTrei.GetNextNonce(fromAddress),
                         TransactionType = TransactionType.NFT_TX,
-                        Data = txData
+                        Data = txData,
+                        UnlockTime = rAccount != null ? TimeUtil.GetReserveTime(unlockTime) : null
                     };
 
                     scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
 
                     scTx.Build();
 
-                    var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+                    var senderBalance = AccountStateTrei.GetAccountBalance(fromAddress);
                     if ((scTx.Amount + scTx.Fee) > senderBalance)
                     {
                         scTx.TransactionStatus = TransactionStatus.Failed;
                         TransactionData.AddTxToWallet(scTx, true);
                         NFTLogUtility.Log($"Balance insufficient. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
-                        //return null;//balance insufficient
+                        return;
                     }
 
                     BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+                    PrivateKey privateKey = isReserveAccount && reserveAccountKey != null ? reserveAccountKey : new PrivateKey("secp256k1", b1);
 
                     var txHash = scTx.Hash;
-                    var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+                    var signature = SignatureService.CreateSignature(txHash, privateKey, publicKey);
                     if (signature == "ERROR")
                     {
                         scTx.TransactionStatus = TransactionStatus.Failed;
                         TransactionData.AddTxToWallet(scTx, true);
                         NFTLogUtility.Log($"TX Signature Failed. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
-                        //return null; //TX sig failed
+                        return;
                     }
 
                     scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
@@ -260,31 +263,17 @@ namespace ReserveBlockCore.Services
                     {
                         scTx.TransactionStatus = TransactionStatus.Pending;
 
-                        if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                        if (account != null)
                         {
-                            var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
-                            ValidatorService.StopValidating(validator);
-                            TransactionData.AddToPool(scTx);
-                            TransactionData.AddTxToWallet(scTx, true);
-                            AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                            await P2PClient.SendTXMempool(scTx);//send out to mempool
+                            await WalletService.SendTransaction(scTx, account);
                         }
-                        else if (account.IsValidating)
+                        if(rAccount != null)
                         {
-                            TransactionData.AddToPool(scTx);
-                            TransactionData.AddTxToWallet(scTx, true);
-                            AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                            await P2PClient.SendTXToAdjudicator(scTx);//send directly to adjs
+                            await WalletService.SendReserveTransaction(scTx, rAccount, true);
                         }
-                        else
-                        {
-                            TransactionData.AddToPool(scTx);
-                            TransactionData.AddTxToWallet(scTx, true);
-                            AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
-                            await P2PClient.SendTXMempool(scTx);//send out to mempool
-                        }
+                        
                         NFTLogUtility.Log($"TX Success. SCUID: {scMain.SmartContractUID}", "SmartContractService.TransferSmartContract()");
-                        //return scTx;
+                        return;
                     }
                     else
                     {
@@ -292,7 +281,7 @@ namespace ReserveBlockCore.Services
                         scTx.TransactionStatus = TransactionStatus.Failed;
                         TransactionData.AddTxToWallet(scTx, true);
                         NFTLogUtility.Log($"Error Transfer Failed TX Verify: {scMain.SmartContractUID}. Result: {result.Item2}", "SmartContractService.TransferSmartContract()");
-                        //return null;
+                        return;
                     }
                 
                 }

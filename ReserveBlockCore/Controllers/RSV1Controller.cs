@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -179,6 +182,62 @@ namespace ReserveBlockCore.Controllers
             catch(Exception ex)
             {
                 output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Send a reserve nft transfer transaction. Specify from, to, nft scuid, backupURL, and password
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("ReserveTransferNFT")]
+        public async Task<string> ReserveTransferNFT([FromBody] object jsonData)
+        {
+            var output = "";
+            try
+            {
+                if(jsonData == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Json Payload was empty." });
+
+                var sendNFTTransferPayload = JsonConvert.DeserializeObject<ReserveAccount.SendNFTTransferPayload>(jsonData.ToString());
+                if (sendNFTTransferPayload == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Json Payload could not be deserialized." });
+
+                var toAddress = sendNFTTransferPayload.ToAddress;
+                var backupURL = sendNFTTransferPayload.BackupURL;
+
+                var fromAddress = ReserveAccount.GetReserveAccountSingle(sendNFTTransferPayload.FromAddress);
+
+                if (fromAddress == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "From Address was not found in wallet. You may only send from addresses you own locally." });
+
+                var keyString = ReserveAccount.GetPrivateKey(sendNFTTransferPayload.FromAddress, sendNFTTransferPayload.DecryptPassword);
+
+                if (keyString == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Unable to get private key. Please ensure account is in wallet, and password was correct." });
+
+                var key = ReserveAccount.GetPrivateKey(keyString);
+
+                if (key == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Unable to get private key. Please ensure account is in wallet, and password was correct." });
+
+                var sc = SmartContractMain.SmartContractData.GetSmartContract(sendNFTTransferPayload.SmartContractUID);
+
+                if (sc == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find smart contract with UID of {sendNFTTransferPayload.SmartContractUID}" });
+
+                if (!sc.IsPublished)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Smart contract found, but has not been minted." });
+
+                var result = await ReserveAccount.CreateReserveNFTTransferTx(sendNFTTransferPayload);
+
+                output = JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"{result.Item2}" });
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Result = "Fail", Message = $"Unknown Error Occurred. Error: {ex.ToString()}" });
+                NFTLogUtility.Log($"Unknown Error Transfering NFT. Error: {ex.ToString()}", "SCV1Controller.TransferNFT()");
             }
 
             return output;
