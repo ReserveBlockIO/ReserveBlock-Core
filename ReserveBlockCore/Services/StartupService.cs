@@ -279,7 +279,7 @@ namespace ReserveBlockCore.Services
 
                     if (lastShutDown != null && settings.CorrectShutdown && Globals.LastBlock.Height > 0)
                     {
-                        if (lastShutDown.Value.AddSeconds(20) > now)
+                        if (!Debugger.IsAttached && lastShutDown.Value.AddSeconds(20) > now)
                         {
                             var diff = Convert.ToInt32((lastShutDown.Value.AddSeconds(20) - now).TotalMilliseconds);
                             Console.WriteLine("Wallet was restarted too fast. Startup will continue in a moment. Do not close wallet.");
@@ -329,7 +329,7 @@ namespace ReserveBlockCore.Services
             {
                 if(Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
-                    DSTServer.Run();
+                    //_ = DSTServer.Run();
                     var port = Globals.Port + 20000; //23338 - mainnet
                     
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
