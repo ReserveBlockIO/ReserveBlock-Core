@@ -459,7 +459,7 @@ namespace ReserveBlockCore.Services
                             if (function == "Transfer()")
                             {
                                 var txdata = TransactionData.GetAll();
-                                tx.TransactionStatus = TransactionStatus.Success;
+                                tx.TransactionStatus = tx.FromAddress.StartsWith("xRBX") ? TransactionStatus.Reserved : TransactionStatus.Success;
                                 txdata.InsertSafe(tx);
                             }
                         }
@@ -479,29 +479,6 @@ namespace ReserveBlockCore.Services
             {
                 if (!Globals.IgnoreIncomingNFTs)
                 {
-                    if (tx.TransactionType == TransactionType.NFT_MINT)
-                    {
-                        NFTLogUtility.Log($"NFT TX Detected (Mint): {tx.Hash}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
-                        var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                        var scData = scDataArray[0];
-
-                        if (scData != null)
-                        {
-                            var function = (string?)scData["Function"];
-                            if (!string.IsNullOrWhiteSpace(function))
-                            {
-                                if (function == "Mint()")
-                                {
-                                    var scUID = (string?)scData["ContractUID"];
-                                    if (!string.IsNullOrWhiteSpace(scUID))
-                                    {
-                                        SmartContractMain.SmartContractData.SetSmartContractIsPublished(scUID);//flags local SC to isPublished now
-                                        NFTLogUtility.Log($"NFT Mint Completed: {scUID}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
-                                    }
-                                }
-                            }
-                        }
-                    }
 
                     if (tx.TransactionType == TransactionType.NFT_TX)
                     {

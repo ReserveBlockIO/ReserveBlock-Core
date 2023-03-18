@@ -155,7 +155,8 @@ namespace ReserveBlockCore.Controllers
                     if(scState != null)
                     {
                         var exist = accounts.Exists(x => x.Address == scState.OwnerAddress);
-                        if(exist)
+                        var rExist = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress) != null ? true : false;
+                        if(exist || rExist)
                             scStateMainBag.Add(scState);
                     }
                 }
