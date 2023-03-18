@@ -177,7 +177,8 @@ namespace ReserveBlockCore.Services
                                             {
                                                 return (txResult, "This smart contract has already been minted.");
                                             }
-
+                                            if(txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not mint a smart contract.");
                                             break;
                                         }
 
@@ -188,9 +189,13 @@ namespace ReserveBlockCore.Services
                                             if (scStateTreiRec != null)
                                             {
                                                 if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
-                                                {
                                                     return (txResult, "You are attempting to transfer a Smart contract you don't own.");
-                                                }
+                                                
+                                                if(scStateTreiRec.IsLocked)
+                                                    return (txResult, "You are attempting to transfer a Smart contract that is locked.");
+                                                
+                                                if(scStateTreiRec.NextOwner != null)
+                                                    return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
                                             }
                                             else
                                             {
@@ -202,9 +207,15 @@ namespace ReserveBlockCore.Services
 
                                     case "Burn()":
                                         {
+                                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not burn a smart contract.");
+
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
+                                                if (scStateTreiRec.IsLocked)
+                                                    return (txResult, "You are attempting to burn a Smart contract that is locked.");
+
                                                 if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
                                                 {
                                                     return (txResult, "You are attempting to burn a Smart contract you don't own.");
@@ -219,9 +230,15 @@ namespace ReserveBlockCore.Services
                                         }
                                     case "Evolve()":
                                         {
+                                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not evolve a smart contract.");
+
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
+                                                if (scStateTreiRec.IsLocked)
+                                                    return (txResult, "You are attempting to evolve a Smart contract that is locked.");
+
                                                 if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
                                                 {
                                                     return (txResult, "You are attempting to evolve a Smart contract you don't own.");
@@ -236,9 +253,15 @@ namespace ReserveBlockCore.Services
                                         }
                                     case "Devolve()":
                                         {
+                                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not devolve a smart contract.");
+
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
+                                                if (scStateTreiRec.IsLocked)
+                                                    return (txResult, "You are attempting to devolve a Smart contract that is locked.");
+
                                                 if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
                                                 {
                                                     return (txResult, "You are attempting to devolve a Smart contract you don't own.");
@@ -253,9 +276,15 @@ namespace ReserveBlockCore.Services
                                         }
                                     case "ChangeEvolveStateSpecific()":
                                         {
+                                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not evolve/devolve a smart contract.");
+
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
+                                                if (scStateTreiRec.IsLocked)
+                                                    return (txResult, "You are attempting to evolve/devolve a Smart contract that is locked.");
+
                                                 if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
                                                 {
                                                     return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
@@ -296,6 +325,9 @@ namespace ReserveBlockCore.Services
 
                             if (function == "AdnrCreate()")
                             {
+                                if (txRequest.FromAddress.StartsWith("xRBX"))
+                                    return (txResult, "A reserve account may not create an ADNR.");
+
                                 var name = (string)jobj["Name"];
 
                                 var adnrList = Adnr.GetAdnr();
@@ -326,6 +358,9 @@ namespace ReserveBlockCore.Services
 
                             if (function == "AdnrDelete()")
                             {
+                                if (txRequest.FromAddress.StartsWith("xRBX"))
+                                    return (txResult, "A reserve account may not delete an ADNR.");
+
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
                                 {
@@ -344,6 +379,9 @@ namespace ReserveBlockCore.Services
 
                             if (function == "AdnrTransfer()")
                             {
+                                if (txRequest.FromAddress.StartsWith("xRBX"))
+                                    return (txResult, "A reserve account may not transfer an ADNR.");
+
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
                                 {
@@ -380,6 +418,9 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
+                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                return (txResult, "A reserve account may not performing voting actions.");
+
                             var jobj = JObject.Parse(txData);
                             if(jobj != null)
                             {
@@ -511,6 +552,9 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
+                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                return (txResult, "A reserve account may not performing voting actions.");
+
                             var jobj = JObject.Parse(txData);
                             if (jobj != null)
                             {
@@ -582,6 +626,9 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
+                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                return (txResult, "A reserve account may not performing DST actions.");
+
                             if (txRequest.ToAddress != "DecShop_Base")
                                 return (txResult, "To Address must be DecShop_Base.");
 

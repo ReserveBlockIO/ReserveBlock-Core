@@ -710,24 +710,6 @@ namespace ReserveBlockCore.Services
                         }
                     }
                 }
-                if (tx.TransactionType == TransactionType.NFT_BURN)
-                {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                    var scData = scDataArray[0];
-                    //do burn logic here! This is for person giving away or feature actions
-                    var scUID = (string?)scData["ContractUID"];
-                    var function = (string?)scData["Function"];
-                    if (!string.IsNullOrWhiteSpace(function))
-                    {
-                        if (function == "Burn()")
-                        {
-                            if (!string.IsNullOrWhiteSpace(scUID))
-                            {
-                                SmartContractMain.SmartContractData.DeleteSmartContract(scUID);//deletes locally if they burn it.
-                            }
-                        }
-                    }
-                }
 
                 if (tx.TransactionType == TransactionType.RESERVE)
                 {

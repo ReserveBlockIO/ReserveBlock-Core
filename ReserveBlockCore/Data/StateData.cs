@@ -102,7 +102,8 @@ namespace ReserveBlockCore.Data
                                 from.Nonce += 1;
                                 from.StateRoot = block.StateRoot;
                                 from.Balance -= (tx.Amount + tx.Fee);
-                                from.LockedBalance += tx.Amount;
+                                if(tx.TransactionType == TransactionType.TX)
+                                    from.LockedBalance += tx.Amount;
 
                                 accStTrei.UpdateSafe(from);
                             }
@@ -369,34 +370,61 @@ namespace ReserveBlockCore.Data
                 {
                     var tx = rtx.Transaction;
 
-                    if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd" && tx.ToAddress != "Reserve_Base")
+                    if(tx.TransactionType == TransactionType.TX)
                     {
-                        var from = GetSpecificAccountStateTrei(tx.FromAddress);
-                        if (from != null)
+                        if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd" && tx.ToAddress != "Reserve_Base")
                         {
-                            from.LockedBalance -= tx.Amount;
-                            accStTrei.UpdateSafe(from);
+                            var from = GetSpecificAccountStateTrei(tx.FromAddress);
+                            if (from != null)
+                            {
+                                from.LockedBalance -= tx.Amount;
+                                accStTrei.UpdateSafe(from);
+                            }
+
                         }
 
-                    }
-
-                    if (tx.ToAddress != "Adnr_Base" &&
-                        tx.ToAddress != "DecShop_Base" &&
-                        tx.ToAddress != "Topic_Base" &&
-                        tx.ToAddress != "Vote_Base" &&
-                        tx.ToAddress != "Reserve_Base")
-                    {
-                        var to = GetSpecificAccountStateTrei(tx.ToAddress);
-                        if (tx.TransactionType == TransactionType.TX)
+                        if (tx.ToAddress != "Adnr_Base" &&
+                            tx.ToAddress != "DecShop_Base" &&
+                            tx.ToAddress != "Topic_Base" &&
+                            tx.ToAddress != "Vote_Base" &&
+                            tx.ToAddress != "Reserve_Base")
                         {
-                            if (to != null)
+                            var to = GetSpecificAccountStateTrei(tx.ToAddress);
+                            if (tx.TransactionType == TransactionType.TX)
                             {
-                                if (tx.FromAddress.StartsWith("xRBX"))
+                                if (to != null)
                                 {
-                                    to.Balance += tx.Amount;
-                                    to.LockedBalance -= tx.Amount;
+                                    if (tx.FromAddress.StartsWith("xRBX"))
+                                    {
+                                        to.Balance += tx.Amount;
+                                        to.LockedBalance -= tx.Amount;
 
-                                    accStTrei.UpdateSafe(to);
+                                        accStTrei.UpdateSafe(to);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if(tx.TransactionType == TransactionType.NFT_TX)
+                    {
+                        var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                        var scData = scDataArray[0];
+                        var function = (string?)scData["Function"];
+                        var scUID = (string?)scData["ContractUID"];
+
+                        if(function != null)
+                        {
+                            if (function == "Transfer()")
+                            {
+                                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                if (scStateTreiRec != null)
+                                {
+                                    
+                                    scStateTreiRec.OwnerAddress = tx.ToAddress;
+                                    scStateTreiRec.NextOwner = null;
+                                    scStateTreiRec.IsLocked = false;
+
+                                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
                                 }
                             }
                         }
@@ -410,11 +438,12 @@ namespace ReserveBlockCore.Data
                         rtxDb.DeleteSafe(rtxRec.Id);
                     }
 
-                    //var txRec = TransactionData.GetTxByHash(hash);
-                    //if (txRec != null)
-                    //{
-                    //    txDb.DeleteSafe(txRec.Id);
-                    //}
+                    var txRec = TransactionData.GetTxByHash(hash);
+                    if (txRec != null)
+                    {
+                        txRec.TransactionStatus = TransactionStatus.Success;
+                        txDb.UpdateSafe(txRec);
+                    }
                 }
                 catch {  }
             }
@@ -491,53 +520,81 @@ namespace ReserveBlockCore.Data
                     {
                         var tx = rTX.Transaction;
                         var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
-                        var stDb = GetAccountStateTrei();
-                        var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
-                        var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
 
-                        if (stateTreiFrom != null)
+                        if(tx.TransactionType == TransactionType.TX)
                         {
-                            //return amount to From address
-                            stateTreiFrom.LockedBalance -= tx.Amount;
-                            stateTreiFrom.Balance += tx.Amount;
-                            if (stDb != null)
-                                stDb.UpdateSafe(stateTreiFrom);
+                            var stDb = GetAccountStateTrei();
+                            var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
+                            var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
 
-                            var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiFrom.Key);
-                            if (rLocalAccount != null)
+                            if (stateTreiFrom != null)
                             {
-                                var rDb = ReserveAccount.GetReserveAccountsDb();
-                                rLocalAccount.LockedBalance -= tx.Amount;
-                                rLocalAccount.AvailableBalance += tx.Amount;
-                                if (rDb != null)
-                                    rDb.UpdateSafe(rLocalAccount);
+                                //return amount to From address
+                                stateTreiFrom.LockedBalance -= tx.Amount;
+                                stateTreiFrom.Balance += tx.Amount;
+                                if (stDb != null)
+                                    stDb.UpdateSafe(stateTreiFrom);
+
+                                var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiFrom.Key);
+                                if (rLocalAccount != null)
+                                {
+                                    var rDb = ReserveAccount.GetReserveAccountsDb();
+                                    rLocalAccount.LockedBalance -= tx.Amount;
+                                    rLocalAccount.AvailableBalance += tx.Amount;
+                                    if (rDb != null)
+                                        rDb.UpdateSafe(rLocalAccount);
+                                }
+                            }
+                            if (stateTreiTo != null)
+                            {
+                                //remove amount from locked To address
+                                stateTreiTo.LockedBalance -= tx.Amount;
+                                if (stDb != null)
+                                    stDb.UpdateSafe(stateTreiTo);
+
+                                var localAccount = AccountData.GetSingleAccount(stateTreiTo.Key);
+                                if (localAccount != null)
+                                {
+                                    var accountDB = AccountData.GetAccounts();
+                                    localAccount.LockedBalance -= tx.Amount;
+                                    if (accountDB != null)
+                                        accountDB.UpdateSafe(localAccount);
+                                }
+
+                                var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiTo.Key);
+                                if (rLocalAccount != null)
+                                {
+                                    var rDb = ReserveAccount.GetReserveAccountsDb();
+                                    rLocalAccount.LockedBalance -= tx.Amount;
+                                    if (rDb != null)
+                                        rDb.UpdateSafe(rLocalAccount);
+                                }
                             }
                         }
-                        if (stateTreiTo != null)
+
+                        if(tx.TransactionType == TransactionType.NFT_TX)
                         {
-                            //remove amount from locked To address
-                            stateTreiTo.LockedBalance -= tx.Amount;
-                            if (stDb != null)
-                                stDb.UpdateSafe(stateTreiTo);
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            var scData = scDataArray[0];
+                            var function = (string?)scData["Function"];
+                            var scUID = (string?)scData["ContractUID"];
 
-                            var localAccount = AccountData.GetSingleAccount(stateTreiTo.Key);
-                            if(localAccount != null)
+                            if(scUID != null)
                             {
-                                var accountDB = AccountData.GetAccounts();
-                                localAccount.LockedBalance -= tx.Amount;
-                                if (accountDB != null)
-                                    accountDB.UpdateSafe(localAccount);
-                            }
-
-                            var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiTo.Key);
-                            if (rLocalAccount != null)
-                            {
-                                var rDb = ReserveAccount.GetReserveAccountsDb();
-                                rLocalAccount.LockedBalance -= tx.Amount;
-                                if (rDb != null)
-                                    rDb.UpdateSafe(rLocalAccount);
+                                var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                                if(scStateTrei != null)
+                                {
+                                    var scDb = SmartContractStateTrei.GetSCST();
+                                    if(scDb != null)
+                                    {
+                                        scStateTrei.NextOwner = null;
+                                        scStateTrei.IsLocked = false;
+                                        scDb.UpdateSafe(scStateTrei);
+                                    }
+                                }
                             }
                         }
+                        
 
                         var localTx = TransactionData.GetTxByHash(tx.Hash);
                         if(localTx != null)
@@ -568,66 +625,99 @@ namespace ReserveBlockCore.Data
                     {
                         var tx = rTX.Transaction;
                         var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
-                        var stDb = GetAccountStateTrei();
                         var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
-                        var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
-                        
-                        if(stateTreiFrom != null)
+                        if (tx.TransactionType == TransactionType.TX)
                         {
-                            var recoveryAddress = stateTreiFrom.RecoveryAccount;
-                            if(recoveryAddress != null)
+                            var stDb = GetAccountStateTrei();
+                            
+                            var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
+
+                            if (stateTreiFrom != null)
                             {
-                                stateTreiFrom.LockedBalance -= tx.Amount;
-                                if (stDb != null)
-                                    stDb.UpdateSafe(stateTreiFrom);
-
-                                var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiFrom.Key);
-                                if (rLocalAccount != null)
+                                var recoveryAddress = stateTreiFrom.RecoveryAccount;
+                                if (recoveryAddress != null)
                                 {
-                                    var rDb = ReserveAccount.GetReserveAccountsDb();
-                                    rLocalAccount.LockedBalance -= tx.Amount;
-                                    if (rDb != null)
-                                        rDb.UpdateSafe(rLocalAccount);
-                                }
-
-                                var stateTreiRecovery = GetSpecificAccountStateTrei(recoveryAddress);
-                                if(stateTreiRecovery != null)
-                                {
-                                    stateTreiRecovery.Balance += tx.Amount;
+                                    stateTreiFrom.LockedBalance -= tx.Amount;
                                     if (stDb != null)
                                         stDb.UpdateSafe(stateTreiFrom);
-                                }
-                                else
-                                {
-                                    var acctStateTreiTo = new AccountStateTrei
+
+                                    var rLocalAccount = ReserveAccount.GetReserveAccountSingle(stateTreiFrom.Key);
+                                    if (rLocalAccount != null)
                                     {
-                                        Key = recoveryAddress,
-                                        Nonce = 0,
-                                        Balance = tx.Amount, //subtract from the address
-                                        StateRoot = stateRoot
-                                    };
+                                        var rDb = ReserveAccount.GetReserveAccountsDb();
+                                        rLocalAccount.LockedBalance -= tx.Amount;
+                                        if (rDb != null)
+                                            rDb.UpdateSafe(rLocalAccount);
+                                    }
 
-                                    if(stDb!= null)
-                                        stDb.InsertSafe(acctStateTreiTo);
+                                    var stateTreiRecovery = GetSpecificAccountStateTrei(recoveryAddress);
+                                    if (stateTreiRecovery != null)
+                                    {
+                                        stateTreiRecovery.Balance += tx.Amount;
+                                        if (stDb != null)
+                                            stDb.UpdateSafe(stateTreiFrom);
+                                    }
+                                    else
+                                    {
+                                        var acctStateTreiTo = new AccountStateTrei
+                                        {
+                                            Key = recoveryAddress,
+                                            Nonce = 0,
+                                            Balance = tx.Amount, //subtract from the address
+                                            StateRoot = stateRoot
+                                        };
 
-                                }
+                                        if (stDb != null)
+                                            stDb.InsertSafe(acctStateTreiTo);
 
-                                var localAccount = AccountData.GetSingleAccount(recoveryAddress);
-                                if (localAccount != null)
-                                {
-                                    var accountDB = AccountData.GetAccounts();
-                                    localAccount.Balance += tx.Amount;
-                                    if (accountDB != null)
-                                        accountDB.UpdateSafe(localAccount);
+                                    }
+
+                                    var localAccount = AccountData.GetSingleAccount(recoveryAddress);
+                                    if (localAccount != null)
+                                    {
+                                        var accountDB = AccountData.GetAccounts();
+                                        localAccount.Balance += tx.Amount;
+                                        if (accountDB != null)
+                                            accountDB.UpdateSafe(localAccount);
+                                    }
                                 }
                             }
-                        }
 
-                        if(stateTreiTo != null)
+                            if (stateTreiTo != null)
+                            {
+                                stateTreiTo.LockedBalance -= tx.Amount;
+                                if (stDb != null)
+                                    stDb.UpdateSafe(stateTreiTo);
+                            }
+                        }
+                        
+                        if(tx.TransactionType == TransactionType.NFT_TX)
                         {
-                            stateTreiTo.LockedBalance -= tx.Amount;
-                            if (stDb != null)
-                                stDb.UpdateSafe(stateTreiTo);
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            var scData = scDataArray[0];
+                            var function = (string?)scData["Function"];
+                            var scUID = (string?)scData["ContractUID"];
+                            var recoveryAddress = stateTreiFrom?.RecoveryAccount;
+
+                            if (scUID != null)
+                            {
+                                var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                                if (scStateTrei != null)
+                                {
+                                    var scDb = SmartContractStateTrei.GetSCST();
+                                    if (scDb != null)
+                                    {
+                                        if(recoveryAddress != null)
+                                        {
+                                            scStateTrei.OwnerAddress = recoveryAddress;
+                                            scStateTrei.NextOwner = null;
+                                            scStateTrei.IsLocked = false;
+                                            scDb.UpdateSafe(scStateTrei);
+                                        }
+                                        
+                                    }
+                                }
+                            }
                         }
 
                         var localTx = TransactionData.GetTxByHash(tx.Hash);
@@ -843,11 +933,21 @@ namespace ReserveBlockCore.Data
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
             if(scStateTreiRec != null)
             {
-                scStateTreiRec.OwnerAddress = tx.ToAddress;
-                scStateTreiRec.Nonce += 1;
-                scStateTreiRec.ContractData = data;
-                scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
-
+                if(tx.FromAddress.StartsWith("xRBX"))
+                {
+                    scStateTreiRec.NextOwner = tx.ToAddress;
+                    scStateTreiRec.IsLocked = true;
+                    scStateTreiRec.Nonce += 1;
+                    scStateTreiRec.ContractData = data;
+                    scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
+                }
+                else
+                {
+                    scStateTreiRec.OwnerAddress = tx.ToAddress;
+                    scStateTreiRec.Nonce += 1;
+                    scStateTreiRec.ContractData = data;
+                    scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
+                }
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
 

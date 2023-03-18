@@ -31,6 +31,7 @@ namespace ReserveBlockCore.Models
         }
 
         #endregion
+
         #region Get ReserveTransactions transaction
         public static ReserveTransactions? GetTransactions(string hash)
         {

@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         public string SmartContractUID { get; set; }//System Set
         public bool IsMinter { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsLocked { get { return SmartContractData.GetSmartContractLockState(SmartContractUID); } }
         public Dictionary<string, string>? Properties { get; set; }
         public List<SmartContractFeatures>? Features { get; set; }
 
@@ -58,6 +59,22 @@ namespace ReserveBlockCore.Models.SmartContracts
                     NFTLogUtility.Log($"Smart Contract Has Been Minted to Network : {scMain.SmartContractUID}", "SmartContractMain.SetSmartContractIsPublished(string scUID)");
                     scs.UpdateSafe(scMain);
                 }              
+            }
+
+            public static bool GetSmartContractLockState(string scUID)
+            {
+                try
+                {
+                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if (scStateTreiRec == null)
+                        return false;
+
+                    if (scStateTreiRec.IsLocked)
+                        return true;
+                }
+                catch { }
+                
+                return false;
             }
             public static void SaveSmartContract(SmartContractMain scMain, string? scText)
             {
