@@ -22,6 +22,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         public bool IsMinter { get; set; }
         public bool IsPublished { get; set; }
         public bool IsLocked { get { return SmartContractData.GetSmartContractLockState(SmartContractUID); } }
+        public string? NextOwner { get { return SmartContractData.GetSmartContractNextOwner(SmartContractUID); } }
         public Dictionary<string, string>? Properties { get; set; }
         public List<SmartContractFeatures>? Features { get; set; }
 
@@ -65,6 +66,16 @@ namespace ReserveBlockCore.Models.SmartContracts
             {
                 try
                 {
+                    int count = 0;
+                    bool exit = false;
+                    while(Globals.TreisUpdating && !exit)
+                    {
+                        count += 1;
+                        Thread.Sleep(500);
+
+                        if (count >= 10)
+                            exit = true;
+                    }
                     var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                     if (scStateTreiRec == null)
                         return false;
@@ -75,6 +86,34 @@ namespace ReserveBlockCore.Models.SmartContracts
                 catch { }
                 
                 return false;
+            }
+
+            public static string? GetSmartContractNextOwner(string scUID)
+            {
+                try
+                {
+                    int count = 0;
+                    bool exit = false;
+                    while (Globals.TreisUpdating && !exit)
+                    {
+                        count += 1;
+                        Thread.Sleep(500);
+
+                        if (count >= 10)
+                            exit = true;
+                    }
+                    var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                    if (scStateTreiRec == null)
+                        return null;
+
+                    if (scStateTreiRec.NextOwner == null)
+                        return null;
+
+                    return scStateTreiRec.NextOwner;
+                }
+                catch { }
+
+                return null;
             }
             public static void SaveSmartContract(SmartContractMain scMain, string? scText)
             {
