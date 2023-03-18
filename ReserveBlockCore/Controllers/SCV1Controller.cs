@@ -154,9 +154,11 @@ namespace ReserveBlockCore.Controllers
                     var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
                     if(scState != null)
                     {
-                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress);
+                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress || x.Address == scState.NextOwner);
                         var rExist = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress) != null ? true : false;
-                        if(exist || rExist)
+                        if(!rExist)
+                            rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : false;
+                        if (exist || rExist)
                             scStateMainBag.Add(scState);
                     }
                 }
