@@ -110,6 +110,59 @@ namespace ReserveBlockCore.Models
             }
         }
 
+        public static string? GetPrivateKey(ReserveAccount account, string passkey)
+        {
+            if (account == null)
+            {
+                return null;
+            }
+            try
+            {
+                var password = passkey;
+                var newPasswordArray = Encoding.ASCII.GetBytes(password);
+                var passwordKey = new byte[32 - newPasswordArray.Length].Concat(newPasswordArray).ToArray();
+
+                var keys = Convert.FromBase64String(account.EncryptedDecryptKey);
+                var encryptedPrivKey = Convert.FromBase64String(account.PrivateKey);
+
+                var keyDecrypted = WalletEncryptionService.DecryptKey(keys, passwordKey);
+                var privKeyDecrypted = WalletEncryptionService.DecryptKey(encryptedPrivKey, Convert.FromBase64String(keyDecrypted));
+
+                return privKeyDecrypted;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        public static PrivateKey? GetPrivateKey(ReserveAccount account, string passkey, bool sendClass = false)
+        {
+            if (account == null)
+            {
+                return null;
+            }
+            try
+            {
+                var password = passkey;
+                var newPasswordArray = Encoding.ASCII.GetBytes(password);
+                var passwordKey = new byte[32 - newPasswordArray.Length].Concat(newPasswordArray).ToArray();
+
+                var keys = Convert.FromBase64String(account.EncryptedDecryptKey);
+                var encryptedPrivKey = Convert.FromBase64String(account.PrivateKey);
+
+                var keyDecrypted = WalletEncryptionService.DecryptKey(keys, passwordKey);
+                var privKeyDecrypted = WalletEncryptionService.DecryptKey(encryptedPrivKey, Convert.FromBase64String(keyDecrypted));
+
+                BigInteger b1 = BigInteger.Parse(privKeyDecrypted, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                return privateKey;
+            }
+            catch
+            {
+                return null;
+            }
+        }
         public static PrivateKey? GetPrivateKey(string key)
         {
             try

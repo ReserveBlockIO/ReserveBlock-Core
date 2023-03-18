@@ -1189,6 +1189,9 @@ namespace ReserveBlockCore.P2P
                 else
                 {
                     var account = AccountData.GetSingleAccount(scState.OwnerAddress);
+                    if (account == null && scState.NextOwner != null)
+                        account = AccountData.GetSingleAccount(scState.NextOwner);
+
                     if (account != null)
                     {
                         BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.

@@ -64,6 +64,59 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Dumps out a specific reserve account locally stored.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="address"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpGet("GetReserveAccountNFTAssets/{scUID}/{address}/{**password}")]
+        public async Task<string> GetReserveAccountNFTAssets(string scUID,string address, string password)
+        {
+            var output = "Command not recognized."; // this will only display if command not recognized.
+            var aqDB = AssetQueue.GetAssetQueue();
+            if(aqDB == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Asset Queue DB Null." });
+
+            var aq = aqDB.Query().Where(x => x.SmartContractUID == scUID).FirstOrDefault(); 
+
+            if(aq == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Did not find an active Asset Queue record. Please wait 30 seconds and try again." });
+
+            var fromAddress = ReserveAccount.GetReserveAccountSingle(address);
+
+            if(fromAddress == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "No ReserveAccount Found." });
+
+            var privateKey = ReserveAccount.GetPrivateKey(fromAddress, password, true);
+
+            if(privateKey == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Password or Private Key did not match. Please try entering password again." });
+
+            var preSig = SignatureService.CreateSignature(aq.SmartContractUID, privateKey, fromAddress.PublicKey);
+
+            var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(aq.SmartContractUID, aq.Locator, preSig, aq.MD5List);
+
+            if(result == "Success")
+            {
+                aq.IsComplete = true;
+                aq.Attempts = 0;
+                aq.NextAttempt = DateTime.UtcNow;
+                aqDB.UpdateSafe(aq);
+
+                output = JsonConvert.SerializeObject(new { Success = true, Message = "Assets have been queued for download. Please check logs if you do not start to see them." });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "Assets failed to Queue for download. Please check logs for more details." });
+            }
+            
+            
+
+            return output;
+        }
+
+        /// <summary>
         /// Dumps out all reserve transactions locally stored.
         /// </summary>
         /// <returns></returns>
