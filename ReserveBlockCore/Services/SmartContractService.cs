@@ -191,6 +191,7 @@ namespace ReserveBlockCore.Services
                     }
                     var fromAddress = !isReserveAccount ? account?.Address : rAccount?.Address;
                     var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
+                    var privateKey = !isReserveAccount ? account?.GetPrivKey : reserveAccountKey;
 
                     var scData = SmartContractReaderService.ReadSmartContract(scMain);
 
@@ -236,8 +237,16 @@ namespace ReserveBlockCore.Services
                         return;
                     }
 
-                    BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                    PrivateKey privateKey = isReserveAccount && reserveAccountKey != null ? reserveAccountKey : new PrivateKey("secp256k1", b1);
+                    //BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                    //PrivateKey privateKey = isReserveAccount && reserveAccountKey != null ? reserveAccountKey : new PrivateKey("secp256k1", b1);
+
+                    if (privateKey == null)
+                    {
+                        scTx.TransactionStatus = TransactionStatus.Failed;
+                        TransactionData.AddTxToWallet(scTx, true);
+                        NFTLogUtility.Log($"Private key was null for account {fromAddress}", "SmartContractService.TransferSmartContract()");
+                        return;
+                    }
 
                     var txHash = scTx.Hash;
                     var signature = SignatureService.CreateSignature(txHash, privateKey, publicKey);
