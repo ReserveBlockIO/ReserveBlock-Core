@@ -743,6 +743,9 @@ namespace ReserveBlockCore.Services
                                         {
                                             NFTLogUtility.Log("SC Data from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                         }
+
+                                        if (rtxDb != null)
+                                            rtxDb.DeleteSafe(rTX.Id);
                                     }
                                 }
                             }

@@ -606,9 +606,14 @@ namespace ReserveBlockCore.Data
                                 txDB.UpdateSafe(localTx);
                         }
 
+                        var localFrom = ReserveAccount.GetReserveAccountSingle(rTX.FromAddress);
+                        if( localFrom == null ) 
+                        {
+                            if (rtxDb != null)
+                                rtxDb.DeleteSafe(rTX.Id);
+                        }
                         //Delete from Reserve Transaction List
-                        if (rtxDb != null)
-                            rtxDb.DeleteSafe(rTX.Id);
+                        
                     }
                 }
             }
