@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
 using System.Security.Principal;
 using System;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Services
 {
@@ -690,39 +691,80 @@ namespace ReserveBlockCore.Services
 
                 if (tx.TransactionType == TransactionType.RESERVE)
                 {
-                    var scData = JObject.Parse(tx.Data);
+                    try
+                    {
+                        if (tx.Data != null)
+                        {
+                            var jobj = JObject.Parse(tx.Data);
+                            var function = (string?)jobj["Function"];
 
-                    var function = (string?)scData["Function"];
-                    if(function == "Register()")
-                    {
-                        account.IsNetworkProtected = true;
-                        ReserveAccount.SaveReserveAccount(account);
+                            if (function == "Register()")
+                            {
+                                account.IsNetworkProtected = true;
+                                ReserveAccount.SaveReserveAccount(account);
+                            }
+                            if (function == "CallBack()")
+                            {
+
+                                var callBackHash = (string?)jobj["Hash"];
+                                if (callBackHash != null)
+                                {
+                                    var rTX = ReserveTransactions.GetTransactions(callBackHash);
+                                    if (rTX != null)
+                                    {
+                                        var ctx = rTX.Transaction;
+                                        var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
+
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(ctx.Data);
+                                        var scData = scDataArray[0];
+                                        var cfunction = (string?)scData["Function"];
+                                        var scUID = (string?)scData["ContractUID"];
+
+                                        var data = (string?)scData["Data"];
+                                        if (data != null)
+                                        {
+                                            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                            if (sc == null)
+                                            {
+                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
+                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+
+                                                if (!isCompletedSuccessfully)
+                                                {
+                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                NFTLogUtility.Log("SC was not null. Contract already exist.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            NFTLogUtility.Log("SC Data from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                        }
+                                    }
+                                }
+                            }
+                            if (function == "Recover()")
+                            {
+                                //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                                //if (rAccount != null)
+                                //{
+                                //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
+                                //    if (rStateTrei != null)
+                                //    {
+                                //        rAccount.AvailableBalance = rStateTrei.Balance;
+                                //        rAccount.LockedBalance = rStateTrei.LockedBalance;
+                                //    }
+                                //}
+                            }
+
+                        }
                     }
-                    if(function == "CallBack()")
+                    catch(Exception ex)
                     {
-                        //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
-                        //if(rAccount != null)
-                        //{
-                        //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
-                        //    if( rStateTrei != null )
-                        //    {
-                        //        rAccount.AvailableBalance = rStateTrei.Balance;
-                        //        rAccount.LockedBalance = rStateTrei.LockedBalance;
-                        //    }
-                        //}
-                    }
-                    if(function == "Recover()")
-                    {
-                        //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
-                        //if (rAccount != null)
-                        //{
-                        //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
-                        //    if (rStateTrei != null)
-                        //    {
-                        //        rAccount.AvailableBalance = rStateTrei.Balance;
-                        //        rAccount.LockedBalance = rStateTrei.LockedBalance;
-                        //    }
-                        //}
+                        ErrorLogUtility.LogError($"Error performing callback function. Error: {ex.ToString()}", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                     }
                 }
             }
