@@ -50,6 +50,9 @@ namespace ReserveBlockCore.Services
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
                     return (txResult, "To Address failed to validate");
+
+                if(txRequest.ToAddress.Length < 32)
+                    return (txResult, "Address length is too short.");
             }
 
             //Timestamp Check

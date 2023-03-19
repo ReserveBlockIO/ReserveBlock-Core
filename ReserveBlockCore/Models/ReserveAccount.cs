@@ -909,6 +909,8 @@ namespace ReserveBlockCore.Models
                 return (null, $"Address is not found for : {sendTxData.FromAddress}");
             }
 
+            var toAddress = sendTxData.ToAddress.ToAddressNormalize();
+
             var txData = "";
             var timestamp = TimeUtil.GetTime();
             var key = GetPrivateKey(account.Address, sendTxData.DecryptPassword);
@@ -925,7 +927,7 @@ namespace ReserveBlockCore.Models
             {
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = account.Address,
-                ToAddress = sendTxData.ToAddress,
+                ToAddress = toAddress,
                 Amount = sendTxData.Amount * 1.0M,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(account.Address),
