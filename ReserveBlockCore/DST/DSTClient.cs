@@ -71,12 +71,53 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        private static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint)
+        public static async Task ConnectServerToClient(string ipAddress, int peerPort )
+        {
+            var portNumber = Port;
+            var cudpClient = new UdpClient(portNumber);
+            var peerIpAddress = IPAddress.Parse(ipAddress);
+
+            var peerEndPoint = new IPEndPoint(peerIpAddress, peerPort);
+
+            Console.WriteLine($"peer endpoint: {peerEndPoint}");
+
+            Console.WriteLine("punching UDP hole...");
+            cudpClient.Send(Array.Empty<byte>(), peerEndPoint);
+
+            var listenerThread = new Thread(Listen);
+            listenerThread.Start();
+
+            _ = KeepAlive(10, peerEndPoint, true);
+
+            bool _exit = false;
+
+            while (!_exit)
+            {
+                Console.Write("> ");
+                var message = Console.ReadLine();
+                if (message == "/exit")
+                {
+                    _exit = true;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        var payload = new Message { Type = MessageType.Chat, Data = message, Address = "AaronRBX" };
+                        var payloadJson = GenerateMessage(payload);
+                        var messageDataBytes = Encoding.UTF8.GetBytes(payloadJson);
+                        cudpClient.Send(messageDataBytes, peerEndPoint);
+                    }
+                }
+            }
+        }
+
+        private static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, bool isShop = false)
         {
             while (true)
             {
                 var delay = Task.Delay(new TimeSpan(0, 0, seconds));
-                var payload = new Message { Type = MessageType.KeepAlive, Data = "" };
+                var payload = new Message { Type = !isShop ? MessageType.KeepAlive : MessageType.ShopKeepAlive, Data = "" };
                 var message = GenerateMessage(payload);
                 var messageDataBytes = Encoding.UTF8.GetBytes(message);
                 udpClient.Send(messageDataBytes, peerEndPoint);
@@ -111,6 +152,10 @@ namespace ReserveBlockCore.DST
                         {
                             Console.Write($"peer: {message.Data}\n> ");
                         }
+                    }
+                    if(message.Type == MessageType.ShopKeepAlive)
+                    {
+                        Console.Write($"peer: {message.Data}\n> ");
                     }
                 }
             }

@@ -12,6 +12,7 @@ namespace ReserveBlockCore.Models.DST
         public string? Address { get; set; } = null;
         public string IPAddress { get; set; }
         public long SentTimestamp { get; set; }
+        public int Port { get; set; }
         public long? ReceivedTimestamp { get; set; } = null;
         public string Hash { get; set; }
        
@@ -21,6 +22,19 @@ namespace ReserveBlockCore.Models.DST
             SentTimestamp = TimeUtil.GetTime();
             IPAddress = Type == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
             if(Type == MessageType.KeepAlive)
+            {
+                Data = "0";
+                Hash = "0";
+            }
+            else
+            {
+                Hash = (Data + SentTimestamp.ToString() + IPAddress).ToHash();
+            }
+        }
+
+        public void Rebuild()
+        {
+            if (Type == MessageType.KeepAlive)
             {
                 Data = "0";
                 Hash = "0";
@@ -101,7 +115,9 @@ namespace ReserveBlockCore.Models.DST
         Typing,
         Claims,
         Rejected,
-        Ack
+        Ack,
+        ShopConnect,
+        ShopKeepAlive
     }
 
 }

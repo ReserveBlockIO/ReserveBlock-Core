@@ -25,6 +25,7 @@ using System.Xml.Linq;
 using System.Data;
 using System.Diagnostics;
 using ReserveBlockCore.DST;
+using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Services
 {
@@ -323,25 +324,40 @@ namespace ReserveBlockCore.Services
             //no rules needed at this time
         }
 
-        internal static void StartBeacon()
+        internal static async Task StartBeacon()
         {
             try
             {
                 if(Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
-                    //_ = DSTServer.Run();
                     var port = Globals.Port + 20000; //23338 - mainnet
                     
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
                     Thread obj_thread = new Thread(server.StartServer());
-                    Console.WriteLine("Beacon Started");
+                    Console.WriteLine("Beacon Stopped");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-            
+        }
+
+        internal static async Task StartDSTServer()
+        {
+            try
+            {
+                if (Globals.SelfBeacon?.SelfBeaconActive == true)
+                {
+                    _ = DSTServer.Run();
+                    Console.WriteLine("DST Service Started.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
         }
 
         internal static async Task SetSelfBeacon()
@@ -1141,6 +1157,25 @@ namespace ReserveBlockCore.Services
                     DbContext.DB_Peers.Checkpoint();//commits from log file
                     //success
                 }
+            }
+        }
+
+        internal static void OpenUpShop()
+        {
+            var decShop = DecShop.GetMyDecShopInfo();
+            if(decShop != null)
+            {
+                var message = new Message
+                {
+                    Address = decShop.OwnerAddress,
+                    Data = "",
+                    Type = MessageType.ShopConnect,
+                    Port = decShop.Port
+                };
+
+                //var messageSend = 
+
+
             }
         }
 

@@ -58,6 +58,7 @@ namespace ReserveBlockCore.Models
             public string Password { get; set; }
             public bool StoreRecoveryAccount { get; set; }
             public bool RescanForTx { get; set; }
+            public bool OnlyRestoreRecovery { get; set; }
         }
 
         public class SendTransactionPayload
@@ -577,7 +578,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         # region RestoreReserveAccount(string privKey, string recoveryKey, string password, bool storeRecoveryKey = false, bool rescanForTx = false)
-        public static async Task<ReserveAccountInfo> RestoreReserveAccount(string privKey, string recoveryKey, string password, bool storeRecoveryKey = false, bool rescanForTx = false)
+        public static async Task<ReserveAccountInfo> RestoreReserveAccount(string privKey, string recoveryKey, string password, bool storeRecoveryKey = false, bool rescanForTx = false, bool onlyRestoreRecovery = false)
         {
             ReserveAccount rAccount = new ReserveAccount();
             Account account = new Account();
@@ -1313,6 +1314,5 @@ namespace ReserveBlockCore.Models
         }
 
         #endregion
-
     }
 }

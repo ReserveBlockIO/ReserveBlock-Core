@@ -705,7 +705,6 @@ namespace ReserveBlockCore.Services
                             }
                             if (function == "CallBack()")
                             {
-
                                 var callBackHash = (string?)jobj["Hash"];
                                 if (callBackHash != null)
                                 {
@@ -713,6 +712,7 @@ namespace ReserveBlockCore.Services
                                     if (rTX != null)
                                     {
                                         var ctx = rTX.Transaction;
+
                                         var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
 
                                         var scDataArray = JsonConvert.DeserializeObject<JArray>(ctx.Data);

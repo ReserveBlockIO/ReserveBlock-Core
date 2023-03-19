@@ -519,6 +519,7 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatingMonitorService();
             _ = ReserveService.Run();
             
+            
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
 
@@ -681,7 +682,9 @@ namespace ReserveBlockCore
 
         private static void CommandLoop3()
         {
-            StartupService.StartBeacon();
+            _ = StartupService.StartBeacon();
+            //_ = StartupService.StartDSTServer();
+
         }
 
         #endregion

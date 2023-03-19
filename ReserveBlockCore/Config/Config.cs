@@ -167,6 +167,7 @@ namespace ReserveBlockCore.Config
 			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 			Globals.RunUnsafeCode = config.RunUnsafeCode;
 			Globals.DSTClientPort = config.DSTClientPort;
+            Globals.DSTPort = 3340;
 
             if (config.TestNet == true)
             {
@@ -177,6 +178,7 @@ namespace ReserveBlockCore.Config
 				Globals.AddressPrefix = 0x89; //address prefix 'x'
 				Globals.BlockLock = 15;
 				Globals.DSTClientPort = 13341;
+                Globals.DSTPort = 13340;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))

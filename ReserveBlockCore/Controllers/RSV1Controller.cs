@@ -8,6 +8,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System;
 using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
@@ -432,11 +433,36 @@ namespace ReserveBlockCore.Controllers
                 if (rsrvAccountPayload == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" });
                 
-                var result = ReserveAccount.RestoreReserveAccount(rsrvAccountPayload.RestoreCode, rsrvAccountPayload.Password, rsrvAccountPayload.StoreRecoveryAccount, rsrvAccountPayload.RescanForTx);
-                if (result != null)
+
+                if(rsrvAccountPayload.OnlyRestoreRecovery)
                 {
-                    output = JsonConvert.SerializeObject(new { Success = true, Message = "Reserve Account Restored", ReserveAccount = result });
-                    return output;
+                    var restoreCode = rsrvAccountPayload.RestoreCode.ToStringFromBase64().Split("//");
+                    var recoveryKey = restoreCode[1];
+
+                    var account = await AccountData.RestoreAccount(recoveryKey, rsrvAccountPayload.RescanForTx);
+
+                    if (account == null)
+                    {
+                        output = "NAC";
+                    }
+                    else if (account.Address == null || account.Address == "")
+                    {
+                        output = "NAC";
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Recovery Account Restored", Account = account });
+                        return output;
+                    }
+                }
+                else
+                {
+                    var result = ReserveAccount.RestoreReserveAccount(rsrvAccountPayload.RestoreCode, rsrvAccountPayload.Password, rsrvAccountPayload.StoreRecoveryAccount, rsrvAccountPayload.RescanForTx);
+                    if (result != null)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Reserve Account Restored", ReserveAccount = result });
+                        return output;
+                    }
                 }
             }
             catch (Exception ex)
