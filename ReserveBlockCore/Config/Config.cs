@@ -205,8 +205,8 @@ namespace ReserveBlockCore.Config
                 }
 				else
 				{
-
-				}
+                    Globals.STUNServers.TryAdd($"162.251.121.150:{port}");
+                }
             }
 
             if (config.TestNet == true)

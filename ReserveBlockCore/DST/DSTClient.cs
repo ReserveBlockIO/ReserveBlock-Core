@@ -142,12 +142,12 @@ namespace ReserveBlockCore.DST
             udpClient.Send(messageBytes, ConnectedShopServer);
         }
 
-        public static async Task Run()
+        public static async Task Run(bool bypass = false)
         {
             var myDecShop = DecShop.GetMyDecShopInfo();
-            if(myDecShop != null)
+            if(myDecShop != null && !bypass)
             {
-                if(!myDecShop.IsOffline)
+                if(!myDecShop.IsOffline && !bypass)
                 {
                     var successful = Encoding.UTF8.GetBytes("echo");
                     var remoteEndPoint = RemoteEndPoint;
