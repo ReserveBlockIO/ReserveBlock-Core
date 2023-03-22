@@ -257,14 +257,14 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static async Task RunSettingChecks()
+        internal static async Task RunSettingChecks(bool runStateSync = false)
         {
             var settings = Settings.GetSettings();
             if (settings != null)
             {
                 if (!settings.CorrectShutdown)
                 {
-                    if(!Debugger.IsAttached)
+                    if(!Debugger.IsAttached || runStateSync)
                     {
                         await StateTreiSyncService.SyncAccountStateTrei();
                     }
@@ -624,7 +624,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400)
+            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending)).Take(400)
                 .Select(x => x.Transactions.Select(y => new { y.Hash, x.Height})).SelectMany(x => x).ToDictionary(x => x.Hash, x => x.Height));
         }
 

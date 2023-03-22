@@ -1661,6 +1661,28 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Dumps out active val list from past 30 days
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ListActiveVals")]
+        public async Task<string> ListActiveVals()
+        {
+            var output = "";
+            var activeVals = Globals.ActiveValidatorDict;
+
+            if (activeVals.Count > 0)
+            {
+                output = JsonConvert.SerializeObject(activeVals);
+            }
+            else
+            {
+                output = "Active validator list was empty.";
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Dumps out banned peers
         /// </summary>
         /// <returns></returns>

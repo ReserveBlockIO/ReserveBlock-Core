@@ -10,6 +10,7 @@ using System.Formats.Asn1;
 using System.Globalization;
 using System.Net;
 using System.Numerics;
+using System.Security.Cryptography.X509Certificates;
 using System.Xml.Linq;
 
 namespace ReserveBlockCore.Models
@@ -219,16 +220,17 @@ namespace ReserveBlockCore.Models
         public bool Build(VotingDays voteDays, VoteTopicCategories voteTopicCat)
         {
             var result = false;
-
+            var adjList = new List<string>();
             var startDate = DateTimeOffset.UtcNow.AddDays(-14).ToUnixTimeSeconds();
-            var adjCount = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToList().Distinct().Count();
+            var valCount = Globals.ActiveValidatorDict.Count;
+
             var daysToEnd = ((int)voteDays);
 
             TopicUID = GetTopicUID();
             VoteTopicCategory = voteTopicCat;
             TopicCreateDate = DateTime.UtcNow;
             VotingEndDate = DateTime.UtcNow.AddDays(daysToEnd);
-            ValidatorCount = adjCount;
+            ValidatorCount = valCount;
             BlockHeight = Globals.LastBlock.Height;
             TopicOwnerAddress = Globals.ValidatorAddress;
 
@@ -284,52 +286,52 @@ namespace ReserveBlockCore.Models
         #region Create Topic Transaction
         public static async Task<(Transaction?, string)> CreateTopicTx(TopicTrei topic)
         {
-            Transaction? topicTx = null;
-            var address = topic.TopicOwnerAddress;
-
-            var account = AccountData.GetSingleAccount(address);
-            if (account == null)
-            {
-                ErrorLogUtility.LogError($"Address is not found for : {address}", "TopicTrei.CreateTopicTx()");
-                return (null, $"Address is not found for : {address}");
-            }
-
-            var txData = "";
-            var timestamp = TimeUtil.GetTime();
-
-            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-            txData = JsonConvert.SerializeObject(new { Function = "TopicAdd()", Topic = topic });
-
-            topicTx = new Transaction
-            {
-                Timestamp = timestamp,
-                FromAddress = address,
-                ToAddress = "Topic_Base",
-                Amount = 1.0M,
-                Fee = 0,
-                Nonce = AccountStateTrei.GetNextNonce(address),
-                TransactionType = TransactionType.VOTE_TOPIC,
-                Data = txData
-            };
-
-            topicTx.Fee = FeeCalcService.CalculateTXFee(topicTx);
-
-            topicTx.Build();
-
-            var txHash = topicTx.Hash;
-            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
-            if (sig == "ERROR")
-            {
-                ErrorLogUtility.LogError($"Signing TX failed for Topic Request on address {address}.", "TopicTrei.CreateTopicTx()");
-                return (null, $"Signing TX failed for Topic Request on address {address}.");
-            }
-
-            topicTx.Signature = sig;
-
             try
             {
+                Transaction? topicTx = null;
+                var address = topic.TopicOwnerAddress;
+
+                var account = AccountData.GetSingleAccount(address);
+                //if (account == null)
+                //{
+                //    ErrorLogUtility.LogError($"Address is not found for : {address}", "TopicTrei.CreateTopicTx()");
+                //    return (null, $"Address is not found for : {address}");
+                //}
+
+                var txData = "";
+                var timestamp = TimeUtil.GetTime();
+
+                BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                txData = JsonConvert.SerializeObject(new { Function = "TopicAdd()", Topic = topic });
+
+                topicTx = new Transaction
+                {
+                    Timestamp = timestamp,
+                    FromAddress = address,
+                    ToAddress = "Topic_Base",
+                    Amount = 1.0M,
+                    Fee = 0,
+                    Nonce = AccountStateTrei.GetNextNonce(address),
+                    TransactionType = TransactionType.VOTE_TOPIC,
+                    Data = txData
+                };
+
+                topicTx.Fee = FeeCalcService.CalculateTXFee(topicTx);
+
+                topicTx.Build();
+
+                var txHash = topicTx.Hash;
+                var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+                if (sig == "ERROR")
+                {
+                    ErrorLogUtility.LogError($"Signing TX failed for Topic Request on address {address}.", "TopicTrei.CreateTopicTx()");
+                    return (null, $"Signing TX failed for Topic Request on address {address}.");
+                }
+
+                topicTx.Signature = sig;
+
                 if (topicTx.TransactionRating == null)
                 {
                     var rating = await TransactionRatingService.GetTransactionRating(topicTx);
@@ -341,9 +343,9 @@ namespace ReserveBlockCore.Models
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
                     TransactionData.AddToPool(topicTx);
-                    TransactionData.AddTxToWallet(topicTx, true);
-                    AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
-                    await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
+                    //TransactionData.AddTxToWallet(topicTx, true);
+                    //AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
+                    //await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
                     return (topicTx, "Success");
                 }
                 else

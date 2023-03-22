@@ -8,12 +8,15 @@ using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
+using LiteDB;
+using System.Linq;
 
 namespace ReserveBlockCore.Services
 {
     public class ValidatorService
     {
         static SemaphoreSlim ValidatorMonitorServiceLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim ValidatorCountServiceLock = new SemaphoreSlim(1, 1);
         public static async void DoValidate()
         {
             try
@@ -584,6 +587,76 @@ namespace ReserveBlockCore.Services
                 }
 
                 await delay;
+            }
+        }
+
+        public static async Task ValidatorCountRun()
+        {
+            while (true)
+            {
+                var delay = Task.Delay(new TimeSpan(0,10,0));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+                await ValidatorCountServiceLock.WaitAsync();
+                try
+                {
+                    var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
+                    var valsToRemove = Globals.ActiveValidatorDict.Where(x => x.Value < startDate).Select(x => x.Key).ToList();
+                    if(valsToRemove.Any())
+                    {
+                        foreach (var val in valsToRemove)
+                        {
+                            Globals.ActiveValidatorDict.TryRemove(val, out _);
+                        }
+                    }
+                }
+                finally
+                {
+                    ValidatorCountServiceLock.Release();
+                }
+
+                await delay;
+            }
+        }
+
+        public static async Task GetActiveValidators()
+        {
+            var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
+            var blockSub = 3456 * 30;
+            var lastHeight = Globals.LastBlock.Height;
+            var startHeight = lastHeight - blockSub;
+
+            //temporarily removed due to memory constraints. 
+            //var startBlock = BlockchainData.GetBlocks().Find(Query.All(Query.Descending)).Where(x => x.Timestamp <= startDate).FirstOrDefault();
+
+            if(startHeight > 0)
+            {
+                var currentHeight = lastHeight;
+                for (long i = startHeight; i < currentHeight; i++)
+                {
+                    var block = BlockchainData.GetBlocks().Query().Where(x => x.Height == i).FirstOrDefault();
+                    if (block != null)
+                    {
+                        if (!Globals.ActiveValidatorDict.ContainsKey(block.Validator))
+                            Globals.ActiveValidatorDict.TryAdd(block.Validator, block.Timestamp);
+                        else
+                            Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
+                    }
+                }
+            }
+        }
+
+        public static async Task UpdateActiveValidators(Block? block)
+        {
+            if (block != null)
+            {
+                if (!Globals.ActiveValidatorDict.ContainsKey(block.Validator))
+                    Globals.ActiveValidatorDict.TryAdd(block.Validator, block.Timestamp);
+                else
+                    Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
             }
         }
 

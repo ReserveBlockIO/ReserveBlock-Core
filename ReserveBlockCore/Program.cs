@@ -32,6 +32,7 @@ namespace ReserveBlockCore
             bool keslog = false;
             bool signalrLog = false;
             bool runSingleRequest = false;
+            bool runStateSync = false;
 
             var argList = args.ToList();
             //force culture info to US
@@ -133,6 +134,10 @@ namespace ReserveBlockCore
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
+                    }
+                    if (argC == "sync")
+                    {
+                        runStateSync = true;
                     }
                     if (argC == "unsafe")
                     {
@@ -351,7 +356,7 @@ namespace ReserveBlockCore
                 valEncryptCheck = true;
             }
 
-            await StartupService.RunSettingChecks();
+            await StartupService.RunSettingChecks(runStateSync);
 
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();
@@ -495,7 +500,9 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
-            
+            _ = ValidatorService.GetActiveValidators();
+            _ = ValidatorService.ValidatorCountRun();
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
 
