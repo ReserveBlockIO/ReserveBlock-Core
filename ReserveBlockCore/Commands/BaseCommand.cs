@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Commands
                 case "/chat":
                     Console.Clear();
                     Globals.StopConsoleOutput = true;
-                    await DSTClient.Run();
+                    _ = DSTClient.Run();
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/update":

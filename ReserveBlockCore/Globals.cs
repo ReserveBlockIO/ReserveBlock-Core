@@ -240,6 +240,7 @@ namespace ReserveBlockCore
 
         public static ConcurrentDictionary<string, DSTConnection> ConnectedClients = new ConcurrentDictionary<string, DSTConnection>();
         public static ConcurrentDictionary<string, DSTConnection> ConnectedShops = new ConcurrentDictionary<string, DSTConnection>();
+        public static DSTConnection? STUNServer = null;
         public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
         public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
         public static ConcurrentDictionary<string, Message> ClientMessageDict = new ConcurrentDictionary<string, Message>();

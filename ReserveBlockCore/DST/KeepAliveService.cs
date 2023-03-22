@@ -9,7 +9,7 @@ namespace ReserveBlockCore.DST
 {
     public class KeepAliveService
     {
-        public static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, UdpClient udpClient, bool isShop = false)
+        public static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, UdpClient udpClient, bool isShop = false, bool isStun = false)
         {
             bool stop = false;
             while (true && !stop)
@@ -41,6 +41,29 @@ namespace ReserveBlockCore.DST
                         }
                     }
                 }
+                else if(isStun)
+                {
+                    if (Globals.STUNServer != null)
+                    {
+                        var delay = Task.Delay(new TimeSpan(0, 0, seconds));
+
+                        var payload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
+                        var message = MessageService.GenerateMessage(payload);
+                        var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                        udpClient.Send(messageDataBytes, peerEndPoint);
+
+                        Globals.STUNServer.LastSentMessage = TimeUtil.GetTime();
+
+                        var currentTime = TimeUtil.GetTime();
+                        if (currentTime - Globals.STUNServer.LastReceiveMessage < 30)
+                        {
+                            stop = true;
+                            Globals.STUNServer = null;
+                        }
+
+                        await delay;
+                    }
+                }    
                 else
                 {
                     if (Globals.ConnectedClients.TryGetValue(peerEndPoint.ToString(), out var client))

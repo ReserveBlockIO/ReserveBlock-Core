@@ -116,18 +116,13 @@ namespace ReserveBlockCore.DST
             {
                 message.ReceivedTimestamp = TimeUtil.GetTime();
 
-                if (Globals.ConnectedShops.TryGetValue(endPoint.ToString(), out var shop))
+                if (Globals.STUNServer != null)
                 {
-                    if (shop != null)
+                    Globals.STUNServer.LastReceiveMessage = TimeUtil.GetTime();
+                    if (!Globals.STUNServer.IsConnected)
                     {
-                        shop.LastReceiveMessage = TimeUtil.GetTime();
-                        if (!shop.IsConnected)
-                        {
-                            shop.IsConnected = true;
-                            _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, true);
-                        }
-
-                        Globals.ConnectedShops[endPoint.ToString()] = shop;
+                        Globals.STUNServer.IsConnected = true;
+                        _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, true);
                     }
                 }
             }
