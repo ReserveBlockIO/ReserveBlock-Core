@@ -86,11 +86,32 @@ namespace ReserveBlockCore.DST
             {
                 Console.WriteLine("connected to SHOP");
 
-
                 var listenerThread = new Thread(Listen);
                 listenerThread.Start();
 
-                _ = KeepAliveService.KeepAlive(10, ConnectedStunServer, udpClient);
+                var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
+                var kaMessage = GenerateMessage(kaPayload);
+
+                var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
+
+                Globals.ConnectedClients.TryGetValue(ConnectedStunServer.ToString(), out var client);
+                if (client != null)
+                {
+                    client.LastReceiveMessage = TimeUtil.GetTime();
+                    client.IsConnected = false;
+                    Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
+                }
+                else
+                {
+                    client = new DSTConnection
+                    {
+                        LastReceiveMessage = TimeUtil.GetTime(),
+                        ConnectDate = TimeUtil.GetTime(),
+                        IPAddress = ConnectedStunServer.ToString(),
+                    };
+                }
+
+                udpClient.Send(messageBytes, ConnectedStunServer);
 
             }
         }
@@ -189,9 +210,8 @@ namespace ReserveBlockCore.DST
 
                 var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
 
-                udpClient.Send(messageBytes, ConnectedStunServer);
-
-                DSTConnection dstCon = new DSTConnection {
+                DSTConnection dstCon = new DSTConnection
+                {
                     ConnectDate = TimeUtil.GetTime(),
                     IPAddress = ConnectedStunServer.ToString(),
                     LastReceiveMessage = TimeUtil.GetTime(),
@@ -199,7 +219,9 @@ namespace ReserveBlockCore.DST
 
                 Globals.STUNServer = dstCon;
 
-                _ = KeepAliveService.KeepAlive(10, ConnectedStunServer, udpClient, false, true);
+                udpClient.Send(messageBytes, ConnectedStunServer);
+
+                
             }
         }
 

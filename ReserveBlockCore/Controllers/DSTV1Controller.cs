@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 
@@ -793,7 +794,7 @@ namespace ReserveBlockCore.Controllers
 
             if (decshop != null)
             {
-               //start STUN Logic Here!     
+                await DSTClient.ConnectToShop(url);
             }
         }
     }
