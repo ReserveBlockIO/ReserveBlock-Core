@@ -120,7 +120,8 @@ namespace ReserveBlockCore.Models.DST
         Ack,
         ShopConnect,
         STUNConnect,
-        STUNKeepAlive
+        STUNKeepAlive,
+        ShopKeepAlive
     }
 
 }

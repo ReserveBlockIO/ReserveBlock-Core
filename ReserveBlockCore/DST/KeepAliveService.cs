@@ -47,7 +47,7 @@ namespace ReserveBlockCore.DST
                     {
                         var delay = Task.Delay(new TimeSpan(0, 0, seconds));
 
-                        var payload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
+                        var payload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
                         var message = MessageService.GenerateMessage(payload);
                         var messageDataBytes = Encoding.UTF8.GetBytes(message);
                         udpClient.Send(messageDataBytes, peerEndPoint);

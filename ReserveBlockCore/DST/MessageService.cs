@@ -24,6 +24,9 @@ namespace ReserveBlockCore.DST
                 case MessageType.ShopConnect:
                     ShopConnect(message, endPoint, udpClient);
                     break;
+                case MessageType.ShopKeepAlive:
+                    ShopKeepAlive(message, endPoint, udpClient);
+                    break;
                 case MessageType.STUNConnect:
                     STUNConnect(message, endPoint, udpClient);
                     break;
@@ -109,6 +112,28 @@ namespace ReserveBlockCore.DST
                 }
             }
         }
+        public static void ShopKeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type != MessageType.ShopKeepAlive)
+            {
+                message.ReceivedTimestamp = TimeUtil.GetTime();
+
+                if (Globals.ConnectedShops.TryGetValue(endPoint.ToString(), out var shop))
+                {
+                    if (shop != null)
+                    {
+                        shop.LastReceiveMessage = TimeUtil.GetTime();
+                        if (!shop.IsConnected)
+                        {
+                            shop.IsConnected = true;
+                            _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, true);
+                        }
+
+                        Globals.ConnectedClients[endPoint.ToString()] = shop;
+                    }
+                }
+            }
+        }
 
         public static void STUNKeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
@@ -122,7 +147,7 @@ namespace ReserveBlockCore.DST
                     if (!Globals.STUNServer.IsConnected)
                     {
                         Globals.STUNServer.IsConnected = true;
-                        _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, true);
+                        _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, false, true);
                     }
                 }
             }

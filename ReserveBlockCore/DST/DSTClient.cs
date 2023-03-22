@@ -184,7 +184,7 @@ namespace ReserveBlockCore.DST
                 var listenerThread = new Thread(Listen);
                 listenerThread.Start();
 
-                var kaPayload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
+                var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
 
                 var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
