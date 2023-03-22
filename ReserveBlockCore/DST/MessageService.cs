@@ -92,7 +92,7 @@ namespace ReserveBlockCore.DST
 
         public static void KeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
-            if (message.Type != MessageType.KeepAlive)
+            if (message.Type == MessageType.KeepAlive)
             {
                 message.ReceivedTimestamp = TimeUtil.GetTime();
 
@@ -114,7 +114,7 @@ namespace ReserveBlockCore.DST
         }
         public static void ShopKeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
-            if (message.Type != MessageType.ShopKeepAlive)
+            if (message.Type == MessageType.ShopKeepAlive)
             {
                 message.ReceivedTimestamp = TimeUtil.GetTime();
 
