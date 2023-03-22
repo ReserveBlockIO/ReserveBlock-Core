@@ -5,6 +5,10 @@ using ReserveBlockCore.P2P;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
+using System.Reflection.Metadata;
+using System.Diagnostics;
+using ReserveBlockCore.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace ReserveBlockCore.DST
 {
@@ -13,119 +17,178 @@ namespace ReserveBlockCore.DST
         static int Port = Globals.DSTClientPort;
         static UdpClient udpClient;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-        public static async Task Run()
+
+        public static async Task ConnectToShop(string shopAddress, string address = "na")
         {
-            var successful = Encoding.UTF8.GetBytes("successful");
+            var successful = Encoding.UTF8.GetBytes("echo");
             var remoteEndPoint = RemoteEndPoint;
-
-            //This will eventually pull from a network of IPs Anything will work so long as its port is open and running the DSTServer interface
-            var stunEndPoint = IPEndPoint.Parse($"185.199.226.121:{Globals.DSTPort}" ?? "");
-
+            var IsConnected = false;
+            IPEndPoint? ConnectedStunServer = null;
+            var FailedToConnect = false;
             var portNumber = Port;
             udpClient = new UdpClient(portNumber);
 
-            Console.Write("> add ");
-            var groupName = Console.ReadLine() ?? "default";
-            var addCommandDataBytes = Encoding.UTF8.GetBytes(groupName);
-            udpClient.Send(addCommandDataBytes, stunEndPoint);
-            var addCommandResponseBytes = udpClient.Receive(ref remoteEndPoint);
-
-            if (!addCommandResponseBytes.SequenceEqual(successful))
+            while (!IsConnected && !FailedToConnect)
             {
-                Console.WriteLine("an error occurred while connecting to STUN server");
-                //return 1;
-            }
-            Console.WriteLine("connected to STUN server");
-
-            var peerEndPoint = ReadPeerInfo();
-            Console.WriteLine($"peer endpoint: {peerEndPoint}");
-
-            Console.WriteLine("punching UDP hole...");
-            udpClient.Send(Array.Empty<byte>(), peerEndPoint);
-
-            var listenerThread = new Thread(Listen);
-            listenerThread.Start();
-
-            _ = KeepAlive(10, peerEndPoint);
-
-            bool _exit = false;
-
-            while (!_exit)
-            {
-                Console.Write("> ");
-                var message = Console.ReadLine();
-                if(message == "/exit")
+                var decShop = await DecShop.GetDecShopStateTreiLeafByURL(shopAddress);
+                if(decShop != null)
                 {
-                    _exit = true;
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(message))
+                    var stunServer = decShop.IP + ":" + decShop.Port;
+
+                    if (stunServer != null)
                     {
-                        var payload = new Message { Type = MessageType.Chat, Data = message, Address = "AaronRBX" };
-                        var payloadJson = GenerateMessage(payload);
-                        var messageDataBytes = Encoding.UTF8.GetBytes(payloadJson);
-                        udpClient.Send(messageDataBytes, peerEndPoint);
+                        var stunEndPoint = IPEndPoint.Parse(stunServer);
+
+                        var stopwatch = new Stopwatch();
+                        var payload = new Message { Type = MessageType.ShopConnect, Data = "helo", Address = address };
+                        var message = GenerateMessage(payload);
+
+                        var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
+
+                        udpClient.Send(addCommandDataBytes, stunEndPoint);
+                        stopwatch.Start();
+                        while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
+                        {
+                            var beginReceive = udpClient.BeginReceive(null, null);
+                            beginReceive.AsyncWaitHandle.WaitOne(new TimeSpan(0, 0, 5));
+
+                            if (beginReceive.IsCompleted)
+                            {
+                                try
+                                {
+                                    IPEndPoint remoteEP = null;
+                                    byte[] receivedData = udpClient.EndReceive(beginReceive, ref remoteEP);
+                                    if (receivedData.SequenceEqual(successful))
+                                    {
+                                        ConnectedStunServer = stunEndPoint;
+                                        IsConnected = true;
+                                    }
+                                    else
+                                    {
+                                        IsConnected = false;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    IsConnected = false;
+                                }
+                            }
+                            else
+                            {
+                                FailedToConnect = true;
+                            }
+                        }
+                        stopwatch.Stop();
                     }
                 }
             }
+            if (IsConnected)
+            {
+                Console.WriteLine("connected to SHOP");
+
+
+                var listenerThread = new Thread(Listen);
+                listenerThread.Start();
+
+                _ = KeepAliveService.KeepAlive(10, ConnectedStunServer, udpClient);
+
+            }
         }
 
-        public static async Task ConnectServerToClient(string ipAddress, int peerPort )
+        public static async Task<bool> DisconnectFromShop()
         {
+            try
+            {
+                udpClient.Close();
+                udpClient.Dispose();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static async Task Run()
+        {
+            var successful = Encoding.UTF8.GetBytes("echo");
+            var remoteEndPoint = RemoteEndPoint;
+            var IsConnected = false;
+            IPEndPoint? ConnectedStunServer = null;
+            var FailedToConnect = false;
+            var badList = new List<string>();
             var portNumber = Port;
-            var cudpClient = new UdpClient(portNumber);
-            var peerIpAddress = IPAddress.Parse(ipAddress);
+            udpClient = new UdpClient(portNumber);
 
-            var peerEndPoint = new IPEndPoint(peerIpAddress, peerPort);
-
-            Console.WriteLine($"peer endpoint: {peerEndPoint}");
-
-            Console.WriteLine("punching UDP hole...");
-            cudpClient.Send(Array.Empty<byte>(), peerEndPoint);
-
-            var listenerThread = new Thread(Listen);
-            listenerThread.Start();
-
-            _ = KeepAlive(10, peerEndPoint, true);
-
-            bool _exit = false;
-
-            while (!_exit)
+            while (!IsConnected && !FailedToConnect)
             {
-                Console.Write("> ");
-                var message = Console.ReadLine();
-                if (message == "/exit")
+                var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x)).FirstOrDefault();
+
+                if(stunServer != null)
                 {
-                    _exit = true;
+                    var stunEndPoint = IPEndPoint.Parse(stunServer);
+
+                    var stopwatch = new Stopwatch();
+                    var payload = new Message { Type = MessageType.STUNConnect, Data = "helo" };
+                    var message = GenerateMessage(payload);
+
+                    var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
+
+                    udpClient.Send(addCommandDataBytes, stunEndPoint);
+                    stopwatch.Start();
+                    while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
+                    {
+                        var beginReceive = udpClient.BeginReceive(null, null);
+                        beginReceive.AsyncWaitHandle.WaitOne(new TimeSpan(0,0,5));
+
+                        if (beginReceive.IsCompleted)
+                        {
+                            try
+                            {
+                                IPEndPoint remoteEP = null;
+                                byte[] receivedData = udpClient.EndReceive(beginReceive, ref remoteEP);
+                                if (receivedData.SequenceEqual(successful))
+                                {
+                                    ConnectedStunServer = stunEndPoint;
+                                    IsConnected = true;
+                                }
+                                else
+                                {
+                                    badList.Add(stunServer);
+                                    IsConnected = false;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // EndReceive failed and we ended up here
+                            }
+                        }
+                        else
+                        {
+                            badList.Add(stunServer);
+                        }
+                    }
+                    stopwatch.Stop();
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(message))
-                    {
-                        var payload = new Message { Type = MessageType.Chat, Data = message, Address = "AaronRBX" };
-                        var payloadJson = GenerateMessage(payload);
-                        var messageDataBytes = Encoding.UTF8.GetBytes(payloadJson);
-                        cudpClient.Send(messageDataBytes, peerEndPoint);
-                    }
+                    FailedToConnect = true;
                 }
             }
-        }
 
-        private static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, bool isShop = false)
-        {
-            while (true)
+            if(IsConnected)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, seconds));
-                var payload = new Message { Type = !isShop ? MessageType.KeepAlive : MessageType.ShopKeepAlive, Data = "" };
-                var message = GenerateMessage(payload);
-                var messageDataBytes = Encoding.UTF8.GetBytes(message);
-                udpClient.Send(messageDataBytes, peerEndPoint);
+                Console.WriteLine("connected to STUN server");
 
-                await delay;
+                var listenerThread = new Thread(Listen);
+                listenerThread.Start();
+
+                _ = KeepAliveService.KeepAlive(10, ConnectedStunServer, udpClient, true);
+
             }
-            
         }
+
         static void Listen()
         {
             while (true)
@@ -135,40 +198,16 @@ namespace ReserveBlockCore.DST
 
                 if (string.IsNullOrEmpty(payload)) continue;
 
-                var message = JsonConvert.DeserializeObject<Message>(payload);
-
-                if(message != null)
+                if (!string.IsNullOrEmpty(payload))
                 {
-                    if (message.Type != MessageType.KeepAlive)
-                    {
-                        message.ReceivedTimestamp = TimeUtil.GetTime();
+                    var message = JsonConvert.DeserializeObject<Message>(payload);
 
-                        ConsoleHelper.ClearCurrentLine();
-                        if(!string.IsNullOrEmpty(message.Address))
-                        {
-                            Console.Write($"{message.Address}: {message.Data}\n> ");
-                        }
-                        else
-                        {
-                            Console.Write($"peer: {message.Data}\n> ");
-                        }
-                    }
-                    if(message.Type == MessageType.ShopKeepAlive)
+                    if (message != null)
                     {
-                        Console.Write($"peer: {message.Data}\n> ");
+                        MessageService.ProcessMessage(message, RemoteEndPoint, udpClient);
                     }
                 }
             }
-        }
-
-        static IPEndPoint ReadPeerInfo()
-        {
-            var stunPeerInfoDataBytes = udpClient.Receive(ref RemoteEndPoint);
-            var dataStringArray = Encoding.UTF8.GetString(stunPeerInfoDataBytes).Split(" ");
-            var peerIpAddress = IPAddress.Parse(dataStringArray[0]);
-            var peerPort = Convert.ToInt32(dataStringArray[1]);
-
-            return new IPEndPoint(peerIpAddress, peerPort);
         }
 
         internal class ConsoleHelper

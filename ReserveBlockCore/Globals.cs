@@ -72,7 +72,7 @@ namespace ReserveBlockCore
         public static int NFTTimeout = 0;
         public static int Port = 3338;
         public static int ADJPort = 3339;
-        public static int DSTPort = 3340;
+        public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
@@ -153,7 +153,8 @@ namespace ReserveBlockCore
         public static bool TimeSyncError = false;
         public static bool BasicCLI = false;
         public static bool MemoryOverload = false;
-
+        public static bool SelfSTUNServer = false;
+        
         public static CancellationToken CancelledToken;
 
         public static ConcurrentDictionary<string, long> MemBlocks = new ConcurrentDictionary<string, long>();
@@ -167,6 +168,7 @@ namespace ReserveBlockCore
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
+        public static BlockingCollection<string> STUNServers = new BlockingCollection<string>();
 
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString DecryptPassword = new SecureString();
@@ -236,7 +238,8 @@ namespace ReserveBlockCore
 
         #region DST Variables
 
-        public static ConcurrentDictionary<string, string> ConnectedClientShops = new ConcurrentDictionary<string, string>();
+        public static ConcurrentDictionary<string, DSTConnection> ConnectedClients = new ConcurrentDictionary<string, DSTConnection>();
+        public static ConcurrentDictionary<string, DSTConnection> ConnectedShops = new ConcurrentDictionary<string, DSTConnection>();
         public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
         public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
         public static ConcurrentDictionary<string, Message> ClientMessageDict = new ConcurrentDictionary<string, Message>();

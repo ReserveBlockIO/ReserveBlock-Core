@@ -21,6 +21,8 @@ namespace ReserveBlockCore.Models.DST
             Id = RandomStringUtility.GetRandomString(8);
             SentTimestamp = TimeUtil.GetTime();
             IPAddress = Type == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
+            Port = Globals.DSTClientPort;
+
             if(Type == MessageType.KeepAlive)
             {
                 Data = "0";
@@ -117,7 +119,8 @@ namespace ReserveBlockCore.Models.DST
         Rejected,
         Ack,
         ShopConnect,
-        ShopKeepAlive
+        STUNConnect,
+        STUNKeepAlive
     }
 
 }

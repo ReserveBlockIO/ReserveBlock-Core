@@ -129,6 +129,26 @@ namespace ReserveBlockCore
                         //Launch testnet
                         Globals.IsTestNet = true;
                     }
+                    if (argC == "stun")
+                    {
+                        Globals.SelfSTUNServer = true;
+                    }
+                    if (argC == "stunport")
+                    {
+                        var stunPortSplit = argC.Split(new char[] { '=' });
+                        var convRes = int.TryParse(stunPortSplit[1], out var result);
+                        var stunPort = convRes ? result : Globals.IsTestNet ? 13340 : 3340;
+                        Globals.SelfSTUNPort = stunPort;
+                    }
+                    if (argC.Contains("stunservers"))
+                    {
+                        var stunSplit = argC.Split(new char[] { '=' });
+                        var stunServers = stunSplit[1].Split(',');
+                        foreach (var server in stunServers)
+                        {
+                            Globals.STUNServers.TryAdd(server);
+                        }
+                    }
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
@@ -683,7 +703,8 @@ namespace ReserveBlockCore
         private static void CommandLoop3()
         {
             _ = StartupService.StartBeacon();
-            //_ = StartupService.StartDSTServer();
+            if(Globals.SelfSTUNServer)
+                _ = StartupService.StartDSTServer();
 
         }
 

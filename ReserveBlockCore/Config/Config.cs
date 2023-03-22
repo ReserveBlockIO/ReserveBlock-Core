@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Utilities;
+﻿using Microsoft.AspNetCore.Hosting.Server;
+using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,6 +41,9 @@ namespace ReserveBlockCore.Config
 		public bool OpenAPI { get; set; }
 		public bool RunUnsafeCode { get; set; }
 		public int DSTClientPort { get; set; }
+		public string? STUNServers { get; set; }
+		public bool SelfSTUNServer { get; set; }
+        public int SelfSTUNPort { get; set; }
         public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();
@@ -91,6 +96,9 @@ namespace ReserveBlockCore.Config
                 config.OpenAPI = dict.ContainsKey("OpenAPI") ? Convert.ToBoolean(dict["OpenAPI"]) : false;
                 config.RunUnsafeCode = dict.ContainsKey("RunUnsafeCode") ? Convert.ToBoolean(dict["RunUnsafeCode"]) : false;
                 config.DSTClientPort = dict.ContainsKey("DSTClientPort") ? Convert.ToInt32(dict["DSTClientPort"]) : 3341;
+                config.STUNServers = dict.ContainsKey("STUNServers") ? dict["STUNServers"] : null;
+                config.SelfSTUNServer = dict.ContainsKey("STUN") ? Convert.ToBoolean(dict["STUN"]) : false;
+                config.DSTClientPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -167,7 +175,39 @@ namespace ReserveBlockCore.Config
 			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 			Globals.RunUnsafeCode = config.RunUnsafeCode;
 			Globals.DSTClientPort = config.DSTClientPort;
-            Globals.DSTPort = 3340;
+            Globals.SelfSTUNPort = config.SelfSTUNPort;
+			Globals.SelfSTUNServer = config.SelfSTUNServer;
+			
+			if (config.STUNServers?.Count() > 0)
+			{
+				var serverList = config.STUNServers.Split(',');
+				foreach( var server in serverList)
+				{
+					Globals.STUNServers.TryAdd(server);
+				}
+			}
+			else
+			{
+				var port = Globals.IsTestNet ? 13340 : 3440;
+
+				if(!Globals.IsTestNet)
+				{
+                    Globals.STUNServers.TryAdd($"162.248.14.123:{port}");
+                    Globals.STUNServers.TryAdd($"144.126.149.104:{port}");
+                    Globals.STUNServers.TryAdd($"144.126.150.118:{port}");
+                    Globals.STUNServers.TryAdd($"89.117.21.39:{port}");
+                    Globals.STUNServers.TryAdd($"89.117.21.40:{port}");
+                    Globals.STUNServers.TryAdd($"209.126.11.92:{port}");
+                    Globals.STUNServers.TryAdd($"149.102.144.58:{port}");
+                    Globals.STUNServers.TryAdd($"194.233.77.39:{port}");
+                    Globals.STUNServers.TryAdd($"185.188.249.117:{port}");
+                    Globals.STUNServers.TryAdd($"154.26.155.35:{port}");
+                }
+				else
+				{
+
+				}
+            }
 
             if (config.TestNet == true)
             {
@@ -178,7 +218,7 @@ namespace ReserveBlockCore.Config
 				Globals.AddressPrefix = 0x89; //address prefix 'x'
 				Globals.BlockLock = 15;
 				Globals.DSTClientPort = 13341;
-                Globals.DSTPort = 13340;
+                Globals.SelfSTUNPort = 13340;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))

@@ -6,43 +6,28 @@ using ReserveBlockCore.Models.DST;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using ReserveBlockCore.Utilities;
+using static ReserveBlockCore.DST.DSTClient;
 
 namespace ReserveBlockCore.DST
 {
     public class DSTServer
     {
-        static UdpClient udpClient;
+        public static UdpClient udpClient;
         private static ConcurrentDictionary<int, UdpClient> UdpClientDict = new ConcurrentDictionary<int, UdpClient>();
 
         public static async Task Run()
         {
             var successMessage = Encoding.UTF8.GetBytes("successful");
-            udpClient = new UdpClient(Globals.DSTPort);
+            udpClient = new UdpClient(Globals.SelfSTUNPort);
 
-            Console.WriteLine($"Started listening on port {Globals.DSTPort}...");
+            Console.WriteLine($"Started listening on port {Globals.SelfSTUNPort}...");
 
             var peersData = new Dictionary<string, IList<IPEndPoint>>();
 
             while (true)
             {
-                var (endPoint, group) = ReadData();
-                Console.WriteLine($"received {group} from {endPoint}");
-
-                //need to check ownership. If they are owner of domain. set them as primary. If not set them as secondary.
-                if (!peersData.ContainsKey(group))
-                {
-                    peersData[group] = new List<IPEndPoint>();
-                }
-                peersData[group].Add(endPoint);
-                udpClient.Send(successMessage, endPoint);
-
-                if (peersData[group].Count == 2)
-                {
-                    InformClient(peersData[group][0], peersData[group][1]);
-                    InformClient(peersData[group][1], peersData[group][0]);
-                    peersData.Remove(group);
-                    Console.WriteLine($"removed group {group}");
-                }
+                ReadData();
             }
         }
         static void InformClient(IPEndPoint destinationEndPoint, IPEndPoint sourceEndPoint)
@@ -53,13 +38,30 @@ namespace ReserveBlockCore.DST
             udpClient.Send(dataBytes, destinationEndPoint);
         }
 
-        static (IPEndPoint, string) ReadData()
+        static void ReadData()
         {
-            var endPoint = new IPEndPoint(IPAddress.Any, 0);
-            var receivedData = udpClient.Receive(ref endPoint);
-            var group = Encoding.UTF8.GetString(receivedData);
+            try
+            {
+                var endPoint = new IPEndPoint(IPAddress.Any, 0);
+                //this may need to become async
+                var receivedData = udpClient.Receive(ref endPoint);
+                var payload = Encoding.UTF8.GetString(receivedData);
 
-            return (endPoint, group);
+                if (!string.IsNullOrEmpty(payload))
+                {
+                    var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                    if (message != null)
+                    {
+                        MessageService.ProcessMessage(message, endPoint, udpClient);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.ToString()}");
+            }
+            
         }
 
         public static async Task ConnectServerToClient(IPEndPoint endPoint)
@@ -106,15 +108,33 @@ namespace ReserveBlockCore.DST
 
         private static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, bool isShop = false)
         {
-            while (true)
+            bool stop = false;
+            while (true && !stop)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, seconds));
-                var payload = new Message { Type = !isShop ? MessageType.KeepAlive : MessageType.ShopKeepAlive, Data = "" };
-                var message = GenerateMessage(payload);
-                var messageDataBytes = Encoding.UTF8.GetBytes(message);
-                udpClient.Send(messageDataBytes, peerEndPoint);
+                if(Globals.ConnectedShops.TryGetValue(peerEndPoint.ToString(), out var shop))
+                {
+                    if(shop != null)
+                    {
+                        var delay = Task.Delay(new TimeSpan(0, 0, seconds));
+                        var payload = new Message { Type = !isShop ? MessageType.KeepAlive : MessageType.ShopKeepAlive, Data = "" };
+                        var message = GenerateMessage(payload);
+                        var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                        udpClient.Send(messageDataBytes, peerEndPoint);
 
-                await delay;
+                        shop.LastSentMessage = TimeUtil.GetTime();
+
+                        Globals.ConnectedShops[peerEndPoint.ToString()] = shop;
+
+                        var currentTime = TimeUtil.GetTime();
+                        if(currentTime - shop.LastReceiveMessage < 30)
+                        {
+                            stop = true;
+                            Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);    
+                        }
+
+                        await delay;
+                    }
+                }               
             }
         }
 

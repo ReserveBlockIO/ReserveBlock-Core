@@ -347,11 +347,8 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                if (Globals.SelfBeacon?.SelfBeaconActive == true)
-                {
-                    _ = DSTServer.Run();
-                    Console.WriteLine("DST Service Started.");
-                }
+                _ = DSTServer.Run();
+                Console.WriteLine("DST Service Started.");
             }
             catch (Exception ex)
             {
