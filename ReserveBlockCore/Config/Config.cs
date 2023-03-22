@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Config
 			Globals.RunUnsafeCode = config.RunUnsafeCode;
 			Globals.DSTClientPort = config.DSTClientPort;
             Globals.SelfSTUNPort = config.SelfSTUNPort;
-			Globals.SelfSTUNServer = config.SelfSTUNServer;
+			Globals.SelfSTUNServer = Globals.SelfSTUNServer == true ? true : config.SelfSTUNServer;
 			
 			if (config.STUNServers?.Count() > 0)
 			{
