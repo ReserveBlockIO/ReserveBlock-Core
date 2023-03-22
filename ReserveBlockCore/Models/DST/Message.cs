@@ -8,6 +8,7 @@ namespace ReserveBlockCore.Models.DST
     {
         public string Id { get; set; }
         public MessageType Type { get; set; }
+        public MessageComType ComType { get; set; }
         public string Data { get; set; } //may want to make this an object
         public string? Address { get; set; } = null;
         public string IPAddress { get; set; }
@@ -15,6 +16,9 @@ namespace ReserveBlockCore.Models.DST
         public int Port { get; set; }
         public long? ReceivedTimestamp { get; set; } = null;
         public string Hash { get; set; }
+        public bool ResponseMessage { get; set; }
+        public string ResponseMessageId { get; set; }
+
        
         public void Build()
         {
@@ -101,8 +105,8 @@ namespace ReserveBlockCore.Models.DST
 
     public enum MessageComType
     {
-        Sender,
-        Receiver
+        Request,
+        Response
     }
 
     public enum MessageType
@@ -110,7 +114,7 @@ namespace ReserveBlockCore.Models.DST
         KeepAlive,
         Chat,
         ActionItem,
-        DecShopRequest,
+        DecShop,
         Bid,
         Purchase,
         Notification,
@@ -122,6 +126,15 @@ namespace ReserveBlockCore.Models.DST
         STUNConnect,
         STUNKeepAlive,
         ShopKeepAlive
+    }
+
+    public enum DecShopRequestOptions
+    {
+        Info,
+        Collections,
+        ListingsByCollection,
+        Listings,
+        SpecificListing,
     }
 
 }

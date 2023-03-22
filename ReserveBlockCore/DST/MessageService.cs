@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
@@ -11,7 +12,7 @@ namespace ReserveBlockCore.DST
 {
     public class MessageService
     {
-        public static void ProcessMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static async Task ProcessMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
             switch(message.Type)
             {
@@ -29,6 +30,9 @@ namespace ReserveBlockCore.DST
                     break;
                 case MessageType.STUNConnect:
                     STUNConnect(message, endPoint, udpClient);
+                    break;
+                case MessageType.DecShop :
+                    DecShopMessage(message, endPoint, udpClient);
                     break;
                 default:
                     break;
@@ -153,10 +157,35 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static string GenerateMessage(Message message)
+        public static void DecShopMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.ComType == MessageComType.Request)
+            {
+                    
+                var respMessage = DecShopMessageService.ProcessMessage(message);
+
+                if(respMessage != null)
+                {
+                    var messagePayload = GenerateMessage(respMessage, false);
+
+                    var successMessage = Encoding.UTF8.GetBytes(messagePayload);
+                    udpClient.Send(successMessage, endPoint);
+                }
+            }
+            
+            if (message.ComType == MessageComType.Response)
+            {
+                var respMessage = DecShopMessageService.ProcessMessage(message);
+            }
+
+        }
+
+        public static string GenerateMessage(Message message, bool responseRequested)
         {
             var output = "";
             message.Build();
+
+            Globals.ClientMessageDict.TryAdd(message.Id, new MessageState { Message = message, MessageId = message.Id, MessageSentTimestamp = TimeUtil.GetTime() });
             output = JsonConvert.SerializeObject(message);
 
             return output;

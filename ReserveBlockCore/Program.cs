@@ -538,6 +538,7 @@ namespace ReserveBlockCore
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
             _ = ReserveService.Run();
+            _ = DSTClient.Run();
             
             
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

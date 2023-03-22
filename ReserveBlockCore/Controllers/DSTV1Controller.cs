@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using System.Net;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -13,6 +14,8 @@ namespace ReserveBlockCore.Controllers
     [ApiController]
     public class DSTV1Controller : ControllerBase
     {
+        private static string? ConnectingAddress = null;
+
         /// <summary>
         /// Check Status of API
         /// </summary>
@@ -784,17 +787,171 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Get network shop info rbx://someurlgoeshere'
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet("GetNetworkDecShopInfo/{**url}")]
+        public async Task<string> GetNetworkDecShopInfo(string url)
+        {
+            var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
+
+            if(decshop == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find the DecShop leaf for url: {url}." });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Shop Found", DecShop = decshop });
+
+        }
+
+
+        /// <summary>
         /// Connects to a shop : 'rbx://someurlgoeshere'
         /// </summary>
+        /// <param name="address"></param>
+        /// <param name="url"></param>
         /// <returns></returns>
-        [HttpGet("ConnectToDecShop/{**url}")]
-        public async Task ConnectToDecShop(string url)
+        [HttpGet("ConnectToDecShop/{address}/{**url}")]
+        public async Task ConnectToDecShop(string address, string url)
         {
             var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
 
             if (decshop != null)
             {
-                await DSTClient.ConnectToShop(url);
+                ConnectingAddress = address;
+                //removes current connection to shop
+                await DSTClient.DisconnectFromShop();
+                _ =  DSTClient.ConnectToShop(url);
+            }
+        }
+
+        /// <summary>
+        /// Gets shop info : 'rbx://someurlgoeshere'
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetShopInfo")]
+        public async Task GetShopInfo()
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if(connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.Info}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessage(message, true);
+            }
+        }
+
+        /// <summary>
+        /// Gets shop collections
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetShopCollections")]
+        public async Task GetShopCollections()
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.Collections}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessage(message, true);
+            }
+        }
+
+        /// <summary>
+        /// Gets shop Listings
+        /// </summary>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopListings/{page}")]
+        public async Task GetShopListings(int page)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.Listings},{page}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessage(message, true);
+            }
+        }
+
+        /// <summary>
+        /// Gets shop Listings by collection
+        /// </summary>
+        /// <param name="collectionId"></param>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopListingsByCollection/{collectionId}/{page}")]
+        public async Task GetShopListingsByCollection(int collectionId, int page)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.ListingsByCollection},{collectionId},{page}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessage(message, true);
+            }
+        }
+
+        /// <summary>
+        /// Gets shop Listings by collection
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopSpecificListing/{scUID}")]
+        public async Task GetShopSpecificListing(string scUID)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.SpecificListing},{scUID}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessage(message, true);
+            }
+        }
+
+        /// <summary>
+        /// Returns the shops info stored in memory.'
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDecShopData")]
+        public async Task<string> GetDecShopData()
+        {
+            if(Globals.DecShopData != null)
+            {
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Data Found.", Globals.DecShopData });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Data not found." });
             }
         }
     }
