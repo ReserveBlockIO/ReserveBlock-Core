@@ -21,15 +21,7 @@ namespace ReserveBlockCore.Services
                 }
                 if (tx.TransactionType == TransactionType.DSTR)
                 {
-                    if(dstShopTx)
-                    {
-                        rating = await DecShopRating(tx);
-                    }
-                    else
-                    {
-                        
-                    }
-                    
+                    rating = await DecShopRating(tx);
                 }
                 if (tx.TransactionType == TransactionType.RESERVE)
                 {
