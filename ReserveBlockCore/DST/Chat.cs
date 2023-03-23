@@ -7,7 +7,7 @@ namespace ReserveBlockCore.DST
 {
     public class Chat
     {
-        static int Port = 13343;
+        static int Port = 13341;
         static UdpClient udpClient;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         public static async Task Run()
