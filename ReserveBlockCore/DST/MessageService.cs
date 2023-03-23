@@ -159,25 +159,15 @@ namespace ReserveBlockCore.DST
 
         public static void DecShopMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
-            if (message.ComType == MessageComType.Request)
+            var respMessage = DecShopMessageService.ProcessMessage(message);
+
+            if(respMessage != null)
             {
-                    
-                var respMessage = DecShopMessageService.ProcessMessage(message);
+                var messagePayload = GenerateMessage(respMessage, false);
 
-                if(respMessage != null)
-                {
-                    var messagePayload = GenerateMessage(respMessage, false);
-
-                    var successMessage = Encoding.UTF8.GetBytes(messagePayload);
-                    udpClient.Send(successMessage, endPoint);
-                }
+                var successMessage = Encoding.UTF8.GetBytes(messagePayload);
+                udpClient.Send(successMessage, endPoint);
             }
-            
-            if (message.ComType == MessageComType.Response)
-            {
-                var respMessage = DecShopMessageService.ProcessMessage(message);
-            }
-
         }
 
         public static string GenerateMessage(Message message, bool responseRequested)
