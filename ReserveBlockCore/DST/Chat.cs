@@ -42,11 +42,17 @@ namespace ReserveBlockCore.DST
             var listenerThread = new Thread(Listen);
             listenerThread.Start();
 
-            while (true)
+            var exit = false;
+            while (true && !exit)
             {
                 Console.Write("> ");
                 var message = Console.ReadLine();
-                if (!string.IsNullOrEmpty(message))
+                if(message == "/bye")
+                {
+                    exit = true;
+                    Console.WriteLine("Bye bye bye.");
+                }
+                if (!string.IsNullOrEmpty(message) && !exit)
                 {
                     var messageDataBytes = Encoding.UTF8.GetBytes(message);
                     udpClient.Send(messageDataBytes, peerEndPoint);
