@@ -27,6 +27,9 @@ namespace ReserveBlockCore.Models.DST
             IPAddress = Type == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
             Port = Globals.DSTClientPort;
 
+            if (IPAddress == "192.168.1.1")
+                IPAddress = "162.248.14.123";
+
             if(Type == MessageType.KeepAlive)
             {
                 Data = "0";

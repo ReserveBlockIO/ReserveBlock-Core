@@ -34,11 +34,11 @@ namespace ReserveBlockCore.DST
                 if (msg != null)
                 {
                     var requestOptArray = msg.Message.Data.Split(',');
-                    var requestOpt = int.TryParse(requestOptArray[0], out var optNum);
-                    if (requestOpt)
+                    var requestOpt = requestOptArray[0];
+                    if (requestOpt != null)
                     {
-                        var option = (DecShopRequestOptions)optNum;
-                        if (option == DecShopRequestOptions.Info)
+                        var option = requestOpt;
+                        if (option == "Info")
                         {
                             var decShopInfo = JsonConvert.DeserializeObject<DecShop>(message.Data);
                             if (Globals.DecShopData == null)
@@ -78,11 +78,11 @@ namespace ReserveBlockCore.DST
             try
             {
                 var requestOptArray = message.Data.Split(',');
-                var requestOpt = int.TryParse(requestOptArray[0], out var optNum);
-                if (requestOpt)
+                var requestOpt = requestOptArray[0];
+                if (requestOpt != null)
                 {
-                    var option = (DecShopRequestOptions)optNum;
-                    if (option == DecShopRequestOptions.Info)
+                    var option = requestOpt;
+                    if (option == "Info")
                     {
                         var decShop = DecShop.GetMyDecShopInfo();
                         if (decShop != null)

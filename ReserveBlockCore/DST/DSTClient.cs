@@ -9,6 +9,7 @@ using System.Reflection.Metadata;
 using System.Diagnostics;
 using ReserveBlockCore.Models;
 using Microsoft.AspNetCore.Http;
+using System.Linq.Expressions;
 
 namespace ReserveBlockCore.DST
 {
@@ -111,6 +112,8 @@ namespace ReserveBlockCore.DST
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
                     };
+
+                    Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
                 }
 
                 udpClient.Send(messageBytes, ConnectedStunServer);
@@ -247,20 +250,24 @@ namespace ReserveBlockCore.DST
         {
             while (true)
             {
-                var messageBytes = udpClient.Receive(ref RemoteEndPoint);
-                var payload = Encoding.UTF8.GetString(messageBytes);
-
-                if (string.IsNullOrEmpty(payload)) continue;
-
-                if (!string.IsNullOrEmpty(payload))
+                try
                 {
-                    var message = JsonConvert.DeserializeObject<Message>(payload);
+                    var messageBytes = udpClient.Receive(ref RemoteEndPoint);
+                    var payload = Encoding.UTF8.GetString(messageBytes);
 
-                    if (message != null)
+                    if (string.IsNullOrEmpty(payload)) continue;
+
+                    if (!string.IsNullOrEmpty(payload))
                     {
-                        MessageService.ProcessMessage(message, RemoteEndPoint, udpClient);
+                        var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                        if (message != null)
+                        {
+                            MessageService.ProcessMessage(message, RemoteEndPoint, udpClient);
+                        }
                     }
                 }
+                catch { }
             }
         }
 

@@ -756,6 +756,39 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Deletes Dec Shop on network
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDeleteLocalDecShop")]
+        public async Task<string> GetDeleteLocalDecShop()
+        {
+            string output = "";
+
+            try
+            {
+                var localShop = DecShop.GetMyDecShopInfo();
+                if (localShop != null)
+                {
+                    var decDb = DecShop.DecShopLocalDB();
+                    if(decDb != null)
+                    {
+                        var result = decDb.DeleteSafe(localShop.Id);
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Local Dec Shop Deleted : {result}" });
+                    }
+
+
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "A local decshop does not exist." });
+                }
+            }
+            catch { }
+
+            return output;
+        }
+
+        /// <summary>
         /// Gets dec shop from network
         /// </summary>
         /// <param name="address"></param>
@@ -811,7 +844,7 @@ namespace ReserveBlockCore.Controllers
         /// <param name="url"></param>
         /// <returns></returns>
         [HttpGet("ConnectToDecShop/{address}/{**url}")]
-        public async Task ConnectToDecShop(string address, string url)
+        public async Task<bool> ConnectToDecShop(string address, string url)
         {
             var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
 
@@ -821,7 +854,11 @@ namespace ReserveBlockCore.Controllers
                 //removes current connection to shop
                 await DSTClient.DisconnectFromShop();
                 _ =  DSTClient.ConnectToShop(url);
+
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
