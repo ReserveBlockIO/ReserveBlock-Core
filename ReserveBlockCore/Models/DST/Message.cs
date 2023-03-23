@@ -128,7 +128,8 @@ namespace ReserveBlockCore.Models.DST
         ShopConnect,
         STUNConnect,
         STUNKeepAlive,
-        ShopKeepAlive
+        ShopKeepAlive,
+        STUN
     }
 
     public enum DecShopRequestOptions

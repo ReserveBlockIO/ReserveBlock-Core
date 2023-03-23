@@ -16,6 +16,9 @@ namespace ReserveBlockCore.DST
         {
             switch(message.Type)
             {
+                case MessageType.STUN:
+                    STUNClientConnect(message, endPoint, udpClient);
+                    break;
                 case MessageType.KeepAlive:
                     KeepAlive(message, endPoint, udpClient);
                     break;
@@ -34,11 +37,21 @@ namespace ReserveBlockCore.DST
                 case MessageType.DecShop :
                     DecShopMessage(message, endPoint, udpClient);
                     break;
+                
                 default:
                     break;
                     
             }
         }
+        public static void STUNClientConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Data == "helo")
+            {
+                var successMessage = Encoding.UTF8.GetBytes("echo");
+                udpClient.Send(successMessage, endPoint);
+            }
+        }
+
         public static void STUNConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
             if (message.Data == "helo")

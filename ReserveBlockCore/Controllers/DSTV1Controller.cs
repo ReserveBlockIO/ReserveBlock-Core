@@ -853,9 +853,9 @@ namespace ReserveBlockCore.Controllers
                 ConnectingAddress = address;
                 //removes current connection to shop
                 await DSTClient.DisconnectFromShop();
-                _ =  DSTClient.ConnectToShop(url);
+                var connectionResult = await DSTClient.ConnectToShop(url);
 
-                return true;
+                return connectionResult;
             }
 
             return false;

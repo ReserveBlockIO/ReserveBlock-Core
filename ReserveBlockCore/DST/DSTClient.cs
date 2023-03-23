@@ -20,8 +20,9 @@ namespace ReserveBlockCore.DST
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         static IPEndPoint? ConnectedShopServer = null;
 
-        public static async Task ConnectToShop(string shopAddress, string address = "na")
+        public static async Task<bool> ConnectToShop(string shopAddress, string address = "na")
         {
+            bool connected = false;
             var successful = Encoding.UTF8.GetBytes("echo");
             var remoteEndPoint = RemoteEndPoint;
             var IsConnected = false;
@@ -46,6 +47,8 @@ namespace ReserveBlockCore.DST
                         var message = GenerateMessage(payload);
 
                         var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
+
+                        STUN();
 
                         udpClient.Send(addCommandDataBytes, stunEndPoint);
                         stopwatch.Start();
@@ -87,6 +90,7 @@ namespace ReserveBlockCore.DST
             }
             if (IsConnected)
             {
+                connected = true;
                 Console.WriteLine("connected to SHOP");
 
                 var listenerThread = new Thread(Listen);
@@ -118,22 +122,117 @@ namespace ReserveBlockCore.DST
 
                 udpClient.Send(messageBytes, ConnectedStunServer);
 
+                return connected;
             }
+            return connected;
         }
 
         public static async Task<bool> DisconnectFromShop()
         {
             try
             {
+                Globals.DecShopData = null;
                 udpClient.Close();
                 udpClient.Dispose();
-                Globals.DecShopData = null;
-
+                
                 return true;
             }
             catch
             {
                 return false;
+            }
+        }
+
+        private static void STUN()
+        {
+            var successful = Encoding.UTF8.GetBytes("echo");
+            var remoteEndPoint = RemoteEndPoint;
+            var IsConnected = false;
+            IPEndPoint? ConnectedStunServer = null;
+            var FailedToConnect = false;
+            var badList = new List<string>();
+            var portNumber = Port;
+
+            while (!IsConnected && !FailedToConnect)
+            {
+                var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x)).FirstOrDefault();
+
+                if (stunServer != null)
+                {
+                    var stunEndPoint = IPEndPoint.Parse(stunServer);
+
+                    var stopwatch = new Stopwatch();
+                    var payload = new Message { Type = MessageType.STUN, Data = "helo" };
+                    var message = GenerateMessage(payload);
+
+                    var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
+
+                    udpClient.Send(addCommandDataBytes, stunEndPoint);
+                    stopwatch.Start();
+                    while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
+                    {
+                        var beginReceive = udpClient.BeginReceive(null, null);
+                        beginReceive.AsyncWaitHandle.WaitOne(new TimeSpan(0, 0, 5));
+
+                        if (beginReceive.IsCompleted)
+                        {
+                            try
+                            {
+                                IPEndPoint remoteEP = null;
+                                byte[] receivedData = udpClient.EndReceive(beginReceive, ref remoteEP);
+                                if (receivedData.SequenceEqual(successful))
+                                {
+                                    ConnectedStunServer = stunEndPoint;
+                                    IsConnected = true;
+                                }
+                                else
+                                {
+                                    badList.Add(stunServer);
+                                    IsConnected = false;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // EndReceive failed and we ended up here
+                            }
+                        }
+                        else
+                        {
+                            badList.Add(stunServer);
+                        }
+                    }
+                    stopwatch.Stop();
+                }
+                else
+                {
+                    FailedToConnect = true;
+                }
+            }
+
+            if (IsConnected)
+            {
+                Console.WriteLine("connected to STUN server");
+
+                //var listenerThread = new Thread(Listen);
+                //listenerThread.Start();
+
+                //var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
+                //var kaMessage = GenerateMessage(kaPayload);
+
+                //var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
+
+                //DSTConnection dstCon = new DSTConnection
+                //{
+                //    ConnectDate = TimeUtil.GetTime(),
+                //    IPAddress = ConnectedStunServer.ToString(),
+                //    LastReceiveMessage = TimeUtil.GetTime(),
+                //};
+
+                //Globals.STUNServer = dstCon;
+
+                //udpClient.Send(messageBytes, ConnectedStunServer);
+
+
             }
         }
 
