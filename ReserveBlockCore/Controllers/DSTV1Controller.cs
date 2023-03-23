@@ -892,7 +892,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetShopCollections")]
-        public async Task GetShopCollections()
+        public async Task<bool> GetShopCollections()
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
@@ -906,7 +906,11 @@ namespace ReserveBlockCore.Controllers
                 };
 
                 _ = DSTClient.SendShopMessage(message, true);
+
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -915,7 +919,7 @@ namespace ReserveBlockCore.Controllers
         /// <param name="page"></param>
         /// <returns></returns>
         [HttpGet("GetShopListings/{page}")]
-        public async Task GetShopListings(int page)
+        public async Task<bool> GetShopListings(int page)
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
@@ -929,7 +933,10 @@ namespace ReserveBlockCore.Controllers
                 };
 
                 _ = DSTClient.SendShopMessage(message, true);
+
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -939,7 +946,7 @@ namespace ReserveBlockCore.Controllers
         /// <param name="page"></param>
         /// <returns></returns>
         [HttpGet("GetShopListingsByCollection/{collectionId}/{page}")]
-        public async Task GetShopListingsByCollection(int collectionId, int page)
+        public async Task<bool> GetShopListingsByCollection(int collectionId, int page)
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
@@ -953,7 +960,9 @@ namespace ReserveBlockCore.Controllers
                 };
 
                 _ = DSTClient.SendShopMessage(message, true);
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -962,7 +971,7 @@ namespace ReserveBlockCore.Controllers
         /// <param name="scUID"></param>
         /// <returns></returns>
         [HttpGet("GetShopSpecificListing/{scUID}")]
-        public async Task GetShopSpecificListing(string scUID)
+        public async Task<bool> GetShopSpecificListing(string scUID)
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
@@ -976,7 +985,9 @@ namespace ReserveBlockCore.Controllers
                 };
 
                 _ = DSTClient.SendShopMessage(message, true);
+                return true;
             }
+            return false;
         }
 
         /// <summary>
