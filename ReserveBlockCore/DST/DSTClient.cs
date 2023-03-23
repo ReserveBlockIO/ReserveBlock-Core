@@ -48,7 +48,7 @@ namespace ReserveBlockCore.DST
 
                         var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
 
-                        STUN();
+                        //STUN();
 
                         udpClient.Send(addCommandDataBytes, stunEndPoint);
                         stopwatch.Start();
@@ -213,24 +213,24 @@ namespace ReserveBlockCore.DST
             {
                 Console.WriteLine("connected to STUN server");
 
-                //var listenerThread = new Thread(Listen);
-                //listenerThread.Start();
+                var listenerThread = new Thread(Listen);
+                listenerThread.Start();
 
-                //var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
-                //var kaMessage = GenerateMessage(kaPayload);
+                var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
+                var kaMessage = GenerateMessage(kaPayload);
 
-                //var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
+                var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
 
-                //DSTConnection dstCon = new DSTConnection
-                //{
-                //    ConnectDate = TimeUtil.GetTime(),
-                //    IPAddress = ConnectedStunServer.ToString(),
-                //    LastReceiveMessage = TimeUtil.GetTime(),
-                //};
+                DSTConnection dstCon = new DSTConnection
+                {
+                    ConnectDate = TimeUtil.GetTime(),
+                    IPAddress = ConnectedStunServer.ToString(),
+                    LastReceiveMessage = TimeUtil.GetTime(),
+                };
 
-                //Globals.STUNServer = dstCon;
+                Globals.STUNServer = dstCon;
 
-                //udpClient.Send(messageBytes, ConnectedStunServer);
+                udpClient.Send(messageBytes, ConnectedStunServer);
 
 
             }
