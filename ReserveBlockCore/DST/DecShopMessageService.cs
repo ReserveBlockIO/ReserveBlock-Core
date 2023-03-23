@@ -14,7 +14,7 @@ namespace ReserveBlockCore.DST
             if (message.ComType == MessageComType.Request)
             {
                 var result = RequestMessage(message);
-                return message;
+                return result;
             }
             
             if (message.ComType == MessageComType.Response)
@@ -114,8 +114,9 @@ namespace ReserveBlockCore.DST
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.ToString());
                 var respMessage = new Message
                 {
                     ResponseMessage = true,

@@ -866,7 +866,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetShopInfo")]
-        public async Task GetShopInfo()
+        public async Task<bool> GetShopInfo()
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if(connectedShop.Count() > 0)
@@ -880,7 +880,11 @@ namespace ReserveBlockCore.Controllers
                 };
 
                 _ = DSTClient.SendShopMessage(message, true);
+
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
