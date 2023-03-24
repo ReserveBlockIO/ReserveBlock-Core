@@ -42,6 +42,10 @@ namespace ReserveBlockCore.DST
                                 await delay;
                             }
                         }
+                        else
+                        {
+                            stop = true;
+                        }
                     }
                     else if (isStun)
                     {
@@ -64,6 +68,10 @@ namespace ReserveBlockCore.DST
                             }
 
                             await delay;
+                        }
+                        else
+                        {
+                            stop = true;
                         }
                     }
                     else
@@ -91,6 +99,10 @@ namespace ReserveBlockCore.DST
 
                                 await delay;
                             }
+                        }
+                        else
+                        {
+                            stop = true;
                         }
                     }
                 }

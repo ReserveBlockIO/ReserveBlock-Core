@@ -7,9 +7,10 @@ namespace ReserveBlockCore.DST
 {
     public class Chat
     {
-        static int Port = 13341;
+        static int Port = 13343;
         static UdpClient udpClient;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        private static bool EndChat = false;
         public static async Task Run()
         {
             var successful = Encoding.UTF8.GetBytes("successful");
@@ -42,17 +43,18 @@ namespace ReserveBlockCore.DST
             var listenerThread = new Thread(Listen);
             listenerThread.Start();
 
-            var exit = false;
-            while (true && !exit)
+            while (true && !EndChat)
             {
                 Console.Write("> ");
                 var message = Console.ReadLine();
                 if(message == "/bye")
                 {
-                    exit = true;
+                    EndChat = true;
                     Console.WriteLine("Bye bye bye.");
+                    udpClient.Close();
+                    udpClient.Dispose();
                 }
-                if (!string.IsNullOrEmpty(message) && !exit)
+                if (!string.IsNullOrEmpty(message) && !EndChat)
                 {
                     var messageDataBytes = Encoding.UTF8.GetBytes(message);
                     udpClient.Send(messageDataBytes, peerEndPoint);
@@ -61,15 +63,19 @@ namespace ReserveBlockCore.DST
         }
         static void Listen()
         {
-            while (true)
+            while (true && !EndChat)
             {
-                var messageBytes = udpClient.Receive(ref RemoteEndPoint);
-                var message = Encoding.UTF8.GetString(messageBytes);
+                try
+                {
+                    var messageBytes = udpClient.Receive(ref RemoteEndPoint);
+                    var message = Encoding.UTF8.GetString(messageBytes);
 
-                if (string.IsNullOrEmpty(message)) continue;
+                    if (string.IsNullOrEmpty(message)) continue;
 
-                ConsoleHelper.ClearCurrentLine();
-                Console.Write($"peer: {message}\n> ");
+                    ConsoleHelper.ClearCurrentLine();
+                    Console.Write($"peer: {message}\n> ");
+                }
+                catch { }
             }
         }
 
