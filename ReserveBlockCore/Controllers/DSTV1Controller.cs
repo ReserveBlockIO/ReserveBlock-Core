@@ -1006,5 +1006,19 @@ namespace ReserveBlockCore.Controllers
                 return JsonConvert.SerializeObject(new { Success = false, Message = "Data not found." });
             }
         }
+
+        /// <summary>
+        /// Debug Data for DST
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Debug")]
+        public async Task<string> Debug()
+        {
+            var clients = Globals.ConnectedClients;
+            var shops = Globals.ConnectedShops;
+            var stunServer = Globals.STUNServer;
+
+            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer });           
+        }
     }
 }

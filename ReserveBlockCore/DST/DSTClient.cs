@@ -36,11 +36,11 @@ namespace ReserveBlockCore.DST
                 var decShop = await DecShop.GetDecShopStateTreiLeafByURL(shopAddress);
                 if(decShop != null)
                 {
-                    var stunServer = decShop.IP + ":" + decShop.Port;
+                    var shopServer = decShop.IP + ":" + decShop.Port;
 
-                    if (stunServer != null)
+                    if (shopServer != null)
                     {
-                        var stunEndPoint = IPEndPoint.Parse(stunServer);
+                        var shopEndPoint = IPEndPoint.Parse(shopServer);
 
                         var stopwatch = new Stopwatch();
                         var payload = new Message { Type = MessageType.ShopConnect, Data = "helo", Address = address };
@@ -48,9 +48,13 @@ namespace ReserveBlockCore.DST
 
                         var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
 
-                        //STUN();
+                        udpClient.Send(addCommandDataBytes, shopEndPoint);
+                        STUN(shopServer);
 
-                        udpClient.Send(addCommandDataBytes, stunEndPoint);
+                        //Give shop time to punch
+                        await Task.Delay(1000);
+                        udpClient.Send(addCommandDataBytes, shopEndPoint);
+
                         stopwatch.Start();
                         while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
                         {
@@ -65,8 +69,8 @@ namespace ReserveBlockCore.DST
                                     byte[] receivedData = udpClient.EndReceive(beginReceive, ref remoteEP);
                                     if (receivedData.SequenceEqual(successful))
                                     {
-                                        ConnectedStunServer = stunEndPoint;
-                                        ConnectedShopServer = stunEndPoint;
+                                        ConnectedStunServer = shopEndPoint;
+                                        ConnectedShopServer = shopEndPoint;
                                         IsConnected = true;
                                     }
                                     else
@@ -143,9 +147,9 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        private static void STUN()
+        private static void STUN(string shopEndPoint)
         {
-            var successful = Encoding.UTF8.GetBytes("echo");
+            var successful = Encoding.UTF8.GetBytes("ack");
             var remoteEndPoint = RemoteEndPoint;
             var IsConnected = false;
             IPEndPoint? ConnectedStunServer = null;
@@ -162,7 +166,7 @@ namespace ReserveBlockCore.DST
                     var stunEndPoint = IPEndPoint.Parse(stunServer);
 
                     var stopwatch = new Stopwatch();
-                    var payload = new Message { Type = MessageType.STUN, Data = "helo" };
+                    var payload = new Message { Type = MessageType.STUN, Data = shopEndPoint };
                     var message = GenerateMessage(payload);
 
                     var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
@@ -211,26 +215,26 @@ namespace ReserveBlockCore.DST
 
             if (IsConnected)
             {
-                Console.WriteLine("connected to STUN server");
+                Console.WriteLine("Connected to STUN server...");
+                Console.WriteLine("Waiting to be UDP punched...");
+                //var listenerThread = new Thread(Listen);
+                //listenerThread.Start();
 
-                var listenerThread = new Thread(Listen);
-                listenerThread.Start();
+                //var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
+                //var kaMessage = GenerateMessage(kaPayload);
 
-                var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
-                var kaMessage = GenerateMessage(kaPayload);
+                //var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
 
-                var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
+                //DSTConnection dstCon = new DSTConnection
+                //{
+                //    ConnectDate = TimeUtil.GetTime(),
+                //    IPAddress = ConnectedStunServer.ToString(),
+                //    LastReceiveMessage = TimeUtil.GetTime(),
+                //};
 
-                DSTConnection dstCon = new DSTConnection
-                {
-                    ConnectDate = TimeUtil.GetTime(),
-                    IPAddress = ConnectedStunServer.ToString(),
-                    LastReceiveMessage = TimeUtil.GetTime(),
-                };
+                //Globals.STUNServer = dstCon;
 
-                Globals.STUNServer = dstCon;
-
-                udpClient.Send(messageBytes, ConnectedStunServer);
+                //udpClient.Send(messageBytes, ConnectedStunServer);
 
 
             }

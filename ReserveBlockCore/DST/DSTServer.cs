@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using ReserveBlockCore.Utilities;
-using static ReserveBlockCore.DST.DSTClient;
 
 namespace ReserveBlockCore.DST
 {
