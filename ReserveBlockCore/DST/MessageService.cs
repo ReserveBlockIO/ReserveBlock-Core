@@ -58,7 +58,7 @@ namespace ReserveBlockCore.DST
                 var ip = ipEndPoint[0];
                 var port = ipEndPoint[1];
 
-                if(Globals.ConnectedShops.TryGetValue(ip, out var shop))
+                if(Globals.ConnectedShops.TryGetValue(message.Data, out var shop))
                 {
                     if(shop.IsConnected)
                     {
