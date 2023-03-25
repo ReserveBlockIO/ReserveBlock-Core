@@ -16,20 +16,27 @@ namespace ReserveBlockCore.DST
     public class DSTClient
     {
         static int Port = Globals.DSTClientPort;
+        static int LastUsedPort = 0;
         static UdpClient udpClient;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         static IPEndPoint? ConnectedShopServer = null;
+        public static Thread? ListenerThread = null;
 
         public static async Task<bool> ConnectToShop(string shopAddress, string address = "na")
         {
+            ListenerThread?.Interrupt();
             bool connected = false;
             var successful = Encoding.UTF8.GetBytes("echo");
+            RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            ConnectedShopServer = null;
             var remoteEndPoint = RemoteEndPoint;
             var IsConnected = false;
             IPEndPoint? ConnectedStunServer = null;
             var FailedToConnect = false;
-            var portNumber = Port;
+
+            var portNumber = Port == LastUsedPort ? LastUsedPort + 1 : Port; //dynamic port
             udpClient = new UdpClient(portNumber);
+            LastUsedPort = portNumber;
 
             while (!IsConnected && !FailedToConnect)
             {
@@ -97,8 +104,8 @@ namespace ReserveBlockCore.DST
                 connected = true;
                 Console.WriteLine("connected to SHOP");
 
-                var listenerThread = new Thread(Listen);
-                listenerThread.Start();
+                ListenerThread = new Thread(Listen);
+                ListenerThread.Start();
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -135,6 +142,11 @@ namespace ReserveBlockCore.DST
         {
             try
             {
+                var connectedClients = Globals.ConnectedClients.Values.Where(x => x.IsConnected);
+                foreach(var client in  connectedClients)
+                {
+                    Globals.ConnectedClients.TryRemove(client.IPAddress, out _);
+                }
                 Globals.DecShopData = null;
                 udpClient.Close();
                 udpClient.Dispose();
@@ -217,25 +229,6 @@ namespace ReserveBlockCore.DST
             {
                 Console.WriteLine("Connected to STUN server...");
                 Console.WriteLine("Waiting to be UDP punched...");
-                //var listenerThread = new Thread(Listen);
-                //listenerThread.Start();
-
-                //var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
-                //var kaMessage = GenerateMessage(kaPayload);
-
-                //var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
-
-                //DSTConnection dstCon = new DSTConnection
-                //{
-                //    ConnectDate = TimeUtil.GetTime(),
-                //    IPAddress = ConnectedStunServer.ToString(),
-                //    LastReceiveMessage = TimeUtil.GetTime(),
-                //};
-
-                //Globals.STUNServer = dstCon;
-
-                //udpClient.Send(messageBytes, ConnectedStunServer);
-
 
             }
         }
@@ -358,10 +351,14 @@ namespace ReserveBlockCore.DST
                     var messageBytes = udpClient.Receive(ref RemoteEndPoint);
                     var payload = Encoding.UTF8.GetString(messageBytes);
 
-                    if (string.IsNullOrEmpty(payload)) continue;
+                    if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc") continue;
+                    {
+                        Console.WriteLine(payload);
+                    }
 
                     if (!string.IsNullOrEmpty(payload))
                     {
+                        Console.WriteLine(payload + "\n");  
                         var message = JsonConvert.DeserializeObject<Message>(payload);
 
                         if (message != null)

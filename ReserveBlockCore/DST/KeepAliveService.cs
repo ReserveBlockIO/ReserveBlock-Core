@@ -33,7 +33,7 @@ namespace ReserveBlockCore.DST
                                 Globals.ConnectedShops[peerEndPoint.ToString()] = shop;
 
                                 var currentTime = TimeUtil.GetTime();
-                                if (currentTime - shop.LastReceiveMessage > 30)
+                                if (currentTime - shop.LastReceiveMessage > 15)
                                 {
                                     stop = true;
                                     Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
@@ -61,7 +61,7 @@ namespace ReserveBlockCore.DST
                             Globals.STUNServer.LastSentMessage = TimeUtil.GetTime();
 
                             var currentTime = TimeUtil.GetTime();
-                            if (currentTime - Globals.STUNServer.LastReceiveMessage > 30)
+                            if (currentTime - Globals.STUNServer.LastReceiveMessage > 15)
                             {
                                 stop = true;
                                 Globals.STUNServer = null;
@@ -91,7 +91,7 @@ namespace ReserveBlockCore.DST
                                 Globals.ConnectedClients[peerEndPoint.ToString()] = client;
 
                                 var currentTime = TimeUtil.GetTime();
-                                if (currentTime - client.LastReceiveMessage > 30)
+                                if (currentTime - client.LastReceiveMessage > 15)
                                 {
                                     stop = true;
                                     Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);

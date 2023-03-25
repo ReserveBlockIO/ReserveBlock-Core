@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Services;
 
 namespace ReserveBlockCore.DST
 {
@@ -47,7 +48,7 @@ namespace ReserveBlockCore.DST
             {
                 Console.Write("> ");
                 var message = Console.ReadLine();
-                if(message == "/bye")
+                if (message == "/bye")
                 {
                     EndChat = true;
                     Console.WriteLine("Bye bye bye.");
@@ -98,6 +99,41 @@ namespace ReserveBlockCore.DST
                 Console.Write(new string(' ', Console.WindowWidth));
                 Console.SetCursorPosition(0, currentLineCursor);
             }
+        }
+
+        public class ChatPayload
+        {
+            public string FromAddress { get; set; }
+            public string Message { get; set; }
+        }
+
+        public class ChatMessage
+        {
+            public string Id { get; set; }
+            public string Message { get; set; }
+            public bool IsMyMessage { get; set; }
+            public string MessageHash { get; set; }
+            public string FromAddress { get; set; }
+            public string Signature { get; set; }
+            public long TimeStamp { get; set; }
+            public string ShopURL { get; set; }
+            public bool MessageReceived { get; set; }
+            public IPEndPoint? IPEndPoint { get; set; }
+            public bool IsSignatureValid { get { return SignatureService.VerifySignature(FromAddress, FromAddress + TimeStamp.ToString(), Signature); } }
+            public bool IsMessageHashValid { get { return VerifyMessageHash(Message, MessageHash); } }
+            public bool IsMessageTrusted { get { return IsSignatureValid && IsMessageHashValid ? true : false; } }
+        }
+
+        public static bool VerifyMessageHash(string message, string hash)
+        {
+            var messageHash = message.ToHash();
+
+            if (messageHash == hash)
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

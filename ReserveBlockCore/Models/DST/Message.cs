@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Models.DST
         {
             Id = RandomStringUtility.GetRandomString(8);
             SentTimestamp = TimeUtil.GetTime();
-            IPAddress = Type == MessageType.KeepAlive ? "NA" : P2PClient.MostLikelyIP();
+            IPAddress = P2PClient.MostLikelyIP();
             Port = Globals.DSTClientPort;
 
             if (IPAddress == "192.168.1.1")
@@ -109,7 +109,8 @@ namespace ReserveBlockCore.Models.DST
     public enum MessageComType
     {
         Request,
-        Response
+        Response,
+        Chat
     }
 
     public enum MessageType

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
@@ -243,6 +244,8 @@ namespace ReserveBlockCore
         public static DSTConnection? STUNServer = null;
         public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
         public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentDictionary<string, Chat.ChatMessage> ChatMessageDict = new ConcurrentDictionary<string, Chat.ChatMessage>();
+        public static ConcurrentDictionary<string, List<Chat.ChatMessage>> ShopChatMessageDict = new ConcurrentDictionary<string, List<Chat.ChatMessage>>();
         public static ConcurrentDictionary<string, MessageState> ClientMessageDict = new ConcurrentDictionary<string, MessageState>();
         public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
         public static DecShopData? DecShopData = null;
