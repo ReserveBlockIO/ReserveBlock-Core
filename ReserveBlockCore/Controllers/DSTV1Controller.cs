@@ -1189,7 +1189,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if (chatMessageList.Count > 0)
                 {
-                    var simpleChatMessage = chatMessageList.Select(x => new { x.Message, x.TimeStamp, x.FromAddress, x.ToAddress, x.IsShopSentMessage }).ToList();
+                    var simpleChatMessage = chatMessageList.Select(x => new { x.Id, x.Message, x.TimeStamp, x.FromAddress, x.ToAddress, x.IsShopSentMessage }).ToList();
                     return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = simpleChatMessage });
                 }
                 else
@@ -1238,7 +1238,7 @@ namespace ReserveBlockCore.Controllers
                 if (chat == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Messages Found for {key}." });
 
-                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(10);
+                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(50);
 
                 return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {key}.", ChatMessages = chatSummary });
             }
