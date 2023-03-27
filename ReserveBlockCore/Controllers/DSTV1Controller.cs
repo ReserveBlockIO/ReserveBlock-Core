@@ -5,6 +5,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
@@ -304,6 +305,33 @@ namespace ReserveBlockCore.Controllers
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Gets NFT assets for caching
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("GetNFTAssets/{scUID}")]
+        public async Task<bool> GetNFTAssets(string scUID)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = scUID,
+                    Type = MessageType.AssetReq,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessageFromClient(message, true);
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1032,9 +1060,8 @@ namespace ReserveBlockCore.Controllers
                         TimeStamp = TimeUtil.GetTime(),
                     };
 
-                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
-
                     chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
+                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
 
                     Message message = new Message
                     {
@@ -1125,6 +1152,24 @@ namespace ReserveBlockCore.Controllers
                 {
                     return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
                 }
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found for this shop." });
+            }
+        }
+
+        /// <summary>
+        /// Delete a chat message tree. Key = the identifier. For a client it would be the URL. for a Shop it would from the from RBX address.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [HttpGet("DeleteChatMessages/{**key}")]
+        public async Task<string> DeleteChatMessages(string key)
+        {
+            if (Globals.ChatMessageDict.TryRemove(key, out var chatMessageList))
+            {
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Chat messages have been deleted." });
             }
             else
             {
@@ -1230,9 +1275,8 @@ namespace ReserveBlockCore.Controllers
                         IsShopSentMessage = true,
                     };
 
-                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
-
                     chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
+                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
 
                     Message message = new Message
                     {

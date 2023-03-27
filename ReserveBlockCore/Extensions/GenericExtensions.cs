@@ -23,6 +23,31 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
+        /// <summary>
+        /// Takes a file path string and returns its extension
+        /// </summary>
+        /// <param name="source">string</param>
+        /// <returns>string extensions. Ex: '.txt'</returns>
+        public static string ToFileExtension(this string source)
+        {
+            string myFilePath = source;
+            string ext = Path.GetExtension(myFilePath);
+            return ext;
+        }
+
+        public static byte[] ImageToByteArray(this byte[] imageBytes)
+        {
+            byte[] byteArray;
+            using (MemoryStream stream = new MemoryStream(imageBytes))
+            {
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    byteArray = reader.ReadBytes((int)stream.Length);
+                }
+            }
+            return byteArray;
+        }
+
         public static string ToHash(this string source)
         {
             if (!string.IsNullOrEmpty(source))

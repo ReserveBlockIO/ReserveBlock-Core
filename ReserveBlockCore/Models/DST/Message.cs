@@ -132,7 +132,9 @@ namespace ReserveBlockCore.Models.DST
         ShopKeepAlive,
         STUN,
         PunchClient,
-        ChatRec
+        ChatRec,
+        AssetReq,
+        AssetReqRec
     }
 
     public enum DecShopRequestOptions

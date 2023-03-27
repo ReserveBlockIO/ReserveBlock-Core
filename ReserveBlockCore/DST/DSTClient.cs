@@ -238,7 +238,7 @@ namespace ReserveBlockCore.DST
             var shopMessage = MessageService.GenerateMessage(message, responseRequested);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
-            _ = udpClient.SendAsync(messageBytes, ConnectedShopServer);
+            _  = udpClient.SendAsync(messageBytes, ConnectedShopServer);
         }
 
         public static async Task SendClientMessageFromShop(Message message, IPEndPoint endPoint, bool responseRequested)

@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Sockets;
+using System.Reflection.Metadata;
 using System.Text;
 
 namespace ReserveBlockCore.DST
@@ -47,6 +50,12 @@ namespace ReserveBlockCore.DST
                     break;
                 case MessageType.ChatRec:
                     ChatMessageReceived(message);
+                    break;
+                case MessageType.AssetReq:
+                    AssetRequest(message, endPoint, udpClient);
+                    break;
+                case MessageType.AssetReqRec:
+                    AssetRequestReceived(message, endPoint, udpClient);
                     break;
 
                 default:
@@ -325,6 +334,98 @@ namespace ReserveBlockCore.DST
                     }
                     
                 }
+            }
+        }
+
+        public static async Task AssetRequest(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.AssetReq)
+            {
+                try
+                {
+                    if (message.ComType == MessageComType.Request)
+                    {
+                        message.ReceivedTimestamp = TimeUtil.GetTime();
+                        var scUID = message.Data;
+
+                        var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                        if (sc == null)
+                            return;
+
+                        var assetList = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+
+                        if (assetList.Count == 0)
+                            return;
+
+                        foreach (var asset in assetList)
+                        {
+                            try
+                            {
+                                var location = NFTAssetFileUtility.NFTAssetPath(asset, scUID, true);
+                                if (location != null && location != "NA")
+                                {
+                                    var assetBytes = NFTAssetFileUtility.GetNFTAssetByteArray(location);
+                                    if (assetBytes != null)
+                                    {
+                                        var assetBase = assetBytes.ToBase64();
+                                        Message responseMessage = new Message
+                                        {
+                                            Type = MessageType.AssetReq,
+                                            ComType = MessageComType.Response,
+                                            Data = $"{asset},{assetBase},{scUID}",
+                                            ResponseMessage = true,
+                                            ResponseMessageId = message.Id,
+                                        };
+
+                                        var messageJson = GenerateMessage(responseMessage, false);
+                                        var sendMessage = Encoding.UTF8.GetBytes(messageJson);
+                                        udpClient.Send(sendMessage);
+                                    }
+
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+
+                }
+                catch { }
+                
+                if (message.ComType == MessageComType.Response)
+                {
+                    Globals.ClientMessageDict.TryGetValue(message.ResponseMessageId, out var msg);
+                    if (msg != null)
+                    {
+                        msg.HasReceivedResponse = true;
+                        msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                        Globals.ClientMessageDict[message.ResponseMessageId] = msg;
+
+                        try
+                        {
+                            var dataSplit = message.Data.Split(',');
+                            var assetName = dataSplit[0];
+                            var assetBase = dataSplit[1];
+                            var scUID = dataSplit[2];
+
+                            var assetBytes = assetBase.FromBase64ToByteArray();
+                            var assetPath = NFTAssetFileUtility.NFTAssetPath(assetName, scUID, true);
+
+                            File.WriteAllBytes(assetPath, assetBytes);
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void AssetRequestReceived(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.AssetReqRec)
+            {
+                
             }
         }
 
