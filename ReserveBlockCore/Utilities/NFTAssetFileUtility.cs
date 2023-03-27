@@ -122,7 +122,7 @@ namespace ReserveBlockCore.Utilities
             catch (Exception ex) { }
             
         }
-        public static string CreateNFTAssetPath(string fileName, string scUID)
+        public static string CreateNFTAssetPath(string fileName, string scUID, bool thumbs = false)
         {
             var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
@@ -145,12 +145,20 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
             }
+            
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
+            if (thumbs)
+            {
+                if (!Directory.Exists(path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar))
+                {
+                    Directory.CreateDirectory(path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar);
+                }
+            }
 
-            var newPath = path + fileName;
+            var newPath = thumbs ? path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
 
             return newPath;
         }

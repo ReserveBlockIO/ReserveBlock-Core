@@ -379,7 +379,7 @@ namespace ReserveBlockCore.DST
 
                                         var messageJson = GenerateMessage(responseMessage, false);
                                         var sendMessage = Encoding.UTF8.GetBytes(messageJson);
-                                        udpClient.Send(sendMessage);
+                                        udpClient.Send(sendMessage, endPoint);
                                     }
 
                                 }
@@ -408,9 +408,12 @@ namespace ReserveBlockCore.DST
                             var scUID = dataSplit[2];
 
                             var assetBytes = assetBase.FromBase64ToByteArray();
-                            var assetPath = NFTAssetFileUtility.NFTAssetPath(assetName, scUID, true);
+                            var assetPath = NFTAssetFileUtility.CreateNFTAssetPath(assetName, scUID, true);
 
-                            File.WriteAllBytes(assetPath, assetBytes);
+                            if(!File.Exists(assetPath))
+                            {
+                                File.WriteAllBytes(assetPath, assetBytes);
+                            }
                         }
                         catch (Exception ex)
                         {
