@@ -1083,7 +1083,7 @@ namespace ReserveBlockCore.Controllers
                     
                     _ = DSTClient.SendShopMessageFromClient(message, false);
 
-                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent." });
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent.", MessageId = chatMessage.Id});
                 }
                 
             }
@@ -1337,8 +1337,8 @@ namespace ReserveBlockCore.Controllers
         /// Gets first message for shop summary, not a client/buyer method
         /// </summary>
         /// <returns></returns>
-        [HttpGet("GetShopSummaryChatMessages")]
-        public async Task<string> GetShopSummaryChatMessages()
+        [HttpGet("GetSummaryChatMessages")]
+        public async Task<string> GetSummaryChatMessages()
         {
             var chatMessages = Globals.ChatMessageDict.Keys.ToList();
             if (chatMessages.Count > 0)
@@ -1348,6 +1348,30 @@ namespace ReserveBlockCore.Controllers
                     Messages = x.Value.Count > 0 ? x.Value.OrderByDescending(x => x.TimeStamp).Take(1) : null
                 }).ToList();
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
+        /// <summary>
+        /// Gets first message for summary
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetMostRecentChatMessages/{key}")]
+        public async Task<string> GetMostRecentChatMessages(string key)
+        {
+            if (Globals.ChatMessageDict.ContainsKey(key))
+            {
+                var chat = Globals.ChatMessageDict[key];
+
+                if (chat == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Messages Found for {key}." });
+
+                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(10);
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {key}.", ChatMessages = chatSummary });
             }
             else
             {
@@ -1370,30 +1394,6 @@ namespace ReserveBlockCore.Controllers
                     Messages = x.Value.Count > 0 ? x.Value : null
                 }).ToList();
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
-            }
-            else
-            {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
-            }
-        }
-
-        /// <summary>
-        /// Gets first message for shop summary, not a client/buyer method
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("GetMostRecentShopChatMessages/{rbxAddress}")]
-        public async Task<string> GetMostRecentShopChatMessages(string rbxAddress)
-        {
-            if (Globals.ChatMessageDict.ContainsKey(rbxAddress))
-            {
-                var chat = Globals.ChatMessageDict[rbxAddress];
-
-                if (chat == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Messages Found for {rbxAddress}." });
-
-                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(10);
-
-                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {rbxAddress}.", ChatMessages = chatSummary });
             }
             else
             {
