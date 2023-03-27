@@ -7,6 +7,7 @@ using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Security;
 
 namespace ReserveBlockCore
@@ -244,8 +245,8 @@ namespace ReserveBlockCore
         public static DSTConnection? STUNServer = null;
         public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
         public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
-        public static ConcurrentDictionary<string, Chat.ChatMessage> ChatMessageDict = new ConcurrentDictionary<string, Chat.ChatMessage>();
-        public static ConcurrentDictionary<string, List<Chat.ChatMessage>> ShopChatMessageDict = new ConcurrentDictionary<string, List<Chat.ChatMessage>>();
+        public static ConcurrentDictionary<string, List<Chat.ChatMessage>> ChatMessageDict = new ConcurrentDictionary<string, List<Chat.ChatMessage>>();
+        public static ConcurrentDictionary<string, IPEndPoint> ShopChatUsers = new ConcurrentDictionary<string, IPEndPoint>();
         public static ConcurrentDictionary<string, MessageState> ClientMessageDict = new ConcurrentDictionary<string, MessageState>();
         public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
         public static DecShopData? DecShopData = null;

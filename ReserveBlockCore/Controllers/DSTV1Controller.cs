@@ -884,7 +884,7 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                _ = DSTClient.SendShopMessage(message, true);
+                _ = DSTClient.SendShopMessageFromClient(message, true);
 
                 return true;
             }
@@ -910,7 +910,7 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                _ = DSTClient.SendShopMessage(message, true);
+                _ = DSTClient.SendShopMessageFromClient(message, true);
 
                 return true;
             }
@@ -937,7 +937,7 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                _ = DSTClient.SendShopMessage(message, true);
+                _ = DSTClient.SendShopMessageFromClient(message, true);
 
                 return true;
             }
@@ -964,7 +964,7 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                _ = DSTClient.SendShopMessage(message, true);
+                _ = DSTClient.SendShopMessageFromClient(message, true);
                 return true;
             }
             return false;
@@ -989,7 +989,7 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                _ = DSTClient.SendShopMessage(message, true);
+                _ = DSTClient.SendShopMessageFromClient(message, true);
                 return true;
             }
             return false;
@@ -1018,10 +1018,15 @@ namespace ReserveBlockCore.Controllers
                     if(Globals.DecShopData?.DecShop == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
 
+                    var messageLengthCheck = chatPayload.Message.ToLengthCheck(240);
+                    if (!messageLengthCheck)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Message is too long. Please shorten to 240 characters." });
+
                     var chatMessage = new Chat.ChatMessage {
                         Id = RandomStringUtility.GetRandomString(10, true),
                         FromAddress = localAddress.Address,
                         Message = chatPayload.Message,
+                        ToAddress = Globals.DecShopData.DecShop.DecShopURL,
                         MessageHash = chatPayload.Message.ToHash(),
                         ShopURL = Globals.DecShopData.DecShop.DecShopURL,
                         TimeStamp = TimeUtil.GetTime(),
@@ -1039,9 +1044,19 @@ namespace ReserveBlockCore.Controllers
                         ComType = MessageComType.Chat
                     };
 
-                    Globals.ChatMessageDict.TryAdd(chatMessage.Id, chatMessage);
+                    if(Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL,out var chatMessageList))
+                    {
+                        chatMessageList.Add(chatMessage);
+                        Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                    }
+                    else
+                    {
+                        Globals.ChatMessageDict.TryAdd(chatMessage.ShopURL, new List<Chat.ChatMessage> { chatMessage });
+                    }
                     
-                    _ = DSTClient.SendShopMessage(message, false);
+                    _ = DSTClient.SendShopMessageFromClient(message, false);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent." });
                 }
                 
             }
@@ -1057,12 +1072,15 @@ namespace ReserveBlockCore.Controllers
         /// Resend a chat message
         /// </summary>
         /// <param name="messageId"></param>
+        /// <param name="shopUrl"></param>
         /// <returns></returns>
-        [HttpGet("ResendChatMessage/{messageId}")]
-        public async Task<string> ResendChatMessage(string messageId)
+        [HttpGet("ResendChatMessage/{messageId}/{**shopUrl}")]
+        public async Task<string> ResendChatMessage(string messageId, string shopUrl)
         {
-            if(Globals.ChatMessageDict.TryGetValue(messageId, out var chatMessage))
+            if(Globals.ChatMessageDict.TryGetValue(shopUrl, out var chatMessageList))
             {
+                var chatMessage = chatMessageList.Where(x => x.Id == messageId).FirstOrDefault();
+
                 if(chatMessage == null)
                     return JsonConvert.SerializeObject(new { Success = true, Message = "Chat ID found, but message was null."});
 
@@ -1079,50 +1097,64 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Chat
                 };
 
-                _ = DSTClient.SendShopMessage(message, false);
+                _ = DSTClient.SendShopMessageFromClient(message, false);
 
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Message Resent."});
             }
             else
             {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat message not found." });
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages were not found." });
             }
         }
 
         /// <summary>
         /// Get chat messages for client, not a shop
         /// </summary>
+        /// <param name="shopUrl"></param>
         /// <returns></returns>
-        [HttpGet("GetDetailedChatMessages")]
-        public async Task<string> GetDetailedChatMessages()
+        [HttpGet("GetDetailedChatMessages/{**shopUrl}")]
+        public async Task<string> GetDetailedChatMessages(string shopUrl)
         {
-            var chatMessages = Globals.ChatMessageDict.Values.ToList();
-            if(chatMessages.Count > 0)
+            if (Globals.ChatMessageDict.TryGetValue(shopUrl, out var chatMessageList))
             {
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = chatMessages });
+                if (chatMessageList.Count > 0)
+                {
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = chatMessageList });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+                }
             }
             else
             {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found for this shop." });
             }
         }
 
         /// <summary>
         /// Get chat messages for client, not a shop
         /// </summary>
+        /// <param name="shopUrl"></param>
         /// <returns></returns>
-        [HttpGet("GetSimpleChatMessages")]
-        public async Task<string> GetSimpleChatMessages()
+        [HttpGet("GetSimpleChatMessages/{**shopUrl}")]
+        public async Task<string> GetSimpleChatMessages(string shopUrl)
         {
-            var chatMessages = Globals.ChatMessageDict.Values.ToList();
-            if (chatMessages.Count > 0)
+            if (Globals.ChatMessageDict.TryGetValue(shopUrl, out var chatMessageList))
             {
-                var simpleChatMessage = chatMessages.Select(x => new { x.Message, x.TimeStamp}).ToList();
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = chatMessages });
+                if (chatMessageList.Count > 0)
+                {
+                    var simpleChatMessage = chatMessageList.Select(x => new { x.Message, x.TimeStamp, x.FromAddress, x.ToAddress, x.IsShopSentMessage }).ToList();
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = simpleChatMessage });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+                }
             }
             else
             {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found for this shop." });
             }
         }
 
@@ -1134,15 +1166,104 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetSpecificChatMessages/{messageId}")]
         public async Task<string> GetSpecificChatMessages(string messageId)
         {
-            
-            if(Globals.ChatMessageDict.TryGetValue(messageId, out var chatMessage))
+            var specificMessage = Globals.ChatMessageDict.Values.SelectMany(x => x).Where(y => y.Id == messageId).FirstOrDefault();
+
+            if (specificMessage != null)
             {
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Message Resent.", ChatMessage = chatMessage });
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Message Resent.", ChatMessage = specificMessage });
             }
             else
             {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat message not found." });
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat message was not found." });
             }
+        }
+
+        /// <summary>
+        /// Send a chat message from a shop
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("SendShopChatMessage")]
+        public async Task<string> SendShopChatMessage([FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    var chatPayload = JsonConvert.DeserializeObject<Chat.ChatPayload>(jsonData.ToString());
+                    if (chatPayload == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Chat Payload cannot be null" });
+
+                    var localAddress = AccountData.GetSingleAccount(chatPayload.FromAddress);
+
+                    if (localAddress == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the from address" });
+
+                    var myDecShop = DecShop.GetMyDecShopInfo();
+
+                    if (myDecShop == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+
+                    if(myDecShop.OwnerAddress != chatPayload.FromAddress)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Only the shop  any may send messages back" });
+
+                    var messageLengthCheck = chatPayload.Message.ToLengthCheck(240);
+                    if(!messageLengthCheck)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Message is too long. Please shorten to 240 characters." });
+
+                    if(chatPayload.ToAddress == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "'To' address cannot be null." });
+
+                    var endpoint = Globals.ShopChatUsers[chatPayload.ToAddress];
+
+                    if(endpoint == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Shop Endpoint was null. Please ensure you have sent a message to them before and that they are actively communicating with you." });
+
+                    var chatMessage = new Chat.ChatMessage
+                    {
+                        Id = RandomStringUtility.GetRandomString(10, true),
+                        FromAddress = localAddress.Address,
+                        Message = chatPayload.Message,
+                        ToAddress = chatPayload.ToAddress,
+                        MessageHash = chatPayload.Message.ToHash(),
+                        ShopURL = myDecShop.DecShopURL,
+                        TimeStamp = TimeUtil.GetTime(),
+                        IsShopSentMessage = true,
+                    };
+
+                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
+
+                    chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
+
+                    Message message = new Message
+                    {
+                        Address = ConnectingAddress,
+                        Data = chatMessageJson,
+                        Type = MessageType.Chat,
+                        ComType = MessageComType.Chat
+                    };
+
+                    if (Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL, out var chatMessageList))
+                    {
+                        chatMessageList.Add(chatMessage);
+                        Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                    }
+                    else
+                    {
+                        Globals.ChatMessageDict.TryAdd(chatMessage.ShopURL, new List<Chat.ChatMessage> { chatMessage });
+                    }
+
+                    _ = DSTClient.SendClientMessageFromShop(message, endpoint, false);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent." });
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); 
         }
 
         /// <summary>
@@ -1152,14 +1273,36 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetSimpleShopChatMessages")]
         public async Task<string> GetSimpleShopChatMessages()
         {
-            var chatMessages = Globals.ShopChatMessageDict.Keys.ToList();
+            var chatMessages = Globals.ChatMessageDict.Keys.ToList();
             if (chatMessages?.Count > 0)
             {
-                var sMessages = Globals.ShopChatMessageDict.Select(x => new { 
+                var sMessages = Globals.ChatMessageDict.Select(x => new { 
                     User = x.Key,
-                    Messages = x.Value.Count > 0 ? x.Value.Select(y => new { y.Message, y.TimeStamp}) : null
+                    Messages = x.Value.Count > 0 ? x.Value.Select(y => new { y.Message, y.TimeStamp, y.FromAddress, y.ToAddress, y.IsShopSentMessage}) : null
                 }).ToList();
 
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
+        /// <summary>
+        /// Gets first message for shop summary, not a client/buyer method
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetShopSummaryChatMessages")]
+        public async Task<string> GetShopSummaryChatMessages()
+        {
+            var chatMessages = Globals.ChatMessageDict.Keys.ToList();
+            if (chatMessages.Count > 0)
+            {
+                var sMessages = Globals.ChatMessageDict.Select(x => new {
+                    User = x.Key,
+                    Messages = x.Value.Count > 0 ? x.Value.OrderByDescending(x => x.TimeStamp).Take(1) : null
+                }).ToList();
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
             }
             else
@@ -1178,11 +1321,72 @@ namespace ReserveBlockCore.Controllers
             var chatMessages = Globals.ChatMessageDict.Keys.ToList();
             if (chatMessages.Count > 0)
             {
-                var sMessages = Globals.ShopChatMessageDict.Select(x => new {
+                var sMessages = Globals.ChatMessageDict.Select(x => new {
                     User = x.Key,
                     Messages = x.Value.Count > 0 ? x.Value : null
                 }).ToList();
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
+        /// <summary>
+        /// Gets first message for shop summary, not a client/buyer method
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetMostRecentShopChatMessages/{rbxAddress}")]
+        public async Task<string> GetMostRecentShopChatMessages(string rbxAddress)
+        {
+            if (Globals.ChatMessageDict.ContainsKey(rbxAddress))
+            {
+                var chat = Globals.ChatMessageDict[rbxAddress];
+
+                if (chat == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Messages Found for {rbxAddress}." });
+
+                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(10);
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {rbxAddress}.", ChatMessages = chatSummary });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
+        /// <summary>
+        /// Gets a specific chat messages for shop, not a client/buyer
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDetailedSpecificShopChatMessages/{rbxAddress}")]
+        public async Task<string> GetDetailedSpecificShopChatMessages(string rbxAddress)
+        {
+            if(Globals.ChatMessageDict.ContainsKey(rbxAddress))
+            {
+                var chat = Globals.ChatMessageDict[rbxAddress];
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {rbxAddress}.", ChatMessages = chat });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
+        /// <summary>
+        /// Gets simple specific chat messages for shop, not a client/buyer
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetSimpleSpecificShopChatMessages/{rbxAddress}")]
+        public async Task<string> GetSimpleSpecificShopChatMessages(string rbxAddress)
+        {
+            if (Globals.ChatMessageDict.ContainsKey(rbxAddress))
+            {
+                var chat = Globals.ChatMessageDict[rbxAddress];
+                var chatSimple = chat.Select(x => new { x.Message, x.TimeStamp, x.FromAddress, x.ToAddress, x.IsShopSentMessage });
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {rbxAddress}.", ChatMessages = chatSimple });
             }
             else
             {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.P2P;
@@ -41,8 +42,13 @@ namespace ReserveBlockCore.DST
                 case MessageType.DecShop :
                     DecShopMessage(message, endPoint, udpClient);
                     break;
+                case MessageType.Chat:
+                    ChatMessage(message, endPoint, udpClient);
+                    break;
+                case MessageType.ChatRec:
+                    ChatMessageReceived(message);
+                    break;
 
-                
                 default:
                     break;
                     
@@ -233,6 +239,92 @@ namespace ReserveBlockCore.DST
 
                 var successMessage = Encoding.UTF8.GetBytes(messagePayload);
                 udpClient.Send(successMessage, endPoint);
+            }
+        }
+
+        public static void ChatMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if(message.Type == MessageType.Chat)
+            {
+                message.ReceivedTimestamp = TimeUtil.GetTime();
+
+                var chatMessage = JsonConvert.DeserializeObject<Chat.ChatMessage>(message.Data);
+                if(chatMessage != null)
+                {
+                    if (chatMessage.IsMessageTrusted)
+                    {
+                        chatMessage.MessageReceived = true;
+                        if (!chatMessage.IsShopSentMessage)
+                        {
+                            //Adds user to shop message list
+                            if (Globals.ShopChatUsers.TryGetValue(chatMessage.FromAddress, out var chatUser))
+                            {
+                                Globals.ShopChatUsers[chatMessage.FromAddress] = chatUser;
+                            }
+                            else
+                            {
+                                Globals.ShopChatUsers.TryAdd(chatMessage.FromAddress, endPoint);
+                            }
+
+                            //Adds chat message to global chat list.
+                            if (Globals.ChatMessageDict.TryGetValue(chatMessage.FromAddress, out var chatMessageList))
+                            {
+                                chatMessageList.Add(chatMessage);
+                                Globals.ChatMessageDict[chatMessage.FromAddress] = chatMessageList;
+                            }
+                            else
+                            {
+                                List<Chat.ChatMessage> chatMessages = new List<Chat.ChatMessage>{ chatMessage };
+                                Globals.ChatMessageDict[chatMessage.FromAddress] = chatMessages;
+                            }
+
+                            var messageBytes = Chat.CreateChatReceivedMessage(chatMessage);
+                            if (messageBytes != null)
+                                udpClient.Send(messageBytes, endPoint);
+                        }
+                        else
+                        {
+                            if (Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL, out var chatMessageList))
+                            {
+                                if (Chat.ValidateChatMessage(chatMessage))
+                                {
+                                    chatMessageList.Add(chatMessage);
+                                    Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                                }
+                            }
+                            else
+                            {
+                                List<Chat.ChatMessage> chatMessages = new List<Chat.ChatMessage> { chatMessage };
+                                Globals.ChatMessageDict[chatMessage.FromAddress] = chatMessages;
+                            }
+
+                            var messageBytes = Chat.CreateChatReceivedMessage(chatMessage);
+                            if (messageBytes != null)
+                                udpClient.Send(messageBytes, endPoint);
+                        }
+                    }
+                }
+
+            }
+        }
+        public static void ChatMessageReceived(Message message)
+        {
+            if (message.Type == MessageType.ChatRec)
+            {
+                message.ReceivedTimestamp = TimeUtil.GetTime();
+                var dataSplit = message.Data.Split(',');
+                var key = dataSplit[0];
+                var messageId = dataSplit[1];
+                if(Globals.ChatMessageDict.TryGetValue(key, out var chatMessageList))
+                {
+                    var chatMessage = chatMessageList.Where(x => x.Id == messageId).FirstOrDefault();
+                    if(chatMessage != null)
+                    {
+                        chatMessage.MessageReceived = true;
+                        Globals.ChatMessageDict[key] = chatMessageList;
+                    }
+                    
+                }
             }
         }
 

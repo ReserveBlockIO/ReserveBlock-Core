@@ -233,12 +233,20 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task SendShopMessage(Message message, bool responseRequested)
+        public static async Task SendShopMessageFromClient(Message message, bool responseRequested)
         {
             var shopMessage = MessageService.GenerateMessage(message, responseRequested);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
-            udpClient.Send(messageBytes, ConnectedShopServer);
+            _ = udpClient.SendAsync(messageBytes, ConnectedShopServer);
+        }
+
+        public static async Task SendClientMessageFromShop(Message message, IPEndPoint endPoint, bool responseRequested)
+        {
+            var shopMessage = MessageService.GenerateMessage(message, responseRequested);
+            var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
+
+            _ = udpClient.SendAsync(messageBytes, endPoint);
         }
 
         public static async Task Run(bool bypass = false)
