@@ -1333,14 +1333,14 @@ namespace ReserveBlockCore.Controllers
                         ComType = MessageComType.Chat
                     };
 
-                    if (Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL, out var chatMessageList))
+                    if (Globals.ChatMessageDict.TryGetValue(chatPayload.ToAddress, out var chatMessageList))
                     {
                         chatMessageList.Add(chatMessage);
-                        Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                        Globals.ChatMessageDict[chatPayload.ToAddress] = chatMessageList;
                     }
                     else
                     {
-                        Globals.ChatMessageDict.TryAdd(chatMessage.ShopURL, new List<Chat.ChatMessage> { chatMessage });
+                        Globals.ChatMessageDict.TryAdd(chatPayload.ToAddress, new List<Chat.ChatMessage> { chatMessage });
                     }
 
                     _ = DSTClient.SendClientMessageFromShop(message, endpoint, false);

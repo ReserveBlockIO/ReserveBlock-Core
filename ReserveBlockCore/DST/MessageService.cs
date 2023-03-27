@@ -260,7 +260,8 @@ namespace ReserveBlockCore.DST
                 var chatMessage = JsonConvert.DeserializeObject<Chat.ChatMessage>(message.Data);
                 if(chatMessage != null)
                 {
-                    if (chatMessage.IsMessageTrusted)
+                    var messageLengthCheck = chatMessage.Message.ToLengthCheck(240);
+                    if (chatMessage.IsMessageTrusted && messageLengthCheck)
                     {
                         chatMessage.MessageReceived = true;
                         if (!chatMessage.IsShopSentMessage)
