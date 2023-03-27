@@ -1223,6 +1223,53 @@ namespace ReserveBlockCore.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Gets first message for summary
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetMostRecentChatMessages/{key}")]
+        public async Task<string> GetMostRecentChatMessages(string key)
+        {
+            if (Globals.ChatMessageDict.ContainsKey(key))
+            {
+                var chat = Globals.ChatMessageDict[key];
+
+                if (chat == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Messages Found for {key}." });
+
+                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(10);
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {key}.", ChatMessages = chatSummary });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
+        /// <summary>
+        /// Gets first message for shop summary, not a client/buyer method
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetSummaryChatMessages")]
+        public async Task<string> GetSummaryChatMessages()
+        {
+            var chatMessages = Globals.ChatMessageDict.Keys.ToList();
+            if (chatMessages.Count > 0)
+            {
+                var sMessages = Globals.ChatMessageDict.Select(x => new {
+                    User = x.Key,
+                    Messages = x.Value.Count > 0 ? x.Value.OrderByDescending(x => x.TimeStamp).Take(1) : null
+                }).ToList();
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
+            }
+        }
+
         /// <summary>
         /// Send a chat message from a shop
         /// </summary>
@@ -1320,33 +1367,11 @@ namespace ReserveBlockCore.Controllers
             var chatMessages = Globals.ChatMessageDict.Keys.ToList();
             if (chatMessages?.Count > 0)
             {
-                var sMessages = Globals.ChatMessageDict.Select(x => new { 
-                    User = x.Key,
-                    Messages = x.Value.Count > 0 ? x.Value.Select(y => new { y.Message, y.TimeStamp, y.FromAddress, y.ToAddress, y.IsShopSentMessage}) : null
-                }).ToList();
-
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
-            }
-            else
-            {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
-            }
-        }
-
-        /// <summary>
-        /// Gets first message for shop summary, not a client/buyer method
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("GetSummaryChatMessages")]
-        public async Task<string> GetSummaryChatMessages()
-        {
-            var chatMessages = Globals.ChatMessageDict.Keys.ToList();
-            if (chatMessages.Count > 0)
-            {
                 var sMessages = Globals.ChatMessageDict.Select(x => new {
                     User = x.Key,
-                    Messages = x.Value.Count > 0 ? x.Value.OrderByDescending(x => x.TimeStamp).Take(1) : null
+                    Messages = x.Value.Count > 0 ? x.Value.Select(y => new { y.Id, y.Message, y.TimeStamp, y.FromAddress, y.ToAddress, y.IsShopSentMessage }) : null
                 }).ToList();
+
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Messages Found.", ChatMessages = sMessages });
             }
             else
@@ -1355,29 +1380,6 @@ namespace ReserveBlockCore.Controllers
             }
         }
 
-        /// <summary>
-        /// Gets first message for summary
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("GetMostRecentChatMessages/{key}")]
-        public async Task<string> GetMostRecentChatMessages(string key)
-        {
-            if (Globals.ChatMessageDict.ContainsKey(key))
-            {
-                var chat = Globals.ChatMessageDict[key];
-
-                if (chat == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Messages Found for {key}." });
-
-                var chatSummary = chat.OrderByDescending(x => x.TimeStamp).Take(10);
-
-                return JsonConvert.SerializeObject(new { Success = true, Message = $"Messages Found for {key}.", ChatMessages = chatSummary });
-            }
-            else
-            {
-                return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages not found." });
-            }
-        }
 
         /// <summary>
         /// Get chat messages for shop, not a client/buyer
