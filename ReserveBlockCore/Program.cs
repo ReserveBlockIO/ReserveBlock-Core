@@ -32,6 +32,7 @@ namespace ReserveBlockCore
             bool keslog = false;
             bool signalrLog = false;
             bool runSingleRequest = false;
+            bool skipStateSync = false;
 
             var argList = args.ToList();
             //force culture info to US
@@ -137,6 +138,10 @@ namespace ReserveBlockCore
                     if (argC == "unsafe")
                     {
                         Globals.RunUnsafeCode = true;
+                    }
+                    if (argC == "skip")
+                    {
+                        skipStateSync = true;
                     }
                     if (argC.Contains("encpass"))
                     {
@@ -351,7 +356,7 @@ namespace ReserveBlockCore
                 valEncryptCheck = true;
             }
 
-            await StartupService.RunSettingChecks();
+            await StartupService.RunSettingChecks(skipStateSync);
 
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();
