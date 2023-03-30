@@ -243,7 +243,7 @@ namespace ReserveBlockCore.Services
 
             txRequest.TransactionStatus = TransactionStatus.Pending;
 
-            if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < Globals.ValidatorRequiredRBX))
+            if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < ValidatorService.ValidatorRequiredAmount()))
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
                 ValidatorService.StopValidating(validator);
@@ -275,7 +275,7 @@ namespace ReserveBlockCore.Services
 
         public static async Task SendTransaction(Transaction txRequest, Account account)
         {
-            if (account.IsValidating == true && (account.Balance - (txRequest.Fee + txRequest.Amount) < Globals.ValidatorRequiredRBX))
+            if (account.IsValidating == true && (account.Balance - (txRequest.Fee + txRequest.Amount) < ValidatorService.ValidatorRequiredAmount()))
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == txRequest.FromAddress.ToLower());
                 ValidatorService.StopValidating(validator);

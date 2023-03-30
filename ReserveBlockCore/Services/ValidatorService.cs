@@ -129,9 +129,9 @@ namespace ReserveBlockCore.Services
                     output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance < (decimal)Globals.ValidatorRequiredRBX)
+                if (sTreiAcct != null && sTreiAcct.Balance < ValidatorService.ValidatorRequiredAmount())
                 {
-                    output = $"Account Found, but does not meet the minimum of {Globals.ValidatorRequiredRBX} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
+                    output = $"Account Found, but does not meet the minimum of {ValidatorService.ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
                     return output;
                 }
                 if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
@@ -139,7 +139,7 @@ namespace ReserveBlockCore.Services
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance >= (decimal)Globals.ValidatorRequiredRBX)
+                if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorService.ValidatorRequiredAmount())
                 {
                     //validate account with signature check
                     var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
@@ -336,7 +336,7 @@ namespace ReserveBlockCore.Services
                 //output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                 return result;
             }
-            if (sTreiAcct != null && sTreiAcct.Balance < (decimal)Globals.ValidatorRequiredRBX)
+            if (sTreiAcct != null && sTreiAcct.Balance < ValidatorService.ValidatorRequiredAmount())
             {
                 return result;
             }
@@ -345,7 +345,7 @@ namespace ReserveBlockCore.Services
                 //output = "Unique name has already been taken. Please choose another.";
                 return result;
             }
-            if (sTreiAcct != null && sTreiAcct.Balance >= (decimal)Globals.ValidatorRequiredRBX)
+            if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorService.ValidatorRequiredAmount())
             {
                 result = true; //success
             }
@@ -368,8 +368,20 @@ namespace ReserveBlockCore.Services
 
             await P2PClient.DisconnectAdjudicators();
 
-            ValidatorLogUtility.Log($"Funds have dropped below {Globals.ValidatorRequiredRBX} RBX. Removing from pool.", "ValidatorService.StopValidating()");
+            ValidatorLogUtility.Log($"Funds have dropped below {ValidatorService.ValidatorRequiredAmount()} RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
+        }
+
+        public static int ValidatorRequiredAmount()
+        {
+            if(Globals.LastBlock.Height < Globals.V1TXHeight)
+            {
+                return 1000;
+            }
+            else
+            {
+                return 12000;
+            }
         }
 
         public static async void ClearOldValidator()

@@ -38,6 +38,14 @@ namespace ReserveBlockCore.Services
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
 
+            if(Globals.LastBlock.Height > Globals.V1TXHeight)
+            {
+                if (txRequest.Fee <= 0.000003M)
+                {
+                    return (txResult, "Fee cannot be less than or equal to zero.");
+                }
+            }
+
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
@@ -350,8 +358,17 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if (txRequest.Amount < Globals.ADNRRequiredRBX)
-                                return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                            if(Globals.LastBlock.Height >= Globals.V1TXHeight)
+                            {
+                                if (txRequest.Amount < Globals.ADNRRequiredRBX)
+                                    return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                            }
+                            else
+                            {
+                                if (txRequest.Amount < 1.0M)
+                                    return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                            }
+                            
 
                         }
                         catch (Exception ex)
@@ -412,7 +429,7 @@ namespace ReserveBlockCore.Services
                                                     if (stAcct != null)
                                                     {
                                                         var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
-                                                        if (balance < Globals.ValidatorRequiredRBX)
+                                                        if (balance < ValidatorService.ValidatorRequiredAmount())
                                                         {
                                                             return (txResult, $"Balance is under {Globals.ValidatorRequiredRBX}. Topic will not be allowed.");
                                                         }
