@@ -319,18 +319,17 @@ namespace ReserveBlockCore.Models
                   Data = txData
               };
 
-            topicTx.Fee = FeeCalcService.CalculateTXFee(topicTx);
+                topicTx.Fee = FeeCalcService.CalculateTXFee(topicTx);
 
-            topicTx.Build();
+                topicTx.Build();
 
-            var txHash = topicTx.Hash;
-            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
-            if (sig == "ERROR")
-            {
-                ErrorLogUtility.LogError($"Signing TX failed for Topic Request on address {address}.", "TopicTrei.CreateTopicTx()");
-                return (null, $"Signing TX failed for Topic Request on address {address}.");
-            }
-
+                var txHash = topicTx.Hash;
+                var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+                if (sig == "ERROR")
+                {
+                    ErrorLogUtility.LogError($"Signing TX failed for Topic Request on address {address}.", "TopicTrei.CreateTopicTx()");
+                    return (null, $"Signing TX failed for Topic Request on address {address}.");
+                }
 
                 topicTx.Signature = sig;
 
@@ -344,7 +343,7 @@ namespace ReserveBlockCore.Models
                 if (result.Item1 == true)
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
-                    TransactionData.AddToPool(topicTx);
+                    //TransactionData.AddToPool(topicTx);
                     //TransactionData.AddTxToWallet(topicTx, true);
                     //AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
                     //await P2PClient.SendTXToAdjudicator(topicTx);//send out to mempool
