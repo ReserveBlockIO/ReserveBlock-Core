@@ -350,8 +350,8 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if (txRequest.Amount < 1M)
-                                return (txResult, "There must be at least 1 RBX to perform an ADNR Function.");
+                            if (txRequest.Amount < Globals.ADNRRequiredRBX)
+                                return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
 
                         }
                         catch (Exception ex)
@@ -382,8 +382,8 @@ namespace ReserveBlockCore.Services
                                     if(txRequest.ToAddress != "Topic_Base")
                                         return (txResult, "To Address must be Topic_Base.");
 
-                                    if (txRequest.Amount < 1M)
-                                        return (txResult, "There must be at least 1 RBX to create a Topic.");
+                                    if (txRequest.Amount < Globals.TopicRequiredRBX)
+                                        return (txResult, $"There must be at least {Globals.TopicRequiredRBX} RBX to create a Topic.");
 
                                     var topicSig = topic.TopicOwnerSignature;
                                     if(!string.IsNullOrEmpty(topicSig))
@@ -412,9 +412,9 @@ namespace ReserveBlockCore.Services
                                                     if (stAcct != null)
                                                     {
                                                         var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
-                                                        if (balance < 1000)
+                                                        if (balance < Globals.ValidatorRequiredRBX)
                                                         {
-                                                            return (txResult, "Balance is under 1000. Topic will not be allowed.");
+                                                            return (txResult, $"Balance is under {Globals.ValidatorRequiredRBX}. Topic will not be allowed.");
                                                         }
                                                     }
                                                     else
@@ -537,9 +537,9 @@ namespace ReserveBlockCore.Services
                                         if (stAcct != null)
                                         {
                                             var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
-                                            if (balance < 1000)
+                                            if (balance < Globals.ValidatorRequiredRBX)
                                             {
-                                                return (txResult, "Balance is under 1000. Vote will not be allowed.");
+                                                return (txResult, $"Balance is under {Globals.ValidatorRequiredRBX}. Vote will not be allowed.");
                                             }
                                         }
                                         else
@@ -562,6 +562,115 @@ namespace ReserveBlockCore.Services
                         return (txResult, "TX Data cannot be null on a vote Topic.");
                     }
 
+                }
+
+                if (txRequest.TransactionType == TransactionType.DSTR)
+                {
+                    var badDSTTx = Globals.BadDSTList.Exists(x => x == txRequest.Hash);
+                    var txData = txRequest.Data;
+                    if (txData != null && !badDSTTx)
+                    {
+                        try
+                        {
+                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                return (txResult, "A reserve account may not performing DST actions.");
+
+                            if (txRequest.ToAddress != "DecShop_Base")
+                                return (txResult, "To Address must be DecShop_Base.");
+
+                            var jobj = JObject.Parse(txData);
+                            if (jobj != null)
+                            {
+                                var function = (string?)jobj["Function"];
+                                if (function == "DecShopDelete()")
+                                {
+                                    if (txRequest.Amount < Globals.DecShopRequiredRBX)
+                                        return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to create a Auction House.");
+
+                                    string dsUID = jobj["UniqueId"].ToObject<string>();
+                                    if (!string.IsNullOrEmpty(dsUID))
+                                    {
+                                        //ensure they own the shop
+                                        var treiRec = DecShop.GetDecShopStateTreiLeaf(dsUID);
+                                        if (treiRec != null)
+                                        {
+                                            if (treiRec.OwnerAddress != txRequest.FromAddress)
+                                                return (txResult, "You must be the valid owner of this shop.");
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "No record found to delete.");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    DecShop decshop = jobj["DecShop"].ToObject<DecShop>();
+
+                                    if (decshop == null)
+                                        return (txResult, "DecShop record cannot be null.");
+
+                                    var result = DecShop.CheckURL(decshop.DecShopURL);
+                                    if (!result)
+                                        return (txResult, "URL does not meet requirements.");
+
+                                    var wordCount = decshop.Description.ToWordCountCheck(200);
+                                    var descLength = decshop.Description.ToLengthCheck(1200);
+                                    var nameLength = decshop.Name.ToLengthCheck(64);
+
+                                    if (!wordCount || !descLength)
+                                        return (txResult, $"Failed to insert/update. Description Word Count Allowed: {200}. Description length allowed: {1200}");
+
+                                    if (!nameLength)
+                                        return (txResult, $"Failed to insert/update. Name length allowed: {64}");
+
+                                    if (function == "DecShopCreate()")
+                                    {
+                                        if (txRequest.Amount < 1M)
+                                            return (txResult, "There must be at least 1 RBX to create a Auction House.");
+
+                                        var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
+                                        if (!urlValid)
+                                            return (txResult, "The URL in this TX has already been used. URLs must be unique.");
+                                        var recExist = DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
+                                        if (recExist != null)
+                                            return (txResult, "This record has already been inserted to trei. Rejecting.");
+                                    }
+                                    if (function == "DecShopUpdate()")
+                                    {
+                                        //ensure they own the shop
+                                        var treiRec = DecShop.GetDecShopStateTreiLeaf(decshop.UniqueId);
+                                        if (treiRec != null)
+                                        {
+                                            //86400 seconds in a day
+                                            var currentTime = TimeUtil.GetTime();
+                                            var lastUpdateTime = currentTime - treiRec.UpdateTimestamp;
+
+                                            if (lastUpdateTime < 43200)
+                                            {
+                                                if (txRequest.Amount < 1M)
+                                                    return (txResult, "There must be at least 1 RBX to Update an Auction House more than 1 time in 12 hours.");
+                                            }
+                                            if (decshop.DecShopURL.ToLower() != treiRec.DecShopURL.ToLower())
+                                            {
+                                                var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
+                                                if (!urlValid)
+                                                    return (txResult, "The URL in this TX has already been used. URLs must be unique.");
+                                            }
+
+                                            if (treiRec.OwnerAddress != txRequest.FromAddress)
+                                                return (txResult, "You must be the valid owner of this shop.");
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "No record found to update.");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch { return (txResult, $"TX not formatted properly."); }
+                    }
                 }
             }
 

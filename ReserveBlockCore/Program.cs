@@ -59,7 +59,7 @@ namespace ReserveBlockCore
 
 
             //Forced Testnet
-            //Globals.IsTestNet = true;
+            Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -396,9 +396,12 @@ namespace ReserveBlockCore
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
-            string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
-            string url2 = "http://*:" + Globals.Port; //this is port for signalr connect and all p2p functions
-                                                      //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
+            //API Port URL
+            string url = !Globals.TestURL ? "http://*:" + Globals.APIPort : "https://*:7777";
+            //P2P Port URL
+            string url2 = "http://*:" + Globals.Port;
+            //Consensus Port URL
+            string url3 = "http://*:" + Globals.ADJPort;
 
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
@@ -437,6 +440,21 @@ namespace ReserveBlockCore
                     webBuilder.UseKestrel()
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
+                    .ConfigureLogging(!signalrLog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
+                    webBuilder.ConfigureKestrel(options =>
+                    {
+
+
+                    });
+                });
+
+            //for consensus adjs using signalr p2p
+            var builder3 = Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseKestrel()
+                    .UseStartup<StartupP2PConsensus>()
+                    .UseUrls(url3)
                     .ConfigureLogging(!signalrLog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
                     webBuilder.ConfigureKestrel(options =>
                     {

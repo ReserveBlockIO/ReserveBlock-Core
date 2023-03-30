@@ -691,9 +691,9 @@ namespace ReserveBlockCore.Controllers
                     if (account != null)
                     {
                         var stateTreiBalance = AccountStateTrei.GetAccountBalance(account.Address);
-                        if(stateTreiBalance < 1000)
+                        if(stateTreiBalance < Globals.ValidatorRequiredRBX)
                         {
-                            output = "The balance for this account is under 1000.";
+                            output = $"The balance for this account is under {Globals.ValidatorRequiredRBX}.";
                         }
                         else
                         {

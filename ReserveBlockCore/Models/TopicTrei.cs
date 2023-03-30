@@ -304,31 +304,33 @@ namespace ReserveBlockCore.Models
                 BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
                 PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
+
                 txData = JsonConvert.SerializeObject(new { Function = "TopicAdd()", Topic = topic });
 
-                topicTx = new Transaction
-                {
-                    Timestamp = timestamp,
-                    FromAddress = address,
-                    ToAddress = "Topic_Base",
-                    Amount = 1.0M,
-                    Fee = 0,
-                    Nonce = AccountStateTrei.GetNextNonce(address),
-                    TransactionType = TransactionType.VOTE_TOPIC,
-                    Data = txData
-                };
+              topicTx = new Transaction
+              {
+                  Timestamp = timestamp,
+                  FromAddress = address,
+                  ToAddress = "Topic_Base",
+                  Amount = Globals.TopicRequiredRBX,
+                  Fee = 0,
+                  Nonce = AccountStateTrei.GetNextNonce(address),
+                  TransactionType = TransactionType.VOTE_TOPIC,
+                  Data = txData
+              };
 
-                topicTx.Fee = FeeCalcService.CalculateTXFee(topicTx);
+            topicTx.Fee = FeeCalcService.CalculateTXFee(topicTx);
 
-                topicTx.Build();
+            topicTx.Build();
 
-                var txHash = topicTx.Hash;
-                var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
-                if (sig == "ERROR")
-                {
-                    ErrorLogUtility.LogError($"Signing TX failed for Topic Request on address {address}.", "TopicTrei.CreateTopicTx()");
-                    return (null, $"Signing TX failed for Topic Request on address {address}.");
-                }
+            var txHash = topicTx.Hash;
+            var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (sig == "ERROR")
+            {
+                ErrorLogUtility.LogError($"Signing TX failed for Topic Request on address {address}.", "TopicTrei.CreateTopicTx()");
+                return (null, $"Signing TX failed for Topic Request on address {address}.");
+            }
+
 
                 topicTx.Signature = sig;
 

@@ -59,6 +59,10 @@ namespace ReserveBlockCore
         public static DateTime? APIUnlockTime = null;
         public static DateTime? ExplorerValDataLastSend = null;
 
+        public const int ValidatorRequiredRBX = 12000;
+        public const decimal ADNRRequiredRBX = 5.0M;
+        public const decimal TopicRequiredRBX = 10.0M;
+        public const decimal DecShopRequiredRBX = 10.0M;
         public const int ADNRLimit = 65;
         public static int BlockLock = -1;
         public static long V3Height = 579015;
@@ -70,6 +74,9 @@ namespace ReserveBlockCore
         public static int PasswordClearTime = 10;
         public static int NFTTimeout = 0;
         public static int Port = 3338;
+        public static int ADJPort = 3339;
+        public static int SelfSTUNPort = 3340;
+        public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
         public static int MinorVer = 3;
