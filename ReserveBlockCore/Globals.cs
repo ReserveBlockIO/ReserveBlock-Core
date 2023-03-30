@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Security;
 
 namespace ReserveBlockCore
@@ -157,7 +160,8 @@ namespace ReserveBlockCore
         public static bool TimeSyncError = false;
         public static bool BasicCLI = false;
         public static bool MemoryOverload = false;
-
+        public static bool SelfSTUNServer = false;
+        
         public static CancellationToken CancelledToken;
 
         public static ConcurrentDictionary<string, long> MemBlocks = new ConcurrentDictionary<string, long>();
@@ -172,8 +176,11 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
         public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
+        public static BlockingCollection<string> STUNServers = new BlockingCollection<string>();
+
 
         public static SecureString EncryptPassword = new SecureString();
+        public static SecureString DecryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;
 
         public static IHttpClientFactory HttpClientFactory;        
@@ -224,13 +231,32 @@ namespace ReserveBlockCore
 
         #region Bad TX Ignore List
 
-        public static List<string> BadADNRTxList = new List<string> { "9ebe7eb08abcf35f7e5cad6a5346babcb045f0e52732cdfddd021296331c2056" };
+        public static List<string> BadADNRTxList = new List<string> { "9ebe7eb08abcf35f7e5cad6a5346babcb045f0e52732cdfddd021296331c2056"};
         public static List<string> BadNFTTxList = new List<string>();
         public static List<string> BadTopicTxList = new List<string>();
         public static List<string> BadVoteTxList = new List<string>();
-        public static List<string> BadTxList = new List<string>();
-        public static List<string> BadDSTList = new List<string>();
+        public static List<string> BadTxList = new List<string> { "9065618ff356dc1dcef8cd5413ffe826f8ab45ca8b6bb9c8f9853d1de0b576ae", "b05b230c9f7fb6f9014c0a9a4a5b1c9ddaf36a96462635d628272b8c62e2e5b3" };
+        public static List<string> BadDSTList = new List<string> { "8f9eec99c69ace2ad758048ceb281c38099173ca95a97c31114f2d136b34916a", 
+        "a898112b2770ca2182d330d71f8830ad7eeb2b7ac9030cf33312ebeefd72c8a5",
+        "152250f2673234765ab61e3f46e2ef94a80e50cf24bcaaf0ad5e0341f8b5626a",
+        "241546578f04a3dbcf9e9195352750f7ff087ba39840759fe38e56e22f9d6139",};
+
         public static List<string> BadNodeList = new List<string>();
+
+        #endregion
+
+        #region DST Variables
+
+        public static ConcurrentDictionary<string, DSTConnection> ConnectedClients = new ConcurrentDictionary<string, DSTConnection>();
+        public static ConcurrentDictionary<string, DSTConnection> ConnectedShops = new ConcurrentDictionary<string, DSTConnection>();
+        public static DSTConnection? STUNServer = null;
+        public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentDictionary<string, List<Chat.ChatMessage>> ChatMessageDict = new ConcurrentDictionary<string, List<Chat.ChatMessage>>();
+        public static ConcurrentDictionary<string, IPEndPoint> ShopChatUsers = new ConcurrentDictionary<string, IPEndPoint>();
+        public static ConcurrentDictionary<string, MessageState> ClientMessageDict = new ConcurrentDictionary<string, MessageState>();
+        public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
+        public static DecShopData? DecShopData = null;
 
         #endregion
 

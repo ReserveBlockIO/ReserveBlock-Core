@@ -24,7 +24,14 @@ namespace ReserveBlockCore.Utilities
             }
             else
             {
-				result = ValidateRBXAddress(addr);
+				if(addr.StartsWith("xRBX"))
+				{
+                    result = ValidateRBXAddress(addr);
+                }
+				else
+				{
+                    result = ValidateRBXAddress(addr);
+                }
 			}
 			
 			return result;

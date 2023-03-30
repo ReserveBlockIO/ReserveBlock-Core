@@ -209,6 +209,7 @@ namespace ReserveBlockCore.Services
                 Fee = txRequest.Fee,
                 Nonce = txRequest.Nonce,
                 Data = txRequest.Data,
+                UnlockTime = txRequest.UnlockTime,
             };
 
             newTxn.Build();
@@ -296,6 +297,66 @@ namespace ReserveBlockCore.Services
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
                 AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+        }
+
+        //Needs refactor to use maximum peer spread.
+        public static async Task SendTransaction(Transaction txRequest, Account account)
+        {
+            if (account.IsValidating == true && (account.Balance - (txRequest.Fee + txRequest.Amount) < 1000))
+            {
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == txRequest.FromAddress.ToLower());
+                ValidatorService.StopValidating(validator);
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+            else if (account.IsValidating)
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+        }
+
+        public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account, bool noLockUp = false)
+        {
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                if (txRequest.TransactionType == TransactionType.RESERVE || noLockUp)
+                {
+                    ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                else
+                {
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                if(txRequest.TransactionType == TransactionType.RESERVE || noLockUp)
+                {
+                    ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                else
+                {
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
         }

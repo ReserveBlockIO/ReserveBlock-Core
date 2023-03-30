@@ -24,6 +24,8 @@ using System.Security;
 using System.Xml.Linq;
 using System.Data;
 using System.Diagnostics;
+using ReserveBlockCore.DST;
+using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Services
 {
@@ -186,6 +188,7 @@ namespace ReserveBlockCore.Services
                     [("xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", 0)] = null,
                     [("xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", 0)] = null,
                     [("xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", 0)] = null,
+                    [("xBRgsdHnRBnpbBNTfWPk2dKdNbfKs9GDWK", 0)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
@@ -235,13 +238,13 @@ namespace ReserveBlockCore.Services
             //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
             BlockchainData.ChainRef = "m1_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
-            LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
-
             if (Globals.IsTestNet)
             {
                 //testnet
                 BlockchainData.ChainRef = "t_testnet1";
             }
+
+            LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "StartupService.SetBlockchainChainRef()");
         }
 
         internal static void CheckBlockRefVerToDb()
@@ -275,9 +278,9 @@ namespace ReserveBlockCore.Services
                     var now = DateTime.Now;
                     var lastShutDown = settings.LastShutdown;
 
-                    if (lastShutDown != null && settings.CorrectShutdown)
+                    if (lastShutDown != null && settings.CorrectShutdown && Globals.LastBlock.Height > 0)
                     {
-                        if (lastShutDown.Value.AddSeconds(20) > now)
+                        if (!Debugger.IsAttached && lastShutDown.Value.AddSeconds(20) > now)
                         {
                             var diff = Convert.ToInt32((lastShutDown.Value.AddSeconds(20) - now).TotalMilliseconds);
                             Console.WriteLine("Wallet was restarted too fast. Startup will continue in a moment. Do not close wallet.");
@@ -286,7 +289,7 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        if (!Debugger.IsAttached)
+                        if (!Debugger.IsAttached && Globals.LastBlock.Height > 0)
                         {
                             Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
                             await Task.Delay(15000);
@@ -321,24 +324,37 @@ namespace ReserveBlockCore.Services
             //no rules needed at this time
         }
 
-        internal static void StartBeacon()
+        internal static async Task StartBeacon()
         {
             try
             {
                 if(Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
                     var port = Globals.Port + 20000; //23338 - mainnet
- 
+                    
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
                     Thread obj_thread = new Thread(server.StartServer());
-                    Console.WriteLine("Beacon Started");
+                    Console.WriteLine("Beacon Stopped");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-            
+        }
+
+        internal static async Task StartDSTServer()
+        {
+            try
+            {
+                _ = DSTServer.Run();
+                Console.WriteLine("DST Service Started.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
         }
 
         internal static async Task SetSelfBeacon()
@@ -1141,6 +1157,25 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static void OpenUpShop()
+        {
+            var decShop = DecShop.GetMyDecShopInfo();
+            if(decShop != null)
+            {
+                var message = new Message
+                {
+                    Address = decShop.OwnerAddress,
+                    Data = "",
+                    Type = MessageType.ShopConnect,
+                    Port = decShop.Port
+                };
+
+                //var messageSend = 
+
+
+            }
+        }
+
         internal static void DisplayValidatorAddress()
         {
             var accounts = AccountData.GetAccounts();
@@ -1240,14 +1275,14 @@ namespace ReserveBlockCore.Services
                 {
                     AnsiConsole.Write(
                     new FigletText("RBX Wallet")
-                    .LeftAligned()
+                    .LeftJustified()
                     .Color(Color.Blue));
                 }
                 else
                 {
                     AnsiConsole.Write(
                     new FigletText("RBX Wallet - TestNet")
-                    .LeftAligned()
+                    .LeftJustified()
                     .Color(Color.Green));
                 }
 
@@ -1261,10 +1296,8 @@ namespace ReserveBlockCore.Services
                 }
                 Console.WriteLine("|======================================|");
                 Console.WriteLine("| 1. Genesis Block (Check)             |");
-                Console.WriteLine("| 2. Create Account                    |");
-                Console.WriteLine("| 2hd. Create HD Wallet                |");
-                Console.WriteLine("| 3. Restore Account                   |");
-                Console.WriteLine("| 3hd. Restore HD Wallet               |");
+                Console.WriteLine("| 2/2r/2hd. Create Account/Reserve/HD  |");
+                Console.WriteLine("| 3/3r/3hd. Restore Account/Reserve/HD |");
                 Console.WriteLine("| 4. Send Coins                        |");
                 Console.WriteLine("| 5. Get Latest Block & Metrics        |");
                 Console.WriteLine("| 6. Transaction History               |");

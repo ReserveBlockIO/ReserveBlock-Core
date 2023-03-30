@@ -80,12 +80,12 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AdjAutoRestart()
         {
-            if(Globals.AdjudicateAccount != null)
+            if(Globals.AdjudicateAccount != null && !Globals.IsTestNet)
             {
                 while (true)
                 {
                     var delay = Task.Delay(4000);
-                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced && !Globals.IsTestNet)
                     {
                         await delay;
                         continue;

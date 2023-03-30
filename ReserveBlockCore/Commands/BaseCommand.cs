@@ -11,6 +11,7 @@ using ReserveBlockCore.Trillium;
 using ReserveBlockCore.P2P;
 using System.Runtime.InteropServices;
 using Spectre.Console;
+using ReserveBlockCore.DST;
 
 namespace ReserveBlockCore.Commands
 {
@@ -53,6 +54,12 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/clear":
                     Console.Clear();
+                    break;
+                case "/chat":
+                    Console.Clear();
+                    Globals.StopConsoleOutput = true;
+                    _ = Chat.Run();
+                    Globals.StopConsoleOutput = false;
                     break;
                 case "/update":
                     Globals.StopConsoleOutput = true;
@@ -260,6 +267,12 @@ namespace ReserveBlockCore.Commands
                     await BaseCommandServices.CreateAddress();
                     Console.WriteLine("Please type /menu to return to mainscreen.");
                     break;
+                case "2r": // Create Reserve Account Account
+                    Globals.StopConsoleOutput = true;
+                    Console.WriteLine("Please type /menu to return to mainscreen.");
+                    await BaseCommandServices.CreateReserveAddress();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "2hd": // Create HD Wallet
                     Globals.StopConsoleOutput = true;
                     var mnemonic = BaseCommandServices.CreateHDWallet();
@@ -324,7 +337,12 @@ namespace ReserveBlockCore.Commands
                     }
                     Globals.StopConsoleOutput = false;
                     break;
-                case "3hd": // Create HD Wallet
+                case "3r": // Restore reserve account
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.RestoreReserveAccount();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "3hd": // restore HD Wallet
                     Globals.StopConsoleOutput = true;
                     var mnemonicRestore = BaseCommandServices.RestoreHDWallet();
                     Console.WriteLine("-----------------------HD Wallet Process Result------------------------");

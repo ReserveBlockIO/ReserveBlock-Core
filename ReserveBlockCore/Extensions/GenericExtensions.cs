@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -22,6 +23,42 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
+        /// <summary>
+        /// Takes a file path string and returns its extension
+        /// </summary>
+        /// <param name="source">string</param>
+        /// <returns>string extensions. Ex: '.txt'</returns>
+        public static string ToFileExtension(this string source)
+        {
+            string myFilePath = source;
+            string ext = Path.GetExtension(myFilePath);
+            return ext;
+        }
+
+        public static byte[] ImageToByteArray(this byte[] imageBytes)
+        {
+            byte[] byteArray;
+            using (MemoryStream stream = new MemoryStream(imageBytes))
+            {
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    byteArray = reader.ReadBytes((int)stream.Length);
+                }
+            }
+            return byteArray;
+        }
+
+        public static string ToHash(this string source)
+        {
+            if (!string.IsNullOrEmpty(source))
+            {
+                return HashingService.GenerateHash(HashingService.GenerateHash(source));
+            }
+            else
+            {
+                return "NA";
+            }
+        }
         public static long ToUnixTimeSeconds(this DateTime obj)
         {
             long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();
@@ -403,6 +440,48 @@ namespace ReserveBlockCore.Extensions
                 }
                 return Convert.ToBase64String(mso.ToArray());
             }
+        }
+
+        public static bool ToLengthCheck(this string text, int length)
+        {
+            var stringLength = text.Length;
+            if(stringLength > length)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public static bool ToWordCountCheck(this string text, int count)
+        {
+            int wordCount = 0, index = 0;
+
+            // skip whitespace until first word
+            while (index < text.Length && char.IsWhiteSpace(text[index]))
+                index++;
+
+            while (index < text.Length)
+            {
+                // check if current char is part of a word
+                while (index < text.Length && !char.IsWhiteSpace(text[index]))
+                    index++;
+
+                wordCount++;
+
+                // skip whitespace until next word
+                while (index < text.Length && char.IsWhiteSpace(text[index]))
+                    index++;
+
+                if (wordCount > count)
+                    break;
+            }
+
+            if(wordCount > count)
+                return false;
+            return true;
         }
 
         public static string ToDecompress(this string s)
