@@ -699,9 +699,9 @@ namespace ReserveBlockCore.Controllers
                     if (account != null)
                     {
                         var stateTreiBalance = AccountStateTrei.GetAccountBalance(account.Address);
-                        if(stateTreiBalance < 1000)
+                        if(stateTreiBalance < ValidatorService.ValidatorRequiredAmount())
                         {
-                            output = "The balance for this account is under 1000.";
+                            output = $"The balance for this account is under {ValidatorService.ValidatorRequiredAmount()}.";
                         }
                         else
                         {
@@ -798,6 +798,23 @@ namespace ReserveBlockCore.Controllers
             {
                 output = JsonConvert.SerializeObject(account);
             }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns the balance for a specific network address **For exchanges**
+        /// </summary>
+        /// <param name="rbxAddress"></param>
+        /// <returns></returns>
+        [HttpGet("GetChainBalance/{rbxAddress}")]
+        public async Task<string> GetChainBalance(string rbxAddress)
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+            var balance = AccountStateTrei.GetAccountBalance(rbxAddress);
+
+            output = JsonConvert.SerializeObject(new { Account = rbxAddress, Balance = balance });
 
             return output;
         }
@@ -1679,6 +1696,28 @@ namespace ReserveBlockCore.Controllers
 
             return output;
 
+        }
+
+        /// <summary>
+        /// Dumps out active val list from past 30 days
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ListActiveVals")]
+        public async Task<string> ListActiveVals()
+        {
+            var output = "";
+            var activeVals = Globals.ActiveValidatorDict;
+
+            if (activeVals.Count > 0)
+            {
+                output = JsonConvert.SerializeObject(activeVals);
+            }
+            else
+            {
+                output = "Active validator list was empty.";
+            }
+
+            return output;
         }
 
         /// <summary>

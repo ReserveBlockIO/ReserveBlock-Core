@@ -62,9 +62,14 @@ namespace ReserveBlockCore
         public static DateTime? APIUnlockTime = null;
         public static DateTime? ExplorerValDataLastSend = null;
 
+        public const int ValidatorRequiredRBX = 12000;
+        public const decimal ADNRRequiredRBX = 5.0M;
+        public const decimal TopicRequiredRBX = 10.0M;
+        public const decimal DecShopRequiredRBX = 10.0M;
         public const int ADNRLimit = 65;
         public static int BlockLock = -1;
         public static long V3Height = 579015;
+        public static long V1TXHeight = 34361;
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;
@@ -170,7 +175,9 @@ namespace ReserveBlockCore
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
+        public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
         public static BlockingCollection<string> STUNServers = new BlockingCollection<string>();
+
 
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString DecryptPassword = new SecureString();

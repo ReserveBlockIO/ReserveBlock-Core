@@ -244,7 +244,7 @@ namespace ReserveBlockCore.Services
 
             txRequest.TransactionStatus = TransactionStatus.Pending;
 
-            if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < 1000))
+            if (account.IsValidating == true && (account.Balance - (newTxn.Fee + newTxn.Amount) < ValidatorService.ValidatorRequiredAmount()))
             {
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == newTxn.FromAddress.ToLower());
                 ValidatorService.StopValidating(validator);
@@ -268,11 +268,37 @@ namespace ReserveBlockCore.Services
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
 
-            
-
             //Return verification result.
             return txResult;
 
+
+        }
+
+        public static async Task SendTransaction(Transaction txRequest, Account account)
+        {
+            if (account.IsValidating == true && (account.Balance - (txRequest.Fee + txRequest.Amount) < ValidatorService.ValidatorRequiredAmount()))
+            {
+                var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == txRequest.FromAddress.ToLower());
+                ValidatorService.StopValidating(validator);
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+            else if (account.IsValidating)
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
         }
 
         //Needs refactor to use maximum peer spread.

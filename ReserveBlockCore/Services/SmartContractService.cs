@@ -103,7 +103,7 @@ namespace ReserveBlockCore.Services
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -405,7 +405,7 @@ namespace ReserveBlockCore.Services
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -540,7 +540,7 @@ namespace ReserveBlockCore.Services
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -676,7 +676,7 @@ namespace ReserveBlockCore.Services
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -812,7 +812,7 @@ namespace ReserveBlockCore.Services
                 {
                     scTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);

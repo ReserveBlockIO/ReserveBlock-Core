@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 
+
 namespace ReserveBlockCore
 {
     public class StartupP2PConsensus
@@ -50,10 +51,11 @@ namespace ReserveBlockCore
 
                 if (Globals.AdjudicateAccount != null)
                 {
-                    //endpoints.MapHub<ConsensusServer>("/consensus", options => {
-                    //    options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    //    options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
-                    //});
+                    endpoints.MapHub<ConsensusServer>("/consensus", options =>
+                    {
+                        options.ApplicationMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                        options.TransportMaxBufferSize = 8388608; // values might need tweaking if mem consumption gets too large
+                    });
                 }
             });
         }

@@ -41,6 +41,16 @@ namespace ReserveBlockCore.Services
             {
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
+
+            if(Globals.LastBlock.Height > Globals.V1TXHeight)
+            {
+                if (txRequest.Fee <= 0.000003M)
+                {
+                    return (txResult, "Fee cannot be less than or equal to zero.");
+                }
+            }
+
+            if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             
             if (txRequest.ToAddress != "Adnr_Base" && 
                 txRequest.ToAddress != "DecShop_Base" && 
@@ -402,8 +412,17 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if (txRequest.Amount < 1M)
-                                return (txResult, "There must be at least 1 RBX to perform an ADNR Function.");
+                            if(Globals.LastBlock.Height >= Globals.V1TXHeight)
+                            {
+                                if (txRequest.Amount < Globals.ADNRRequiredRBX)
+                                    return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                            }
+                            else
+                            {
+                                if (txRequest.Amount < 1.0M)
+                                    return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                            }
+                            
 
                         }
                         catch (Exception ex)
@@ -437,8 +456,8 @@ namespace ReserveBlockCore.Services
                                     if(txRequest.ToAddress != "Topic_Base")
                                         return (txResult, "To Address must be Topic_Base.");
 
-                                    if (txRequest.Amount < 1M)
-                                        return (txResult, "There must be at least 1 RBX to create a Topic.");
+                                    if (txRequest.Amount < Globals.TopicRequiredRBX)
+                                        return (txResult, $"There must be at least {Globals.TopicRequiredRBX} RBX to create a Topic.");
 
                                     var topicSig = topic.TopicOwnerSignature;
                                     if(!string.IsNullOrEmpty(topicSig))
@@ -455,9 +474,9 @@ namespace ReserveBlockCore.Services
                                                 }
 
                                                 //checks if validator has solved block in past 30 days
-                                                var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
-                                                var validatorList = BlockchainData.GetBlocks().Query().Where(x => x.Timestamp >= startDate).Select(x => x.Validator).ToEnumerable().Distinct();
-                                                var valExist = validatorList.Where(x => x == txRequest.FromAddress).Any();
+                                                
+                                                var validatorList = Globals.ActiveValidatorDict;
+                                                var valExist = validatorList.ContainsKey(txRequest.FromAddress);
                                                 if (!valExist)
                                                     return (txResult, "Validator has not crafted a block. Please wait til you craft a block to create a topic.");
 
@@ -467,9 +486,9 @@ namespace ReserveBlockCore.Services
                                                     if (stAcct != null)
                                                     {
                                                         var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
-                                                        if (balance < 1000)
+                                                        if (balance < ValidatorService.ValidatorRequiredAmount())
                                                         {
-                                                            return (txResult, "Balance is under 1000. Topic will not be allowed.");
+                                                            return (txResult, $"Balance is under {ValidatorService.ValidatorRequiredAmount()}. Topic will not be allowed.");
                                                         }
                                                     }
                                                     else
@@ -595,9 +614,9 @@ namespace ReserveBlockCore.Services
                                         if (stAcct != null)
                                         {
                                             var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
-                                            if (balance < 1000)
+                                            if (balance < ValidatorService.ValidatorRequiredAmount())
                                             {
-                                                return (txResult, "Balance is under 1000. Vote will not be allowed.");
+                                                return (txResult, $"Balance is under {ValidatorService.ValidatorRequiredAmount()}. Vote will not be allowed.");
                                             }
                                         }
                                         else
@@ -621,6 +640,7 @@ namespace ReserveBlockCore.Services
                     }
 
                 }
+
                 if (txRequest.TransactionType == TransactionType.DSTR)
                 {
                     var badDSTTx = Globals.BadDSTList.Exists(x => x == txRequest.Hash);
@@ -641,11 +661,11 @@ namespace ReserveBlockCore.Services
                                 var function = (string?)jobj["Function"];
                                 if (function == "DecShopDelete()")
                                 {
-                                    if (txRequest.Amount < 1M)
-                                        return (txResult, "There must be at least 1 RBX to create a Auction House.");
+                                    if (txRequest.Amount < Globals.DecShopRequiredRBX)
+                                        return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to create a Auction House.");
 
                                     string dsUID = jobj["UniqueId"].ToObject<string>();
-                                    if(!string.IsNullOrEmpty(dsUID))
+                                    if (!string.IsNullOrEmpty(dsUID))
                                     {
                                         //ensure they own the shop
                                         var treiRec = DecShop.GetDecShopStateTreiLeaf(dsUID);
@@ -703,7 +723,7 @@ namespace ReserveBlockCore.Services
                                             var currentTime = TimeUtil.GetTime();
                                             var lastUpdateTime = currentTime - treiRec.UpdateTimestamp;
 
-                                            if(lastUpdateTime < 43200)
+                                            if (lastUpdateTime < 43200)
                                             {
                                                 if (txRequest.Amount < 1M)
                                                     return (txResult, "There must be at least 1 RBX to Update an Auction House more than 1 time in 12 hours.");
@@ -729,7 +749,6 @@ namespace ReserveBlockCore.Services
                         catch { return (txResult, $"TX not formatted properly."); }
                     }
                 }
-
                 if(txRequest.TransactionType == TransactionType.RESERVE)
                 {
                     var txData = txRequest.Data;

@@ -56,6 +56,7 @@ namespace ReserveBlockCore.Models
             if (HostingType == DecShopHostingType.Network)
             {
                 IP = P2PClient.MostLikelyIP();
+
                 if(IP == "NA")
                 {
                     return (false, "Could not find IP automatically.");
@@ -101,7 +102,7 @@ namespace ReserveBlockCore.Models
                 return decshop;
             }
             catch (Exception ex)
-            {                
+            {
                 ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetMyDecShop()");
                 return null;
             }
@@ -117,7 +118,7 @@ namespace ReserveBlockCore.Models
             {
                 var decshop = DecShopLocalDB();
 
-                if(decshop == null)
+                if (decshop == null)
                 {
                     return null;
                 }
@@ -130,7 +131,7 @@ namespace ReserveBlockCore.Models
                 return decshopInfo;
             }
             catch (Exception ex)
-            {                
+            {
                 ErrorLogUtility.LogError(ex.ToString(), "DecShop.GetMyDecShopInfo()");
                 return null;
             }
@@ -142,7 +143,8 @@ namespace ReserveBlockCore.Models
         public static DecShop? GetDecShopStateTreiLeaf(string dsUID)
         {
             var dstDB = DecShopTreiDb();
-            if(dstDB != null)
+            
+            if (dstDB != null)
             {
                 var rec = dstDB.Query().Where(x => x.UniqueId == dsUID).FirstOrDefault();
                 return rec;
@@ -212,20 +214,22 @@ namespace ReserveBlockCore.Models
                     var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
                     if (existingDecShopInfo == null)
                     {
-                        if(!isImport)
+
+                        if (!isImport)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
 
                             if (!urlvalidCheck)
                                 return (false, "URL is already taken");
                         }
-                        
+
                         decshops.InsertSafe(decshop); //inserts new record
                         return (true, $"Decentralized Auction Shop has been created with name {decshop.Name}");
                     }
                     else
                     {
-                        if(decshop.DecShopURL != existingDecShopInfo.DecShopURL)
+
+                        if (decshop.DecShopURL != existingDecShopInfo.DecShopURL)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
 
@@ -238,18 +242,17 @@ namespace ReserveBlockCore.Models
                     }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ErrorLogUtility.LogError($"Error Saving: {ex.ToString()}", "DecShop.SaveMyDecShopLocal()");
                 return (false, $"Unknown Error Saving/Updating Dec Shop. Error: {ex.ToString()}");
             }
-            
         }
 
         #endregion
 
         #region Save DecShop State Trei Leaf
-        public static (bool,string) SaveDecShopStateTrei(DecShop decshop)
+        public static (bool, string) SaveDecShopStateTrei(DecShop decshop)
         {
             try
             {
@@ -292,7 +295,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Update DecShop State Trei Leaf
-        public static (bool,string) UpdateDecShopStateTrei(DecShop decshop)
+        public static (bool, string) UpdateDecShopStateTrei(DecShop decshop)
         {
             try
             {
@@ -307,13 +310,13 @@ namespace ReserveBlockCore.Models
                     var existingDecShopInfo = decshops.Query().Where(x => x.UniqueId == decshop.UniqueId).FirstOrDefault();
                     if (existingDecShopInfo != null)
                     {
-                        if(existingDecShopInfo.DecShopURL != decshop.DecShopURL)
+                        if (existingDecShopInfo.DecShopURL != decshop.DecShopURL)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
                             if (!urlvalidCheck)
                                 return (false, $"URL already exist");
                         }
-                        
+
                         var result = CheckURL(decshop.DecShopURL);
                         if (!result)
                             return (false, "URL does not meet requirements.");
@@ -355,10 +358,10 @@ namespace ReserveBlockCore.Models
             else
             {
                 var decshop = DecShopLocalDB();
-                if(decshop != null)
+                if (decshop != null)
                 {
                     myDecShop.IsOffline = !myDecShop.IsOffline;
-                    if(myDecShop.IsOffline)
+                    if (myDecShop.IsOffline)
                     {
                         //turn off STUN UDP Logic
                     }
@@ -386,7 +389,7 @@ namespace ReserveBlockCore.Models
             if (result == null)
                 output = true;
 
-            return output;  
+            return output;
         }
 
         #endregion
@@ -415,14 +418,14 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "DecShopCreate()", DecShop = decshop});
+            txData = JsonConvert.SerializeObject(new { Function = "DecShopCreate()", DecShop = decshop });
 
             decShopTx = new Transaction
             {
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = address,
                 ToAddress = "DecShop_Base",
-                Amount = 1.0M,
+                Amount = Globals.DecShopRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.DSTR,
@@ -467,7 +470,7 @@ namespace ReserveBlockCore.Models
                 }
             }
             catch (Exception ex)
-            {                
+            {
                 Console.WriteLine("Error: {0}", ex.ToString());
             }
 
@@ -502,7 +505,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = address,
                 ToAddress = "DecShop_Base",
-                Amount = 1.0M,
+                Amount = Globals.DecShopRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.DSTR,
@@ -580,7 +583,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = address,
                 ToAddress = "DecShop_Base",
-                Amount = 1.0M,
+                Amount = Globals.DecShopRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.DSTR,

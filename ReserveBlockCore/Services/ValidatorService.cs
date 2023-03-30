@@ -8,12 +8,15 @@ using ReserveBlockCore.EllipticCurve;
 using System.Globalization;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
+using LiteDB;
+using System.Linq;
 
 namespace ReserveBlockCore.Services
 {
     public class ValidatorService
     {
         static SemaphoreSlim ValidatorMonitorServiceLock = new SemaphoreSlim(1, 1);
+        static SemaphoreSlim ValidatorCountServiceLock = new SemaphoreSlim(1, 1);
         public static async void DoValidate()
         {
             try
@@ -126,9 +129,9 @@ namespace ReserveBlockCore.Services
                     output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
+                if (sTreiAcct != null && sTreiAcct.Balance < ValidatorService.ValidatorRequiredAmount())
                 {
-                    output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
+                    output = $"Account Found, but does not meet the minimum of {ValidatorService.ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
                     return output;
                 }
                 if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
@@ -136,7 +139,7 @@ namespace ReserveBlockCore.Services
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
+                if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorService.ValidatorRequiredAmount())
                 {
                     //validate account with signature check
                     var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
@@ -333,9 +336,8 @@ namespace ReserveBlockCore.Services
                 //output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                 return result;
             }
-            if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
+            if (sTreiAcct != null && sTreiAcct.Balance < ValidatorService.ValidatorRequiredAmount())
             {
-                //output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                 return result;
             }
             if (!string.IsNullOrWhiteSpace(validator.UniqueName) && UniqueNameCheck(validator.UniqueName) == false)
@@ -343,7 +345,7 @@ namespace ReserveBlockCore.Services
                 //output = "Unique name has already been taken. Please choose another.";
                 return result;
             }
-            if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
+            if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorService.ValidatorRequiredAmount())
             {
                 result = true; //success
             }
@@ -366,8 +368,20 @@ namespace ReserveBlockCore.Services
 
             await P2PClient.DisconnectAdjudicators();
 
-            ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
+            ValidatorLogUtility.Log($"Funds have dropped below {ValidatorService.ValidatorRequiredAmount()} RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
+        }
+
+        public static int ValidatorRequiredAmount()
+        {
+            if(Globals.LastBlock.Height < Globals.V1TXHeight)
+            {
+                return 1000;
+            }
+            else
+            {
+                return 12000;
+            }
         }
 
         public static async void ClearOldValidator()
@@ -584,6 +598,76 @@ namespace ReserveBlockCore.Services
                 }
 
                 await delay;
+            }
+        }
+
+        public static async Task ValidatorCountRun()
+        {
+            while (true)
+            {
+                var delay = Task.Delay(new TimeSpan(0,10,0));
+                if (Globals.StopAllTimers && !Globals.IsChainSynced)
+                {
+                    await delay;
+                    continue;
+                }
+                await ValidatorCountServiceLock.WaitAsync();
+                try
+                {
+                    var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
+                    var valsToRemove = Globals.ActiveValidatorDict.Where(x => x.Value < startDate).Select(x => x.Key).ToList();
+                    if(valsToRemove.Any())
+                    {
+                        foreach (var val in valsToRemove)
+                        {
+                            Globals.ActiveValidatorDict.TryRemove(val, out _);
+                        }
+                    }
+                }
+                finally
+                {
+                    ValidatorCountServiceLock.Release();
+                }
+
+                await delay;
+            }
+        }
+
+        public static async Task GetActiveValidators()
+        {
+            var startDate = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeSeconds();
+            var blockSub = 3456 * 30;
+            var lastHeight = Globals.LastBlock.Height;
+            var startHeight = lastHeight - blockSub;
+
+            //temporarily removed due to memory constraints. 
+            //var startBlock = BlockchainData.GetBlocks().Find(Query.All(Query.Descending)).Where(x => x.Timestamp <= startDate).FirstOrDefault();
+
+            if(startHeight > 0)
+            {
+                var currentHeight = lastHeight;
+                for (long i = startHeight; i < currentHeight; i++)
+                {
+                    var block = BlockchainData.GetBlocks().Query().Where(x => x.Height == i).FirstOrDefault();
+                    if (block != null)
+                    {
+                        if (!Globals.ActiveValidatorDict.ContainsKey(block.Validator))
+                            Globals.ActiveValidatorDict.TryAdd(block.Validator, block.Timestamp);
+                        else
+                            Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
+                    }
+                }
+            }
+        }
+
+        public static async Task UpdateActiveValidators(Block? block)
+        {
+            if (block != null)
+            {
+                if (!Globals.ActiveValidatorDict.ContainsKey(block.Validator))
+                    Globals.ActiveValidatorDict.TryAdd(block.Validator, block.Timestamp);
+                else
+                    Globals.ActiveValidatorDict[block.Validator] = block.Timestamp;
             }
         }
 
