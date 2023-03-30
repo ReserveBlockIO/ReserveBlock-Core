@@ -32,7 +32,6 @@ namespace ReserveBlockCore
             bool keslog = false;
             bool signalrLog = false;
             bool runSingleRequest = false;
-            bool runStateSync = false;
 
             var argList = args.ToList();
             //force culture info to US
@@ -134,10 +133,6 @@ namespace ReserveBlockCore
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
-                    }
-                    if (argC == "sync")
-                    {
-                        runStateSync = true;
                     }
                     if (argC == "unsafe")
                     {
@@ -356,7 +351,7 @@ namespace ReserveBlockCore
                 valEncryptCheck = true;
             }
 
-            await StartupService.RunSettingChecks(runStateSync);
+            await StartupService.RunSettingChecks();
 
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();

@@ -257,14 +257,14 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static async Task RunSettingChecks(bool runStateSync = false)
+        internal static async Task RunSettingChecks()
         {
             var settings = Settings.GetSettings();
             if (settings != null)
             {
                 if (!settings.CorrectShutdown)
                 {
-                    if(!Debugger.IsAttached || runStateSync)
+                    if(!Debugger.IsAttached)
                     {
                         await StateTreiSyncService.SyncAccountStateTrei();
                     }
