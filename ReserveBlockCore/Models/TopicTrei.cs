@@ -307,7 +307,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = timestamp,
                 FromAddress = address,
                 ToAddress = "Topic_Base",
-                Amount = 1.0M,
+                Amount = Globals.TopicRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.VOTE_TOPIC,

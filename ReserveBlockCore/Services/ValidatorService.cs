@@ -126,9 +126,9 @@ namespace ReserveBlockCore.Services
                     output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
+                if (sTreiAcct != null && sTreiAcct.Balance < (decimal)Globals.ValidatorRequiredRBX)
                 {
-                    output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
+                    output = $"Account Found, but does not meet the minimum of {Globals.ValidatorRequiredRBX} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
                     return output;
                 }
                 if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
@@ -136,7 +136,7 @@ namespace ReserveBlockCore.Services
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
+                if (sTreiAcct != null && sTreiAcct.Balance >= (decimal)Globals.ValidatorRequiredRBX)
                 {
                     //validate account with signature check
                     var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
@@ -333,9 +333,8 @@ namespace ReserveBlockCore.Services
                 //output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                 return result;
             }
-            if (sTreiAcct != null && sTreiAcct.Balance < 1000.0M)
+            if (sTreiAcct != null && sTreiAcct.Balance < (decimal)Globals.ValidatorRequiredRBX)
             {
-                //output = "Account Found, but does not meet the minimum of 1000 RBX. Please send funds to get account balance to 1000 RBX.";
                 return result;
             }
             if (!string.IsNullOrWhiteSpace(validator.UniqueName) && UniqueNameCheck(validator.UniqueName) == false)
@@ -343,7 +342,7 @@ namespace ReserveBlockCore.Services
                 //output = "Unique name has already been taken. Please choose another.";
                 return result;
             }
-            if (sTreiAcct != null && sTreiAcct.Balance >= 1000.0M)
+            if (sTreiAcct != null && sTreiAcct.Balance >= (decimal)Globals.ValidatorRequiredRBX)
             {
                 result = true; //success
             }
@@ -366,7 +365,7 @@ namespace ReserveBlockCore.Services
 
             await P2PClient.DisconnectAdjudicators();
 
-            ValidatorLogUtility.Log("Funds have dropped below 1000 RBX. Removing from pool.", "ValidatorService.StopValidating()");
+            ValidatorLogUtility.Log($"Funds have dropped below {Globals.ValidatorRequiredRBX} RBX. Removing from pool.", "ValidatorService.StopValidating()");
 
         }
 

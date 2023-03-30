@@ -142,7 +142,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = timestamp,
                 FromAddress = address,
                 ToAddress = "Adnr_Base",
-                Amount = 1.0M,
+                Amount = Globals.ADNRRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.ADNR,
@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Models
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < Globals.ValidatorRequiredRBX))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -243,7 +243,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = timestamp,
                 FromAddress = fromAddress,
                 ToAddress = toAddress,
-                Amount = 1.0M,
+                Amount = Globals.ADNRRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(fromAddress),
                 TransactionType = TransactionType.ADNR,
@@ -277,7 +277,7 @@ namespace ReserveBlockCore.Models
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < Globals.ValidatorRequiredRBX))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -344,7 +344,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = timestamp,
                 FromAddress = address,
                 ToAddress = "Adnr_Base",
-                Amount = 1.0M,
+                Amount = Globals.ADNRRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.ADNR,
@@ -378,7 +378,7 @@ namespace ReserveBlockCore.Models
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < 1000))
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < Globals.ValidatorRequiredRBX))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
