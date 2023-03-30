@@ -407,7 +407,7 @@ namespace ReserveBlockCore.Voting
                         table.AddColumn(new TableColumn(new Panel("Topic Cat.")));
                         table.AddColumn(new TableColumn(new Panel("Votes Yes")));
                         table.AddColumn(new TableColumn(new Panel("Votes No")));
-                        table.AddColumn(new TableColumn(new Panel("Passing Vote? (51%>)")));
+                        table.AddColumn(new TableColumn(new Panel("Passing Vote? (90%>)")));
 
                         foreach (var topic in results)
                         {
@@ -476,7 +476,7 @@ namespace ReserveBlockCore.Voting
                 table.AddColumn(new TableColumn(new Panel("Topic Cat.")));
                 table.AddColumn(new TableColumn(new Panel("Votes Yes")));
                 table.AddColumn(new TableColumn(new Panel("Votes No")));
-                table.AddColumn(new TableColumn(new Panel("Passing Vote? (51%>)")));
+                table.AddColumn(new TableColumn(new Panel("Passing Vote? (90%>)")));
 
                 foreach(var topic in topics)
                 {
@@ -531,7 +531,7 @@ namespace ReserveBlockCore.Voting
                 table.AddColumn(new TableColumn(new Panel("Topic Cat.")));
                 table.AddColumn(new TableColumn(new Panel("Votes Yes")));
                 table.AddColumn(new TableColumn(new Panel("Votes No")));
-                table.AddColumn(new TableColumn(new Panel("Passing Vote? (51%>)")));
+                table.AddColumn(new TableColumn(new Panel("Passing Vote? (90%>)")));
 
                 foreach (var topic in topics)
                 {
