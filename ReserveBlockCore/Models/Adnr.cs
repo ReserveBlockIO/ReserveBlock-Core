@@ -176,7 +176,7 @@ namespace ReserveBlockCore.Models
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < Globals.ValidatorRequiredRBX))
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -277,7 +277,7 @@ namespace ReserveBlockCore.Models
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < Globals.ValidatorRequiredRBX))
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);
@@ -378,7 +378,7 @@ namespace ReserveBlockCore.Models
                 {
                     adnrTx.TransactionStatus = TransactionStatus.Pending;
 
-                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < Globals.ValidatorRequiredRBX))
+                    if (account.IsValidating == true && (account.Balance - (adnrTx.Fee + adnrTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
                     {
                         var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == adnrTx.FromAddress.ToLower());
                         ValidatorService.StopValidating(validator);

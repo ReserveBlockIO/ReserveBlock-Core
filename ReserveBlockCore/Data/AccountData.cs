@@ -333,7 +333,7 @@ namespace ReserveBlockCore.Data
 		public static IEnumerable<Account> GetPossibleValidatorAccounts()
 		{
 			var accounts = DbContext.DB_Wallet.GetCollection<Account>(DbContext.RSRV_ACCOUNTS);
-			var accountsWithBal = accounts.Find(x => x.Balance >= Globals.ValidatorRequiredRBX);
+			var accountsWithBal = accounts.Find(x => x.Balance >= ValidatorService.ValidatorRequiredAmount());
 
 			return accountsWithBal;
 		}

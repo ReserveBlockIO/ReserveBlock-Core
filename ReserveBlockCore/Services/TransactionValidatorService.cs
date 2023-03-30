@@ -431,7 +431,7 @@ namespace ReserveBlockCore.Services
                                                         var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
                                                         if (balance < ValidatorService.ValidatorRequiredAmount())
                                                         {
-                                                            return (txResult, $"Balance is under {Globals.ValidatorRequiredRBX}. Topic will not be allowed.");
+                                                            return (txResult, $"Balance is under {ValidatorService.ValidatorRequiredAmount()}. Topic will not be allowed.");
                                                         }
                                                     }
                                                     else
@@ -554,9 +554,9 @@ namespace ReserveBlockCore.Services
                                         if (stAcct != null)
                                         {
                                             var balance = (stAcct.Balance - (txRequest.Amount + txRequest.Fee));
-                                            if (balance < Globals.ValidatorRequiredRBX)
+                                            if (balance < ValidatorService.ValidatorRequiredAmount())
                                             {
-                                                return (txResult, $"Balance is under {Globals.ValidatorRequiredRBX}. Vote will not be allowed.");
+                                                return (txResult, $"Balance is under {ValidatorService.ValidatorRequiredAmount()}. Vote will not be allowed.");
                                             }
                                         }
                                         else
