@@ -59,9 +59,14 @@ namespace ReserveBlockCore
         public static DateTime? APIUnlockTime = null;
         public static DateTime? ExplorerValDataLastSend = null;
 
+        public const int ValidatorRequiredRBX = 12000;
+        public const decimal ADNRRequiredRBX = 5.0M;
+        public const decimal TopicRequiredRBX = 10.0M;
+        public const decimal DecShopRequiredRBX = 10.0M;
         public const int ADNRLimit = 65;
         public static int BlockLock = -1;
         public static long V3Height = 579015;
+        public static long V1TXHeight = 200;
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;
@@ -70,6 +75,9 @@ namespace ReserveBlockCore
         public static int PasswordClearTime = 10;
         public static int NFTTimeout = 0;
         public static int Port = 3338;
+        public static int ADJPort = 3339;
+        public static int SelfSTUNPort = 3340;
+        public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
         public static int MinorVer = 3;
@@ -77,6 +85,7 @@ namespace ReserveBlockCore
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
         public static bool ValidatorReceiving = true;
+        public static bool ValidatorBalanceGood = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
         public static string GitHubVersion = "beta3.3";
@@ -163,6 +172,7 @@ namespace ReserveBlockCore
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
+        public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
 
         public static SecureString EncryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;

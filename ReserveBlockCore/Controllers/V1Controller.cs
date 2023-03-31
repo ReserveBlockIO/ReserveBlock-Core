@@ -656,7 +656,7 @@ namespace ReserveBlockCore.Controllers
 
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
-                if (Globals.ValidatorReceiving && Globals.ValidatorSending)
+                if (Globals.ValidatorReceiving && Globals.ValidatorSending && Globals.ValidatorBalanceGood)
                 {
                     output = "true";
                 }
@@ -691,9 +691,9 @@ namespace ReserveBlockCore.Controllers
                     if (account != null)
                     {
                         var stateTreiBalance = AccountStateTrei.GetAccountBalance(account.Address);
-                        if(stateTreiBalance < 1000)
+                        if(stateTreiBalance < ValidatorService.ValidatorRequiredAmount())
                         {
-                            output = "The balance for this account is under 1000.";
+                            output = $"The balance for this account is under {ValidatorService.ValidatorRequiredAmount()}.";
                         }
                         else
                         {
@@ -1675,6 +1675,28 @@ namespace ReserveBlockCore.Controllers
 
             return output;
 
+        }
+
+        /// <summary>
+        /// Dumps out active val list from past 30 days
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ListActiveVals")]
+        public async Task<string> ListActiveVals()
+        {
+            var output = "";
+            var activeVals = Globals.ActiveValidatorDict;
+
+            if (activeVals.Count > 0)
+            {
+                output = JsonConvert.SerializeObject(activeVals);
+            }
+            else
+            {
+                output = "Active validator list was empty.";
+            }
+
+            return output;
         }
 
         /// <summary>

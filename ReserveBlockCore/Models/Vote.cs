@@ -11,7 +11,6 @@ namespace ReserveBlockCore.Models
 {
     public class Vote
     {
-
         #region Variables
         public int Id { get; set; }
         public string TopicUID { get; set; }

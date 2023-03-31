@@ -765,92 +765,92 @@ namespace ReserveBlockCore.Commands
 
         public static async void CreateDecShop()
         {
-            Console.WriteLine("Please select the wallet you'd like to use to pay for shop registration...");
-            var accountList = AccountData.GetAccountsWithBalance();
-            var accountNumberList = new Dictionary<string, Account>();
-            if (accountList.Count() > 0)
-            {
-                int count = 1;
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
-                accountList.ToList().ForEach(x => {
-                    accountNumberList.Add(count.ToString(), x);
-                    Console.WriteLine("********************************************************************");
-                    Console.WriteLine("\n#" + count.ToString());
-                    Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
-                    Console.WriteLine("********************************************************************");
-                    count++;
-                });
-                string walletChoice = "";
-                walletChoice = Console.ReadLine();
+            //Console.WriteLine("Please select the wallet you'd like to use to pay for shop registration...");
+            //var accountList = AccountData.GetAccountsWithBalance();
+            //var accountNumberList = new Dictionary<string, Account>();
+            //if (accountList.Count() > 0)
+            //{
+            //    int count = 1;
+            //    Console.WriteLine("********************************************************************");
+            //    Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
+            //    accountList.ToList().ForEach(x => {
+            //        accountNumberList.Add(count.ToString(), x);
+            //        Console.WriteLine("********************************************************************");
+            //        Console.WriteLine("\n#" + count.ToString());
+            //        Console.WriteLine("\nAddress :\n{0}", x.Address);
+            //        Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+            //        Console.WriteLine("********************************************************************");
+            //        count++;
+            //    });
+            //    string walletChoice = "";
+            //    walletChoice = Console.ReadLine();
 
-                if (!string.IsNullOrWhiteSpace(walletChoice))
-                {
-                    var keyCheck = accountNumberList.ContainsKey(walletChoice);
+            //    if (!string.IsNullOrWhiteSpace(walletChoice))
+            //    {
+            //        var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
-                    if (keyCheck == false)
-                    {
-                        Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
-                        MainMenuReturn();
-                    }
-                    else
-                    {
-                        var wallet = accountNumberList[walletChoice];
-                        var address = wallet.Address;
-                        Console.WriteLine("Please give your shop a name...");
-                        var name = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(name))
-                        {
-                            Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
-                            var desc = Console.ReadLine();
-                            if (!string.IsNullOrWhiteSpace(desc) && desc.Length > 512)
-                            {
-                                var ip = P2PClient.MostLikelyIP();
+            //        if (keyCheck == false)
+            //        {
+            //            Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
+            //            MainMenuReturn();
+            //        }
+            //        else
+            //        {
+            //            var wallet = accountNumberList[walletChoice];
+            //            var address = wallet.Address;
+            //            Console.WriteLine("Please give your shop a name...");
+            //            var name = Console.ReadLine();
+            //            if (!string.IsNullOrWhiteSpace(name))
+            //            {
+            //                Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
+            //                var desc = Console.ReadLine();
+            //                if (!string.IsNullOrWhiteSpace(desc) && desc.Length > 512)
+            //                {
+            //                    var ip = P2PClient.MostLikelyIP();
 
-                                if (ip == "NA")
-                                {
-                                    Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
-                                    MainMenuReturn();
-                                }
-                                else
-                                {
-                                    var sUID = Guid.NewGuid().ToString().Substring(0, 10).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+            //                    if (ip == "NA")
+            //                    {
+            //                        Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
+            //                        MainMenuReturn();
+            //                    }
+            //                    else
+            //                    {
+            //                        var sUID = Guid.NewGuid().ToString().Substring(0, 10).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
 
-                                    DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
-                                    {
-                                        IPAddress = ip,
-                                        Port = Globals.Port,
-                                        Name = name,
-                                        ShopUID = sUID
-                                    };
+            //                        DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
+            //                        {
+            //                            IPAddress = ip,
+            //                            Port = Globals.Port,
+            //                            Name = name,
+            //                            ShopUID = sUID
+            //                        };
 
-                                    var decShopLocJson = JsonConvert.SerializeObject(decShopLoc);
+            //                        var decShopLocJson = JsonConvert.SerializeObject(decShopLoc);
 
-                                    DecShop dsInfo = new DecShop();
-                                    dsInfo.Name = name;
-                                    dsInfo.Description = desc;
-                                    dsInfo.Locator = decShopLocJson.ToBase64();
-                                    dsInfo.IsOffline = false;
-                                    dsInfo.ShopUID = sUID;
-                                    dsInfo.Address = address;
+            //                        DecShop dsInfo = new DecShop();
+            //                        dsInfo.Name = name;
+            //                        dsInfo.Description = desc;
+            //                        dsInfo.Locator = decShopLocJson.ToBase64();
+            //                        dsInfo.IsOffline = false;
+            //                        dsInfo.ShopUID = sUID;
+            //                        dsInfo.Address = address;
 
-                                    var result = await DecShop.SaveMyDecShopInfo(dsInfo);
-                                    //publish to chain now.
-                                    Console.WriteLine(result);
-                                    MainMenuReturn();
-                                }
+            //                        var result = await DecShop.SaveMyDecShopInfo(dsInfo);
+            //                        //publish to chain now.
+            //                        Console.WriteLine(result);
+            //                        MainMenuReturn();
+            //                    }
 
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a shop.");
-                MainMenuReturn();
-            }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a shop.");
+            //    MainMenuReturn();
+            //}
         }
 
         public static string CreateHDWallet()
@@ -890,12 +890,13 @@ namespace ReserveBlockCore.Commands
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
                 {
-                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending && Globals.ValidatorBalanceGood ? "[green]Yes[/]" : "[red]No[/]";
                     var isValidatingSending = Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
                     var isValidatingReceiving = Globals.ValidatorReceiving ? "[green]Yes[/]" : "[red]No[/]";
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
+                    Console.WriteLine($"Validator Balance Good?: {Globals.ValidatorBalanceGood}");
                     AnsiConsole.MarkupLine($"Validating? {isValidating}");
                     AnsiConsole.MarkupLine($"Validator Sending? {isValidatingSending}");
                     AnsiConsole.MarkupLine($"Validator Receiving? {isValidatingReceiving}");
