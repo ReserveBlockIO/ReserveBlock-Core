@@ -343,6 +343,7 @@ namespace ReserveBlockCore.Models
                 if (result.Item1 == true)
                 {
                     topicTx.TransactionStatus = TransactionStatus.Pending;
+                    await WalletService.SendTransaction(topicTx, account);
                     //TransactionData.AddToPool(topicTx);
                     //TransactionData.AddTxToWallet(topicTx, true);
                     //AccountData.UpdateLocalBalance(topicTx.FromAddress, (topicTx.Fee + topicTx.Amount));
