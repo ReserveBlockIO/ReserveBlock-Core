@@ -43,6 +43,15 @@ namespace ReserveBlockCore.Extensions
             return value;
         }
 
+        public static bool ToDecimalCountValid(this decimal value)
+        {
+            int count = BitConverter.GetBytes(decimal.GetBits(value)[3])[2];
+            if (count > 18)
+                return false;
+
+            return true;
+        }
+
         public static DateTime ToLocalDateTimeFromUnix(this long unixTime)
         {
             DateTime frDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);

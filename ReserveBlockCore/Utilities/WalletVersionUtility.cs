@@ -41,5 +41,15 @@
 
             return output;
         }
+
+        public static int GetBuildVersion()
+        {
+            DateTime originDate = new DateTime(2022, 1, 1);
+            DateTime currentDate = DateTime.Now;
+
+            var dateDiff = (int)Math.Round((currentDate - originDate).TotalDays);
+
+            return dateDiff;
+        }
     }
 }
