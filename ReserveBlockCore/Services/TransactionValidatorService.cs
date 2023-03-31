@@ -44,6 +44,14 @@ namespace ReserveBlockCore.Services
                     return (txResult, "Address failed to validate");
             }
 
+            if (Globals.LastBlock.Height > 820457)
+            {
+                if (txRequest.Amount < 0.0M)
+                {
+                    return (txResult, "Amount cannot be less than or equal to zero.");
+                }
+            }
+
             //Timestamp Check
             if (Globals.BlocksDownloadSlim.CurrentCount != 0)
             {
