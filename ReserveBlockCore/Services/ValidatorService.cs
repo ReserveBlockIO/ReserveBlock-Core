@@ -524,7 +524,7 @@ namespace ReserveBlockCore.Services
                         var valAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);
                         if(valAccount != null)
                         {
-                            if(valAccount.Balance < Globals.ValidatorRequiredRBX)
+                            if(valAccount.Balance < ValidatorService.ValidatorRequiredAmount())
                             {
                                 Globals.ValidatorIssueCount += 1;
                                 Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 2 or less.");
