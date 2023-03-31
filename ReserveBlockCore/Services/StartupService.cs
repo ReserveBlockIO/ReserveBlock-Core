@@ -681,7 +681,7 @@ namespace ReserveBlockCore.Services
                         var ConnectTasks = new ConcurrentBag<Task>();
                         DisconnectedPeers.ParallelLoop(peer =>
                         {
-                            var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
+                            var url = "http://" + peer.NodeIP + ":" + Globals.ADJPort + "/consensus";
                             ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
                         });                        
 
