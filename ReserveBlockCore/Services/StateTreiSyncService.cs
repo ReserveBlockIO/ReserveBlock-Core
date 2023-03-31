@@ -18,9 +18,7 @@ namespace ReserveBlockCore.Services
                 AnsiConsole.MarkupLine("[yellow]This is running due to an incorrect shutdown of wallet.[/]");
                 AnsiConsole.MarkupLine("[yellow]During this time please do not close wallet, or click cursor into the CLI.[/]");
 
-                var blockHeight = Globals.LastBlock.Height;
-
-                if (IsRunning == false && blockHeight > 10)
+                if (IsRunning == false)
                 {
                     IsRunning = true;
                     var height = BlockchainData.GetHeight();
@@ -88,11 +86,7 @@ namespace ReserveBlockCore.Services
                                             }
 
                                         }
-                                        if (x.ToAddress != "Adnr_Base" && 
-                                            x.ToAddress != "DecShop_Base" && 
-                                            x.ToAddress != "Topic_Base" && 
-                                            x.ToAddress != "Vote_Base" && 
-                                            x.ToAddress != "Reserve_Base")
+                                        if (x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base" && x.ToAddress != "Topic_Base" && x.ToAddress != "Vote_Base")
                                         {
                                             if (x.TransactionType == TransactionType.TX)
                                             {

@@ -1,5 +1,6 @@
 ﻿using ReserveBlockCore.Commands;
 using ReserveBlockCore.Models;
+using Spectre.Console.Cli;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -98,12 +99,12 @@ namespace ReserveBlockCore.Utilities
 
         public static async Task AdjAutoRestart()
         {
-            if(Globals.AdjudicateAccount != null && !Globals.IsTestNet)
+            if(Globals.AdjudicateAccount != null)
             {
                 while (true)
                 {
                     var delay = Task.Delay(4000);
-                    if (Globals.StopAllTimers && !Globals.IsChainSynced && !Globals.IsTestNet)
+                    if (Globals.StopAllTimers && !Globals.IsChainSynced)
                     {
                         await delay;
                         continue;

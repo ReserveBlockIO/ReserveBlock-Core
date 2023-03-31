@@ -115,11 +115,8 @@ namespace ReserveBlockCore.Utilities
             var timeSync = $"Time in Sync? {Globals.TimeInSync}";
             var lastSyncDiff = $"Last Time Sync Diff: {Globals.TimeSyncDiff}";
             var lastSyncTime = $"Last Time Sync Date: {Globals.TimeSyncLastDate}";
-
             var startMemory = $"Start Memory: {Globals.StartMemory}";
             var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
-
-            var lastBlockWon = Globals.LastWonBlock != null ? $"Last Block Won: {Globals.LastWonBlock.Height}" : "No blocks reported yet.";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
                 + " - Validator: " + lastBlock.Validator;
@@ -199,8 +196,6 @@ namespace ReserveBlockCore.Utilities
             }
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
-                strBld.AppendLine(lastBlockWon);
-                strBld.AppendLine("---------------------------------------------------------------------");
                 strBld.AppendLine(lastTaskResultText);
                 strBld.AppendLine("---------------------------------------------------------------------");
                 strBld.AppendLine(lastTaskSentText);

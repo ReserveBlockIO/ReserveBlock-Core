@@ -56,8 +56,7 @@ namespace ReserveBlockCore.Models
             if (HostingType == DecShopHostingType.Network)
             {
                 IP = P2PClient.MostLikelyIP();
-
-                if(IP == "NA")
+                if (IP == "NA")
                 {
                     return (false, "Could not find IP automatically.");
                 }
@@ -84,7 +83,7 @@ namespace ReserveBlockCore.Models
                 return decshops;
             }
             catch (Exception ex)
-            {                
+            {
                 ErrorLogUtility.LogError(ex.ToString(), "DecShop.DecShopTreiDb()");
                 return null;
             }
@@ -143,7 +142,6 @@ namespace ReserveBlockCore.Models
         public static DecShop? GetDecShopStateTreiLeaf(string dsUID)
         {
             var dstDB = DecShopTreiDb();
-            
             if (dstDB != null)
             {
                 var rec = dstDB.Query().Where(x => x.UniqueId == dsUID).FirstOrDefault();
@@ -214,7 +212,6 @@ namespace ReserveBlockCore.Models
                     var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
                     if (existingDecShopInfo == null)
                     {
-
                         if (!isImport)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
@@ -228,7 +225,6 @@ namespace ReserveBlockCore.Models
                     }
                     else
                     {
-
                         if (decshop.DecShopURL != existingDecShopInfo.DecShopURL)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
@@ -247,6 +243,7 @@ namespace ReserveBlockCore.Models
                 ErrorLogUtility.LogError($"Error Saving: {ex.ToString()}", "DecShop.SaveMyDecShopLocal()");
                 return (false, $"Unknown Error Saving/Updating Dec Shop. Error: {ex.ToString()}");
             }
+
         }
 
         #endregion

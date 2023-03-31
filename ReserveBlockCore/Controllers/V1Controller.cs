@@ -599,14 +599,6 @@ namespace ReserveBlockCore.Controllers
             else
             {
                 var accountList = accounts.Query().Where(x => true).ToEnumerable();
-                //var reserveAccounts = ReserveAccount.GetReserveAccounts();
-                //if(reserveAccounts?.Count() > 0)
-                //{
-                //    foreach(var rA in reserveAccounts)
-                //    {
-
-                //    }
-                //}
                 output = JsonConvert.SerializeObject(accountList);
             }
 
@@ -910,7 +902,6 @@ namespace ReserveBlockCore.Controllers
 
             var accountsDb = AccountData.GetAccounts();
             var accounts = accountsDb.Query().Where(x => true).ToEnumerable();
-            var rAccount = ReserveAccount.GetReserveAccounts();
 
             if (accounts.Count() > 0)
             {
@@ -920,27 +911,15 @@ namespace ReserveBlockCore.Controllers
                     if(stateTrei != null)
                     {
                         account.Balance = stateTrei.Balance;
-                        account.LockedBalance = stateTrei.LockedBalance;
                         accountsDb.UpdateSafe(account);
                     }
                 }
                 output = JsonConvert.SerializeObject(new { Success = true, Message = $"Balance resync completed" });
             }
-
-            if(rAccount?.Count() > 0)
+            else
             {
-                foreach (var account in rAccount)
-                {
-                    var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
-                    if (stateTrei != null)
-                    {
-                        account.AvailableBalance = stateTrei.Balance;
-                        account.LockedBalance = stateTrei.LockedBalance;
-                        ReserveAccount.SaveReserveAccount(account);
-                    }
-                }
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"No Accounts were found locally." });
             }
-
 
             return output;
         }

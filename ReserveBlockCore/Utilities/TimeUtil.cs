@@ -46,10 +46,7 @@ namespace ReserveBlockCore.Utilities
             //default to 5 days
             return DateTimeOffset.UtcNow.AddDays(5).ToUnixTimeSeconds();
         }
-        public static long GetReserveTime(int addHours = 0)
-        {
-            return DateTimeOffset.UtcNow.AddHours(24 + addHours).ToUnixTimeSeconds();
-        }
+
         public static DateTime ToDateTime(long unixTime)
         {
             DateTime frDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);

@@ -19,7 +19,6 @@ using System.Globalization;
 using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System;
-using System.Security.Principal;
 
 namespace ReserveBlockCore.Commands
 {
@@ -912,12 +911,6 @@ namespace ReserveBlockCore.Commands
                         }
                         
                     }
-
-                    var lastBlockWon = Globals.LastWonBlock;
-                    if(lastBlockWon != null)
-                    {
-                        AnsiConsole.MarkupLine($"Last Block Won: [green]{lastBlockWon.Height}[/] | Time: [yellow]{lastBlockWon.Timestamp.ToLocalDateTimeFromUnix()}[/]");
-                    }
                 }
                 else
                 {
@@ -1505,46 +1498,6 @@ namespace ReserveBlockCore.Commands
 
         }
 
-        public static async Task CreateReserveAddress()
-        {
-            try
-            {
-                Console.WriteLine("Please input a password for your Reserve Account.");
-                var password = await ReadLineUtility.ReadLine();
-
-                AnsiConsole.MarkupLine($"Do you want to store the recovery address in wallet? [green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/]");
-                var confirm = await ReadLineUtility.ReadLine();
-
-                if(!string.IsNullOrEmpty(password))
-                {
-                    if(!string.IsNullOrEmpty(confirm))
-                    {
-                        var storeRecoveryKey = confirm.ToLower() == "y" ? true : false;
-                        var result = ReserveAccount.CreateNewReserveAccount(password, storeRecoveryKey);
-
-                        if(result != null)
-                        {
-                            Console.Clear();
-                            Console.WriteLine("\n\n\nYour Wallet");
-                            Console.WriteLine("======================");
-                            Console.WriteLine("\nAddress :\n{0}", result.Address);
-                            Console.WriteLine("\nRecovery Address:\n{0}", result.RecoveryAddress);
-                            Console.WriteLine("\nPrivate Key:\n{0}", result.PrivateKey);
-                            Console.WriteLine("\nRecovery Private Key:\n{0}", result.RecoveryPrivateKey);
-                            Console.WriteLine("\nRestore Code:\n{0}", result.RestoreCode);
-                            Console.WriteLine("\n - - - - - - - - - - - - - - - - - - - - - - ");
-                            Console.WriteLine("*** Be sure to save private key and Restore Code!                  ***");
-                            Console.WriteLine("*** Use your private key to restore account!       ***");
-                        }
-                    }
-                    
-                }
-                
-            }
-            catch(Exception ex) { }
-            
-        }
-
         public static async Task CreateAddress()
         {
             if (Globals.HDWallet == true)
@@ -1715,97 +1668,6 @@ namespace ReserveBlockCore.Commands
 
         }
 
-        public static async Task RestoreReserveAccount()
-        {
-            try
-            {
-                ReserveAccount.ReserveAccountInfo? rInfo = null;
-
-                Console.WriteLine("1. Restore from 'Restore Code'.");
-                Console.WriteLine("2. Restore from two private keys.");
-                Console.WriteLine("Please choose option 1. to restore from a code, or option 2. to restore from two private keys");
-
-                var choice = await ReadLineUtility.ReadLine();
-
-                if(!string.IsNullOrEmpty(choice))
-                {
-                    Console.WriteLine("Please input a password for your Reserve Account.");
-                    var password = await ReadLineUtility.ReadLine();
-
-                    AnsiConsole.MarkupLine($"Do you want to store the recovery address in wallet? [green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/]");
-                    var confirm = await ReadLineUtility.ReadLine();
-
-                    AnsiConsole.MarkupLine($"Do you want to rescan for TXs? [green]'y'[/] for [green]yes[/] and[red]'n'[/] for [red]no[/]");
-                    var rescanForTx = await ReadLineUtility.ReadLine();
-                    var rescan = rescanForTx?.ToLower() == "y" ? true : false;
-
-                    if (!string.IsNullOrEmpty(password))
-                    {
-                        if (!string.IsNullOrEmpty(confirm))
-                        {
-                            var storeRecoveryKey = confirm.ToLower() == "y" ? true : false;
-                            if (choice == "1")
-                            {
-                                Console.WriteLine("Please input your restore code.");
-                                var restoreCode = await ReadLineUtility.ReadLine();
-                                
-                                if(!string.IsNullOrEmpty(restoreCode))
-                                {
-                                    var result = await ReserveAccount.RestoreReserveAccount(restoreCode, password, storeRecoveryKey, rescan);
-                                    if(result != null)
-                                    {
-                                        rInfo = new ReserveAccount.ReserveAccountInfo();
-                                        rInfo = result;
-                                    }
-                                }
-                            }
-                            if (choice == "2")
-                            {
-                                Console.WriteLine("Please input your reserve account private key first.");
-                                var firstKey = await ReadLineUtility.ReadLine();
-
-                                Console.WriteLine("Please input your recovery account private key now.");
-                                var secondKey = await ReadLineUtility.ReadLine();
-
-                                if(!string.IsNullOrEmpty(firstKey) && !string.IsNullOrEmpty(secondKey))
-                                {
-                                    var result = await ReserveAccount.RestoreReserveAccount(firstKey, secondKey, password, storeRecoveryKey, rescan);
-                                    if (result != null)
-                                    {
-                                        rInfo = new ReserveAccount.ReserveAccountInfo();
-                                        rInfo = result;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if(rInfo != null)
-                {
-                    Console.Clear();
-                    Console.WriteLine("\n\n\nYour Wallet");
-                    Console.WriteLine("======================");
-                    Console.WriteLine("\nAddress :\n{0}", rInfo.Address);
-                    Console.WriteLine("\nRecovery Address:\n{0}", rInfo.RecoveryAddress);
-                    Console.WriteLine("\nPrivate Key:\n{0}", rInfo.PrivateKey);
-                    Console.WriteLine("\nRecovery Private Key:\n{0}", rInfo.RecoveryPrivateKey);
-                    Console.WriteLine("\nRestore Code:\n{0}", rInfo.RestoreCode);
-                    Console.WriteLine("\n - - - - - - - - - - - - - - - - - - - - - - ");
-                    Console.WriteLine("*** Be sure to save private key and Restore Code!                  ***");
-                    Console.WriteLine("*** Use your private key to restore account!       ***");
-                }
-                else
-                {
-                    Console.WriteLine("There was an issue restoring your Reserve Account. Please verify key/code is correct.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unknown error restoring account. Error: {ex.ToString()}");
-            }
-        }
-
         public static string RestoreHDWallet()
         {
             Console.WriteLine("Please paste your Mnemonic Below...");
@@ -1858,7 +1720,6 @@ namespace ReserveBlockCore.Commands
             foreach (int i in Enum.GetValues(typeof(TransactionType)))
             {
                 Console.WriteLine($"{count} - {i}");
-                count += 1;
             }
 
             var badTxTranType = Console.ReadLine();
@@ -2119,11 +1980,10 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/findtx[/]", "[green]This is a heavy query to find a specific TX in all blocks.[/]");
             table.AddRow("[blue]/vote[/]", "[green]This will start the voting program.[/]");
             table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
-            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host. This will also take you main screen for mother after setup.[/]");
+            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
-            table.AddRow("[blue]2r[/]", "[green]This will create an Reserve Account.[/]");
             table.AddRow("[blue]3[/]", "[green]This will restore an account with a provided key.[/]");
             table.AddRow("[blue]3hd[/]", "[green]Restores an HD wallet with a provided Mnemonic (12 or 24 words).[/]");
             table.AddRow("[blue]4[/]", "[green]This will start an RBX transactions for coins only.[/]");

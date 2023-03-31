@@ -1,6 +1,5 @@
 ﻿using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
-using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 using System.Globalization;
 using System.Numerics;
@@ -70,7 +69,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = PublicKey.fromString(pubKeyByte);
 
                 var _PublicKey = "04" + ByteToHex(publicKey.toString());
-                var _Address = address.StartsWith("xRBX") ? ReserveAccount.GetHumanAddress(_PublicKey) : AccountData.GetHumanAddress(_PublicKey);
+                var _Address = AccountData.GetHumanAddress(_PublicKey);
 
                 if (address != _Address)
                 {
