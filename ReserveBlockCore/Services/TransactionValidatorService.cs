@@ -38,11 +38,11 @@ namespace ReserveBlockCore.Services
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
 
-            if(Globals.LastBlock.Height > Globals.V1TXHeight)
+            if(Globals.LastBlock.Height > Globals.TXHeightRule2) //around April 7, 2023 at 18:30 UTC
             {
                 if (txRequest.Fee <= 0.000003M)
                 {
-                    return (txResult, "Fee cannot be less than or equal to zero.");
+                    return (txResult, "Fee cannot be less than 0.000003 RBX");
                 }
             }
 
@@ -52,7 +52,7 @@ namespace ReserveBlockCore.Services
                     return (txResult, "Address failed to validate");
             }
 
-            if (Globals.LastBlock.Height > 820457)
+            if (Globals.LastBlock.Height > Globals.TXHeightRule1) //March 31th, 2023 at 03:44 UTC
             {
                 if (txRequest.Amount < 0.0M)
                 {
@@ -366,7 +366,7 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if(Globals.LastBlock.Height >= Globals.V1TXHeight)
+                            if(Globals.LastBlock.Height >= Globals.V1ValHeight)
                             {
                                 if (txRequest.Amount < Globals.ADNRRequiredRBX)
                                     return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");

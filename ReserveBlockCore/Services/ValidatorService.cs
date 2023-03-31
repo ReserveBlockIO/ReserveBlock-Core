@@ -374,7 +374,7 @@ namespace ReserveBlockCore.Services
 
         public static int ValidatorRequiredAmount()
         {
-            if(Globals.LastBlock.Height < Globals.V1TXHeight)
+            if(Globals.LastBlock.Height < Globals.V1ValHeight)
             {
                 return 1000;
             }
