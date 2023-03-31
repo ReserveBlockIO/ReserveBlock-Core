@@ -734,7 +734,7 @@ namespace ReserveBlockCore.Services
                         .Select(x => x.First())
                         .OrderBy(x => Math.Abs(x.Answer - ChosenAnswer))
                         .ThenBy(x => x.Answer)                        
-                        .Where(x => AccountStateTrei.GetAccountBalance(x.RBXAddress) >= 1000M)
+                        .Where(x => AccountStateTrei.GetAccountBalance(x.RBXAddress) >= ValidatorService.ValidatorRequiredAmount())
                         .Take(30)
                         .ToArray();
 

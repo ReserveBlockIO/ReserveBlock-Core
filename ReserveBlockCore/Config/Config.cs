@@ -167,7 +167,8 @@ namespace ReserveBlockCore.Config
 
             if (config.TestNet == true)
             {
-				Globals.IsTestNet = true;
+                Globals.ADJPort = 13339;
+                Globals.IsTestNet = true;
 				Globals.GenesisAddress = "xAfPR4w2cBsvmB7Ju5mToBLtJYuv1AZSyo";
 				Globals.Port = 13338;
 				Globals.APIPort = 17292;

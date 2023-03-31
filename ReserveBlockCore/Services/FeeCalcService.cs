@@ -8,7 +8,7 @@ namespace ReserveBlockCore.Services
         public static decimal CalculateTXFee(Transaction tx)
         {
             var txFee = new decimal();
-            var baseFeeMultiplier = 0.00001M;
+            var baseFeeMultiplier = 0.00002M;
             var kb = 1024.0M;
 
             var txSize = JsonConvert.SerializeObject(tx).Length;
@@ -22,8 +22,8 @@ namespace ReserveBlockCore.Services
             }
             else
             {
-                //fees are now capped at 8 decimal places
-                txFee = decimal.Round(txFee, 8);
+                //fees are now capped at 8 decimal places and rounded up at the 8th decimal place
+                txFee = decimal.Round(txFee, 8, MidpointRounding.ToPositiveInfinity);
             }
             return txFee;
         }

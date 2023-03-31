@@ -322,6 +322,9 @@ namespace ReserveBlockCore.Data
                 Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
                 Globals.LastBlockAddedTimestamp = currentTime;
                 _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
+                _ = ValidatorService.UpdateActiveValidators(block);
+
+                //insert block to db
                 blocks.InsertSafe(block);
             }
             else

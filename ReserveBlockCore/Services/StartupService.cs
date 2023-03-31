@@ -186,6 +186,7 @@ namespace ReserveBlockCore.Services
                     [("xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", 0)] = null,
                     [("xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", 0)] = null,
                     [("xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", 0)] = null,
+                    [("xBRgsdHnRBnpbBNTfWPk2dKdNbfKs9GDWK", 0)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
@@ -275,7 +276,7 @@ namespace ReserveBlockCore.Services
                     var now = DateTime.Now;
                     var lastShutDown = settings.LastShutdown;
 
-                    if (lastShutDown != null && settings.CorrectShutdown)
+                    if (lastShutDown != null && settings.CorrectShutdown && Globals.LastBlock.Height > 0)
                     {
                         if (lastShutDown.Value.AddSeconds(20) > now)
                         {
@@ -286,7 +287,7 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        if (!Debugger.IsAttached)
+                        if (!Debugger.IsAttached && Globals.LastBlock.Height > 0)
                         {
                             Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
                             await Task.Delay(15000);
@@ -624,7 +625,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400)
+            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending)).Take(400)
                 .Select(x => x.Transactions.Select(y => new { y.Hash, x.Height})).SelectMany(x => x).ToDictionary(x => x.Hash, x => x.Height));
         }
 
@@ -680,7 +681,7 @@ namespace ReserveBlockCore.Services
                         var ConnectTasks = new ConcurrentBag<Task>();
                         DisconnectedPeers.ParallelLoop(peer =>
                         {
-                            var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
+                            var url = "http://" + peer.NodeIP + ":" + Globals.ADJPort + "/consensus";
                             ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
                         });                        
 
