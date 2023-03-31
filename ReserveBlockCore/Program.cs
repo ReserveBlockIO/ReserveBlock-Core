@@ -465,6 +465,7 @@ namespace ReserveBlockCore
 
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
+            _ = builder3.RunConsoleAsync();
 
             if (Globals.AdjudicateAccount == null)
             {
