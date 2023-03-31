@@ -88,6 +88,7 @@ namespace ReserveBlockCore
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
         public static bool ValidatorReceiving = true;
+        public static bool ValidatorBalanceGood = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
         public static string GitHubVersion = "beta3.3";

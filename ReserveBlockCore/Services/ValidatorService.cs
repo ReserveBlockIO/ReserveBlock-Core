@@ -521,6 +521,27 @@ namespace ReserveBlockCore.Services
                             Globals.ValidatorErrorMessages.RemoveAll(x => x.Contains("Block Heights are behind."));
                         }
 
+                        var valAccount = AccountData.GetSingleAccount(Globals.ValidatorAddress);
+                        if(valAccount != null)
+                        {
+                            if(valAccount.Balance < Globals.ValidatorRequiredRBX)
+                            {
+                                Globals.ValidatorIssueCount += 1;
+                                Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 2 or less.");
+                                Globals.ValidatorBalanceGood = false;
+                                await DoMasterNodeStop();
+                            }
+                            else
+                            {
+                                Globals.ValidatorBalanceGood = true;
+                            }
+                        }
+                        else
+                        {
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Validator Account Missing");
+                        }
+
                         var adjNodes = Globals.AdjNodes.Values.Where(x => x.IsConnected).ToList();
                         if(adjNodes.Count < 3)
                         {
@@ -570,10 +591,7 @@ namespace ReserveBlockCore.Services
                                 //send variable to false that sending and receiving is not happening.
                                 Globals.ValidatorIssueCount += 1;
                             }
-
-                            
                         }
-                        
                     }
                     else
                     {
@@ -585,7 +603,6 @@ namespace ReserveBlockCore.Services
                         ConsoleWriterService.OutputMarked("[red]Validator has had the following issues to report. Please ensure node is operating correctly[/]");
                         foreach (var issue in Globals.ValidatorErrorMessages)
                         {
-
                             ConsoleWriterService.OutputMarked($"[yellow]{issue}[/]");
                         }
 

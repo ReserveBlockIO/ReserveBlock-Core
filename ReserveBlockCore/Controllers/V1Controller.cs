@@ -664,7 +664,7 @@ namespace ReserveBlockCore.Controllers
 
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
-                if (Globals.ValidatorReceiving && Globals.ValidatorSending)
+                if (Globals.ValidatorReceiving && Globals.ValidatorSending && Globals.ValidatorBalanceGood)
                 {
                     output = "true";
                 }

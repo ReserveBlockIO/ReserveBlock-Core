@@ -891,12 +891,13 @@ namespace ReserveBlockCore.Commands
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
                 {
-                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending && Globals.ValidatorBalanceGood ? "[green]Yes[/]" : "[red]No[/]";
                     var isValidatingSending = Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
                     var isValidatingReceiving = Globals.ValidatorReceiving ? "[green]Yes[/]" : "[red]No[/]";
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
+                    Console.WriteLine($"Validator Balance Good?: {Globals.ValidatorBalanceGood}");
                     AnsiConsole.MarkupLine($"Validating? {isValidating}");
                     AnsiConsole.MarkupLine($"Validator Sending? {isValidatingSending}");
                     AnsiConsole.MarkupLine($"Validator Receiving? {isValidatingReceiving}");
