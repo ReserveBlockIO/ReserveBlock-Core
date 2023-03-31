@@ -276,7 +276,7 @@ namespace ReserveBlockCore.Services
                     var now = DateTime.Now;
                     var lastShutDown = settings.LastShutdown;
 
-                    if (lastShutDown != null && settings.CorrectShutdown)
+                    if (lastShutDown != null && settings.CorrectShutdown && Globals.LastBlock.Height > 0)
                     {
                         if (lastShutDown.Value.AddSeconds(20) > now)
                         {
@@ -287,7 +287,7 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        if (!Debugger.IsAttached)
+                        if (!Debugger.IsAttached && Globals.LastBlock.Height > 0)
                         {
                             Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
                             await Task.Delay(15000);
