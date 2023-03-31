@@ -420,7 +420,7 @@ namespace ReserveBlockCore.Services
                             else
                             {
                                 if (txRequest.Amount < 1.0M)
-                                    return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                                    return (txResult, $"There must be at least 1 RBX to perform an ADNR Function.");
                             }
                             
 
