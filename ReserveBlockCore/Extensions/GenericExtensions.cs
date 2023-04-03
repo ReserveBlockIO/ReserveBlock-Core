@@ -427,49 +427,6 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
-        public static bool ToLengthCheck(this string text, int length)
-        {
-            var stringLength = text.Length;
-            if (stringLength > length)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        public static bool ToWordCountCheck(this string text, int count)
-        {
-            int wordCount = 0, index = 0;
-
-            // skip whitespace until first word
-            while (index < text.Length && char.IsWhiteSpace(text[index]))
-                index++;
-
-            while (index < text.Length)
-            {
-                // check if current char is part of a word
-                while (index < text.Length && !char.IsWhiteSpace(text[index]))
-                    index++;
-
-                wordCount++;
-
-                // skip whitespace until next word
-                while (index < text.Length && char.IsWhiteSpace(text[index]))
-                    index++;
-
-                if (wordCount > count)
-                    break;
-            }
-
-            if (wordCount > count)
-                return false;
-            return true;
-        }
-
-
         private static Random rng = new Random();
         public static void Shuffle<T>(this IList<T> list)
         {

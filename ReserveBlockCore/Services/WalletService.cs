@@ -299,5 +299,37 @@ namespace ReserveBlockCore.Services
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
         }
+        
+        public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account, bool noLockUp = false)
+        {
+            if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                if (txRequest.TransactionType == TransactionType.RESERVE || noLockUp)
+                {
+                    ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                else
+                {
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
+            }
+            else
+            {
+                TransactionData.AddToPool(txRequest);
+                TransactionData.AddTxToWallet(txRequest, true);
+                if(txRequest.TransactionType == TransactionType.RESERVE || noLockUp)
+                {
+                    ReserveAccount.UpdateOnlyBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                else
+                {
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                }
+                await P2PClient.SendTXMempool(txRequest);//send out to mempool
+            }
+        }
     }
 }
