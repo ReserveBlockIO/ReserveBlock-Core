@@ -85,7 +85,7 @@ namespace ReserveBlockCore.Services
         {
             while(true)
             {
-                var delay = Task.Delay(new TimeSpan(1,0,0));
+                var delay = Task.Delay(new TimeSpan(12,0,0));
                 await VesrionControlServiceLock.WaitAsync();
                 try
                 {

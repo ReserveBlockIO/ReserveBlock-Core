@@ -116,7 +116,7 @@ namespace ReserveBlockCore.Services
                     catch { }
                 }
 
-                var orderedDict = GlobalMemoryDict.OrderBy(x => x.Key).ToList();
+                var orderedDict = GlobalMemoryDict.OrderBy(x => x.Value < 1M).ThenBy(x => x.Key).ToList();
                 StringBuilder strBld = new StringBuilder();
                 var gcMemInfo = GC.GetGCMemoryInfo();
                 strBld.AppendLine("------------------------App Memory Usage-----------------------------");

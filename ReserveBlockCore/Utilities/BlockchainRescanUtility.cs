@@ -107,7 +107,7 @@ namespace ReserveBlockCore.Utilities
 
         }
 
-        public static async Task RescanForTransactions(string address)
+        public static async Task RescanForTransactions(string address, string? rAddress = null)
         {
             var blocks = BlockchainData.GetBlocks();
             var height = Convert.ToInt32(Globals.LastBlock.Height);
@@ -121,8 +121,11 @@ namespace ReserveBlockCore.Utilities
                 var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
                 if(block != null) 
                 {
-                    var fromTxs = block.Transactions.Where(from => from.FromAddress == address).ToList();
-                    var toTxs = block.Transactions.Where(to => to.ToAddress == address).ToList(); 
+                    var fromTxs = rAddress == null ? block.Transactions.Where(from => from.FromAddress == address).ToList() : 
+                        block.Transactions.Where(from => from.FromAddress == address || from.FromAddress == rAddress).ToList();
+
+                    var toTxs = rAddress == null ? block.Transactions.Where(to => to.ToAddress == address).ToList() :
+                        block.Transactions.Where(to => to.ToAddress == address || to.ToAddress == rAddress).ToList();
 
                     if(fromTxs.Count > 0)
                     {

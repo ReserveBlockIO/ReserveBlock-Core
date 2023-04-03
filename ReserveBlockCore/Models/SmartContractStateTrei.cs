@@ -10,6 +10,8 @@ namespace ReserveBlockCore.Models
         public string ContractData { get; set; }
         public string MinterAddress { get; set; }
         public string OwnerAddress { get; set; }
+        public string? NextOwner { get; set; }
+        public bool IsLocked { get; set; }
         public string? Locators { get; set; }
         public long Nonce { get; set; }
         public string? MD5List { get; set; }

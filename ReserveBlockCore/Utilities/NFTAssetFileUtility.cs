@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ImageMagick;
+using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
@@ -10,6 +11,23 @@ namespace ReserveBlockCore.Utilities
     public class NFTAssetFileUtility 
     {
         private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+        private static readonly HashSet<string> ValidExtensions = new HashSet<string>()
+        {
+            ".png",
+            ".icns",
+            ".ico",
+            ".jpg",
+            ".jpeg",
+            ".jp2",
+            ".gif",
+            ".tif",
+            ".tiff",
+            ".webp",
+            ".bmp",
+            ".psd",
+            ".ai"
+            // Other possible extensions
+        };
 
         public static bool MoveAsset(string fileLocation, string fileName, string scUID)
         {
@@ -40,12 +58,22 @@ namespace ReserveBlockCore.Utilities
                 path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
             }
 
+            var thumbPath = path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar;
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
 
+            if (!Directory.Exists(thumbPath))
+            {
+                Directory.CreateDirectory(thumbPath);
+            }
+
             var newPath = path + fileName;
+            var newThumbPath = thumbPath + fileName;
+
+            var fileExt = fileLocation.ToFileExtension();
 
             try
             {
@@ -54,6 +82,9 @@ namespace ReserveBlockCore.Utilities
                 {
                     File.Copy(fileLocation, newPath);
                 }
+                if(ValidExtensions.Contains(fileExt.ToLower()))
+                    CreateNFTAssetThumbnail(newPath, newThumbPath);
+                
                 return true;
             }
             catch(Exception ex)
@@ -63,7 +94,35 @@ namespace ReserveBlockCore.Utilities
                 return false;
             }
         }
-        public static string CreateNFTAssetPath(string fileName, string scUID)
+
+        public static void CreateNFTAssetThumbnail(string originPath, string newPath)
+        {
+            try
+            {
+                var fileExist = File.Exists(originPath);
+                if (fileExist)
+                {
+                    using (var image = new MagickImage(originPath))
+                    {
+                        if (image.Height > 512 || image.Width > 512)
+                        {
+                            var size = new MagickGeometry(512, 512);
+                            size.IgnoreAspectRatio = false;
+                            image.Resize(size);
+                            // Save the result
+                            image.Write(newPath);
+                        }
+                        else
+                        {
+                            File.Copy(originPath, newPath);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { }
+            
+        }
+        public static string CreateNFTAssetPath(string fileName, string scUID, bool thumbs = false)
         {
             var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
@@ -86,16 +145,24 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
             }
+            
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
+            if (thumbs)
+            {
+                if (!Directory.Exists(path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar))
+                {
+                    Directory.CreateDirectory(path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar);
+                }
+            }
 
-            var newPath = path + fileName;
+            var newPath = thumbs ? path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
 
             return newPath;
         }
-        public static string NFTAssetPath(string fileName, string scUID)
+        public static string NFTAssetPath(string fileName, string scUID, bool getThumbs = false)
         {
             var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
@@ -119,7 +186,7 @@ namespace ReserveBlockCore.Utilities
                 }
             }
 
-            var newPath = path + fileName;
+            var newPath = getThumbs ? path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
 
             try
             {
@@ -127,8 +194,7 @@ namespace ReserveBlockCore.Utilities
                 if (fileExist)
                 {
                     return newPath;
-                }
-                
+                }                
             }
             catch (Exception ex)
             {
@@ -138,6 +204,13 @@ namespace ReserveBlockCore.Utilities
             }
 
             return "NA";
+        }
+
+        public static byte[] GetNFTAssetByteArray(string path)
+        {
+            byte[] imageBytes = File.ReadAllBytes(path);
+
+            return imageBytes;
         }
 
         public static async Task<List<string>> GetAssetListFromSmartContract(SmartContractMain sc)
