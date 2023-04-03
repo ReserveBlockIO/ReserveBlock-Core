@@ -204,7 +204,7 @@ namespace ReserveBlockCore.P2P
                         {
                             if (beaconData != null)
                             {
-                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && (x.NextAssetOwnerAddress == scState.OwnerAddress || x.NextAssetOwnerAddress == scState.NextOwner)).FirstOrDefault();
+                                var bdCheck = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
                                 if (bdCheck != null)
                                 {
                                     if (beaconDatas != null)
@@ -230,7 +230,7 @@ namespace ReserveBlockCore.P2P
 
                             result = true; //success
                             //need to then call out to origin to process download
-                            var beaconDataRec = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && (x.NextAssetOwnerAddress == scState.OwnerAddress || x.NextAssetOwnerAddress == scState.NextOwner)).FirstOrDefault();
+                            var beaconDataRec = beaconData.Where(x => x.SmartContractUID == bdd.SmartContractUID && x.AssetName == fileName && x.NextAssetOwnerAddress == scState.OwnerAddress).FirstOrDefault();
                             if(beaconDataRec != null)
                             {
                                 var remoteUser = beaconPool.Where(x => x.Reference == beaconDataRec.Reference).FirstOrDefault();

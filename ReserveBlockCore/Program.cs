@@ -20,7 +20,7 @@ using System.Net.Http;
 using System.Security.Principal;
 using System.Runtime.Intrinsics.Arm;
 using System.Reflection;
-using ReserveBlockCore.DST;
+
 
 namespace ReserveBlockCore
 {
@@ -57,8 +57,9 @@ namespace ReserveBlockCore
             await httpClientBuilder.StartAsync();
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
+
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -129,26 +130,6 @@ namespace ReserveBlockCore
                     {
                         //Launch testnet
                         Globals.IsTestNet = true;
-                    }
-                    if (argC == "stun")
-                    {
-                        Globals.SelfSTUNServer = true;
-                    }
-                    if (argC == "stunport")
-                    {
-                        var stunPortSplit = argC.Split(new char[] { '=' });
-                        var convRes = int.TryParse(stunPortSplit[1], out var result);
-                        var stunPort = convRes ? result : Globals.IsTestNet ? 13340 : 3340;
-                        Globals.SelfSTUNPort = stunPort;
-                    }
-                    if (argC.Contains("stunservers"))
-                    {
-                        var stunSplit = argC.Split(new char[] { '=' });
-                        var stunServers = stunSplit[1].Split(',');
-                        foreach (var server in stunServers)
-                        {
-                            Globals.STUNServers.TryAdd(server);
-                        }
                     }
                     if (argC == "gui")
                     {
@@ -484,12 +465,8 @@ namespace ReserveBlockCore
 
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
+            _ = builder3.RunConsoleAsync();
 
-            if(Globals.AdjudicateAccount != null)
-            {
-                _ = builder3.RunConsoleAsync();
-            }
-            
             if (Globals.AdjudicateAccount == null)
             {
                 Globals.StopAllTimers = true;
@@ -544,8 +521,6 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatingMonitorService();
             _ = ValidatorService.GetActiveValidators();
             _ = ValidatorService.ValidatorCountRun();
-            _ = ReserveService.Run();
-            _ = DSTClient.Run();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
@@ -559,8 +534,6 @@ namespace ReserveBlockCore
             }
 
             await Task.Delay(2000);
-
-            //_ = DSTServer.Run();
 
             var tasks = new Task[] {
                 commandLoopTask, //CLI console
@@ -709,10 +682,7 @@ namespace ReserveBlockCore
 
         private static void CommandLoop3()
         {
-            _ = StartupService.StartBeacon();
-            if(Globals.SelfSTUNServer)
-                _ = StartupService.StartDSTServer();
-
+            StartupService.StartBeacon();
         }
 
         #endregion

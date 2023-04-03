@@ -1,6 +1,4 @@
 ﻿using ReserveBlockCore.P2P;
-using ReserveBlockCore.Services;
-
 
 namespace ReserveBlockCore
 {

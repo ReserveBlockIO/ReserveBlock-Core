@@ -6,7 +6,6 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
-using System.Security.Principal;
 
 namespace ReserveBlockCore.Services
 {
@@ -15,11 +14,6 @@ namespace ReserveBlockCore.Services
         public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false)
         {
             bool txResult = false;
-            bool runReserveCheck = true;
-
-            var badTx = Globals.BadTxList.Exists(x => x == txRequest.Hash);
-            if (badTx)
-                return (true, "");
 
             var accStTrei = StateData.GetAccountStateTrei();
             var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
@@ -27,7 +21,9 @@ namespace ReserveBlockCore.Services
             //Balance Check
             if (from == null)
             {
-                return (txResult, "This is a new account with no balance, or your wallet does not have all the blocks in the chain.");
+                //They may also just need the block that contains this TX.
+                //We might want to queue a block check and download.
+                return (txResult, "This is a new account with no balance.");
             }
             else
             {
@@ -37,32 +33,31 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            if (txRequest.Fee <= 0)
+            if(txRequest.Fee <= 0)
             {
                 return (txResult, "Fee cannot be less than or equal to zero.");
             }
 
-            if(Globals.LastBlock.Height > Globals.V1TXHeight)
+            if(Globals.LastBlock.Height > Globals.TXHeightRule2) //around April 7, 2023 at 18:30 UTC
             {
                 if (txRequest.Fee <= 0.000003M)
                 {
-                    return (txResult, "Fee cannot be less than or equal to zero.");
+                    return (txResult, "Fee cannot be less than 0.000003 RBX");
                 }
             }
 
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
-            
-            if (txRequest.ToAddress != "Adnr_Base" && 
-                txRequest.ToAddress != "DecShop_Base" && 
-                txRequest.ToAddress != "Topic_Base" && 
-                txRequest.ToAddress != "Vote_Base" && 
-                txRequest.ToAddress != "Reserve_Base")
             {
                 if (!AddressValidateUtility.ValidateAddress(txRequest.ToAddress))
-                    return (txResult, "To Address failed to validate");
+                    return (txResult, "Address failed to validate");
+            }
 
-                if(txRequest.ToAddress.Length < 32)
-                    return (txResult, "Address length is too short.");
+            if (Globals.LastBlock.Height > Globals.TXHeightRule1) //March 31th, 2023 at 03:44 UTC
+            {
+                if (txRequest.Amount < 0.0M)
+                {
+                    return (txResult, "Amount cannot be less than or equal to zero.");
+                }
             }
 
             //Timestamp Check
@@ -108,7 +103,6 @@ namespace ReserveBlockCore.Services
                 Nonce = txRequest.Nonce,
                 TransactionType = txRequest.TransactionType,
                 Data = txRequest.Data,
-                UnlockTime = txRequest.UnlockTime,
             };
 
             newTxn.Build();
@@ -133,7 +127,6 @@ namespace ReserveBlockCore.Services
                     Nonce = txRequest.Nonce,
                     TransactionType = txRequest.TransactionType,
                     Data = txRequest.Data,
-                    UnlockTime = txRequest.UnlockTime,
                 };
 
                 newTxnMod.Build();
@@ -150,7 +143,6 @@ namespace ReserveBlockCore.Services
                         Nonce = txRequest.Nonce,
                         TransactionType = txRequest.TransactionType,
                         Data = txRequest.Data,
-                        UnlockTime = txRequest.UnlockTime,
                     };
 
                     newTxnModZero.Build();
@@ -190,8 +182,7 @@ namespace ReserveBlockCore.Services
                                             {
                                                 return (txResult, "This smart contract has already been minted.");
                                             }
-                                            if(txRequest.FromAddress.StartsWith("xRBX"))
-                                                return (txResult, "A reserve account may not mint a smart contract.");
+
                                             break;
                                         }
 
@@ -202,13 +193,9 @@ namespace ReserveBlockCore.Services
                                             if (scStateTreiRec != null)
                                             {
                                                 if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                                {
                                                     return (txResult, "You are attempting to transfer a Smart contract you don't own.");
-                                                
-                                                if(scStateTreiRec.IsLocked)
-                                                    return (txResult, "You are attempting to transfer a Smart contract that is locked.");
-                                                
-                                                if(scStateTreiRec.NextOwner != null)
-                                                    return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
+                                                }
                                             }
                                             else
                                             {
@@ -220,15 +207,9 @@ namespace ReserveBlockCore.Services
 
                                     case "Burn()":
                                         {
-                                            if (txRequest.FromAddress.StartsWith("xRBX"))
-                                                return (txResult, "A reserve account may not burn a smart contract.");
-
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
-                                                if (scStateTreiRec.IsLocked)
-                                                    return (txResult, "You are attempting to burn a Smart contract that is locked.");
-
                                                 if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
                                                 {
                                                     return (txResult, "You are attempting to burn a Smart contract you don't own.");
@@ -243,15 +224,9 @@ namespace ReserveBlockCore.Services
                                         }
                                     case "Evolve()":
                                         {
-                                            if (txRequest.FromAddress.StartsWith("xRBX"))
-                                                return (txResult, "A reserve account may not evolve a smart contract.");
-
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
-                                                if (scStateTreiRec.IsLocked)
-                                                    return (txResult, "You are attempting to evolve a Smart contract that is locked.");
-
                                                 if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
                                                 {
                                                     return (txResult, "You are attempting to evolve a Smart contract you don't own.");
@@ -266,15 +241,9 @@ namespace ReserveBlockCore.Services
                                         }
                                     case "Devolve()":
                                         {
-                                            if (txRequest.FromAddress.StartsWith("xRBX"))
-                                                return (txResult, "A reserve account may not devolve a smart contract.");
-
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
-                                                if (scStateTreiRec.IsLocked)
-                                                    return (txResult, "You are attempting to devolve a Smart contract that is locked.");
-
                                                 if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
                                                 {
                                                     return (txResult, "You are attempting to devolve a Smart contract you don't own.");
@@ -289,15 +258,9 @@ namespace ReserveBlockCore.Services
                                         }
                                     case "ChangeEvolveStateSpecific()":
                                         {
-                                            if (txRequest.FromAddress.StartsWith("xRBX"))
-                                                return (txResult, "A reserve account may not evolve/devolve a smart contract.");
-
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
                                             {
-                                                if (scStateTreiRec.IsLocked)
-                                                    return (txResult, "You are attempting to evolve/devolve a Smart contract that is locked.");
-
                                                 if (txRequest.FromAddress != scStateTreiRec.MinterAddress)
                                                 {
                                                     return (txResult, "You are attempting to devolve/evolve a Smart contract you don't own.");
@@ -328,8 +291,8 @@ namespace ReserveBlockCore.Services
                 if (txRequest.TransactionType == TransactionType.ADNR)
                 {
                     var txData = txRequest.Data;
-                    var badAdnrTx = Globals.BadADNRTxList.Exists(x => x == txRequest.Hash);
-                    if (txData != null && !badAdnrTx)
+                    var badTx = Globals.BadADNRTxList.Exists(x => x == txRequest.Hash);
+                    if (txData != null && !badTx)
                     {
                         try
                         {
@@ -338,9 +301,6 @@ namespace ReserveBlockCore.Services
 
                             if (function == "AdnrCreate()")
                             {
-                                if (txRequest.FromAddress.StartsWith("xRBX"))
-                                    return (txResult, "A reserve account may not create an ADNR.");
-
                                 var name = (string)jobj["Name"];
 
                                 var adnrList = Adnr.GetAdnr();
@@ -371,9 +331,6 @@ namespace ReserveBlockCore.Services
 
                             if (function == "AdnrDelete()")
                             {
-                                if (txRequest.FromAddress.StartsWith("xRBX"))
-                                    return (txResult, "A reserve account may not delete an ADNR.");
-
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
                                 {
@@ -392,9 +349,6 @@ namespace ReserveBlockCore.Services
 
                             if (function == "AdnrTransfer()")
                             {
-                                if (txRequest.FromAddress.StartsWith("xRBX"))
-                                    return (txResult, "A reserve account may not transfer an ADNR.");
-
                                 var adnrList = Adnr.GetAdnr();
                                 if (adnrList != null)
                                 {
@@ -412,7 +366,7 @@ namespace ReserveBlockCore.Services
                                 }
                             }
 
-                            if(Globals.LastBlock.Height >= Globals.V1TXHeight)
+                            if(Globals.LastBlock.Height >= Globals.V1ValHeight)
                             {
                                 if (txRequest.Amount < Globals.ADNRRequiredRBX)
                                     return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
@@ -420,7 +374,7 @@ namespace ReserveBlockCore.Services
                             else
                             {
                                 if (txRequest.Amount < 1.0M)
-                                    return (txResult, $"There must be at least {Globals.ADNRRequiredRBX} RBX to perform an ADNR Function.");
+                                    return (txResult, $"There must be at least 1 RBX to perform an ADNR Function.");
                             }
                             
 
@@ -440,9 +394,6 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
-                            if (txRequest.FromAddress.StartsWith("xRBX"))
-                                return (txResult, "A reserve account may not performing voting actions.");
-
                             var jobj = JObject.Parse(txData);
                             if(jobj != null)
                             {
@@ -574,9 +525,6 @@ namespace ReserveBlockCore.Services
                     {
                         try
                         {
-                            if (txRequest.FromAddress.StartsWith("xRBX"))
-                                return (txResult, "A reserve account may not performing voting actions.");
-
                             var jobj = JObject.Parse(txData);
                             if (jobj != null)
                             {
@@ -749,138 +697,10 @@ namespace ReserveBlockCore.Services
                         catch { return (txResult, $"TX not formatted properly."); }
                     }
                 }
-                if(txRequest.TransactionType == TransactionType.RESERVE)
-                {
-                    var txData = txRequest.Data;
-                    if (txData != null)
-                    {
-                        try
-                        {
-                            if (txRequest.ToAddress != "Reserve_Base")
-                                return (txResult, "To Address must be Reserve_Base.");
-
-                            if (!txRequest.FromAddress.StartsWith("xRBX"))
-                                return (txResult, "Not a valid Reserve Account address. Must start with 'xRBX'");
-
-                            var jobj = JObject.Parse(txData);
-                            if (jobj != null)
-                            {
-                                var function = (string?)jobj["Function"];
-                                if(function != null)
-                                {
-                                    if (function == "Register()")
-                                    {
-                                        runReserveCheck = false;
-
-                                        if (txRequest.Amount < 4M)
-                                            return (txResult, "There must be at least 4 RBX to register a Reserve Account on network.");
-
-                                        string reserveAddress = txRequest.FromAddress;
-                                        string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
-                                        if(!string.IsNullOrEmpty(reserveAddress) && !string.IsNullOrEmpty(recoveryAddress))
-                                        {
-                                            var stateRec = StateData.GetSpecificAccountStateTrei(reserveAddress);
-                                            if(stateRec != null)
-                                            {
-                                                if (stateRec.RecoveryAccount != null)
-                                                    return (txResult, $"Address already has a recovery account: {stateRec.RecoveryAccount}");
-
-                                                if (stateRec.Balance - (txRequest.Amount + txRequest.Fee) < 0.5M)
-                                                    return (txResult, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
-                                            }
-                                            else
-                                            {
-                                                return (txResult, "Could not find a state trei leaf record.");
-                                            }
-                                        }
-                                        else
-                                        {
-                                            return (txResult, "Could not find a proper reserve address and recovery address");
-                                        }
-                                    }
-
-                                    if(function == "CallBack()")
-                                    {
-                                        runReserveCheck = false;
-                                        string hash = jobj["Hash"].ToObject<string>();
-                                        if(!string.IsNullOrEmpty(hash))
-                                        {
-                                            var currentTime = TimeUtil.GetTime();
-                                            var rTx = ReserveTransactions.GetTransactions(hash);
-                                            if(rTx == null)
-                                                return (txResult, "Could not find a reserve transaction with that hash.");
-
-                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
-                                                return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
-
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                                            {
-                                                if (rTx.ConfirmTimestamp <= currentTime)
-                                                    return (txResult, "This TX has already passed and can no longer be called back.");
-                                            }
-                                        }
-                                    }
-
-                                    if (function == "Recover()")
-                                    {
-                                        runReserveCheck = false;
-                                        string hash = jobj["Hash"].ToObject<string>();
-                                        if (!string.IsNullOrEmpty(hash))
-                                        {
-                                            var currentTime = TimeUtil.GetTime();
-                                            var rTx = ReserveTransactions.GetTransactions(hash);
-                                            if (rTx == null)
-                                                return (txResult, "Could not find a reserve transaction with that hash.");
-
-                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
-                                                return (txResult, "From address does not match the reserve tx from address. Cannot recover.");
-
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                                            {
-                                                if (rTx.ConfirmTimestamp <= currentTime)
-                                                    return (txResult, "This TX has already passed and can no longer be recovered.");
-                                            }
-                                            var stateRec = StateData.GetSpecificAccountStateTrei(rTx.FromAddress);
-
-                                            if (stateRec == null) 
-                                                return (txResult, "State record cannot be null.");
-                                            
-                                            if (stateRec.RecoveryAccount == null)
-                                                return (txResult, $"Reserve account does not have a recovery address.");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-
-                }
-            }
-
-            if (txRequest.FromAddress.StartsWith("xRBX") && runReserveCheck)
-            {
-                if (txRequest.TransactionType != TransactionType.TX && txRequest.TransactionType != TransactionType.RESERVE && txRequest.TransactionType != TransactionType.NFT_TX)
-                    return (txResult, "Invalid Transaction Type was selected.");
-
-                var balanceTooLow = from.Balance - (txRequest.Fee + txRequest.Amount) < 0.5M ? true : false;
-                if (balanceTooLow)
-                    return (txResult, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
-
-                if(txRequest.UnlockTime == null)
-                    return (txResult, "There must be an unlock time for this transaction");
-
-                if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                {
-                    var validUnlockTime = TimeUtil.GetReserveTime(-3);
-
-                    if (txRequest.UnlockTime.Value < validUnlockTime)
-                        return (txResult, "Unlock time does not meet 24 hour requirement.");
-                }
             }
 
             //Signature Check - Final Check to return true.
-            if (!string.IsNullOrEmpty(txRequest.Signature))
+            if(!string.IsNullOrEmpty(txRequest.Signature))
             {
                 var isTxValid = SignatureService.VerifySignature(txRequest.FromAddress, txRequest.Hash, txRequest.Signature);
                 if (isTxValid)
@@ -897,6 +717,7 @@ namespace ReserveBlockCore.Services
                 return (txResult, "Signature cannot be null.");
             }
             
+
             //Return verification result.
             return (txResult, "Transaction has been verified.");
 

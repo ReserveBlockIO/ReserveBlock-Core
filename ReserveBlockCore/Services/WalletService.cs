@@ -209,7 +209,6 @@ namespace ReserveBlockCore.Services
                 Fee = txRequest.Fee,
                 Nonce = txRequest.Nonce,
                 Data = txRequest.Data,
-                UnlockTime = txRequest.UnlockTime,
             };
 
             newTxn.Build();
@@ -300,6 +299,7 @@ namespace ReserveBlockCore.Services
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
         }
+        
         public static async Task SendReserveTransaction(Transaction txRequest, ReserveAccount account, bool noLockUp = false)
         {
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))

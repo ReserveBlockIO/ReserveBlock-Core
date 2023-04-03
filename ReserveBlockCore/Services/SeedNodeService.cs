@@ -261,7 +261,7 @@ namespace ReserveBlockCore.Services
                 else
                 {               
                     List <AdjBench> mainList = new List<AdjBench>{
-                        new AdjBench { IPAddress = "144.126.141.56", PulledFromBench = true, RBXAddress = "xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
+                        new AdjBench { IPAddress = "144.126.141.56", PulledFromBench= true, RBXAddress= "xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         new AdjBench { IPAddress = "144.126.156.176", PulledFromBench = true, RBXAddress = "xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         new AdjBench { IPAddress = "144.126.141.210", PulledFromBench = true, RBXAddress = "xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },
                         new AdjBench { IPAddress = "144.126.156.180", PulledFromBench = true, RBXAddress = "xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", TimeEligibleForConsensus = 1674055875, TimeEntered = 1674055875, TopicUID = "Seed" },

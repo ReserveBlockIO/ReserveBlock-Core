@@ -88,11 +88,7 @@ namespace ReserveBlockCore.Services
                                             }
 
                                         }
-                                        if (x.ToAddress != "Adnr_Base" && 
-                                            x.ToAddress != "DecShop_Base" && 
-                                            x.ToAddress != "Topic_Base" && 
-                                            x.ToAddress != "Vote_Base" && 
-                                            x.ToAddress != "Reserve_Base")
+                                        if (x.ToAddress != "Adnr_Base" && x.ToAddress != "DecShop_Base" && x.ToAddress != "Topic_Base" && x.ToAddress != "Vote_Base")
                                         {
                                             if (x.TransactionType == TransactionType.TX)
                                             {
