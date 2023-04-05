@@ -973,6 +973,32 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Gets shop Auctions
+        /// </summary>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopAuctions/{page}")]
+        public async Task<bool> GetShopAuctions(int page)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.Auctions},{page}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessageFromClient(message, true);
+
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Gets shop Listings by collection
         /// </summary>
         /// <param name="collectionId"></param>
@@ -1191,7 +1217,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="bidStatus"></param>
         /// <returns></returns>
-        [HttpGet("GetListingBids/{bidStatus}")]
+        [HttpGet("GetBidsByStatus/{bidStatus}")]
         public async Task<string> GetBidsByStatus(BidStatus bidStatus)
         {
             try

@@ -10,6 +10,7 @@ namespace ReserveBlockCore.DST
 {
     public class DecShopMessageService
     {
+        const int PaginationAmount = 10;
         public static Message? ProcessMessage(Message message)
         {
             if (message.ComType == MessageComType.Request)
@@ -194,6 +195,10 @@ namespace ReserveBlockCore.DST
                             msg.HasReceivedResponse = true;
                             msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
                             Globals.ClientMessageDict[message.ResponseMessageId] = msg;
+                        }
+                        else if(option == "Auctions")
+                        {
+
                         }
                         else
                         {
@@ -434,6 +439,57 @@ namespace ReserveBlockCore.DST
 
                             return respMessage;
                         }
+                    }
+                    else if (option == "Auctions")
+                    {
+                        var pageParse = int.TryParse(requestOptArray[1], out var page);
+                        if (!pageParse)
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+                        var auctions = Auction.GetAllAuctions()?.ToList();
+                        if (auctions?.Count() > 0)
+                        {
+                            var pageSkip = page * 6;
+                            var listingsPageApplied = auctions.Skip(pageSkip);
+
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = JsonConvert.SerializeObject(listingsPageApplied)
+                            };
+
+                            auctions.Clear();
+                            auctions = new List<Auction>();
+
+                            return respMessage;
+                        }
+                        else
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
                     }
                     else
                     {

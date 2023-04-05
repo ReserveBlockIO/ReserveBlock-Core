@@ -144,6 +144,7 @@ namespace ReserveBlockCore.Models.DST
         ListingsByCollection,
         Listings,
         SpecificListing,
+        Auctions
     }
 
 }
