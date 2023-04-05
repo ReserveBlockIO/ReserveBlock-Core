@@ -2,6 +2,7 @@
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -198,7 +199,38 @@ namespace ReserveBlockCore.DST
                         }
                         else if(option == "Auctions")
                         {
+                            var auctions = JsonConvert.DeserializeObject<List<Auction>>(message.Data);
+                            if (auctions != null)
+                            {
+                                if (Globals.DecShopData == null)
+                                {
+                                    Globals.DecShopData = new DecShopData
+                                    {
+                                        Auctions = auctions,
+                                    };
+                                }
+                                else
+                                {
+                                    foreach (var auction in auctions)
+                                    {
+                                        if (Globals.DecShopData.Auctions != null)
+                                        {
+                                            var auctionExist = Globals.DecShopData.Auctions.Exists(x => x.ListingId == auction.ListingId);
+                                            if (!auctionExist)
+                                                Globals.DecShopData.Auctions.Add(auction);
+                                        }
+                                        else
+                                        {
+                                            Globals.DecShopData.Auctions = new List<Auction> { auction };
+                                        }
+                                    }
+                                }
+                            }
 
+
+                            msg.HasReceivedResponse = true;
+                            msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                            Globals.ClientMessageDict[message.ResponseMessageId] = msg;
                         }
                         else
                         {
@@ -311,7 +343,7 @@ namespace ReserveBlockCore.DST
                         var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleAfterEndDate && x.IsVisibleBeforeStartDate && !x.IsCancelled).ToList();
                         if(listings?.Count() > 0)
                         {
-                            var pageSkip = page * 6;
+                            var pageSkip = page * PaginationAmount;
                             var listingsPageApplied = listings.Skip(pageSkip);
 
                             var respMessage = new Message
@@ -363,7 +395,7 @@ namespace ReserveBlockCore.DST
                         var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleAfterEndDate && x.IsVisibleBeforeStartDate && !x.IsCancelled && x.CollectionId == collectionId).ToList();
                         if (listings?.Count() > 0)
                         {
-                            var pageSkip = page * 6;
+                            var pageSkip = page * PaginationAmount;
                             var listingsPageApplied = listings.Skip(pageSkip);
                             var respMessage = new Message
                             {
@@ -459,8 +491,8 @@ namespace ReserveBlockCore.DST
                         var auctions = Auction.GetAllAuctions()?.ToList();
                         if (auctions?.Count() > 0)
                         {
-                            var pageSkip = page * 6;
-                            var listingsPageApplied = auctions.Skip(pageSkip);
+                            var pageSkip = page * PaginationAmount;
+                            var auctionsPageApplied = auctions.Skip(pageSkip);
 
                             var respMessage = new Message
                             {
@@ -468,7 +500,7 @@ namespace ReserveBlockCore.DST
                                 ResponseMessageId = message.Id,
                                 Type = message.Type,
                                 ComType = MessageComType.Response,
-                                Data = JsonConvert.SerializeObject(listingsPageApplied)
+                                Data = JsonConvert.SerializeObject(auctionsPageApplied)
                             };
 
                             auctions.Clear();
