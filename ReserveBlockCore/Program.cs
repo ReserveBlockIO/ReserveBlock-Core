@@ -21,6 +21,7 @@ using System.Security.Principal;
 using System.Runtime.Intrinsics.Arm;
 using System.Reflection;
 using ReserveBlockCore.DST;
+using ReserveBlockCore.Engines;
 
 namespace ReserveBlockCore
 {
@@ -546,6 +547,17 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatorCountRun();
             _ = ReserveService.Run();
             _ = DSTClient.Run();
+
+            var decShop = DecShop.GetMyDecShopInfo();
+            if(decShop != null)
+            {
+                if (!decShop.IsOffline)
+                {
+                    _ = AuctionEngine.StartBidProcessing();
+                }
+                _ = AuctionEngine.StartAuctioneer();
+            }
+
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();

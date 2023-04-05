@@ -1024,6 +1024,223 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Send a bid to a listing
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("SendBid")]
+        public async Task<string> SendBid([FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    var bidPayload = JsonConvert.DeserializeObject<Bid>(jsonData.ToString());
+                    if (bidPayload == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Bid Payload cannot be null" });
+
+                    var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
+
+                    if (localAddress == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+
+                    if (Globals.DecShopData?.DecShop == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+
+                    var bidBuild = bidPayload.Build();
+                    if(bidBuild == false)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to build bid." });
+
+                    var bidJson = JsonConvert.SerializeObject(bidPayload);
+
+                    Message message = new Message
+                    {
+                        Address = ConnectingAddress,
+                        Data = bidJson,
+                        Type = MessageType.Bid,
+                        ComType = MessageComType.Request
+                    };
+
+                    var bidSave = Bid.SaveBid(bidPayload);
+                    
+                    _ = DSTClient.SendShopMessageFromClient(message, false);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bid sent.", BidId = bidPayload.Id });
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a bid to a listing
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("SendBuyNowBid")]
+        public async Task<string> SendBuyNowBid([FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    var bidPayload = JsonConvert.DeserializeObject<Bid>(jsonData.ToString());
+                    if (bidPayload == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Bid Payload cannot be null" });
+
+                    var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
+
+                    if (localAddress == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+
+                    if (Globals.DecShopData?.DecShop == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+
+                    var bidBuild = bidPayload.Build();
+
+                    if(bidPayload.IsBuyNow != true)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "IsBuyNow must be set to 'true'." });
+
+                    if (bidBuild == false)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to build bid." });
+
+                    var bidJson = JsonConvert.SerializeObject(bidPayload);
+
+                    Message message = new Message
+                    {
+                        Address = ConnectingAddress,
+                        Data = bidJson,
+                        Type = MessageType.Purchase,
+                        ComType = MessageComType.Request
+                    };
+
+                    var bidSave = Bid.SaveBid(bidPayload);
+
+                    _ = DSTClient.SendShopMessageFromClient(message, false);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id });
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Get bids
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetBids")]
+        public async Task<string> GetBids()
+        {
+            try
+            {
+                var bids = Bid.GetAllBids();
+                
+                if (bids?.Count() > 0)
+                {
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bids Found.", Bids = bids });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Bids not found." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
+
+        /// <summary>
+        /// Get bids for specific listing
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetListingBids/{listingId}")]
+        public async Task<string> GetListingBids(int listingId)
+        {
+            try
+            {
+                var bids = Bid.GetListingBids(listingId);
+
+                if (bids?.Count() > 0)
+                {
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bids Found.", Bids = bids });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Bids not found." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
+
+        /// <summary>
+        /// Get bids for specific status
+        /// </summary>
+        /// <param name="bidStatus"></param>
+        /// <returns></returns>
+        [HttpGet("GetListingBids/{bidStatus}")]
+        public async Task<string> GetBidsByStatus(BidStatus bidStatus)
+        {
+            try
+            {
+                var bids = Bid.GetBidByStatus(bidStatus);
+
+                if (bids?.Count() > 0)
+                {
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bids Found.", Bids = bids });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Bids not found." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
+
+        /// <summary>
+        /// Get specific bid.
+        /// </summary>
+        /// <param name="bidId"></param>
+        /// <returns></returns>
+        [HttpGet("GetSingleBids/{bidId}")]
+        public async Task<string> GetSingleBids(Guid bidId)
+        {
+            try
+            {
+                var bid = Bid.GetSingleBid(bidId);
+
+                if (bid != null)
+                {
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bid Found.", Bid = bid });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Bid not found." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
+
+        /// <summary>
         /// Send a chat message
         /// </summary>
         /// <returns></returns>

@@ -1,7 +1,9 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Security.Cryptography;
+using static ReserveBlockCore.Models.Mother;
 
 namespace ReserveBlockCore.Models.DST
 {
@@ -16,10 +18,35 @@ namespace ReserveBlockCore.Models.DST
         public bool IsBuyNow { get; set; }
         public bool IsAutoBid { get; set; }
         public BidStatus BidStatus { get; set; }
+        public BidSendReceive BidSendReceive { get; set; }
         public long BidSendTime { get; set; }
         public bool? IsProcessed { get; set; }// Bid Queue Item
         public int ListingId { get; set; }
         public int CollectionId { get; set; }
+
+        public bool Build()
+        {
+            var account = AccountData.GetSingleAccount(BidAddress);
+            if (account == null)
+                return false;
+
+            if (account.GetPrivKey == null)
+                return false;
+
+            Id = Guid.NewGuid();
+            BidStatus = BidStatus.Sent;
+            IsAutoBid = false;
+            BidSendTime = TimeUtil.GetTime();
+            MaxBidAmount = BidAmount;
+            BidSendReceive = BidSendReceive.Sent;
+
+            var message = $"{BidAddress}_{BidSendTime}_{BidAmount}";
+            var signature = SignatureService.CreateSignature(message, account.GetPrivKey, account.PublicKey);
+
+            BidSignature = signature;
+
+            return true;
+        }
 
         #region Get Bid Db
         public static LiteDB.ILiteCollection<Bid>? GetBidDb()
@@ -108,8 +135,31 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
+        #region Get Bid By Status
+        public static IEnumerable<Bid>? GetBidByStatus(BidStatus bidStatus)
+        {
+            var bidDb = GetBidDb();
+
+            if (bidDb != null)
+            {
+                var bids = bidDb.Query().Where(x => x.BidStatus == bidStatus).ToEnumerable();
+                if (bids.Count() == 0)
+                {
+                    return null;
+                }
+
+                return bids;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         #region Save Bid
-        public static (bool, string) SaveAuction(Bid bid)
+        public static (bool, string) SaveBid(Bid bid)
         {
             var singleBid = GetSingleBid(bid.Id);
             var bidDb = GetBidDb();
@@ -135,7 +185,7 @@ namespace ReserveBlockCore.Models.DST
         #endregion
 
         #region Delete Bid
-        public static (bool, string) DeleteAuction(Guid bidId)
+        public static (bool, string) DeleteBid(Guid bidId)
         {
             var singleBid = GetSingleBid(bidId);
             if (singleBid != null)
@@ -211,7 +261,16 @@ namespace ReserveBlockCore.Models.DST
     public enum BidStatus
     { 
         Accepted,
-        Rejected
+        Rejected,
+        Sent,
+        Received
     }
+
+    public enum BidSendReceive
+    {
+        Sent,
+        Received
+    }
+
 
 }

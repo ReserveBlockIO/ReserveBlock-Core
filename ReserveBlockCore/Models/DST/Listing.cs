@@ -16,6 +16,8 @@ namespace ReserveBlockCore.Models.DST
         public bool IsBuyNowOnly { get; set; }
         public bool IsRoyaltyEnforced { get; set; }
         public bool IsCancelled { get; set; }
+        public bool IsAuctionStarted { get; set; }
+        public bool IsAuctionEnded { get; set; }
         public bool RequireBalanceCheck { get; set; }
         public decimal? FloorPrice { get; set; }
         public decimal? ReservePrice { get; set; }

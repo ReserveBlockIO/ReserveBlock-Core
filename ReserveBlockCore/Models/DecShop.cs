@@ -12,6 +12,8 @@ using System.Data.SqlTypes;
 using LiteDB;
 using System.Net;
 using Trillium.Syntax;
+using ReserveBlockCore.DST;
+using ReserveBlockCore.Engines;
 
 namespace ReserveBlockCore.Models
 {
@@ -363,11 +365,11 @@ namespace ReserveBlockCore.Models
                     myDecShop.IsOffline = !myDecShop.IsOffline;
                     if (myDecShop.IsOffline)
                     {
-                        //turn off STUN UDP Logic
+                        AuctionEngine.StopBidProcessing();
                     }
                     else
                     {
-                        //Turn on STUN UDP Logic
+                        _ = AuctionEngine.StartBidProcessing();
                     }
                     decshop.UpdateSafe(myDecShop);
                     return myDecShop.IsOffline;

@@ -15,6 +15,7 @@ namespace ReserveBlockCore.Models.DST
         public bool IsAuctionOver { get; set; }
         public int ListingId { get; set; }
         public int CollectionId { get; set; }
+        public string? CurrentWinningAddress { get; set; }
 
         #region Get Auction Db
         public static LiteDB.ILiteCollection<Auction>? GetAuctionDb()

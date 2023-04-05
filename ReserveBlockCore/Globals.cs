@@ -260,6 +260,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, MessageState> ClientMessageDict = new ConcurrentDictionary<string, MessageState>();
         public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
         public static DecShopData? DecShopData = null;
+        public static ConcurrentQueue<BidQueue> BidQueue = new ConcurrentQueue<BidQueue>();
 
         #endregion
 

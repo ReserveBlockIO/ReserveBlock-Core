@@ -305,6 +305,9 @@ namespace ReserveBlockCore.Services
                             var oldFilePath = strWorkPath + Path.DirectorySeparatorChar + fileName;
                             if (File.Exists(oldFilePath))
                             {
+                                if(File.Exists(oldFilePath + "_outdated"))
+                                    File.Delete(oldFilePath + "_outdated");
+                                
                                 File.Move(oldFilePath, oldFilePath + "_outdated");
                                 File.Move(filePath, oldFilePath);
                             }

@@ -7,6 +7,7 @@ using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Net;
 using System.Net.Mail;
 using System.Net.Sockets;
@@ -56,6 +57,12 @@ namespace ReserveBlockCore.DST
                     break;
                 case MessageType.AssetReqRec:
                     AssetRequestReceived(message, endPoint, udpClient);
+                    break;
+                case MessageType.Bid:
+                    ProcessBid(message, endPoint, udpClient);
+                    break;
+                case MessageType.Purchase:
+                    //AssetRequestReceived(message, endPoint, udpClient);
                     break;
 
                 default:
@@ -430,6 +437,62 @@ namespace ReserveBlockCore.DST
             if (message.Type == MessageType.AssetReqRec)
             {
                 
+            }
+        }
+
+        public static void ProcessBid(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.Bid)
+            {
+                try
+                {
+                    if (message.ComType == MessageComType.Request)
+                    {
+                        var bid = JsonConvert.DeserializeObject<BidQueue>(message.Data);
+                        if (bid == null)
+                            return; //reject
+
+                        bid.EndPoint = endPoint;
+                        bid.BidSendReceive = BidSendReceive.Received;
+
+                        Globals.BidQueue.Enqueue(bid);
+
+                        Message responseMessage = new Message
+                        {
+                            Type = MessageType.Bid,
+                            ComType = MessageComType.Response,
+                            Data = $"{bid.Id},{BidStatus.Received}",
+                            ResponseMessage = true,
+                            ResponseMessageId = message.Id,
+                        };
+
+                        var messageJson = GenerateMessage(responseMessage, false);
+                        var sendMessage = Encoding.UTF8.GetBytes(messageJson);
+                        udpClient.Send(sendMessage, endPoint);
+                    }
+                }
+                catch { }
+                
+                if(message.ComType == MessageComType.Response)
+                {
+                    try
+                    {
+                        var dataSplit = message.Data.Split(',');
+                        Guid.TryParse(dataSplit[0], out Guid bidId);
+                        var isEnumStringParsed = Enum.TryParse(dataSplit[1], true, out BidStatus bidStatus);
+
+                        if(isEnumStringParsed)
+                        {
+                            var bid = Bid.GetSingleBid(bidId);
+                            if (bid != null)
+                            {
+                                bid.BidStatus = bidStatus;
+                                Bid.SaveBid(bid);
+                            }
+                        }
+                    }
+                    catch { }
+                }
             }
         }
 
