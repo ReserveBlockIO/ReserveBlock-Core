@@ -4,8 +4,10 @@ using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using static System.Collections.Specialized.BitVector32;
 
 namespace ReserveBlockCore.DST
 {
@@ -81,6 +83,12 @@ namespace ReserveBlockCore.DST
                                             var colExist = Globals.DecShopData.Collections.Exists(x => x.Name == collection.Name);
                                             if (!colExist)
                                                 Globals.DecShopData.Collections.Add(collection);
+
+                                            if (colExist)
+                                            {
+                                                int index = Globals.DecShopData.Collections.FindIndex(x => x.Name == collection.Name);
+                                                Globals.DecShopData.Collections[index] = collection;
+                                            }
                                         }
                                         else
                                         {
@@ -116,6 +124,12 @@ namespace ReserveBlockCore.DST
                                             var listingExist = Globals.DecShopData.Listings.Exists(x => x.SmartContractUID == listing.SmartContractUID);
                                             if (!listingExist)
                                                 Globals.DecShopData.Listings.Add(listing);
+
+                                            if (listingExist)
+                                            {
+                                                int index = Globals.DecShopData.Listings.FindIndex(x => x.SmartContractUID == listing.SmartContractUID);
+                                                Globals.DecShopData.Listings[index] = listing;
+                                            }
                                         }
                                         else
                                         {
@@ -151,6 +165,12 @@ namespace ReserveBlockCore.DST
                                             var listingExist = Globals.DecShopData.Listings.Exists(x => x.SmartContractUID == listing.SmartContractUID);
                                             if (!listingExist)
                                                 Globals.DecShopData.Listings.Add(listing);
+
+                                            if (listingExist)
+                                            {
+                                                int index = Globals.DecShopData.Listings.FindIndex(x => x.SmartContractUID == listing.SmartContractUID);
+                                                Globals.DecShopData.Listings[index] = listing;
+                                            }
                                         }
                                         else
                                         {
@@ -184,6 +204,12 @@ namespace ReserveBlockCore.DST
                                         var listingExist = Globals.DecShopData.Listings.Exists(x => x.SmartContractUID == listing.SmartContractUID);
                                         if (!listingExist)
                                             Globals.DecShopData.Listings.Add(listing);
+
+                                        if (listingExist)
+                                        {
+                                            int index = Globals.DecShopData.Listings.FindIndex(x => x.SmartContractUID == listing.SmartContractUID);
+                                            Globals.DecShopData.Listings[index] = listing;
+                                        }
                                     }
                                     else
                                     {
@@ -218,6 +244,13 @@ namespace ReserveBlockCore.DST
                                             var auctionExist = Globals.DecShopData.Auctions.Exists(x => x.ListingId == auction.ListingId);
                                             if (!auctionExist)
                                                 Globals.DecShopData.Auctions.Add(auction);
+
+                                            if (auctionExist)
+                                            {
+                                                int index = Globals.DecShopData.Auctions.FindIndex(x => x.Id == auction.Id);
+                                                Globals.DecShopData.Auctions[index] = auction;
+                                            }
+                                                
                                         }
                                         else
                                         {
