@@ -161,7 +161,7 @@ namespace ReserveBlockCore.Models.DST
         #endregion
 
         #region Save Bid
-        public static (bool, string) SaveBid(Bid bid)
+        public static (bool, string) SaveBid(Bid bid, bool dontUpdate = false)
         {
             var singleBid = GetSingleBid(bid.Id);
             var bidDb = GetBidDb();
@@ -175,7 +175,7 @@ namespace ReserveBlockCore.Models.DST
             }
             else
             {
-                if (bidDb != null)
+                if (bidDb != null && !dontUpdate)
                 {
                     bidDb.UpdateSafe(bid);
                     return (true, "Bid updated.");

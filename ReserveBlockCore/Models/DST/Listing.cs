@@ -70,6 +70,29 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
+        #region Get All Started Listings
+        public static IEnumerable<Listing>? GetAllStartedListings()
+        {
+            var listingDb = GetListingDb();
+
+            if (listingDb != null)
+            {
+                var listings = listingDb.Query().Where(x => x.IsAuctionStarted).ToEnumerable();
+                if (listings.Count() == 0)
+                {
+                    return null;
+                }
+
+                return listings;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         #region Get Single Listing
         public static Listing? GetSingleListing(int listingId)
         {

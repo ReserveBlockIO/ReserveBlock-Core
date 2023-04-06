@@ -1,6 +1,11 @@
-﻿using ReserveBlockCore.Models.DST;
+﻿using Microsoft.AspNetCore.Http;
+using ReserveBlockCore.DST;
+using ReserveBlockCore.Models.DST;
+using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 namespace ReserveBlockCore.Engines
 {
@@ -112,24 +117,79 @@ namespace ReserveBlockCore.Engines
 
         public static void ProcessBidQueue()
         {
-            //Save bid, assign status.
-            foreach(var bid in Globals.BidQueue)
+            var bidQueueList = Globals.BidQueue.ToList();
+            if(bidQueueList.Count > 0)
             {
-                var listing = Listing.GetSingleListing(bid.ListingId);
-                var auction = Auction.GetListingAuction(bid.ListingId); 
-                if (listing == null || auction == null)
+                var listings = Listing.GetAllStartedListings(); //get all listings and store into memory. 
+                var auctions = Auction.GetAllLiveAuctions(); //get all auctions and store into memory.
+                                                             
+                if(auctions?.Count() > 0)
                 {
-                    DequeueBid(); 
-                    continue;
-                }
+                    foreach (var bid in Globals.BidQueue)
+                    {
+                        var auction = auctions.Where(x => x.ListingId == bid.ListingId).FirstOrDefault();
 
-                DequeueBid();
+                        if (auction != null)
+                        {
+                            if (auction?.CurrentWinningAddress != bid.BidAddress)
+                            {
+                                if ((auction?.CurrentBidPrice + auction?.IncrementAmount) < bid.MaxBidAmount)
+                                {
+                                    Bid aBid = new Bid
+                                    {
+                                        BidAddress = bid.BidAddress,
+                                        BidAmount = bid.BidAmount,
+                                        BidSendReceive = BidSendReceive.Received,
+                                        BidSendTime = bid.BidSendTime,
+                                        BidSignature = bid.BidSignature,
+                                        BidStatus = BidStatus.Accepted,
+                                        CollectionId = bid.CollectionId,
+                                        IsAutoBid = bid.IsAutoBid,
+                                        IsBuyNow = bid.IsBuyNow,
+                                        IsProcessed = true,
+                                        ListingId = bid.ListingId,
+                                        MaxBidAmount = bid.MaxBidAmount
+                                    };
+
+                                    auction.CurrentBidPrice = bid.MaxBidAmount;
+                                    auction.MaxBidPrice = bid.MaxBidAmount;
+                                    auction.CurrentWinningAddress = bid.BidAddress;
+                                    auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
+
+                                    Bid.SaveBid(aBid, true);
+                                    Auction.SaveAuction(auction);
+                                    DequeueBid(bid, BidStatus.Accepted);
+                                    continue;
+
+                                }
+                                else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                            }
+                            else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                        }
+                        else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                    }
+                }
+                else
+                {
+                    foreach (var bid in bidQueueList)
+                    {
+                        DequeueBid(bid, BidStatus.Rejected);
+                    }
+                }
             }
         }
 
-        public static void DequeueBid()
+        public static void DequeueBid(BidQueue bid, BidStatus bidStatus)
         {
             Globals.BidQueue.TryDequeue(out _);
+            Message message = new Message
+            {
+                Type = MessageType.Bid,
+                ComType = MessageComType.Response,
+                Data = $"{bid.Id},{bidStatus}",
+            };
+
+            _ = DSTClient.SendClientMessageFromShop(message, bid.EndPoint, false);
         }
 
         public static decimal GetIncrementBidAmount(decimal CurrentBidPrice)
