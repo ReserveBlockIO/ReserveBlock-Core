@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Net;
@@ -18,7 +19,7 @@ namespace ReserveBlockCore.Engines
         public static async Task StartBidProcessing()
         {
             BidProcessingOn = true;
-
+            LogUtility.Log("Bid Processing Started", "AuctionEngine.StartBidProcessing()");
             while (BidProcessingOn)
             {
                 var delay = Task.Delay(300);
@@ -43,6 +44,7 @@ namespace ReserveBlockCore.Engines
         
         public static async Task StartAuctioneer()
         {
+            LogUtility.Log("StartAuctioneer Started", "AuctionEngine.StartAuctioneer()");
             while (true)
             {
                 var delay = Task.Delay(10000);
@@ -127,47 +129,52 @@ namespace ReserveBlockCore.Engines
                 {
                     foreach (var bid in Globals.BidQueue)
                     {
-                        var auction = auctions.Where(x => x.ListingId == bid.ListingId).FirstOrDefault();
-
-                        if (auction != null)
+                        try
                         {
-                            if (auction?.CurrentWinningAddress != bid.BidAddress)
+                            var auction = auctions.Where(x => x.ListingId == bid.ListingId).FirstOrDefault();
+
+                            if (auction != null)
                             {
-                                if ((auction?.CurrentBidPrice + auction?.IncrementAmount) < bid.MaxBidAmount)
+                                if (auction?.CurrentWinningAddress != bid.BidAddress)
                                 {
-                                    Bid aBid = new Bid
+                                    if ((auction?.CurrentBidPrice + auction?.IncrementAmount) < bid.MaxBidAmount)
                                     {
-                                        Id = Guid.NewGuid(),
-                                        BidAddress = bid.BidAddress,
-                                        BidAmount = bid.BidAmount,
-                                        BidSendReceive = BidSendReceive.Received,
-                                        BidSendTime = bid.BidSendTime,
-                                        BidSignature = bid.BidSignature,
-                                        BidStatus = BidStatus.Accepted,
-                                        CollectionId = bid.CollectionId,
-                                        IsAutoBid = bid.IsAutoBid,
-                                        IsBuyNow = bid.IsBuyNow,
-                                        IsProcessed = true,
-                                        ListingId = bid.ListingId,
-                                        MaxBidAmount = bid.MaxBidAmount
-                                    };
+                                        Bid aBid = new Bid
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            BidAddress = bid.BidAddress,
+                                            BidAmount = bid.BidAmount,
+                                            BidSendReceive = BidSendReceive.Received,
+                                            BidSendTime = bid.BidSendTime,
+                                            BidSignature = bid.BidSignature,
+                                            BidStatus = BidStatus.Accepted,
+                                            CollectionId = bid.CollectionId,
+                                            IsAutoBid = bid.IsAutoBid,
+                                            IsBuyNow = bid.IsBuyNow,
+                                            IsProcessed = true,
+                                            ListingId = bid.ListingId,
+                                            MaxBidAmount = bid.MaxBidAmount,
+                                        };
 
-                                    auction.CurrentBidPrice = bid.MaxBidAmount;
-                                    auction.MaxBidPrice = bid.MaxBidAmount;
-                                    auction.CurrentWinningAddress = bid.BidAddress;
-                                    auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
+                                        auction.CurrentBidPrice = bid.MaxBidAmount;
+                                        auction.MaxBidPrice = bid.MaxBidAmount;
+                                        auction.CurrentWinningAddress = bid.BidAddress;
+                                        auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
 
-                                    Bid.SaveBid(aBid, true);
-                                    Auction.SaveAuction(auction);
-                                    DequeueBid(bid, BidStatus.Accepted);
-                                    continue;
+                                        Bid.SaveBid(aBid, true);
+                                        Auction.SaveAuction(auction);
+                                        DequeueBid(bid, BidStatus.Accepted);
+                                        continue;
 
+                                    }
+                                    else { DequeueBid(bid, BidStatus.Rejected); continue; }
                                 }
                                 else { DequeueBid(bid, BidStatus.Rejected); continue; }
                             }
                             else { DequeueBid(bid, BidStatus.Rejected); continue; }
                         }
-                        else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                        catch(Exception ex) { ErrorLogUtility.LogError($"Bid Error (01): {ex.ToString}", "AuctionEngine.ProcessBidQueue()"); }
+                        
                     }
                 }
                 else
