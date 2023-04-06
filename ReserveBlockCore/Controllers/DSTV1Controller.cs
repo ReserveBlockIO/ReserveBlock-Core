@@ -1162,13 +1162,14 @@ namespace ReserveBlockCore.Controllers
         /// <summary>
         /// Get bids
         /// </summary>
+        /// <param name="sendReceive"></param>
         /// <returns></returns>
-        [HttpGet("GetBids")]
-        public async Task<string> GetBids()
+        [HttpGet("GetBids/{sendReceive}")]
+        public async Task<string> GetBids(BidSendReceive sendReceive)
         {
             try
             {
-                var bids = Bid.GetAllBids();
+                var bids = Bid.GetAllBids(sendReceive);
                 
                 if (bids?.Count() > 0)
                 {
@@ -1189,13 +1190,14 @@ namespace ReserveBlockCore.Controllers
         /// Get bids for specific listing
         /// </summary>
         /// <param name="listingId"></param>
+        /// <param name="sendReceive"></param>
         /// <returns></returns>
-        [HttpGet("GetListingBids/{listingId}")]
-        public async Task<string> GetListingBids(int listingId)
+        [HttpGet("GetListingBids/{listingId}/{sendReceive}")]
+        public async Task<string> GetListingBids(int listingId, BidSendReceive sendReceive)
         {
             try
             {
-                var bids = Bid.GetListingBids(listingId);
+                var bids = Bid.GetListingBids(listingId, sendReceive);
 
                 if (bids?.Count() > 0)
                 {
@@ -1216,9 +1218,10 @@ namespace ReserveBlockCore.Controllers
         /// Get bids for specific status
         /// </summary>
         /// <param name="bidStatus"></param>
+        /// <param name="sendReceive"></param>
         /// <returns></returns>
-        [HttpGet("GetBidsByStatus/{bidStatus}")]
-        public async Task<string> GetBidsByStatus(BidStatus bidStatus)
+        [HttpGet("GetBidsByStatus/{bidStatus}/{sendReceive}")]
+        public async Task<string> GetBidsByStatus(BidStatus bidStatus, BidSendReceive sendReceive)
         {
             try
             {

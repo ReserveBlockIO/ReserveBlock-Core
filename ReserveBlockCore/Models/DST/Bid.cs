@@ -67,13 +67,13 @@ namespace ReserveBlockCore.Models.DST
         #endregion
 
         #region Get All Bids
-        public static IEnumerable<Bid>? GetAllBids()
+        public static IEnumerable<Bid>? GetAllBids(BidSendReceive? bidSendReceive = null)
         {
             var bidDb = GetBidDb();
 
             if (bidDb != null)
             {
-                var bids = bidDb.Query().Where(x => true).ToEnumerable();
+                var bids = bidSendReceive == null ? bidDb.Query().Where(x => true).ToEnumerable() : bidDb.Query().Where(x => x.BidSendReceive == bidSendReceive).ToEnumerable();
                 if (bids.Count() == 0)
                 {
                     return null;
@@ -113,13 +113,14 @@ namespace ReserveBlockCore.Models.DST
         #endregion
 
         #region Get Listing Bids
-        public static IEnumerable<Bid>? GetListingBids(int listingId)
+        public static IEnumerable<Bid>? GetListingBids(int listingId, BidSendReceive? bidSendReceive = null)
         {
             var bidDb = GetBidDb();
 
             if (bidDb != null)
             {
-                var bids = bidDb.Query().Where(x => x.ListingId == listingId).ToEnumerable();
+                var bids = bidSendReceive == null ? bidDb.Query().Where(x => x.ListingId == listingId).ToEnumerable() :
+                    bidDb.Query().Where(x => x.ListingId == listingId && x.BidSendReceive == bidSendReceive).ToEnumerable();
                 if (bids.Count() == 0)
                 {
                     return null;
@@ -136,13 +137,14 @@ namespace ReserveBlockCore.Models.DST
         #endregion
 
         #region Get Bid By Status
-        public static IEnumerable<Bid>? GetBidByStatus(BidStatus bidStatus)
+        public static IEnumerable<Bid>? GetBidByStatus(BidStatus bidStatus, BidSendReceive? bidSendReceive = null)
         {
             var bidDb = GetBidDb();
 
             if (bidDb != null)
             {
-                var bids = bidDb.Query().Where(x => x.BidStatus == bidStatus).ToEnumerable();
+                var bids = bidSendReceive == null ? bidDb.Query().Where(x => x.BidStatus == bidStatus).ToEnumerable() : 
+                    bidDb.Query().Where(x => x.BidStatus == bidStatus && x.BidSendReceive == bidSendReceive).ToEnumerable();
                 if (bids.Count() == 0)
                 {
                     return null;
