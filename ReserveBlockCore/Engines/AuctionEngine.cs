@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using ReserveBlockCore.DST;
+using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
@@ -78,10 +79,10 @@ namespace ReserveBlockCore.Engines
             var listings = Listing.GetAllListings();
             if(listings?.Count() > 0)
             {
+                var listingDb = Listing.GetListingDb();
                 var notStartedListingAuctions = listings.Where(x => x.IsAuctionStarted == false && x.IsAuctionEnded == false && x.StartDate <= DateTime.UtcNow).ToList();
                 if(notStartedListingAuctions.Count() > 0)
                 {
-                    var listingDb = Listing.GetListingDb();
                     if(listingDb != null)
                     {
                         foreach (var listing in notStartedListingAuctions)
@@ -114,6 +115,75 @@ namespace ReserveBlockCore.Engines
                         }
                     }
                 }
+
+                var listingsNeedingEnding = listings.Where(x => x.IsAuctionStarted == true && x.IsAuctionEnded == false && x.EndDate <= DateTime.UtcNow).ToList();
+                if(listingsNeedingEnding.Count > 0 )
+                {
+                    var auctionDb = Auction.GetAuctionDb();
+                    if (listingDb != null)
+                    {
+                        foreach(var listing in listingsNeedingEnding)
+                        {
+                            var auction = Auction.GetListingAuction(listing.Id);
+                            if(auction != null)
+                            {
+                                auction.IsAuctionOver = true;
+
+                                listing.IsAuctionEnded = true;
+                                listing.WinningAddress = auction.CurrentWinningAddress;
+                                listing.FinalPrice = auction.CurrentBidPrice;
+
+                                if(listing.ReservePrice != null)
+                                {
+                                    if(listing.ReservePrice.Value <= auction.CurrentBidPrice)
+                                        auction.IsReserveMet = true;
+                                }
+                                else
+                                {
+                                    auction.IsReserveMet = true;
+                                }
+
+                                if(auctionDb != null)
+                                {
+                                    listingDb.UpdateSafe(listing);
+                                    auctionDb.UpdateSafe(auction);
+
+                                    if(auction.IsReserveMet)
+                                    {
+                                        //Create TX to start NFT send.
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                var listingsThatAreCancelled = listings.Where(x => x.IsAuctionStarted == true && x.IsAuctionEnded == false && x.IsCancelled).ToList();
+                if(listingsThatAreCancelled.Count > 0 )
+                {
+                    var auctionDb = Auction.GetAuctionDb();
+                    if (listingDb != null)
+                    {
+                        foreach (var listing in listingsThatAreCancelled)
+                        {
+                            var auction = Auction.GetListingAuction(listing.Id);
+                            if (auction != null)
+                            {
+                                auction.IsAuctionOver = true;
+
+                                listing.IsAuctionEnded = true;
+                                listing.WinningAddress = "CANCELLED";
+                                listing.FinalPrice = auction.CurrentBidPrice;
+
+                                if (auctionDb != null)
+                                {
+                                    listingDb.UpdateSafe(listing);
+                                    auctionDb.UpdateSafe(auction);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -139,33 +209,46 @@ namespace ReserveBlockCore.Engines
                                 {
                                     if ((auction?.CurrentBidPrice + auction?.IncrementAmount) < bid.MaxBidAmount)
                                     {
-                                        Bid aBid = new Bid
+                                        var listing = listings.Where(x => x.Id == bid.ListingId).FirstOrDefault();
+                                        if(listing != null)
                                         {
-                                            Id = Guid.NewGuid(),
-                                            BidAddress = bid.BidAddress,
-                                            BidAmount = bid.BidAmount,
-                                            BidSendReceive = BidSendReceive.Received,
-                                            BidSendTime = bid.BidSendTime,
-                                            BidSignature = bid.BidSignature,
-                                            BidStatus = BidStatus.Accepted,
-                                            CollectionId = bid.CollectionId,
-                                            IsAutoBid = bid.IsAutoBid,
-                                            IsBuyNow = bid.IsBuyNow,
-                                            IsProcessed = true,
-                                            ListingId = bid.ListingId,
-                                            MaxBidAmount = bid.MaxBidAmount,
-                                        };
+                                            if(listing.RequireBalanceCheck)
+                                            {
+                                                var addressBalance = AccountStateTrei.GetAccountBalance(bid.BidAddress);
+                                                if(addressBalance <  bid.BidAmount)
+                                                {
+                                                    DequeueBid(bid, BidStatus.Rejected); 
+                                                    continue;
+                                                }
+                                            }
+                                            Bid aBid = new Bid
+                                            {
+                                                Id = Guid.NewGuid(),
+                                                BidAddress = bid.BidAddress,
+                                                BidAmount = bid.BidAmount,
+                                                BidSendReceive = BidSendReceive.Received,
+                                                BidSendTime = bid.BidSendTime,
+                                                BidSignature = bid.BidSignature,
+                                                BidStatus = BidStatus.Accepted,
+                                                CollectionId = bid.CollectionId,
+                                                IsAutoBid = bid.IsAutoBid,
+                                                IsBuyNow = bid.IsBuyNow,
+                                                IsProcessed = true,
+                                                ListingId = bid.ListingId,
+                                                MaxBidAmount = bid.MaxBidAmount,
+                                            };
 
-                                        auction.CurrentBidPrice = bid.MaxBidAmount;
-                                        auction.MaxBidPrice = bid.MaxBidAmount;
-                                        auction.CurrentWinningAddress = bid.BidAddress;
-                                        auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
+                                            auction.CurrentBidPrice = bid.MaxBidAmount;
+                                            auction.MaxBidPrice = bid.MaxBidAmount;
+                                            auction.CurrentWinningAddress = bid.BidAddress;
+                                            auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
 
-                                        Bid.SaveBid(aBid, true);
-                                        Auction.SaveAuction(auction);
-                                        DequeueBid(bid, BidStatus.Accepted);
-                                        continue;
-
+                                            Bid.SaveBid(aBid, true);
+                                            Auction.SaveAuction(auction);
+                                            DequeueBid(bid, BidStatus.Accepted);
+                                            continue;
+                                        }
+                                        else { DequeueBid(bid, BidStatus.Rejected); continue; }
                                     }
                                     else { DequeueBid(bid, BidStatus.Rejected); continue; }
                                 }
