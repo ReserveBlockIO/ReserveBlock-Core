@@ -87,7 +87,8 @@ namespace ReserveBlockCore.DST
                                             if (colExist)
                                             {
                                                 int index = Globals.DecShopData.Collections.FindIndex(x => x.Name == collection.Name);
-                                                Globals.DecShopData.Collections[index] = collection;
+                                                if (index != -1)
+                                                    Globals.DecShopData.Collections[index] = collection;
                                             }
                                         }
                                         else
@@ -128,7 +129,8 @@ namespace ReserveBlockCore.DST
                                             if (listingExist)
                                             {
                                                 int index = Globals.DecShopData.Listings.FindIndex(x => x.SmartContractUID == listing.SmartContractUID);
-                                                Globals.DecShopData.Listings[index] = listing;
+                                                if (index != -1)
+                                                    Globals.DecShopData.Listings[index] = listing;
                                             }
                                         }
                                         else
@@ -169,7 +171,8 @@ namespace ReserveBlockCore.DST
                                             if (listingExist)
                                             {
                                                 int index = Globals.DecShopData.Listings.FindIndex(x => x.SmartContractUID == listing.SmartContractUID);
-                                                Globals.DecShopData.Listings[index] = listing;
+                                                if (index != -1)
+                                                    Globals.DecShopData.Listings[index] = listing;
                                             }
                                         }
                                         else
@@ -208,7 +211,8 @@ namespace ReserveBlockCore.DST
                                         if (listingExist)
                                         {
                                             int index = Globals.DecShopData.Listings.FindIndex(x => x.SmartContractUID == listing.SmartContractUID);
-                                            Globals.DecShopData.Listings[index] = listing;
+                                            if (index != -1)
+                                                Globals.DecShopData.Listings[index] = listing;
                                         }
                                     }
                                     else
@@ -248,7 +252,8 @@ namespace ReserveBlockCore.DST
                                             if (auctionExist)
                                             {
                                                 int index = Globals.DecShopData.Auctions.FindIndex(x => x.Id == auction.Id);
-                                                Globals.DecShopData.Auctions[index] = auction;
+                                                if (index != -1)
+                                                    Globals.DecShopData.Auctions[index] = auction;
                                             }
                                                 
                                         }
