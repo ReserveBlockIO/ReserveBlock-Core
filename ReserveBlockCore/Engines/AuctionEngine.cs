@@ -137,6 +137,7 @@ namespace ReserveBlockCore.Engines
                                 {
                                     Bid aBid = new Bid
                                     {
+                                        Id = Guid.NewGuid(),
                                         BidAddress = bid.BidAddress,
                                         BidAmount = bid.BidAmount,
                                         BidSendReceive = BidSendReceive.Received,
