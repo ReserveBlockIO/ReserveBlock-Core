@@ -27,6 +27,9 @@ namespace ReserveBlockCore.Models.DST
         public bool IsVisibleAfterEndDate { get; set; }
         public decimal? FinalPrice { get; set; }
         public string? WinningAddress { get; set; }
+        public bool IsSaleTXSent { get; set; }
+        public string? SaleTXHash { get; set; }
+        public bool IsSaleComplete { get; set; }
         public int CollectionId { get; set; }
 
         #region Get Listing Db

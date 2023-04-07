@@ -496,6 +496,61 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        public static void ProcessBuyNow(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.Purchase)
+            {
+                try
+                {
+                    if (message.ComType == MessageComType.Request)
+                    {
+                        var bid = JsonConvert.DeserializeObject<BidQueue>(message.Data);
+                        if (bid == null)
+                            return; //reject
+
+                        bid.EndPoint = endPoint;
+                        bid.BidSendReceive = BidSendReceive.Received;
+
+                        Globals.BuyNowQueue.Enqueue(bid);
+
+                        Message responseMessage = new Message
+                        {
+                            Type = MessageType.Bid,
+                            ComType = MessageComType.Response,
+                            Data = $"{bid.Id},{BidStatus.Received}",
+                            ResponseMessage = true,
+                            ResponseMessageId = message.Id,
+                        };
+
+                        var messageJson = GenerateMessage(responseMessage, false);
+                        var sendMessage = Encoding.UTF8.GetBytes(messageJson);
+                        udpClient.Send(sendMessage, endPoint);
+                    }
+                }
+                catch { }
+                try
+                {
+                    if (message.ComType == MessageComType.Response)
+                    {
+                        var dataSplit = message.Data.Split(',');
+                        Guid.TryParse(dataSplit[0], out Guid bidId);
+                        var isEnumStringParsed = Enum.TryParse(dataSplit[1], true, out BidStatus bidStatus);
+
+                        if (isEnumStringParsed)
+                        {
+                            var bid = Bid.GetSingleBid(bidId);
+                            if (bid != null)
+                            {
+                                bid.BidStatus = bidStatus;
+                                Bid.SaveBid(bid);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
         public static string GenerateMessage(Message message, bool responseRequested)
         {
             var output = "";

@@ -52,7 +52,7 @@ namespace ReserveBlockCore.DST
 
                     if (message != null)
                     {
-                        MessageService.ProcessMessage(message, endPoint, udpClient);
+                        _ = MessageService.ProcessMessage(message, endPoint, udpClient);
                     }
                 }
             }

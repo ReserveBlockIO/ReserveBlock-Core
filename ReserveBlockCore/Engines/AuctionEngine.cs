@@ -7,6 +7,8 @@ using Spectre.Console;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ReserveBlockCore.Engines
@@ -33,6 +35,7 @@ namespace ReserveBlockCore.Engines
                 try
                 {
                     ProcessBidQueue();
+                    ProcessBuyNowQueue();
                 }
                 finally
                 {
@@ -186,7 +189,89 @@ namespace ReserveBlockCore.Engines
                 }
             }
         }
+        public static void ProcessBuyNowQueue()
+        {
+            var buyNowQueueList = Globals.BuyNowQueue.ToList();
+            if (buyNowQueueList.Count > 0)
+            {
+                var listings = Listing.GetAllStartedListings(); //get all listings and store into memory. 
+                var auctions = Auction.GetAllLiveAuctions(); //get all auctions and store into memory.
 
+                if (auctions?.Count() > 0)
+                {
+                    foreach (var buyNow in buyNowQueueList)
+                    {
+                        try
+                        {
+                            if(!buyNow.IsBuyNow)
+                            {
+                                DequeueBid(buyNow, BidStatus.Rejected);
+                                continue;
+                            }
+                            var auction = auctions.Where(x => x.ListingId == buyNow.ListingId).FirstOrDefault();
+                            {
+                                if (auction != null)
+                                {
+                                    var listing = listings?.Where(x => x.Id == buyNow.ListingId).FirstOrDefault();
+                                    if (listing != null)
+                                    {
+                                        if(listing.BuyNowPrice == null)
+                                        {
+                                            DequeueBid(buyNow, BidStatus.Rejected);
+                                            continue;
+                                        }
+                                        if (listing.RequireBalanceCheck)
+                                        {
+                                            var addressBalance = AccountStateTrei.GetAccountBalance(buyNow.BidAddress);
+                                            if (addressBalance < listing.BuyNowPrice)
+                                            {
+                                                DequeueBid(buyNow, BidStatus.Rejected);
+                                                continue;
+                                            }
+                                        }
+
+                                        Bid aBid = new Bid
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            BidAddress = buyNow.BidAddress,
+                                            BidAmount = listing.BuyNowPrice.Value,
+                                            BidSendReceive = BidSendReceive.Received,
+                                            BidSendTime = buyNow.BidSendTime,
+                                            BidSignature = buyNow.BidSignature,
+                                            BidStatus = BidStatus.Accepted,
+                                            CollectionId = buyNow.CollectionId,
+                                            IsAutoBid = buyNow.IsAutoBid,
+                                            IsBuyNow = true,
+                                            IsProcessed = true,
+                                            ListingId = buyNow.ListingId,
+                                            MaxBidAmount = listing.BuyNowPrice.Value,
+                                        };
+
+                                        auction.CurrentBidPrice = listing.BuyNowPrice.Value;
+                                        auction.MaxBidPrice = listing.BuyNowPrice.Value;
+                                        auction.CurrentWinningAddress = buyNow.BidAddress;                                        
+                                        auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
+                                        auction.IsAuctionOver = true;
+                                        auction.IsReserveMet = true;
+
+                                        listing.IsAuctionEnded = true;
+                                        listing.WinningAddress = auction.CurrentWinningAddress;
+                                        listing.FinalPrice = auction.CurrentBidPrice;
+
+
+                                        Bid.SaveBid(aBid, true);
+                                        Auction.SaveAuction(auction);
+                                        DequeueBid(buyNow, BidStatus.Accepted);
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
         public static void ProcessBidQueue()
         {
             var bidQueueList = Globals.BidQueue.ToList();
@@ -197,7 +282,7 @@ namespace ReserveBlockCore.Engines
                                                              
                 if(auctions?.Count() > 0)
                 {
-                    foreach (var bid in Globals.BidQueue)
+                    foreach (var bid in bidQueueList)
                     {
                         try
                         {
@@ -209,7 +294,7 @@ namespace ReserveBlockCore.Engines
                                 {
                                     if ((auction?.CurrentBidPrice + auction?.IncrementAmount) < bid.MaxBidAmount)
                                     {
-                                        var listing = listings.Where(x => x.Id == bid.ListingId).FirstOrDefault();
+                                        var listing = listings?.Where(x => x.Id == bid.ListingId).FirstOrDefault();
                                         if(listing != null)
                                         {
                                             if(listing.RequireBalanceCheck)
@@ -245,6 +330,10 @@ namespace ReserveBlockCore.Engines
 
                                             Bid.SaveBid(aBid, true);
                                             Auction.SaveAuction(auction);
+                                            Listing.SaveListing(listing);
+
+                                            //create tx to send
+
                                             DequeueBid(bid, BidStatus.Accepted);
                                             continue;
                                         }
