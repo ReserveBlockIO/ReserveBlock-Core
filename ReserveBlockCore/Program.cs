@@ -135,6 +135,10 @@ namespace ReserveBlockCore
                     {
                         Globals.SelfSTUNServer = true;
                     }
+                    if (argC == "stunmessages")
+                    {
+                        Globals.ShowSTUNMessagesInConsole = true;
+                    }
                     if (argC == "stunport")
                     {
                         var stunPortSplit = argC.Split(new char[] { '=' });

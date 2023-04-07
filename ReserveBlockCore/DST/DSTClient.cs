@@ -371,7 +371,7 @@ namespace ReserveBlockCore.DST
 
                         if (message != null)
                         {
-                            MessageService.ProcessMessage(message, RemoteEndPoint, udpClient);
+                            _ = MessageService.ProcessMessage(message, RemoteEndPoint, udpClient);
                         }
                     }
                 }

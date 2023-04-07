@@ -164,6 +164,7 @@ namespace ReserveBlockCore
         public static bool BasicCLI = false;
         public static bool MemoryOverload = false;
         public static bool SelfSTUNServer = false;
+        public static bool ShowSTUNMessagesInConsole = false;
         
         public static CancellationToken CancelledToken;
 

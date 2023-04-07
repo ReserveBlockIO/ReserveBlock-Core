@@ -25,6 +25,8 @@ namespace ReserveBlockCore.Models
         public string UniqueId { get; set; }
         public string Name { get; set; } //User Submitted - 64 length
         public string DecShopURL { get; set; } //User Submitted - 64 length - Do not add rbx://
+        public string? ThirdPartyBaseURL { get; set; }
+        public string? ThirdPartyAPIURL { get; set; }
         public string Description { get; set; } //User Submitted - 200 words, or 1200 in length
         public string OwnerAddress { get; set; } //User Submitted -starts with R
         public DecShopHostingType HostingType { get; set; } //User Submitted
@@ -660,6 +662,7 @@ namespace ReserveBlockCore.Models
     public enum DecShopHostingType
     {
         Network,
-        SelfHosted
+        SelfHosted,
+        ThirdParty
     }
 }

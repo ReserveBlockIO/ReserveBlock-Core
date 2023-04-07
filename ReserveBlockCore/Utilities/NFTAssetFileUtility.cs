@@ -186,7 +186,7 @@ namespace ReserveBlockCore.Utilities
                 }
             }
 
-            var newPath = getThumbs ? path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
+            var newPath = getThumbs ? path + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
 
             try
             {
