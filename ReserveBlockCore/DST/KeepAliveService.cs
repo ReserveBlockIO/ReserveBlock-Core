@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using Newtonsoft.Json;
+using ReserveBlockCore.Models;
 
 namespace ReserveBlockCore.DST
 {
@@ -37,6 +38,7 @@ namespace ReserveBlockCore.DST
                                 {
                                     stop = true;
                                     Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
+
                                 }
 
                                 await delay;
@@ -64,7 +66,11 @@ namespace ReserveBlockCore.DST
                             if (currentTime - Globals.STUNServer.LastReceiveMessage > 15)
                             {
                                 stop = true;
+                                _ = DSTClient.DisconnectFromSTUNServer(); //disconnect from STUN Server
+                                await Task.Delay(1000);
                                 Globals.STUNServer = null;
+                                _ = DSTClient.Run(); //attempt to reconnect to a STUN server.
+                                await Task.Delay(1000);
                             }
 
                             await delay;
@@ -93,8 +99,16 @@ namespace ReserveBlockCore.DST
                                 var currentTime = TimeUtil.GetTime();
                                 if (currentTime - client.LastReceiveMessage > 15)
                                 {
+                                    //stop = true;
+                                    //Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
                                     stop = true;
+                                    var shopServer = client.IPAddress; //this also has port
+                                    var shopEndPoint = IPEndPoint.Parse(shopServer);
                                     Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
+                                    _ = DSTClient.DisconnectFromShop();
+                                    await Task.Delay(1000);
+                                    _ = DSTClient.ConnectToShop(shopEndPoint, shopServer);
+                                    await Task.Delay(1000);
                                 }
 
                                 await delay;

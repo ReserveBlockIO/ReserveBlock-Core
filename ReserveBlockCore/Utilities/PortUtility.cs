@@ -41,6 +41,9 @@ namespace ReserveBlockCore.Utilities
             if (port > 50000)
                 port = Globals.DSTClientPort + 1; // reset port back down
 
+            if (port < 13341)
+                port = Globals.DSTClientPort;
+
             while (!portFound) 
             {
                 var nextPort = port + count;
