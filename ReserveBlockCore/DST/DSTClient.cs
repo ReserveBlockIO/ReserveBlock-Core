@@ -443,8 +443,13 @@ namespace ReserveBlockCore.DST
             {
                 try
                 {
-                    var messageBytes = udpShop.ReceiveAsync(token);
-                    var dataGram = await udpClient.ReceiveAsync(token);
+                    var isCancelled = token.IsCancellationRequested;
+                    if (isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+                    var dataGram = await udpShop.ReceiveAsync(token);
                     RemoteEndPoint = dataGram.RemoteEndPoint;
                     var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
