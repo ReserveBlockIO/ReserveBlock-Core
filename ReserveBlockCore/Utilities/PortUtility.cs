@@ -45,7 +45,7 @@ namespace ReserveBlockCore.Utilities
             {
                 var nextPort = port + count;
                 //testing this without OS agnostic method for now.
-                var portInUse = IsUdpPortInUse(nextPort); //RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? IsUdpPortInUse(nextPort) : IsUdpPortInUseOSAgnostic(nextPort);
+                var portInUse = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? IsUdpPortInUse(nextPort) : IsUdpPortInUseOSAgnostic(nextPort);
                 if (!portInUse)
                 {
                     portFound = true;
