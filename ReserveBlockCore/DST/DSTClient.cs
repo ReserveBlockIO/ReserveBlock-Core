@@ -18,6 +18,7 @@ namespace ReserveBlockCore.DST
         static int Port = Globals.DSTClientPort;
         static int LastUsedPort = 0;
         static UdpClient udpClient;
+        static UdpClient udpShop;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         static IPEndPoint? ConnectedShopServer = null;
         public static Thread? ListenerThread = null;
@@ -147,6 +148,13 @@ namespace ReserveBlockCore.DST
                 {
                     Globals.ConnectedClients.TryRemove(client.IPAddress, out _);
                 }
+
+                var localIPPort = "127.0.0.1:" + LastUsedPort;
+                var localEndpoint = IPEndPoint.Parse(localIPPort);
+
+                var exitCommandMessage = Encoding.UTF8.GetBytes("exit");
+                udpClient.Send(exitCommandMessage, localEndpoint);
+
                 Globals.DecShopData = null;
                 udpClient.Close();
                 udpClient.Dispose();
@@ -246,7 +254,7 @@ namespace ReserveBlockCore.DST
             var shopMessage = MessageService.GenerateMessage(message, responseRequested);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
-            _ = udpClient.SendAsync(messageBytes, endPoint);
+            _ = udpShop.SendAsync(messageBytes, endPoint);
         }
 
         public static async Task Run(bool bypass = false)
@@ -263,7 +271,8 @@ namespace ReserveBlockCore.DST
                     var FailedToConnect = false;
                     var badList = new List<string>();
                     var portNumber = Port;
-                    udpClient = new UdpClient(portNumber);
+                    LastUsedPort = portNumber;
+                    udpShop = new UdpClient(portNumber);
 
                     while (!IsConnected && !FailedToConnect)
                     {
@@ -279,11 +288,11 @@ namespace ReserveBlockCore.DST
 
                             var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
 
-                            udpClient.Send(addCommandDataBytes, stunEndPoint);
+                            udpShop.Send(addCommandDataBytes, stunEndPoint);
                             stopwatch.Start();
                             while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
                             {
-                                var beginReceive = udpClient.BeginReceive(null, null);
+                                var beginReceive = udpShop.BeginReceive(null, null);
                                 beginReceive.AsyncWaitHandle.WaitOne(new TimeSpan(0, 0, 5));
 
                                 if (beginReceive.IsCompleted)
@@ -291,7 +300,7 @@ namespace ReserveBlockCore.DST
                                     try
                                     {
                                         IPEndPoint remoteEP = null;
-                                        byte[] receivedData = udpClient.EndReceive(beginReceive, ref remoteEP);
+                                        byte[] receivedData = udpShop.EndReceive(beginReceive, ref remoteEP);
                                         if (receivedData.SequenceEqual(successful))
                                         {
                                             ConnectedStunServer = stunEndPoint;
@@ -325,7 +334,7 @@ namespace ReserveBlockCore.DST
                     {
                         Console.WriteLine("connected to STUN server");
 
-                        var listenerThread = new Thread(Listen);
+                        var listenerThread = new Thread(ShopListen);
                         listenerThread.Start();
 
                         var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
@@ -342,7 +351,7 @@ namespace ReserveBlockCore.DST
 
                         Globals.STUNServer = dstCon;
 
-                        udpClient.Send(messageBytes, ConnectedStunServer);
+                        udpShop.Send(messageBytes, ConnectedStunServer);
 
 
                     }
@@ -350,23 +359,66 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        static void ShopListen()
+        {
+            var exit = false;
+            while (!exit)
+            {
+                try
+                {
+                    var messageBytes = udpShop.Receive(ref RemoteEndPoint);
+                    var payload = Encoding.UTF8.GetString(messageBytes);
+
+                    if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
+                    {
+                        Console.WriteLine(payload);
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(payload))
+                    {
+                        if (Globals.ShowSTUNMessagesInConsole)
+                            Console.WriteLine(payload + "\n");
+
+                        var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                        if (message != null)
+                        {
+                            _ = MessageService.ProcessMessage(message, RemoteEndPoint, udpShop);
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
         static void Listen()
         {
-            while (true)
+            var exit = false;
+            while (!exit)
             {
                 try
                 {
                     var messageBytes = udpClient.Receive(ref RemoteEndPoint);
                     var payload = Encoding.UTF8.GetString(messageBytes);
 
-                    if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc") continue;
+                    if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo") 
                     {
                         Console.WriteLine(payload);
+                        continue;
+                    }
+
+                    if (payload == "exit" && RemoteEndPoint.ToString().Contains("127.0.0.1"))
+                    {
+                        exit = true;
+                        continue;
                     }
 
                     if (!string.IsNullOrEmpty(payload))
                     {
-                        Console.WriteLine(payload + "\n");  
+                        if(Globals.ShowSTUNMessagesInConsole)
+                            Console.WriteLine(payload + "\n");  
+
                         var message = JsonConvert.DeserializeObject<Message>(payload);
 
                         if (message != null)
