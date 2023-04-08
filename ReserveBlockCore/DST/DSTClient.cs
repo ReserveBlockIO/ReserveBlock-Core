@@ -22,6 +22,9 @@ namespace ReserveBlockCore.DST
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         static IPEndPoint? ConnectedShopServer = null;
         public static Thread? ListenerThread = null;
+        public static CancellationTokenSource shopToken = new CancellationTokenSource();
+        public static CancellationTokenSource stunToken = new CancellationTokenSource();
+        public static int somecount = 0;
 
         public static async Task Run(bool bypass = false)
         {
@@ -100,8 +103,11 @@ namespace ReserveBlockCore.DST
                     {
                         Console.WriteLine("connected to STUN server");
 
-                        var listenerThread = new Thread(ShopListen);
-                        listenerThread.Start();
+                        stunToken = new CancellationTokenSource();
+                        CancellationToken token = stunToken.Token;
+
+                        Task task = new Task(() => { ShopListen(token); }, token);
+                        task.Start();
 
                         var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
                         var kaMessage = GenerateMessage(kaPayload);
@@ -196,8 +202,11 @@ namespace ReserveBlockCore.DST
                 connected = true;
                 Console.WriteLine("connected to SHOP");
 
-                ListenerThread = new Thread(Listen);
-                ListenerThread.Start();
+                shopToken = new CancellationTokenSource();
+                CancellationToken token = shopToken.Token;
+
+                Task task = new Task(() => { Listen(token); }, token);
+                task.Start();
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -312,8 +321,15 @@ namespace ReserveBlockCore.DST
                 connected = true;
                 Console.WriteLine("connected to SHOP");
 
-                ListenerThread = new Thread(Listen);
-                ListenerThread.Start();
+                somecount += 1;
+                shopToken = new CancellationTokenSource();
+                CancellationToken token = shopToken.Token;
+
+                Task task = new Task(() => { Listen(token); }, token);
+                task.Start();
+
+                //ListenerThread = new Thread(Listen);
+                //ListenerThread.Start();
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -420,26 +436,22 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        static void ShopListen()
+        static async Task ShopListen(CancellationToken token)
         {
             var exit = false;
-            while (!exit)
+            while (!exit && !token.IsCancellationRequested)
             {
                 try
                 {
-                    var messageBytes = udpShop.Receive(ref RemoteEndPoint);
-                    var payload = Encoding.UTF8.GetString(messageBytes);
+                    var messageBytes = udpShop.ReceiveAsync(token);
+                    var dataGram = await udpClient.ReceiveAsync(token);
+                    RemoteEndPoint = dataGram.RemoteEndPoint;
+                    var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
                     if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
                     {
                         if (Globals.ShowSTUNMessagesInConsole)
                             Console.WriteLine(payload);
-                        continue;
-                    }
-
-                    if (payload == "exit" && RemoteEndPoint.ToString().Contains("127.0.0.1"))
-                    {
-                        exit = true;
                         continue;
                     }
 
@@ -460,26 +472,29 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        static void Listen()
+        static async Task Listen(CancellationToken token)
         {
+            var counter = somecount;
+
             var exit = false;
-            while (!exit)
+            while (!exit && !token.IsCancellationRequested)
             {
                 try
                 {
-                    var messageBytes = udpClient.Receive(ref RemoteEndPoint);
-                    var payload = Encoding.UTF8.GetString(messageBytes);
+                    var isCancelled = token.IsCancellationRequested;
+                    if(isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+                    var dataGram = await udpClient.ReceiveAsync(token);
+                    RemoteEndPoint = dataGram.RemoteEndPoint;
+                    var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
                     if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo") 
                     {
                         if (Globals.ShowSTUNMessagesInConsole)
                             Console.WriteLine(payload);
-                        continue;
-                    }
-
-                    if (payload == "exit" && RemoteEndPoint.ToString().Contains("127.0.0.1"))
-                    {
-                        exit = true;
                         continue;
                     }
 
@@ -496,7 +511,10 @@ namespace ReserveBlockCore.DST
                         }
                     }
                 }
-                catch { }
+                catch 
+                { 
+
+                }
             }
         }
 
@@ -511,11 +529,7 @@ namespace ReserveBlockCore.DST
                     Globals.ConnectedClients.TryRemove(client.IPAddress, out _);
                 }
 
-                var localIPPort = "127.0.0.1:" + LastUsedPort;
-                var localEndpoint = IPEndPoint.Parse(localIPPort);
-
-                var exitCommandMessage = Encoding.UTF8.GetBytes("exit");
-                udpClient.Send(exitCommandMessage, localEndpoint);
+                shopToken.Cancel();
 
                 Globals.DecShopData = null;
                 udpClient.Close();
@@ -535,11 +549,7 @@ namespace ReserveBlockCore.DST
             {
                 if (Globals.STUNServer != null)
                 {
-                    var localIPPort = "127.0.0.1:" + LastUsedPort;
-                    var localEndpoint = IPEndPoint.Parse(localIPPort);
-
-                    var exitCommandMessage = Encoding.UTF8.GetBytes("exit");
-                    udpShop.Send(exitCommandMessage, localEndpoint);
+                    stunToken.Cancel();
 
                     Globals.DecShopData = null;
                     Globals.STUNServer = null;
