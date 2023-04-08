@@ -35,7 +35,7 @@ namespace ReserveBlockCore.DST
             IPEndPoint? ConnectedStunServer = null;
             var FailedToConnect = false;
 
-            var portNumber = Port == LastUsedPort ? LastUsedPort + 1 : Port; //dynamic port
+            var portNumber = PortUtility.FindOpenUDPPort(LastUsedPort); //dynamic port / Port == LastUsedPort ? LastUsedPort + 1 : Port;
             udpClient = new UdpClient(portNumber);
             LastUsedPort = portNumber;
 
