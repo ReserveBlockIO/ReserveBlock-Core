@@ -15,7 +15,10 @@ namespace ReserveBlockCore.Utilities
         {
             var portFound = false;
             var count = 1;
-            while(!portFound) 
+            if (port > 50000)
+                port = Globals.DSTClientPort + 1; // reset port back down
+
+            while (!portFound) 
             {
                 var nextPort = port + count;
                 var portInUse = IsUdpPortInUse(nextPort);
