@@ -115,8 +115,8 @@ namespace ReserveBlockCore.DST
                     udpClient.Send(notFoundMessage, endPoint);
                 }
 
-                var failMessage = Encoding.UTF8.GetBytes("fail");
-                udpClient.Send(failMessage, endPoint);
+                //var failMessage = Encoding.UTF8.GetBytes("fail");
+                //udpClient.Send(failMessage, endPoint);
             }
         }
 
