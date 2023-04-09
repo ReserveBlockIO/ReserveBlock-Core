@@ -1069,6 +1069,9 @@ namespace ReserveBlockCore.Controllers
                     if (localAddress == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
 
+                    if(bidPayload.BidAddress.StartsWith("xRBX"))
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You may not place bids with a Reserve Account" });
+
                     if (Globals.DecShopData?.DecShop == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
 
@@ -1121,6 +1124,9 @@ namespace ReserveBlockCore.Controllers
 
                     if (localAddress == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+
+                    if (bidPayload.BidAddress.StartsWith("xRBX"))
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You may not perform a 'Buy Now' with a Reserve Account" });
 
                     if (Globals.DecShopData?.DecShop == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });

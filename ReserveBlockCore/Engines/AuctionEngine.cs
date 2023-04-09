@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
@@ -228,6 +229,12 @@ namespace ReserveBlockCore.Engines
                                                 DequeueBid(buyNow, BidStatus.Rejected);
                                                 continue;
                                             }
+
+                                        }
+                                        if (buyNow.BidAddress.StartsWith("xRBX"))
+                                        {
+                                            DequeueBid(buyNow, BidStatus.Rejected);
+                                            continue;
                                         }
 
                                         Bid aBid = new Bid
@@ -305,6 +312,11 @@ namespace ReserveBlockCore.Engines
                                                     DequeueBid(bid, BidStatus.Rejected); 
                                                     continue;
                                                 }
+                                            }
+                                            if (bid.BidAddress.StartsWith("xRBX"))
+                                            {
+                                                DequeueBid(bid, BidStatus.Rejected);
+                                                continue;
                                             }
                                             Bid aBid = new Bid
                                             {
