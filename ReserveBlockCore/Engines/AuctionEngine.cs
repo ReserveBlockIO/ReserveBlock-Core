@@ -274,6 +274,8 @@ namespace ReserveBlockCore.Engines
 
                                         Bid.SaveBid(aBid, true);
                                         Auction.SaveAuction(auction);
+                                        _ = Listing.SaveListing(listing);
+
                                         DequeueBid(buyNow, BidStatus.Accepted);
 
                                         _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
@@ -351,7 +353,7 @@ namespace ReserveBlockCore.Engines
 
                                             Bid.SaveBid(aBid, true);
                                             Auction.SaveAuction(auction);
-                                            Listing.SaveListing(listing);
+                                            _ = Listing.SaveListing(listing);
 
                                             //create tx to send
 
