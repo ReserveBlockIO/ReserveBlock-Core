@@ -950,6 +950,8 @@ namespace ReserveBlockCore.Services
 
             var privateKey = account.GetPrivKey;
 
+            var keySign = smartContractStateTrei.PurchaseKey;
+
             try
             {
                 var scMain = SmartContractMain.GenerateSmartContractInMemory(smartContractStateTrei.ContractData);
@@ -1091,7 +1093,7 @@ namespace ReserveBlockCore.Services
                 return (null, $"Unknown error decompiling SC. Error: {ex.ToString()}");
             }
             
-            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID, Royalty = isRoyalty, RoyaltyAmount = royaltyAmount, RoyaltyPayTo = royaltyPayTo, Transactions = scTxList });
+            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID, Royalty = isRoyalty, RoyaltyAmount = royaltyAmount, RoyaltyPayTo = royaltyPayTo, Transactions = scTxList, KeySign = keySign });
 
             scTx = new Transaction
             {

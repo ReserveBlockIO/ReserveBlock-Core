@@ -384,8 +384,9 @@ namespace ReserveBlockCore.Services
                             var royaltyAmount = jobj["RoyaltyAmount"]?.ToObject<decimal?>();
                             var royaltyPayTo = jobj["RoyaltyPayTo"]?.ToObject<string?>();
                             var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
+                            var keySign = jobj["KeySign"]?.ToObject<string?>();
 
-                            if(scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null)
+                            if (scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                 if (scStateTreiRec != null)
@@ -397,6 +398,8 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner == null)
                                         return (txResult, "There is no next owner specified for this NFT.");
+                                    if(scStateTreiRec.PurchaseKey != keySign)
+                                        return (txResult, "Purchase Keys do not match.");
 
                                     if (txRequest.FromAddress != scStateTreiRec.NextOwner)
                                         return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
