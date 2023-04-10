@@ -36,7 +36,7 @@ namespace ReserveBlockCore.Services
                 }
                 
             }
-            if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_SALE)
+            if (tx.TransactionType == TransactionType.NFT_TX)
             {
                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                 if (scDataArray != null)
@@ -55,6 +55,26 @@ namespace ReserveBlockCore.Services
                             }
                         }
                     }
+                }
+
+            }
+            if (tx.TransactionType == TransactionType.NFT_SALE)
+            {
+                var jobj = JObject.Parse(tx.Data);
+                if (jobj != null)
+                {
+                    var function = jobj["Function"]?.ToObject<string?>();
+
+                    if (!string.IsNullOrWhiteSpace(function))
+                    {
+                        if (function == "Sale_Start()")
+                        {
+                            var txdata = TransactionData.GetAll();
+                            tx.TransactionStatus = TransactionStatus.Success;
+                            txdata.InsertSafe(tx);
+                        }
+                    }
+                    
                 }
 
             }
