@@ -379,6 +379,109 @@ namespace ReserveBlockCore.Services
                         if (function == "Sale_Complete()")
                         {
                             //Complete sale logic.
+                            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            var royalty = jobj["Royalty"]?.ToObject<bool?>();
+                            var royaltyAmount = jobj["RoyaltyAmount"]?.ToObject<decimal?>();
+                            var royaltyPayTo = jobj["RoyaltyPayTo"]?.ToObject<string?>();
+                            var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
+
+                            if(scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null)
+                            {
+                                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                if (scStateTreiRec != null)
+                                {
+                                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTreiRec.ContractData);
+
+                                    if(!scStateTreiRec.IsLocked)
+                                        return (txResult, "This NFT has not been locked for purchase.");
+
+                                    if (scStateTreiRec.NextOwner == null)
+                                        return (txResult, "There is no next owner specified for this NFT.");
+
+                                    if (txRequest.FromAddress != scStateTreiRec.NextOwner)
+                                        return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+
+                                    if ((txRequest.Amount + txRequest.Fee + transactions.Select(x => x.Amount + x.Fee).Sum()) > from.Balance)  // not sure about this... double check.
+                                        return (txResult, "Amount exceeds balance.");
+
+                                    if (scMain == null)
+                                        return (txResult, "Failed to decompile smart contract.");
+
+                                    if(scMain.Features != null)
+                                    {
+                                        var royaltyFeat = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                                        if(royaltyFeat != null)
+                                        {
+                                            var royaltyDetails = (RoyaltyFeature)royaltyFeat.FeatureFeatures;
+
+                                            var stRoyaltyAmount = royaltyDetails.RoyaltyAmount;
+                                            var stRoyaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
+                                            if(royaltyAmount != stRoyaltyAmount)
+                                                return (txResult, "Royalty Amounts do not match up.");
+
+                                            if (stRoyaltyPayTo != royaltyPayTo)
+                                                return (txResult, "Royalty Pay to does not match up.");
+
+                                            var amountPaid = transactions.Sum(x => x.Amount);
+                                            var payChecked = scStateTreiRec.PurchaseAmount - amountPaid > 1.0M ? false : true;
+                                            if(!payChecked)
+                                                return (txResult, "Purchase amount does not match up with TX amounts.");
+
+                                            if(transactions.Any(x => x.Data == null))
+                                                return (txResult, "Data cannot be missing for any TX.");
+
+                                            var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
+
+                                            if(txToSeller == null)
+                                                return (txResult, "Could not find TX to seller.");
+
+                                            var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+
+                                            if (txToRoyaltyPayee == null)
+                                                return (txResult, "Could not find TX to royalty owner.");
+
+                                            var txToSellerAmountCheck = txToSeller.Amount - (amountPaid * (1.0M - stRoyaltyAmount)) > 1 ? false : true;
+                                            var txToRoyaltyAmountCheck = txToRoyaltyPayee.Amount - (amountPaid * stRoyaltyAmount) > 1 ? false : true;
+
+                                            if(!txToSellerAmountCheck)
+                                                return (txResult, "Amount to seller does not match.");
+
+                                            if (!txToRoyaltyAmountCheck)
+                                                return (txResult, "Amount to royalty owner does not match.");
+
+                                            if (txToSeller.FromAddress != scStateTreiRec.NextOwner)
+                                                return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+                                            if (txToRoyaltyPayee.FromAddress != scStateTreiRec.NextOwner)
+                                                return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+
+                                            if(txToSeller.ToAddress != scStateTreiRec.OwnerAddress)
+                                                return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {txToSeller.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
+                                            if (txToRoyaltyPayee.ToAddress != stRoyaltyPayTo)
+                                                return (txResult, $"Funds are being sent to the wrong Royalty Address. You are sending here: {txToRoyaltyPayee.ToAddress}, but should be sending here {stRoyaltyPayTo}");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var sellerTx = transactions.FirstOrDefault();
+                                        if(sellerTx == null) 
+                                            return (txResult, "Seller TX cannot be missing.");
+
+                                        var sellerPayAmountCheck = scStateTreiRec.PurchaseAmount - sellerTx.Amount > 1.0M ? false : true;
+
+                                        if(!sellerPayAmountCheck)
+                                            return (txResult, "Amount in transaction does not match the state amount.");
+
+                                        if (sellerTx.FromAddress != scStateTreiRec.NextOwner)
+                                            return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+
+                                        if (sellerTx.ToAddress != scStateTreiRec.OwnerAddress)
+                                            return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {sellerTx.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
+                                    }
+
+                                }
+                                    
+
+                            }
                         }
                     }
                     catch(Exception ex)

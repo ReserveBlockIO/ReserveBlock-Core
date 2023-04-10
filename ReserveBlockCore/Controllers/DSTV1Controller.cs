@@ -1699,7 +1699,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetDecShopData")]
         public async Task<string> GetDecShopData()
         {
-            if(Globals.DecShopData != null)
+            if (Globals.DecShopData != null)
             {
                 return JsonConvert.SerializeObject(new { Success = true, Message = "Data Found.", Globals.DecShopData });
             }
@@ -1707,6 +1707,38 @@ namespace ReserveBlockCore.Controllers
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = "Data not found." });
             }
+        }
+
+        /// <summary>
+        /// Complete NFT purchase
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CompleteNFTPurchase")]
+        public async Task<string> CompleteNFTPurchase(string scUID)
+        {
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if(scStateTrei == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract was not found." });
+
+            var nextOwner = scStateTrei.NextOwner;
+            var purchaseAmount = scStateTrei.PurchaseAmount;
+
+            if(nextOwner == null || purchaseAmount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart contract data missing or purchase already completed. Next Owner: {nextOwner} | Purchase Amount {purchaseAmount}" });
+
+            var localAccount = AccountData.GetSingleAccount(nextOwner);
+
+            if(localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"A local account with next owner address was not found. Next Owner: {nextOwner}" });
+
+            if(localAccount.Balance <= purchaseAmount.Value)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Not enough funds to purchase NFT. Purchase Amount {purchaseAmount} | Current Balance: {localAccount.Balance}." });
+
+            var result = await SmartContractService.CompleteSaleSmartContractTX(scUID, nextOwner, purchaseAmount.Value);
+
+            return JsonConvert.SerializeObject(new { Success = result.Item1 == null ? false : true, Message = result.Item2 });
         }
 
         /// <summary>

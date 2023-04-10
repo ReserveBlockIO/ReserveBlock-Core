@@ -8,6 +8,7 @@ using ReserveBlockCore.Utilities;
 using System;
 using System.Globalization;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Security.Principal;
 using System.Text;
@@ -922,6 +923,229 @@ namespace ReserveBlockCore.Services
 
             return null;
         }
+        #endregion
+
+        #region Complete Sale Smart Contract
+
+        public static async Task<(Transaction?, string)> CompleteSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor)
+        {
+            Transaction? scTx = null;
+            bool isRoyalty = false;
+            decimal royaltyAmount = 0.0M;
+            string royaltyPayTo = "";
+            List<Transaction> scTxList = new List<Transaction>(); 
+
+            var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (smartContractStateTrei == null) 
+                return (null, $"Could not find State record for smart contract: {scUID}");
+
+            if(smartContractStateTrei.NextOwner == null) 
+                return (null, "There was no next owner identified on the state trei level.");
+
+            var account = AccountData.GetSingleAccount(smartContractStateTrei.NextOwner);
+            if (account == null) 
+                return (null, $"Next owner is {smartContractStateTrei.NextOwner}, but this account was not found within your wallet.");//Owner address not found.
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+
+            var privateKey = account.GetPrivKey;
+
+            try
+            {
+                var scMain = SmartContractMain.GenerateSmartContractInMemory(smartContractStateTrei.ContractData);
+                if (scMain.Features != null)
+                {
+                    var royalty = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                    if (royalty != null)
+                    {
+                        //calc royalty
+                        var royaltyDetails = (RoyaltyFeature)royalty.FeatureFeatures;
+                        isRoyalty = true;
+                        royaltyAmount = royaltyDetails.RoyaltyAmount;
+                        royaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
+
+                        var royaltyRBX = amountSoldFor * royaltyAmount;
+                        var saleRBXLessRoyalty = amountSoldFor - royaltyRBX;
+
+                        var payRoyaltyOff = amountSoldFor - (saleRBXLessRoyalty + royaltyRBX) > 1.0M ? false : true;
+                        if(payRoyaltyOff)
+                            return (null, "The Royalty VS amount being paid is not settling. Please verify all things are correct.");
+
+                        Transaction scSaleTx = new Transaction
+                        {
+                            Timestamp = TimeUtil.GetTime(),
+                            FromAddress = account.Address,
+                            ToAddress = toAddress,
+                            Amount = saleRBXLessRoyalty,
+                            Fee = 0,
+                            Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                            TransactionType = TransactionType.NFT_SALE,
+                            Data = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID, Royalty = true, RoyaltyAmount = royaltyRBX, RoyaltyPaidTo = royaltyPayTo, TXNum = "1/2" })
+                        };
+
+                        scSaleTx.Fee = FeeCalcService.CalculateTXFee(scSaleTx);
+
+                        scSaleTx.Build();
+
+                        if ((scSaleTx.Amount + scSaleTx.Fee) > senderBalance)
+                            return (null, "Amount exceeds balance.");//balance insufficient
+
+                        if (privateKey == null)
+                            return (null, "Private key was null.");
+
+                        var txHashRoyaltyPay = scSaleTx.Hash;
+                        var signatureRoyaltyPay = SignatureService.CreateSignature(txHashRoyaltyPay, privateKey, account.PublicKey);
+                        if (signatureRoyaltyPay == "ERROR")
+                            return (null, "Failed to create signature."); //TX sig failed
+
+                        scSaleTx.Signature = signatureRoyaltyPay;
+
+                        if (scSaleTx.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(scSaleTx);
+                            scSaleTx.TransactionRating = rating;
+                        }
+
+                        scTxList.Add(scSaleTx);
+
+                        Transaction scRoyaltyTx = new Transaction
+                        {
+                            Timestamp = TimeUtil.GetTime(),
+                            FromAddress = account.Address,
+                            ToAddress = royaltyPayTo,
+                            Amount = royaltyRBX,
+                            Fee = 0,
+                            Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                            TransactionType = TransactionType.NFT_SALE,
+                            Data = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID, Royalty = true, TXNum = "2/2" })
+                        };
+
+                        scRoyaltyTx.Fee = FeeCalcService.CalculateTXFee(scRoyaltyTx);
+
+                        scRoyaltyTx.Build();
+
+                        if ((scRoyaltyTx.Amount + scRoyaltyTx.Fee) > senderBalance)
+                            return (null, "Amount exceeds balance.");//balance insufficient
+
+                        if (privateKey == null)
+                            return (null, "Private key was null.");
+
+                        var txHashRoyalty = scRoyaltyTx.Hash;
+                        var signatureRoyalty = SignatureService.CreateSignature(txHashRoyalty, privateKey, account.PublicKey);
+                        if (signatureRoyalty == "ERROR")
+                            return (null, "Failed to create signature."); //TX sig failed
+
+                        scRoyaltyTx.Signature = signatureRoyalty;
+
+                        if (scRoyaltyTx.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(scRoyaltyTx);
+                            scRoyaltyTx.TransactionRating = rating;
+                        }
+
+                        scTxList.Add(scRoyaltyTx);
+                    }
+                    else
+                    {
+                        Transaction scSaleTx = new Transaction
+                        {
+                            Timestamp = TimeUtil.GetTime(),
+                            FromAddress = account.Address,
+                            ToAddress = toAddress,
+                            Amount = amountSoldFor,
+                            Fee = 0,
+                            Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                            TransactionType = TransactionType.NFT_SALE,
+                            Data = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID })
+                        };
+
+                        scSaleTx.Fee = FeeCalcService.CalculateTXFee(scSaleTx);
+
+                        scSaleTx.Build();
+
+                        if ((scSaleTx.Amount + scSaleTx.Fee) > senderBalance)
+                            return (null, "Amount exceeds balance.");//balance insufficient
+
+                        if (privateKey == null)
+                            return (null, "Private key was null.");
+
+                        var txHashNoRoyalty = scSaleTx.Hash;
+                        var signatureNoRoyalty = SignatureService.CreateSignature(txHashNoRoyalty, privateKey, account.PublicKey);
+                        if (signatureNoRoyalty == "ERROR")
+                            return (null, "Failed to create signature."); //TX sig failed
+
+                        scSaleTx.Signature = signatureNoRoyalty;
+
+                        if (scSaleTx.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(scSaleTx);
+                            scSaleTx.TransactionRating = rating;
+                        }
+
+                        scTxList.Add(scSaleTx);
+                    }
+                }
+            }
+            catch(Exception ex)
+            { 
+                return (null, $"Unknown error decompiling SC. Error: {ex.ToString()}");
+            }
+            
+            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID, Royalty = isRoyalty, RoyaltyAmount = royaltyAmount, RoyaltyPayTo = royaltyPayTo, Transactions = scTxList });
+
+            scTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.NFT_SALE,
+                Data = txData
+            };
+
+            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            if ((scTx.Amount + scTx.Fee + scTxList.Select(x => x.Amount + x.Fee).Sum()) > senderBalance)  // not sure about this... double check.
+                return (null, "Amount exceeds balance.");//balance insufficient
+
+            if (privateKey == null) 
+                return (null, "Private key was null.");
+
+            var txHash = scTx.Hash;
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR") 
+                return (null, "Failed to create signature."); //TX sig failed
+
+            scTx.Signature = signature;
+
+            try
+            {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                if (!result.Item1) 
+                    return (null, $"Transaction failed to verify. Reason: {result.Item2}");
+
+                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                //await WalletService.SendTransaction(scTx, account);
+
+                return (scTx, "TX Sent to Mempool");
+            }
+            catch { }
+
+            return (null, "Fail");
+        }
+
         #endregion
     }
 }

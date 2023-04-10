@@ -212,7 +212,7 @@ namespace ReserveBlockCore.Data
                                             StartSaleSmartContract(tx);
                                             break;
                                         case "Sale_Complete()":
-                                            //TransferAdnr(tx);
+                                            CompleteSaleSmartContract(tx);
                                             break;
                                         default:
                                             break;
@@ -1082,6 +1082,61 @@ namespace ReserveBlockCore.Data
                 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
+
+        }
+
+        private static void CompleteSaleSmartContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var royalty = jobj["Royalty"]?.ToObject<bool?>();
+            var royaltyAmount = jobj["RoyaltyAmount"]?.ToObject<decimal?>();
+            var royaltyPayTo = jobj["RoyaltyPayTo"]?.ToObject<string?>();
+            var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
+            //var locator = jobj["Locators"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.NextOwner = null;
+                scStateTreiRec.IsLocked = false;
+                scStateTreiRec.PurchaseAmount = null;
+                scStateTreiRec.PurchaseKey = null;
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
+
+            var from = GetSpecificAccountStateTrei(tx.FromAddress);
+            if(royalty != null)
+            {
+                if(royalty.Value)
+                {
+                    if(transactions != null)
+                    {
+                        var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
+                        var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+                    }
+                }
+                else
+                {
+                    if (transactions != null)
+                    {
+                        var txToSeller = transactions.FirstOrDefault();
+                    }
+                }
+            }
+            else
+            {
+                if (transactions != null)
+                {
+                    var txToSeller = transactions.FirstOrDefault();
+                }
+            }
+
 
         }
 
