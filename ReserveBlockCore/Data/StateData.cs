@@ -212,7 +212,7 @@ namespace ReserveBlockCore.Data
                                             StartSaleSmartContract(tx);
                                             break;
                                         case "Sale_Complete()":
-                                            CompleteSaleSmartContract(tx);
+                                            CompleteSaleSmartContract(tx, block);
                                             break;
                                         default:
                                             break;
@@ -1085,9 +1085,11 @@ namespace ReserveBlockCore.Data
 
         }
 
-        private static void CompleteSaleSmartContract(Transaction tx)
+        private static void CompleteSaleSmartContract(Transaction tx, Block block)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
+            var accStTrei = GetAccountStateTrei();
+
             var txData = tx.Data;
 
             var jobj = JObject.Parse(txData);
@@ -1119,6 +1121,67 @@ namespace ReserveBlockCore.Data
                     {
                         var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
                         var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+                        if(txToSeller != null)
+                        {
+                            var toSeller = GetSpecificAccountStateTrei(txToSeller.ToAddress);
+                            if (toSeller == null)
+                            {
+                                var acctStateTreiTo = new AccountStateTrei
+                                {
+                                    Key = txToSeller.ToAddress,
+                                    Nonce = 0,
+                                    Balance = 0.0M,
+                                    StateRoot = block.StateRoot
+                                };
+
+                                acctStateTreiTo.Balance += txToSeller.Amount;
+                                accStTrei.InsertSafe(acctStateTreiTo);
+                            }
+                            else
+                            {
+                                toSeller.StateRoot = block.StateRoot;
+                                toSeller.Balance += txToSeller.Amount;
+                                
+                                accStTrei.UpdateSafe(toSeller);
+                            }
+
+                            from.Nonce += 1;
+                            from.StateRoot = block.StateRoot;
+                            from.Balance -= (txToSeller.Amount + txToSeller.Fee);
+
+                            accStTrei.UpdateSafe(from);
+                        }
+                        if (txToRoyaltyPayee != null)
+                        {
+                            var toRoyalty = GetSpecificAccountStateTrei(txToRoyaltyPayee.ToAddress);
+                            if (toRoyalty == null)
+                            {
+                                var acctStateTreiTo = new AccountStateTrei
+                                {
+                                    Key = txToRoyaltyPayee.ToAddress,
+                                    Nonce = 0,
+                                    Balance = 0.0M,
+                                    StateRoot = block.StateRoot
+                                };
+
+                                acctStateTreiTo.Balance += txToRoyaltyPayee.Amount;
+                                accStTrei.InsertSafe(acctStateTreiTo);
+                            }
+                            else
+                            {
+                                toRoyalty.StateRoot = block.StateRoot;
+                                toRoyalty.Balance += txToRoyaltyPayee.Amount;
+
+                                accStTrei.UpdateSafe(toRoyalty);
+                            }
+
+                            from.Nonce += 1;
+                            from.StateRoot = block.StateRoot;
+                            from.Balance -= (txToRoyaltyPayee.Amount + txToRoyaltyPayee.Fee);
+
+                            accStTrei.UpdateSafe(from);
+                        }
+
                     }
                 }
                 else
@@ -1126,6 +1189,37 @@ namespace ReserveBlockCore.Data
                     if (transactions != null)
                     {
                         var txToSeller = transactions.FirstOrDefault();
+                        if (txToSeller != null)
+                        {
+                            var toSeller = GetSpecificAccountStateTrei(txToSeller.ToAddress);
+                            if (toSeller == null)
+                            {
+                                var acctStateTreiTo = new AccountStateTrei
+                                {
+                                    Key = txToSeller.ToAddress,
+                                    Nonce = 0,
+                                    Balance = 0.0M,
+                                    StateRoot = block.StateRoot
+                                };
+
+                                acctStateTreiTo.Balance += txToSeller.Amount;
+                                accStTrei.InsertSafe(acctStateTreiTo);
+                            }
+                            else
+                            {
+                                toSeller.StateRoot = block.StateRoot;
+                                toSeller.Balance += txToSeller.Amount;
+
+                                accStTrei.UpdateSafe(toSeller);
+                            }
+
+                            from.Nonce += 1;
+                            from.StateRoot = block.StateRoot;
+                            from.Balance -= (txToSeller.Amount + txToSeller.Fee);
+
+                            accStTrei.UpdateSafe(from);
+                        }
+
                     }
                 }
             }
@@ -1134,6 +1228,36 @@ namespace ReserveBlockCore.Data
                 if (transactions != null)
                 {
                     var txToSeller = transactions.FirstOrDefault();
+                    if (txToSeller != null)
+                    {
+                        var toSeller = GetSpecificAccountStateTrei(txToSeller.ToAddress);
+                        if (toSeller == null)
+                        {
+                            var acctStateTreiTo = new AccountStateTrei
+                            {
+                                Key = txToSeller.ToAddress,
+                                Nonce = 0,
+                                Balance = 0.0M,
+                                StateRoot = block.StateRoot
+                            };
+
+                            acctStateTreiTo.Balance += txToSeller.Amount;
+                            accStTrei.InsertSafe(acctStateTreiTo);
+                        }
+                        else
+                        {
+                            toSeller.StateRoot = block.StateRoot;
+                            toSeller.Balance += txToSeller.Amount;
+
+                            accStTrei.UpdateSafe(toSeller);
+                        }
+
+                        from.Nonce += 1;
+                        from.StateRoot = block.StateRoot;
+                        from.Balance -= (txToSeller.Amount + txToSeller.Fee);
+
+                        accStTrei.UpdateSafe(from);
+                    }
                 }
             }
 

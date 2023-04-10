@@ -458,6 +458,28 @@ namespace ReserveBlockCore.Services
                                                 return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {txToSeller.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
                                             if (txToRoyaltyPayee.ToAddress != stRoyaltyPayTo)
                                                 return (txResult, $"Funds are being sent to the wrong Royalty Address. You are sending here: {txToRoyaltyPayee.ToAddress}, but should be sending here {stRoyaltyPayTo}");
+
+                                            if (!string.IsNullOrEmpty(txToSeller.Signature))
+                                            {
+                                                var isTxValid = SignatureService.VerifySignature(txToSeller.FromAddress, txToSeller.Hash, txToSeller.Signature);
+                                                if (!isTxValid)
+                                                    return (txResult, "Signature Failed to verify for tx to seller.");
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "Signature to from seller tx cannot be null.");
+                                            }
+
+                                            if (!string.IsNullOrEmpty(txToRoyaltyPayee.Signature))
+                                            {
+                                                var isTxValid = SignatureService.VerifySignature(txToRoyaltyPayee.FromAddress, txToRoyaltyPayee.Hash, txToRoyaltyPayee.Signature);
+                                                if (!isTxValid)
+                                                    return (txResult, "Signature Failed to verify for tx to royalty payee.");
+                                            }
+                                            else
+                                            {
+                                                return (txResult, "Signature cannot be null for royalty tx.");
+                                            }
                                         }
                                     }
                                     else
@@ -476,6 +498,17 @@ namespace ReserveBlockCore.Services
 
                                         if (sellerTx.ToAddress != scStateTreiRec.OwnerAddress)
                                             return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {sellerTx.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
+
+                                        if (!string.IsNullOrEmpty(sellerTx.Signature))
+                                        {
+                                            var isTxValid = SignatureService.VerifySignature(sellerTx.FromAddress, sellerTx.Hash, sellerTx.Signature);
+                                            if (!isTxValid)
+                                                return (txResult, "Signature Failed to verify for tx to seller.");
+                                        }
+                                        else
+                                        {
+                                            return (txResult, "Signature to from seller tx cannot be null.");
+                                        }
                                     }
 
                                 }
