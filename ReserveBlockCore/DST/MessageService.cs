@@ -62,7 +62,7 @@ namespace ReserveBlockCore.DST
                     ProcessBid(message, endPoint, udpClient);
                     break;
                 case MessageType.Purchase:
-                    //AssetRequestReceived(message, endPoint, udpClient);
+                    ProcessBuyNow(message, endPoint, udpClient);
                     break;
 
                 default:

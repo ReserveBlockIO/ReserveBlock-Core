@@ -6,6 +6,7 @@ using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
+using System;
 using System.Security.Principal;
 
 namespace ReserveBlockCore.Services
@@ -330,6 +331,60 @@ namespace ReserveBlockCore.Services
                         }
                     }
                     catch { return (txResult, $"TX Could not be parsed. TX Hash: {txRequest.Hash}"); }
+                    
+                }
+
+                if(txRequest.TransactionType == TransactionType.NFT_SALE)
+                {
+                    var txData = txRequest.Data;
+                    try
+                    {
+                        var jobj = JObject.Parse(txData);
+                        var function = (string?)jobj["Function"];
+                        if (function == null)
+                            return (txResult, "SC Function cannot be null.");
+
+                        if (function == "Sale_Start()")
+                        {
+                            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            var toAddress = jobj["NextOwner"]?.ToObject<string?>();
+                            var keySign = jobj["KeySign"]?.ToObject<string?>();
+                            var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
+
+                            if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null)
+                            {
+                                var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                if (scStateTreiRec != null)
+                                {
+                                    if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                        return (txResult, "You are attempting to transfer a Smart contract you don't own.");
+
+                                    if (scStateTreiRec.IsLocked)
+                                        return (txResult, "You are attempting to transfer a Smart contract that is locked.");
+
+                                    if (scStateTreiRec.NextOwner != null)
+                                        return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
+                                }
+                                else
+                                {
+                                    return (txResult, "SC does not exist.");
+                                }
+                            }
+                            else
+                            {
+                                return (txResult, "TX Data has a null value in ContractUID, NextOwner, and/or KeySign");
+                            }
+                        }
+
+                        if (function == "Sale_Complete()")
+                        {
+                            //Complete sale logic.
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        return (txResult, $"Unknown TX Error: {ex.ToString()}");
+                    }
                     
                 }
 
@@ -672,7 +727,7 @@ namespace ReserveBlockCore.Services
                                     if (txRequest.Amount < Globals.DecShopRequiredRBX)
                                         return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to create a Auction House.");
 
-                                    string dsUID = jobj["UniqueId"].ToObject<string>();
+                                    string dsUID = jobj["UniqueId"].ToObject<string?>();
                                     if (!string.IsNullOrEmpty(dsUID))
                                     {
                                         //ensure they own the shop

@@ -11,6 +11,7 @@ using System.Net;
 using System.Numerics;
 using System.Security.Principal;
 using System.Text;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Services
 {
@@ -853,6 +854,74 @@ namespace ReserveBlockCore.Services
             return null;
         }
 
+        #endregion
+
+        #region Start Sale Smart Contract
+        public static async Task<Transaction?> StartSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor)
+        {
+            Transaction? scTx = null;
+
+            var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (smartContractStateTrei == null) return null;
+            
+            var account = AccountData.GetSingleAccount(smartContractStateTrei.OwnerAddress);
+            if (account == null) return null;//Owner address not found.
+
+            var keyToSign = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+
+            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Start()", ContractUID = scUID, NextOwner = toAddress, SoldFor = amountSoldFor, KeySign = keyToSign });
+
+            scTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.NFT_SALE,
+                Data = txData
+            };
+
+            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+            if ((scTx.Amount + scTx.Fee) > senderBalance) return null;//balance insufficient
+
+            var privateKey = account.GetPrivKey;
+
+            if(privateKey == null) return null;
+
+            var txHash = scTx.Hash;
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR") return null; //TX sig failed
+
+            scTx.Signature = signature;
+
+            try
+            {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                if (!result.Item1) return null;
+
+                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                await WalletService.SendTransaction(scTx, account);
+
+                return scTx;
+            }
+            catch { }
+
+            return null;
+        }
         #endregion
     }
 }

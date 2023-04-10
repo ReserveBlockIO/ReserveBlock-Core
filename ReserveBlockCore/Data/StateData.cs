@@ -197,13 +197,37 @@ namespace ReserveBlockCore.Data
 
                         }
 
+                        if(tx.TransactionType == TransactionType.NFT_SALE)
+                        {
+                            var txData = tx.Data;
+                            if (!string.IsNullOrWhiteSpace(txData))
+                            {
+                                var jobj = JObject.Parse(txData);
+                                var function = (string?)jobj["Function"];
+                                if (!string.IsNullOrWhiteSpace(function))
+                                {
+                                    switch (function)
+                                    {
+                                        case "Sale_Start()":
+                                            StartSaleSmartContract(tx);
+                                            break;
+                                        case "Sale_Complete()":
+                                            //TransferAdnr(tx);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+
                         if (tx.TransactionType == TransactionType.ADNR)
                         {
                             var txData = tx.Data;
                             if (!string.IsNullOrWhiteSpace(txData))
                             {
                                 var jobj = JObject.Parse(txData);
-                                var function = (string)jobj["Function"];
+                                var function = (string?)jobj["Function"];
                                 if (!string.IsNullOrWhiteSpace(function))
                                 {
                                     switch (function)
@@ -826,7 +850,7 @@ namespace ReserveBlockCore.Data
             try
             {
                 var jobj = JObject.Parse(tx.Data);
-                var name = (string)jobj["Name"];
+                var name = (string?)jobj["Name"];
                 Adnr adnr = new Adnr();
 
                 adnr.Address = tx.FromAddress;
@@ -1029,6 +1053,36 @@ namespace ReserveBlockCore.Data
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
+        }
+
+        private static void StartSaleSmartContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var toAddress = jobj["NextOwner"]?.ToObject<string?>();
+            var keySign = jobj["KeySign"]?.ToObject<string?>();
+            var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
+            //var locator = jobj["Locators"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.NextOwner = toAddress;
+                scStateTreiRec.IsLocked = true;
+                scStateTreiRec.Nonce += 1;
+                scStateTreiRec.PurchaseAmount = amountSoldFor;
+                scStateTreiRec.PurchaseKey = keySign;
+                //scStateTreiRec.ContractData = data;
+                //scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
+                
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
+
         }
 
     }

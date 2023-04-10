@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
@@ -237,6 +238,12 @@ namespace ReserveBlockCore.Engines
                                             continue;
                                         }
 
+                                        if(auction.IsAuctionOver)
+                                        {
+                                            DequeueBid(buyNow, BidStatus.Rejected);
+                                            continue;
+                                        }
+
                                         Bid aBid = new Bid
                                         {
                                             Id = Guid.NewGuid(),
@@ -263,12 +270,14 @@ namespace ReserveBlockCore.Engines
 
                                         listing.IsAuctionEnded = true;
                                         listing.WinningAddress = auction.CurrentWinningAddress;
-                                        listing.FinalPrice = auction.CurrentBidPrice;
-
+                                        listing.FinalPrice = listing.BuyNowPrice.Value;
 
                                         Bid.SaveBid(aBid, true);
                                         Auction.SaveAuction(auction);
                                         DequeueBid(buyNow, BidStatus.Accepted);
+
+                                        _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
+
                                         continue;
                                     }
                                 }
