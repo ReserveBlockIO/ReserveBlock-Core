@@ -391,7 +391,8 @@ namespace ReserveBlockCore.Data
                                 tx.TransactionType != TransactionType.VOTE_TOPIC &&
                                 tx.TransactionType != TransactionType.VOTE && 
                                 tx.TransactionType != TransactionType.DSTR &&
-                                tx.TransactionType != TransactionType.RESERVE)
+                                tx.TransactionType != TransactionType.RESERVE &&
+                                tx.TransactionType != TransactionType.NFT_SALE)
                             {
                                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                                 if (scDataArray != null)
@@ -633,7 +634,8 @@ namespace ReserveBlockCore.Data
                 tx.TransactionType != TransactionType.VOTE_TOPIC && 
                 tx.TransactionType != TransactionType.VOTE && 
                 tx.TransactionType != TransactionType.DSTR &&
-                tx.TransactionType != TransactionType.RESERVE)
+                tx.TransactionType != TransactionType.RESERVE &&
+                tx.TransactionType != TransactionType.NFT_SALE)
             {
                 if(tx.Data != null)
                 {
