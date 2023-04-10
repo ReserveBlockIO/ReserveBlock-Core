@@ -1714,7 +1714,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <returns></returns>
-        [HttpGet("CompleteNFTPurchase")]
+        [HttpGet("CompleteNFTPurchase/{scUID}")]
         public async Task<string> CompleteNFTPurchase(string scUID)
         {
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
