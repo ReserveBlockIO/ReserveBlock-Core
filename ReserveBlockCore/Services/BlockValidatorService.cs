@@ -281,7 +281,8 @@ namespace ReserveBlockCore.Services
                                         blkTransaction.TransactionType != TransactionType.VOTE &&
                                         blkTransaction.TransactionType != TransactionType.VOTE_TOPIC &&
                                         blkTransaction.TransactionType != TransactionType.DSTR &&
-                                        blkTransaction.TransactionType != TransactionType.RESERVE)
+                                        blkTransaction.TransactionType != TransactionType.RESERVE && 
+                                        blkTransaction.TransactionType != TransactionType.NFT_SALE)
                                     {
                                         if (blkTransaction.Data != null)
                                         {
