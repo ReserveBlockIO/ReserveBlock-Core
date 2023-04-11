@@ -73,10 +73,16 @@ namespace ReserveBlockCore.Services
                             tx.TransactionStatus = TransactionStatus.Success;
                             txdata.InsertSafe(tx);
                         }
+
+                        if(function == "Sale_Complete()")
+                        {
+                            var txdata = TransactionData.GetAll();
+                            tx.TransactionStatus = TransactionStatus.Success;
+                            txdata.InsertSafe(tx);
+                        }
                     }
                     
                 }
-
             }
             if (Globals.IsChainSynced == true)//this is here so someone doesn't get spammed with API calls when starting wallet or syncing
             {

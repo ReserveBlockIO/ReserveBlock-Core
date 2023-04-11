@@ -1109,6 +1109,8 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.IsLocked = false;
                 scStateTreiRec.PurchaseAmount = null;
                 scStateTreiRec.PurchaseKey = null;
+                scStateTreiRec.OwnerAddress = tx.FromAddress;
+
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
 
