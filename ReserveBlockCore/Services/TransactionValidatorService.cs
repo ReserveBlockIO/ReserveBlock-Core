@@ -22,6 +22,10 @@ namespace ReserveBlockCore.Services
             if (badTx)
                 return (true, "");
 
+            var badNFTTx = Globals.BadNFTTxList.Exists(x => x == txRequest.Hash);
+            if (badNFTTx) 
+                return (true, "");
+
             var accStTrei = StateData.GetAccountStateTrei();
             var from = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
