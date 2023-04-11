@@ -132,31 +132,63 @@ namespace ReserveBlockCore.Engines
                             var auction = Auction.GetListingAuction(listing.Id);
                             if(auction != null)
                             {
-                                auction.IsAuctionOver = true;
-
-                                listing.IsAuctionEnded = true;
-                                listing.WinningAddress = auction.CurrentWinningAddress;
-                                listing.FinalPrice = auction.CurrentBidPrice;
-
-                                if(listing.ReservePrice != null)
+                                var bids = Bid.GetListingBids(listing.Id);
+                                if(bids?.Count() > 0)
                                 {
-                                    if(listing.ReservePrice.Value <= auction.CurrentBidPrice)
+                                    auction.IsAuctionOver = true;
+
+                                    listing.IsAuctionEnded = true;
+                                    listing.WinningAddress = auction.CurrentWinningAddress;
+                                    listing.FinalPrice = auction.MaxBidPrice;
+
+                                    if (listing.ReservePrice != null)
+                                    {
+                                        if (listing.ReservePrice.Value <= auction.CurrentBidPrice)
+                                            auction.IsReserveMet = true;
+                                    }
+                                    else
+                                    {
                                         auction.IsReserveMet = true;
+                                    }
+
+                                    if (auctionDb != null)
+                                    {
+                                        Auction.SaveAuction(auction);
+                                        _ = Listing.SaveListing(listing);
+
+                                        if (auction.IsReserveMet)
+                                        {
+                                            //Create TX to start NFT send.
+                                            if (listing.RequireBalanceCheck)
+                                            {
+                                                var addressBalance = AccountStateTrei.GetAccountBalance(listing.WinningAddress);
+                                                if (addressBalance >= listing.FinalPrice)
+                                                {
+                                                    _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
+                                                    continue;
+                                                }
+                                                else
+                                                {
+                                                    //high bidder does not have balance.
+                                                    //perhaps fall back to previous bid?
+                                                }
+                                            }
+                                            
+                                        }
+                                    }
                                 }
                                 else
                                 {
-                                    auction.IsReserveMet = true;
-                                }
+                                    //auction did not get any bids
+                                    auction.IsAuctionOver = true;
+                                    auction.IsReserveMet = false;
 
-                                if(auctionDb != null)
-                                {
-                                    listingDb.UpdateSafe(listing);
-                                    auctionDb.UpdateSafe(auction);
+                                    listing.IsAuctionEnded = true;
+                                    listing.WinningAddress = null;
+                                    listing.FinalPrice = auction.CurrentBidPrice;
 
-                                    if(auction.IsReserveMet)
-                                    {
-                                        //Create TX to start NFT send.
-                                    }
+                                    Auction.SaveAuction(auction);
+                                    _ = Listing.SaveListing(listing);
                                 }
                             }
                         }
@@ -177,8 +209,8 @@ namespace ReserveBlockCore.Engines
                                 auction.IsAuctionOver = true;
 
                                 listing.IsAuctionEnded = true;
-                                listing.WinningAddress = "CANCELLED";
-                                listing.FinalPrice = auction.CurrentBidPrice;
+                                listing.WinningAddress = null;
+                                listing.FinalPrice = auction.MaxBidPrice;
 
                                 if (auctionDb != null)
                                 {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
@@ -1273,6 +1274,32 @@ namespace ReserveBlockCore.Controllers
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
             }
+        }
+
+        /// <summary>
+        /// Get bids for specific listing from shop - NOT LOCAL
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <param name="sendReceive"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopListingBids/{listingId}")]
+        public async Task<bool> GetShopListingBids(int listingId)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.Bids},{listingId}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessageFromClient(message, true);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
@@ -7,6 +8,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using static ReserveBlockCore.Models.Mother;
 using static System.Collections.Specialized.BitVector32;
 
 namespace ReserveBlockCore.DST
@@ -265,6 +267,47 @@ namespace ReserveBlockCore.DST
                                 }
                             }
 
+
+                            msg.HasReceivedResponse = true;
+                            msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                            Globals.ClientMessageDict[message.ResponseMessageId] = msg;
+                        }
+                        else if (option == "Bids")
+                        {
+                            var bids = JsonConvert.DeserializeObject<List<Bid>>(message.Data);
+                            if (bids != null)
+                            {
+                                if (Globals.DecShopData == null)
+                                {
+                                    Globals.DecShopData = new DecShopData
+                                    {
+                                        Bids = bids,
+                                    };
+                                }
+                                else
+                                {
+                                    foreach (var bid in bids)
+                                    {
+                                        if (Globals.DecShopData.Bids != null)
+                                        {
+                                            var bidExist = Globals.DecShopData.Bids.Exists(x => x.ListingId == bid.ListingId);
+                                            if (!bidExist)
+                                                Globals.DecShopData.Bids.Add(bid);
+
+                                            if (bidExist)
+                                            {
+                                                int index = Globals.DecShopData.Bids.FindIndex(x => x.Id == bid.Id);
+                                                if (index != -1)
+                                                    Globals.DecShopData.Bids[index] = bid;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Globals.DecShopData.Bids = new List<Bid> { bid };
+                                        }
+                                    }
+                                }
+                            }
 
                             msg.HasReceivedResponse = true;
                             msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
@@ -543,6 +586,56 @@ namespace ReserveBlockCore.DST
 
                             auctions.Clear();
                             auctions = new List<Auction>();
+
+                            return respMessage;
+                        }
+                        else
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
+                    }
+                    else if (option == "Bids")
+                    {
+                        var listingIdParse = int.TryParse(requestOptArray[1], out var listingId);
+                        if (!listingIdParse)
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
+                        var bids = Bid.GetListingBids(listingId);
+                        if (bids?.Count() > 0)
+                        {
+                            var bidList = bids.ToList();
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = JsonConvert.SerializeObject(bidList)
+                            };
+
+                            bidList.Clear();
+                            bidList = new List<Bid>();
 
                             return respMessage;
                         }
