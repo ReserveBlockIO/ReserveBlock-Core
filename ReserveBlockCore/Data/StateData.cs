@@ -1067,6 +1067,7 @@ namespace ReserveBlockCore.Data
             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
             var keySign = jobj["KeySign"]?.ToObject<string?>();
             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
+            var locator = jobj["Locators"]?.ToObject<string?>();
             //var locator = jobj["Locators"]?.ToObject<string?>();
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -1077,9 +1078,10 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.PurchaseAmount = amountSoldFor;
                 scStateTreiRec.PurchaseKey = keySign;
+                scStateTreiRec.Locators = locator != null ? locator : scStateTreiRec.Locators;
                 //scStateTreiRec.ContractData = data;
                 //scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
-                
+
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
 

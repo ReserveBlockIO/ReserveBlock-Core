@@ -399,7 +399,7 @@ namespace ReserveBlockCore.Services
 
                                             if (!isCompletedSuccessfully)
                                             {
-                                                NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                                NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                             }
                                             else
                                             {
