@@ -1087,6 +1087,45 @@ namespace ReserveBlockCore.Services
                         scTxList.Add(scSaleTx);
                     }
                 }
+                else
+                {
+                    Transaction scSaleTx = new Transaction
+                    {
+                        Timestamp = TimeUtil.GetTime(),
+                        FromAddress = account.Address,
+                        ToAddress = toAddress,
+                        Amount = amountSoldFor,
+                        Fee = 0,
+                        Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                        TransactionType = TransactionType.NFT_SALE,
+                        Data = JsonConvert.SerializeObject(new { Function = "Sale_Complete()", ContractUID = scUID })
+                    };
+
+                    scSaleTx.Fee = FeeCalcService.CalculateTXFee(scSaleTx);
+
+                    scSaleTx.Build();
+
+                    if ((scSaleTx.Amount + scSaleTx.Fee) > senderBalance)
+                        return (null, "Amount exceeds balance.");//balance insufficient
+
+                    if (privateKey == null)
+                        return (null, "Private key was null.");
+
+                    var txHashNoRoyalty = scSaleTx.Hash;
+                    var signatureNoRoyalty = SignatureService.CreateSignature(txHashNoRoyalty, privateKey, account.PublicKey);
+                    if (signatureNoRoyalty == "ERROR")
+                        return (null, "Failed to create signature."); //TX sig failed
+
+                    scSaleTx.Signature = signatureNoRoyalty;
+
+                    if (scSaleTx.TransactionRating == null)
+                    {
+                        var rating = await TransactionRatingService.GetTransactionRating(scSaleTx);
+                        scSaleTx.TransactionRating = rating;
+                    }
+
+                    scTxList.Add(scSaleTx);
+                }
             }
             catch(Exception ex)
             { 
