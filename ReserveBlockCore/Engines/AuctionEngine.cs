@@ -361,6 +361,13 @@ namespace ReserveBlockCore.Engines
                                                 DequeueBid(bid, BidStatus.Rejected);
                                                 continue;
                                             }
+
+                                            if(listing.IsBuyNowOnly)
+                                            {
+                                                DequeueBid(bid, BidStatus.Rejected);
+                                                continue;
+                                            }
+
                                             Bid aBid = new Bid
                                             {
                                                 Id = Guid.NewGuid(),
