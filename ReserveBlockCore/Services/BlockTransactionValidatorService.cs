@@ -409,7 +409,7 @@ namespace ReserveBlockCore.Services
                                                 if (localFromAddress == null)
                                                 {
                                                     NFTLogUtility.Log($"NFT XFER LOG -3", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
-                                                    if (locators != "NA")
+                                                    if (!string.IsNullOrEmpty(locators))
                                                     {
                                                         NFTLogUtility.Log($"NFT XFER LOG -4", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                         var assetList = await MD5Utility.GetAssetList(md5List);
