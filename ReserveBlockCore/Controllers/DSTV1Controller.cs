@@ -1736,7 +1736,7 @@ namespace ReserveBlockCore.Controllers
             if(localAccount.Balance <= purchaseAmount.Value)
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Not enough funds to purchase NFT. Purchase Amount {purchaseAmount} | Current Balance: {localAccount.Balance}." });
 
-            var result = await SmartContractService.CompleteSaleSmartContractTX(scUID, nextOwner, purchaseAmount.Value);
+            var result = await SmartContractService.CompleteSaleSmartContractTX(scUID, scStateTrei.OwnerAddress, purchaseAmount.Value);
 
             return JsonConvert.SerializeObject(new { Success = result.Item1 == null ? false : true, Message = result.Item2 });
         }
