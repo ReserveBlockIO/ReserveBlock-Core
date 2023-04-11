@@ -79,6 +79,8 @@ namespace ReserveBlockCore.Services
                             var txdata = TransactionData.GetAll();
                             tx.TransactionStatus = TransactionStatus.Success;
                             txdata.InsertSafe(tx);
+
+                            AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, false);
                         }
                     }
                     

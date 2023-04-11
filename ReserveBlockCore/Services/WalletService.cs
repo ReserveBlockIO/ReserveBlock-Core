@@ -274,7 +274,7 @@ namespace ReserveBlockCore.Services
 
         }
 
-        public static async Task SendTransaction(Transaction txRequest, Account account)
+        public static async Task SendTransaction(Transaction txRequest, Account account, decimal? specialAmount = null)
         {
             if (account.IsValidating == true && (account.Balance - (txRequest.Fee + txRequest.Amount) < ValidatorService.ValidatorRequiredAmount()))
             {
@@ -282,21 +282,21 @@ namespace ReserveBlockCore.Services
                 ValidatorService.StopValidating(validator);
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
-                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, specialAmount == null ? (txRequest.Fee + txRequest.Amount) : specialAmount.Value);
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
             else if (account.IsValidating)
             {
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
-                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, specialAmount == null ? (txRequest.Fee + txRequest.Amount) : specialAmount.Value);
                 await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
             }
             else
             {
                 TransactionData.AddToPool(txRequest);
                 TransactionData.AddTxToWallet(txRequest, true);
-                AccountData.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                AccountData.UpdateLocalBalance(txRequest.FromAddress, specialAmount == null ? (txRequest.Fee + txRequest.Amount) : specialAmount.Value);
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }
         }

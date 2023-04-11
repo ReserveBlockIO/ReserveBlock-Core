@@ -1139,7 +1139,9 @@ namespace ReserveBlockCore.Services
 
                 scTx.TransactionStatus = TransactionStatus.Pending;
 
-                await WalletService.SendTransaction(scTx, account);
+                var specialAmount = scTx.Amount + scTx.Fee + scTxList.Select(x => x.Amount + x.Fee).Sum();
+
+                await WalletService.SendTransaction(scTx, account, specialAmount);
 
                 return (scTx, "TX Sent to Mempool");
             }
