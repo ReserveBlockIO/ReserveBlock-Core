@@ -7,6 +7,7 @@ using ReserveBlockCore.Utilities;
 using System.Security.Principal;
 using System;
 using System.Xml.Linq;
+using Spectre.Console;
 
 namespace ReserveBlockCore.Services
 {
@@ -346,6 +347,81 @@ namespace ReserveBlockCore.Services
                         }
                     }
 
+                }
+
+                if(tx.TransactionType == TransactionType.NFT_SALE)
+                {
+                    var jobj = JObject.Parse(tx.Data);
+                    if (jobj != null)
+                    {
+                        var function = jobj["Function"]?.ToObject<string?>();
+
+                        if (!string.IsNullOrWhiteSpace(function))
+                        {
+                            if (function == "Sale_Complete()")
+                            {
+                                var localFromAddress = AccountData.GetSingleAccount(tx.FromAddress);
+
+                                var scUID = (string?)jobj["ContractUID"];
+                                if(scUID != null)
+                                {
+                                    var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                                    if(scStateTrei != null)
+                                    {
+                                        var locators = scStateTrei.Locators;
+                                        var md5List = scStateTrei.MD5List;
+
+                                        NFTLogUtility.Log($"NFT Transfer: {scUID}", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+
+                                        var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+                                        if (sc != null)
+                                        {
+                                            NFTLogUtility.Log($"NFT Transfer - SC has been generated.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+                                            if (localFromAddress == null)
+                                            {
+                                                if (locators != "NA")
+                                                {
+                                                    var assetList = await MD5Utility.GetAssetList(md5List);
+                                                    var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
+                                                    NFTLogUtility.Log($"NFT Transfer - Asset Queue items created.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+                                                }
+                                                else
+                                                {
+                                                    NFTLogUtility.Log($"NFT Transfer - No Locators in TX.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scStateTrei.ContractData); });
+                                            bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+
+                                            if (!isCompletedSuccessfully)
+                                            {
+                                                NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockValidatorService.ValidateBlock()");
+                                            }
+                                            else
+                                            {
+                                                //download files here.
+                                                if (localFromAddress == null)
+                                                {
+                                                    if (locators != "NA")
+                                                    {
+                                                        var assetList = await MD5Utility.GetAssetList(md5List);
+                                                        var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
+                                                    }
+
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                }
+                            }
+                        }
+
+                    }
                 }
 
                 if (tx.TransactionType == TransactionType.ADNR)
