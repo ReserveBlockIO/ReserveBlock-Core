@@ -1078,7 +1078,7 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.PurchaseAmount = amountSoldFor;
                 scStateTreiRec.PurchaseKey = keySign;
-                scStateTreiRec.Locators = locator != null ? locator : scStateTreiRec.Locators;
+                scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
                 //scStateTreiRec.ContractData = data;
                 //scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
 

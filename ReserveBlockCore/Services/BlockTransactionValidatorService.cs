@@ -394,6 +394,7 @@ namespace ReserveBlockCore.Services
                                         }
                                         else
                                         {
+                                            NFTLogUtility.Log($"NFT XFER LOG -1", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                             var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scStateTrei.ContractData); });
                                             bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
 
@@ -403,11 +404,14 @@ namespace ReserveBlockCore.Services
                                             }
                                             else
                                             {
+                                                NFTLogUtility.Log($"NFT XFER LOG -2", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                 //download files here.
                                                 if (localFromAddress == null)
                                                 {
+                                                    NFTLogUtility.Log($"NFT XFER LOG -3", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                     if (locators != "NA")
                                                     {
+                                                        NFTLogUtility.Log($"NFT XFER LOG -4", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                         var assetList = await MD5Utility.GetAssetList(md5List);
                                                         var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
                                                     }
