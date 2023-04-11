@@ -863,8 +863,13 @@ namespace ReserveBlockCore.Services
             Transaction? scTx = null;
 
             var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
-            if (smartContractStateTrei == null) return null;
             
+            if (smartContractStateTrei == null) return null;
+
+            var scMain = SmartContractMain.GenerateSmartContractInMemory(smartContractStateTrei.ContractData);
+
+            if(scMain == null) return null;
+
             var account = AccountData.GetSingleAccount(smartContractStateTrei.OwnerAddress);
             if (account == null) return null;//Owner address not found.
 
@@ -913,11 +918,98 @@ namespace ReserveBlockCore.Services
 
                 if (!result.Item1) return null;
 
-                scTx.TransactionStatus = TransactionStatus.Pending;
+                if (!Globals.Beacons.Any())
+                {
+                    NFTLogUtility.Log("Error - You do not have any beacons stored.", "SmartContratService.StartSaleSmartContractTX()");
+                    return null;
+                }
+                else
+                {
+                    if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
+                    {
+                        var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                        if (!beaconConnectionResult)
+                        {
+                            NFTLogUtility.Log("Error - You failed to connect to any beacons.", "SmartContratService.StartSaleSmartContractTX()");
+                            return null;
+                        }
+                    }
+                    var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+                    if (connectedBeacon == null)
+                    {
+                        NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "SmartContratService.StartSaleSmartContractTX()");
+                        return null;
+                    }
+                    toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
+                    var localAddress = AccountData.GetSingleAccount(toAddress);
 
-                await WalletService.SendTransaction(scTx, account);
+                    var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(scMain);
+                    var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
 
-                return scTx;
+                    NFTLogUtility.Log($"Sending the following assets for upload: {md5List}", "SmartContratService.StartSaleSmartContractTX()");
+
+                    bool burResult = false;
+                    if (localAddress == null)
+                    {
+                        burResult = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, scMain.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                        NFTLogUtility.Log($"NFT Beacon Upload Request Completed. SCUID: {scMain.SmartContractUID}", "SmartContratService.StartSaleSmartContractTX()");
+                    }
+                    else
+                    {
+                        burResult = true;
+                    }
+
+                    if (burResult == true)
+                    {
+                        var aqResult = AssetQueue.CreateAssetQueueItem(scMain.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
+                            AssetQueue.TransferType.Upload);
+                        NFTLogUtility.Log($"NFT Asset Queue Items Completed. SCUID: {scMain.SmartContractUID}", "SmartContratService.StartSaleSmartContractTX()");
+
+                        if (aqResult)
+                        {
+                            //_ = Task.Run(() => SendBeaconAssetsFromSale(scMain, toAddress, connectedBeacon, md5List));
+                            bool beaconSendFinalResult = true;
+                            if (assets.Count() > 0)
+                            {
+                                NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                                foreach (var asset in assets)
+                                {
+                                    var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset, connectedBeacon.Beacons.BeaconLocator);
+                                    if (!sendResult)
+                                        beaconSendFinalResult = false;
+                                }
+
+                                connectedBeacon.Uploading = false;
+                                Globals.Beacon[connectedBeacon.IPAddress] = connectedBeacon;
+
+                                NFTLogUtility.Log($"NFT Asset Transfer Done for: {scMain.SmartContractUID}.", "SCV1Controller.TransferNFT()");
+                            }
+
+                            if (beaconSendFinalResult)
+                            {
+                                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                                await WalletService.SendTransaction(scTx, account);
+
+                                return scTx;
+                            }
+                            else
+                            {
+                                NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {connectedBeacon.Beacons.BeaconLocator} | MD5List: {md5List}", "SmartContractService.StartSaleSmartContractTX()");
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {connectedBeacon.Beacons.BeaconLocator} | MD5List: {md5List}", "SmartContratService.StartSaleSmartContractTX()");
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        NFTLogUtility.Log($"Beacon upload failed. Result was : {burResult}", "SmartContratService.StartSaleSmartContractTX()");
+                    }
+                }
             }
             catch { }
 
@@ -1190,5 +1282,43 @@ namespace ReserveBlockCore.Services
         }
 
         #endregion
+
+        public static async Task SendBeaconAssetsFromSale(SmartContractMain scMain, string toAddress, BeaconNodeInfo beaconNodeInfo, string md5List = "NA", string backupURL = "", bool isReserveAccount = false, PrivateKey? reserveAccountKey = null, int unlockTime = 0)
+        {
+            try
+            {
+                var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(scMain);
+
+                bool beaconSendFinalResult = true;
+                if (assets.Count() > 0)
+                {
+                    NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                    foreach (var asset in assets)
+                    {
+                        var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset, beaconNodeInfo.Beacons.BeaconLocator);
+                        if (!sendResult)
+                            beaconSendFinalResult = false;
+                    }
+
+                    beaconNodeInfo.Uploading = false;
+                    Globals.Beacon[beaconNodeInfo.IPAddress] = beaconNodeInfo;
+
+                    NFTLogUtility.Log($"NFT Asset Transfer Done for: {scMain.SmartContractUID}.", "SCV1Controller.TransferNFT()");
+                }
+
+                if (beaconSendFinalResult)
+                {
+
+                }
+                else
+                {
+                    NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {beaconNodeInfo.Beacons.BeaconLocator} | MD5List: {md5List} | backupURL: {backupURL}", "SmartContractService.SendBeaconAssetsFromSale()");
+                }
+            }
+            catch(Exception ex)
+            {
+
+            }
+        }
     }
 }
