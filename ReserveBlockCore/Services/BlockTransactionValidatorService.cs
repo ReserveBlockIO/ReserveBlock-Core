@@ -406,7 +406,7 @@ namespace ReserveBlockCore.Services
                                             {
                                                 NFTLogUtility.Log($"NFT XFER LOG -2", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                 //download files here.
-                                                if (localFromAddress == null)
+                                                if (localFromAddress != null)
                                                 {
                                                     NFTLogUtility.Log($"NFT XFER LOG -3", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
                                                     if (!string.IsNullOrEmpty(locators))
