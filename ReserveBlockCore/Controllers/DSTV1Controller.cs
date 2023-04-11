@@ -1280,7 +1280,6 @@ namespace ReserveBlockCore.Controllers
         /// Get bids for specific listing from shop - NOT LOCAL
         /// </summary>
         /// <param name="listingId"></param>
-        /// <param name="sendReceive"></param>
         /// <returns></returns>
         [HttpGet("GetShopListingBids/{listingId}")]
         public async Task<bool> GetShopListingBids(int listingId)
