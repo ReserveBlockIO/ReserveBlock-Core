@@ -970,7 +970,7 @@ namespace ReserveBlockCore.Services
                         var saleRBXLessRoyalty = amountSoldFor - royaltyRBX;
 
                         var payRoyaltyOff = amountSoldFor - (saleRBXLessRoyalty + royaltyRBX) > 1.0M ? false : true;
-                        if(payRoyaltyOff)
+                        if(!payRoyaltyOff)
                             return (null, $"The Royalty VS amount being paid is not settling. Please verify all things are correct. Royalty % {royaltyAmount}.  Amount Sold For: {amountSoldFor}. Royalty Due: {royaltyRBX}. Sale less the royalty {saleRBXLessRoyalty}");
 
                         Transaction scSaleTx = new Transaction
