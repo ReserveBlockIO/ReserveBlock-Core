@@ -171,6 +171,7 @@ namespace ReserveBlockCore.Data
             DB_SmartContractStateTrei.Pragma("UTC_DATE", true);
             DB_TopicTrei.Pragma("UTC_DATE", true);
             DB_Vote.Pragma("UTC_DATE", true);
+            DB_DST.Pragma("UTC_DATE", true);
         }        
         public static void BeginTrans()
         {                    
