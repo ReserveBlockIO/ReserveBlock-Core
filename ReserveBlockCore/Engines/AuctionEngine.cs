@@ -124,17 +124,21 @@ namespace ReserveBlockCore.Engines
                 var listingsNeedingEnding = listings.Where(x => x.IsAuctionStarted == true && x.IsAuctionEnded == false && x.EndDate <= DateTime.UtcNow).ToList();
                 if(listingsNeedingEnding.Count > 0 )
                 {
+                    AuctionLogUtility.Log($"Auctions Ending Count: {listingsNeedingEnding.Count}.", "AuctionEngine.ProcessAuctions()-1");
                     var auctionDb = Auction.GetAuctionDb();
                     if (listingDb != null)
                     {
                         foreach(var listing in listingsNeedingEnding)
-                        {
+                        { 
+                            AuctionLogUtility.Log($"Processing Listing: {listing.Id}.", "AuctionEngine.ProcessAuctions()-2");
                             var auction = Auction.GetListingAuction(listing.Id);
                             if(auction != null)
                             {
+                                AuctionLogUtility.Log($"Processing Auction {auction.Id}.", "AuctionEngine.ProcessAuctions()-3");
                                 var bids = Bid.GetListingBids(listing.Id);
                                 if(bids?.Count() > 0)
                                 {
+                                    AuctionLogUtility.Log($"Auction Has Bids. Count: {bids?.Count()}.", "AuctionEngine.ProcessAuctions()-4");
                                     auction.IsAuctionOver = true;
 
                                     listing.IsAuctionEnded = true;
@@ -151,6 +155,8 @@ namespace ReserveBlockCore.Engines
                                         auction.IsReserveMet = true;
                                     }
 
+                                    AuctionLogUtility.Log($"Auction Reserve Met?: {auction.IsReserveMet}.", "AuctionEngine.ProcessAuctions()-5");
+
                                     if (auctionDb != null)
                                     {
                                         Auction.SaveAuction(auction);
@@ -158,20 +164,30 @@ namespace ReserveBlockCore.Engines
 
                                         if (auction.IsReserveMet)
                                         {
+                                            AuctionLogUtility.Log($"Auction Processing", "AuctionEngine.ProcessAuctions()-6");
                                             //Create TX to start NFT send.
                                             if (listing.RequireBalanceCheck)
                                             {
+                                                AuctionLogUtility.Log($"Balance Check Required", "AuctionEngine.ProcessAuctions()-7");
                                                 var addressBalance = AccountStateTrei.GetAccountBalance(listing.WinningAddress);
                                                 if (addressBalance >= listing.FinalPrice)
                                                 {
+                                                    AuctionLogUtility.Log($"Balance Check Passed. Sending TX", "AuctionEngine.ProcessAuctions()-8");
                                                     _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
                                                     continue;
                                                 }
                                                 else
                                                 {
+                                                    AuctionLogUtility.Log($"Balance Check Failed.", "AuctionEngine.ProcessAuctions()-9");
                                                     //high bidder does not have balance.
                                                     //perhaps fall back to previous bid?
                                                 }
+                                            }
+                                            else
+                                            {
+                                                AuctionLogUtility.Log($"No Balance Check Needed. Sending TX", "AuctionEngine.ProcessAuctions()-10");
+                                                _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
+                                                continue;
                                             }
                                             
                                         }
@@ -179,6 +195,7 @@ namespace ReserveBlockCore.Engines
                                 }
                                 else
                                 {
+                                    AuctionLogUtility.Log($"Auction had zero (0) bids.", "AuctionEngine.ProcessAuctions()-11");
                                     //auction did not get any bids
                                     auction.IsAuctionOver = true;
                                     auction.IsReserveMet = false;
