@@ -20,11 +20,12 @@ namespace ReserveBlockCore.Engines
         static SemaphoreSlim BidProcessingLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim AuctioneerLock = new SemaphoreSlim(1, 1);
         static bool BidProcessingOn = false;
+        static ConcurrentDictionary<int, int> ListingPostSaleDict = new ConcurrentDictionary<int, int>(); 
 
         public static async Task StartBidProcessing()
         {
             BidProcessingOn = true;
-            LogUtility.Log("Bid Processing Started", "AuctionEngine.StartBidProcessing()");
+            AuctionLogUtility.Log("Bid Processing Started", "AuctionEngine.StartBidProcessing()");
             while (BidProcessingOn)
             {
                 var delay = Task.Delay(300);
@@ -50,7 +51,7 @@ namespace ReserveBlockCore.Engines
         
         public static async Task StartAuctioneer()
         {
-            LogUtility.Log("StartAuctioneer Started", "AuctionEngine.StartAuctioneer()");
+            AuctionLogUtility.Log("StartAuctioneer Started", "AuctionEngine.StartAuctioneer()");
             while (true)
             {
                 var delay = Task.Delay(10000);
@@ -63,6 +64,7 @@ namespace ReserveBlockCore.Engines
                 try
                 {
                     ProcessAuctions();
+                    ProcessSales();
                 }
                 finally
                 {
@@ -88,7 +90,8 @@ namespace ReserveBlockCore.Engines
                 var notStartedListingAuctions = listings.Where(x => x.IsAuctionStarted == false && x.IsAuctionEnded == false && x.StartDate <= DateTime.UtcNow).ToList();
                 if(notStartedListingAuctions.Count() > 0)
                 {
-                    if(listingDb != null)
+                    AuctionLogUtility.Log($"New Auctions Found, ready to be started. Count: {notStartedListingAuctions.Count()}", "AuctionEngine.ProcessAuctions()");
+                    if (listingDb != null)
                     {
                         foreach (var listing in notStartedListingAuctions)
                         {
@@ -113,6 +116,7 @@ namespace ReserveBlockCore.Engines
                                     if (auctionDb != null)
                                     {
                                         auctionDb.InsertSafe(newAuction);
+                                        AuctionLogUtility.Log($"Auction Created for Listing: {newAuction.ListingId}", "AuctionEngine.ProcessAuctions()");
                                     }
                                 }
                             }
@@ -162,7 +166,7 @@ namespace ReserveBlockCore.Engines
                                         Auction.SaveAuction(auction);
                                         _ = Listing.SaveListing(listing);
 
-                                        if (auction.IsReserveMet)
+                                        if (auction.IsReserveMet && listing.WinningAddress != null)
                                         {
                                             AuctionLogUtility.Log($"Auction Processing", "AuctionEngine.ProcessAuctions()-6");
                                             //Create TX to start NFT send.
@@ -215,6 +219,7 @@ namespace ReserveBlockCore.Engines
                 var listingsThatAreCancelled = listings.Where(x => x.IsAuctionStarted == true && x.IsAuctionEnded == false && x.IsCancelled).ToList();
                 if(listingsThatAreCancelled.Count > 0 )
                 {
+                    AuctionLogUtility.Log($"Auction Listings that were cancelled: {listingsThatAreCancelled.Count}", "AuctionEngine.ProcessAuctions()");
                     var auctionDb = Auction.GetAuctionDb();
                     if (listingDb != null)
                     {
@@ -224,6 +229,7 @@ namespace ReserveBlockCore.Engines
                             if (auction != null)
                             {
                                 auction.IsAuctionOver = true;
+                                auction.IsReserveMet = false;
 
                                 listing.IsAuctionEnded = true;
                                 listing.WinningAddress = null;
@@ -233,6 +239,7 @@ namespace ReserveBlockCore.Engines
                                 {
                                     listingDb.UpdateSafe(listing);
                                     auctionDb.UpdateSafe(auction);
+                                    AuctionLogUtility.Log($"Auction Listing cancelled Id: {listing.Id}", "AuctionEngine.ProcessAuctions()");
                                 }
                             }
                         }
@@ -245,6 +252,7 @@ namespace ReserveBlockCore.Engines
             var buyNowQueueList = Globals.BuyNowQueue.ToList();
             if (buyNowQueueList.Count > 0)
             {
+                AuctionLogUtility.Log($"Buy Now Bids Detected. Count: {buyNowQueueList.Count}", "AuctionEngine.ProcessBuyNowQueue()");
                 var listings = Listing.GetAllStartedListings(); //get all listings and store into memory. 
                 var auctions = Auction.GetAllLiveAuctions(); //get all auctions and store into memory.
 
@@ -254,8 +262,10 @@ namespace ReserveBlockCore.Engines
                     {
                         try
                         {
-                            if(!buyNow.IsBuyNow)
+                            AuctionLogUtility.Log($"Processing BuyNow for Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
+                            if (!buyNow.IsBuyNow)
                             {
+                                AuctionLogUtility.Log($"Failed to process as it was not flagged as IsBuyNow = true. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
                                 DequeueBid(buyNow, BidStatus.Rejected);
                                 continue;
                             }
@@ -268,6 +278,7 @@ namespace ReserveBlockCore.Engines
                                     {
                                         if(listing.BuyNowPrice == null)
                                         {
+                                            AuctionLogUtility.Log($"Buy Now Rejected - Buy Now Price was Null. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
                                             DequeueBid(buyNow, BidStatus.Rejected);
                                             continue;
                                         }
@@ -276,6 +287,7 @@ namespace ReserveBlockCore.Engines
                                             var addressBalance = AccountStateTrei.GetAccountBalance(buyNow.BidAddress);
                                             if (addressBalance < listing.BuyNowPrice)
                                             {
+                                                AuctionLogUtility.Log($"Buy Now Rejected - Address balance too low. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
                                                 DequeueBid(buyNow, BidStatus.Rejected);
                                                 continue;
                                             }
@@ -283,12 +295,14 @@ namespace ReserveBlockCore.Engines
                                         }
                                         if (buyNow.BidAddress.StartsWith("xRBX"))
                                         {
+                                            AuctionLogUtility.Log($"Buy Now Rejected - Buy Now cannot be purchases from Reserve Account. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
                                             DequeueBid(buyNow, BidStatus.Rejected);
                                             continue;
                                         }
 
                                         if(auction.IsAuctionOver)
                                         {
+                                            AuctionLogUtility.Log($"Buy Now Rejected - Auction is already over. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
                                             DequeueBid(buyNow, BidStatus.Rejected);
                                             continue;
                                         }
@@ -326,6 +340,7 @@ namespace ReserveBlockCore.Engines
                                         _ = Listing.SaveListing(listing);
 
                                         DequeueBid(buyNow, BidStatus.Accepted);
+                                        AuctionLogUtility.Log($"Buy Now Accepted - Sending TX now. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
 
                                         _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
 
@@ -346,15 +361,15 @@ namespace ReserveBlockCore.Engines
             {
                 var listings = Listing.GetAllStartedListings(); //get all listings and store into memory. 
                 var auctions = Auction.GetAllLiveAuctions(); //get all auctions and store into memory.
-                                                             
-                if(auctions?.Count() > 0)
+                AuctionLogUtility.Log($"Bids detected. Count: {bidQueueList.Count}", "AuctionEngine.ProcessBidQueue()");
+                if (auctions?.Count() > 0)
                 {
                     foreach (var bid in bidQueueList)
                     {
                         try
                         {
                             var auction = auctions.Where(x => x.ListingId == bid.ListingId).FirstOrDefault();
-
+                            AuctionLogUtility.Log($"Processing bid for Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()");
                             if (auction != null)
                             {
                                 if (auction?.CurrentWinningAddress != bid.BidAddress)
@@ -369,18 +384,21 @@ namespace ReserveBlockCore.Engines
                                                 var addressBalance = AccountStateTrei.GetAccountBalance(bid.BidAddress);
                                                 if(addressBalance <  bid.BidAmount)
                                                 {
+                                                    AuctionLogUtility.Log($"Bid Rejected - Balance was too low. Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()");
                                                     DequeueBid(bid, BidStatus.Rejected); 
                                                     continue;
                                                 }
                                             }
                                             if (bid.BidAddress.StartsWith("xRBX"))
                                             {
+                                                AuctionLogUtility.Log($"Bid Rejected - Cannot bid with Reserve Account. Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()");
                                                 DequeueBid(bid, BidStatus.Rejected);
                                                 continue;
                                             }
 
                                             if(listing.IsBuyNowOnly)
                                             {
+                                                AuctionLogUtility.Log($"Bid Rejected - This auction is a buy now only. Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()");
                                                 DequeueBid(bid, BidStatus.Rejected);
                                                 continue;
                                             }
@@ -411,20 +429,20 @@ namespace ReserveBlockCore.Engines
                                             Auction.SaveAuction(auction);
                                             _ = Listing.SaveListing(listing);
 
-                                            //create tx to send
+                                            AuctionLogUtility.Log($"Bid Accepted. Listing: {bid.ListingId} | Bid {aBid.Id}", "AuctionEngine.ProcessBidQueue()");
 
                                             DequeueBid(bid, BidStatus.Accepted);
                                             continue;
                                         }
-                                        else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                                        else { DequeueBid(bid, BidStatus.Rejected); AuctionLogUtility.Log($"Bid Rejected - Listing was null: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()"); continue; }
                                     }
-                                    else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                                    else { DequeueBid(bid, BidStatus.Rejected); AuctionLogUtility.Log($"Bid Rejected - Increment amount was wrong. Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()"); continue; }
                                 }
-                                else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                                else { DequeueBid(bid, BidStatus.Rejected); AuctionLogUtility.Log($"Bid Rejected - Already winning auction. Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()"); continue; }
                             }
-                            else { DequeueBid(bid, BidStatus.Rejected); continue; }
+                            else { DequeueBid(bid, BidStatus.Rejected); AuctionLogUtility.Log($"Bid Rejected - Auction was null. Listing: {bid.ListingId}", "AuctionEngine.ProcessBidQueue()"); continue; }
                         }
-                        catch(Exception ex) { ErrorLogUtility.LogError($"Bid Error (01): {ex.ToString}", "AuctionEngine.ProcessBidQueue()"); }
+                        catch(Exception ex) { AuctionLogUtility.Log($"Bid Error (01): {ex.ToString}", "AuctionEngine.ProcessBidQueue()"); }
                         
                     }
                 }
@@ -435,6 +453,42 @@ namespace ReserveBlockCore.Engines
                         DequeueBid(bid, BidStatus.Rejected);
                     }
                 }
+            }
+        }
+
+        public static void ProcessSales()
+        {
+            try
+            {
+                var listings = Listing.GetAllListings();
+                if (listings?.Count() > 0)
+                {
+                    var listingDb = Listing.GetListingDb();
+                    var listingsNeedingSaleTX = listings.Where(x => x.IsAuctionStarted && x.IsAuctionEnded && !x.IsSaleTXSent).ToList();
+                    if (listingsNeedingSaleTX.Count > 0)
+                    {
+                        foreach(var listing in  listingsNeedingSaleTX)
+                        {
+                            //this is to give it time for first send to succeed and avoid double send.
+                            if(ListingPostSaleDict.TryGetValue(listing.Id, out int value))
+                            {
+                                if(value > 1)
+                                    _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
+
+                                value += 1;
+                                ListingPostSaleDict[listing.Id] = value;
+                            }
+                            else
+                            {
+                                ListingPostSaleDict.TryAdd(listing.Id, 0);
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+
             }
         }
 

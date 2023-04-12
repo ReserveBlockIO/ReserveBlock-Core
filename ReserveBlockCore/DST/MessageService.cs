@@ -64,7 +64,6 @@ namespace ReserveBlockCore.DST
                 case MessageType.Purchase:
                     ProcessBuyNow(message, endPoint, udpClient);
                     break;
-
                 default:
                     break;
                     
@@ -196,7 +195,7 @@ namespace ReserveBlockCore.DST
                         if (!client.IsConnected)
                         {
                             client.IsConnected = true;
-                            _ = KeepAliveService.KeepAlive(10, endPoint, udpClient);
+                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient);
                         }
                             
                         Globals.ConnectedClients[endPoint.ToString()] = client;
@@ -218,7 +217,7 @@ namespace ReserveBlockCore.DST
                         if (!shop.IsConnected)
                         {
                             shop.IsConnected = true;
-                            _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, true);
+                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, true);
                         }
 
                         Globals.ConnectedClients[endPoint.ToString()] = shop;
@@ -239,7 +238,7 @@ namespace ReserveBlockCore.DST
                     if (!Globals.STUNServer.IsConnected)
                     {
                         Globals.STUNServer.IsConnected = true;
-                        _ = KeepAliveService.KeepAlive(10, endPoint, udpClient, false, true);
+                        _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, false, true);
                     }
                 }
             }

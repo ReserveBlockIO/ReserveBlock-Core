@@ -2,6 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
@@ -858,7 +859,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region Start Sale Smart Contract
-        public static async Task<Transaction?> StartSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor)
+        public static async Task<Transaction?> StartSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor, Listing? listing = null)
         {
             Transaction? scTx = null;
 
@@ -992,6 +993,13 @@ namespace ReserveBlockCore.Services
                                 scTx.TransactionStatus = TransactionStatus.Pending;
 
                                 await WalletService.SendTransaction(scTx, account);
+
+                                if(listing != null)
+                                {
+                                    listing.IsSaleTXSent = true;
+                                    listing.SaleTXHash = scTx.Hash;
+                                    _ = Listing.SaveListing(listing);
+                                }
 
                                 return scTx;
                             }

@@ -6,6 +6,7 @@ namespace ReserveBlockCore.Utilities
 {
     public class AuctionLogUtility
     {
+        public static bool AuctionLoggerEnabled = true;
         public static async void Log(string message, string location, bool firstEntry = false)
         {
             try
@@ -42,12 +43,11 @@ namespace ReserveBlockCore.Utilities
                 }
                 if (firstEntry == true)
                 {
-                    await File.AppendAllTextAsync(path + "auctionlog.txt", Environment.NewLine + " ");
-
-
+                    if(AuctionLoggerEnabled)
+                        await File.AppendAllTextAsync(path + "auctionlog.txt", Environment.NewLine + " ");
                 }
-
-                await File.AppendAllTextAsync(path + "auctionlog.txt", Environment.NewLine + text);
+                if (AuctionLoggerEnabled)
+                    await File.AppendAllTextAsync(path + "auctionlog.txt", Environment.NewLine + text);
             }
             catch { }
         }
