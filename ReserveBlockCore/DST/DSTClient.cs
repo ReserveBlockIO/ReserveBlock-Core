@@ -524,7 +524,7 @@ namespace ReserveBlockCore.DST
         }
 
 
-        public static async Task<bool> DisconnectFromShop()
+        public static async Task<bool> DisconnectFromShop(bool keepShopData = false)
         {
             try
             {
@@ -536,7 +536,8 @@ namespace ReserveBlockCore.DST
 
                 shopToken.Cancel();
 
-                Globals.DecShopData = null;
+                if(!keepShopData)
+                    Globals.DecShopData = null;
                 udpClient.Close();
                 udpClient.Dispose();
 

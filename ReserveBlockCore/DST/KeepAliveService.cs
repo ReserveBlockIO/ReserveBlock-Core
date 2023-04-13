@@ -97,7 +97,7 @@ namespace ReserveBlockCore.DST
                                 Globals.ConnectedClients[peerEndPoint.ToString()] = client;
 
                                 var currentTime = TimeUtil.GetTime();
-                                if (currentTime - client.LastReceiveMessage > 15)
+                                if (currentTime - client.LastReceiveMessage > 28)
                                 {
                                     //stop = true;
                                     //Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
@@ -105,7 +105,7 @@ namespace ReserveBlockCore.DST
                                     var shopServer = client.IPAddress; //this also has port
                                     var shopEndPoint = IPEndPoint.Parse(shopServer);
                                     Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
-                                    _ = DSTClient.DisconnectFromShop();
+                                    _ = DSTClient.DisconnectFromShop(true);
                                     await Task.Delay(1000);
                                     _ = DSTClient.ConnectToShop(shopEndPoint, shopServer);
                                     await Task.Delay(1000);
