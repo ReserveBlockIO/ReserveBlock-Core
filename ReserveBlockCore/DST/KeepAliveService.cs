@@ -66,7 +66,7 @@ namespace ReserveBlockCore.DST
                             if (currentTime - Globals.STUNServer.LastReceiveMessage > 15)
                             {
                                 stop = true;
-                                _ = DSTClient.DisconnectFromSTUNServer(); //disconnect from STUN Server
+                                _ = DSTClient.DisconnectFromSTUNServer(true); //disconnect from STUN Server
                                 await Task.Delay(1000);
                                 Globals.STUNServer = null;
                                 _ = DSTClient.Run(); //attempt to reconnect to a STUN server.

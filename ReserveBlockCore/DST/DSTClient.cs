@@ -549,7 +549,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task<bool> DisconnectFromSTUNServer()
+        public static async Task<bool> DisconnectFromSTUNServer(bool keepShopData = false, bool keepSTUNData = false)
         {
             try
             {
@@ -557,8 +557,12 @@ namespace ReserveBlockCore.DST
                 {
                     stunToken.Cancel();
 
-                    Globals.DecShopData = null;
-                    Globals.STUNServer = null;
+                    if (!keepShopData)
+                        Globals.DecShopData = null;
+
+                    if(!keepSTUNData)
+                        Globals.STUNServer = null;
+
                     udpShop.Close();
                     udpShop.Dispose();
 
