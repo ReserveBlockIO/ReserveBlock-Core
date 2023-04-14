@@ -572,6 +572,34 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        public static async Task PassMessage(UdpReceiveResult dataGram)
+        {
+            RemoteEndPoint = dataGram.RemoteEndPoint;
+            var payload = Encoding.UTF8.GetString(dataGram.Buffer);
+
+            if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
+            {
+                if (Globals.ShowSTUNMessagesInConsole)
+                    Console.WriteLine(payload);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(payload))
+                {
+                    if (Globals.ShowSTUNMessagesInConsole)
+                        Console.WriteLine(payload + "\n");
+
+                    var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                    if (message != null)
+                    {
+                        _ = MessageService.ProcessMessage(message, RemoteEndPoint, udpShop);
+                    }
+                }
+            }
+            
+        }
+
         static async Task Listen(CancellationToken token)
         {
             var counter = somecount;
