@@ -316,9 +316,11 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("GetNFTAssets/{scUID}")]
         public async Task<bool> GetNFTAssets(string scUID)
         {
+            NFTLogUtility.Log($"Asset Download Started for: {scUID}", "DSTV1Controller.GetNFTAssets()");
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
             {
+                NFTLogUtility.Log($"Connected to shop, downloading attempting for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                 Message message = new Message
                 {
                     Address = ConnectingAddress,
@@ -329,6 +331,7 @@ namespace ReserveBlockCore.Controllers
 
                 if(!Globals.AssetDownloadLock)
                 {
+                    NFTLogUtility.Log($"Asset download unlocked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                     await DSTClient.DisconnectFromAsset();
                     var connected = await DSTClient.ConnectToShopForAssets();
                     if (connected)
@@ -337,6 +340,10 @@ namespace ReserveBlockCore.Controllers
                         return false;
 
                     return true;
+                }
+                else
+                {
+                    NFTLogUtility.Log($"Asset download locked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                 }
             }
 
