@@ -12,6 +12,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Net.Sockets;
 using System.Reflection.Metadata;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ReserveBlockCore.DST
@@ -27,6 +28,9 @@ namespace ReserveBlockCore.DST
                     break;
                 case MessageType.PunchClient:
                     PunchClient(message, endPoint, udpClient);
+                    break;
+                case MessageType.AssetPunchClient:
+                    AssetPunchClient(message, endPoint, udpClient);
                     break;
                 case MessageType.KeepAlive:
                     KeepAlive(message, endPoint, udpClient);
@@ -53,10 +57,7 @@ namespace ReserveBlockCore.DST
                     ChatMessageReceived(message);
                     break;
                 case MessageType.AssetReq:
-                    AssetRequest(message, endPoint, udpClient);
-                    break;
-                case MessageType.AssetReqRec:
-                    AssetRequestReceived(message, endPoint, udpClient);
+                    Task.Run(async () => { await AssetRequest(message, endPoint, udpClient); });
                     break;
                 case MessageType.Bid:
                     ProcessBid(message, endPoint, udpClient);
@@ -125,7 +126,14 @@ namespace ReserveBlockCore.DST
             var remoteEndPoint = IPEndPoint.Parse(message.Data);
             udpClient.Send(punchMessage, remoteEndPoint);
         }
-
+        public static void AssetPunchClient(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            var punchMessage = Encoding.UTF8.GetBytes("ack");
+            var ipArray = endPoint.ToString().Split(':');
+            var ip = ipArray[0];
+            var remoteEndPoint = IPEndPoint.Parse($"{ip}:{message.Data}");
+            udpClient.Send(punchMessage, remoteEndPoint);
+        }
         public static void STUNConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
             if (message.Data == "helo")
@@ -344,12 +352,28 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        public static async Task AssetDataRequest(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.AssetReq)
+            {
+                try
+                {
+                    
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+        }
+
         public static async Task AssetRequest(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
             if (message.Type == MessageType.AssetReq)
             {
                 try
                 {
+                    //Asset Request - Requesting a specific asset.
                     if (message.ComType == MessageComType.Request)
                     {
                         message.ReceivedTimestamp = TimeUtil.GetTime();
@@ -364,6 +388,9 @@ namespace ReserveBlockCore.DST
                         if (assetList.Count == 0)
                             return;
 
+                        var sendCount = Encoding.UTF8.GetBytes($"[count],{assetList.Count()}");
+                        await udpClient.SendAsync(sendCount, sendCount.Length, endPoint);
+
                         foreach (var asset in assetList)
                         {
                             try
@@ -374,19 +401,40 @@ namespace ReserveBlockCore.DST
                                     var assetBytes = NFTAssetFileUtility.GetNFTAssetByteArray(location);
                                     if (assetBytes != null)
                                     {
-                                        var assetBase = assetBytes.ToBase64();
-                                        Message responseMessage = new Message
-                                        {
-                                            Type = MessageType.AssetReq,
-                                            ComType = MessageComType.Response,
-                                            Data = $"{asset},{assetBase},{scUID}",
-                                            ResponseMessage = true,
-                                            ResponseMessageId = message.Id,
-                                        };
+                                        var packets = NFTAssetFileUtility.SplitIntoPackets(assetBytes);
+                                        int expectedAckNumber = 0;
 
-                                        var messageJson = GenerateMessage(responseMessage, false);
-                                        var sendMessage = Encoding.UTF8.GetBytes(messageJson);
-                                        udpClient.Send(sendMessage, endPoint);
+                                        var sendMessage = Encoding.UTF8.GetBytes($"[name],{asset}");
+                                        await udpClient.SendAsync(sendMessage, sendMessage.Length, endPoint);
+
+                                        foreach (var packet in packets)
+                                        {
+                                            bool ackReceived = false;
+                                            while (!ackReceived)
+                                            {
+                                                //send packet
+                                                await udpClient.SendAsync(packet, packet.Length, endPoint);
+
+                                                try
+                                                {
+                                                    // Wait for an acknowledgement packet from the client
+                                                    var ackResponse = await udpClient.ReceiveAsync();
+                                                    var ackNumber = BitConverter.ToInt32(ackResponse.Buffer, 0);
+
+                                                    // Check if this is the expected acknowledgement packet
+                                                    if (ackNumber == expectedAckNumber)
+                                                    {
+                                                        // If so, move on to the next packet
+                                                        ackReceived = true;
+                                                        expectedAckNumber++;
+                                                    }
+                                                }
+                                                catch (SocketException)
+                                                {
+                                                    // If there was a socket exception, assume the acknowledgement was lost and retry
+                                                }
+                                            }
+                                        }
                                     }
 
                                 }
@@ -397,45 +445,6 @@ namespace ReserveBlockCore.DST
 
                 }
                 catch { }
-                
-                if (message.ComType == MessageComType.Response)
-                {
-                    Globals.ClientMessageDict.TryGetValue(message.ResponseMessageId, out var msg);
-                    if (msg != null)
-                    {
-                        msg.HasReceivedResponse = true;
-                        msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
-                        Globals.ClientMessageDict[message.ResponseMessageId] = msg;
-
-                        try
-                        {
-                            var dataSplit = message.Data.Split(',');
-                            var assetName = dataSplit[0];
-                            var assetBase = dataSplit[1];
-                            var scUID = dataSplit[2];
-
-                            var assetBytes = assetBase.FromBase64ToByteArray();
-                            var assetPath = NFTAssetFileUtility.CreateNFTAssetPath(assetName, scUID, true);
-
-                            if(!File.Exists(assetPath))
-                            {
-                                File.WriteAllBytes(assetPath, assetBytes);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-
-                        }
-                    }
-                }
-            }
-        }
-
-        public static void AssetRequestReceived(Message message, IPEndPoint endPoint, UdpClient udpClient)
-        {
-            if (message.Type == MessageType.AssetReqRec)
-            {
-                
             }
         }
 

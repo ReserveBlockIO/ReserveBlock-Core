@@ -31,6 +31,7 @@ namespace ReserveBlockCore.Models.DST
         public string? SaleTXHash { get; set; }
         public bool IsSaleComplete { get; set; }
         public int CollectionId { get; set; }
+        public bool SaleHasFailed { get; set; }
 
         #region Get Listing Db
         public static LiteDB.ILiteCollection<Listing>? GetListingDb()

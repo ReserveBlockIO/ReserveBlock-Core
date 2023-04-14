@@ -18,11 +18,16 @@ namespace ReserveBlockCore.DST
         static int Port = Globals.DSTClientPort;
         static int LastUsedPort = 0;
         static UdpClient udpClient;
+        static UdpClient udpAssets;
         static UdpClient udpShop;
         static IPEndPoint RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        static IPEndPoint RemoteEndPointAssets = new IPEndPoint(IPAddress.Any, 0);
         static IPEndPoint? ConnectedShopServer = null;
+        static IPEndPoint? ConnectedShopServerAssets = null;
         public static Thread? ListenerThread = null;
+        public static Thread? ListenerThreadAssets = null;
         public static CancellationTokenSource shopToken = new CancellationTokenSource();
+        public static CancellationTokenSource shopAssetToken = new CancellationTokenSource();
         public static CancellationTokenSource stunToken = new CancellationTokenSource();
         public static int somecount = 0;
 
@@ -362,6 +367,96 @@ namespace ReserveBlockCore.DST
             return connected;
         }
 
+        public static async Task<bool> ConnectToShopForAssets()
+        {
+            ListenerThreadAssets?.Interrupt();
+            bool connected = false;
+            var successful = Encoding.UTF8.GetBytes("echo");
+            RemoteEndPointAssets = new IPEndPoint(IPAddress.Any, 0);
+            ConnectedShopServerAssets = null;
+            var remoteEndPoint = RemoteEndPointAssets;
+            var IsConnected = false;
+            IPEndPoint? ConnectedStunServer = null;
+            var FailedToConnect = false;
+
+            var portNumber = PortUtility.FindOpenUDPPort(LastUsedPort); //dynamic port / Port == LastUsedPort ? LastUsedPort + 1 : Port;
+            udpAssets = new UdpClient(portNumber);
+            LastUsedPort = portNumber;
+
+            while (!IsConnected && !FailedToConnect)
+            {
+                var connectedClients = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+                if (connectedClients.Count() > 0)
+                {
+                    var connectedStore = connectedClients.FirstOrDefault().Value;
+                    var shopServer = connectedStore.IPAddress;
+
+                    if (shopServer != null)
+                    {
+                        var shopEndPoint = IPEndPoint.Parse(shopServer);
+
+                        var stopwatch = new Stopwatch();
+                        var payload = new Message { Type = MessageType.ShopConnect, Data = "helo", Address = "NA" };
+                        var message = GenerateMessage(payload);
+
+                        var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
+
+                        udpAssets.Send(addCommandDataBytes, shopEndPoint);
+                        //STUN(shopServer);
+                        var punchMeMessage = new Message { Type = MessageType.AssetPunchClient, Data = portNumber.ToString(), Address = "NA" };
+                        await SendShopMessageFromClient(punchMeMessage, false);
+
+                        //Give shop time to punch
+                        await Task.Delay(1000);
+                        udpAssets.Send(addCommandDataBytes, shopEndPoint);
+
+                        stopwatch.Start();
+                        while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
+                        {
+                            var beginReceive = udpAssets.BeginReceive(null, null);
+                            beginReceive.AsyncWaitHandle.WaitOne(new TimeSpan(0, 0, 5));
+
+                            if (beginReceive.IsCompleted)
+                            {
+                                try
+                                {
+                                    IPEndPoint remoteEP = null;
+                                    byte[] receivedData = udpAssets.EndReceive(beginReceive, ref remoteEP);
+                                    if (receivedData.SequenceEqual(successful))
+                                    {
+                                        ConnectedStunServer = shopEndPoint;
+                                        ConnectedShopServerAssets = shopEndPoint;
+                                        IsConnected = true;
+                                    }
+                                    else
+                                    {
+                                        IsConnected = false;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    IsConnected = false;
+                                }
+                            }
+                            else
+                            {
+                                FailedToConnect = true;
+                            }
+                        }
+                        stopwatch.Stop();
+                    }
+                }
+            }
+            if (IsConnected)
+            {
+                connected = true;
+                Console.WriteLine("connected to SHOP");
+
+                return connected;
+            }
+            return connected;
+        }
+
         private static void STUN(string shopEndPoint)
         {
             var successful = Encoding.UTF8.GetBytes("ack");
@@ -574,6 +669,91 @@ namespace ReserveBlockCore.DST
             catch
             {
                 return false;
+            }
+        }
+
+        public static async Task GetListingAssetThumbnails(Message message, string scUID)
+        {
+            var shopMessage = MessageService.GenerateMessage(message, false);
+            var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
+
+            await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
+
+            var countDataGram = await udpAssets.ReceiveAsync();
+            var countBuffer = Encoding.UTF8.GetString(countDataGram.Buffer);
+            if(countBuffer.StartsWith("[count]"))
+            {
+                var countArray = countBuffer.Split(',');
+                var count = int.Parse(countArray[1]);
+                for(int i = 1; i <= count; i++)
+                {
+                    var dataGram = await udpAssets.ReceiveAsync();
+                    var assetNameBuffer = Encoding.UTF8.GetString(dataGram.Buffer);
+
+                    if(assetNameBuffer.StartsWith("[name]"))
+                    {
+                        var assetNameArray = assetNameBuffer.Split(',');
+                        var assetName = assetNameArray[1];
+                        if(assetName != null)
+                        {
+                            var path = NFTAssetFileUtility.CreateNFTAssetPath(assetName, scUID, true);
+                            if (File.Exists(path))
+                                continue;
+
+                            using (var fileStream = File.Create(path))
+                            {
+                                int expectedSequenceNumber = 0;
+                                byte[] imageData = null;
+
+                                while (true)
+                                {
+                                    var response = await udpAssets.ReceiveAsync();
+                                    var packetData = response.Buffer;
+                                    // Check if this is the last packet
+                                    bool isLastPacket = packetData.Length < 1024;
+
+                                    // Extract the sequence number from the packet
+                                    int sequenceNumber = BitConverter.ToInt32(packetData, 0);
+
+                                    // Check if this is the expected packet
+                                    if (sequenceNumber != expectedSequenceNumber)
+                                    {
+                                        // If not, discard the packet and request a retransmission
+                                        var ackPacket = BitConverter.GetBytes(expectedSequenceNumber - 1);
+                                        await udpAssets.SendAsync(ackPacket, ackPacket.Length, ConnectedShopServer);
+                                        continue;
+                                    }
+
+                                    // If this is the expected packet, extract the image data and write it to disk
+                                    int dataOffset = sizeof(int);
+                                    int dataLength = packetData.Length - dataOffset;
+                                    if (imageData == null)
+                                    {
+                                        imageData = new byte[dataLength];
+                                    }
+                                    else
+                                    {
+                                        Array.Resize(ref imageData, imageData.Length + dataLength);
+                                    }
+                                    Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
+
+                                    // Send an acknowledgement packet
+                                    var ackNumber = BitConverter.GetBytes(sequenceNumber);
+                                    await udpAssets.SendAsync(ackNumber, ackNumber.Length, ConnectedShopServer);
+
+                                    if (isLastPacket)
+                                    {
+                                        // If this is the last packet, save the image to disk and exit the loop
+                                        await fileStream.WriteAsync(imageData, 0, imageData.Length);
+                                        break;
+                                    }
+
+                                    expectedSequenceNumber++;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

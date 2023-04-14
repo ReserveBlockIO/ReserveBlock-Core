@@ -496,6 +496,22 @@ namespace ReserveBlockCore.Utilities
             return output;
         }
 
+        public static byte[][] SplitIntoPackets(byte[] data)
+        {
+            const int MaxPacketSize = 1024;
+
+            var packets = new byte[(data.Length + MaxPacketSize - 1) / MaxPacketSize][];
+            for (int i = 0; i < packets.Length; i++)
+            {
+                int offset = i * MaxPacketSize;
+                int length = Math.Min(MaxPacketSize, data.Length - offset);
+                packets[i] = new byte[length + sizeof(int)];
+                BitConverter.GetBytes(i).CopyTo(packets[i], 0);
+                Array.Copy(data, offset, packets[i], sizeof(int), length);
+            }
+
+            return packets;
+        }
 
     }
 }

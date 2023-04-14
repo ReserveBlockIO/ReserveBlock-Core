@@ -110,7 +110,9 @@ namespace ReserveBlockCore.Models.DST
     {
         Request,
         Response,
-        Chat
+        Chat,
+        Info,
+        InfoResponse
     }
 
     public enum MessageType
@@ -134,7 +136,8 @@ namespace ReserveBlockCore.Models.DST
         PunchClient,
         ChatRec,
         AssetReq,
-        AssetReqRec
+        AssetReqRec,
+        AssetPunchClient
     }
 
     public enum DecShopRequestOptions

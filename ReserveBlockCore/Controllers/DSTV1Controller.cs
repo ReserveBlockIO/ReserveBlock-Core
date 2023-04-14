@@ -327,7 +327,11 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                _ = DSTClient.SendShopMessageFromClient(message, true);
+                var connected = await DSTClient.ConnectToShopForAssets();
+                if (connected)
+                    _ = DSTClient.GetListingAssetThumbnails(message, scUID);
+                else
+                    return false;
 
                 return true;
             }

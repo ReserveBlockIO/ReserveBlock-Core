@@ -152,7 +152,13 @@ namespace ReserveBlockCore.Engines
                                     if (listing.ReservePrice != null)
                                     {
                                         if (listing.ReservePrice.Value <= auction.CurrentBidPrice)
+                                        {
                                             auction.IsReserveMet = true;
+                                        }
+                                        else
+                                        {
+                                            listing.WinningAddress = null;
+                                        }
                                     }
                                     else
                                     {
@@ -464,7 +470,7 @@ namespace ReserveBlockCore.Engines
                 if (listings?.Count() > 0)
                 {
                     var listingDb = Listing.GetListingDb();
-                    var listingsNeedingSaleTX = listings.Where(x => x.IsAuctionStarted && x.IsAuctionEnded && !x.IsSaleTXSent).ToList();
+                    var listingsNeedingSaleTX = listings.Where(x => x.IsAuctionStarted && x.IsAuctionEnded && !x.IsSaleTXSent && x.WinningAddress != null && !x.SaleHasFailed).ToList();
                     if (listingsNeedingSaleTX.Count > 0)
                     {
                         foreach(var listing in  listingsNeedingSaleTX)
@@ -472,6 +478,12 @@ namespace ReserveBlockCore.Engines
                             //this is to give it time for first send to succeed and avoid double send.
                             if(ListingPostSaleDict.TryGetValue(listing.Id, out int value))
                             {
+                                if(value > 3)
+                                {
+                                    listing.SaleHasFailed = true;
+                                    _ = Listing.SaveListing(listing);
+                                    ListingPostSaleDict.TryRemove(listing.Id, out value);
+                                }
                                 if(value > 1)
                                     _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
 
