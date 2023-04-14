@@ -730,6 +730,7 @@ namespace ReserveBlockCore.DST
 
         public static async Task GetListingAssetThumbnails(Message message, string scUID)
         {
+            Globals.AssetDownloadLock = true;
             var shopMessage = MessageService.GenerateMessage(message, false);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
@@ -812,6 +813,7 @@ namespace ReserveBlockCore.DST
                     }
                 }
             }
+            Globals.AssetDownloadLock = false;
         }
 
         public static async Task SendShopMessageFromClient(Message message, bool responseRequested)

@@ -264,6 +264,7 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<BidQueue> BidQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
+        public static bool AssetDownloadLock = false;
 
         #endregion
 

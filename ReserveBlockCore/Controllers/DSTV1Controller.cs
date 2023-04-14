@@ -327,14 +327,17 @@ namespace ReserveBlockCore.Controllers
                     ComType = MessageComType.Request
                 };
 
-                await DSTClient.DisconnectFromAsset();
-                var connected = await DSTClient.ConnectToShopForAssets();
-                if (connected)
-                    _ = DSTClient.GetListingAssetThumbnails(message, scUID);
-                else
-                    return false;
+                if(!Globals.AssetDownloadLock)
+                {
+                    await DSTClient.DisconnectFromAsset();
+                    var connected = await DSTClient.ConnectToShopForAssets();
+                    if (connected)
+                        _ = DSTClient.GetListingAssetThumbnails(message, scUID);
+                    else
+                        return false;
 
-                return true;
+                    return true;
+                }
             }
 
             return false;
