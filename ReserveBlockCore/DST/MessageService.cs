@@ -128,7 +128,7 @@ namespace ReserveBlockCore.DST
         }
         public static void AssetPunchClient(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
-            var punchMessage = Encoding.UTF8.GetBytes("ack");
+            var punchMessage = Encoding.UTF8.GetBytes("echo");
             var ipArray = endPoint.ToString().Split(':');
             var ip = ipArray[0];
             var remoteEndPoint = IPEndPoint.Parse($"{ip}:{message.Data}");
@@ -404,15 +404,23 @@ namespace ReserveBlockCore.DST
                                                 {
                                                     // Wait for an acknowledgement packet from the client
                                                     var ackResponse = await udpClient.ReceiveAsync();
-                                                    var ackNumber = BitConverter.ToInt32(ackResponse.Buffer, 0);
-
-                                                    // Check if this is the expected acknowledgement packet
-                                                    if (ackNumber == expectedAckNumber)
+                                                    if(ackResponse.RemoteEndPoint.ToString() == endPoint.ToString())
                                                     {
-                                                        // If so, move on to the next packet
-                                                        ackReceived = true;
-                                                        expectedAckNumber++;
+                                                        var ackNumber = BitConverter.ToInt32(ackResponse.Buffer, 0);
+
+                                                        // Check if this is the expected acknowledgement packet
+                                                        if (ackNumber == expectedAckNumber)
+                                                        {
+                                                            // If so, move on to the next packet
+                                                            ackReceived = true;
+                                                            expectedAckNumber++;
+                                                        }
                                                     }
+                                                    else
+                                                    {
+                                                        _ = DSTClient.PassMessage(ackResponse);
+                                                    }
+                                                    
                                                 }
                                                 catch (SocketException)
                                                 {
