@@ -352,21 +352,6 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task AssetDataRequest(Message message, IPEndPoint endPoint, UdpClient udpClient)
-        {
-            if (message.Type == MessageType.AssetReq)
-            {
-                try
-                {
-                    
-                }
-                catch (Exception ex)
-                {
-
-                }
-            }
-        }
-
         public static async Task AssetRequest(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
             if (message.Type == MessageType.AssetReq)

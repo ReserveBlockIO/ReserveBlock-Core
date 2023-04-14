@@ -407,8 +407,8 @@ namespace ReserveBlockCore.DST
                         await SendShopMessageFromClient(punchMeMessage, false);
 
                         //Give shop time to punch
-                        await Task.Delay(1000);
-                        udpAssets.Send(addCommandDataBytes, shopEndPoint);
+                        //await Task.Delay(1000);
+                        //udpAssets.Send(addCommandDataBytes, shopEndPoint);
 
                         stopwatch.Start();
                         while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
@@ -618,6 +618,20 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        public static async Task<bool> DisconnectFromAsset(bool keepShopData = false)
+        {
+            try
+            {
+                udpAssets.Close();
+                udpAssets.Dispose();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         public static async Task<bool> DisconnectFromShop(bool keepShopData = false)
         {
