@@ -552,9 +552,9 @@ namespace ReserveBlockCore.DST
                         var packetData = dataGram.Buffer;
                         int sequenceNumber = BitConverter.ToInt32(packetData, 0);
 
-                        if(sequenceNumber == (value + 1)) 
+                        if(sequenceNumber == value) 
                         {
-                            Globals.AssetAckEndpoint[dataGram.RemoteEndPoint] = sequenceNumber;
+                            Globals.AssetAckEndpoint[dataGram.RemoteEndPoint] = sequenceNumber + 1;
                             continue;
                         }
                     }
