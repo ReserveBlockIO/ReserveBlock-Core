@@ -734,12 +734,14 @@ namespace ReserveBlockCore.DST
             var shopMessage = MessageService.GenerateMessage(message, false);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
+            NFTLogUtility.Log("NFT asset thumbnail process start", "DSTClient.GetListingAssetThumbnails()-1");
             await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
 
             var countDataGram = await udpAssets.ReceiveAsync();
             var countBuffer = Encoding.UTF8.GetString(countDataGram.Buffer);
             if(countBuffer.StartsWith("[count]"))
             {
+                NFTLogUtility.Log($"Count Buffer Received: {countBuffer}", "DSTClient.GetListingAssetThumbnails()-2");
                 var countArray = countBuffer.Split(',');
                 var count = int.Parse(countArray[1]);
                 for(int i = 1; i <= count; i++)
@@ -749,6 +751,7 @@ namespace ReserveBlockCore.DST
 
                     if(assetNameBuffer.StartsWith("[name]"))
                     {
+                        NFTLogUtility.Log($"Asset Name Buffer Received: {assetNameBuffer}", "DSTClient.GetListingAssetThumbnails()-3");
                         var assetNameArray = assetNameBuffer.Split(',');
                         var assetName = assetNameArray[1];
                         if(assetName != null)
@@ -757,6 +760,8 @@ namespace ReserveBlockCore.DST
                             if (File.Exists(path))
                                 continue;
 
+
+                            NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-4");
                             using (var fileStream = File.Create(path))
                             {
                                 int expectedSequenceNumber = 0;
@@ -788,9 +793,11 @@ namespace ReserveBlockCore.DST
                                     if (imageData == null)
                                     {
                                         imageData = new byte[dataLength];
+                                        NFTLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
                                     }
                                     else
                                     {
+                                        NFTLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
                                         Array.Resize(ref imageData, imageData.Length + dataLength);
                                     }
                                     Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
@@ -801,6 +808,7 @@ namespace ReserveBlockCore.DST
 
                                     if (isLastPacket)
                                     {
+                                        NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-5");
                                         // If this is the last packet, save the image to disk and exit the loop
                                         await fileStream.WriteAsync(imageData, 0, imageData.Length);
                                         break;
@@ -808,11 +816,13 @@ namespace ReserveBlockCore.DST
 
                                     expectedSequenceNumber++;
                                 }
+                                NFTLogUtility.Log($"File saved. Done", "DSTClient.GetListingAssetThumbnails()-6");
                             }
                         }
                     }
                 }
             }
+            NFTLogUtility.Log($"Asset method unlocked", "DSTClient.GetListingAssetThumbnails()-7");
             Globals.AssetDownloadLock = false;
         }
 

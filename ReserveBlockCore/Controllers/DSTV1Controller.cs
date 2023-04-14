@@ -320,7 +320,7 @@ namespace ReserveBlockCore.Controllers
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
             {
-                NFTLogUtility.Log($"Connected to shop, downloading attempting for: {scUID}", "DSTV1Controller.GetNFTAssets()");
+                NFTLogUtility.Log($"Connected to shop, attempting download  for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                 Message message = new Message
                 {
                     Address = ConnectingAddress,
@@ -331,6 +331,7 @@ namespace ReserveBlockCore.Controllers
 
                 if(!Globals.AssetDownloadLock)
                 {
+                    Globals.AssetDownloadLock = true;
                     NFTLogUtility.Log($"Asset download unlocked for: {scUID}", "DSTV1Controller.GetNFTAssets()");
                     await DSTClient.DisconnectFromAsset();
                     var connected = await DSTClient.ConnectToShopForAssets();
