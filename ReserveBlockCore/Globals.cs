@@ -263,6 +263,7 @@ namespace ReserveBlockCore
         public static DecShopData? DecShopData = null;
         public static ConcurrentQueue<BidQueue> BidQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
+        public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
 
         #endregion
 

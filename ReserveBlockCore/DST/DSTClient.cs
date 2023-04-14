@@ -544,7 +544,21 @@ namespace ReserveBlockCore.DST
                         exit = true;
                         continue;
                     }
+
                     var dataGram = await udpShop.ReceiveAsync(token);
+
+                    if(Globals.AssetAckEndpoint.TryGetValue(dataGram.RemoteEndPoint, out int value))
+                    {
+                        var packetData = dataGram.Buffer;
+                        int sequenceNumber = BitConverter.ToInt32(packetData, 0);
+
+                        if(sequenceNumber == (value + 1)) 
+                        {
+                            Globals.AssetAckEndpoint[dataGram.RemoteEndPoint] = sequenceNumber;
+                            continue;
+                        }
+                    }
+
                     RemoteEndPoint = dataGram.RemoteEndPoint;
                     var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
@@ -761,7 +775,8 @@ namespace ReserveBlockCore.DST
                                     if (sequenceNumber != expectedSequenceNumber)
                                     {
                                         // If not, discard the packet and request a retransmission
-                                        var ackPacket = BitConverter.GetBytes(expectedSequenceNumber - 1);
+                                        var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber - 1;
+                                        var ackPacket = BitConverter.GetBytes(expSeqNum);
                                         await udpAssets.SendAsync(ackPacket, ackPacket.Length, ConnectedShopServer);
                                         continue;
                                     }

@@ -388,7 +388,10 @@ namespace ReserveBlockCore.DST
                                     {
                                         var packets = NFTAssetFileUtility.SplitIntoPackets(assetBytes);
                                         int expectedAckNumber = 0;
-
+                                        if(Globals.AssetAckEndpoint.TryAdd(endPoint, expectedAckNumber))
+                                        {
+                                            Globals.AssetAckEndpoint[endPoint] = expectedAckNumber;
+                                        }
                                         var sendMessage = Encoding.UTF8.GetBytes($"[name],{asset}");
                                         await udpClient.SendAsync(sendMessage, sendMessage.Length, endPoint);
 
@@ -397,28 +400,23 @@ namespace ReserveBlockCore.DST
                                             bool ackReceived = false;
                                             while (!ackReceived)
                                             {
-                                                //send packet
-                                                await udpClient.SendAsync(packet, packet.Length, endPoint);
-
+                                                var ackNum = Globals.AssetAckEndpoint[endPoint];
                                                 try
                                                 {
                                                     // Wait for an acknowledgement packet from the client
-                                                    var ackResponse = await udpClient.ReceiveAsync();
-                                                    if(ackResponse.RemoteEndPoint.ToString() == endPoint.ToString())
+                                                    // Check if this is the expected acknowledgement packet
+                                                    if (ackNum == expectedAckNumber)
                                                     {
-                                                        var ackNumber = BitConverter.ToInt32(ackResponse.Buffer, 0);
-
-                                                        // Check if this is the expected acknowledgement packet
-                                                        if (ackNumber == expectedAckNumber)
-                                                        {
-                                                            // If so, move on to the next packet
-                                                            ackReceived = true;
-                                                            expectedAckNumber++;
-                                                        }
+                                                        //send packet
+                                                        await udpClient.SendAsync(packet, packet.Length, endPoint);
+                                                        // If so, move on to the next packet
+                                                        ackReceived = true;
+                                                        expectedAckNumber++;
                                                     }
                                                     else
                                                     {
-                                                        _ = DSTClient.PassMessage(ackResponse);
+                                                        //create small pause to avoid program locking up.
+                                                        await Task.Delay(10);
                                                     }
                                                     
                                                 }
@@ -434,6 +432,8 @@ namespace ReserveBlockCore.DST
                             }
                             catch { }
                         }
+
+                        Globals.AssetAckEndpoint.TryRemove(endPoint, out _);
                     }
 
                 }
