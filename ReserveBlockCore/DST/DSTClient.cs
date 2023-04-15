@@ -739,9 +739,10 @@ namespace ReserveBlockCore.DST
 
             var countDataGram = await udpAssets.ReceiveAsync();
             var countBuffer = Encoding.UTF8.GetString(countDataGram.Buffer);
-            if(countBuffer.StartsWith("[count]"))
+            NFTLogUtility.Log($"Count Buffer: {countBuffer}", "DSTClient.GetListingAssetThumbnails()-2");
+            if (countBuffer.StartsWith("[count]"))
             {
-                NFTLogUtility.Log($"Count Buffer Received: {countBuffer}", "DSTClient.GetListingAssetThumbnails()-2");
+                NFTLogUtility.Log($"Good Count Buffer Received: {countBuffer}", "DSTClient.GetListingAssetThumbnails()-2Y");
                 var countArray = countBuffer.Split(',');
                 var count = int.Parse(countArray[1]);
                 for(int i = 1; i <= count; i++)
@@ -759,7 +760,6 @@ namespace ReserveBlockCore.DST
                             var path = NFTAssetFileUtility.CreateNFTAssetPath(assetName, scUID, true);
                             if (File.Exists(path))
                                 continue;
-
 
                             NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-4");
                             using (var fileStream = File.Create(path))
