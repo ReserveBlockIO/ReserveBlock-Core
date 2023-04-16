@@ -80,7 +80,7 @@ namespace ReserveBlockCore.Services
                             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
 
                             //if you have a bid or buy now this should auto start the process.
-                            _ = SmartContractService.CompleteSaleSmartContractTX(scUID, toAddress, amountSoldFor.Value, keySign);
+                            _ = SmartContractService.CompleteSaleSmartContractTX(scUID, tx.FromAddress, amountSoldFor.Value, keySign);
                         }
 
                         if(function == "Sale_Complete()")
