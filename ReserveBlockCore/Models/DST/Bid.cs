@@ -38,7 +38,7 @@ namespace ReserveBlockCore.Models.DST
             if (BidAmount < Globals.BidMinimum)
                 return false;
 
-            if(!string.IsNullOrEmpty(PurchaseKey))
+            if(string.IsNullOrEmpty(PurchaseKey))
                 return false;
 
             Id = Guid.NewGuid();
