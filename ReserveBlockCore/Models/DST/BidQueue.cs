@@ -13,6 +13,7 @@ namespace ReserveBlockCore.Models.DST
         public decimal MaxBidAmount { get; set; }
         public bool IsBuyNow { get; set; }
         public bool IsAutoBid { get; set; }
+        public string PurchaseKey { get; set; }
         public BidStatus BidStatus { get; set; }
         public BidSendReceive BidSendReceive { get; set; }
         public long BidSendTime { get; set; }

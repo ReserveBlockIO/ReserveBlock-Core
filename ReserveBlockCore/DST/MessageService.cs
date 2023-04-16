@@ -380,7 +380,13 @@ namespace ReserveBlockCore.DST
                         {
                             try
                             {
-                                var location = NFTAssetFileUtility.NFTAssetPath(asset, scUID, true);
+                                var _asset = asset;
+                                if(asset.EndsWith(".pdf"))
+                                {
+                                    _asset = asset.Replace(".pdf", ".png");
+                                }
+                                
+                                var location = NFTAssetFileUtility.NFTAssetPath(_asset, scUID, true);
                                 if (location != null && location != "NA")
                                 {
                                     var assetBytes = NFTAssetFileUtility.GetNFTAssetByteArray(location);
@@ -392,7 +398,7 @@ namespace ReserveBlockCore.DST
                                         {
                                             Globals.AssetAckEndpoint[endPoint] = expectedAckNumber;
                                         }
-                                        var sendMessage = Encoding.UTF8.GetBytes($"[name],{asset}");
+                                        var sendMessage = Encoding.UTF8.GetBytes($"[name],{_asset}");
                                         await udpClient.SendAsync(sendMessage, sendMessage.Length, endPoint);
 
                                         foreach (var packet in packets)

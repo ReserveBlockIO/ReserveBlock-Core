@@ -15,6 +15,7 @@ namespace ReserveBlockCore.Models.DST
         public decimal? BuyNowPrice { get; set; }
         public bool IsBuyNowOnly { get; set; }
         public bool IsRoyaltyEnforced { get; set; }
+        public string PurchaseKey { get; set; }  
         public bool IsCancelled { get; set; }
         public bool IsAuctionStarted { get; set; }
         public bool IsAuctionEnded { get; set; }
@@ -152,7 +153,9 @@ namespace ReserveBlockCore.Models.DST
             {
                 if (listingDb != null)
                 {
+                    listing.PurchaseKey = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
                     listingDb.InsertSafe(listing);
+                    NFTAssetFileUtility.GenerateThumbnails(listing.SmartContractUID);
                     return (true, "Listing saved.");
                 }
             }
@@ -215,23 +218,6 @@ namespace ReserveBlockCore.Models.DST
             
         }
 
-        #endregion
-
-        #region Produce Thumbnails
-        public static async Task GenerateThumbnails(string scUID)
-        {
-            List<string> ImageExtensionList = new List<string> { 
-                "jpg", "png", "gif", "webp", "tiff", "psd", "raw", "bmp", "heif", "indd", "jpeg2000", "svg", "eps", "ai"
-            };
-
-            //need util that gets all assets for an NFT.
-            //create a folder inside NFT folder called Thumbs that will contain all thumbnails.
-            //below code works. Just need pathing modifications.
-
-            //Image image = Image.FromFile(fileName);
-            //Image thumb = image.GetThumbnailImage(256, 256, () => false, IntPtr.Zero);
-            //thumb.Save(Path.ChangeExtension(fileName, "thumb"));
-        }
         #endregion
 
     }

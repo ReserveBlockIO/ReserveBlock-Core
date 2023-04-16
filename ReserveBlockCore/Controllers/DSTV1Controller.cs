@@ -1754,10 +1754,11 @@ namespace ReserveBlockCore.Controllers
         /// <summary>
         /// Complete NFT purchase
         /// </summary>
+        /// <param name="keySign"></param>
         /// <param name="scUID"></param>
         /// <returns></returns>
-        [HttpGet("CompleteNFTPurchase/{**scUID}")]
-        public async Task<string> CompleteNFTPurchase(string scUID)
+        [HttpGet("CompleteNFTPurchase/{keySign}/{**scUID}")]
+        public async Task<string> CompleteNFTPurchase(string keySign, string scUID)
         {
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
 
@@ -1778,7 +1779,7 @@ namespace ReserveBlockCore.Controllers
             if(localAccount.Balance <= purchaseAmount.Value)
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Not enough funds to purchase NFT. Purchase Amount {purchaseAmount} | Current Balance: {localAccount.Balance}." });
 
-            var result = await SmartContractService.CompleteSaleSmartContractTX(scUID, scStateTrei.OwnerAddress, purchaseAmount.Value);
+            var result = await SmartContractService.CompleteSaleSmartContractTX(scUID, scStateTrei.OwnerAddress, purchaseAmount.Value, keySign);
 
             return JsonConvert.SerializeObject(new { Success = result.Item1 == null ? false : true, Message = result.Item2 });
         }

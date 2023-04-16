@@ -1,4 +1,6 @@
-﻿using ImageMagick;
+﻿using Docnet.Core;
+using Docnet.Core.Models;
+using ImageMagick;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
@@ -25,7 +27,8 @@ namespace ReserveBlockCore.Utilities
             ".webp",
             ".bmp",
             ".psd",
-            ".ai"
+            ".ai",
+            ".pdf"
             // Other possible extensions
         };
 
@@ -94,7 +97,34 @@ namespace ReserveBlockCore.Utilities
                 return false;
             }
         }
+        public static async Task GenerateThumbnails(string scUID)
+        {
+            var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if(scMain != null)
+            {
+                var assetList = await GetAssetListFromSmartContract(scMain);
+                if(assetList?.Count > 0)
+                {
+                    foreach(var asset in assetList)
+                    {
+                        try
+                        {
+                            var originPath = CreateNFTAssetPath(asset, scUID);
+                            var thumbsPath = CreateNFTAssetPath(asset, scUID, true);
 
+                            if (File.Exists(originPath))
+                            {
+                                if (!File.Exists(thumbsPath))
+                                {
+                                    CreateNFTAssetThumbnail(originPath, thumbsPath);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
         public static void CreateNFTAssetThumbnail(string originPath, string newPath)
         {
             try
@@ -102,21 +132,41 @@ namespace ReserveBlockCore.Utilities
                 var fileExist = File.Exists(originPath);
                 if (fileExist)
                 {
-                    using (var image = new MagickImage(originPath))
+                    var fileExt = originPath.ToFileExtension();
+                    if (fileExt == ".pdf")
                     {
-                        if (image.Height > 512 || image.Width > 512)
+                        var pdfBytes = File.ReadAllBytes(originPath);
+                        var pdfImage = PdfToImage(pdfBytes);
+
+                        newPath = newPath.Replace(".pdf", ".png");
+                        FileStream file = new FileStream(newPath, FileMode.Create, FileAccess.Write);
+                        pdfImage.WriteTo(file);
+                        file.Close();
+                        pdfImage.Close();
+                    }
+                    else if(fileExt == ".mp4")
+                    { 
+                        //will need to integrate ffmpeg if we want this function.
+                    }
+                    else
+                    {
+                        using (var image = new MagickImage(originPath))
                         {
-                            var size = new MagickGeometry(512, 512);
-                            size.IgnoreAspectRatio = false;
-                            image.Resize(size);
-                            // Save the result
-                            image.Write(newPath);
-                        }
-                        else
-                        {
-                            File.Copy(originPath, newPath);
+                            if (image.Height > 512 || image.Width > 512)
+                            {
+                                var size = new MagickGeometry(512, 512);
+                                size.IgnoreAspectRatio = false;
+                                image.Resize(size);
+                                // Save the result
+                                image.Write(newPath);
+                            }
+                            else
+                            {
+                                File.Copy(originPath, newPath);
+                            }
                         }
                     }
+                    
                 }
             }
             catch (Exception ex) { }
@@ -494,6 +544,73 @@ namespace ReserveBlockCore.Utilities
             }
             
             return output;
+        }
+
+        public static MemoryStream PdfToImage(byte[] pdfBytes /* the PDF file bytes */)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            MagickImage imgBackdrop;
+            MagickColor backdropColor = MagickColors.White; // replace transparent pixels with this color 
+            int pdfPageNum = 0; // first page is 0
+
+            using (IDocLib pdfLibrary = DocLib.Instance)
+            {
+                using (var docReader = pdfLibrary.GetDocReader(pdfBytes, new PageDimensions(1.0d)))
+                {
+                    using (var pageReader = docReader.GetPageReader(pdfPageNum))
+                    {
+                        var rawBytes = pageReader.GetImage(); // Returns image bytes as B-G-R-A ordered list.
+                        rawBytes = RearrangeBytesToRGBA(rawBytes);
+                        var width = pageReader.GetPageWidth();
+                        var height = pageReader.GetPageHeight();
+
+                        // specify that we are reading a byte array of colors in R-G-B-A order.
+                        PixelReadSettings pixelReadSettings = new PixelReadSettings(width, height, StorageType.Char, PixelMapping.RGBA);
+                        using (MagickImage imgPdfOverlay = new MagickImage(rawBytes, pixelReadSettings))
+                        {
+                            // turn transparent pixels into backdrop color using composite
+                            imgBackdrop = new MagickImage(backdropColor, width, height);
+                            imgBackdrop.Composite(imgPdfOverlay, CompositeOperator.Over);
+                        }
+                    }
+                }
+            }
+
+            var size = new MagickGeometry(512, 512);
+            size.IgnoreAspectRatio = false;
+            imgBackdrop.Resize(size);
+
+            imgBackdrop.Write(memoryStream, MagickFormat.Png);
+            imgBackdrop.Dispose();
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+        private static byte[] RearrangeBytesToRGBA(byte[] BGRABytes)
+        {
+            var max = BGRABytes.Length;
+            var RGBABytes = new byte[max];
+            var idx = 0;
+            byte r;
+            byte g;
+            byte b;
+            byte a;
+            while (idx < max)
+            {
+                // get colors in original order: B G R A
+                b = BGRABytes[idx];
+                g = BGRABytes[idx + 1];
+                r = BGRABytes[idx + 2];
+                a = BGRABytes[idx + 3];
+
+                // re-arrange to be in new order: R G B A
+                RGBABytes[idx] = r;
+                RGBABytes[idx + 1] = g;
+                RGBABytes[idx + 2] = b;
+                RGBABytes[idx + 3] = a;
+
+                idx += 4;
+            }
+            return RGBABytes;
         }
 
         public static byte[][] SplitIntoPackets(byte[] data)

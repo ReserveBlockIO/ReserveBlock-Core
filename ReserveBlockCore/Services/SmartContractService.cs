@@ -859,7 +859,7 @@ namespace ReserveBlockCore.Services
         #endregion
 
         #region Start Sale Smart Contract
-        public static async Task<Transaction?> StartSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor, Listing? listing = null)
+        public static async Task<Transaction?> StartSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor, Listing listing, Bid bid)
         {
             Transaction? scTx = null;
 
@@ -874,7 +874,7 @@ namespace ReserveBlockCore.Services
             var account = AccountData.GetSingleAccount(smartContractStateTrei.OwnerAddress);
             if (account == null) return null;//Owner address not found.
 
-            var keyToSign = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+            var keyToSign = listing.PurchaseKey;
 
             if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
             {
@@ -892,7 +892,7 @@ namespace ReserveBlockCore.Services
                 return null;
             }
 
-            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Start()", ContractUID = scUID, NextOwner = toAddress, SoldFor = amountSoldFor, KeySign = keyToSign, Locators = connectedBeacon.Beacons.BeaconLocator });
+            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Start()", ContractUID = scUID, NextOwner = toAddress, SoldFor = amountSoldFor, KeySign = keyToSign, bid.BidSignature, Locators = connectedBeacon.Beacons.BeaconLocator });
 
             scTx = new Transaction
             {
@@ -1029,7 +1029,7 @@ namespace ReserveBlockCore.Services
 
         #region Complete Sale Smart Contract
 
-        public static async Task<(Transaction?, string)> CompleteSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor)
+        public static async Task<(Transaction?, string)> CompleteSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor, string keySign)
         {
             Transaction? scTx = null;
             bool isRoyalty = false;
@@ -1051,8 +1051,6 @@ namespace ReserveBlockCore.Services
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
 
             var privateKey = account.GetPrivKey;
-
-            var keySign = smartContractStateTrei.PurchaseKey;
 
             try
             {

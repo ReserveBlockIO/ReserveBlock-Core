@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
@@ -354,8 +355,9 @@ namespace ReserveBlockCore.Services
                             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
                             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
+                            var bidSignature = jobj["BidSignature"]?.ToObject<string?>();
 
-                            if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null)
+                            if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null && bidSignature != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                 if (scStateTreiRec != null)
@@ -368,6 +370,17 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner != null)
                                         return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
+                                    
+                                    if(scStateTreiRec.PurchaseKeys != null)
+                                    {
+                                        if(scStateTreiRec.PurchaseKeys.Contains(keySign))
+                                            return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
+                                    }
+
+                                    var signatureVerify = Bid.VerifyBidSignature(keySign, amountSoldFor.Value, toAddress, bidSignature);
+
+                                    if(!signatureVerify)
+                                        return (txResult, "Bid signature did not verify.");
                                 }
                                 else
                                 {
@@ -390,7 +403,7 @@ namespace ReserveBlockCore.Services
                             var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
 
-                            if (scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null)
+                            if (scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null && keySign != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                 if (scStateTreiRec != null)
@@ -402,8 +415,12 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner == null)
                                         return (txResult, "There is no next owner specified for this NFT.");
-                                    if(scStateTreiRec.PurchaseKey != keySign)
-                                        return (txResult, "Purchase Keys do not match.");
+
+                                    if (scStateTreiRec.PurchaseKeys != null)
+                                    {
+                                        if (scStateTreiRec.PurchaseKeys.Contains(keySign))
+                                            return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
+                                    }
 
                                     if (txRequest.FromAddress != scStateTreiRec.NextOwner)
                                         return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");

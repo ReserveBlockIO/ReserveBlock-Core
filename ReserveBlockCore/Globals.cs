@@ -250,7 +250,8 @@ namespace ReserveBlockCore
         #endregion
 
         #region DST Variables
-
+        public const decimal BidModifier = 100000000M;
+        public const decimal BidMinimum = 0.00000001M;
         public static ConcurrentDictionary<string, DSTConnection> ConnectedClients = new ConcurrentDictionary<string, DSTConnection>();
         public static ConcurrentDictionary<string, DSTConnection> ConnectedShops = new ConcurrentDictionary<string, DSTConnection>();
         public static DSTConnection? STUNServer = null;

@@ -1065,7 +1065,6 @@ namespace ReserveBlockCore.Data
 
             var scUID = jobj["ContractUID"]?.ToObject<string?>();
             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
-            var keySign = jobj["KeySign"]?.ToObject<string?>();
             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
             var locator = jobj["Locators"]?.ToObject<string?>();
             //var locator = jobj["Locators"]?.ToObject<string?>();
@@ -1077,10 +1076,7 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.IsLocked = true;
                 scStateTreiRec.Nonce += 1;
                 scStateTreiRec.PurchaseAmount = amountSoldFor;
-                scStateTreiRec.PurchaseKey = keySign;
                 scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
-                //scStateTreiRec.ContractData = data;
-                //scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
@@ -1102,6 +1098,8 @@ namespace ReserveBlockCore.Data
             var royaltyAmount = jobj["RoyaltyAmount"]?.ToObject<decimal?>();
             var royaltyPayTo = jobj["RoyaltyPayTo"]?.ToObject<string?>();
             var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
+            var keySign = jobj["KeySign"]?.ToObject<string?>();
+
             //var locator = jobj["Locators"]?.ToObject<string?>();
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -1110,8 +1108,15 @@ namespace ReserveBlockCore.Data
                 scStateTreiRec.NextOwner = null;
                 scStateTreiRec.IsLocked = false;
                 scStateTreiRec.PurchaseAmount = null;
-                scStateTreiRec.PurchaseKey = null;
                 scStateTreiRec.OwnerAddress = tx.FromAddress;
+                if (scStateTreiRec.PurchaseKeys != null)
+                {
+                    scStateTreiRec.PurchaseKeys.Add(keySign);
+                }
+                else
+                {
+                    scStateTreiRec.PurchaseKeys = new List<string> { keySign };
+                }
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }

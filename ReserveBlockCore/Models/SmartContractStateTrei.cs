@@ -17,7 +17,7 @@ namespace ReserveBlockCore.Models
         public string? MD5List { get; set; }
         public bool? MinterManaged { get; set; }
         public decimal? PurchaseAmount { get; set; } //Royalty is included in this.
-        public string? PurchaseKey { get; set; }
+        public List<string>? PurchaseKeys { get; set; }
 
         public static LiteDB.ILiteCollection<SmartContractStateTrei> GetSCST()
         {

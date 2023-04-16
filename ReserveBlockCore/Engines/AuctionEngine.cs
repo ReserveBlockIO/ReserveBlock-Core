@@ -182,9 +182,17 @@ namespace ReserveBlockCore.Engines
                                                 var addressBalance = AccountStateTrei.GetAccountBalance(listing.WinningAddress);
                                                 if (addressBalance >= listing.FinalPrice)
                                                 {
-                                                    AuctionLogUtility.Log($"Balance Check Passed. Sending TX", "AuctionEngine.ProcessAuctions()-8");
-                                                    _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
-                                                    continue;
+                                                    if(auction.WinningBidId != null)
+                                                    {
+                                                        var winningBid = Bid.GetSingleBid(auction.WinningBidId.Value);
+                                                        AuctionLogUtility.Log($"Balance Check Passed. Sending TX", "AuctionEngine.ProcessAuctions()-8");
+                                                        _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, winningBid);
+                                                        continue;
+                                                    }
+                                                    else
+                                                    {
+                                                        AuctionLogUtility.Log($"Winning Bid ID was missing. This cannot be missing.", "AuctionEngine.ProcessAuctions()-8");
+                                                    }
                                                 }
                                                 else
                                                 {
@@ -195,9 +203,13 @@ namespace ReserveBlockCore.Engines
                                             }
                                             else
                                             {
-                                                AuctionLogUtility.Log($"No Balance Check Needed. Sending TX", "AuctionEngine.ProcessAuctions()-10");
-                                                _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
-                                                continue;
+                                                if (auction.WinningBidId != null)
+                                                {
+                                                    var winningBid = Bid.GetSingleBid(auction.WinningBidId.Value);
+                                                    AuctionLogUtility.Log($"No Balance Check Needed. Sending TX", "AuctionEngine.ProcessAuctions()-10");
+                                                    _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, winningBid);
+                                                    continue;
+                                                }
                                             }
                                             
                                         }
@@ -328,6 +340,7 @@ namespace ReserveBlockCore.Engines
                                             IsProcessed = true,
                                             ListingId = buyNow.ListingId,
                                             MaxBidAmount = listing.BuyNowPrice.Value,
+                                            PurchaseKey = buyNow.PurchaseKey
                                         };
 
                                         auction.CurrentBidPrice = listing.BuyNowPrice.Value;
@@ -336,6 +349,7 @@ namespace ReserveBlockCore.Engines
                                         auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
                                         auction.IsAuctionOver = true;
                                         auction.IsReserveMet = true;
+                                        auction.WinningBidId = aBid.Id;
 
                                         listing.IsAuctionEnded = true;
                                         listing.WinningAddress = auction.CurrentWinningAddress;
@@ -348,7 +362,7 @@ namespace ReserveBlockCore.Engines
                                         DequeueBid(buyNow, BidStatus.Accepted);
                                         AuctionLogUtility.Log($"Buy Now Accepted - Sending TX now. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
 
-                                        _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
+                                        _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, aBid);
 
                                         continue;
                                     }
@@ -430,6 +444,7 @@ namespace ReserveBlockCore.Engines
                                             auction.MaxBidPrice = bid.MaxBidAmount;
                                             auction.CurrentWinningAddress = bid.BidAddress;
                                             auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
+                                            auction.WinningBidId = aBid.Id;
 
                                             Bid.SaveBid(aBid, true);
                                             Auction.SaveAuction(auction);
@@ -485,7 +500,20 @@ namespace ReserveBlockCore.Engines
                                     ListingPostSaleDict.TryRemove(listing.Id, out value);
                                 }
                                 if(value > 1)
-                                    _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value);
+                                {
+                                    var auction = Auction.GetSingleAuction(listing.Id);
+                                    if(auction != null)
+                                    {
+                                        if(auction.WinningBidId != null)
+                                        {
+                                            var winningBid = Bid.GetSingleBid(auction.WinningBidId.Value);
+                                            if(winningBid != null)
+                                                _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, winningBid);
+                                        }
+                                        
+                                    }
+                                    
+                                }
 
                                 value += 1;
                                 ListingPostSaleDict[listing.Id] = value;

@@ -769,7 +769,7 @@ namespace ReserveBlockCore.DST
 
                                 while (true)
                                 {
-                                    var response = await udpAssets.ReceiveAsync();
+                                    var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0,0,3));
                                     var packetData = response.Buffer;
                                     // Check if this is the last packet
                                     bool isLastPacket = packetData.Length < 1024;

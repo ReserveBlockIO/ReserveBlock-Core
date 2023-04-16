@@ -16,6 +16,7 @@ namespace ReserveBlockCore.Models.DST
         public int ListingId { get; set; }
         public int CollectionId { get; set; }
         public string? CurrentWinningAddress { get; set; }
+        public Guid? WinningBidId { get; set; }
 
         #region Get Auction Db
         public static LiteDB.ILiteCollection<Auction>? GetAuctionDb()

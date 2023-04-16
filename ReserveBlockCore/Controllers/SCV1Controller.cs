@@ -901,6 +901,26 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        ///  Creates thumbnails for known image types
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CreateThumbnails/{scUID}")]
+        public async Task<string> CreateThumbnails(string scUID)
+        {
+            var output = "";
+
+            //Get SmartContractMain.IsPublic and set to True.
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if (sc != null)
+            {
+                _ = NFTAssetFileUtility.GenerateThumbnails(scUID);
+                output = JsonConvert.SerializeObject(new { Success = true, Message = "Thumbnail generation process started." });
+            }
+            return output;
+        }
+
+        /// <summary>
         /// Returns the NFTs asset location.
         /// </summary>
         /// <param name="scUID"></param>

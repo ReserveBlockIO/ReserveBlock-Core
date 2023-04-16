@@ -2,6 +2,7 @@
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
+using System.Net;
 using System.Security.Cryptography;
 using static ReserveBlockCore.Models.Mother;
 
@@ -17,6 +18,7 @@ namespace ReserveBlockCore.Models.DST
         public decimal MaxBidAmount { get; set; }
         public bool IsBuyNow { get; set; }
         public bool IsAutoBid { get; set; }
+        public string PurchaseKey { get; set; }
         public BidStatus BidStatus { get; set; }
         public BidSendReceive BidSendReceive { get; set; }
         public long BidSendTime { get; set; }
@@ -33,6 +35,12 @@ namespace ReserveBlockCore.Models.DST
             if (account.GetPrivKey == null)
                 return false;
 
+            if (BidAmount < Globals.BidMinimum)
+                return false;
+
+            if(!string.IsNullOrEmpty(PurchaseKey))
+                return false;
+
             Id = Guid.NewGuid();
             BidStatus = BidStatus.Sent;
             IsAutoBid = false;
@@ -40,7 +48,9 @@ namespace ReserveBlockCore.Models.DST
             MaxBidAmount = BidAmount;
             BidSendReceive = BidSendReceive.Sent;
 
-            var message = $"{BidAddress}_{BidSendTime}_{BidAmount}";
+            var bidModifier = (BidAmount * Globals.BidModifier);
+            var bidAmount = Convert.ToInt64(bidModifier);
+            var message = $"{PurchaseKey}_{bidAmount}_{BidAddress}";
             var signature = SignatureService.CreateSignature(message, account.GetPrivKey, account.PublicKey);
 
             BidSignature = signature;
@@ -258,6 +268,20 @@ namespace ReserveBlockCore.Models.DST
         }
 
         #endregion
+
+        #region Verify Bid Signature
+        public static bool VerifyBidSignature(string keySign, decimal amount, string address, string bidSignature)
+        {
+            var bidModifier = (amount * Globals.BidModifier).ToString();
+            var bidAmount = Convert.ToInt64(bidModifier);
+
+            var bidMessage = $"{keySign}_{bidAmount}_{address}";
+            var signatureVerify = SignatureService.VerifySignature(address, bidMessage, bidSignature);
+
+            return signatureVerify;
+        }
+        #endregion
+
     }
 
     public enum BidStatus
