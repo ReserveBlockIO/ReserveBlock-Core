@@ -459,8 +459,8 @@ namespace ReserveBlockCore.DST
 
                             return respMessage;
                         }
-                        var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleAfterEndDate && x.IsVisibleBeforeStartDate && !x.IsCancelled).ToList();
-                        if(listings?.Count() > 0)
+                        var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleBeforeStartDate && !x.IsCancelled && !x.IsAuctionEnded).ToList();
+                        if (listings?.Count() > 0)
                         {
                             var pageSkip = page * PaginationAmount;
                             var listingsPageApplied = listings.Skip(pageSkip);
@@ -606,7 +606,7 @@ namespace ReserveBlockCore.DST
 
                             return respMessage;
                         }
-                        var auctions = Auction.GetAllAuctions()?.ToList();
+                        var auctions = Auction.GetAllAuctions()?.Where(x => !x.IsAuctionOver).ToList();
                         if (auctions?.Count() > 0)
                         {
                             var pageSkip = page * PaginationAmount;

@@ -339,9 +339,6 @@ namespace ReserveBlockCore.DST
                 Task taskData = new Task(() => { UpdateShopData(token); }, token);
                 taskData.Start();
 
-                //ListenerThread = new Thread(Listen);
-                //ListenerThread.Start();
-
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
 
@@ -411,10 +408,6 @@ namespace ReserveBlockCore.DST
                         //STUN(shopServer);
                         var punchMeMessage = new Message { Type = MessageType.AssetPunchClient, Data = portNumber.ToString(), Address = "NA" };
                         await SendShopMessageFromClient(punchMeMessage, false);
-
-                        //Give shop time to punch
-                        //await Task.Delay(1000);
-                        //udpAssets.Send(addCommandDataBytes, shopEndPoint);
 
                         stopwatch.Start();
                         while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
