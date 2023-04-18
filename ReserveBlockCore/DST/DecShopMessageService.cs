@@ -290,7 +290,7 @@ namespace ReserveBlockCore.DST
                                     {
                                         if (Globals.DecShopData.Bids != null)
                                         {
-                                            var bidExist = Globals.DecShopData.Bids.Exists(x => x.ListingId == bid.ListingId);
+                                            var bidExist = Globals.DecShopData.Bids.Exists(x => x.ListingId == bid.ListingId && x.Id == bid.Id);
                                             if (!bidExist)
                                                 Globals.DecShopData.Bids.Add(bid);
 
