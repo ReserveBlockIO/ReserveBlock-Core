@@ -1127,7 +1127,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="bidId"></param>
         /// <returns></returns>
-        [HttpGet("ResendBid")]
+        [HttpGet("ResendBid/{bidId}")]
         public async Task<string> ResendBid(Guid bidId)
         {
             try
