@@ -725,10 +725,15 @@ namespace ReserveBlockCore.DST
                         {
                             try
                             {
+                                var _asset = asset;
+                                if (asset.EndsWith(".pdf"))
+                                {
+                                    _asset = asset.Replace(".pdf", ".png");
+                                }
                                 //craft message to start process.
                                 var uniqueId = RandomStringUtility.GetRandomStringOnlyLetters(10, false);
 
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
                                 
                                 if (File.Exists(path))
                                 {
@@ -757,7 +762,7 @@ namespace ReserveBlockCore.DST
                                     {
                                         try
                                         {
-                                            var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, asset, scUID, expectedSequenceNumber);
+                                            var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
 
                                             await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServer);//this starts the first file download. Next receive should be the first set of bytes
 
@@ -775,7 +780,7 @@ namespace ReserveBlockCore.DST
                                                 // If not, discard the packet and request a retransmission
                                                 var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber;
                                                 var ackPacket = BitConverter.GetBytes(expSeqNum);
-                                                messageAssetBytes = await GenerateAssetAckMessage(uniqueId, asset, scUID, expSeqNum);
+                                                messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expSeqNum);
                                                 await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServer);
                                                 continue;
                                             }

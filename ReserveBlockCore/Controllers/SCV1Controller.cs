@@ -955,7 +955,7 @@ namespace ReserveBlockCore.Controllers
             if (scStateTrei != null)
             {
                 var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                output = JsonConvert.SerializeObject(scMain);
+                output = JsonConvert.SerializeObject(new { SmartContractMain = scMain, CurrentOwner = scStateTrei.OwnerAddress });
             }
 
             return output;

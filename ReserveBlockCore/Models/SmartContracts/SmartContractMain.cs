@@ -429,7 +429,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
             var fileName = repl.Run(@"FileName").Value.ToString();
             var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
-            var properties = repl.Run(@"getProperties(Properties)");
+            var properties = repl.Run(@"getProperties(Properties)").Value;
 
             var mainData = repl.Run(@"NftMain(""nftdata"")").Value.ToString();
             var mainDataArray = mainData.Split(new string[] { "|->" }, StringSplitOptions.None);
@@ -443,6 +443,10 @@ namespace ReserveBlockCore.Models.SmartContracts
             var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
             smartContractMain.SmartContractAsset = smartContractAssset;
 
+            if (properties != null)
+            {
+                smartContractMain.Properties = (Dictionary<string, string>)properties;
+            }
 
             if (!string.IsNullOrWhiteSpace((string)features))
             {
