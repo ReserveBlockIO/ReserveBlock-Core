@@ -684,11 +684,10 @@ namespace ReserveBlockCore.DST
 
             while (!stopProcess)
             {
-                await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
-
-                var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 3)); //wait to receive list
                 try
                 {
+                    await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
+                    var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 3)); //wait to receive list
                     attempts += 1;
 
                     if (attempts == 5)
