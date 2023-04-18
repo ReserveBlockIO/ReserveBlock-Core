@@ -10,6 +10,9 @@ using System.Diagnostics;
 using ReserveBlockCore.Models;
 using Microsoft.AspNetCore.Http;
 using System.Linq.Expressions;
+using static ReserveBlockCore.Models.Mother;
+using System.Xml;
+using System;
 
 namespace ReserveBlockCore.DST
 {
@@ -547,39 +550,12 @@ namespace ReserveBlockCore.DST
 
                     var dataGram = await udpShop.ReceiveAsync(token);
 
-                    if(Globals.AssetAckEndpoint.TryGetValue(dataGram.RemoteEndPoint, out int value))
-                    {
-                        var packetData = dataGram.Buffer;
-                        int sequenceNumber = BitConverter.ToInt32(packetData, 0);
-
-                        if(sequenceNumber == value) 
-                        {
-                            Globals.AssetAckEndpoint[dataGram.RemoteEndPoint] = sequenceNumber + 1;
-                            continue;
-                        }
-                    }
-
                     RemoteEndPoint = dataGram.RemoteEndPoint;
                     var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
-                    if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
+                    if(!string.IsNullOrEmpty(payload))
                     {
-                        if (Globals.ShowSTUNMessagesInConsole)
-                            Console.WriteLine(payload);
-                        continue;
-                    }
-
-                    if (!string.IsNullOrEmpty(payload))
-                    {
-                        if (Globals.ShowSTUNMessagesInConsole)
-                            Console.WriteLine(payload + "\n");
-
-                        var message = JsonConvert.DeserializeObject<Message>(payload);
-
-                        if (message != null)
-                        {
-                            _ = MessageService.ProcessMessage(message, RemoteEndPoint, udpShop);
-                        }
+                        _ = Task.Run(() => MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
                     }
                 }
                 catch { }
@@ -591,27 +567,11 @@ namespace ReserveBlockCore.DST
             RemoteEndPoint = dataGram.RemoteEndPoint;
             var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
-            if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
+            if (!string.IsNullOrEmpty(payload))
             {
-                if (Globals.ShowSTUNMessagesInConsole)
-                    Console.WriteLine(payload);
+                _ = Task.Run(() => MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
             }
-            else
-            {
-                if (!string.IsNullOrEmpty(payload))
-                {
-                    if (Globals.ShowSTUNMessagesInConsole)
-                        Console.WriteLine(payload + "\n");
 
-                    var message = JsonConvert.DeserializeObject<Message>(payload);
-
-                    if (message != null)
-                    {
-                        _ = MessageService.ProcessMessage(message, RemoteEndPoint, udpShop);
-                    }
-                }
-            }
-            
         }
 
         static async Task Listen(CancellationToken token)
@@ -633,24 +593,9 @@ namespace ReserveBlockCore.DST
                     RemoteEndPoint = dataGram.RemoteEndPoint;
                     var payload = Encoding.UTF8.GetString(dataGram.Buffer);
 
-                    if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo") 
-                    {
-                        if (Globals.ShowSTUNMessagesInConsole)
-                            Console.WriteLine(payload);
-                        continue;
-                    }
-
                     if (!string.IsNullOrEmpty(payload))
                     {
-                        if(Globals.ShowSTUNMessagesInConsole)
-                            Console.WriteLine(payload + "\n");  
-
-                        var message = JsonConvert.DeserializeObject<Message>(payload);
-
-                        if (message != null)
-                        {
-                            _ = MessageService.ProcessMessage(message, RemoteEndPoint, udpClient);
-                        }
+                        _ = Task.Run(() => MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
                     }
                 }
                 catch 
@@ -733,95 +678,146 @@ namespace ReserveBlockCore.DST
             Globals.AssetDownloadLock = true;
             var shopMessage = MessageService.GenerateMessage(message, false);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
-
-            NFTLogUtility.Log("NFT asset thumbnail process start", "DSTClient.GetListingAssetThumbnails()-1");
-            await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
-
-            var countDataGram = await udpAssets.ReceiveAsync();
-            var countBuffer = Encoding.UTF8.GetString(countDataGram.Buffer);
-            NFTLogUtility.Log($"Count Buffer: {countBuffer}", "DSTClient.GetListingAssetThumbnails()-2");
-            if (countBuffer.StartsWith("[count]"))
+            var stopProcess = false;
+            int attempts = 0;
+            NFTLogUtility.Log("NFT asset thumbnail process start. Requesting Asset List", "DSTClient.GetListingAssetThumbnails()-1");
+            
+            while(!stopProcess)
             {
-                NFTLogUtility.Log($"Good Count Buffer Received: {countBuffer}", "DSTClient.GetListingAssetThumbnails()-2Y");
-                var countArray = countBuffer.Split(',');
-                var count = int.Parse(countArray[1]);
-                for(int i = 1; i <= count; i++)
+                await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
+
+                var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 3)); //wait to receive list
+                try
                 {
-                    var dataGram = await udpAssets.ReceiveAsync();
-                    var assetNameBuffer = Encoding.UTF8.GetString(dataGram.Buffer);
+                    attempts += 1;
 
-                    if(assetNameBuffer.StartsWith("[name]"))
+                    if (attempts == 5)
+                        stopProcess = true;
+
+                    var messageBuffer = Encoding.UTF8.GetString(messageDataGram.Buffer);
+                    var messageFromJson = JsonConvert.DeserializeObject<Message>(messageBuffer);
+
+                    if (messageFromJson == null)
+                        continue;
+
+                    var messageData = messageFromJson.Data;
+                    var messageDataArray = messageData.Split(',');
+                    var scuidRet = messageDataArray[0];
+                    var assetListJson = messageDataArray[1];
+
+                    if (scuidRet == null)
+                        continue;
+
+                    if (scuidRet != scUID)
+                        continue;
+
+                    if(assetListJson == null)
+                        continue;
+
+                    var assetList = JsonConvert.DeserializeObject<List<string>?>(assetListJson);
+
+                    if (assetList == null)
+                        continue;
+
+                    if (assetList.Count > 0)
                     {
-                        NFTLogUtility.Log($"Asset Name Buffer Received: {assetNameBuffer}", "DSTClient.GetListingAssetThumbnails()-3");
-                        var assetNameArray = assetNameBuffer.Split(',');
-                        var assetName = assetNameArray[1];
-                        if(assetName != null)
+                        NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
+                        foreach (var asset in assetList)
                         {
-                            var path = NFTAssetFileUtility.CreateNFTAssetPath(assetName, scUID, true);
-                            if (File.Exists(path))
-                                continue;
-
-                            NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-4");
-                            using (var fileStream = File.Create(path))
+                            try
                             {
-                                int expectedSequenceNumber = 0;
-                                byte[] imageData = null;
+                                //craft message to start process.
+                                var uniqueId = RandomStringUtility.GetRandomStringOnlyLetters(10, false);
 
-                                while (true)
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                if (File.Exists(path))
+                                    continue;
+
+                                using (var fileStream = File.Create(path))
                                 {
-                                    var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0,0,3));
-                                    var packetData = response.Buffer;
-                                    // Check if this is the last packet
-                                    bool isLastPacket = packetData.Length < 1024;
+                                    NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-3");
+                                    int expectedSequenceNumber = 0;
+                                    byte[]? imageData = null;
 
-                                    // Extract the sequence number from the packet
-                                    int sequenceNumber = BitConverter.ToInt32(packetData, 0);
-
-                                    // Check if this is the expected packet
-                                    if (sequenceNumber != expectedSequenceNumber)
+                                    bool stopAssetBuild = false;
+                                    while (!stopAssetBuild)
                                     {
-                                        // If not, discard the packet and request a retransmission
-                                        var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber - 1;
-                                        var ackPacket = BitConverter.GetBytes(expSeqNum);
-                                        await udpAssets.SendAsync(ackPacket, ackPacket.Length, ConnectedShopServer);
-                                        continue;
-                                    }
+                                        var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, asset, scUID, expectedSequenceNumber);
 
-                                    // If this is the expected packet, extract the image data and write it to disk
-                                    int dataOffset = sizeof(int);
-                                    int dataLength = packetData.Length - dataOffset;
-                                    if (imageData == null)
-                                    {
-                                        imageData = new byte[dataLength];
-                                        NFTLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
-                                    }
-                                    else
-                                    {
-                                        NFTLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
-                                        Array.Resize(ref imageData, imageData.Length + dataLength);
-                                    }
-                                    Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
+                                        await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServer);//this starts the first file download. Next receive should be the first set of bytes
 
-                                    // Send an acknowledgement packet
-                                    var ackNumber = BitConverter.GetBytes(sequenceNumber);
-                                    await udpAssets.SendAsync(ackNumber, ackNumber.Length, ConnectedShopServer);
+                                        var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 1));
+                                        var packetData = response.Buffer;
+                                        var responseMessageJson = Encoding.UTF8.GetString(packetData);
+                                        var respMessage = JsonConvert.DeserializeObject<Message>(responseMessageJson);
+                                        // Check if this is the last packet
+                                        bool isLastPacket = packetData.Length < 1024;
 
-                                    if (isLastPacket)
-                                    {
-                                        NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-5");
-                                        // If this is the last packet, save the image to disk and exit the loop
-                                        await fileStream.WriteAsync(imageData, 0, imageData.Length);
-                                        break;
+                                        // Extract the sequence number from the packet
+                                        int sequenceNumber = BitConverter.ToInt32(packetData, 0);
+
+                                        if (sequenceNumber != expectedSequenceNumber)
+                                        {
+                                            // If not, discard the packet and request a retransmission
+                                            var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber - 1;
+                                            var ackPacket = BitConverter.GetBytes(expSeqNum);
+                                            messageAssetBytes = await GenerateAssetAckMessage(uniqueId, asset, scUID, expSeqNum);
+                                            await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServer);
+                                            continue;
+                                        }
+
+                                        // If this is the expected packet, extract the image data and write it to disk
+                                        int dataOffset = sizeof(int);
+                                        int dataLength = packetData.Length - dataOffset;
+                                        if (imageData == null)
+                                        {
+                                            imageData = new byte[dataLength];
+                                            NFTLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
+                                        }
+                                        else
+                                        {
+                                            NFTLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
+                                            Array.Resize(ref imageData, imageData.Length + dataLength);
+                                        }
+                                        Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
+
+                                        // Send an acknowledgement packet
+                                        //var ackNumber = BitConverter.GetBytes(sequenceNumber);
+                                        //await udpAssets.SendAsync(ackNumber, ackNumber.Length, ConnectedShopServer);
+
+                                        if (isLastPacket)
+                                        {
+                                            NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-4");
+                                            // If this is the last packet, save the image to disk and exit the loop
+                                            await fileStream.WriteAsync(imageData, 0, imageData.Length);
+                                            stopAssetBuild = true;
+                                            break;
+                                        }
+
+                                        expectedSequenceNumber++;
                                     }
-
-                                    expectedSequenceNumber++;
                                 }
-                                NFTLogUtility.Log($"File saved. Done", "DSTClient.GetListingAssetThumbnails()-6");
+                            }
+                            catch (Exception ex)
+                            {
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                if (File.Exists(path))
+                                {
+                                    File.Delete(path);
+                                }
                             }
                         }
                     }
                 }
+                catch (Exception ex)
+                {
+                    NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR");
+                    Globals.AssetDownloadLock = false;
+                }
             }
+
+            Globals.AssetDownloadLock = false;
+
             NFTLogUtility.Log($"Asset method unlocked", "DSTClient.GetListingAssetThumbnails()-7");
             Globals.AssetDownloadLock = false;
         }
@@ -840,6 +836,22 @@ namespace ReserveBlockCore.DST
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
             _ = udpShop.SendAsync(messageBytes, endPoint);
+        }
+
+        public static async Task<byte[]> GenerateAssetAckMessage(string uniqueId, string asset, string scUID, int ackNum)
+        {
+            var assetDataPayload = $"{uniqueId},{asset},{scUID},{ackNum}";
+            Message assetMessage = new Message
+            {
+                Data = assetDataPayload,
+                Type = MessageType.AssetReq,
+                ComType = MessageComType.Request
+            };
+
+            var shopAssetMessage = MessageService.GenerateMessage(assetMessage, false);
+            var messageAssetBytes = Encoding.UTF8.GetBytes(shopAssetMessage);
+
+            return messageAssetBytes;
         }
 
         internal class ConsoleHelper

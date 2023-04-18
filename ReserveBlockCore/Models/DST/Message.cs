@@ -112,7 +112,9 @@ namespace ReserveBlockCore.Models.DST
         Response,
         Chat,
         Info,
-        InfoResponse
+        InfoResponse,
+        Error,
+        Null
     }
 
     public enum MessageType

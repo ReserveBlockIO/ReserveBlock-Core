@@ -326,10 +326,10 @@ namespace ReserveBlockCore.Controllers
                     Address = ConnectingAddress,
                     Data = scUID,
                     Type = MessageType.AssetReq,
-                    ComType = MessageComType.Request
+                    ComType = MessageComType.Info
                 };
 
-                if(!Globals.AssetDownloadLock)
+                if (!Globals.AssetDownloadLock)
                 {
                     Globals.AssetDownloadLock = true;
                     NFTLogUtility.Log($"Asset download unlocked for: {scUID}", "DSTV1Controller.GetNFTAssets()");

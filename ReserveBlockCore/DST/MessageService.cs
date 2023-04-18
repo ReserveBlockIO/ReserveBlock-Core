@@ -6,6 +6,7 @@ using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.Net;
@@ -19,55 +20,75 @@ namespace ReserveBlockCore.DST
 {
     public class MessageService
     {
-        public static async Task ProcessMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static async Task ProcessMessage(string payload, IPEndPoint endPoint, UdpClient udpClient)
         {
-            switch(message.Type)
+            if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
             {
-                case MessageType.STUN:
-                    STUNClientConnect(message, endPoint, udpClient);
-                    break;
-                case MessageType.PunchClient:
-                    PunchClient(message, endPoint, udpClient);
-                    break;
-                case MessageType.AssetPunchClient:
-                    AssetPunchClient(message, endPoint, udpClient);
-                    break;
-                case MessageType.KeepAlive:
-                    KeepAlive(message, endPoint, udpClient);
-                    break;
-                case MessageType.STUNKeepAlive:
-                    STUNKeepAlive(message, endPoint, udpClient);
-                    break;
-                case MessageType.ShopConnect:
-                    ShopConnect(message, endPoint, udpClient);
-                    break;
-                case MessageType.ShopKeepAlive:
-                    ShopKeepAlive(message, endPoint, udpClient);
-                    break;
-                case MessageType.STUNConnect:
-                    STUNConnect(message, endPoint, udpClient);
-                    break;
-                case MessageType.DecShop :
-                    DecShopMessage(message, endPoint, udpClient);
-                    break;
-                case MessageType.Chat:
-                    ChatMessage(message, endPoint, udpClient);
-                    break;
-                case MessageType.ChatRec:
-                    ChatMessageReceived(message);
-                    break;
-                case MessageType.AssetReq:
-                    Task.Run(async () => { await AssetRequest(message, endPoint, udpClient); });
-                    break;
-                case MessageType.Bid:
-                    ProcessBid(message, endPoint, udpClient);
-                    break;
-                case MessageType.Purchase:
-                    ProcessBuyNow(message, endPoint, udpClient);
-                    break;
-                default:
-                    break;
-                    
+                if (Globals.ShowSTUNMessagesInConsole)
+                    Console.WriteLine(payload);
+            }
+            else
+            {
+
+                if (!string.IsNullOrEmpty(payload))
+                {
+                    if (Globals.ShowSTUNMessagesInConsole)
+                        Console.WriteLine(payload + "\n");
+
+                    var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                    if (message != null)
+                    {
+                        switch (message.Type)
+                        {
+                            case MessageType.STUN:
+                                STUNClientConnect(message, endPoint, udpClient);
+                                break;
+                            case MessageType.PunchClient:
+                                PunchClient(message, endPoint, udpClient);
+                                break;
+                            case MessageType.AssetPunchClient:
+                                AssetPunchClient(message, endPoint, udpClient);
+                                break;
+                            case MessageType.KeepAlive:
+                                KeepAlive(message, endPoint, udpClient);
+                                break;
+                            case MessageType.STUNKeepAlive:
+                                STUNKeepAlive(message, endPoint, udpClient);
+                                break;
+                            case MessageType.ShopConnect:
+                                ShopConnect(message, endPoint, udpClient);
+                                break;
+                            case MessageType.ShopKeepAlive:
+                                ShopKeepAlive(message, endPoint, udpClient);
+                                break;
+                            case MessageType.STUNConnect:
+                                STUNConnect(message, endPoint, udpClient);
+                                break;
+                            case MessageType.DecShop:
+                                DecShopMessage(message, endPoint, udpClient);
+                                break;
+                            case MessageType.Chat:
+                                ChatMessage(message, endPoint, udpClient);
+                                break;
+                            case MessageType.ChatRec:
+                                ChatMessageReceived(message);
+                                break;
+                            case MessageType.AssetReq:
+                                _ = Task.Run(() => AssetRequest(message, endPoint, udpClient));
+                                break;
+                            case MessageType.Bid:
+                                ProcessBid(message, endPoint, udpClient);
+                                break;
+                            case MessageType.Purchase:
+                                ProcessBuyNow(message, endPoint, udpClient);
+                                break;
+                            default:
+                                break;
+
+                        }
+                    }
+                }
             }
         }
         public static void STUNClientConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
@@ -358,12 +379,9 @@ namespace ReserveBlockCore.DST
             {
                 try
                 {
-                    //Asset Request - Requesting a specific asset.
-                    if (message.ComType == MessageComType.Request)
+                    if(message.ComType == MessageComType.Info)
                     {
-                        message.ReceivedTimestamp = TimeUtil.GetTime();
                         var scUID = message.Data;
-
                         var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
                         if (sc == null)
                             return;
@@ -373,73 +391,44 @@ namespace ReserveBlockCore.DST
                         if (assetList.Count == 0)
                             return;
 
-                        var sendCount = Encoding.UTF8.GetBytes($"[count],{assetList.Count()}");
-                        await udpClient.SendAsync(sendCount, sendCount.Length, endPoint);
+                        var assetListJson = JsonConvert.SerializeObject(assetList);
+                        var dataPayload = $"{scUID},{assetListJson}";
 
-                        foreach (var asset in assetList)
+                        Message messageRes = new Message
                         {
+                            Data = dataPayload,
+                            Type = MessageType.AssetReq,
+                            ComType = MessageComType.InfoResponse
+                        };
+
+                        await DSTClient.SendClientMessageFromShop(messageRes, endPoint, false);
+                    }
+                    //Asset Request - Requesting a specific asset.
+                    if (message.ComType == MessageComType.Request)
+                    {
+
+                        var assetMessageDataArray = message.Data.Split(',');
+                        if(assetMessageDataArray != null) 
+                        {
+                            var uniqueId = assetMessageDataArray[0];
+                            var asset = assetMessageDataArray[1];
+                            var assetscUID = assetMessageDataArray[2];
+                            var ackNumParse = int.TryParse(assetMessageDataArray[3], out int ackNum);
+
                             try
                             {
                                 var _asset = asset;
-                                if(asset.EndsWith(".pdf"))
+                                if (asset.EndsWith(".pdf"))
                                 {
                                     _asset = asset.Replace(".pdf", ".png");
                                 }
-                                
-                                var location = NFTAssetFileUtility.NFTAssetPath(_asset, scUID, true);
-                                if (location != null && location != "NA")
-                                {
-                                    var assetBytes = NFTAssetFileUtility.GetNFTAssetByteArray(location);
-                                    if (assetBytes != null)
-                                    {
-                                        var packets = NFTAssetFileUtility.SplitIntoPackets(assetBytes);
-                                        int expectedAckNumber = 0;
-                                        if(Globals.AssetAckEndpoint.TryAdd(endPoint, expectedAckNumber))
-                                        {
-                                            Globals.AssetAckEndpoint[endPoint] = expectedAckNumber;
-                                        }
-                                        var sendMessage = Encoding.UTF8.GetBytes($"[name],{_asset}");
-                                        await udpClient.SendAsync(sendMessage, sendMessage.Length, endPoint);
 
-                                        foreach (var packet in packets)
-                                        {
-                                            bool ackReceived = false;
-                                            while (!ackReceived)
-                                            {
-                                                var ackNum = Globals.AssetAckEndpoint[endPoint];
-                                                try
-                                                {
-                                                    // Wait for an acknowledgement packet from the client
-                                                    // Check if this is the expected acknowledgement packet
-                                                    if (ackNum == expectedAckNumber)
-                                                    {
-                                                        //send packet
-                                                        await udpClient.SendAsync(packet, packet.Length, endPoint);
-                                                        // If so, move on to the next packet
-                                                        ackReceived = true;
-                                                        expectedAckNumber++;
-                                                    }
-                                                    else
-                                                    {
-                                                        //create small pause to avoid program locking up.
-                                                        await Task.Delay(10);
-                                                    }
-                                                    
-                                                }
-                                                catch (SocketException)
-                                                {
-                                                    // If there was a socket exception, assume the acknowledgement was lost and retry
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                }
+                                _ = AssetSendService.SendAsset(_asset, assetscUID, endPoint, udpClient, ackNum);
                             }
                             catch { }
-                        }
-
-                        Globals.AssetAckEndpoint.TryRemove(endPoint, out _);
+                        }   
+                        
+                        //message.ReceivedTimestamp = TimeUtil.GetTime();
                     }
 
                 }

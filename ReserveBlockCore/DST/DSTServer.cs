@@ -48,12 +48,7 @@ namespace ReserveBlockCore.DST
 
                 if (!string.IsNullOrEmpty(payload))
                 {
-                    var message = JsonConvert.DeserializeObject<Message>(payload);
-
-                    if (message != null)
-                    {
-                        _ = MessageService.ProcessMessage(message, endPoint, udpClient);
-                    }
+                    _ = MessageService.ProcessMessage(payload, endPoint, udpClient);
                 }
             }
             catch (Exception ex)
