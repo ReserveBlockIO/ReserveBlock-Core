@@ -150,7 +150,8 @@ namespace ReserveBlockCore.Models.DST
         Listings,
         SpecificListing,
         Auctions,
-        Bids
+        Bids,
+        Update
     }
 
 }

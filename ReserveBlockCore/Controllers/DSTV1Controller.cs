@@ -1125,6 +1125,42 @@ namespace ReserveBlockCore.Controllers
         /// <summary>
         /// Send a bid to a listing
         /// </summary>
+        /// <param name="bidId"></param>
+        /// <returns></returns>
+        [HttpGet("ResendBid")]
+        public async Task<string> ResendBid(Guid bidId)
+        {
+            try
+            {
+                var bid = Bid.GetSingleBid(bidId);
+                if (bid != null)
+                {
+                    var bidJson = JsonConvert.SerializeObject(bid);
+
+                    Message message = new Message
+                    {
+                        Address = ConnectingAddress,
+                        Data = bidJson,
+                        Type = MessageType.Bid,
+                        ComType = MessageComType.Request
+                    };
+
+                    _ = DSTClient.SendShopMessageFromClient(message, false);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bid Resent.", BidId = bid.Id });
+                }
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a bid to a listing
+        /// </summary>
         /// <returns></returns>
         [HttpPost("SendBuyNowBid")]
         public async Task<string> SendBuyNowBid([FromBody] object jsonData)

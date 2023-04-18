@@ -313,6 +313,44 @@ namespace ReserveBlockCore.DST
                             msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
                             Globals.ClientMessageDict[message.ResponseMessageId] = msg;
                         }
+                        else if(option == "Update")
+                        {
+                            try
+                            {
+                                var uData = JsonConvert.DeserializeObject<DecShopUpdateData>(message.Data);
+                                if (uData != null)
+                                {
+                                    if (Globals.DecShopData != null)
+                                    {
+                                        if (uData.CollectionList?.Count > 0)
+                                        {
+                                            if (Globals.DecShopData.Collections?.Count > 0)
+                                            {
+                                                var newCollectionList = Globals.DecShopData.Collections.Where(x => uData.CollectionList.Contains(x.Id)).Select(x => x).ToList();
+                                                Globals.DecShopData.Collections = newCollectionList;
+                                            }
+                                        }
+                                        if (uData.ListingList?.Count > 0)
+                                        {
+                                            if (Globals.DecShopData.Listings?.Count > 0)
+                                            {
+                                                var newListingList = Globals.DecShopData.Listings.Where(x => uData.ListingList.Contains(x.Id)).Select(x => x).ToList();
+                                                Globals.DecShopData.Listings = newListingList;
+                                            }
+                                        }
+                                        if (uData.AuctionList?.Count > 0)
+                                        {
+                                            if (Globals.DecShopData.Auctions?.Count > 0)
+                                            {
+                                                var newAuctionList = Globals.DecShopData.Auctions.Where(x => uData.AuctionList.Contains(x.Id)).Select(x => x).ToList();
+                                                Globals.DecShopData.Auctions = newAuctionList;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
                         else
                         {
 
@@ -506,7 +544,6 @@ namespace ReserveBlockCore.DST
                             return respMessage;
                         }
                     }
-                    
                     else if (option == "SpecificListing")
                     {
                         var scUID = requestOptArray[1];
@@ -634,8 +671,8 @@ namespace ReserveBlockCore.DST
                                 Data = JsonConvert.SerializeObject(bidList)
                             };
 
-                            bidList.Clear();
-                            bidList = new List<Bid>();
+                            //bidList.Clear();
+                            //bidList = new List<Bid>();
 
                             return respMessage;
                         }
@@ -653,6 +690,55 @@ namespace ReserveBlockCore.DST
                             return respMessage;
                         }
 
+                    }
+                    else if(option == "Update")
+                    {
+                        var collections = Collection.GetAllCollections()?.ToList();
+                        var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleBeforeStartDate && !x.IsCancelled && !x.IsAuctionEnded).ToList();
+                        var auctions = Auction.GetAllAuctions()?.Where(x => !x.IsAuctionOver).ToList();
+
+                        List<int>? collectionIds = null;
+                        List<int>? listingIds = null;
+                        List<int>? auctionsIds = null;
+
+                        if(collections?.Count > 0)
+                        {
+                            var colIds = collections.Select(x => x.Id);    
+                            collectionIds = new List<int>();
+                            collectionIds.AddRange(colIds);
+                        }
+
+                        if (listings?.Count > 0)
+                        {
+                            var listIds = listings.Select(x => x.Id);
+                            listingIds = new List<int>();
+                            listingIds.AddRange(listIds);
+                        }
+
+                        if (auctions?.Count > 0)
+                        {
+                            var aucIds = auctions.Select(x => x.Id);
+                            auctionsIds = new List<int>();
+                            auctionsIds.AddRange(aucIds);
+                        }
+
+                        var decShopUpdateData = new DecShopUpdateData { 
+                            AuctionList = auctionsIds,
+                            CollectionList = collectionIds,
+                            ListingList = listingIds,
+                        };
+
+
+                        var respMessage = new Message
+                        {
+                            ResponseMessage = true,
+                            ResponseMessageId = message.Id,
+                            Type = message.Type,
+                            ComType = MessageComType.Response,
+                            Data = JsonConvert.SerializeObject(decShopUpdateData)
+                        };
+
+                        return respMessage;
                     }
                     else
                     {

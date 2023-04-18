@@ -336,6 +336,9 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
+                Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                taskData.Start();
+
                 //ListenerThread = new Thread(Listen);
                 //ListenerThread.Start();
 
@@ -605,6 +608,40 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        static async Task UpdateShopData(CancellationToken token)
+        {
+            var counter = somecount;
+
+            var exit = false;
+            while (!exit && !token.IsCancellationRequested)
+            {
+                try
+                {
+                    var delay = Task.Delay(new TimeSpan(0, 0, 12));
+                    var isCancelled = token.IsCancellationRequested;
+                    if (isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+
+                    Message message = new Message {
+                        Data = $"{DecShopRequestOptions.Update},0",
+                        Type = MessageType.DecShop,
+                        ComType = MessageComType.Request
+                    };
+
+                    _ = SendShopMessageFromClient(message, true);
+
+                    await delay;
+                }
+                catch
+                {
+
+                }
+            }
+        }
+
         public static async Task<bool> DisconnectFromAsset(bool keepShopData = false)
         {
             try
@@ -845,12 +882,17 @@ namespace ReserveBlockCore.DST
             Globals.AssetDownloadLock = false;
         }
 
-        public static async Task SendShopMessageFromClient(Message message, bool responseRequested)
+        public static async Task SendShopMessageFromClient(Message message, bool responseRequested, bool sendTwice = false)
         {
             var shopMessage = MessageService.GenerateMessage(message, responseRequested);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
 
             _ = udpClient.SendAsync(messageBytes, ConnectedShopServer);
+
+            if(sendTwice)
+            {
+                await udpClient.SendAsync(messageBytes, ConnectedShopServer);
+            }
         }
 
         public static async Task SendClientMessageFromShop(Message message, IPEndPoint endPoint, bool responseRequested)
