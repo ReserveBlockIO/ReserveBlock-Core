@@ -681,8 +681,8 @@ namespace ReserveBlockCore.DST
             var stopProcess = false;
             int attempts = 0;
             NFTLogUtility.Log("NFT asset thumbnail process start. Requesting Asset List", "DSTClient.GetListingAssetThumbnails()-1");
-            
-            while(!stopProcess)
+
+            while (!stopProcess)
             {
                 await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
 
@@ -701,7 +701,7 @@ namespace ReserveBlockCore.DST
                         continue;
 
                     var messageData = messageFromJson.Data;
-                    var messageDataArray = messageData.Split(',');
+                    var messageDataArray = messageData.Split(new string[] { "<|>" }, StringSplitOptions.None);
                     var scuidRet = messageDataArray[0];
                     var assetListJson = messageDataArray[1];
 

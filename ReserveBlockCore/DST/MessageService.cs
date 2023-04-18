@@ -392,7 +392,7 @@ namespace ReserveBlockCore.DST
                             return;
 
                         var assetListJson = JsonConvert.SerializeObject(assetList);
-                        var dataPayload = $"{scUID},{assetListJson}";
+                        var dataPayload = $"{scUID}<|>{assetListJson}";
 
                         Message messageRes = new Message
                         {
