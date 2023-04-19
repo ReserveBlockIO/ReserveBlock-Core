@@ -718,7 +718,7 @@ namespace ReserveBlockCore.DST
                 try
                 {
                     _ = udpAssets.SendAsync(messageBytes, ConnectedShopServerAssets);
-                    var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 10)); //wait to receive list
+                    var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5)); //wait to receive list
                     attempts += 1;
 
                     if (attempts == 5)
@@ -799,9 +799,11 @@ namespace ReserveBlockCore.DST
                                         {
                                             var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
 
-                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);//this starts the first file download. Next receive should be the first set of bytes
+                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
+                                            await Task.Delay(10);
+                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
                                             
-                                            var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 10));
+                                            var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                             var packetData = response.Buffer;
                                             await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                             // Check if this is the last packet
