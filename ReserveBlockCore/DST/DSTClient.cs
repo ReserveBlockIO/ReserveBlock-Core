@@ -758,9 +758,12 @@ namespace ReserveBlockCore.DST
                             try
                             {
                                 var _asset = asset;
-                                if (asset.EndsWith(".pdf"))
+                                if (!asset.EndsWith(".jpg"))
                                 {
-                                    _asset = asset.Replace(".pdf", ".jpg");
+                                    var assetArray = asset.Split('.');
+                                    var extIndex = assetArray.Length - 1;
+                                    var extToReplace = assetArray[extIndex];
+                                    _asset = asset.Replace(extToReplace, "jpg");
                                 }
                                 //craft message to start process.
                                 var uniqueId = RandomStringUtility.GetRandomStringOnlyLetters(10, false);
@@ -800,9 +803,9 @@ namespace ReserveBlockCore.DST
                                             
                                             var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 1));
                                             var packetData = response.Buffer;
-                                            await Task.Delay(50);
+                                            await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                             // Check if this is the last packet
-                                            bool isLastPacket = packetData.Length < 1024;
+                                            bool isLastPacket = packetData.Length < 8192;
 
                                             // Extract the sequence number from the packet
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);

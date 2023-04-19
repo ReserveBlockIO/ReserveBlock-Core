@@ -156,13 +156,15 @@ namespace ReserveBlockCore.Utilities
                         {
                             if (image.Height > ImageSize || image.Width > ImageSize)
                             {
+                                var newPathFileExt = newPath.ToFileExtension();
                                 var size = new MagickGeometry(ImageSize, ImageSize);
                                 size.IgnoreAspectRatio = false;
                                 image.Resize(size);
-                                
+                                image.Quality = 45;
                                 // Save the result
+                                newPath = newPath.Replace(newPathFileExt, ".jpg");
                                 ImageOptimizer optimizer = new ImageOptimizer();
-                                image.Write(newPath);
+                                image.Write(newPath, MagickFormat.Jpg);
                                 FileInfo info = new FileInfo(newPath);
                                 optimizer.Compress(info);
                                 info.Refresh();
@@ -622,7 +624,7 @@ namespace ReserveBlockCore.Utilities
 
         public static byte[][] SplitIntoPackets(byte[] data)
         {
-            const int MaxPacketSize = 1024;
+            const int MaxPacketSize = 8192;
 
             var packets = new byte[(data.Length + MaxPacketSize - 1) / MaxPacketSize][];
             for (int i = 0; i < packets.Length; i++)
