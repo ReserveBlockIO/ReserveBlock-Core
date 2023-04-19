@@ -717,8 +717,8 @@ namespace ReserveBlockCore.DST
             {
                 try
                 {
-                    await udpAssets.SendAsync(messageBytes, ConnectedShopServer);
-                    var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 3)); //wait to receive list
+                    _ = udpAssets.SendAsync(messageBytes, ConnectedShopServerAssets);
+                    var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 10)); //wait to receive list
                     attempts += 1;
 
                     if (attempts == 5)
@@ -799,9 +799,9 @@ namespace ReserveBlockCore.DST
                                         {
                                             var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
 
-                                            await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);//this starts the first file download. Next receive should be the first set of bytes
+                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);//this starts the first file download. Next receive should be the first set of bytes
                                             
-                                            var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 1));
+                                            var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 10));
                                             var packetData = response.Buffer;
                                             await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                             // Check if this is the last packet
@@ -843,7 +843,7 @@ namespace ReserveBlockCore.DST
                                             if (isLastPacket)
                                             {
                                                 NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-4");
-                                                // If this is the last packet, save the image to disk and exit the loop
+                                                // If this is the last   packet, save the image to disk and exit the loop
                                                 await fileStream.WriteAsync(imageData, 0, imageData.Length);
                                                 stopAssetBuild = true;
                                                 break;
@@ -856,7 +856,7 @@ namespace ReserveBlockCore.DST
                                             timeouts += 1;
                                             NFTLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
                                             Globals.AssetDownloadLock = false;
-                                            if (timeouts > 10)
+                                            if (timeouts > 5)
                                             {
                                                 stopAssetBuild = true;
                                                 var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
