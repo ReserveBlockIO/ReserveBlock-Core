@@ -857,7 +857,15 @@ namespace ReserveBlockCore.DST
                                             NFTLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
                                             Globals.AssetDownloadLock = false;
                                             if (timeouts > 10)
+                                            {
                                                 stopAssetBuild = true;
+                                                var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                                if (File.Exists(pathToDelete))
+                                                {
+                                                    File.Delete(pathToDelete);
+                                                }
+                                            }
+                                                
                                         }
                                     }
                                 }
