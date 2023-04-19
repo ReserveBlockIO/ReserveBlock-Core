@@ -85,7 +85,7 @@ namespace ReserveBlockCore.DST
                                 ChatMessageReceived(message);
                                 break;
                             case MessageType.AssetReq:
-                                _ = Task.Run(() => AssetRequest(message, endPoint, udpClient));
+                                _ = Task.Run(async () => await AssetRequest(message, endPoint, udpClient));
                                 break;
                             case MessageType.Bid:
                                 ProcessBid(message, endPoint, udpClient);
