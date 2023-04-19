@@ -420,7 +420,7 @@ namespace ReserveBlockCore.DST
                                 var _asset = asset;
                                 if (asset.EndsWith(".pdf"))
                                 {
-                                    _asset = asset.Replace(".pdf", ".png");
+                                    _asset = asset.Replace(".pdf", ".jpg");
                                 }
 
                                 _ = AssetSendService.SendAsset(_asset, assetscUID, endPoint, udpClient, ackNum);

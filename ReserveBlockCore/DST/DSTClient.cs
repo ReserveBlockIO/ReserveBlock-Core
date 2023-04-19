@@ -750,6 +750,7 @@ namespace ReserveBlockCore.DST
 
                     if (assetList.Count > 0)
                     {
+                        int byteSize = 0;
                         NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
                         foreach (var asset in assetList)
                         {
@@ -758,7 +759,7 @@ namespace ReserveBlockCore.DST
                                 var _asset = asset;
                                 if (asset.EndsWith(".pdf"))
                                 {
-                                    _asset = asset.Replace(".pdf", ".png");
+                                    _asset = asset.Replace(".pdf", ".jpg");
                                 }
                                 //craft message to start process.
                                 var uniqueId = RandomStringUtility.GetRandomStringOnlyLetters(10, false);
@@ -786,7 +787,7 @@ namespace ReserveBlockCore.DST
                                     NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-3");
                                     int expectedSequenceNumber = 0;
                                     byte[]? imageData = null;
-
+                                    int timeouts = 0;
                                     bool stopAssetBuild = false;
                                     while (!stopAssetBuild)
                                     {
@@ -794,11 +795,11 @@ namespace ReserveBlockCore.DST
                                         {
                                             var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
 
-                                            await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServer);//this starts the first file download. Next receive should be the first set of bytes
-
+                                            await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);//this starts the first file download. Next receive should be the first set of bytes
+                                            
                                             var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 1));
                                             var packetData = response.Buffer;
-                                            
+                                            await Task.Delay(50);
                                             // Check if this is the last packet
                                             bool isLastPacket = packetData.Length < 1024;
 
@@ -811,13 +812,14 @@ namespace ReserveBlockCore.DST
                                                 var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber;
                                                 var ackPacket = BitConverter.GetBytes(expSeqNum);
                                                 messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expSeqNum);
-                                                await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServer);
+                                                await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
                                                 continue;
                                             }
 
                                             // If this is the expected packet, extract the image data and write it to disk
                                             int dataOffset = sizeof(int);
                                             int dataLength = packetData.Length - dataOffset;
+                                            byteSize += dataLength;
                                             if (imageData == null)
                                             {
                                                 imageData = new byte[dataLength];
@@ -845,7 +847,14 @@ namespace ReserveBlockCore.DST
 
                                             expectedSequenceNumber++;
                                         }
-                                        catch { }
+                                        catch(Exception ex) 
+                                        {
+                                            timeouts += 1;
+                                            NFTLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
+                                            Globals.AssetDownloadLock = false;
+                                            if (timeouts > 10)
+                                                stopAssetBuild = true;
+                                        }
                                     }
                                 }
                             }
@@ -864,7 +873,7 @@ namespace ReserveBlockCore.DST
                 }
                 catch (Exception ex)
                 {
-                    NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR");
+                    NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR1");
                     Globals.AssetDownloadLock = false;
                 }
             }

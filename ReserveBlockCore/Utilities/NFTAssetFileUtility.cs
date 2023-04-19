@@ -32,6 +32,8 @@ namespace ReserveBlockCore.Utilities
             // Other possible extensions
         };
 
+        private const int ImageSize = 100;
+
         public static bool MoveAsset(string fileLocation, string fileName, string scUID)
         {
             var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
@@ -138,7 +140,7 @@ namespace ReserveBlockCore.Utilities
                         var pdfBytes = File.ReadAllBytes(originPath);
                         var pdfImage = PdfToImage(pdfBytes);
 
-                        newPath = newPath.Replace(".pdf", ".png");
+                        newPath = newPath.Replace(".pdf", ".jpg");
                         FileStream file = new FileStream(newPath, FileMode.Create, FileAccess.Write);
                         pdfImage.WriteTo(file);
                         file.Close();
@@ -152,13 +154,17 @@ namespace ReserveBlockCore.Utilities
                     {
                         using (var image = new MagickImage(originPath))
                         {
-                            if (image.Height > 512 || image.Width > 512)
+                            if (image.Height > ImageSize || image.Width > ImageSize)
                             {
-                                var size = new MagickGeometry(512, 512);
+                                var size = new MagickGeometry(ImageSize, ImageSize);
                                 size.IgnoreAspectRatio = false;
                                 image.Resize(size);
                                 // Save the result
+                                ImageOptimizer optimizer = new ImageOptimizer();
                                 image.Write(newPath);
+                                FileInfo info = new FileInfo(newPath);
+                                optimizer.Compress(info);
+                                info.Refresh();
                             }
                             else
                             {
@@ -576,11 +582,11 @@ namespace ReserveBlockCore.Utilities
                 }
             }
 
-            var size = new MagickGeometry(512, 512);
+            var size = new MagickGeometry(ImageSize, ImageSize);
             size.IgnoreAspectRatio = false;
             imgBackdrop.Resize(size);
 
-            imgBackdrop.Write(memoryStream, MagickFormat.Png);
+            imgBackdrop.Write(memoryStream, MagickFormat.Jpg);
             imgBackdrop.Dispose();
             memoryStream.Position = 0;
             return memoryStream;
