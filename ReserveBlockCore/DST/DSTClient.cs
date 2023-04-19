@@ -336,8 +336,8 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
-                //Task taskData = new Task(() => { UpdateShopData(token); }, token);
-                //taskData.Start();
+                Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                taskData.Start();
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -611,7 +611,7 @@ namespace ReserveBlockCore.DST
             {
                 try
                 {
-                    var delay = Task.Delay(new TimeSpan(0, 0, 12));
+                    var delay = Task.Delay(new TimeSpan(0, 0, 60));
                     var isCancelled = token.IsCancellationRequested;
                     if (isCancelled)
                     {

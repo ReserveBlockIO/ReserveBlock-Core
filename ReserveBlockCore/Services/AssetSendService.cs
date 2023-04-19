@@ -13,7 +13,7 @@ namespace ReserveBlockCore.Services
             {
                 var location = NFTAssetFileUtility.NFTAssetPath(asset, scUID, true);
 
-                if (location != null && location != "NA")
+                if (location != "NA")
                 {
                     var assetBytes = NFTAssetFileUtility.GetNFTAssetByteArray(location);
                     if(assetBytes != null)
@@ -21,15 +21,22 @@ namespace ReserveBlockCore.Services
                         var packets = NFTAssetFileUtility.SplitIntoPackets(assetBytes);
                         if(packets != null)
                         {
-                            var packet = packets[ackNum];
-                            await udpClient.SendAsync(packets[ackNum], packet.Length, endPoint);
+                            if (ackNum < packets.Length)
+                            {
+                                var packet = packets[ackNum];
+                                await udpClient.SendAsync(packets[ackNum], packet.Length, endPoint);
+                            }
+                            else
+                            {
+                                NFTLogUtility.Log($"Packet Ack Num too large. Asset: {asset} | AckNum: {ackNum} | Contract UID : {scUID} | IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
+                            }
                         }
                     }
                 }
             }
             catch(Exception ex) 
             {
-                NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "AssetSendService.SendAsset()");
+                NFTLogUtility.Log($"Unknown Error: {ex.ToString()} - Asset: {asset} - ACK Num: {ackNum} - SCUID: {scUID} - IP: {endPoint.ToString()}", "AssetSendService.SendAsset()");
             }
         }
     }
