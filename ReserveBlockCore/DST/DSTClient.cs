@@ -13,6 +13,7 @@ using System.Linq.Expressions;
 using static ReserveBlockCore.Models.Mother;
 using System.Xml;
 using System;
+using Docnet.Core.Bindings;
 
 namespace ReserveBlockCore.DST
 {
@@ -114,8 +115,11 @@ namespace ReserveBlockCore.DST
                         stunToken = new CancellationTokenSource();
                         CancellationToken token = stunToken.Token;
 
-                        Task task = new Task(() => { ShopListen(token); }, token);
+                        Task task = new Task(async () => { await ShopListen(token); }, token);
                         task.Start();
+
+                        Task taskClear = new Task(async () => { await ClearStaleConnections(token); }, token);
+                        taskClear.Start();
 
                         var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
                         var kaMessage = GenerateMessage(kaPayload);
@@ -530,6 +534,32 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        static async Task ClearStaleConnections(CancellationToken token)
+        {
+            var exit = false;
+            while (!exit && !token.IsCancellationRequested)
+            {
+                var delay = Task.Delay(new TimeSpan(0, 2, 0));
+                var isCancelled = token.IsCancellationRequested;
+                if (isCancelled)
+                {
+                    exit = true;
+                    continue;
+                }
+
+                var clientsToRemoveList = Globals.ConnectedClients.Values.Where(x => !x.IsConnected).ToList();
+                if(clientsToRemoveList.Count > 0)
+                {
+                    foreach (var client in clientsToRemoveList)
+                    {
+                        Globals.ConnectedClients.TryRemove(client.IPAddress, out _);
+                    }
+                }
+                
+                await delay;
+            }
+        }
+
         static async Task ShopListen(CancellationToken token)
         {
             var exit = false;
@@ -848,6 +878,8 @@ namespace ReserveBlockCore.DST
                                                 // If this is the last   packet, save the image to disk and exit the loop
                                                 await fileStream.WriteAsync(imageData, 0, imageData.Length);
                                                 stopAssetBuild = true;
+                                                expectedSequenceNumber = 0;
+                                                imageData = null;
                                                 break;
                                             }
 
@@ -864,6 +896,8 @@ namespace ReserveBlockCore.DST
                                                 var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
                                                 if (File.Exists(pathToDelete))
                                                 {
+                                                    expectedSequenceNumber = 0;
+                                                    imageData = null;
                                                     File.Delete(pathToDelete);
                                                 }
                                             }
