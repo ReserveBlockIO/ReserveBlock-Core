@@ -37,6 +37,16 @@ namespace ReserveBlockCore.DST
 
                     var message = JsonConvert.DeserializeObject<Message>(payload);
 
+                    //var ipTest = endPoint.ToString();
+                    //if (ipTest.StartsWith("185"))
+                    //{
+                    //    Console.WriteLine($"Message from shop: {ipTest} - Received at {TimeUtil.GetTime()} - Message Type : {message.Type}");
+                    //    if(message.Type == MessageType.DecShop)
+                    //    {
+                    //        Console.WriteLine(message.Data);
+                    //    }
+                    //}
+
                     if (message != null)
                     {
                         switch (message.Type)

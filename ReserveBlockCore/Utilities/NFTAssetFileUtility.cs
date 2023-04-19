@@ -159,6 +159,7 @@ namespace ReserveBlockCore.Utilities
                                 var size = new MagickGeometry(ImageSize, ImageSize);
                                 size.IgnoreAspectRatio = false;
                                 image.Resize(size);
+                                
                                 // Save the result
                                 ImageOptimizer optimizer = new ImageOptimizer();
                                 image.Write(newPath);

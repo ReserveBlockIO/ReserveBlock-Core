@@ -336,8 +336,8 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
-                Task taskData = new Task(() => { UpdateShopData(token); }, token);
-                taskData.Start();
+                //Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                //taskData.Start();
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -551,7 +551,8 @@ namespace ReserveBlockCore.DST
 
                     if(!string.IsNullOrEmpty(payload))
                     {
-                        _ = Task.Run(() => MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
+                        _ = Task.Run(async () => await MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
+                        //_ = MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop);
                     }
                 }
                 catch { }
@@ -565,7 +566,7 @@ namespace ReserveBlockCore.DST
 
             if (!string.IsNullOrEmpty(payload))
             {
-                _ = Task.Run(() => MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
+                _ = Task.Run(() => MessageService.ProcessMessage(payload, dataGram.RemoteEndPoint, udpShop));
             }
 
         }
@@ -591,7 +592,7 @@ namespace ReserveBlockCore.DST
 
                     if (!string.IsNullOrEmpty(payload))
                     {
-                        _ = Task.Run(() => MessageService.ProcessMessage(payload, RemoteEndPoint, udpShop));
+                        _ = Task.Run(async () => await MessageService.ProcessMessage(payload, RemoteEndPoint, udpClient));
                     }
                 }
                 catch 
