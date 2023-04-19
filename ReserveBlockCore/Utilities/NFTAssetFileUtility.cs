@@ -32,7 +32,7 @@ namespace ReserveBlockCore.Utilities
             // Other possible extensions
         };
 
-        private const int ImageSize = 100;
+        private const int ImageSize = 400;
 
         public static bool MoveAsset(string fileLocation, string fileName, string scUID)
         {
