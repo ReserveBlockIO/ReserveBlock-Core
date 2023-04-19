@@ -802,7 +802,7 @@ namespace ReserveBlockCore.DST
                                             var packetData = response.Buffer;
                                             await Task.Delay(50);
                                             // Check if this is the last packet
-                                            bool isLastPacket = packetData.Length < 8192;
+                                            bool isLastPacket = packetData.Length < 1024;
 
                                             // Extract the sequence number from the packet
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);
