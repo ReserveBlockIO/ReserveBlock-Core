@@ -51,8 +51,9 @@ namespace ReserveBlockCore.DST
                     var portNumber = Port;
                     LastUsedPort = portNumber;
                     udpShop = new UdpClient(portNumber);
+                    var delay = Task.Delay(new TimeSpan(0,2,0));
 
-                    while (!IsConnected && !FailedToConnect)
+                    while (!IsConnected)
                     {
                         var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == myDecShop.STUNServerGroup).FirstOrDefault();
 
@@ -115,7 +116,8 @@ namespace ReserveBlockCore.DST
                         }
                         else
                         {
-                            FailedToConnect = true;
+                            await delay;
+                            badList = new List<StunServer>();
                         }
                     }
 
@@ -487,11 +489,12 @@ namespace ReserveBlockCore.DST
             var FailedToConnect = false;
             var badList = new List<StunServer>();
             var portNumber = Port;
+            var delay = Task.Delay(new TimeSpan(0,2,0));
 
             if (Globals.IsTestNet)
                 groupNum = 1;
 
-            while (!IsConnected && !FailedToConnect)
+            while (!IsConnected)
             {
                 var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == groupNum).FirstOrDefault();
 
@@ -556,7 +559,8 @@ namespace ReserveBlockCore.DST
                 }
                 else
                 {
-                    FailedToConnect = true;
+                    badList = new List<StunServer>();
+                    await delay;
                 }
             }
 
