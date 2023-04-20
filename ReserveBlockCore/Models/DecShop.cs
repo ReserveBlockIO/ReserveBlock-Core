@@ -12,6 +12,8 @@ using System.Data.SqlTypes;
 using LiteDB;
 using System.Net;
 using Trillium.Syntax;
+using ReserveBlockCore.DST;
+using ReserveBlockCore.Engines;
 
 namespace ReserveBlockCore.Models
 {
@@ -23,11 +25,14 @@ namespace ReserveBlockCore.Models
         public string UniqueId { get; set; }
         public string Name { get; set; } //User Submitted - 64 length
         public string DecShopURL { get; set; } //User Submitted - 64 length - Do not add rbx://
+        public string? ThirdPartyBaseURL { get; set; }
+        public string? ThirdPartyAPIURL { get; set; }
         public string Description { get; set; } //User Submitted - 200 words, or 1200 in length
         public string OwnerAddress { get; set; } //User Submitted -starts with R
         public DecShopHostingType HostingType { get; set; } //User Submitted
         public string IP { get; set; } //User Submitted if HostingType  == SelfHosted - 32 length
         public int Port { get; set; } //User Submitted if HostingType  == SelfHosted
+        public int STUNServerGroup { get; set; }
         public long OriginalBlockHeight { get; set; }
         public string? OriginalTXHash { get; set; } = null;
         public long LatestBlockHeight { get; set; }
@@ -56,7 +61,8 @@ namespace ReserveBlockCore.Models
             if (HostingType == DecShopHostingType.Network)
             {
                 IP = P2PClient.MostLikelyIP();
-                if (IP == "NA")
+
+                if(IP == "NA")
                 {
                     return (false, "Could not find IP automatically.");
                 }
@@ -68,6 +74,11 @@ namespace ReserveBlockCore.Models
                 return (false, "Please do not include 'rbx://' in your URL. It is automatically added.");
 
             DecShopURL = $"rbx://{DecShopURL}";
+
+            Random rnd = new Random();
+            var groupNum = Globals.IsTestNet ? 1 : rnd.Next(1, 6);
+
+            STUNServerGroup = groupNum;
 
             return (true, "");
         }
@@ -83,7 +94,7 @@ namespace ReserveBlockCore.Models
                 return decshops;
             }
             catch (Exception ex)
-            {
+            {                
                 ErrorLogUtility.LogError(ex.ToString(), "DecShop.DecShopTreiDb()");
                 return null;
             }
@@ -142,6 +153,7 @@ namespace ReserveBlockCore.Models
         public static DecShop? GetDecShopStateTreiLeaf(string dsUID)
         {
             var dstDB = DecShopTreiDb();
+            
             if (dstDB != null)
             {
                 var rec = dstDB.Query().Where(x => x.UniqueId == dsUID).FirstOrDefault();
@@ -212,6 +224,7 @@ namespace ReserveBlockCore.Models
                     var existingDecShopInfo = decshops.FindAll().FirstOrDefault();
                     if (existingDecShopInfo == null)
                     {
+
                         if (!isImport)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
@@ -225,6 +238,7 @@ namespace ReserveBlockCore.Models
                     }
                     else
                     {
+
                         if (decshop.DecShopURL != existingDecShopInfo.DecShopURL)
                         {
                             var urlvalidCheck = ValidStateTreiURL(decshop.DecShopURL);
@@ -243,7 +257,6 @@ namespace ReserveBlockCore.Models
                 ErrorLogUtility.LogError($"Error Saving: {ex.ToString()}", "DecShop.SaveMyDecShopLocal()");
                 return (false, $"Unknown Error Saving/Updating Dec Shop. Error: {ex.ToString()}");
             }
-
         }
 
         #endregion
@@ -360,11 +373,11 @@ namespace ReserveBlockCore.Models
                     myDecShop.IsOffline = !myDecShop.IsOffline;
                     if (myDecShop.IsOffline)
                     {
-                        //turn off STUN UDP Logic
+                        AuctionEngine.StopBidProcessing();
                     }
                     else
                     {
-                        //Turn on STUN UDP Logic
+                        _ = AuctionEngine.StartBidProcessing();
                     }
                     decshop.UpdateSafe(myDecShop);
                     return myDecShop.IsOffline;
@@ -655,6 +668,7 @@ namespace ReserveBlockCore.Models
     public enum DecShopHostingType
     {
         Network,
-        SelfHosted
+        SelfHosted,
+        ThirdParty
     }
 }

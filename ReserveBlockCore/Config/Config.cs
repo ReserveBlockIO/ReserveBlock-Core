@@ -1,4 +1,6 @@
-﻿using ReserveBlockCore.Utilities;
+﻿using Microsoft.AspNetCore.Hosting.Server;
+using ReserveBlockCore.Models;
+using ReserveBlockCore.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,6 +40,10 @@ namespace ReserveBlockCore.Config
 		public bool RefuseToCallSeed { get; set; }
 		public bool OpenAPI { get; set; }
 		public bool RunUnsafeCode { get; set; }
+		public int DSTClientPort { get; set; }
+		public string? STUNServers { get; set; }
+		public bool SelfSTUNServer { get; set; }
+        public int SelfSTUNPort { get; set; }
         public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();
@@ -89,6 +95,10 @@ namespace ReserveBlockCore.Config
                 config.RefuseToCallSeed = dict.ContainsKey("RefuseToCallSeed") ? Convert.ToBoolean(dict["RefuseToCallSeed"]) : false;
                 config.OpenAPI = dict.ContainsKey("OpenAPI") ? Convert.ToBoolean(dict["OpenAPI"]) : false;
                 config.RunUnsafeCode = dict.ContainsKey("RunUnsafeCode") ? Convert.ToBoolean(dict["RunUnsafeCode"]) : false;
+                config.DSTClientPort = dict.ContainsKey("DSTClientPort") ? Convert.ToInt32(dict["DSTClientPort"]) : 3341;
+                config.STUNServers = dict.ContainsKey("STUNServers") ? dict["STUNServers"] : null;
+                config.SelfSTUNServer = dict.ContainsKey("STUN") ? Convert.ToBoolean(dict["STUN"]) : false;
+                config.DSTClientPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -164,6 +174,42 @@ namespace ReserveBlockCore.Config
 			Globals.RefuseToCallSeed = config.RefuseToCallSeed;
 			Globals.OpenAPI = Globals.OpenAPI != true ? config.OpenAPI : true;
 			Globals.RunUnsafeCode = config.RunUnsafeCode;
+			Globals.DSTClientPort = config.DSTClientPort;
+            Globals.SelfSTUNPort = config.SelfSTUNPort;
+			Globals.SelfSTUNServer = Globals.SelfSTUNServer == true ? true : config.SelfSTUNServer;
+			
+			if (config.STUNServers?.Count() > 0)
+			{
+				var serverList = config.STUNServers.Split(',');
+				foreach( var server in serverList)
+				{
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = server, Group = 999, IsNetwork = false });
+                }
+			}
+			else
+			{
+				var port = Globals.IsTestNet ? 13340 : 3440;
+
+				if(!Globals.IsTestNet)
+				{
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"162.248.14.123:{port}", Group = 1, IsNetwork = true});
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"144.126.149.104:{port}", Group = 1, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"144.126.150.118:{port}", Group = 2, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"89.117.21.39:{port}", Group = 2, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"89.117.21.40:{port}", Group = 3, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"209.126.11.92:{port}", Group = 3, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"149.102.144.58:{port}", Group = 4, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"194.233.77.39:{port}", Group = 4, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"185.188.249.117:{port}", Group = 5, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"154.26.155.35:{port}", Group = 5, IsNetwork = true });
+
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"173.254.253.106:{port}", Group = 0, IsNetwork = true });
+                }
+				else
+				{
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"162.251.121.150:{port}", Group = 1, IsNetwork = true });
+                }
+            }
 
             if (config.TestNet == true)
             {
@@ -173,7 +219,11 @@ namespace ReserveBlockCore.Config
 				Globals.Port = 13338;
 				Globals.APIPort = 17292;
 				Globals.AddressPrefix = 0x89; //address prefix 'x'
-				Globals.BlockLock = 15;
+				Globals.V1ValHeight = 200;
+				Globals.TXHeightRule1 = 200;
+				Globals.TXHeightRule2 = 200;
+				Globals.DSTClientPort = 13341;
+                Globals.SelfSTUNPort = 13340;
             }
 
 			if (!string.IsNullOrWhiteSpace(config.WalletPassword))

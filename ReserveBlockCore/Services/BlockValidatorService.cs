@@ -8,6 +8,7 @@ using ReserveBlockCore.Nodes;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using System;
+using System.Security.Principal;
 using System.Text;
 
 namespace ReserveBlockCore.Services
@@ -278,7 +279,10 @@ namespace ReserveBlockCore.Services
                                     if (blkTransaction.TransactionType != TransactionType.TX &&
                                         blkTransaction.TransactionType != TransactionType.ADNR &&
                                         blkTransaction.TransactionType != TransactionType.VOTE &&
-                                        blkTransaction.TransactionType != TransactionType.VOTE_TOPIC)
+                                        blkTransaction.TransactionType != TransactionType.VOTE_TOPIC &&
+                                        blkTransaction.TransactionType != TransactionType.DSTR &&
+                                        blkTransaction.TransactionType != TransactionType.RESERVE && 
+                                        blkTransaction.TransactionType != TransactionType.NFT_SALE)
                                     {
                                         if (blkTransaction.Data != null)
                                         {
@@ -379,6 +383,12 @@ namespace ReserveBlockCore.Services
                                         {
                                             await BlockTransactionValidatorService.ProcessOutgoingTransaction(localFromTransaction, fromAccount, block.Height);
                                         }
+                                        var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localFromTransaction.FromAddress).FirstOrDefault();
+                                        if (reserveAccount != null)
+                                        {
+                                            //change account types
+                                            await BlockTransactionValidatorService.ProcessOutgoingReserveTransaction(localFromTransaction, reserveAccount, block.Height);
+                                        }
                                     }
                                     catch { }
                                     
@@ -386,6 +396,48 @@ namespace ReserveBlockCore.Services
 
                                 foreach (var localToTransaction in block.Transactions)
                                 {
+                                    string? nftSellerAddress = null;
+                                    Transaction? nftSellerTX = null;
+                                    string? nftRoyaltyAddress = null;
+                                    Transaction? nftRoyaltyTX = null;
+                                    try
+                                    {
+                                        if (localToTransaction.TransactionType == TransactionType.NFT_SALE)
+                                        {
+                                            var txData = localToTransaction.Data;
+                                            var jobj = JObject.Parse(txData);
+                                            var function = (string?)jobj["Function"];
+                                            if (function != null)
+                                            {
+                                                if (function == "Sale_Complete()")
+                                                {
+                                                    var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
+                                                    if (transactions != null)
+                                                    {
+                                                        if (transactions.Count() > 1)
+                                                        {
+                                                            var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
+                                                            var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+
+                                                            nftSellerAddress = txToSeller.ToAddress;
+                                                            nftSellerTX = txToSeller;
+
+                                                            nftRoyaltyAddress = txToRoyaltyPayee.ToAddress;
+                                                            nftRoyaltyTX = txToRoyaltyPayee;
+                                                        }
+                                                        else
+                                                        {
+                                                            var txToSeller = transactions.FirstOrDefault();
+                                                            nftSellerAddress = txToSeller.ToAddress;
+                                                            nftSellerTX = txToSeller;
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                        }
+                                    }
+                                    catch { }
                                     try
                                     {
                                         //Process transactions sent ->To<- wallet
@@ -393,6 +445,30 @@ namespace ReserveBlockCore.Services
                                         if (account != null)
                                         {
                                             await BlockTransactionValidatorService.ProcessIncomingTransactions(localToTransaction, account, block.Height);
+                                        }
+
+                                        //these are for NFT sales 1. seller 2. royalty
+                                        if(nftSellerAddress != null)
+                                        {
+                                            var nftSellerAccount = AccountData.GetAccounts().FindOne(x => x.Address == nftSellerAddress);
+                                            if (nftSellerTX != null && nftSellerAccount != null)
+                                            {
+                                                await BlockTransactionValidatorService.ProcessIncomingTransactions(nftSellerTX, nftSellerAccount, block.Height);
+                                            }
+                                        }
+                                        if (nftRoyaltyAddress != null)
+                                        {
+                                            var nftRoyaltyAccount = AccountData.GetAccounts().FindOne(x => x.Address == nftRoyaltyAddress);
+                                            if (nftRoyaltyTX != null && nftRoyaltyAccount != null)
+                                            {
+                                                await BlockTransactionValidatorService.ProcessIncomingTransactions(nftRoyaltyTX, nftRoyaltyAccount, block.Height);
+                                            }
+                                        }
+                                        var reserveAccount = ReserveAccount.GetReserveAccounts()?.Where(x => x.Address == localToTransaction.ToAddress).FirstOrDefault();
+                                        if(reserveAccount != null)
+                                        {
+                                            //change accounts types
+                                            await BlockTransactionValidatorService.ProcessIncomingReserveTransactions(localToTransaction, reserveAccount, block.Height);
                                         }
                                     }
                                     catch { }

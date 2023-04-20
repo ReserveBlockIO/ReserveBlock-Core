@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Docnet.Core;
+using Docnet.Core.Models;
+using ImageMagick;
+using Newtonsoft.Json;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
@@ -10,6 +13,26 @@ namespace ReserveBlockCore.Utilities
     public class NFTAssetFileUtility 
     {
         private static string MainFolder = Globals.IsTestNet != true ? "RBX" : "RBXTest";
+        private static readonly HashSet<string> ValidExtensions = new HashSet<string>()
+        {
+            ".png",
+            ".icns",
+            ".ico",
+            ".jpg",
+            ".jpeg",
+            ".jp2",
+            ".gif",
+            ".tif",
+            ".tiff",
+            ".webp",
+            ".bmp",
+            ".psd",
+            ".ai",
+            ".pdf"
+            // Other possible extensions
+        };
+
+        private const int ImageSize = 400;
 
         public static bool MoveAsset(string fileLocation, string fileName, string scUID)
         {
@@ -40,12 +63,22 @@ namespace ReserveBlockCore.Utilities
                 path = Globals.CustomPath + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar;
             }
 
+            var thumbPath = path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar;
+
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
 
+            if (!Directory.Exists(thumbPath))
+            {
+                Directory.CreateDirectory(thumbPath);
+            }
+
             var newPath = path + fileName;
+            var newThumbPath = thumbPath + fileName;
+
+            var fileExt = fileLocation.ToFileExtension();
 
             try
             {
@@ -54,6 +87,9 @@ namespace ReserveBlockCore.Utilities
                 {
                     File.Copy(fileLocation, newPath);
                 }
+                if(ValidExtensions.Contains(fileExt.ToLower()))
+                    CreateNFTAssetThumbnail(newPath, newThumbPath);
+                
                 return true;
             }
             catch(Exception ex)
@@ -63,7 +99,89 @@ namespace ReserveBlockCore.Utilities
                 return false;
             }
         }
-        public static string CreateNFTAssetPath(string fileName, string scUID)
+        public static async Task GenerateThumbnails(string scUID)
+        {
+            var scMain = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if(scMain != null)
+            {
+                var assetList = await GetAssetListFromSmartContract(scMain);
+                if(assetList?.Count > 0)
+                {
+                    foreach(var asset in assetList)
+                    {
+                        try
+                        {
+                            var originPath = CreateNFTAssetPath(asset, scUID);
+                            var thumbsPath = CreateNFTAssetPath(asset, scUID, true);
+
+                            if (File.Exists(originPath))
+                            {
+                                if (!File.Exists(thumbsPath))
+                                {
+                                    CreateNFTAssetThumbnail(originPath, thumbsPath);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+        public static void CreateNFTAssetThumbnail(string originPath, string newPath)
+        {
+            try
+            {
+                var fileExist = File.Exists(originPath);
+                if (fileExist)
+                {
+                    var fileExt = originPath.ToFileExtension();
+                    if (fileExt == ".pdf")
+                    {
+                        var pdfBytes = File.ReadAllBytes(originPath);
+                        var pdfImage = PdfToImage(pdfBytes);
+
+                        newPath = newPath.Replace(".pdf", ".jpg");
+                        FileStream file = new FileStream(newPath, FileMode.Create, FileAccess.Write);
+                        pdfImage.WriteTo(file);
+                        file.Close();
+                        pdfImage.Close();
+                    }
+                    else if(fileExt == ".mp4")
+                    { 
+                        //will need to integrate ffmpeg if we want this function.
+                    }
+                    else
+                    {
+                        using (var image = new MagickImage(originPath))
+                        {
+                            if (image.Height > ImageSize || image.Width > ImageSize)
+                            {
+                                var newPathFileExt = newPath.ToFileExtension();
+                                var size = new MagickGeometry(ImageSize, ImageSize);
+                                size.IgnoreAspectRatio = false;
+                                image.Resize(size);
+                                image.Quality = 45;
+                                // Save the result
+                                newPath = newPath.Replace(newPathFileExt, ".jpg");
+                                ImageOptimizer optimizer = new ImageOptimizer();
+                                image.Write(newPath, MagickFormat.Jpg);
+                                FileInfo info = new FileInfo(newPath);
+                                optimizer.Compress(info);
+                                info.Refresh();
+                            }
+                            else
+                            {
+                                File.Copy(originPath, newPath);
+                            }
+                        }
+                    }
+                    
+                }
+            }
+            catch (Exception ex) { }
+            
+        }
+        public static string CreateNFTAssetPath(string fileName, string scUID, bool thumbs = false)
         {
             var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
@@ -86,16 +204,24 @@ namespace ReserveBlockCore.Utilities
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + MainFolder + Path.DirectorySeparatorChar + assetLocation + Path.DirectorySeparatorChar + scUID + Path.DirectorySeparatorChar;
                 }
             }
+            
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
+            if (thumbs)
+            {
+                if (!Directory.Exists(path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar))
+                {
+                    Directory.CreateDirectory(path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar);
+                }
+            }
 
-            var newPath = path + fileName;
+            var newPath = thumbs ? path + Path.DirectorySeparatorChar + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
 
             return newPath;
         }
-        public static string NFTAssetPath(string fileName, string scUID)
+        public static string NFTAssetPath(string fileName, string scUID, bool getThumbs = false)
         {
             var assetLocation = Globals.IsTestNet != true ? "Assets" : "AssetsTestNet";
 
@@ -119,7 +245,7 @@ namespace ReserveBlockCore.Utilities
                 }
             }
 
-            var newPath = path + fileName;
+            var newPath = getThumbs ? path + "thumbs" + Path.DirectorySeparatorChar + fileName : path + fileName;
 
             try
             {
@@ -127,8 +253,7 @@ namespace ReserveBlockCore.Utilities
                 if (fileExist)
                 {
                     return newPath;
-                }
-                
+                }                
             }
             catch (Exception ex)
             {
@@ -138,6 +263,13 @@ namespace ReserveBlockCore.Utilities
             }
 
             return "NA";
+        }
+
+        public static byte[] GetNFTAssetByteArray(string path)
+        {
+            byte[] imageBytes = File.ReadAllBytes(path);
+
+            return imageBytes;
         }
 
         public static async Task<List<string>> GetAssetListFromSmartContract(SmartContractMain sc)
@@ -423,6 +555,89 @@ namespace ReserveBlockCore.Utilities
             return output;
         }
 
+        public static MemoryStream PdfToImage(byte[] pdfBytes /* the PDF file bytes */)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            MagickImage imgBackdrop;
+            MagickColor backdropColor = MagickColors.White; // replace transparent pixels with this color 
+            int pdfPageNum = 0; // first page is 0
+
+            using (IDocLib pdfLibrary = DocLib.Instance)
+            {
+                using (var docReader = pdfLibrary.GetDocReader(pdfBytes, new PageDimensions(1.0d)))
+                {
+                    using (var pageReader = docReader.GetPageReader(pdfPageNum))
+                    {
+                        var rawBytes = pageReader.GetImage(); // Returns image bytes as B-G-R-A ordered list.
+                        rawBytes = RearrangeBytesToRGBA(rawBytes);
+                        var width = pageReader.GetPageWidth();
+                        var height = pageReader.GetPageHeight();
+
+                        // specify that we are reading a byte array of colors in R-G-B-A order.
+                        PixelReadSettings pixelReadSettings = new PixelReadSettings(width, height, StorageType.Char, PixelMapping.RGBA);
+                        using (MagickImage imgPdfOverlay = new MagickImage(rawBytes, pixelReadSettings))
+                        {
+                            // turn transparent pixels into backdrop color using composite
+                            imgBackdrop = new MagickImage(backdropColor, width, height);
+                            imgBackdrop.Composite(imgPdfOverlay, CompositeOperator.Over);
+                        }
+                    }
+                }
+            }
+
+            var size = new MagickGeometry(ImageSize, ImageSize);
+            size.IgnoreAspectRatio = false;
+            imgBackdrop.Resize(size);
+
+            imgBackdrop.Write(memoryStream, MagickFormat.Jpg);
+            imgBackdrop.Dispose();
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+        private static byte[] RearrangeBytesToRGBA(byte[] BGRABytes)
+        {
+            var max = BGRABytes.Length;
+            var RGBABytes = new byte[max];
+            var idx = 0;
+            byte r;
+            byte g;
+            byte b;
+            byte a;
+            while (idx < max)
+            {
+                // get colors in original order: B G R A
+                b = BGRABytes[idx];
+                g = BGRABytes[idx + 1];
+                r = BGRABytes[idx + 2];
+                a = BGRABytes[idx + 3];
+
+                // re-arrange to be in new order: R G B A
+                RGBABytes[idx] = r;
+                RGBABytes[idx + 1] = g;
+                RGBABytes[idx + 2] = b;
+                RGBABytes[idx + 3] = a;
+
+                idx += 4;
+            }
+            return RGBABytes;
+        }
+
+        public static byte[][] SplitIntoPackets(byte[] data)
+        {
+            const int MaxPacketSize = 8192;
+
+            var packets = new byte[(data.Length + MaxPacketSize - 1) / MaxPacketSize][];
+            for (int i = 0; i < packets.Length; i++)
+            {
+                int offset = i * MaxPacketSize;
+                int length = Math.Min(MaxPacketSize, data.Length - offset);
+                packets[i] = new byte[length + sizeof(int)];
+                BitConverter.GetBytes(i).CopyTo(packets[i], 0);
+                Array.Copy(data, offset, packets[i], sizeof(int), length);
+            }
+
+            return packets;
+        }
 
     }
 }
