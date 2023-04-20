@@ -341,7 +341,7 @@ namespace ReserveBlockCore.Services
 
                 if(txRequest.TransactionType == TransactionType.NFT_SALE)
                 {
-                    if (Globals.LastBlock.Height < Globals.FeatureLock)
+                    if (Globals.LastBlock.Height < Globals.FeatureLock && !Globals.IsTestNet)
                         return (txResult, "Feature not activated yet.");
 
                     var txData = txRequest.Data;
