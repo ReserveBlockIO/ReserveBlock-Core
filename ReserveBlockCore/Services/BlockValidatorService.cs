@@ -213,7 +213,7 @@ namespace ReserveBlockCore.Services
                     if (block.Height != 0)
                     {
                         var prevTimestamp = Globals.LastBlock.Timestamp;
-                        var currentTimestamp = TimeUtil.GetTime(1);
+                        var currentTimestamp = TimeUtil.GetTime(60);
                         if (prevTimestamp > block.Timestamp || block.Timestamp > currentTimestamp)
                         {
                             DbContext.Rollback("BlockValidatorService.ValidateBlock()-9");

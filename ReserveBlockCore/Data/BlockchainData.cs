@@ -86,6 +86,10 @@ namespace ReserveBlockCore.Data
 
                     //Need to get master node validator.
                     var timestamp = TimeUtil.GetTime();
+
+                    if (timestamp <= Globals.LastBlock.Timestamp)
+                        timestamp = Globals.LastBlock.Timestamp + 1;
+
                     var transactionList = new List<Transaction>();
 
                     //var coinbase_tx = new Transaction

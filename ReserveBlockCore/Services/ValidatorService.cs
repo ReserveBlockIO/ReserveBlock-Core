@@ -527,7 +527,7 @@ namespace ReserveBlockCore.Services
                             if(valAccount.Balance < ValidatorService.ValidatorRequiredAmount())
                             {
                                 Globals.ValidatorIssueCount += 1;
-                                Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} ADJ Connections are 2 or less.");
+                                Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Balance Error. Please ensure you have proper amount.");
                                 Globals.ValidatorBalanceGood = false;
                                 await DoMasterNodeStop();
                             }
@@ -540,6 +540,12 @@ namespace ReserveBlockCore.Services
                         {
                             Globals.ValidatorIssueCount += 1;
                             Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Validator Account Missing");
+                        }
+
+                        if(Globals.TimeSyncError)
+                        {
+                            Globals.ValidatorIssueCount += 1;
+                            Globals.ValidatorErrorMessages.Add($"Time: {DateTime.Now} Node system time is out of sync. Please correct.");
                         }
 
                         var adjNodes = Globals.AdjNodes.Values.Where(x => x.IsConnected).ToList();

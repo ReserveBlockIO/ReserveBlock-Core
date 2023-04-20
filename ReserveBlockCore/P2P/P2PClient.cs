@@ -217,7 +217,7 @@ namespace ReserveBlockCore.P2P
                         currentNode.NodeLatency = node.NodeLatency;
                     }
 
-                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/14");
                     peer.IsOutgoing = true;
                     peer.FailCount = 0; //peer responded. Reset fail count
                     Peers.GetAll()?.UpdateSafe(peer);
@@ -551,7 +551,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task SendTaskAnswerV3(string taskAnswer)
         {
-            if (taskAnswer == null)
+            if (taskAnswer == null || Globals.TimeSyncError) //adding time sync check here.
                 return;
 
             var tasks = new ConcurrentBag<Task>();

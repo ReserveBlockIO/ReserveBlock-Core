@@ -185,7 +185,7 @@ namespace ReserveBlockCore
 
         #region P2P Client Variables
 
-        public const int MaxPeers = 8;
+        public const int MaxPeers = 14;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, Peers> BannedIPs;        
 
