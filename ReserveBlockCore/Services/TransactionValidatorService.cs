@@ -869,7 +869,7 @@ namespace ReserveBlockCore.Services
 
                 if (txRequest.TransactionType == TransactionType.DSTR)
                 {
-                    if(Globals.LastBlock.Height < Globals.FeatureLock)
+                    if(Globals.LastBlock.Height < Globals.FeatureLock && !Globals.IsTestNet)
                         return (txResult, "Feature not activated yet.");
 
                     var badDSTTx = Globals.BadDSTList.Exists(x => x == txRequest.Hash);

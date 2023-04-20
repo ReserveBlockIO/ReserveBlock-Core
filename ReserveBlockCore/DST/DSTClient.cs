@@ -47,7 +47,7 @@ namespace ReserveBlockCore.DST
                     var IsConnected = false;
                     IPEndPoint? ConnectedStunServer = null;
                     var FailedToConnect = false;
-                    var badList = new List<string>();
+                    var badList = new List<StunServer>();
                     var portNumber = Port;
                     LastUsedPort = portNumber;
                     udpShop = new UdpClient(portNumber);
@@ -58,7 +58,7 @@ namespace ReserveBlockCore.DST
 
                         if (stunServer != null)
                         {
-                            var stunEndPoint = IPEndPoint.Parse(stunServer);
+                            var stunEndPoint = IPEndPoint.Parse(stunServer.ServerIPPort);
 
                             var stopwatch = new Stopwatch();
                             var payload = new Message { Type = MessageType.STUNConnect, Data = "helo" };
@@ -168,10 +168,13 @@ namespace ReserveBlockCore.DST
                 var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
 
                 udpClient.Send(addCommandDataBytes, shopEndPoint);
+
                 STUN(shopServer);
 
                 //Give shop time to punch
                 await Task.Delay(1000);
+                udpClient.Send(addCommandDataBytes, shopEndPoint);
+                await Task.Delay(200);
                 udpClient.Send(addCommandDataBytes, shopEndPoint);
 
                 stopwatch.Start();
@@ -471,7 +474,7 @@ namespace ReserveBlockCore.DST
             var IsConnected = false;
             IPEndPoint? ConnectedStunServer = null;
             var FailedToConnect = false;
-            var badList = new List<string>();
+            var badList = new List<StunServer>();
             var portNumber = Port;
 
             while (!IsConnected && !FailedToConnect)
@@ -480,7 +483,7 @@ namespace ReserveBlockCore.DST
 
                 if (stunServer != null)
                 {
-                    var stunEndPoint = IPEndPoint.Parse(stunServer);
+                    var stunEndPoint = IPEndPoint.Parse(stunServer.ServerIPPort);
 
                     var stopwatch = new Stopwatch();
                     var payload = new Message { Type = MessageType.STUN, Data = shopEndPoint };

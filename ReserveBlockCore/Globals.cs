@@ -182,7 +182,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
         public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
-        public static BlockingCollection<string> STUNServers = new BlockingCollection<string>();
+        public static ConcurrentBag<StunServer> STUNServers = new ConcurrentBag<StunServer>();
 
 
         public static SecureString EncryptPassword = new SecureString();

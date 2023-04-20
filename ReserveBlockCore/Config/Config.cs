@@ -183,8 +183,8 @@ namespace ReserveBlockCore.Config
 				var serverList = config.STUNServers.Split(',');
 				foreach( var server in serverList)
 				{
-					Globals.STUNServers.TryAdd(server);
-				}
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = server, Group = 999, IsNetwork = false });
+                }
 			}
 			else
 			{
@@ -192,20 +192,20 @@ namespace ReserveBlockCore.Config
 
 				if(!Globals.IsTestNet)
 				{
-                    Globals.STUNServers.TryAdd($"162.248.14.123:{port}");
-                    Globals.STUNServers.TryAdd($"144.126.149.104:{port}");
-                    Globals.STUNServers.TryAdd($"144.126.150.118:{port}");
-                    Globals.STUNServers.TryAdd($"89.117.21.39:{port}");
-                    Globals.STUNServers.TryAdd($"89.117.21.40:{port}");
-                    Globals.STUNServers.TryAdd($"209.126.11.92:{port}");
-                    Globals.STUNServers.TryAdd($"149.102.144.58:{port}");
-                    Globals.STUNServers.TryAdd($"194.233.77.39:{port}");
-                    Globals.STUNServers.TryAdd($"185.188.249.117:{port}");
-                    Globals.STUNServers.TryAdd($"154.26.155.35:{port}");
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"162.248.14.123:{port}", Group = 1, IsNetwork = true});
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"144.126.149.104:{port}", Group = 1, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"144.126.150.118:{port}", Group = 2, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"89.117.21.39:{port}", Group = 2, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"89.117.21.40:{port}", Group = 3, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"209.126.11.92:{port}", Group = 3, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"149.102.144.58:{port}", Group = 4, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"194.233.77.39:{port}", Group = 4, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"185.188.249.117:{port}", Group = 5, IsNetwork = true });
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"154.26.155.35:{port}", Group = 5, IsNetwork = true });
                 }
 				else
 				{
-                    Globals.STUNServers.TryAdd($"162.251.121.150:{port}");
+                    Globals.STUNServers.Add(new StunServer { ServerIPPort = $"162.251.121.150:{port}", Group = 1, IsNetwork = true });
                 }
             }
 

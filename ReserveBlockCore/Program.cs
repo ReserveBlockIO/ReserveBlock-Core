@@ -152,7 +152,7 @@ namespace ReserveBlockCore
                         var stunServers = stunSplit[1].Split(',');
                         foreach (var server in stunServers)
                         {
-                            Globals.STUNServers.TryAdd(server);
+                            Globals.STUNServers.Add(new StunServer { ServerIPPort = server, Group = 999, IsNetwork = false });
                         }
                     }
                     if (argC == "gui")
