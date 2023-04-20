@@ -1,4 +1,5 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -22,6 +23,42 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
+        /// <summary>
+        /// Takes a file path string and returns its extension
+        /// </summary>
+        /// <param name="source">string</param>
+        /// <returns>string extensions. Ex: '.txt'</returns>
+        public static string ToFileExtension(this string source)
+        {
+            string myFilePath = source;
+            string ext = Path.GetExtension(myFilePath);
+            return ext;
+        }
+
+        public static byte[] ImageToByteArray(this byte[] imageBytes)
+        {
+            byte[] byteArray;
+            using (MemoryStream stream = new MemoryStream(imageBytes))
+            {
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    byteArray = reader.ReadBytes((int)stream.Length);
+                }
+            }
+            return byteArray;
+        }
+
+        public static string ToHash(this string source)
+        {
+            if (!string.IsNullOrEmpty(source))
+            {
+                return HashingService.GenerateHash(HashingService.GenerateHash(source));
+            }
+            else
+            {
+                return "NA";
+            }
+        }
         public static long ToUnixTimeSeconds(this DateTime obj)
         {
             long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();
@@ -405,32 +442,10 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
-        public static string ToDecompress(this string s)
-        {
-            var bytes = Convert.FromBase64String(s);
-            using (var msi = new MemoryStream(bytes))
-            using (var mso = new MemoryStream())
-            {
-                using (var gs = new GZipStream(msi, CompressionMode.Decompress))
-                {
-                    gs.CopyTo(mso);
-                }
-                return Encoding.Unicode.GetString(mso.ToArray());
-            }
-        }
-        private static byte[] GetKey(string password)
-        {
-            var keyBytes = Encoding.UTF8.GetBytes(password);
-            using (var md5 = MD5.Create())
-            {
-                return md5.ComputeHash(keyBytes);
-            }
-        }
-
         public static bool ToLengthCheck(this string text, int length)
         {
             var stringLength = text.Length;
-            if (stringLength > length)
+            if(stringLength > length)
             {
                 return false;
             }
@@ -464,11 +479,32 @@ namespace ReserveBlockCore.Extensions
                     break;
             }
 
-            if (wordCount > count)
+            if(wordCount > count)
                 return false;
             return true;
         }
 
+        public static string ToDecompress(this string s)
+        {
+            var bytes = Convert.FromBase64String(s);
+            using (var msi = new MemoryStream(bytes))
+            using (var mso = new MemoryStream())
+            {
+                using (var gs = new GZipStream(msi, CompressionMode.Decompress))
+                {
+                    gs.CopyTo(mso);
+                }
+                return Encoding.Unicode.GetString(mso.ToArray());
+            }
+        }
+        private static byte[] GetKey(string password)
+        {
+            var keyBytes = Encoding.UTF8.GetBytes(password);
+            using (var md5 = MD5.Create())
+            {
+                return md5.ComputeHash(keyBytes);
+            }
+        }
 
         private static Random rng = new Random();
         public static void Shuffle<T>(this IList<T> list)

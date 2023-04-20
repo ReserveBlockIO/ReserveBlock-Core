@@ -7,8 +7,10 @@ namespace ReserveBlockCore.Models
     {
         public long Id { get; set; }
         public string Key { get; set; }
+        public string? RecoveryAccount { get; set; }
         public long Nonce { get; set; }
         public decimal Balance { get; set; }
+        public decimal LockedBalance { get; set; }
         public string StateRoot { get; set; }
         public string CodeHash { get; set; }
 

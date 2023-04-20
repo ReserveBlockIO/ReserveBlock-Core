@@ -154,8 +154,11 @@ namespace ReserveBlockCore.Controllers
                     var scState = scStateTrei.FindOne(x => x.SmartContractUID == sc.SmartContractUID);
                     if(scState != null)
                     {
-                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress);
-                        if(exist)
+                        var exist = accounts.Exists(x => x.Address == scState.OwnerAddress || x.Address == scState.NextOwner);
+                        var rExist = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress) != null ? true : false;
+                        if(!rExist)
+                            rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : false;
+                        if (exist || rExist)
                             scStateMainBag.Add(scState);
                     }
                 }
@@ -898,6 +901,26 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        ///  Creates thumbnails for known image types
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CreateThumbnails/{scUID}")]
+        public async Task<string> CreateThumbnails(string scUID)
+        {
+            var output = "";
+
+            //Get SmartContractMain.IsPublic and set to True.
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if (sc != null)
+            {
+                _ = NFTAssetFileUtility.GenerateThumbnails(scUID);
+                output = JsonConvert.SerializeObject(new { Success = true, Message = "Thumbnail generation process started." });
+            }
+            return output;
+        }
+
+        /// <summary>
         /// Returns the NFTs asset location.
         /// </summary>
         /// <param name="scUID"></param>
@@ -932,7 +955,7 @@ namespace ReserveBlockCore.Controllers
             if (scStateTrei != null)
             {
                 var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                output = JsonConvert.SerializeObject(scMain);
+                output = JsonConvert.SerializeObject(new { SmartContractMain = scMain, CurrentOwner = scStateTrei.OwnerAddress });
             }
 
             return output;

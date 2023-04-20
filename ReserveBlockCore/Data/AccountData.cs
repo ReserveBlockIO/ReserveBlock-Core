@@ -201,9 +201,10 @@ namespace ReserveBlockCore.Data
         {
 			Console.Clear();
 			var accounts = GetAccounts();
+			var reserveAccounts = ReserveAccount.GetReserveAccounts();
 
-			var accountList = accounts.FindAll().ToList();
-
+            var accountList = accounts.FindAll().ToList();
+			
 			if (accountList.Count() > 0)
             {
 				Console.Clear();
@@ -223,6 +224,13 @@ namespace ReserveBlockCore.Data
 				accountList.ForEach(x => {
 					table.AddRow($"[blue]{x.Address}[/]", $"[green]{x.Balance}[/]");
 				});
+
+				if(reserveAccounts?.Count() > 0)
+				{
+                    reserveAccounts.ForEach(x => {
+                        table.AddRow($"[purple]{x.Address}[/]", $"[green]{x.AvailableBalance}[/]");
+                    });
+                }
 
 				table.Border(TableBorder.Rounded);
 
@@ -271,7 +279,10 @@ namespace ReserveBlockCore.Data
         {
 			var accountList = GetAccounts();
 			var localAccount = accountList.FindOne(x => x.Address == address);
-			localAccount.Balance -= amount;
+            if (amount < 0M)
+                amount = amount * -1.0M;
+
+            localAccount.Balance -= amount;
 
 			accountList.UpdateSafe(localAccount);
 		}
@@ -285,13 +296,22 @@ namespace ReserveBlockCore.Data
 			accountList.UpdateSafe(localAccount);
 		}
 
-		public static void UpdateLocalBalanceAdd(string address, decimal amount)
+		public static void UpdateLocalBalanceAdd(string address, decimal amount, bool isReserveSend = false)
 		{
 			var accountList = GetAccounts();
 			var localAccount = accountList.FindOne(x => x.Address == address);
 			if (amount < 0M)
 				amount = amount * -1.0M;
-			localAccount.Balance += amount;
+
+			if(isReserveSend)
+			{
+                localAccount.LockedBalance += amount;
+            }
+			else
+			{
+                localAccount.Balance += amount;
+            }
+			
 
 			accountList.UpdateSafe(localAccount);
 		}

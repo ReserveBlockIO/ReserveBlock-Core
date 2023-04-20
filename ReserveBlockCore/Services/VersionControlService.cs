@@ -85,7 +85,7 @@ namespace ReserveBlockCore.Services
         {
             while(true)
             {
-                var delay = Task.Delay(new TimeSpan(1,0,0));
+                var delay = Task.Delay(new TimeSpan(12,0,0));
                 await VesrionControlServiceLock.WaitAsync();
                 try
                 {
@@ -305,6 +305,9 @@ namespace ReserveBlockCore.Services
                             var oldFilePath = strWorkPath + Path.DirectorySeparatorChar + fileName;
                             if (File.Exists(oldFilePath))
                             {
+                                if(File.Exists(oldFilePath + "_outdated"))
+                                    File.Delete(oldFilePath + "_outdated");
+                                
                                 File.Move(oldFilePath, oldFilePath + "_outdated");
                                 File.Move(filePath, oldFilePath);
                             }
