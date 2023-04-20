@@ -54,7 +54,18 @@ namespace ReserveBlockCore.DST
 
                     while (!IsConnected && !FailedToConnect)
                     {
-                        var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x)).FirstOrDefault();
+                        var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == myDecShop.STUNServerGroup).FirstOrDefault();
+
+                        if (stunServer == null)
+                        {
+                            var failOverSTUN = Globals.STUNServers.Where(x => x.Group == 0).FirstOrDefault();
+                            if (failOverSTUN != null)
+                            {
+                                var exist = badList.Exists(x => x.ServerIPPort == failOverSTUN.ServerIPPort);
+                                if (!exist)
+                                    stunServer = failOverSTUN;
+                            }
+                        }
 
                         if (stunServer != null)
                         {
@@ -169,7 +180,7 @@ namespace ReserveBlockCore.DST
 
                 udpClient.Send(addCommandDataBytes, shopEndPoint);
 
-                STUN(shopServer);
+                await STUN(shopServer);
 
                 //Give shop time to punch
                 await Task.Delay(1000);
@@ -290,7 +301,7 @@ namespace ReserveBlockCore.DST
                         udpClient.Send(addCommandDataBytes, shopEndPoint);
 
                         if(decShop.HostingType == DecShopHostingType.Network)
-                            STUN(shopServer);
+                            await STUN(shopServer, decShop.STUNServerGroup);
 
                         //Give shop time to punch
                         await Task.Delay(1000);
@@ -467,7 +478,7 @@ namespace ReserveBlockCore.DST
             return connected;
         }
 
-        private static void STUN(string shopEndPoint)
+        private static async Task STUN(string shopEndPoint, int groupNum = 0)
         {
             var successful = Encoding.UTF8.GetBytes("ack");
             var remoteEndPoint = RemoteEndPoint;
@@ -477,9 +488,23 @@ namespace ReserveBlockCore.DST
             var badList = new List<StunServer>();
             var portNumber = Port;
 
+            if (Globals.IsTestNet)
+                groupNum = 1;
+
             while (!IsConnected && !FailedToConnect)
             {
-                var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x)).FirstOrDefault();
+                var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == groupNum).FirstOrDefault();
+
+                if(stunServer == null)
+                {
+                    var failOverSTUN = Globals.STUNServers.Where(x => x.Group == 0).FirstOrDefault();
+                    if(failOverSTUN != null)
+                    {
+                        var exist = badList.Exists(x => x.ServerIPPort == failOverSTUN.ServerIPPort);
+                        if(!exist)
+                            stunServer = failOverSTUN;
+                    }
+                }
 
                 if (stunServer != null)
                 {
@@ -491,6 +516,8 @@ namespace ReserveBlockCore.DST
 
                     var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
 
+                    udpClient.Send(addCommandDataBytes, stunEndPoint);
+                    await Task.Delay(200);
                     udpClient.Send(addCommandDataBytes, stunEndPoint);
                     stopwatch.Start();
                     while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)

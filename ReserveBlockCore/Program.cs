@@ -555,6 +555,14 @@ namespace ReserveBlockCore
             var decShop = DecShop.GetMyDecShopInfo();
             if(decShop != null)
             {
+                if(decShop.STUNServerGroup == 0)
+                {
+                    if(Globals.IsTestNet)
+                    {
+                        decShop.STUNServerGroup = 1;
+                        await DecShop.SaveMyDecShopLocal(decShop);
+                    }
+                }
                 if (!decShop.IsOffline)
                 {
                     _ = AuctionEngine.StartBidProcessing();

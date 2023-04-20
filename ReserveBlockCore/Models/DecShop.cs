@@ -32,6 +32,7 @@ namespace ReserveBlockCore.Models
         public DecShopHostingType HostingType { get; set; } //User Submitted
         public string IP { get; set; } //User Submitted if HostingType  == SelfHosted - 32 length
         public int Port { get; set; } //User Submitted if HostingType  == SelfHosted
+        public int STUNServerGroup { get; set; }
         public long OriginalBlockHeight { get; set; }
         public string? OriginalTXHash { get; set; } = null;
         public long LatestBlockHeight { get; set; }
@@ -73,6 +74,11 @@ namespace ReserveBlockCore.Models
                 return (false, "Please do not include 'rbx://' in your URL. It is automatically added.");
 
             DecShopURL = $"rbx://{DecShopURL}";
+
+            Random rnd = new Random();
+            var groupNum = Globals.IsTestNet ? 1 : rnd.Next(1, 6);
+
+            STUNServerGroup = groupNum;
 
             return (true, "");
         }
