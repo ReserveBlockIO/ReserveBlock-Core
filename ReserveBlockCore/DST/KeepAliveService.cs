@@ -38,7 +38,6 @@ namespace ReserveBlockCore.DST
                                 {
                                     stop = true;
                                     Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
-
                                 }
 
                                 await delay;

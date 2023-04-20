@@ -53,6 +53,9 @@ namespace ReserveBlockCore.DST
                     udpShop = new UdpClient(portNumber);
                     var delay = Task.Delay(new TimeSpan(0,2,0));
 
+                    if (myDecShop.HostingType == DecShopHostingType.SelfHosted)
+                        IsConnected = true;
+
                     while (!IsConnected)
                     {
                         var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == myDecShop.STUNServerGroup).FirstOrDefault();
@@ -134,23 +137,24 @@ namespace ReserveBlockCore.DST
                         Task taskClear = new Task(async () => { await ClearStaleConnections(token); }, token);
                         taskClear.Start();
 
-                        var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
-                        var kaMessage = GenerateMessage(kaPayload);
-
-                        var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
-
-                        DSTConnection dstCon = new DSTConnection
+                        if (myDecShop.HostingType != DecShopHostingType.SelfHosted)
                         {
-                            ConnectDate = TimeUtil.GetTime(),
-                            IPAddress = ConnectedStunServer.ToString(),
-                            LastReceiveMessage = TimeUtil.GetTime(),
-                        };
+                            var kaPayload = new Message { Type = MessageType.ShopKeepAlive, Data = "" };
+                            var kaMessage = GenerateMessage(kaPayload);
 
-                        Globals.STUNServer = dstCon;
+                            var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
 
-                        udpShop.Send(messageBytes, ConnectedStunServer);
+                            DSTConnection dstCon = new DSTConnection
+                            {
+                                ConnectDate = TimeUtil.GetTime(),
+                                IPAddress = ConnectedStunServer != null ? ConnectedStunServer.ToString() : "NA",
+                                LastReceiveMessage = TimeUtil.GetTime(),
+                            };
 
+                            Globals.STUNServer = dstCon;
 
+                            udpShop.Send(messageBytes, ConnectedStunServer);
+                        }
                     }
                 }
             }
