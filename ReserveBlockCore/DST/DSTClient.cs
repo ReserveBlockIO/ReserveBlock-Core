@@ -285,10 +285,14 @@ namespace ReserveBlockCore.DST
                         var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
 
                         udpClient.Send(addCommandDataBytes, shopEndPoint);
-                        STUN(shopServer);
+
+                        if(decShop.HostingType == DecShopHostingType.Network)
+                            STUN(shopServer);
 
                         //Give shop time to punch
                         await Task.Delay(1000);
+                        udpClient.Send(addCommandDataBytes, shopEndPoint);
+                        await Task.Delay(200);
                         udpClient.Send(addCommandDataBytes, shopEndPoint);
 
                         stopwatch.Start();

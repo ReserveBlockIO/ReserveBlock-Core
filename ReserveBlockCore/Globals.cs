@@ -67,6 +67,7 @@ namespace ReserveBlockCore
         public const decimal TopicRequiredRBX = 10.0M;
         public const decimal DecShopRequiredRBX = 10.0M;
         public const int ADNRLimit = 65;
+        public static long FeatureLock = 896247;
         public static int BlockLock = -1;
         public static long V3Height = 579015;
         public static long V1ValHeight = 832000;
@@ -121,6 +122,7 @@ namespace ReserveBlockCore
         public static string? MotherAddress = null;
         public static string? CustomPath = null;
 
+        public static bool Lock = true;
         public static bool AlwaysRequireWalletPassword = false;
         public static bool AlwaysRequireAPIPassword = false;
         public static bool StopConsoleOutput = false;        

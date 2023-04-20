@@ -7,6 +7,7 @@ using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
+using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
@@ -672,8 +673,14 @@ namespace ReserveBlockCore.Controllers
                             {
                                 myDS.IP = decShop.IP;
                                 myDS.Port = decShop.Port;
+                                myDS.HostingType = DecShopHostingType.SelfHosted;
                             }
 
+                            if(myDS.IsIPDifferent && myDS.HostingType == DecShopHostingType.Network)
+                            {
+                                myDS.IP = P2PClient.MostLikelyIP();
+                            }
+                                
                             var result = await DecShop.SaveMyDecShopLocal(myDS);
                             output = JsonConvert.SerializeObject(new { Success = result.Item1, Message = result.Item2 });
                             return output;

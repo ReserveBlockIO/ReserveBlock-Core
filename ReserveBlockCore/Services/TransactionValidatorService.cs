@@ -341,6 +341,9 @@ namespace ReserveBlockCore.Services
 
                 if(txRequest.TransactionType == TransactionType.NFT_SALE)
                 {
+                    if (Globals.LastBlock.Height < Globals.FeatureLock)
+                        return (txResult, "Feature not activated yet.");
+
                     var txData = txRequest.Data;
                     try
                     {
@@ -866,6 +869,9 @@ namespace ReserveBlockCore.Services
 
                 if (txRequest.TransactionType == TransactionType.DSTR)
                 {
+                    if(Globals.LastBlock.Height < Globals.FeatureLock)
+                        return (txResult, "Feature not activated yet.");
+
                     var badDSTTx = Globals.BadDSTList.Exists(x => x == txRequest.Hash);
                     var txData = txRequest.Data;
                     if (txData != null && !badDSTTx)
@@ -974,6 +980,13 @@ namespace ReserveBlockCore.Services
                 }
                 if(txRequest.TransactionType == TransactionType.RESERVE)
                 {
+                    //Feature not activated yet.
+                    if(Globals.Lock)
+                        return (txResult, "Feature not activated yet.");
+
+                    //Feature not activated yet.
+                    return (txResult, "Feature not activated yet.");
+
                     var txData = txRequest.Data;
                     if (txData != null)
                     {
