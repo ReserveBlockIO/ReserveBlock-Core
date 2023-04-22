@@ -17,8 +17,8 @@ namespace ReserveBlockCore.DST
 
         public static async Task Run()
         {
-            var successMessage = Encoding.UTF8.GetBytes("successful");
-            udpClient = new UdpClient(Globals.SelfSTUNPort);
+            var port = Globals.MinorVer == 5 && Globals.MajorVer == 3 ? 3440 : Globals.SelfSTUNPort; //temporary fix until next release. Adding it this way in case its forgotten.
+            udpClient = new UdpClient(port);
 
             Console.WriteLine($"Started listening on port {Globals.SelfSTUNPort}...");
 
