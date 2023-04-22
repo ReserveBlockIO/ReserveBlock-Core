@@ -498,7 +498,7 @@ namespace ReserveBlockCore.DST
             if (Globals.IsTestNet)
                 groupNum = 1;
 
-            while (!IsConnected)
+            while (!IsConnected && !FailedToConnect)
             {
                 var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == groupNum).FirstOrDefault();
 
@@ -527,6 +527,7 @@ namespace ReserveBlockCore.DST
                     await Task.Delay(200);
                     udpClient.Send(addCommandDataBytes, stunEndPoint);
                     stopwatch.Start();
+
                     while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
                     {
                         var beginReceive = udpClient.BeginReceive(null, null);
@@ -557,14 +558,16 @@ namespace ReserveBlockCore.DST
                         else
                         {
                             badList.Add(stunServer);
+                            var newPortNumber = PortUtility.FindOpenUDPPort(LastUsedPort); //dynamic port / Port == LastUsedPort ? LastUsedPort + 1 : Port;
+                            udpClient = new UdpClient(newPortNumber);
+                            LastUsedPort = newPortNumber;
                         }
                     }
                     stopwatch.Stop();
                 }
                 else
                 {
-                    badList = new List<StunServer>();
-                    await delay;
+                    FailedToConnect = true;
                 }
             }
 

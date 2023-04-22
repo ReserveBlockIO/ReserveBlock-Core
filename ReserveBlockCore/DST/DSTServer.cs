@@ -17,16 +17,19 @@ namespace ReserveBlockCore.DST
 
         public static async Task Run()
         {
-            var port = Globals.MinorVer == 5 && Globals.MajorVer == 3 ? 3440 : Globals.SelfSTUNPort; //temporary fix until next release. Adding it this way in case its forgotten.
-            udpClient = new UdpClient(port);
-
-            Console.WriteLine($"Started listening on port {Globals.SelfSTUNPort}...");
-
-            var peersData = new Dictionary<string, IList<IPEndPoint>>();
-
-            while (true)
+            try
             {
-                ReadData();
+                var port = Globals.MinorVer == 5 && Globals.MajorVer == 3 ? 3440 : Globals.SelfSTUNPort; //temporary fix until next release. Adding it this way in case its forgotten.
+                udpClient = new UdpClient(port);
+
+                while (true)
+                {
+                    ReadData();
+                }
+            }
+            catch(Exception ex)
+            {
+                LogUtility.LogQueue($"Error starting DST STUN server. Error: {ex.ToString()}", "DSTServer.Run()", "rbxlog.txt", true);
             }
         }
         static void InformClient(IPEndPoint destinationEndPoint, IPEndPoint sourceEndPoint)

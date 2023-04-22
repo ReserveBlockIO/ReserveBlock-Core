@@ -203,6 +203,7 @@ namespace ReserveBlockCore.Config
                     Globals.STUNServers.Add(new StunServer { ServerIPPort = $"185.188.249.117:{port}", Group = 5, IsNetwork = true });
                     Globals.STUNServers.Add(new StunServer { ServerIPPort = $"154.26.155.35:{port}", Group = 5, IsNetwork = true });
 
+					//failover
                     Globals.STUNServers.Add(new StunServer { ServerIPPort = $"173.254.253.106:{port}", Group = 0, IsNetwork = true });
                 }
 				else
