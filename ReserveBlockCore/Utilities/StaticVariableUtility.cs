@@ -119,6 +119,9 @@ namespace ReserveBlockCore.Utilities
             var startMemory = $"Start Memory: {Globals.StartMemory}";
             var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
 
+            var stunServerText = $"STUN Server Active: {Globals.SelfSTUNServer}";
+            var stunServerPortText = $"STUN Server Port: {Globals.SelfSTUNPort}";
+
             var lastBlockWon = Globals.LastWonBlock != null ? $"Last Block Won: {Globals.LastWonBlock.Height}" : "No blocks reported yet.";
 
             var lastBlockInfo = "Height: " + lastBlock.Height.ToString() + " - Hash: " + lastBlock.Hash + " Timestamp: " + lastBlock.Timestamp
@@ -188,6 +191,13 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(adjConnection);
             strBld.AppendLine("---------------------------------------------------------------------");
+            if(Globals.SelfSTUNServer)
+            {
+                strBld.AppendLine(stunServerText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(stunServerPortText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+            }
             if(Globals.AdjudicateAccount != null)
             {
                 strBld.AppendLine(fortisPoolText);
