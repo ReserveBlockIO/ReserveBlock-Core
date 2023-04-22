@@ -119,8 +119,9 @@ namespace ReserveBlockCore.Utilities
             var startMemory = $"Start Memory: {Globals.StartMemory}";
             var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
 
-            var stunServerText = $"STUN Server Active: {Globals.SelfSTUNServer}";
+            var stunServerText = $"STUN Server Start: {Globals.SelfSTUNServer}";
             var stunServerPortText = $"STUN Server Port: {Globals.SelfSTUNPort}";
+            var stunServerRunning = $"STUN Server Active: {Globals.STUNServerRunning}";
 
             var lastBlockWon = Globals.LastWonBlock != null ? $"Last Block Won: {Globals.LastWonBlock.Height}" : "No blocks reported yet.";
 
@@ -196,6 +197,8 @@ namespace ReserveBlockCore.Utilities
                 strBld.AppendLine(stunServerText);
                 strBld.AppendLine("---------------------------------------------------------------------");
                 strBld.AppendLine(stunServerPortText);
+                strBld.AppendLine("---------------------------------------------------------------------");
+                strBld.AppendLine(stunServerRunning);
                 strBld.AppendLine("---------------------------------------------------------------------");
             }
             if(Globals.AdjudicateAccount != null)

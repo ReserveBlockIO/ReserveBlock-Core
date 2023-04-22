@@ -22,6 +22,7 @@ namespace ReserveBlockCore.DST
                 var port = Globals.MinorVer == 5 && Globals.MajorVer == 3 ? 3440 : Globals.SelfSTUNPort; //temporary fix until next release. Adding it this way in case its forgotten.
                 udpClient = new UdpClient(port);
 
+                Globals.STUNServerRunning = true;
                 while (true)
                 {
                     ReadData();
