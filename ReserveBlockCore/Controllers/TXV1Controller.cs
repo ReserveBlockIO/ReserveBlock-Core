@@ -58,6 +58,26 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns a list of reserved transactions that are local to wallet
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetReserveLocalTX")]
+        public async Task<string> GetReserveLocalTX()
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetReserveLocalTransactions();
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns a list of mined reward transactions that are local to wallet
         /// </summary>
         /// <returns></returns>
@@ -264,6 +284,72 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns a all transactions for a specific address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxByAddress/{address}")]
+        public async Task<string> GetLocalTxByAddress(string address)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetAllLocalTransactionsByAddress(address);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions for a specific address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="limit"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxByAddressLimit/{address}/{limit?}")]
+        public async Task<string> GetLocalTxByAddressLimit(string address, int limit = 50)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetAccountTransactionsLimit(address, limit);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Returns a all transactions for by page and limit per page
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="page"></param>
+        /// <param name="amountPerPage"></param>
+        /// <returns></returns>
+        [HttpGet("GetLocalTxPaginated/{page}/{amountPerPage}/{address?}")]
+        public async Task<string> GetLocalTxByAddressPaginated(int page, int amountPerPage, string? address = null)
+        {
+            //use Id to get specific commands
+            var output = "[]"; // this will only display if command not recognized.
+
+            var txList = TransactionData.GetTransactionsPaginated(page, amountPerPage, address);
+
+            if (txList.Count() > 0)
+            {
+                output = JsonConvert.SerializeObject(txList);
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns all transactions for ADNR
         /// </summary>
         /// <returns></returns>
@@ -312,7 +398,7 @@ namespace ReserveBlockCore.Controllers
         {
             var output = "";
             var coreCount = Environment.ProcessorCount;
-            if (coreCount >= 4)
+            if (coreCount >= 4 || Globals.RunUnsafeCode)
             {
                 if (!string.IsNullOrEmpty(txHash))
                 {
@@ -352,7 +438,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude." });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude. You must enable 'RunUnsafeCode' in config file or add 'unsafe' to your start up parameters." });
             }
 
             return output;

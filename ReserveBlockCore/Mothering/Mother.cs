@@ -119,14 +119,14 @@ namespace ReserveBlockCore.Mothering
             {
                 AnsiConsole.Write(
                 new FigletText("Mother")
-                .LeftAligned()
+                .LeftJustified()
                 .Color(Color.Blue));
             }
             else
             {
                 AnsiConsole.Write(
                 new FigletText("Welcome Mother")
-                .LeftAligned()
+                .LeftJustified()
                 .Color(Color.Green));
             }
 

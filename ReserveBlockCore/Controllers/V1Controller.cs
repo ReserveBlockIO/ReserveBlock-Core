@@ -159,6 +159,7 @@ namespace ReserveBlockCore.Controllers
         /// Returns the state of a wallets encryption and if password is present
         /// </summary>
         /// <returns></returns>
+        [HttpGet("GetCheckEncryptionStatus")]
         public static async Task<string> GetCheckEncryptionStatus()
         {
             string output = "";
@@ -598,6 +599,14 @@ namespace ReserveBlockCore.Controllers
             else
             {
                 var accountList = accounts.Query().Where(x => true).ToEnumerable();
+                //var reserveAccounts = ReserveAccount.GetReserveAccounts();
+                //if(reserveAccounts?.Count() > 0)
+                //{
+                //    foreach(var rA in reserveAccounts)
+                //    {
+
+                //    }
+                //}
                 output = JsonConvert.SerializeObject(accountList);
             }
 
@@ -655,7 +664,7 @@ namespace ReserveBlockCore.Controllers
 
             if(!string.IsNullOrEmpty(Globals.ValidatorAddress))
             {
-                if (Globals.ValidatorReceiving && Globals.ValidatorSending)
+                if (Globals.ValidatorReceiving && Globals.ValidatorSending && Globals.ValidatorBalanceGood)
                 {
                     output = "true";
                 }
@@ -690,9 +699,9 @@ namespace ReserveBlockCore.Controllers
                     if (account != null)
                     {
                         var stateTreiBalance = AccountStateTrei.GetAccountBalance(account.Address);
-                        if(stateTreiBalance < 1000)
+                        if(stateTreiBalance < ValidatorService.ValidatorRequiredAmount())
                         {
-                            output = "The balance for this account is under 1000.";
+                            output = $"The balance for this account is under {ValidatorService.ValidatorRequiredAmount()}.";
                         }
                         else
                         {
@@ -794,12 +803,30 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Returns the balance for a specific network address **For exchanges**
+        /// </summary>
+        /// <param name="rbxAddress"></param>
+        /// <returns></returns>
+        [HttpGet("GetChainBalance/{rbxAddress}")]
+        public async Task<string> GetChainBalance(string rbxAddress)
+        {
+            //use Id to get specific commands
+            var output = "Command not recognized."; // this will only display if command not recognized.
+            var balance = AccountStateTrei.GetAccountBalance(rbxAddress);
+
+            output = JsonConvert.SerializeObject(new { Account = rbxAddress, Balance = balance });
+
+            return output;
+        }
+
+        /// <summary>
         /// Imports a private key.
         /// </summary>
         /// <param name="id"></param>
+        /// <param name="scan"></param>
         /// <returns></returns>
-        [HttpGet("ImportPrivateKey/{id}")]
-        public async Task<string> ImportPrivateKey(string id)
+        [HttpGet("ImportPrivateKey/{id}/{scan?}")]
+        public async Task<string> ImportPrivateKey(string id, bool scan = false)
         {
             //use Id to get specific commands
             var output = "Command not recognized."; // this will only display if command not recognized.
@@ -807,7 +834,7 @@ namespace ReserveBlockCore.Controllers
             {
                 if(Globals.EncryptPassword.Length > 0)
                 {
-                    var account = await AccountData.RestoreAccount(id);
+                    var account = await AccountData.RestoreAccount(id, scan);
 
                     if (account == null)
                     {
@@ -829,7 +856,7 @@ namespace ReserveBlockCore.Controllers
             }
             else
             {
-                var account = await AccountData.RestoreAccount(id);
+                var account = await AccountData.RestoreAccount(id, scan);
 
                 if (account == null)
                 {
@@ -845,6 +872,75 @@ namespace ReserveBlockCore.Controllers
                 }
             }
             
+
+            return output;
+        }
+
+        /// <summary>
+        /// Rescan for TXs
+        /// </summary>
+        /// <param name="walletAddr"></param>
+        /// <returns></returns>
+        [HttpGet("RescanForTx/{walletAddr}")]
+        public async Task<string> RescanForTx(string walletAddr)
+        {
+            var output = "";
+            var account = AccountData.GetSingleAccount(walletAddr);
+            if(account != null)
+            {
+                _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address));
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Rescan has started." });
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Account was not found locally." });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Syncs account balances
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("SyncBalances")]
+        public async Task<string> SyncBalances()
+        {
+            var output = "";
+
+            var accountsDb = AccountData.GetAccounts();
+            var accounts = accountsDb.Query().Where(x => true).ToEnumerable();
+            var rAccount = ReserveAccount.GetReserveAccounts();
+
+            if (accounts.Count() > 0)
+            {
+                foreach(var account in accounts)
+                {
+                    var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if(stateTrei != null)
+                    {
+                        account.Balance = stateTrei.Balance;
+                        account.LockedBalance = stateTrei.LockedBalance;
+                        accountsDb.UpdateSafe(account);
+                    }
+                }
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Balance resync completed" });
+            }
+
+            if(rAccount?.Count() > 0)
+            {
+                foreach (var account in rAccount)
+                {
+                    var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if (stateTrei != null)
+                    {
+                        account.AvailableBalance = stateTrei.Balance;
+                        account.LockedBalance = stateTrei.LockedBalance;
+                        ReserveAccount.SaveReserveAccount(account);
+                    }
+                }
+            }
+
 
             return output;
         }
@@ -1191,6 +1287,38 @@ namespace ReserveBlockCore.Controllers
             string output = "";
             var blocks = Globals.MemBlocks;
             output = JsonConvert.SerializeObject(blocks);
+
+            return output;
+        }
+
+        /// <summary>
+        /// Finds a specific block by height.
+        /// </summary>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        [HttpGet("GetBlockByHeight")]
+        public async Task<string> GetBlockByHeight(long height)
+        {
+            string output = "";
+            var block = BlockchainData.GetBlockByHeight(height);
+            if(block != null)
+                output = JsonConvert.SerializeObject(block);
+
+            return output;
+        }
+
+        /// <summary>
+        /// Finds a specific block by hash.
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        [HttpGet("GetBlockByHash")]
+        public async Task<string> GetBlockByHash(string hash)
+        {
+            string output = "";
+            var block = BlockchainData.GetBlockByHash(hash);
+            if (block != null)
+                output = JsonConvert.SerializeObject(block);
 
             return output;
         }
@@ -1568,6 +1696,28 @@ namespace ReserveBlockCore.Controllers
 
             return output;
 
+        }
+
+        /// <summary>
+        /// Dumps out active val list from past 30 days
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ListActiveVals")]
+        public async Task<string> ListActiveVals()
+        {
+            var output = "";
+            var activeVals = Globals.ActiveValidatorDict;
+
+            if (activeVals.Count > 0)
+            {
+                output = JsonConvert.SerializeObject(activeVals);
+            }
+            else
+            {
+                output = "Active validator list was empty.";
+            }
+
+            return output;
         }
 
         /// <summary>

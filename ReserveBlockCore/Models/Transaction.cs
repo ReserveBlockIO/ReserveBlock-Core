@@ -28,7 +28,8 @@ namespace ReserveBlockCore.Models
         public long Nonce { get; set; }
         public decimal Fee { get; set; }
         public long Timestamp { get; set; }
-        public string? Data { get; set; }
+        public string? Data { get; set; } = null;
+        public long? UnlockTime { get; set; } = null;
         
         [StringLength(512)]
         public string Signature { get; set; }
@@ -43,7 +44,8 @@ namespace ReserveBlockCore.Models
         }
         public string GetHash()
         {
-            var data = Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + TransactionType + Data;
+            var data = UnlockTime == null ? Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + TransactionType + Data :
+                Timestamp + FromAddress + ToAddress + Amount + Fee + Nonce + TransactionType + Data + UnlockTime;
             return HashingService.GenerateHash(HashingService.GenerateHash(data));
         }
         public static void Add(Transaction transaction)
@@ -68,14 +70,18 @@ namespace ReserveBlockCore.Models
         ADNR, //address dnr
         DSTR, //DST shop registration
         VOTE_TOPIC, //voting topic for validators to vote on
-        VOTE //cast vote for topic
+        VOTE, //cast vote for topic
+        RESERVE //create a reserve TX
     }
 
     public enum TransactionStatus
     {
         Pending,
         Success,
-        Failed
+        Failed,
+        Reserved,
+        CalledBack,
+        Recovered
     }
 
     public enum TransactionRating

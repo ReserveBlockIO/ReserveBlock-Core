@@ -86,6 +86,10 @@ namespace ReserveBlockCore.Data
 
                     //Need to get master node validator.
                     var timestamp = TimeUtil.GetTime();
+
+                    if (timestamp <= Globals.LastBlock.Timestamp)
+                        timestamp = Globals.LastBlock.Timestamp + 1;
+
                     var transactionList = new List<Transaction>();
 
                     //var coinbase_tx = new Transaction
@@ -225,18 +229,18 @@ namespace ReserveBlockCore.Data
             var block = GetBlocks().FindOne(x => true);
             return block;
         }
-        public static Block GetBlockByHeight(long height)
+        public static Block? GetBlockByHeight(long height)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
+            var blocks = GetBlocks();           
             var block = blocks.Query().Where(x => x.Height == height).FirstOrDefault();
             return block;
         }
 
 
-        public static Block GetBlockByHash(string hash)
+        public static Block? GetBlockByHash(string hash)
         {
-            var blocks = DbContext.DB.GetCollection<Block>(DbContext.RSRV_BLOCKS);           
-            var block = blocks.FindOne(x => x.Hash == hash);
+            var blocks = GetBlocks();
+            var block = blocks.Query().Where(x => x.Hash == hash).FirstOrDefault();
             return block;
         }
         public static Block GetLastBlock()
@@ -316,10 +320,15 @@ namespace ReserveBlockCore.Data
                 //Update in memory fields.
                 
                 Globals.LastBlock = block;
+                if (Globals.ValidatorAddress == block.Validator)
+                    Globals.LastWonBlock = block;
                 var currentTime = TimeUtil.GetTime();
                 Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
                 Globals.LastBlockAddedTimestamp = currentTime;
                 _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
+                _ = ValidatorService.UpdateActiveValidators(block);
+
+                //insert block to db
                 blocks.InsertSafe(block);
             }
             else

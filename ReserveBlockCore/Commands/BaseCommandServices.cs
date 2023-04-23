@@ -19,6 +19,7 @@ using System.Globalization;
 using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Commands
 {
@@ -236,7 +237,7 @@ namespace ReserveBlockCore.Commands
         public static async Task FindTXByHash()
         {
             var coreCount = Environment.ProcessorCount;
-            if (coreCount >= 4)
+            if (coreCount >= 4 || Globals.RunUnsafeCode)
             {
                 Console.WriteLine("Please enter the TX Hash you are looking for...");
                 var txHash = Console.ReadLine();
@@ -765,92 +766,92 @@ namespace ReserveBlockCore.Commands
 
         public static async void CreateDecShop()
         {
-            Console.WriteLine("Please select the wallet you'd like to use to pay for shop registration...");
-            var accountList = AccountData.GetAccountsWithBalance();
-            var accountNumberList = new Dictionary<string, Account>();
-            if (accountList.Count() > 0)
-            {
-                int count = 1;
-                Console.WriteLine("********************************************************************");
-                Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
-                accountList.ToList().ForEach(x => {
-                    accountNumberList.Add(count.ToString(), x);
-                    Console.WriteLine("********************************************************************");
-                    Console.WriteLine("\n#" + count.ToString());
-                    Console.WriteLine("\nAddress :\n{0}", x.Address);
-                    Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
-                    Console.WriteLine("********************************************************************");
-                    count++;
-                });
-                string walletChoice = "";
-                walletChoice = Console.ReadLine();
+            //Console.WriteLine("Please select the wallet you'd like to use to pay for shop registration...");
+            //var accountList = AccountData.GetAccountsWithBalance();
+            //var accountNumberList = new Dictionary<string, Account>();
+            //if (accountList.Count() > 0)
+            //{
+            //    int count = 1;
+            //    Console.WriteLine("********************************************************************");
+            //    Console.WriteLine("Please choose an address below by typing its # and pressing enter.");
+            //    accountList.ToList().ForEach(x => {
+            //        accountNumberList.Add(count.ToString(), x);
+            //        Console.WriteLine("********************************************************************");
+            //        Console.WriteLine("\n#" + count.ToString());
+            //        Console.WriteLine("\nAddress :\n{0}", x.Address);
+            //        Console.WriteLine("\nAccount Balance:\n{0}", x.Balance);
+            //        Console.WriteLine("********************************************************************");
+            //        count++;
+            //    });
+            //    string walletChoice = "";
+            //    walletChoice = Console.ReadLine();
 
-                if (!string.IsNullOrWhiteSpace(walletChoice))
-                {
-                    var keyCheck = accountNumberList.ContainsKey(walletChoice);
+            //    if (!string.IsNullOrWhiteSpace(walletChoice))
+            //    {
+            //        var keyCheck = accountNumberList.ContainsKey(walletChoice);
 
-                    if (keyCheck == false)
-                    {
-                        Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
-                        MainMenuReturn();
-                    }
-                    else
-                    {
-                        var wallet = accountNumberList[walletChoice];
-                        var address = wallet.Address;
-                        Console.WriteLine("Please give your shop a name...");
-                        var name = Console.ReadLine();
-                        if (!string.IsNullOrWhiteSpace(name))
-                        {
-                            Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
-                            var desc = Console.ReadLine();
-                            if (!string.IsNullOrWhiteSpace(desc) && desc.Length > 512)
-                            {
-                                var ip = P2PClient.MostLikelyIP();
+            //        if (keyCheck == false)
+            //        {
+            //            Console.WriteLine($"Please choose a correct number. Error with entry given: {walletChoice}");
+            //            MainMenuReturn();
+            //        }
+            //        else
+            //        {
+            //            var wallet = accountNumberList[walletChoice];
+            //            var address = wallet.Address;
+            //            Console.WriteLine("Please give your shop a name...");
+            //            var name = Console.ReadLine();
+            //            if (!string.IsNullOrWhiteSpace(name))
+            //            {
+            //                Console.WriteLine("Please give your shop a description (Max length of 512 characters)...");
+            //                var desc = Console.ReadLine();
+            //                if (!string.IsNullOrWhiteSpace(desc) && desc.Length > 512)
+            //                {
+            //                    var ip = P2PClient.MostLikelyIP();
 
-                                if (ip == "NA")
-                                {
-                                    Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
-                                    MainMenuReturn();
-                                }
-                                else
-                                {
-                                    var sUID = Guid.NewGuid().ToString().Substring(0, 10).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
+            //                    if (ip == "NA")
+            //                    {
+            //                        Console.WriteLine("Could not get external IP. Please ensure you are connected to peers and that you are not blocking ports.");
+            //                        MainMenuReturn();
+            //                    }
+            //                    else
+            //                    {
+            //                        var sUID = Guid.NewGuid().ToString().Substring(0, 10).Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
 
-                                    DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
-                                    {
-                                        IPAddress = ip,
-                                        Port = Globals.Port,
-                                        Name = name,
-                                        ShopUID = sUID
-                                    };
+            //                        DecShop.DecShopInfoJson decShopLoc = new DecShop.DecShopInfoJson
+            //                        {
+            //                            IPAddress = ip,
+            //                            Port = Globals.Port,
+            //                            Name = name,
+            //                            ShopUID = sUID
+            //                        };
 
-                                    var decShopLocJson = JsonConvert.SerializeObject(decShopLoc);
+            //                        var decShopLocJson = JsonConvert.SerializeObject(decShopLoc);
 
-                                    DecShop dsInfo = new DecShop();
-                                    dsInfo.Name = name;
-                                    dsInfo.Description = desc;
-                                    dsInfo.Locator = decShopLocJson.ToBase64();
-                                    dsInfo.IsOffline = false;
-                                    dsInfo.ShopUID = sUID;
-                                    dsInfo.Address = address;
+            //                        DecShop dsInfo = new DecShop();
+            //                        dsInfo.Name = name;
+            //                        dsInfo.Description = desc;
+            //                        dsInfo.Locator = decShopLocJson.ToBase64();
+            //                        dsInfo.IsOffline = false;
+            //                        dsInfo.ShopUID = sUID;
+            //                        dsInfo.Address = address;
 
-                                    var result = await DecShop.SaveMyDecShopInfo(dsInfo);
-                                    //publish to chain now.
-                                    Console.WriteLine(result);
-                                    MainMenuReturn();
-                                }
+            //                        var result = await DecShop.SaveMyDecShopInfo(dsInfo);
+            //                        //publish to chain now.
+            //                        Console.WriteLine(result);
+            //                        MainMenuReturn();
+            //                    }
 
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a shop.");
-                MainMenuReturn();
-            }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    Console.WriteLine("No eligible accounts were detected. You must have an account with at least 1 RBX to create a shop.");
+            //    MainMenuReturn();
+            //}
         }
 
         public static string CreateHDWallet()
@@ -890,12 +891,13 @@ namespace ReserveBlockCore.Commands
                 var validator = Validators.Validator.GetAll().FindOne(x => x.Address == account.Address);
                 if(validator != null)
                 {
-                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
+                    var isValidating = Globals.ValidatorReceiving && Globals.ValidatorSending && Globals.ValidatorBalanceGood ? "[green]Yes[/]" : "[red]No[/]";
                     var isValidatingSending = Globals.ValidatorSending ? "[green]Yes[/]" : "[red]No[/]";
                     var isValidatingReceiving = Globals.ValidatorReceiving ? "[green]Yes[/]" : "[red]No[/]";
                     Console.WriteLine($"Validator Name: {validator.UniqueName}");
                     Console.WriteLine($"Validator Address: {validator.Address}");
                     Console.WriteLine($"Validator Amount: {account.Balance}");
+                    Console.WriteLine($"Validator Balance Good?: {Globals.ValidatorBalanceGood}");
                     AnsiConsole.MarkupLine($"Validating? {isValidating}");
                     AnsiConsole.MarkupLine($"Validator Sending? {isValidatingSending}");
                     AnsiConsole.MarkupLine($"Validator Receiving? {isValidatingReceiving}");
@@ -909,6 +911,12 @@ namespace ReserveBlockCore.Commands
                             AnsiConsole.MarkupLine($"Last Task Sent Time: [yellow]{node.LastTaskSentTime}[/] from [purple]{node.Address}[/]");
                         }
                         
+                    }
+
+                    var lastBlockWon = Globals.LastWonBlock;
+                    if(lastBlockWon != null)
+                    {
+                        AnsiConsole.MarkupLine($"Last Block Won: [green]{lastBlockWon.Height}[/] | Time: [yellow]{lastBlockWon.Timestamp.ToLocalDateTimeFromUnix()}[/]");
                     }
                 }
                 else
@@ -1497,6 +1505,46 @@ namespace ReserveBlockCore.Commands
 
         }
 
+        public static async Task CreateReserveAddress()
+        {
+            try
+            {
+                Console.WriteLine("Please input a password for your Reserve Account.");
+                var password = await ReadLineUtility.ReadLine();
+
+                AnsiConsole.MarkupLine($"Do you want to store the recovery address in wallet? [green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/]");
+                var confirm = await ReadLineUtility.ReadLine();
+
+                if(!string.IsNullOrEmpty(password))
+                {
+                    if(!string.IsNullOrEmpty(confirm))
+                    {
+                        var storeRecoveryKey = confirm.ToLower() == "y" ? true : false;
+                        var result = ReserveAccount.CreateNewReserveAccount(password, storeRecoveryKey);
+
+                        if(result != null)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("\n\n\nYour Wallet");
+                            Console.WriteLine("======================");
+                            Console.WriteLine("\nAddress :\n{0}", result.Address);
+                            Console.WriteLine("\nRecovery Address:\n{0}", result.RecoveryAddress);
+                            Console.WriteLine("\nPrivate Key:\n{0}", result.PrivateKey);
+                            Console.WriteLine("\nRecovery Private Key:\n{0}", result.RecoveryPrivateKey);
+                            Console.WriteLine("\nRestore Code:\n{0}", result.RestoreCode);
+                            Console.WriteLine("\n - - - - - - - - - - - - - - - - - - - - - - ");
+                            Console.WriteLine("*** Be sure to save private key and Restore Code!                  ***");
+                            Console.WriteLine("*** Use your private key to restore account!       ***");
+                        }
+                    }
+                    
+                }
+                
+            }
+            catch(Exception ex) { }
+            
+        }
+
         public static async Task CreateAddress()
         {
             if (Globals.HDWallet == true)
@@ -1667,6 +1715,97 @@ namespace ReserveBlockCore.Commands
 
         }
 
+        public static async Task RestoreReserveAccount()
+        {
+            try
+            {
+                ReserveAccount.ReserveAccountInfo? rInfo = null;
+
+                Console.WriteLine("1. Restore from 'Restore Code'.");
+                Console.WriteLine("2. Restore from two private keys.");
+                Console.WriteLine("Please choose option 1. to restore from a code, or option 2. to restore from two private keys");
+
+                var choice = await ReadLineUtility.ReadLine();
+
+                if(!string.IsNullOrEmpty(choice))
+                {
+                    Console.WriteLine("Please input a password for your Reserve Account.");
+                    var password = await ReadLineUtility.ReadLine();
+
+                    AnsiConsole.MarkupLine($"Do you want to store the recovery address in wallet? [green]'y'[/] for [green]yes[/] and [red]'n'[/] for [red]no[/]");
+                    var confirm = await ReadLineUtility.ReadLine();
+
+                    AnsiConsole.MarkupLine($"Do you want to rescan for TXs? [green]'y'[/] for [green]yes[/] and[red]'n'[/] for [red]no[/]");
+                    var rescanForTx = await ReadLineUtility.ReadLine();
+                    var rescan = rescanForTx?.ToLower() == "y" ? true : false;
+
+                    if (!string.IsNullOrEmpty(password))
+                    {
+                        if (!string.IsNullOrEmpty(confirm))
+                        {
+                            var storeRecoveryKey = confirm.ToLower() == "y" ? true : false;
+                            if (choice == "1")
+                            {
+                                Console.WriteLine("Please input your restore code.");
+                                var restoreCode = await ReadLineUtility.ReadLine();
+                                
+                                if(!string.IsNullOrEmpty(restoreCode))
+                                {
+                                    var result = await ReserveAccount.RestoreReserveAccount(restoreCode, password, storeRecoveryKey, rescan);
+                                    if(result != null)
+                                    {
+                                        rInfo = new ReserveAccount.ReserveAccountInfo();
+                                        rInfo = result;
+                                    }
+                                }
+                            }
+                            if (choice == "2")
+                            {
+                                Console.WriteLine("Please input your reserve account private key first.");
+                                var firstKey = await ReadLineUtility.ReadLine();
+
+                                Console.WriteLine("Please input your recovery account private key now.");
+                                var secondKey = await ReadLineUtility.ReadLine();
+
+                                if(!string.IsNullOrEmpty(firstKey) && !string.IsNullOrEmpty(secondKey))
+                                {
+                                    var result = await ReserveAccount.RestoreReserveAccount(firstKey, secondKey, password, storeRecoveryKey, rescan);
+                                    if (result != null)
+                                    {
+                                        rInfo = new ReserveAccount.ReserveAccountInfo();
+                                        rInfo = result;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if(rInfo != null)
+                {
+                    Console.Clear();
+                    Console.WriteLine("\n\n\nYour Wallet");
+                    Console.WriteLine("======================");
+                    Console.WriteLine("\nAddress :\n{0}", rInfo.Address);
+                    Console.WriteLine("\nRecovery Address:\n{0}", rInfo.RecoveryAddress);
+                    Console.WriteLine("\nPrivate Key:\n{0}", rInfo.PrivateKey);
+                    Console.WriteLine("\nRecovery Private Key:\n{0}", rInfo.RecoveryPrivateKey);
+                    Console.WriteLine("\nRestore Code:\n{0}", rInfo.RestoreCode);
+                    Console.WriteLine("\n - - - - - - - - - - - - - - - - - - - - - - ");
+                    Console.WriteLine("*** Be sure to save private key and Restore Code!                  ***");
+                    Console.WriteLine("*** Use your private key to restore account!       ***");
+                }
+                else
+                {
+                    Console.WriteLine("There was an issue restoring your Reserve Account. Please verify key/code is correct.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unknown error restoring account. Error: {ex.ToString()}");
+            }
+        }
+
         public static string RestoreHDWallet()
         {
             Console.WriteLine("Please paste your Mnemonic Below...");
@@ -1719,6 +1858,7 @@ namespace ReserveBlockCore.Commands
             foreach (int i in Enum.GetValues(typeof(TransactionType)))
             {
                 Console.WriteLine($"{count} - {i}");
+                count += 1;
             }
 
             var badTxTranType = Console.ReadLine();
@@ -1859,6 +1999,7 @@ namespace ReserveBlockCore.Commands
             var mostLikelyIP = P2PClient.MostLikelyIP();
 
             var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
+            var configLocation = Globals.IsTestNet != true ? "Config" : "ConfigTestNet";
             var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
             var osDesc = RuntimeInformation.OSDescription;
@@ -1872,22 +2013,27 @@ namespace ReserveBlockCore.Commands
             var threadCount = Environment.ProcessorCount;
 
             string path = "";
+            string configPath = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
                 path = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                configPath = homeDirectory + Path.DirectorySeparatorChar + mainFolderPath.ToLower() + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
             }
             else
             {
                 if (Debugger.IsAttached)
                 {
                     path = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    configPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "DBs" + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
                 }
                 else
                 {
                     path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + databaseLocation + Path.DirectorySeparatorChar;
+                    configPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + Path.DirectorySeparatorChar + mainFolderPath + Path.DirectorySeparatorChar + configLocation + Path.DirectorySeparatorChar;
                 }
             }
+
 
             Console.Clear();
             Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
@@ -1915,6 +2061,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]HD Wallet?[/]", $"[green]{Globals.HDWallet}[/]");
             table.AddRow("[blue]Program Path[/]", $"[green]{strWorkPath}[/]");
             table.AddRow("[blue]Database Folder Path[/]", $"[green]{path}[/]");
+            table.AddRow("[blue]Config Folder Path[/]", $"[green]{configPath}[/]");
             table.AddRow("[blue]System Time[/]", $"[green]{DateTime.Now}[/]");
             table.AddRow("[blue]Timestamp[/]", $"[green]{TimeUtil.GetTime()}[/]");
             
@@ -1945,6 +2092,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/info[/]", "[green]This will print out the RBX wallet client information.[/]");
             table.AddRow("[blue]/debug[/]", "[green]This will print out the debug information for the current state of the wallet.[/]");
             table.AddRow("[blue]/stopco[/]", "[green]This will stop the automatic printout of text in CLI.[/]");
+            table.AddRow("[blue]/basic[/]", "[green]This will turn the basic CLI menu on/off[/]");
             table.AddRow("[blue]/exit[/]", "[green]This will close the wallet.[/]");
             table.AddRow("[blue]/menu[/]", "[green]This will return you to the main menu[/]");
             table.AddRow("[blue]/clear[/]", "[green]This will clear the current console window.[/]");
@@ -1971,10 +2119,11 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]/findtx[/]", "[green]This is a heavy query to find a specific TX in all blocks.[/]");
             table.AddRow("[blue]/vote[/]", "[green]This will start the voting program.[/]");
             table.AddRow("[blue]/resblocks[/]", "[green]Resyncs the blocks to ensure you are at max height.[/]");
-            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host.[/]");
+            table.AddRow("[blue]/mother[/]", "[green]This will create a mother host. This will also take you main screen for mother after setup.[/]");
             table.AddRow("[blue]1[/]", "[green]This will print out the Genesis block[/]");
             table.AddRow("[blue]2[/]", "[green]This will create a new account.[/]");
             table.AddRow("[blue]2hd[/]", "[green]This will create an HD wallet.[/]");
+            table.AddRow("[blue]2r[/]", "[green]This will create an Reserve Account.[/]");
             table.AddRow("[blue]3[/]", "[green]This will restore an account with a provided key.[/]");
             table.AddRow("[blue]3hd[/]", "[green]Restores an HD wallet with a provided Mnemonic (12 or 24 words).[/]");
             table.AddRow("[blue]4[/]", "[green]This will start an RBX transactions for coins only.[/]");

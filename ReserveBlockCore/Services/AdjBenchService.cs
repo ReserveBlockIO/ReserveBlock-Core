@@ -37,13 +37,13 @@ namespace ReserveBlockCore.Services
                         var topic = TopicTrei.GetSpecificTopic(topicUID);
                         if (topic != null)
                         {
-                            if (topic.PercentInFavor >= 51.0M)
+                            if (topic.PercentInFavor >= 90.0M)
                             {
                                 queue.IsVoteInFavor = true;
                                 adjVoteInQueue.UpdateSafe(queue);
                                 CreateAdjBenchItem(queue);
                             }
-                            else if (topic.PercentAgainst >= 51.0M)
+                            else if (topic.PercentAgainst >= 10.0M)
                             {
                                 queue.IsVoteAgainst = true;
                                 adjVoteInQueue.UpdateSafe(queue);
@@ -52,13 +52,13 @@ namespace ReserveBlockCore.Services
                             {
                                 if (topic.VotingEndDate < DateTime.UtcNow)
                                 {
-                                    if (topic.PercentInFavor > 51.0M)
+                                    if (topic.PercentInFavor > 90.0M)
                                     {
                                         queue.IsVoteInFavor = true;
                                         adjVoteInQueue.UpdateSafe(queue);
                                         CreateAdjBenchItem(queue);
                                     }
-                                    else if (topic.PercentAgainst > 51.0M)
+                                    else if (topic.PercentAgainst > 10.0M)
                                     {
                                         queue.IsVoteAgainst = true;
                                         adjVoteInQueue.UpdateSafe(queue);

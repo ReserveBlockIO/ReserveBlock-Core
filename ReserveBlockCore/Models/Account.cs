@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
@@ -24,6 +26,7 @@ namespace ReserveBlockCore.Models
         public string Address { get; set; }
         public string? ADNR { get; set; }
         public decimal Balance { get; set; }
+        public decimal LockedBalance { get; set; }
         public bool IsValidating { get; set; }
 
         /// <summary>
@@ -35,6 +38,7 @@ namespace ReserveBlockCore.Models
         /// </returns>
         /// <exception cref="PrivateKey"></exception>
         public string GetKey{ get { return GetPrivateKey(PrivateKey, Address); } }
+        public PrivateKey? GetPrivKey { get { return GetClassPrivateKey(GetKey); } }
 
         public Account Build()
         {
@@ -43,9 +47,9 @@ namespace ReserveBlockCore.Models
             return account;
         }
 
-        public async static Task<Account> Restore(string privKey)
+        public async static Task<Account> Restore(string privKey, bool rescanForTx = false)
         {
-            Account account = await AccountData.RestoreAccount(privKey);
+            Account account = await AccountData.RestoreAccount(privKey, rescanForTx);
             return account;
         }
         public static async Task AddAdnrToAccount(string address, string name)
@@ -88,6 +92,20 @@ namespace ReserveBlockCore.Models
                     }
                 }
             }
+        }
+
+        private PrivateKey? GetClassPrivateKey(string privkey)
+        {
+            try
+            {
+                BigInteger b1 = BigInteger.Parse(privkey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+                return privateKey;
+            }
+            catch { }
+
+            return null;
         }
 
         private string GetPrivateKey(string privkey, string address)

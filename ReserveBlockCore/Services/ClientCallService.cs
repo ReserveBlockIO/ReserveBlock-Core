@@ -292,7 +292,9 @@ namespace ReserveBlockCore.Services
                 {
                     BroadcastLock = true;
                     var txsToBroadcastAdj = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToAdj).ToList();
-                    var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
+                    //Throttled to 10 per send for now.
+                    Random rnd = new Random();
+                    var txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).OrderBy(x => rnd.Next()).Take(10).ToList();
 
                     if (txsToBroadcastAdj.Count() > 0)
                     {
@@ -340,7 +342,7 @@ namespace ReserveBlockCore.Services
                             }
                             txsToBroadcastVal.Clear();
                             txsToBroadcastVal = new List<TransactionBroadcast>();
-                            txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).ToList();
+                            txsToBroadcastVal = Globals.ConsensusBroadcastedTrxDict.Values.Where(x => !x.IsBroadcastedToVal).OrderBy(x => rnd.Next()).Take(10).ToList();
                         }
                     }
                     catch(Exception ex)
@@ -732,7 +734,7 @@ namespace ReserveBlockCore.Services
                         .Select(x => x.First())
                         .OrderBy(x => Math.Abs(x.Answer - ChosenAnswer))
                         .ThenBy(x => x.Answer)                        
-                        .Where(x => AccountStateTrei.GetAccountBalance(x.RBXAddress) >= 1000M)
+                        .Where(x => AccountStateTrei.GetAccountBalance(x.RBXAddress) >= ValidatorService.ValidatorRequiredAmount())
                         .Take(30)
                         .ToArray();
 

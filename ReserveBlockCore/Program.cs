@@ -17,6 +17,11 @@ using Spectre.Console;
 using System.Security.AccessControl;
 using System.Net.Sockets;
 using System.Net.Http;
+using System.Security.Principal;
+using System.Runtime.Intrinsics.Arm;
+using System.Reflection;
+using ReserveBlockCore.DST;
+using ReserveBlockCore.Engines;
 
 namespace ReserveBlockCore
 {
@@ -25,6 +30,12 @@ namespace ReserveBlockCore
         #region Main
         static async Task Main(string[] args)
         {
+            bool keslog = false;
+            bool signalrLog = false;
+            bool runSingleRequest = false;
+            bool skipStateSync = false;
+
+            var argList = args.ToList();
             //force culture info to US
             var culture = CultureInfo.GetCultureInfo("en-US");
             if (Thread.CurrentThread.CurrentCulture.Name != "en-US")
@@ -35,10 +46,6 @@ namespace ReserveBlockCore
                 Thread.CurrentThread.CurrentCulture = culture;
                 Thread.CurrentThread.CurrentUICulture = culture;
             }
-
-            DateTime originDate = new DateTime(2022, 1, 1);
-            DateTime currentDate = DateTime.Now;
-
 
             var httpClientBuilder = Host.CreateDefaultBuilder(args)
                      .ConfigureServices(services =>
@@ -51,9 +58,8 @@ namespace ReserveBlockCore
             await httpClientBuilder.StartAsync();
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
-
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -103,7 +109,11 @@ namespace ReserveBlockCore
                 WindowsUtilities.DisableConsoleQuickEdit.Go();
 
 
-            var argList = args.ToList();
+            Globals.BuildVer = WalletVersionUtility.GetBuildVersion();
+
+            Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + WalletVersionUtility.GetBuildVersion().ToString() + "-beta";
+            var logCLIVer = Globals.CLIVersion;
+
             if (argList.Count() > 0)
             {
                 Globals.StartArguments = args.ToStringFromArray();//store for later in case of update restart.
@@ -111,14 +121,51 @@ namespace ReserveBlockCore
                 argList.ForEach(async x =>
                 {
                     var argC = x.ToLower();
+                    if(argC == "version")
+                    {
+                        Console.WriteLine(Globals.CLIVersion);
+                        runSingleRequest = true;
+                    }
                     if (argC == "testnet")
                     {
                         //Launch testnet
                         Globals.IsTestNet = true;
                     }
+                    if (argC == "stun")
+                    {
+                        Globals.SelfSTUNServer = true;
+                    }
+                    if (argC == "stunmessages")
+                    {
+                        Globals.ShowSTUNMessagesInConsole = true;
+                    }
+                    if (argC == "stunport")
+                    {
+                        var stunPortSplit = argC.Split(new char[] { '=' });
+                        var convRes = int.TryParse(stunPortSplit[1], out var result);
+                        var stunPort = convRes ? result : Globals.IsTestNet ? 13340 : 3340;
+                        Globals.SelfSTUNPort = stunPort;
+                    }
+                    if (argC.Contains("stunservers"))
+                    {
+                        var stunSplit = argC.Split(new char[] { '=' });
+                        var stunServers = stunSplit[1].Split(',');
+                        foreach (var server in stunServers)
+                        {
+                            Globals.STUNServers.Add(new StunServer { ServerIPPort = server, Group = 999, IsNetwork = false });
+                        }
+                    }
                     if (argC == "gui")
                     {
                         Globals.GUI = true;
+                    }
+                    if (argC == "unsafe")
+                    {
+                        Globals.RunUnsafeCode = true;
+                    }
+                    if (argC == "skip")
+                    {
+                        skipStateSync = true;
                     }
                     if (argC.Contains("encpass"))
                     {
@@ -130,6 +177,10 @@ namespace ReserveBlockCore
                     {
                         Globals.OpenAPI = true;
                     }
+                    if (argC.Contains("basic"))
+                    {
+                        Globals.BasicCLI = true;//give previous session time to close.
+                    }
                     if (argC.Contains("updating"))
                     {
                         await Task.Delay(5000);//give previous session time to close.
@@ -139,6 +190,14 @@ namespace ReserveBlockCore
                         var apiTokens = argC.Split(new char[] { '=' });
                         var apiToken = apiTokens[1];
                         Globals.APIToken = apiToken.ToSecureString();
+                    }
+                    if(argC.Contains("keslog"))
+                    {
+                        keslog = true;
+                    }
+                    if (argC.Contains("signalrlog"))
+                    {
+                        signalrLog = true;
                     }
                     if (argC.Contains("snapshot"))
                     {
@@ -171,17 +230,18 @@ namespace ReserveBlockCore
                 });
             }
 
+            if(runSingleRequest)
+            {
+                Console.WriteLine("Press 'Enter' to exit...");
+                var exit = Console.ReadLine();
+                Environment.Exit(0);
+            }
+
             Globals.Platform = PlatformUtility.GetPlatform();
 
             Config.Config.EstablishConfigFile();
             var config = Config.Config.ReadConfigFile();
             Config.Config.ProcessConfig(config);
-
-            var dateDiff = (int)Math.Round((currentDate - originDate).TotalDays);
-            Globals.BuildVer = dateDiff;
-
-            Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + Globals.BuildVer.ToString() + "-beta";
-            var logCLIVer = Globals.CLIVersion;
 
             LogUtility.Log(logCLIVer, "Main", true);
             LogUtility.Log($"RBX Wallet - {logCLIVer}", "Main");
@@ -200,6 +260,10 @@ namespace ReserveBlockCore
 
             await DbContext.CheckPoint();
 
+            StartupService.SetBlockHeight();
+            StartupService.SetLastBlock();
+            StartupService.StartupMemBlocks();
+
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
             StartupService.HDWalletCheck();// checks for HD wallet
@@ -211,10 +275,11 @@ namespace ReserveBlockCore
             Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;
 
-            var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
-            if(adjGenAccount != null)
-                await BlockchainData.InitializeChain();
+            //var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
+            //if(adjGenAccount != null)
+            // await BlockchainData.InitializeChain();
 
+            StartupService.SetValidator();
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
             if (args.Length != 0)
             {
@@ -227,16 +292,7 @@ namespace ReserveBlockCore
                     }
                     if (argC == "hidecli")
                     {
-                        ProcessStartInfo start = new ProcessStartInfo();
-                        start.FileName = Directory.GetCurrentDirectory() + @"\ReserveBlockCore.exe";
-                        start.WindowStyle = ProcessWindowStyle.Hidden; //Hides GUI
-                        start.CreateNoWindow = true; //Hides console
-                        start.Arguments = "enableapi";
-
-                        Globals.proc.StartInfo = start;
-                        Globals.proc.Start();
-
-                        Environment.Exit(0);
+                        
                     }
                     if (argC == "testurl")
                     {
@@ -253,8 +309,38 @@ namespace ReserveBlockCore
                             if (account != null)
                             {
                                 Console.WriteLine("Account Loaded: " + account.Address);
-                            }
 
+                                if (argList.Exists(x => x.ToLower() == "start-validator"))
+                                {
+                                    var name = argList.Where(x => x.ToLower().Contains("validator-name=")).FirstOrDefault();
+                                    if(name != null)
+                                    {
+                                        if(string.IsNullOrEmpty(Globals.ValidatorAddress))
+                                        {
+                                            var nameSplit = name.Split(new char[] { '=' });
+                                            var validatorName = nameSplit[1];
+                                            var validatorAddress = account.Address;
+                                            var accountDB = AccountData.GetAccounts();
+                                            var accountRec = accountDB.Query().Where(x => x.Address == account.Address).FirstOrDefault();
+
+                                            var valResult = await ValidatorService.StartValidating(accountRec, validatorName, true);
+                                            Console.WriteLine(valResult);
+
+                                            await Task.Delay(1000);
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"Validator Active: {Globals.ValidatorAddress}");
+                                        }
+                                        
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Error: 'start-validator' was present, but no name was entered");
+                                    }
+                                    
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -264,7 +350,7 @@ namespace ReserveBlockCore
                 });
             }
 
-            StartupService.SetValidator();
+            
             StartupService.SetAdjudicatorAddresses();
             Signer.UpdateSigningAddresses();
 
@@ -294,11 +380,7 @@ namespace ReserveBlockCore
                 valEncryptCheck = true;
             }
 
-            await StartupService.RunSettingChecks();
-
-            StartupService.SetBlockHeight();
-            StartupService.SetLastBlock();
-            StartupService.StartupMemBlocks();
+            await StartupService.RunSettingChecks(skipStateSync);
 
             //This is for consensus start.
             await StartupService.GetAdjudicatorPool();
@@ -338,9 +420,12 @@ namespace ReserveBlockCore
             Globals.ConnectionHistoryTimer = new Timer(connectionHistoryTimer_Elapsed); // 1 sec = 1000, 60 sec = 60000
             Globals.ConnectionHistoryTimer.Change(90000, 3 * 10 * 6000); //waits 1.5 minute, then runs every 3 minutes
 
-            string url = Globals.TestURL == false ? "http://*:" + Globals.APIPort : "https://*:7777"; //local API to connect to wallet. This can be changed, but be cautious. 
-            string url2 = "http://*:" + Globals.Port; //this is port for signalr connect and all p2p functions
-                                                      //string url2 = "https://*:3338" //This is non http version. Must uncomment out app.UseHttpsRedirection() in startupp2p
+            //API Port URL
+            string url = !Globals.TestURL ? "http://*:" + Globals.APIPort : "https://*:7777";
+            //P2P Port URL
+            string url2 = "http://*:" + Globals.Port;
+            //Consensus Port URL
+            string url3 = "http://*:" + Globals.ADJPort;
 
             var commandLoopTask = Task.Run(() => CommandLoop(url));
             var commandLoopTask2 = Task.Run(() => CommandLoop2(url2));
@@ -369,7 +454,7 @@ namespace ReserveBlockCore
                     })
                     .UseStartup<Startup>()
                     //.UseUrls(new string[] {$"http://*:{Globals.APIPort}", $"https://*:{Globals.APIPort}" })
-                    .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                    .ConfigureLogging(!keslog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
                 });
 
             //for p2p using signalr
@@ -379,7 +464,22 @@ namespace ReserveBlockCore
                     webBuilder.UseKestrel()
                     .UseStartup<StartupP2P>()
                     .UseUrls(url2)
-                    .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                    .ConfigureLogging(!signalrLog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
+                    webBuilder.ConfigureKestrel(options =>
+                    {
+
+
+                    });
+                });
+
+            //for consensus adjs using signalr p2p
+            var builder3 = Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseKestrel()
+                    .UseStartup<StartupP2PConsensus>()
+                    .UseUrls(url3)
+                    .ConfigureLogging(!signalrLog ? loggingBuilder => loggingBuilder.ClearProviders() : loggingBuilder => loggingBuilder.AddSimpleConsole());
                     webBuilder.ConfigureKestrel(options =>
                     {
 
@@ -390,6 +490,11 @@ namespace ReserveBlockCore
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
 
+            if(Globals.AdjudicateAccount != null)
+            {
+                _ = builder3.RunConsoleAsync();
+            }
+            
             if (Globals.AdjudicateAccount == null)
             {
                 Globals.StopAllTimers = true;
@@ -435,7 +540,6 @@ namespace ReserveBlockCore
 
             await TransactionData.UpdateWalletTXTask();
 
-
             _ = StartupService.ConnectToAdjudicators();
             _ = BanService.PeerBanUnbanService();
             _ = BeaconService.BeaconRunService();
@@ -443,10 +547,37 @@ namespace ReserveBlockCore
             _ = FortisPoolService.PopulateFortisPoolCache();
             _ = MempoolBroadcastService.RunBroadcastService();
             _ = ValidatorService.ValidatingMonitorService();
-            
+            _ = ValidatorService.GetActiveValidators();
+            _ = ValidatorService.ValidatorCountRun();
+            _ = ReserveService.Run();
+            _ = DSTClient.Run();
+
+            var decShop = DecShop.GetMyDecShopInfo();
+            if(decShop != null)
+            {
+                if(decShop.STUNServerGroup == 0)
+                {
+                    if(Globals.IsTestNet)
+                    {
+                        decShop.STUNServerGroup = 1;
+                        await DecShop.SaveMyDecShopLocal(decShop);
+                    }
+                }
+                if (!decShop.IsOffline)
+                {
+                    _ = AuctionEngine.StartBidProcessing();
+                }
+                _ = AuctionEngine.StartAuctioneer();
+            }
+
+            if (Globals.SelfSTUNServer)
+                _ = Task.Run(() => { StartupService.StartDSTServer(); });//launching off the main thread.
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                _ = LinuxUtilities.AdjAutoRestart();
 
             if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
             {
@@ -455,11 +586,25 @@ namespace ReserveBlockCore
 
             await Task.Delay(2000);
 
+            //_ = DSTServer.Run();
+
             var tasks = new Task[] {
                 commandLoopTask, //CLI console
                 commandLoopTask2, //awaiting parameters
                 commandLoopTask3//Beacon client/server
             };
+
+            try
+            {
+                Process proc = Process.GetCurrentProcess();
+                var workingSetMem = proc.WorkingSet64;
+                Globals.StartMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
+                Globals.CurrentMemory = Math.Round((decimal)workingSetMem / 1024 / 1024, 2);
+            }
+            catch { }
+
+            _ = MemoryService.Run();
+            _ = MemoryService.RunGlobals();
 
             await Task.WhenAll(tasks);
 
@@ -590,7 +735,7 @@ namespace ReserveBlockCore
 
         private static void CommandLoop3()
         {
-            StartupService.StartBeacon();
+            _ = StartupService.StartBeacon();
         }
 
         #endregion

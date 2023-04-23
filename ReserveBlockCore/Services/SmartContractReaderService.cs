@@ -102,7 +102,8 @@ namespace ReserveBlockCore.Services
                                     IsCurrentState = evolveDict.IsCurrentState,
                                     EvolveDate = evolveDict.EvolveDate != null ? evolveDict.EvolveDate : null,
                                     EvolveBlockHeight = evolveDict.EvolveBlockHeight != null ? evolveDict.EvolveBlockHeight : null,
-                                    SmartContractAsset = evolveDict.SmartContractAsset != null ? evoAsset : null
+                                    SmartContractAsset = evolveDict.SmartContractAsset != null ? evoAsset : null,
+                                    Properties = evolveDict.Properties != null ? evolveDict.Properties : null
                                 };
 
 
@@ -250,7 +251,8 @@ namespace ReserveBlockCore.Services
                                         IsCurrentState = evolveDict.IsCurrentState,
                                         EvolveDate = evolveDict.EvolveDate != null ? evolveDict.EvolveDate : null,
                                         EvolveBlockHeight = evolveDict.EvolveBlockHeight != null ? evolveDict.EvolveBlockHeight : null,
-                                        SmartContractAsset = evolveDict.SmartContractAsset != null ? evoAsset : null
+                                        SmartContractAsset = evolveDict.SmartContractAsset != null ? evoAsset : null,
+                                        Properties = evolveDict.Properties != null ? evolveDict.Properties : null
                                     };
 
                                     if (activeEvoState != null)
@@ -334,6 +336,11 @@ namespace ReserveBlockCore.Services
                 //strBuild.AppendLine(("let Location = \"" + scAsset.Location + "\""));
                 strBuild.AppendLine(("let FileName = \"" + scAsset.Name + "\""));
                 strBuild.AppendLine(("let AssetAuthorName = \"" + scAsset.AssetAuthorName + "\""));
+
+                if (scMain.Properties != null)
+                {
+                    strBuild.AppendLine("let Properties = \"" + scMain.Properties.ToTrilliumStringFromDict() + "\"");
+                }
 
                 strBuild.AppendLine("function NftMain(data : string) : string");
                 strBuild.AppendLine("{");

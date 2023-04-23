@@ -1,8 +1,10 @@
 ﻿using ReserveBlockCore.Models;
+using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -21,6 +23,42 @@ namespace ReserveBlockCore.Extensions
             }
         }
 
+        /// <summary>
+        /// Takes a file path string and returns its extension
+        /// </summary>
+        /// <param name="source">string</param>
+        /// <returns>string extensions. Ex: '.txt'</returns>
+        public static string ToFileExtension(this string source)
+        {
+            string myFilePath = source;
+            string ext = Path.GetExtension(myFilePath);
+            return ext;
+        }
+
+        public static byte[] ImageToByteArray(this byte[] imageBytes)
+        {
+            byte[] byteArray;
+            using (MemoryStream stream = new MemoryStream(imageBytes))
+            {
+                using (BinaryReader reader = new BinaryReader(stream))
+                {
+                    byteArray = reader.ReadBytes((int)stream.Length);
+                }
+            }
+            return byteArray;
+        }
+
+        public static string ToHash(this string source)
+        {
+            if (!string.IsNullOrEmpty(source))
+            {
+                return HashingService.GenerateHash(HashingService.GenerateHash(source));
+            }
+            else
+            {
+                return "NA";
+            }
+        }
         public static long ToUnixTimeSeconds(this DateTime obj)
         {
             long unixTime = ((DateTimeOffset)obj).ToUnixTimeSeconds();
@@ -42,10 +80,25 @@ namespace ReserveBlockCore.Extensions
             return value;
         }
 
+        public static bool ToDecimalCountValid(this decimal value)
+        {
+            int count = BitConverter.GetBytes(decimal.GetBits(value)[3])[2];
+            if (count > 18)
+                return false;
+
+            return true;
+        }
+
         public static DateTime ToLocalDateTimeFromUnix(this long unixTime)
         {
             DateTime frDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             frDateTime = frDateTime.AddSeconds(unixTime).ToLocalTime();
+            return frDateTime;
+        }
+        public static DateTime ToUTCDateTimeFromUnix(this long unixTime)
+        {
+            DateTime frDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            frDateTime = frDateTime.AddSeconds(unixTime).ToUniversalTime();
             return frDateTime;
         }
         public static int ToInt32(this string obj)
@@ -188,6 +241,17 @@ namespace ReserveBlockCore.Extensions
             var output = string.Join(" ", source);
 
             return output;
+        }
+
+        /// <summary>
+        /// Converts a dictionary into a char delimited string
+        /// </summary>
+        /// <param name="dict">Dictionary string, string</param>
+        /// <returns>Char delimited string</returns>
+        public static string ToTrilliumStringFromDict(this Dictionary<string, string> dict)
+        {
+            var result = string.Join("<|>", dict.Select(m => m.Key + ":" + m.Value).ToArray());
+            return result;
         }
 
         public static string ToAddressNormalize(this string source)
@@ -376,6 +440,48 @@ namespace ReserveBlockCore.Extensions
                 }
                 return Convert.ToBase64String(mso.ToArray());
             }
+        }
+
+        public static bool ToLengthCheck(this string text, int length)
+        {
+            var stringLength = text.Length;
+            if(stringLength > length)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public static bool ToWordCountCheck(this string text, int count)
+        {
+            int wordCount = 0, index = 0;
+
+            // skip whitespace until first word
+            while (index < text.Length && char.IsWhiteSpace(text[index]))
+                index++;
+
+            while (index < text.Length)
+            {
+                // check if current char is part of a word
+                while (index < text.Length && !char.IsWhiteSpace(text[index]))
+                    index++;
+
+                wordCount++;
+
+                // skip whitespace until next word
+                while (index < text.Length && char.IsWhiteSpace(text[index]))
+                    index++;
+
+                if (wordCount > count)
+                    break;
+            }
+
+            if(wordCount > count)
+                return false;
+            return true;
         }
 
         public static string ToDecompress(this string s)

@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.DST;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Security;
 
 namespace ReserveBlockCore
@@ -17,6 +20,14 @@ namespace ReserveBlockCore
             Source.Cancel();
             CancelledToken = Source.Token;
         }
+
+        public class MethodCallCount
+        {
+            public int Enters { get; set; }
+            public int Exits { get; set; }
+            public int Exceptions { get; set; }
+        }
+
 
         #region Timers
         public static bool IsTestNet = false;
@@ -32,6 +43,7 @@ namespace ReserveBlockCore
         public static byte AddressPrefix = 0x3C; //address prefix 'R'        
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address        
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
+        public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();
@@ -40,19 +52,29 @@ namespace ReserveBlockCore
         public static Adjudicators? LeadAdjudicator = null;
         public static Guid AdjudicatorKey = Adjudicators.AdjudicatorData.GetAdjudicatorKey();
         public static BeaconReference BeaconReference = new BeaconReference();
-        public static Process proc = new Process();
         public static Beacons? SelfBeacon = null;
         public static long LastBlockAddedTimestamp = TimeUtil.GetTime();
         public static long BlockTimeDiff = 0;
+        public static Block? LastWonBlock = null;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
         public static DateTime? APIUnlockTime = null;
         public static DateTime? ExplorerValDataLastSend = null;
 
+        public const int ValidatorRequiredRBX = 12000;
+        public const decimal ADNRRequiredRBX = 5.0M;
+        public const decimal TopicRequiredRBX = 10.0M;
+        public const decimal DecShopRequiredRBX = 10.0M;
+        public const decimal DecShopUpdateRequiredRBX = 1.0M;
+
         public const int ADNRLimit = 65;
+        public static long FeatureLock = 896247;
         public static int BlockLock = -1;
         public static long V3Height = 579015;
+        public static long V1ValHeight = 832000;
+        public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
+        public static long TXHeightRule2 = 847847; //around April 7, 2023 at 18:30 UTC
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;
@@ -61,16 +83,20 @@ namespace ReserveBlockCore
         public static int PasswordClearTime = 10;
         public static int NFTTimeout = 0;
         public static int Port = 3338;
+        public static int ADJPort = 3339;
+        public static int SelfSTUNPort = 3340;
+        public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
-        public static int MinorVer = 2;
+        public static int MinorVer = 5;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
         public static bool ValidatorReceiving = true;
+        public static bool ValidatorBalanceGood = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
-        public static string GitHubVersion = "beta3.2";
+        public static string GitHubVersion = "beta3.5";
         public static string GitHubApiURL = "https://api.github.com/";
         public static string GitHubRBXRepoURL = "repos/ReserveBlockIO/ReserveBlock-Core/releases/latest";
         public static string GitHubLatestReleaseVersion = "";
@@ -81,6 +107,9 @@ namespace ReserveBlockCore
         public static SecureString? APIToken = null;
         public static int TimeSyncDiff = 0;
         public static DateTime TimeSyncLastDate = DateTime.Now;
+        public static decimal StartMemory = 0;
+        public static decimal CurrentMemory = 0;
+        public static decimal ProjectedMemory = 0;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";
@@ -95,6 +124,7 @@ namespace ReserveBlockCore
         public static string? MotherAddress = null;
         public static string? CustomPath = null;
 
+        public static bool Lock = true;
         public static bool AlwaysRequireWalletPassword = false;
         public static bool AlwaysRequireAPIPassword = false;
         public static bool StopConsoleOutput = false;        
@@ -122,6 +152,7 @@ namespace ReserveBlockCore
         public static bool OptionalLogging = false;
         public static bool AdjPoolCheckLock = false;
         public static bool GUI = false;
+        public static bool RunUnsafeCode = false;
         public static bool GUIPasswordNeeded = false;
         public static bool TreisUpdating = false;
         public static bool DuplicateAdjIP = false;
@@ -134,7 +165,12 @@ namespace ReserveBlockCore
         public static bool NFTsDownloading = false;
         public static bool TimeInSync = true;
         public static bool TimeSyncError = false;
-
+        public static bool BasicCLI = false;
+        public static bool MemoryOverload = false;
+        public static bool SelfSTUNServer = false;
+        public static bool ShowSTUNMessagesInConsole = false;
+        public static bool STUNServerRunning = false;
+        
         public static CancellationToken CancelledToken;
 
         public static ConcurrentDictionary<string, long> MemBlocks = new ConcurrentDictionary<string, long>();
@@ -148,8 +184,12 @@ namespace ReserveBlockCore
         public static ConcurrentBag<string> RejectAssetExtensionTypes = new ConcurrentBag<string>();
         public static ConcurrentDictionary<string, BeaconNodeInfo> Beacon = new ConcurrentDictionary<string, BeaconNodeInfo>();
         public static ConcurrentQueue<int> BlockDiffQueue = new ConcurrentQueue<int>();
+        public static ConcurrentDictionary<string, long> ActiveValidatorDict = new ConcurrentDictionary<string, long>();
+        public static ConcurrentBag<StunServer> STUNServers = new ConcurrentBag<StunServer>();
+
 
         public static SecureString EncryptPassword = new SecureString();
+        public static SecureString DecryptPassword = new SecureString();
         public static SecureString? MotherPassword = null;
 
         public static IHttpClientFactory HttpClientFactory;        
@@ -158,7 +198,7 @@ namespace ReserveBlockCore
 
         #region P2P Client Variables
 
-        public const int MaxPeers = 8;
+        public const int MaxPeers = 14;
         public static ConcurrentDictionary<string, int> ReportedIPs = new ConcurrentDictionary<string, int>();
         public static ConcurrentDictionary<string, Peers> BannedIPs;        
 
@@ -200,13 +240,37 @@ namespace ReserveBlockCore
 
         #region Bad TX Ignore List
 
-        public static List<string> BadADNRTxList = new List<string> { "9ebe7eb08abcf35f7e5cad6a5346babcb045f0e52732cdfddd021296331c2056" };
-        public static List<string> BadNFTTxList = new List<string>();
+        public static List<string> BadADNRTxList = new List<string> { "9ebe7eb08abcf35f7e5cad6a5346babcb045f0e52732cdfddd021296331c2056"};
+        public static List<string> BadNFTTxList = new List<string>() { "70e34dd1b5d646addc5328f971b4ab370095985dcf4bce1d0e1ea222824daa6d" };
         public static List<string> BadTopicTxList = new List<string>();
         public static List<string> BadVoteTxList = new List<string>();
-        public static List<string> BadTxList = new List<string>();
-        public static List<string> BadDSTList = new List<string>();
+        public static List<string> BadTxList = new List<string> { "9065618ff356dc1dcef8cd5413ffe826f8ab45ca8b6bb9c8f9853d1de0b576ae", "b05b230c9f7fb6f9014c0a9a4a5b1c9ddaf36a96462635d628272b8c62e2e5b3" };
+        public static List<string> BadDSTList = new List<string> { "8f9eec99c69ace2ad758048ceb281c38099173ca95a97c31114f2d136b34916a", 
+        "a898112b2770ca2182d330d71f8830ad7eeb2b7ac9030cf33312ebeefd72c8a5",
+        "152250f2673234765ab61e3f46e2ef94a80e50cf24bcaaf0ad5e0341f8b5626a",
+        "241546578f04a3dbcf9e9195352750f7ff087ba39840759fe38e56e22f9d6139",};
+
         public static List<string> BadNodeList = new List<string>();
+
+        #endregion
+
+        #region DST Variables
+        public const decimal BidModifier = 100000000M;
+        public const decimal BidMinimum = 0.00000001M;
+        public static ConcurrentDictionary<string, DSTConnection> ConnectedClients = new ConcurrentDictionary<string, DSTConnection>();
+        public static ConcurrentDictionary<string, DSTConnection> ConnectedShops = new ConcurrentDictionary<string, DSTConnection>();
+        public static DSTConnection? STUNServer = null;
+        public static ConcurrentQueue<Message> ClientMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentQueue<Message> ServerMessageQueue = new ConcurrentQueue<Message>();
+        public static ConcurrentDictionary<string, List<Chat.ChatMessage>> ChatMessageDict = new ConcurrentDictionary<string, List<Chat.ChatMessage>>();
+        public static ConcurrentDictionary<string, IPEndPoint> ShopChatUsers = new ConcurrentDictionary<string, IPEndPoint>();
+        public static ConcurrentDictionary<string, MessageState> ClientMessageDict = new ConcurrentDictionary<string, MessageState>();
+        public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
+        public static DecShopData? DecShopData = null;
+        public static ConcurrentQueue<BidQueue> BidQueue = new ConcurrentQueue<BidQueue>();
+        public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
+        public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
+        public static bool AssetDownloadLock = false;
 
         #endregion
 

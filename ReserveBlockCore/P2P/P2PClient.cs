@@ -217,7 +217,7 @@ namespace ReserveBlockCore.P2P
                         currentNode.NodeLatency = node.NodeLatency;
                     }
 
-                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/8");
+                    ConsoleWriterService.OutputSameLine($"Connected to {Globals.Nodes.Count}/14");
                     peer.IsOutgoing = true;
                     peer.FailCount = 0; //peer responded. Reset fail count
                     Peers.GetAll()?.UpdateSafe(peer);
@@ -551,7 +551,7 @@ namespace ReserveBlockCore.P2P
 
         public static async Task SendTaskAnswerV3(string taskAnswer)
         {
-            if (taskAnswer == null)
+            if (taskAnswer == null || Globals.TimeSyncError) //adding time sync check here.
                 return;
 
             var tasks = new ConcurrentBag<Task>();
@@ -663,8 +663,9 @@ namespace ReserveBlockCore.P2P
         #region Get Block
         public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
         {
-            if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
-                return null;
+            //if (Interlocked.Exchange(ref node.IsSendingBlock, 1) != 0)
+            //    return null;
+
             var startTime = DateTime.Now;
             long blockSize = 0;
             Block Block = null;
@@ -1188,6 +1189,9 @@ namespace ReserveBlockCore.P2P
                 else
                 {
                     var account = AccountData.GetSingleAccount(scState.OwnerAddress);
+                    if (account == null && scState.NextOwner != null)
+                        account = AccountData.GetSingleAccount(scState.NextOwner);
+
                     if (account != null)
                     {
                         BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.

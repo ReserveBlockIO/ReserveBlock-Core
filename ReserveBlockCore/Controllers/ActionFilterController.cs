@@ -6,6 +6,7 @@ namespace ReserveBlockCore.Controllers
 {
     public class ActionFilterController : ActionFilterAttribute 
     {
+        public static List<string> ApprovedMethodList = new List<string> { "GetDebugInfo", "Mother", "Egg", "CheckStatus", "GetCLIVersion", "GetWalletInfo", "NetworkMetrics", "SyncBalances" };
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
             try
@@ -34,8 +35,11 @@ namespace ReserveBlockCore.Controllers
 
                 if(Globals.APIToken != null)
                 {
+                    var routeValue = filterContext.RouteData.Values.Values.ToArray()[0];
+                    bool bypass = ApprovedMethodList.Contains(routeValue) ? true : false;
+
                     var apiToken = filterContext.HttpContext.Request.Headers["apitoken"];
-                    if(apiToken != Globals.APIToken.ToUnsecureString())
+                    if(apiToken != Globals.APIToken.ToUnsecureString() && !bypass)
                     {
                         filterContext.Result = new StatusCodeResult(403);
                     }
@@ -98,7 +102,8 @@ namespace ReserveBlockCore.Controllers
                     "GetAllLocalTX", "GetSuccessfulLocalTX", "GetFailedLocalTX", "GetPendingLocalTX", "GetMinedLocalTX", "GetAllTopics", 
                     "GetActiveTopics", "GetInactiveTopics", "GetMyTopics", "GetAllSmartContracts", "GetMintedSmartContracts", "CheckStatus", 
                     "GetIsWalletEncrypted", "GetMyVotes", "GetSingleSmartContract", "GetNFTAssetLocation", "GetCLIVersion", "CheckPasswordNeeded",
-                    "GetBeacons", "GetValidatorInfo", "IsValidating"};
+                    "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock"};
+
 
                 if(!APIExclusionList.Contains(action))
                 {

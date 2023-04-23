@@ -23,6 +23,9 @@ using System.Net;
 using System.Security;
 using System.Xml.Linq;
 using System.Data;
+using System.Diagnostics;
+using ReserveBlockCore.DST;
+using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Services
 {
@@ -62,8 +65,6 @@ namespace ReserveBlockCore.Services
             var peerDb = Peers.GetAll();
             Globals.BannedIPs = new ConcurrentDictionary<string, Peers>(
                 peerDb.Find(x => x.IsBanned || x.IsPermaBanned).ToArray().ToDictionary(x => x.PeerIP, x => x));
-            var localBlockTime = BlockLocalTime.GetBlockLocalTimes();
-            localBlockTime.DeleteManySafe(x => x.Height < Globals.LastBlock.Height - 24000);
         }
 
         public static async void EncryptedPasswordEntry()
@@ -187,6 +188,7 @@ namespace ReserveBlockCore.Services
                     [("xBRA57xaL612t35aac1WWQxYQ2ipTV5WcF", 0)] = null,
                     [("xBREKz8TcSh7uhs5mNrWttGkrciaq2jy3V", 0)] = null,
                     [("xBRHXgEwJEqZad6USusAXJfz7Pc6KHViix", 0)] = null,
+                    [("xBRgsdHnRBnpbBNTfWPk2dKdNbfKs9GDWK", 0)] = null,
                 } :
                 new ConcurrentDictionary<(string, long), long?>
                 {
@@ -236,13 +238,13 @@ namespace ReserveBlockCore.Services
             //BlockchainData.ChainRef = "m_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
 
             BlockchainData.ChainRef = "m1_Gi9RNxviAq1TmvuPZsZBzdAa8AWVJtNa7cm1dFaT4dWDbdqSNSTh";
-            LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "Main");
-
             if (Globals.IsTestNet)
             {
                 //testnet
                 BlockchainData.ChainRef = "t_testnet1";
             }
+
+            LogUtility.Log("RBX ChainRef - " + BlockchainData.ChainRef, "StartupService.SetBlockchainChainRef()");
         }
 
         internal static void CheckBlockRefVerToDb()
@@ -258,14 +260,17 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static async Task RunSettingChecks()
+        internal static async Task RunSettingChecks(bool skipStateSync = false)
         {
             var settings = Settings.GetSettings();
             if (settings != null)
             {
                 if (!settings.CorrectShutdown)
                 {
-                    await StateTreiSyncService.SyncAccountStateTrei();
+                    if(!Debugger.IsAttached && !skipStateSync)
+                    {
+                        await StateTreiSyncService.SyncAccountStateTrei();
+                    }
                 }
 
                 if (Globals.AdjudicateAccount == null)
@@ -273,9 +278,9 @@ namespace ReserveBlockCore.Services
                     var now = DateTime.Now;
                     var lastShutDown = settings.LastShutdown;
 
-                    if (lastShutDown != null && settings.CorrectShutdown)
+                    if (lastShutDown != null && settings.CorrectShutdown && Globals.LastBlock.Height > 0)
                     {
-                        if (lastShutDown.Value.AddSeconds(20) > now)
+                        if (!Debugger.IsAttached && lastShutDown.Value.AddSeconds(20) > now)
                         {
                             var diff = Convert.ToInt32((lastShutDown.Value.AddSeconds(20) - now).TotalMilliseconds);
                             Console.WriteLine("Wallet was restarted too fast. Startup will continue in a moment. Do not close wallet.");
@@ -284,8 +289,11 @@ namespace ReserveBlockCore.Services
                     }
                     else
                     {
-                        Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
-                        await Task.Delay(15000);
+                        if (!Debugger.IsAttached && Globals.LastBlock.Height > 0)
+                        {
+                            Console.WriteLine("Wallet was restarted too fast or improperly closed. Startup will continue in a moment. Do not close wallet.");
+                            await Task.Delay(15000);
+                        }
                     }
                 }
 
@@ -316,24 +324,38 @@ namespace ReserveBlockCore.Services
             //no rules needed at this time
         }
 
-        internal static void StartBeacon()
+        internal static async Task StartBeacon()
         {
             try
             {
                 if(Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
                     var port = Globals.Port + 20000; //23338 - mainnet
- 
+                    
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
                     Thread obj_thread = new Thread(server.StartServer());
-                    Console.WriteLine("Beacon Started");
+                    Console.WriteLine("Beacon Stopped");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-            
+        }
+
+        internal static async Task StartDSTServer()
+        {
+            try
+            {
+                Console.WriteLine("DST Service Started.");
+                LogUtility.Log("DST Service Started.", "StartupService.StartDSTServer()");
+                _ = DSTServer.Run();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
         }
 
         internal static async Task SetSelfBeacon()
@@ -619,7 +641,7 @@ namespace ReserveBlockCore.Services
         internal static void StartupMemBlocks()
         {
             var blockChain = BlockchainData.GetBlocks();
-            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending), 0, 400)
+            Globals.MemBlocks = new ConcurrentDictionary<string, long>(blockChain.Find(LiteDB.Query.All(LiteDB.Query.Descending)).Take(400)
                 .Select(x => x.Transactions.Select(y => new { y.Hash, x.Height})).SelectMany(x => x).ToDictionary(x => x.Hash, x => x.Height));
         }
 
@@ -675,7 +697,7 @@ namespace ReserveBlockCore.Services
                         var ConnectTasks = new ConcurrentBag<Task>();
                         DisconnectedPeers.ParallelLoop(peer =>
                         {
-                            var url = "http://" + peer.NodeIP + ":" + Globals.Port + "/consensus";
+                            var url = "http://" + peer.NodeIP + ":" + Globals.ADJPort + "/consensus";
                             ConnectTasks.Add(ConsensusClient.ConnectConsensusNode(url, account.Address, time, account.Address, signature));
                         });                        
 
@@ -1136,6 +1158,25 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        internal static void OpenUpShop()
+        {
+            var decShop = DecShop.GetMyDecShopInfo();
+            if(decShop != null)
+            {
+                var message = new Message
+                {
+                    Address = decShop.OwnerAddress,
+                    Data = "",
+                    Type = MessageType.ShopConnect,
+                    Port = decShop.Port
+                };
+
+                //var messageSend = 
+
+
+            }
+        }
+
         internal static void DisplayValidatorAddress()
         {
             var accounts = AccountData.GetAccounts();
@@ -1216,64 +1257,146 @@ namespace ReserveBlockCore.Services
 
         internal static void MainMenu(bool noAccountMessage = false)
         {
-            Console.Clear();
-            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+            if (Globals.BasicCLI)
+            {
+                MainMenuBasic();
+            }
+            else
+            {
+                
+                try
+                {
+                    Console.Clear();
+                    Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+                }
+                catch { }
+                
 
-            if(Globals.IsTestNet != true)
-            {
-                AnsiConsole.Write(
-                new FigletText("RBX Wallet")
-                .LeftAligned()
-                .Color(Color.Blue));
+                if (Globals.IsTestNet != true)
+                {
+                    AnsiConsole.Write(
+                    new FigletText("RBX Wallet")
+                    .LeftJustified()
+                    .Color(Color.Blue));
+                }
+                else
+                {
+                    AnsiConsole.Write(
+                    new FigletText("RBX Wallet - TestNet")
+                    .LeftJustified()
+                    .Color(Color.Green));
+                }
+
+                if (Globals.IsTestNet != true)
+                {
+                    Console.WriteLine("ReserveBlock Main Menu");
+                }
+                else
+                {
+                    Console.WriteLine("ReserveBlock Main Menu **TestNet**");
+                }
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("| 1. Genesis Block (Check)             |");
+                Console.WriteLine("| 2/2r/2hd. Create Account/Reserve/HD  |");
+                Console.WriteLine("| 3/3r/3hd. Restore Account/Reserve/HD |");
+                Console.WriteLine("| 4. Send Coins                        |");
+                Console.WriteLine("| 5. Get Latest Block & Metrics        |");
+                Console.WriteLine("| 6. Transaction History               |");
+                Console.WriteLine("| 7. Wallet Address(es) Info           |");
+                Console.WriteLine("| 8. Startup Masternode                |");
+                Console.WriteLine("| 9. Search Block                      |");
+                Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
+                Console.WriteLine("| 11. Stop Masternode                  |");
+                Console.WriteLine("| 12. Import Smart Contract (disabled) |");
+                Console.WriteLine("| 13. Voting                           |");
+                Console.WriteLine("| 14. Exit                             |");
+                Console.WriteLine("|======================================|");
+                Console.WriteLine("|type /help for menu options           |");
+                Console.WriteLine("|type /menu to come back to main area  |");
+                Console.WriteLine("|======================================|");
+
+                if (Globals.DuplicateAdjAddr)
+                { Console.WriteLine("|Duplicate Address Found Validating!   |"); }
+                if (Globals.DuplicateAdjIP)
+                { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
+                if (Globals.NFTFilesReadyEPN)
+                {
+                    AnsiConsole.MarkupLine("[red]| NFT Files awaiting download!         |[/]");
+                    AnsiConsole.MarkupLine("[red]| Please input encrypt password        |[/]");
+                }
+                if (!Globals.UpToDate)
+                {
+                    AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("[green]|         **CLI Is Up To Date**        |[/]");
+                }
+
+                if (noAccountMessage)
+                {
+                    Console.WriteLine("********************************************************************");
+                    AnsiConsole.MarkupLine("[yellow]You do not have any accounts yet. Please choose option 2 to create a new account.[/]");
+                }
+                if (!Globals.TimeInSync)
+                {
+                    AnsiConsole.MarkupLine("********************************************************************");
+                    AnsiConsole.MarkupLine("[red]|             **Time is out of sync**            |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock is in sync      |[/]");
+                    AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("[green]| **Time Server shows time is synced** |[/]");
+                }
+                if (Globals.TimeSyncError)
+                {
+                    AnsiConsole.MarkupLine("********************************************************************");
+                    AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
+                    AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
+                    AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+                }
+                if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+                {
+                    AnsiConsole.MarkupLine("[blue]|          **Validator Active**        |[/]");
+                    AnsiConsole.MarkupLine($"[blue]|  {Globals.ValidatorAddress}  |[/]");
+                }
+                if(!Globals.MemoryOverload)
+                {
+
+                    AnsiConsole.MarkupLine($"[darkorange]|            **Memory Usage**          |[/]");
+                    AnsiConsole.MarkupLine($"[darkorange]|               {Globals.CurrentMemory} MB              |[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"[red]| *Memory Overload Restart Recommended*|[/]");
+                    AnsiConsole.MarkupLine($"[red]|               {Globals.CurrentMemory} MB              |[/]");
+                }
             }
-            else
-            {
-                AnsiConsole.Write(
-                new FigletText("RBX Wallet - TestNet")
-                .LeftAligned()
-                .Color(Color.Green));
-            }
+
             
-            if(Globals.IsTestNet != true)
+        }
+
+        internal static void MainMenuBasic(bool noAccountMessage = false)
+        {
+            try
             {
-                Console.WriteLine("ReserveBlock Main Menu");
+                Console.Clear();
+                Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
             }
-            else
-            {
-                Console.WriteLine("ReserveBlock Main Menu **TestNet**");
-            }
-            Console.WriteLine("|======================================|");
-            Console.WriteLine("| 1. Genesis Block (Check)             |");
-            Console.WriteLine("| 2. Create Account                    |");
-            Console.WriteLine("| 2hd. Create HD Wallet                |");
-            Console.WriteLine("| 3. Restore Account                   |");
-            Console.WriteLine("| 3hd. Restore HD Wallet               |");
-            Console.WriteLine("| 4. Send Coins                        |");
-            Console.WriteLine("| 5. Get Latest Block & Metrics        |");
-            Console.WriteLine("| 6. Transaction History               |");
-            Console.WriteLine("| 7. Wallet Address(es) Info           |");
-            Console.WriteLine("| 8. Startup Masternode                |");
-            Console.WriteLine("| 9. Search Block                      |");
-            Console.WriteLine("| 10. Enable API (Turn On and Off)     |");
-            Console.WriteLine("| 11. Stop Masternode                  |");
-            Console.WriteLine("| 12. Import Smart Contract (disabled) |");
-            Console.WriteLine("| 13. Voting                           |");
-            Console.WriteLine("| 14. Exit                             |");
-            Console.WriteLine("|======================================|");
-            Console.WriteLine("|type /help for menu options           |");
-            Console.WriteLine("|type /menu to come back to main area  |");
-            Console.WriteLine("|======================================|");
+            catch { }
 
             if (Globals.DuplicateAdjAddr)
             { Console.WriteLine("|Duplicate Address Found Validating!   |"); }
             if (Globals.DuplicateAdjIP)
             { Console.WriteLine("|Duplicate IPAddress Found Validating! |"); }
-            if(Globals.NFTFilesReadyEPN)
+            if (Globals.NFTFilesReadyEPN)
             {
                 AnsiConsole.MarkupLine("[red]| NFT Files awaiting download!         |[/]");
                 AnsiConsole.MarkupLine("[red]| Please input encrypt password        |[/]");
             }
-            if(!Globals.UpToDate)
+            if (!Globals.UpToDate)
             {
                 AnsiConsole.MarkupLine("[red]|          **CLI Is Outdated**         |[/]");
                 AnsiConsole.MarkupLine("[red]|Please type /update to download latest|[/]");
@@ -1282,12 +1405,13 @@ namespace ReserveBlockCore.Services
             {
                 AnsiConsole.MarkupLine("[green]|         **CLI Is Up To Date**        |[/]");
             }
-            if(noAccountMessage)
+
+            if (noAccountMessage)
             {
                 Console.WriteLine("********************************************************************");
                 AnsiConsole.MarkupLine("[yellow]You do not have any accounts yet. Please choose option 2 to create a new account.[/]");
             }
-            if(!Globals.TimeInSync)
+            if (!Globals.TimeInSync)
             {
                 AnsiConsole.MarkupLine("********************************************************************");
                 AnsiConsole.MarkupLine("[red]|             **Time is out of sync**            |[/]");
@@ -1298,12 +1422,17 @@ namespace ReserveBlockCore.Services
             {
                 AnsiConsole.MarkupLine("[green]| **Time Server shows time is synced** |[/]");
             }
-            if(Globals.TimeSyncError)
+            if (Globals.TimeSyncError)
             {
                 AnsiConsole.MarkupLine("********************************************************************");
                 AnsiConsole.MarkupLine("[red]|             **Failed to Sync Time**            |[/]");
                 AnsiConsole.MarkupLine("[red]|Please ensure your system clock able to sync    |[/]");
                 AnsiConsole.MarkupLine("[red]|You may experience issues with clock out of sync|[/]");
+            }
+            if (!string.IsNullOrEmpty(Globals.ValidatorAddress))
+            {
+                AnsiConsole.MarkupLine("[blue]|          **Validator Active**        |[/]");
+                AnsiConsole.MarkupLine($"[blue]|  {Globals.ValidatorAddress}  |[/]");
             }
         }
     }

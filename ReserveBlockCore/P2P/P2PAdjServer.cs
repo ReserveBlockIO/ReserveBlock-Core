@@ -88,11 +88,11 @@ namespace ReserveBlockCore.P2P
                     return;                    
                 }
 
-                if(stateAddress.Balance < 1000)
+                if(stateAddress.Balance < ValidatorService.ValidatorRequiredAmount())
                 {
                     _ = EndOnConnect(peerIP, "W", startTime, conQueue,
-                        "Connected, but you do not have the minimum balance of 1000 RBX. You are being disconnected.",
-                        "Connected, but you do not have the minimum balance of 1000 RBX: " + address);
+                        $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} RBX. You are being disconnected.",
+                        $"Connected, but you do not have the minimum balance of {ValidatorService.ValidatorRequiredAmount()} RBX: " + address);
                     return;
                 }
 

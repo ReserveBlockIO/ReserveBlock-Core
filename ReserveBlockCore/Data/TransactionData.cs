@@ -72,6 +72,7 @@ namespace ReserveBlockCore.Data
                     TransactionRating = transaction.TransactionRating,
                     TransactionStatus = transaction.TransactionStatus,
                     TransactionType = transaction.TransactionType,
+                    UnlockTime = transaction.UnlockTime
                 };
                 if (subtract)
                 {
@@ -83,7 +84,7 @@ namespace ReserveBlockCore.Data
             }
         }
 
-        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false)
+        public static void UpdateTxStatusAndHeightXXXX(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false, bool isReserveSend = false)
         {
             var txs = GetAll();
             var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
@@ -92,9 +93,21 @@ namespace ReserveBlockCore.Data
                 if (txCheck == null)
                 {
                     //posible sub needed
+                    transaction.Id = new LiteDB.ObjectId();
                     transaction.TransactionStatus = txStatus;
                     transaction.Height = blockHeight;
                     txs.InsertSafe(transaction);
+                    var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                    if (account != null)
+                    {
+                        var accountDb = AccountData.GetAccounts();
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                        if (stateTrei != null)
+                        {
+                            account.Balance = stateTrei.Balance;
+                            accountDb.UpdateSafe(account);
+                        }
+                    }
                 }
                 else
                 {
@@ -109,15 +122,114 @@ namespace ReserveBlockCore.Data
                 {
                     if(txCheck.Amount < 0)
                     {
+                        transaction.Id = new LiteDB.ObjectId();
                         transaction.TransactionStatus = txStatus;
                         transaction.Height = blockHeight;
                         transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
                         transaction.Fee = transaction.Fee < 0 ? transaction.Fee * -1.0M : transaction.Fee;
                         txs.InsertSafe(transaction);
+
+                        var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                        if (account != null)
+                        {
+                            var accountDb = AccountData.GetAccounts();
+                            var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                            if (stateTrei != null)
+                            {
+                                account.Balance = stateTrei.Balance;
+                                accountDb.UpdateSafe(account);
+                            }
+                        }
                     }
                 }
             }
             
+        }
+
+        public static void UpdateTxStatusAndHeight(Transaction transaction, TransactionStatus txStatus, long blockHeight, bool sameWalletTX = false)
+        {
+            var txs = GetAll();
+            var txCheck = txs.FindOne(x => x.Hash == transaction.Hash);
+            if (!sameWalletTX)
+            {
+                if (txCheck == null)
+                {
+                    //posible sub needed
+                    transaction.Id = new LiteDB.ObjectId();
+                    transaction.TransactionStatus = txStatus;
+                    transaction.Height = blockHeight;
+                    txs.InsertSafe(transaction);
+                    var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                    var rAccount = ReserveAccount.GetReserveAccountSingle(transaction.FromAddress);
+                    if (account != null)
+                    {
+                        var accountDb = AccountData.GetAccounts();
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                        if (stateTrei != null)
+                        {
+                            account.Balance = stateTrei.Balance;
+                            accountDb.UpdateSafe(account);
+                        }
+                    }
+                    if(rAccount != null)
+                    {
+                        var stateTrei = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                        if (stateTrei != null)
+                        {
+                            rAccount.AvailableBalance = stateTrei.Balance;
+                            rAccount.LockedBalance = stateTrei.LockedBalance;
+                            ReserveAccount.SaveReserveAccount(rAccount);
+                        }
+                    }
+                }
+                else
+                {
+                    txCheck.TransactionStatus = txStatus;
+                    txCheck.Height = blockHeight;
+                    txs.UpdateSafe(txCheck);
+                }
+            }
+            else
+            {
+                if (txCheck != null)
+                {
+                    if (txCheck.Amount < 0)
+                    {
+                        transaction.Id = new LiteDB.ObjectId();
+                        transaction.TransactionStatus = txStatus;
+                        transaction.Height = blockHeight;
+                        transaction.Amount = transaction.Amount < 0 ? transaction.Amount * -1.0M : transaction.Amount;
+                        transaction.Fee = transaction.Fee < 0 ? transaction.Fee * -1.0M : transaction.Fee;
+                        txs.InsertSafe(transaction);
+
+                        var account = AccountData.GetSingleAccount(transaction.FromAddress);
+                        var rAccount = ReserveAccount.GetReserveAccountSingle(transaction.FromAddress);
+
+                        if (account != null)
+                        {
+                            var accountDb = AccountData.GetAccounts();
+                            var stateTrei = StateData.GetSpecificAccountStateTrei(account.Address);
+                            if (stateTrei != null)
+                            {
+                                account.Balance = stateTrei.Balance;
+                                accountDb.UpdateSafe(account);
+                            }
+                        }
+
+                        if (rAccount != null)
+                        {
+                            var stateTrei = StateData.GetSpecificAccountStateTrei(rAccount.Address);
+                            if (stateTrei != null)
+                            {
+                                rAccount.AvailableBalance = stateTrei.Balance;
+                                rAccount.LockedBalance = stateTrei.LockedBalance;
+                                ReserveAccount.SaveReserveAccount(rAccount);
+                            }
+                        }
+                    }
+                }
+            }
+
         }
 
         public static async Task UpdateWalletTXTask()
@@ -277,7 +389,10 @@ namespace ReserveBlockCore.Data
                             if (tx.TransactionType != TransactionType.TX &&
                                 tx.TransactionType != TransactionType.ADNR &&
                                 tx.TransactionType != TransactionType.VOTE_TOPIC &&
-                                tx.TransactionType != TransactionType.VOTE)
+                                tx.TransactionType != TransactionType.VOTE && 
+                                tx.TransactionType != TransactionType.DSTR &&
+                                tx.TransactionType != TransactionType.RESERVE &&
+                                tx.TransactionType != TransactionType.NFT_SALE)
                             {
                                 var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                                 if (scDataArray != null)
@@ -366,6 +481,19 @@ namespace ReserveBlockCore.Data
                                 if (sigCheck)
                                 {
                                     var topicAlreadyExist = approvedMemPoolList.Exists(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.VOTE);
+                                    if (topicAlreadyExist)
+                                        reject = true;
+                                }
+                            }
+
+                            if (tx.TransactionType == TransactionType.DSTR)
+                            {
+                                var signature = tx.Signature;
+                                //the signature must be checked here to ensure someone isn't spamming bad TXs to invalidated votes/vote topics
+                                var sigCheck = SignatureService.VerifySignature(tx.FromAddress, tx.Hash, signature);
+                                if (sigCheck)
+                                {
+                                    var topicAlreadyExist = approvedMemPoolList.Exists(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.DSTR);
                                     if (topicAlreadyExist)
                                         reject = true;
                                 }
@@ -504,7 +632,10 @@ namespace ReserveBlockCore.Data
             if (tx.TransactionType != TransactionType.TX && 
                 tx.TransactionType != TransactionType.ADNR && 
                 tx.TransactionType != TransactionType.VOTE_TOPIC && 
-                tx.TransactionType != TransactionType.VOTE)
+                tx.TransactionType != TransactionType.VOTE && 
+                tx.TransactionType != TransactionType.DSTR &&
+                tx.TransactionType != TransactionType.RESERVE &&
+                tx.TransactionType != TransactionType.NFT_SALE)
             {
                 if(tx.Data != null)
                 {
@@ -633,6 +764,12 @@ namespace ReserveBlockCore.Data
 
             return transactions;
         }
+        public static IEnumerable<Transaction> GetReserveLocalTransactions(bool showFailed = false)
+        {
+            var transactions = GetAll().Query().Where(x => x.TransactionStatus == TransactionStatus.Reserved).ToEnumerable();
+
+            return transactions;
+        }
 
         public static IEnumerable<Transaction> GetLocalMinedTransactions(bool showFailed = false)
         {
@@ -707,25 +844,46 @@ namespace ReserveBlockCore.Data
             return transactions;
         }
 
-        //public static IEnumerable<Transaction> GetAccountTransactions(string address, int limit = 50)
-        //{
-        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    var query = transactions.Query()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Where(x => x.FromAddress == address || x.ToAddress == address)
-        //        .Limit(limit).ToList();
-        //    return query;
-        //}
+        public static IEnumerable<Transaction> GetAllLocalTransactionsByAddress(string address)
+        {
+            var transactions = GetAll().Query().Where(x => x.FromAddress == address || x.ToAddress == address).ToEnumerable();
 
-        //public static IEnumerable<Transaction> GetTransactions(int pageNumber, int resultPerPage)
-        //{
-        //    var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
-        //    var query = transactions.Query()
-        //        .OrderByDescending(x => x.Timestamp)
-        //        .Offset((pageNumber - 1) * resultPerPage)
-        //        .Limit(resultPerPage).ToList();
-        //    return query;
-        //}
+            return transactions;
+        }
+        public static IEnumerable<Transaction> GetAccountTransactionsLimit(string address, int limit = 50)
+        {
+            var transactions = GetAll();
+            var query = transactions.Query()
+                .OrderByDescending(x => x.Timestamp)
+                .Where(x => x.FromAddress == address || x.ToAddress == address)
+                .Limit(limit).ToEnumerable();
+            return query;
+        }
+
+        public static IEnumerable<Transaction> GetTransactionsPaginated(int pageNumber, int resultPerPage, string? address = null)
+        {
+            var transactions = GetAll();
+            if(address == null)
+            {
+                var query = transactions.Query()
+                    .OrderByDescending(x => x.Timestamp)
+                    .Offset((pageNumber - 1) * resultPerPage)
+                    .Limit(resultPerPage).ToEnumerable();
+
+                return query;
+            }
+            else
+            {
+                var query = transactions.Query()
+                    .Where(x => x.FromAddress == address || x.ToAddress == address)
+                    .OrderByDescending(x => x.Timestamp)
+                    .Offset((pageNumber - 1) * resultPerPage)
+                    .Limit(resultPerPage).ToEnumerable();
+
+                return query;
+            }
+            
+        }
 
     }
 

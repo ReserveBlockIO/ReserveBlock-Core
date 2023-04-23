@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Trillium;
 using ReserveBlockCore.P2P;
+using System.Runtime.InteropServices;
+using Spectre.Console;
+using ReserveBlockCore.DST;
 
 namespace ReserveBlockCore.Commands
 {
@@ -32,6 +35,13 @@ namespace ReserveBlockCore.Commands
                 case "/printkeys":
                     BaseCommandServices.PrintKeys();
                     break;
+                case "/basic":
+                    Globals.BasicCLI = !Globals.BasicCLI;
+                    var state = Globals.BasicCLI ? "-->ON<--" : "-->OFF<--";
+                    if (!Globals.BasicCLI)
+                        StartupService.MainMenu();
+                    Console.WriteLine($"Reserveblock Basic CLI has been turned {state}...");
+                    break;
                 case "/stopco":
                     Globals.StopConsoleOutput = !Globals.StopConsoleOutput;
                     Console.WriteLine($"Stop Console Output set to: {Globals.StopConsoleOutput}");
@@ -44,6 +54,12 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/clear":
                     Console.Clear();
+                    break;
+                case "/chat":
+                    Console.Clear();
+                    Globals.StopConsoleOutput = true;
+                    _ = Chat.Run();
+                    Globals.StopConsoleOutput = false;
                     break;
                 case "/update":
                     Globals.StopConsoleOutput = true;
@@ -204,7 +220,22 @@ namespace ReserveBlockCore.Commands
                     break;
                 case "/restart":
                     Globals.StopConsoleOutput = true;
-                    await WindowsUtilities.ClientRestart();
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        await WindowsUtilities.ClientRestart();
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        await LinuxUtilities.ClientRestart();
+                    }
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        Console.WriteLine("No restart command for OSX yet.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("OS Not detected.");
+                    }
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/entercode":
@@ -227,7 +258,9 @@ namespace ReserveBlockCore.Commands
                     }
                     Globals.StopConsoleOutput = false;
                     break;
-
+                case "/test1":
+                    await DSTClient.ConnectToShopForAssets();
+                    break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
                     BlockchainData.PrintBlock(genBlock);
@@ -235,6 +268,12 @@ namespace ReserveBlockCore.Commands
                 case "2": // Create Account
                     await BaseCommandServices.CreateAddress();
                     Console.WriteLine("Please type /menu to return to mainscreen.");
+                    break;
+                case "2r": // Create Reserve Account Account
+                    Globals.StopConsoleOutput = true;
+                    Console.WriteLine("Please type /menu to return to mainscreen.");
+                    await BaseCommandServices.CreateReserveAddress();
+                    Globals.StopConsoleOutput = false;
                     break;
                 case "2hd": // Create HD Wallet
                     Globals.StopConsoleOutput = true;
@@ -261,10 +300,17 @@ namespace ReserveBlockCore.Commands
                             Console.WriteLine("Please enter private key... ");
                             try
                             {
+                                var rescanForTx = false;
                                 var privKey = await ReadLineUtility.ReadLine();
                                 if(!string.IsNullOrEmpty(privKey))
                                 {
-                                    var restoredAccount = await Account.Restore(privKey);
+                                    AnsiConsole.MarkupLine("Would you like to rescan block chain to find transactions? ('[bold green]y[/]' for yes and '[bold red]n[/]' for no).");
+                                    var rescan = await ReadLineUtility.ReadLine();
+                                    if(!string.IsNullOrEmpty(rescan))
+                                    {
+                                        rescanForTx = rescan.ToLower() == "y" ? true : false;
+                                    }
+                                    var restoredAccount = await Account.Restore(privKey, rescanForTx);
                                     AccountData.WalletInfo(restoredAccount);
                                 }
                             }
@@ -293,7 +339,12 @@ namespace ReserveBlockCore.Commands
                     }
                     Globals.StopConsoleOutput = false;
                     break;
-                case "3hd": // Create HD Wallet
+                case "3r": // Restore reserve account
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.RestoreReserveAccount();
+                    Globals.StopConsoleOutput = false;
+                    break;
+                case "3hd": // restore HD Wallet
                     Globals.StopConsoleOutput = true;
                     var mnemonicRestore = BaseCommandServices.RestoreHDWallet();
                     Console.WriteLine("-----------------------HD Wallet Process Result------------------------");
