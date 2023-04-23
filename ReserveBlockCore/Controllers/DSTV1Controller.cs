@@ -1852,5 +1852,19 @@ namespace ReserveBlockCore.Controllers
 
             return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer }, Formatting.Indented);           
         }
+
+        /// <summary>
+        /// Debug Data for DST
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("DebugData")]
+        public async Task<string> DebugData()
+        {
+            var CollectionCount = Collection.GetLiveCollections();
+            var ListingCount = Listing.GetLiveListingsCount();
+            var AuctionCount = Auction.GetLiveAuctionsCount();
+
+            return JsonConvert.SerializeObject(new { Success = true, CollectionCount, ListingCount, AuctionCount }, Formatting.Indented);
+        }
     }
 }
