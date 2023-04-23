@@ -102,7 +102,8 @@ namespace ReserveBlockCore.Controllers
                     "GetAllLocalTX", "GetSuccessfulLocalTX", "GetFailedLocalTX", "GetPendingLocalTX", "GetMinedLocalTX", "GetAllTopics", 
                     "GetActiveTopics", "GetInactiveTopics", "GetMyTopics", "GetAllSmartContracts", "GetMintedSmartContracts", "CheckStatus", 
                     "GetIsWalletEncrypted", "GetMyVotes", "GetSingleSmartContract", "GetNFTAssetLocation", "GetCLIVersion", "CheckPasswordNeeded",
-                    "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock"};
+                    "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock", "GetDecShop", "GetSummaryChatMessages",
+                    "GetAllCollections", "GetAllReserveAccounts", "GetSimpleShopChatMessages", "GetDecShopData"};
 
 
                 if(!APIExclusionList.Contains(action))
