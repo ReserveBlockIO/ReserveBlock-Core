@@ -12,6 +12,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Net;
 
 namespace ReserveBlockCore.Controllers
@@ -908,9 +909,15 @@ namespace ReserveBlockCore.Controllers
             if (decshop != null)
             {
                 ConnectingAddress = address;
+                var accountExist = AccountData.GetSingleAccount(address);
+                if(!Debugger.IsAttached)
+                {
+                    if (accountExist == null)
+                        return false;
+                }
                 //removes current connection to shop
                 await DSTClient.DisconnectFromShop();
-                var connectionResult = await DSTClient.ConnectToShop(url);
+                var connectionResult = await DSTClient.ConnectToShop(url, address);
 
                 //if connectionResult == true create some looping event.
 

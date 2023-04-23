@@ -15,6 +15,7 @@ using System.Xml;
 using System;
 using Docnet.Core.Bindings;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.DST
 {
@@ -35,6 +36,8 @@ namespace ReserveBlockCore.DST
         public static CancellationTokenSource shopAssetToken = new CancellationTokenSource();
         public static CancellationTokenSource stunToken = new CancellationTokenSource();
         public static int somecount = 0;
+        private static string AssetConnectionId = "";
+        public static ConcurrentDictionary<string, bool> AssetDownloadQueue = new ConcurrentDictionary<string, bool>();
 
         public static async Task Run(bool bypass = false)
         {
@@ -241,6 +244,12 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
+                Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                taskData.Start();
+
+                Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
+                taskAssets.Start();
+
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
 
@@ -367,6 +376,10 @@ namespace ReserveBlockCore.DST
 
                 Task taskData = new Task(() => { UpdateShopData(token); }, token);
                 taskData.Start();
+
+                Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
+                taskAssets.Start();
+                //GetShopListingAssets
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -962,6 +975,14 @@ namespace ReserveBlockCore.DST
                             }
                         }
 
+                        if (AssetDownloadQueue.TryGetValue(scUID, out var value))
+                        {
+                            AssetDownloadQueue[scUID] = true;
+                        }
+                        else
+                        {
+                            AssetDownloadQueue.TryAdd(scUID, true);
+                        }
                         stopProcess = true;
                     }
                 }
@@ -1182,7 +1203,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task GetShopListingAssets(CancellationToken token)
+        public static async Task GetShopListingAssets(CancellationToken token, string address)
         {
             var exit = false;
             var delay = Task.Delay(3000);
@@ -1216,9 +1237,84 @@ namespace ReserveBlockCore.DST
                                 continue;
                             }
                         }
-                            
 
+                        if (Globals.DecShopData?.Listings?.Count > 0)
+                        {
+                            var listings = Globals.DecShopData?.Listings;
+                            if(listings != null)
+                            {
+                                var _assetConnectionId = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+
+                                foreach (var listing in listings)
+                                {
+                                    if (!AssetDownloadQueue.TryGetValue(listing.SmartContractUID, out var value))
+                                    {
+                                        Message message = new Message
+                                        {
+                                            Address = address,
+                                            Data = listing.SmartContractUID,
+                                            Type = MessageType.AssetReq,
+                                            ComType = MessageComType.Info
+                                        };
+
+                                        if (!Globals.AssetDownloadLock)
+                                        {
+                                            Globals.AssetDownloadLock = true;
+                                            NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                            if (_assetConnectionId != AssetConnectionId)
+                                            {
+                                                AssetConnectionId = _assetConnectionId;
+                                                await DisconnectFromAsset();
+                                                var connected = await ConnectToShopForAssets();
+                                                if (connected)
+                                                    await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                            }
+                                            else
+                                            {
+                                                await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if(!value)
+                                        {
+                                            Message message = new Message
+                                            {
+                                                Address = address,
+                                                Data = listing.SmartContractUID,
+                                                Type = MessageType.AssetReq,
+                                                ComType = MessageComType.Info
+                                            };
+
+                                            if (!Globals.AssetDownloadLock)
+                                            {
+                                                Globals.AssetDownloadLock = true;
+                                                NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                                if (_assetConnectionId != AssetConnectionId)
+                                                {
+                                                    AssetConnectionId = _assetConnectionId;
+                                                    await DisconnectFromAsset();
+                                                    var connected = await ConnectToShopForAssets();
+                                                    if (connected)
+                                                        await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                }
+                                                else
+                                                {
+                                                    await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                }
+
+                                Globals.AssetDownloadLock = false;
+                            }
+                        }
                     }
+
+                    await delay;
                 }
                 catch
                 {
