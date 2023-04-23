@@ -14,6 +14,7 @@ using System.Net;
 using Trillium.Syntax;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Engines;
+using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Models
 {
@@ -42,6 +43,9 @@ namespace ReserveBlockCore.Models
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
         public bool IsPublished { get; set; }
+        public int CollectionCount { get { return Collection.GetLiveCollections(); } }
+        public int ListingCount { get { return Listing.GetLiveListingsCount(); } }
+        public int AuctionCount { get { return Auction.GetLiveAuctionsCount(); } }
         public bool IsIPDifferent { get { return P2PClient.MostLikelyIP() == IP ? false : true; } }
 
         public class DecShopTxData

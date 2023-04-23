@@ -977,7 +977,39 @@ namespace ReserveBlockCore.DST
             Globals.AssetDownloadLock = false;
         }
 
-        public static async Task SendShopMessageFromClient(Message message, bool responseRequested, bool sendTwice = false)
+        public static async Task GetShopData(string connectingAddress)
+        {
+            bool infoFound = false;
+            bool collectionsFound = false;
+            bool listingsFound = false;
+            bool auctionsFound = false;
+            int failCounter = 0;
+
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = connectingAddress,
+                    Data = $"{DecShopRequestOptions.Info}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                while(!infoFound && failCounter < 3)
+                {
+                    await SendShopMessageFromClient(message, true);
+                    await Task.Delay(200);
+                    if (Globals.DecShopData?.DecShop != null)
+                        infoFound = true;
+
+                    if(!infoFound)
+                        failCounter += 1;
+                }
+            }
+        }
+
+        public static async Task SendShopMessageFromClient(Message message, bool responseRequested, bool sendTwice = false, int delay = 0)
         {
             var shopMessage = MessageService.GenerateMessage(message, responseRequested);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
@@ -986,7 +1018,8 @@ namespace ReserveBlockCore.DST
 
             if(sendTwice)
             {
-                await udpClient.SendAsync(messageBytes, ConnectedShopServer);
+                await Task.Delay(delay);
+                _ = udpClient.SendAsync(messageBytes, ConnectedShopServer);
             }
         }
 

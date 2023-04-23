@@ -912,6 +912,11 @@ namespace ReserveBlockCore.Controllers
                 await DSTClient.DisconnectFromShop();
                 var connectionResult = await DSTClient.ConnectToShop(url);
 
+                //if connectionResult == true create some looping event.
+
+                if (connectionResult)
+                    _ = DSTClient.GetShopData(ConnectingAddress);
+
                 return connectionResult;
             }
 
