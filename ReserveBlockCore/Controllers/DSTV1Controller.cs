@@ -1791,7 +1791,7 @@ namespace ReserveBlockCore.Controllers
         {
             if (Globals.DecShopData != null)
             {
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Data Found.", Globals.DecShopData });
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Data Found.", Globals.DecShopData }, Formatting.Indented);
             }
             else
             {
@@ -1843,7 +1843,7 @@ namespace ReserveBlockCore.Controllers
             var shops = Globals.ConnectedShops;
             var stunServer = Globals.STUNServer;
 
-            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer });           
+            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer }, Formatting.Indented);           
         }
     }
 }

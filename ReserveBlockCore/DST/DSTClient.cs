@@ -14,6 +14,7 @@ using static ReserveBlockCore.Models.Mother;
 using System.Xml;
 using System;
 using Docnet.Core.Bindings;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ReserveBlockCore.DST
 {
@@ -980,10 +981,9 @@ namespace ReserveBlockCore.DST
         public static async Task GetShopData(string connectingAddress)
         {
             bool infoFound = false;
-            bool collectionsFound = false;
-            bool listingsFound = false;
-            bool auctionsFound = false;
             int failCounter = 0;
+
+            await Task.Delay(1000); //delay needed for UDP client on other end to catch up to request.
 
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
@@ -999,12 +999,230 @@ namespace ReserveBlockCore.DST
                 while(!infoFound && failCounter < 3)
                 {
                     await SendShopMessageFromClient(message, true);
-                    await Task.Delay(200);
                     if (Globals.DecShopData?.DecShop != null)
                         infoFound = true;
 
                     if(!infoFound)
                         failCounter += 1;
+
+                    await Task.Delay(500);
+                }
+
+                if (Globals.DecShopData?.DecShop != null)
+                {
+                    //begin data grab
+
+                    //Collections
+                    _ = GetShopCollections(connectingAddress);
+                    //Listings
+                    _ = GetShopListings(connectingAddress);
+                    //Auctions
+                    _ = GetShopAuctions(connectingAddress);
+                    //Assets
+                }
+            }
+        }
+
+        public static async Task GetShopCollections(string connectionAddress)
+        {
+            bool collectionsFound = false;
+            int failCounter = 0;
+
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = connectionAddress,
+                    Data = $"{DecShopRequestOptions.Collections}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = SendShopMessageFromClient(message, true);
+
+                await Task.Delay(200);
+
+                while(!collectionsFound && failCounter < 3)
+                {
+                    if(Globals.DecShopData?.Collections != null)
+                        collectionsFound= true;
+
+                    if(!collectionsFound)
+                    {
+                        failCounter+= 1;
+                        _ = SendShopMessageFromClient(message, true);
+                    }
+                    else
+                    {
+                        if(Globals.DecShopData?.Collections.Count == Globals.DecShopData?.DecShop.CollectionCount)
+                        {
+                            Console.WriteLine("TESTING");
+                        }
+                    }
+                }
+
+            }
+        }
+
+        public static async Task GetShopListings(string connectionAddress)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
+
+                if (listingCount == null)
+                    return;
+
+                if (listingCount == 0)
+                    return;
+
+                var shopPageCount = (listingCount / 10) + (listingCount % 10 != 0 ? 1 : 0);
+
+                for(int i = 0; i < shopPageCount; i++)
+                {
+                    bool listingsFound = false;
+                    int failCounter = 0;
+
+                    //iterate of amount of pages to get ALL live  listings
+                    Message message = new Message
+                    {
+                        Address = connectionAddress,
+                        Data = $"{DecShopRequestOptions.Listings},{i}",
+                        Type = MessageType.DecShop,
+                        ComType = MessageComType.Request
+                    };
+
+                    _ = SendShopMessageFromClient(message, true);
+
+                    await Task.Delay(200);
+
+                    while (!listingsFound && failCounter < 3)
+                    {
+                        if (Globals.DecShopData?.Listings != null)
+                        {
+                            if (Globals.DecShopData?.Listings?.Count > 0 && Globals.DecShopData?.Listings?.Count <= (i + 1) * 10)
+                            {
+                                //good
+                                listingsFound = true;
+                            }
+                            else
+                            {
+                                failCounter += 1;
+                                _ = SendShopMessageFromClient(message, true);
+                            }
+                        }
+                        else
+                        {
+                            failCounter += 1;
+                            _ = SendShopMessageFromClient(message, true);
+                        }
+                    }
+                }
+
+            }
+        }
+        public static async Task GetShopAuctions(string connectionAddress)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var auctionCount = Globals.DecShopData?.DecShop?.AuctionCount;
+
+                if (auctionCount == null)
+                    return;
+
+                if (auctionCount == 0)
+                    return;
+
+                var shopPageCount = (auctionCount / 10) + (auctionCount % 10 != 0 ? 1 : 0);
+
+                for (int i = 0; i < shopPageCount; i++)
+                {
+                    bool auctionFound = false;
+                    int failCounter = 0;
+
+                    //iterate of amount of pages to get ALL live  listings
+                    Message message = new Message
+                    {
+                        Address = connectionAddress,
+                        Data = $"{DecShopRequestOptions.Auctions},{i}",
+                        Type = MessageType.DecShop,
+                        ComType = MessageComType.Request
+                    };
+
+                    _ = SendShopMessageFromClient(message, true);
+
+                    await Task.Delay(200);
+
+                    while (!auctionFound && failCounter < 3)
+                    {
+                        if (Globals.DecShopData?.Auctions != null)
+                        {
+                            if (Globals.DecShopData?.Auctions?.Count > 0 && Globals.DecShopData?.Auctions?.Count <= (i + 1) * 10)
+                            {
+                                //good
+                                auctionFound = true;
+                            }
+                            else
+                            {
+                                failCounter += 1;
+                                _ = SendShopMessageFromClient(message, true);
+                            }
+                        }
+                        else
+                        {
+                            failCounter += 1;
+                            _ = SendShopMessageFromClient(message, true);
+                        }
+                    }
+                }
+
+            }
+        }
+
+        public static async Task GetShopListingAssets(CancellationToken token)
+        {
+            var exit = false;
+            var delay = Task.Delay(3000);
+            while (!exit && !token.IsCancellationRequested)
+            {
+                try
+                {
+                    var isCancelled = token.IsCancellationRequested;
+                    if (isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+                    var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+                    if (connectedShop.Count() > 0)
+                    {
+                        //begin asset grab loop
+                        
+                        var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
+
+                        if (listingCount == null)
+                        {
+                            await delay;
+                            continue;
+                        }
+                           
+                        if (listingCount == 0)
+                        {
+                            {
+                                await delay;
+                                continue;
+                            }
+                        }
+                            
+
+                    }
+                }
+                catch
+                {
+
                 }
             }
         }
