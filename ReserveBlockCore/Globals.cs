@@ -67,6 +67,7 @@ namespace ReserveBlockCore
         public const decimal TopicRequiredRBX = 10.0M;
         public const decimal DecShopRequiredRBX = 10.0M;
         public const decimal DecShopUpdateRequiredRBX = 1.0M;
+        public const decimal DecShopDeleteRequiredRBX = 1.0M;
 
         public const int ADNRLimit = 65;
         public static long FeatureLock = 896247;

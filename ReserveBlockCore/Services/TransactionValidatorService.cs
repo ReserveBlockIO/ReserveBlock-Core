@@ -902,6 +902,9 @@ namespace ReserveBlockCore.Services
                                         {
                                             if (treiRec.OwnerAddress != txRequest.FromAddress)
                                                 return (txResult, "You must be the valid owner of this shop.");
+
+                                            if (txRequest.Amount < Globals.DecShopDeleteRequiredRBX)
+                                                return (txResult, $"There must be at least {Globals.DecShopDeleteRequiredRBX} RBX to delete a Auction House.");
                                         }
                                         else
                                         {
