@@ -624,7 +624,7 @@ namespace ReserveBlockCore.Utilities
 
         public static byte[][] SplitIntoPackets(byte[] data)
         {
-            const int MaxPacketSize = 8192;
+            const int MaxPacketSize = 1024;
 
             var packets = new byte[(data.Length + MaxPacketSize - 1) / MaxPacketSize][];
             for (int i = 0; i < packets.Length; i++)

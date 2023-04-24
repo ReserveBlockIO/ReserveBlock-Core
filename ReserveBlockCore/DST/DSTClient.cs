@@ -500,7 +500,7 @@ namespace ReserveBlockCore.DST
             if (IsConnected)
             {
                 connected = true;
-                Console.WriteLine("connected to SHOP");
+                Console.WriteLine("connected to SHOP - Assets");
 
                 return connected;
             }
@@ -852,7 +852,12 @@ namespace ReserveBlockCore.DST
                     if (assetList.Count > 0)
                     {
                         int byteSize = 0;
+                        char delim = ',';
+                        var assetListDelim = String.Join(delim, assetList);
                         NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
+                        await Task.Delay(20);
+                        NFTLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
+
                         foreach (var asset in assetList)
                         {
                             try
@@ -893,21 +898,26 @@ namespace ReserveBlockCore.DST
                                     byte[]? imageData = null;
                                     int timeouts = 0;
                                     bool stopAssetBuild = false;
+                                    var stopWatch = new Stopwatch();
                                     while (!stopAssetBuild)
                                     {
                                         try
                                         {
                                             var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
-
-                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
-                                            await Task.Delay(10);
-                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
+                                            stopWatch.Restart();
+                                            stopWatch.Start();
+                                            _ = udpAssets.SendAsync(messageAssetBytes, messageAssetBytes.Length, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
+                                            //await Task.Delay(5);
+                                            //_ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
                                             
                                             var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                             var packetData = response.Buffer;
+                                            stopWatch.Stop();
+                                            NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
+                                            Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
                                             await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                             // Check if this is the last packet
-                                            bool isLastPacket = packetData.Length < 8192;
+                                            bool isLastPacket = packetData.Length < 1024;
 
                                             // Extract the sequence number from the packet
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);
@@ -1369,6 +1379,10 @@ namespace ReserveBlockCore.DST
                                                     await GetListingAssetThumbnails(message, listing.SmartContractUID);
                                                 }
                                             }
+                                        }
+                                        else
+                                        {
+                                            //var files = NFTAssetFileUtility
                                         }
                                     }
                                     
