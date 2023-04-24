@@ -1086,6 +1086,31 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Gets shop Listings by collection
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopSpecificAuction/{listingId}")]
+        public async Task<bool> GetShopSpecificAuction(string listingId)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.SpecificAuction},{listingId}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessageFromClient(message, true);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Send a bid to a listing
         /// </summary>
         /// <returns></returns>

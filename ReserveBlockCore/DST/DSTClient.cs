@@ -704,6 +704,8 @@ namespace ReserveBlockCore.DST
         {
             var counter = somecount;
 
+            //wait 1 minute before starting
+            await Task.Delay(60000);
             var exit = false;
             while (!exit && !token.IsCancellationRequested)
             {
@@ -1043,11 +1045,11 @@ namespace ReserveBlockCore.DST
                     //begin data grab
 
                     //Collections
-                    _ = GetShopCollections(connectingAddress);
+                    //_ = GetShopCollections(connectingAddress);
                     //Listings
-                    _ = GetShopListings(connectingAddress);
+                    //_ = GetShopListings(connectingAddress);
                     //Auctions
-                    _ = GetShopAuctions(connectingAddress);
+                    //_ = GetShopAuctions(connectingAddress);
                     //Assets
                 }
             }
@@ -1112,7 +1114,7 @@ namespace ReserveBlockCore.DST
 
                 var shopPageCount = (listingCount / 10) + (listingCount % 10 != 0 ? 1 : 0);
 
-                for(int i = 0; i < shopPageCount; i++)
+                for (int i = 0; i < shopPageCount; i++)
                 {
                     bool listingsFound = false;
                     int failCounter = 0;
@@ -1130,7 +1132,7 @@ namespace ReserveBlockCore.DST
 
                     await Task.Delay(200);
 
-                    while (!listingsFound && failCounter < 3)
+                    while (!listingsFound && Globals.DecShopData?.Listings?.Count != Globals.DecShopData?.DecShop?.ListingCount)
                     {
                         if (Globals.DecShopData?.Listings != null)
                         {
@@ -1138,15 +1140,18 @@ namespace ReserveBlockCore.DST
                             {
                                 //good
                                 listingsFound = true;
+                                await Task.Delay(200);
                             }
                             else
                             {
+                                await Task.Delay(200);
                                 failCounter += 1;
                                 _ = SendShopMessageFromClient(message, true);
                             }
                         }
                         else
                         {
+                            await Task.Delay(200);
                             failCounter += 1;
                             _ = SendShopMessageFromClient(message, true);
                         }

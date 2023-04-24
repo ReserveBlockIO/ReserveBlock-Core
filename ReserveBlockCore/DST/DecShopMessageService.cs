@@ -230,6 +230,45 @@ namespace ReserveBlockCore.DST
                             msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
                             Globals.ClientMessageDict[message.ResponseMessageId] = msg;
                         }
+                        else if (option == "SpecificAuction")
+                        {
+                            var auction = JsonConvert.DeserializeObject<Auction>(message.Data);
+                            if (auction != null)
+                            {
+                                if (Globals.DecShopData == null)
+                                {
+                                    Globals.DecShopData = new DecShopData
+                                    {
+                                        Auctions = new List<Auction> { auction },
+                                    };
+                                }
+                                else
+                                {
+                                    if (Globals.DecShopData.Auctions != null)
+                                    {
+                                        var auctionExist = Globals.DecShopData.Auctions.Exists(x => x.ListingId == auction.ListingId);
+                                        if (!auctionExist)
+                                            Globals.DecShopData.Auctions.Add(auction);
+
+                                        if (auctionExist)
+                                        {
+                                            int index = Globals.DecShopData.Auctions.FindIndex(x => x.ListingId == auction.ListingId);
+                                            if (index != -1)
+                                                Globals.DecShopData.Auctions[index] = auction;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Globals.DecShopData.Auctions = new List<Auction> { auction };
+                                    }
+                                }
+                            }
+
+
+                            msg.HasReceivedResponse = true;
+                            msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                            Globals.ClientMessageDict[message.ResponseMessageId] = msg;
+                        }
                         else if(option == "Auctions")
                         {
                             var auctions = JsonConvert.DeserializeObject<List<Auction>>(message.Data);
@@ -345,6 +384,12 @@ namespace ReserveBlockCore.DST
                                                 }
                                                 catch { }
                                             }
+                                            else
+                                            {
+                                                if (uData.CollectionList.Count > 0)
+                                                    DSTClient.NewCollectionsFound = true;
+                                                
+                                            }
                                         }
                                         if (uData.ListingList?.Count > 0)
                                         {
@@ -368,6 +413,11 @@ namespace ReserveBlockCore.DST
                                                 }
                                                 catch { }
                                             }
+                                            else
+                                            {
+                                                if(uData.ListingList.Count > 0)
+                                                    DSTClient.NewListingsFound = true;
+                                            }
                                         }
                                         if (uData.AuctionList?.Count > 0)
                                         {
@@ -390,7 +440,11 @@ namespace ReserveBlockCore.DST
                                                         DSTClient.NewAuctionsFound = true;
                                                 }
                                                 catch { }
-                                                
+                                            }
+                                            else
+                                            {
+                                                if (uData.AuctionList.Count > 0)
+                                                    DSTClient.NewAuctionsFound = true;
                                             }
                                         }
                                     }
@@ -687,6 +741,67 @@ namespace ReserveBlockCore.DST
                             return respMessage;
                         }
 
+                    }
+                    else if (option == "SpecificAuction")
+                    {
+                        var listingIdStr = requestOptArray[1];
+
+                        if (!string.IsNullOrEmpty(listingIdStr))
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
+                        var parseAttempt = int.TryParse(listingIdStr, out var listingId);
+                        if(!parseAttempt)
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
+                        var auction = Auction.GetListingAuction(listingId);
+                        if (auction != null)
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = JsonConvert.SerializeObject(auction)
+                            };
+
+                            return respMessage;
+                        }
+                        else
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
                     }
                     else if (option == "Bids")
                     {
