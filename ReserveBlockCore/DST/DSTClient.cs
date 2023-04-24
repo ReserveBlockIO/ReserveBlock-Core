@@ -1045,11 +1045,13 @@ namespace ReserveBlockCore.DST
                     //begin data grab
 
                     //Collections
-                    //_ = GetShopCollections(connectingAddress);
+                    _ = GetShopCollections(connectingAddress);
                     //Listings
-                    //_ = GetShopListings(connectingAddress);
+                    await Task.Delay(200);
+                    _ = GetShopListings(connectingAddress);
                     //Auctions
-                    //_ = GetShopAuctions(connectingAddress);
+                    await Task.Delay(200);
+                    _ = GetShopAuctions(connectingAddress);
                     //Assets
                 }
             }
