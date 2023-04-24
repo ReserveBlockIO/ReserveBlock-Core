@@ -24,7 +24,8 @@ namespace ReserveBlockCore.Services
                             if (ackNum < packets.Length)
                             {
                                 var packet = packets[ackNum];
-                                await udpClient.SendAsync(packets[ackNum], packet.Length, endPoint);
+                                if(packet != null)
+                                    await udpClient.SendAsync(packet, packet.Length, endPoint);
                             }
                             else
                             {

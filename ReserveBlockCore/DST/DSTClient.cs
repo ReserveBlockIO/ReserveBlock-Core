@@ -922,13 +922,16 @@ namespace ReserveBlockCore.DST
                                             // Extract the sequence number from the packet
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);
 
+                                            Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
+                                            NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
                                             if (sequenceNumber != expectedSequenceNumber)
                                             {
                                                 // If not, discard the packet and request a retransmission
                                                 var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber;
                                                 var ackPacket = BitConverter.GetBytes(expSeqNum);
                                                 messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expSeqNum);
-                                                await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
+                                                await Task.Delay(100);
+                                                //await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
                                                 continue;
                                             }
 
@@ -963,7 +966,7 @@ namespace ReserveBlockCore.DST
                                                 break;
                                             }
 
-                                            expectedSequenceNumber++;
+                                            expectedSequenceNumber += 1;
                                         }
                                         catch(Exception ex) 
                                         {
@@ -1301,14 +1304,14 @@ namespace ReserveBlockCore.DST
 
                         if (listingCount == null)
                         {
-                            await delay;
+                            await Task.Delay(3000);
                             continue;
                         }
                            
                         if (listingCount == 0)
                         {
                             {
-                                await delay;
+                                await Task.Delay(3000);
                                 continue;
                             }
                         }
@@ -1393,7 +1396,7 @@ namespace ReserveBlockCore.DST
                         }
                     }
 
-                    await delay;
+                    await Task.Delay(3000);
                 }
                 catch
                 {
