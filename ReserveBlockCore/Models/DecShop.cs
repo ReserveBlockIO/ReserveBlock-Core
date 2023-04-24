@@ -43,9 +43,9 @@ namespace ReserveBlockCore.Models
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
         public bool IsPublished { get; set; }
-        public int CollectionCount { get; } = Collection.GetLiveCollections();
-        public int ListingCount { get; } = Listing.GetLiveListingsCount();
-        public int AuctionCount { get; } = Auction.GetLiveAuctionsCount();
+        public int CollectionCount { get; set; }
+        public int ListingCount { get; set; }
+        public int AuctionCount { get; set; }
         public bool IsIPDifferent { get { return P2PClient.MostLikelyIP() == IP ? false : true; } }
 
         public class DecShopTxData
@@ -142,6 +142,11 @@ namespace ReserveBlockCore.Models
                 {
                     return null;
                 }
+
+                decshopInfo.CollectionCount = Collection.GetLiveCollections();
+                decshopInfo.ListingCount = Listing.GetLiveListingsCount();
+                decshopInfo.AuctionCount = Auction.GetLiveAuctionsCount();
+
                 return decshopInfo;
             }
             catch (Exception ex)
