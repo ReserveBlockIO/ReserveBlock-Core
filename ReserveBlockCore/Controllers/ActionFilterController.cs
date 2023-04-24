@@ -105,7 +105,7 @@ namespace ReserveBlockCore.Controllers
                     "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock", "GetDecShop", "GetSummaryChatMessages",
                     "GetAllCollections", "GetAllReserveAccounts", "GetSimpleShopChatMessages", "GetDecShopData", "GetShopSpecificAuction"};
 
-
+                0
                 if(!APIExclusionList.Contains(action))
                 {
                     if (Globals.GUI || Globals.LogAPI)
