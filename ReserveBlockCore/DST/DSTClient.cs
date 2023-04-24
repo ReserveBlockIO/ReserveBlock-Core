@@ -244,11 +244,15 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
-                Task taskData = new Task(() => { UpdateShopData(token); }, token);
-                taskData.Start();
+                //Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                //taskData.Start();
+
+                Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
+                taskDataLoop.Start();
 
                 Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
                 taskAssets.Start();
+
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -374,12 +378,14 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
-                Task taskData = new Task(() => { UpdateShopData(token); }, token);
-                taskData.Start();
+                //Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                //taskData.Start();
+
+                Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
+                taskDataLoop.Start();
 
                 Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
                 taskAssets.Start();
-                //GetShopListingAssets
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
@@ -1200,6 +1206,46 @@ namespace ReserveBlockCore.DST
                     }
                 }
 
+            }
+        }
+
+        public static async Task GetShopDataLoop(CancellationToken token, string address)
+        {
+            var exit = false;
+            var delay = Task.Delay(60000);
+
+            //wait 1 minute before starting
+            await Task.Delay(60000);
+            while (!exit && !token.IsCancellationRequested)
+            {
+                try
+                {
+                    var isCancelled = token.IsCancellationRequested;
+                    if (isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+
+                    var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+                    if (connectedShop.Count() > 0)
+                    {
+                        if (Globals.DecShopData?.DecShop != null)
+                        {
+                            //begin data grab
+
+                            //Collections
+                            _ = GetShopCollections(address);
+                            //Listings
+                            _ = GetShopListings(address);
+                            //Auctions
+                            _ = GetShopAuctions(address);
+                        }
+                    }
+
+                    await Task.Delay(60000);
+                }
+                catch { await Task.Delay(60000); }
             }
         }
 
