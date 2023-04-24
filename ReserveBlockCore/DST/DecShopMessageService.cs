@@ -6,6 +6,7 @@ using ReserveBlockCore.Utilities;
 using System;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using static ReserveBlockCore.Models.Mother;
@@ -326,24 +327,70 @@ namespace ReserveBlockCore.DST
                                         {
                                             if (Globals.DecShopData.Collections?.Count > 0)
                                             {
-                                                var newCollectionList = Globals.DecShopData.Collections.Where(x => uData.CollectionList.Contains(x.Id)).Select(x => x).ToList();
-                                                Globals.DecShopData.Collections = newCollectionList;
+                                                var oldCollectionList = Globals.DecShopData.Collections.Where(x => !uData.CollectionList.Contains(x.Id)).Select(x => x).ToList();
+                                                foreach(var collection in oldCollectionList)
+                                                {
+                                                    try
+                                                    {
+                                                        Globals.DecShopData.Collections.Remove(collection);
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                try
+                                                {
+                                                    var newCollectionList = uData.CollectionList.Where(x => !Globals.DecShopData.Collections.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
+                                                    if (newCollectionList.Count > 0)
+                                                        DSTClient.NewCollectionsFound = true;
+                                                }
+                                                catch { }
                                             }
                                         }
                                         if (uData.ListingList?.Count > 0)
                                         {
                                             if (Globals.DecShopData.Listings?.Count > 0)
                                             {
-                                                var newListingList = Globals.DecShopData.Listings.Where(x => uData.ListingList.Contains(x.Id)).Select(x => x).ToList();
-                                                Globals.DecShopData.Listings = newListingList;
+                                                var oldListingList = Globals.DecShopData.Listings.Where(x => !uData.ListingList.Contains(x.Id)).Select(x => x).ToList();
+                                                foreach (var listing in oldListingList)
+                                                {
+                                                    try
+                                                    {
+                                                        Globals.DecShopData.Listings.Remove(listing);
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                try
+                                                {
+                                                    var newListingsList = uData.ListingList.Where(x => !Globals.DecShopData.Listings.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
+                                                    if (newListingsList.Count > 0)
+                                                        DSTClient.NewListingsFound = true;
+                                                }
+                                                catch { }
                                             }
                                         }
                                         if (uData.AuctionList?.Count > 0)
                                         {
                                             if (Globals.DecShopData.Auctions?.Count > 0)
                                             {
-                                                var newAuctionList = Globals.DecShopData.Auctions.Where(x => uData.AuctionList.Contains(x.Id)).Select(x => x).ToList();
-                                                Globals.DecShopData.Auctions = newAuctionList;
+                                                var oldAuctionList = Globals.DecShopData.Auctions.Where(x => !uData.AuctionList.Contains(x.Id)).Select(x => x).ToList();
+                                                foreach (var auction in oldAuctionList)
+                                                {
+                                                    try
+                                                    {
+                                                        Globals.DecShopData.Auctions.Remove(auction);
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                try
+                                                {
+                                                    var newAuctionList = uData.AuctionList.Where(x => !Globals.DecShopData.Auctions.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
+                                                    if (newAuctionList.Count > 0)
+                                                        DSTClient.NewAuctionsFound = true;
+                                                }
+                                                catch { }
+                                                
                                             }
                                         }
                                     }

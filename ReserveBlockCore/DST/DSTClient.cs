@@ -38,6 +38,9 @@ namespace ReserveBlockCore.DST
         public static int somecount = 0;
         private static string AssetConnectionId = "";
         public static ConcurrentDictionary<string, bool> AssetDownloadQueue = new ConcurrentDictionary<string, bool>();
+        public static bool NewCollectionsFound = false;
+        public static bool NewAuctionsFound = false;
+        public static bool NewListingsFound = false;
 
         public static async Task Run(bool bypass = false)
         {
@@ -244,8 +247,8 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
-                //Task taskData = new Task(() => { UpdateShopData(token); }, token);
-                //taskData.Start();
+                Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                taskData.Start();
 
                 Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
                 taskDataLoop.Start();
@@ -378,8 +381,8 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
-                //Task taskData = new Task(() => { UpdateShopData(token); }, token);
-                //taskData.Start();
+                Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                taskData.Start();
 
                 Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
                 taskDataLoop.Start();
@@ -722,7 +725,7 @@ namespace ReserveBlockCore.DST
 
                     _ = SendShopMessageFromClient(message, true);
 
-                    await delay;
+                    await Task.Delay(new TimeSpan(0, 0, 60));
                 }
                 catch
                 {
@@ -1090,6 +1093,8 @@ namespace ReserveBlockCore.DST
                 }
 
             }
+
+            NewCollectionsFound = false;
         }
 
         public static async Task GetShopListings(string connectionAddress)
@@ -1149,6 +1154,8 @@ namespace ReserveBlockCore.DST
                 }
 
             }
+
+            NewListingsFound = false;
         }
         public static async Task GetShopAuctions(string connectionAddress)
         {
@@ -1207,6 +1214,8 @@ namespace ReserveBlockCore.DST
                 }
 
             }
+
+            NewAuctionsFound = false;
         }
 
         public static async Task GetShopDataLoop(CancellationToken token, string address)
@@ -1235,11 +1244,14 @@ namespace ReserveBlockCore.DST
                             //begin data grab
 
                             //Collections
-                            _ = GetShopCollections(address);
+                            if(NewCollectionsFound)
+                                _ = GetShopCollections(address);
                             //Listings
-                            _ = GetShopListings(address);
+                            if(NewListingsFound)
+                                _ = GetShopListings(address);
                             //Auctions
-                            _ = GetShopAuctions(address);
+                            if(NewAuctionsFound)
+                                _ = GetShopAuctions(address);
                         }
                     }
 
