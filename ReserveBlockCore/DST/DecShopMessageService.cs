@@ -649,7 +649,7 @@ namespace ReserveBlockCore.DST
                     {
                         var scUID = requestOptArray[1];
 
-                        if (!string.IsNullOrEmpty(scUID))
+                        if (string.IsNullOrEmpty(scUID))
                         {
                             var respMessage = new Message
                             {
@@ -746,7 +746,7 @@ namespace ReserveBlockCore.DST
                     {
                         var listingIdStr = requestOptArray[1];
 
-                        if (!string.IsNullOrEmpty(listingIdStr))
+                        if (string.IsNullOrEmpty(listingIdStr))
                         {
                             var respMessage = new Message
                             {
