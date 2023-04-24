@@ -1283,6 +1283,7 @@ namespace ReserveBlockCore.DST
 
         public static async Task GetShopListingAssets(CancellationToken token, string address)
         {
+            AssetDownloadQueue = new ConcurrentDictionary<string, bool>(); //reset queue assuming a new connection has been made.
             var exit = false;
             var delay = Task.Delay(3000);
             while (!exit && !token.IsCancellationRequested)
