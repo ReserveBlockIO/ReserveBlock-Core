@@ -838,8 +838,6 @@ namespace ReserveBlockCore.Controllers
 
                         output = JsonConvert.SerializeObject(new { Success = true, Message = $"Delete Results - Shop : {result}, Listings : {listingDeleteResult.Item1}, Auctions : {auctionsDeleteResult.Item1}, Bids : {bidDeleteResult.Item1}" });
                     }
-
-
                 }
                 else
                 {

@@ -274,16 +274,16 @@ namespace ReserveBlockCore
         public static bool AssetDownloadLock = false;
         public static readonly HashSet<string> ValidExtensions = new HashSet<string>()
         {
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".jp2",
-            ".gif",
-            ".tif",
-            ".tiff",
-            ".webp",
-            ".bmp",
-            ".pdf"
+            "png",
+            "jpg",
+            "jpeg",
+            "jp2",
+            "gif",
+            "tif",
+            "tiff",
+            "webp",
+            "bmp",
+            "pdf"
             // Other possible extensions
         };
 
