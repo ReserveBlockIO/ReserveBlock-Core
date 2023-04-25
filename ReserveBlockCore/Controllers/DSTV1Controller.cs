@@ -831,6 +831,11 @@ namespace ReserveBlockCore.Controllers
                     if(decDb != null)
                     {
                         var result = decDb.DeleteSafe(localShop.Id);
+
+                        var listingDeleteResult = await Listing.DeleteAllListingsByCollection(localShop.Id);
+                        var auctionsDeleteResult = await Auction.DeleteAllAuctionsByCollection(localShop.Id);
+                        var bidDeleteResult = await Bid.DeleteAllBidsByCollection(localShop.Id);
+
                         output = JsonConvert.SerializeObject(new { Success = true, Message = $"Local Dec Shop Deleted : {result}" });
                     }
 
