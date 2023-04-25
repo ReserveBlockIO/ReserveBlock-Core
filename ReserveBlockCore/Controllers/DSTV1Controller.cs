@@ -836,7 +836,7 @@ namespace ReserveBlockCore.Controllers
                         var auctionsDeleteResult = await Auction.DeleteAllAuctionsByCollection(localShop.Id);
                         var bidDeleteResult = await Bid.DeleteAllBidsByCollection(localShop.Id);
 
-                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Local Dec Shop Deleted : {result}" });
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Delete Results - Shop : {result}, Listings : {listingDeleteResult.Item1}, Auctions : {auctionsDeleteResult.Item1}, Bids : {bidDeleteResult.Item1}" });
                     }
 
 
