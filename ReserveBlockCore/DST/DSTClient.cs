@@ -858,6 +858,9 @@ namespace ReserveBlockCore.DST
                         await Task.Delay(20);
                         NFTLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
 
+                        var assetCount = assetList.Count;
+                        var assetSuccessCount = 0;
+
                         foreach (var asset in assetList)
                         {
                             try
@@ -871,6 +874,7 @@ namespace ReserveBlockCore.DST
                                     if(!Globals.ValidExtensions.Contains(extToReplace))
                                     {
                                         //skip as its not a valid extension type.
+                                        assetCount -= 1;
                                         continue;
                                     }
                                     _asset = asset.Replace(extToReplace, "jpg");
@@ -890,6 +894,7 @@ namespace ReserveBlockCore.DST
                                         }
                                         else
                                         {
+                                            assetSuccessCount += 1;
                                             continue;
                                         }
                                     }
@@ -938,7 +943,8 @@ namespace ReserveBlockCore.DST
                                                         stopAssetBuild = true;
                                                         expectedSequenceNumber = 0;
                                                         imageData = null;
-                                                        var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                                        var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+                                                        assetSuccessCount += 1;
                                                         if (File.Exists(pathToDelete))
                                                         {
                                                             fileStream.Dispose();
@@ -993,6 +999,7 @@ namespace ReserveBlockCore.DST
                                                 stopAssetBuild = true;
                                                 expectedSequenceNumber = 0;
                                                 imageData = null;
+                                                assetSuccessCount += 1;
                                                 break;
                                             }
 
@@ -1006,7 +1013,7 @@ namespace ReserveBlockCore.DST
                                             if (timeouts > 5)
                                             {
                                                 stopAssetBuild = true;
-                                                var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                                var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
                                                 if (File.Exists(pathToDelete))
                                                 {
                                                     expectedSequenceNumber = 0;
@@ -1022,7 +1029,15 @@ namespace ReserveBlockCore.DST
                             }
                             catch (Exception ex)
                             {
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                var _asset = asset;
+                                if (!asset.EndsWith(".jpg"))
+                                {
+                                    var assetArray = asset.Split('.');
+                                    var extIndex = assetArray.Length - 1;
+                                    var extToReplace = assetArray[extIndex];
+                                    _asset = asset.Replace(extToReplace, "jpg");
+                                }
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
                                 if (File.Exists(path))
                                 {
                                     File.Delete(path);
@@ -1030,14 +1045,18 @@ namespace ReserveBlockCore.DST
                             }
                         }
 
-                        if (AssetDownloadQueue.TryGetValue(scUID, out var value))
+                        if(assetSuccessCount == assetCount)
                         {
-                            AssetDownloadQueue[scUID] = true;
+                            if (AssetDownloadQueue.TryGetValue(scUID, out var value))
+                            {
+                                AssetDownloadQueue[scUID] = true;
+                            }
+                            else
+                            {
+                                AssetDownloadQueue.TryAdd(scUID, true);
+                            }
                         }
-                        else
-                        {
-                            AssetDownloadQueue.TryAdd(scUID, true);
-                        }
+
                         stopProcess = true;
                     }
                 }
