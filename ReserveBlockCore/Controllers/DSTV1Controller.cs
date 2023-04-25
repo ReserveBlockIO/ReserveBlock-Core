@@ -894,6 +894,21 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// Get network dec shop list
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDecShopStateTreiList")]
+        public async Task<string> GetDecShopStateTreiList(string url)
+        {
+            var decshops = await DecShop.GetDecShopStateTreiList();
+
+            if(decshops?.Count() == 0)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find any DecShops." });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Shops Found", DecShops = decshops }, Formatting.Indented);
+        }
+
 
         /// <summary>
         /// Connects to a shop : 'rbx://someurlgoeshere'

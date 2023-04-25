@@ -366,6 +366,32 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
+        #region Get DecShop Leafs from State Trei
+        public static async Task<IEnumerable<DecShop>?> GetDecShopStateTreiList()
+        {
+            try
+            {
+                var decshops = DecShopTreiDb();
+                if (decshops == null)
+                {
+                    ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveDecShopInfo()");
+                    return null;
+                }
+                else
+                {
+                    var existingDecShopInfo = decshops.Query().Where(x => true).ToEnumerable();
+                    if (existingDecShopInfo != null)
+                    {
+                        return existingDecShopInfo;
+                    }
+                    return null;
+                }
+            }
+            catch { return null; }
+        }
+
+        #endregion
+
         #region Set DecShop Status
         public static bool? SetDecShopStatus()
         {

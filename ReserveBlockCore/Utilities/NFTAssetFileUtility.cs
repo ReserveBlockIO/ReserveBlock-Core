@@ -178,7 +178,10 @@ namespace ReserveBlockCore.Utilities
                     
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex) 
+            {
+                NFTLogUtility.Log($"Error Creating Thumbnail. Error: {ex.ToString()}", "NFTAssetFileUtility.CreateNFTAssetThumbnail()");
+            }
             
         }
         public static string CreateNFTAssetPath(string fileName, string scUID, bool thumbs = false)

@@ -272,6 +272,20 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
         public static bool AssetDownloadLock = false;
+        public static readonly HashSet<string> ValidExtensions = new HashSet<string>()
+        {
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".jp2",
+            ".gif",
+            ".tif",
+            ".tiff",
+            ".webp",
+            ".bmp",
+            ".pdf"
+            // Other possible extensions
+        };
 
         #endregion
 

@@ -868,6 +868,11 @@ namespace ReserveBlockCore.DST
                                     var assetArray = asset.Split('.');
                                     var extIndex = assetArray.Length - 1;
                                     var extToReplace = assetArray[extIndex];
+                                    if(!Globals.ValidExtensions.Contains(extToReplace))
+                                    {
+                                        //skip as its not a valid extension type.
+                                        continue;
+                                    }
                                     _asset = asset.Replace(extToReplace, "jpg");
                                 }
                                 //craft message to start process.
@@ -919,6 +924,30 @@ namespace ReserveBlockCore.DST
                                             // Check if this is the last packet
                                             bool isLastPacket = packetData.Length < 1024;
 
+                                            //checking to see if byte is -1. If so no image. Delete and move on.
+                                            if(isLastPacket && packetData.Length == 1)
+                                            {
+                                                try
+                                                {
+                                                    byte[] byteArray = new byte[] { 0xFF };
+                                                    sbyte signedByte = unchecked((sbyte)byteArray[0]);
+                                                    int intValue = Convert.ToInt32(signedByte);
+
+                                                    if(intValue == -1)
+                                                    {
+                                                        stopAssetBuild = true;
+                                                        expectedSequenceNumber = 0;
+                                                        imageData = null;
+                                                        var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                                        if (File.Exists(pathToDelete))
+                                                        {
+                                                            File.Delete(pathToDelete);
+                                                        }
+                                                        break;
+                                                    }
+                                                }
+                                                catch { }
+                                            }
                                             // Extract the sequence number from the packet
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);
 

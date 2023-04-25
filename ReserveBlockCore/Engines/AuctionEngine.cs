@@ -394,7 +394,7 @@ namespace ReserveBlockCore.Engines
                             {
                                 if (auction?.CurrentWinningAddress != bid.BidAddress)
                                 {
-                                    if ((auction?.CurrentBidPrice + auction?.IncrementAmount) < bid.MaxBidAmount)
+                                    if ((auction?.CurrentBidPrice + auction?.IncrementAmount) <= bid.MaxBidAmount)
                                     {
                                         var listing = listings?.Where(x => x.Id == bid.ListingId).FirstOrDefault();
                                         if(listing != null)
