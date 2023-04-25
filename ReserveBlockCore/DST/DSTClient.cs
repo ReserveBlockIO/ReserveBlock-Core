@@ -941,6 +941,7 @@ namespace ReserveBlockCore.DST
                                                         var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
                                                         if (File.Exists(pathToDelete))
                                                         {
+                                                            fileStream.Dispose();
                                                             File.Delete(pathToDelete);
                                                         }
                                                         break;
@@ -1010,6 +1011,7 @@ namespace ReserveBlockCore.DST
                                                 {
                                                     expectedSequenceNumber = 0;
                                                     imageData = null;
+                                                    fileStream.Dispose();
                                                     File.Delete(pathToDelete);
                                                 }
                                             }
