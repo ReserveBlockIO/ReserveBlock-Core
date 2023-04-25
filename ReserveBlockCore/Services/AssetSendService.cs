@@ -33,13 +33,13 @@ namespace ReserveBlockCore.Services
                             }
                         }
                     }
-                    else
-                    {
-                        //create -1 packet
-                        byte[] fileNotFoundPacket = new byte[] { 0xFF };
-                        await udpClient.SendAsync(fileNotFoundPacket, fileNotFoundPacket.Length, endPoint);
+                }
+                else
+                {
+                    //create -1 packet
+                    byte[] fileNotFoundPacket = new byte[] { 0xFF };
+                    await udpClient.SendAsync(fileNotFoundPacket, fileNotFoundPacket.Length, endPoint);
 
-                    }
                 }
             }
             catch(Exception ex) 
