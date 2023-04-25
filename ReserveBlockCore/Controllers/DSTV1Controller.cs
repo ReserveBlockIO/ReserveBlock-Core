@@ -899,7 +899,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetDecShopStateTreiList")]
-        public async Task<string> GetDecShopStateTreiList(string url)
+        public async Task<string> GetDecShopStateTreiList()
         {
             var decshops = await DecShop.GetDecShopStateTreiList();
 
