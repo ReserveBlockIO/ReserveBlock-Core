@@ -949,7 +949,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Gets shop info : 'rbx://someurlgoeshere'
+        /// Gets shop info
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetConnections")]
