@@ -167,7 +167,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task<bool> ConnectToShop(IPEndPoint shopEndPoint, string shopServer, string address = "NA")
+        public static async Task<bool> ConnectToShop(IPEndPoint shopEndPoint, string shopServer, string address = "NA", string shopURL = "NA")
         {
             ListenerThread?.Interrupt();
             bool connected = false;
@@ -185,6 +185,7 @@ namespace ReserveBlockCore.DST
 
             while (!IsConnected && !FailedToConnect)
             {
+                
                 var stopwatch = new Stopwatch();
                 var payload = new Message { Type = MessageType.ShopConnect, Data = "helo", Address = address };
                 var message = GenerateMessage(payload);
@@ -276,6 +277,7 @@ namespace ReserveBlockCore.DST
                         LastReceiveMessage = TimeUtil.GetTime(),
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
+                        ShopURL = shopURL
                     };
 
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
@@ -409,6 +411,7 @@ namespace ReserveBlockCore.DST
                         LastReceiveMessage = TimeUtil.GetTime(),
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
+                        ShopURL = shopAddress
                     };
 
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;

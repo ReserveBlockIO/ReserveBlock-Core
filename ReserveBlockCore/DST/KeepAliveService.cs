@@ -34,7 +34,7 @@ namespace ReserveBlockCore.DST
                                 Globals.ConnectedShops[peerEndPoint.ToString()] = shop;
 
                                 var currentTime = TimeUtil.GetTime();
-                                if (currentTime - shop.LastReceiveMessage > 15)
+                                if (currentTime - shop.LastReceiveMessage > 60)
                                 {
                                     stop = true;
                                     Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
@@ -62,7 +62,7 @@ namespace ReserveBlockCore.DST
                             Globals.STUNServer.LastSentMessage = TimeUtil.GetTime();
 
                             var currentTime = TimeUtil.GetTime();
-                            if (currentTime - Globals.STUNServer.LastReceiveMessage > 15)
+                            if (currentTime - Globals.STUNServer.LastReceiveMessage > 60)
                             {
                                 stop = true;
                                 _ = DSTClient.DisconnectFromSTUNServer(true); //disconnect from STUN Server
@@ -96,18 +96,18 @@ namespace ReserveBlockCore.DST
                                 Globals.ConnectedClients[peerEndPoint.ToString()] = client;
 
                                 var currentTime = TimeUtil.GetTime();
-                                if (currentTime - client.LastReceiveMessage > 28)
+                                if (currentTime - client.LastReceiveMessage > 120)
                                 {
                                     //stop = true;
                                     //Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
                                     stop = true;
                                     var shopServer = client.IPAddress; //this also has port
                                     var shopEndPoint = IPEndPoint.Parse(shopServer);
-                                    Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
+                                    Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out var dcClient);
                                     NFTLogUtility.Log($"Disconnected from shop: {shopServer}", "KeepAliveService.KeepAlive()");
                                     _ = DSTClient.DisconnectFromShop(true);
                                     await Task.Delay(1000);
-                                    _ = DSTClient.ConnectToShop(shopEndPoint, shopServer);
+                                    _ = DSTClient.ConnectToShop(shopEndPoint, shopServer, "NA", dcClient != null ? dcClient.ShopURL : "NA");
                                     await Task.Delay(1000);
                                 }
 

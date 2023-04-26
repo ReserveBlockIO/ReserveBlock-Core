@@ -952,6 +952,24 @@ namespace ReserveBlockCore.Controllers
         /// Gets shop info : 'rbx://someurlgoeshere'
         /// </summary>
         /// <returns></returns>
+        [HttpGet("GetConnections")]
+        public async Task<string> GetConnections()
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var decShop = connectedShop.FirstOrDefault().Value;
+
+                if(decShop != null)
+                    return JsonConvert.SerializeObject(new { Success = true, Message = $"Shop Found", DecShop = decShop, Connected = true });
+            }
+            return  JsonConvert.SerializeObject(new { Success = true, Message = $"Shop Found", DecShop = "", Connected = false }); ;
+        }
+
+        /// <summary>
+        /// Gets shop info : 'rbx://someurlgoeshere'
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("GetShopInfo")]
         public async Task<bool> GetShopInfo()
         {
