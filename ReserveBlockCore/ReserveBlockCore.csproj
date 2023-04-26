@@ -31,7 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Docnet.Core" Version="2.3.1" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="13.0.0" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.0.0" />
@@ -51,6 +50,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Docnet.Core">
+      <HintPath>..\Assemblies\Docnet.Core.dll</HintPath>
+    </Reference>
     <Reference Include="LiteDB">
       <HintPath>..\Assemblies\LiteDB.dll</HintPath>
     </Reference>
