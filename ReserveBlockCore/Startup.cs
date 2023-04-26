@@ -52,10 +52,12 @@ namespace ReserveBlockCore
                 c.DocumentFilter<SwaggerDocumentFilter<Bid>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Block>>();
                 c.DocumentFilter<SwaggerDocumentFilter<DecShop>>();
+                c.DocumentFilter<SwaggerDocumentFilter<DSTConnection>>();
                 c.DocumentFilter<SwaggerDocumentFilter<FortisPool>>();
                 c.DocumentFilter<SwaggerDocumentFilter<HDWallet>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Keystore>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Listing>>();
+                c.DocumentFilter<SwaggerDocumentFilter<Message>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Mother>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Mother.Kids>>();
                 c.DocumentFilter<SwaggerDocumentFilter<Mother.MotherJoinPayload>>();
