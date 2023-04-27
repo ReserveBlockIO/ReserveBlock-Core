@@ -16,8 +16,6 @@ namespace ReserveBlockCore.Utilities
         private static readonly HashSet<string> ValidExtensions = new HashSet<string>()
         {
             ".png",
-            ".icns",
-            ".ico",
             ".jpg",
             ".jpeg",
             ".jp2",
@@ -26,8 +24,6 @@ namespace ReserveBlockCore.Utilities
             ".tiff",
             ".webp",
             ".bmp",
-            ".psd",
-            ".ai",
             ".pdf"
             // Other possible extensions
         };
@@ -178,7 +174,10 @@ namespace ReserveBlockCore.Utilities
                     
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex) 
+            {
+                NFTLogUtility.Log($"Error Creating Thumbnail. Error: {ex.ToString()}", "NFTAssetFileUtility.CreateNFTAssetThumbnail()");
+            }
             
         }
         public static string CreateNFTAssetPath(string fileName, string scUID, bool thumbs = false)
@@ -624,7 +623,7 @@ namespace ReserveBlockCore.Utilities
 
         public static byte[][] SplitIntoPackets(byte[] data)
         {
-            const int MaxPacketSize = 8192;
+            const int MaxPacketSize = 1024;
 
             var packets = new byte[(data.Length + MaxPacketSize - 1) / MaxPacketSize][];
             for (int i = 0; i < packets.Length; i++)

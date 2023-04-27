@@ -14,6 +14,8 @@ using static ReserveBlockCore.Models.Mother;
 using System.Xml;
 using System;
 using Docnet.Core.Bindings;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Collections.Concurrent;
 
 namespace ReserveBlockCore.DST
 {
@@ -34,6 +36,11 @@ namespace ReserveBlockCore.DST
         public static CancellationTokenSource shopAssetToken = new CancellationTokenSource();
         public static CancellationTokenSource stunToken = new CancellationTokenSource();
         public static int somecount = 0;
+        private static string AssetConnectionId = "";
+        public static ConcurrentDictionary<string, bool> AssetDownloadQueue = new ConcurrentDictionary<string, bool>();
+        public static bool NewCollectionsFound = false;
+        public static bool NewAuctionsFound = false;
+        public static bool NewListingsFound = false;
 
         public static async Task Run(bool bypass = false)
         {
@@ -160,7 +167,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task<bool> ConnectToShop(IPEndPoint shopEndPoint, string shopServer, string address = "NA")
+        public static async Task<bool> ConnectToShop(IPEndPoint shopEndPoint, string shopServer, string address = "NA", string shopURL = "NA")
         {
             ListenerThread?.Interrupt();
             bool connected = false;
@@ -178,6 +185,7 @@ namespace ReserveBlockCore.DST
 
             while (!IsConnected && !FailedToConnect)
             {
+                
                 var stopwatch = new Stopwatch();
                 var payload = new Message { Type = MessageType.ShopConnect, Data = "helo", Address = address };
                 var message = GenerateMessage(payload);
@@ -240,6 +248,16 @@ namespace ReserveBlockCore.DST
                 Task task = new Task(() => { Listen(token); }, token);
                 task.Start();
 
+                Task taskData = new Task(() => { UpdateShopData(token); }, token);
+                taskData.Start();
+
+                Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
+                taskDataLoop.Start();
+
+                Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
+                taskAssets.Start();
+
+
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
 
@@ -259,6 +277,7 @@ namespace ReserveBlockCore.DST
                         LastReceiveMessage = TimeUtil.GetTime(),
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
+                        ShopURL = shopURL
                     };
 
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
@@ -367,6 +386,12 @@ namespace ReserveBlockCore.DST
                 Task taskData = new Task(() => { UpdateShopData(token); }, token);
                 taskData.Start();
 
+                Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
+                taskDataLoop.Start();
+
+                Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
+                taskAssets.Start();
+
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
                 var kaMessage = GenerateMessage(kaPayload);
 
@@ -386,6 +411,7 @@ namespace ReserveBlockCore.DST
                         LastReceiveMessage = TimeUtil.GetTime(),
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
+                        ShopURL = shopAddress
                     };
 
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
@@ -477,7 +503,7 @@ namespace ReserveBlockCore.DST
             if (IsConnected)
             {
                 connected = true;
-                Console.WriteLine("connected to SHOP");
+                Console.WriteLine("connected to SHOP - Assets");
 
                 return connected;
             }
@@ -498,7 +524,7 @@ namespace ReserveBlockCore.DST
             if (Globals.IsTestNet)
                 groupNum = 1;
 
-            while (!IsConnected)
+            while (!IsConnected && !FailedToConnect)
             {
                 var stunServer = Globals.STUNServers.Where(x => !badList.Any(y => y == x) && x.Group == groupNum).FirstOrDefault();
 
@@ -527,6 +553,7 @@ namespace ReserveBlockCore.DST
                     await Task.Delay(200);
                     udpClient.Send(addCommandDataBytes, stunEndPoint);
                     stopwatch.Start();
+
                     while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
                     {
                         var beginReceive = udpClient.BeginReceive(null, null);
@@ -557,14 +584,16 @@ namespace ReserveBlockCore.DST
                         else
                         {
                             badList.Add(stunServer);
+                            var newPortNumber = PortUtility.FindOpenUDPPort(LastUsedPort); //dynamic port / Port == LastUsedPort ? LastUsedPort + 1 : Port;
+                            udpClient = new UdpClient(newPortNumber);
+                            LastUsedPort = newPortNumber;
                         }
                     }
                     stopwatch.Stop();
                 }
                 else
                 {
-                    badList = new List<StunServer>();
-                    await delay;
+                    FailedToConnect = true;
                 }
             }
 
@@ -678,6 +707,8 @@ namespace ReserveBlockCore.DST
         {
             var counter = somecount;
 
+            //wait 1 minute before starting
+            await Task.Delay(60000);
             var exit = false;
             while (!exit && !token.IsCancellationRequested)
             {
@@ -699,7 +730,7 @@ namespace ReserveBlockCore.DST
 
                     _ = SendShopMessageFromClient(message, true);
 
-                    await delay;
+                    await Task.Delay(new TimeSpan(0, 0, 60));
                 }
                 catch
                 {
@@ -824,7 +855,15 @@ namespace ReserveBlockCore.DST
                     if (assetList.Count > 0)
                     {
                         int byteSize = 0;
+                        char delim = ',';
+                        var assetListDelim = String.Join(delim, assetList);
                         NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
+                        await Task.Delay(20);
+                        NFTLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
+
+                        var assetCount = assetList.Count;
+                        var assetSuccessCount = 0;
+
                         foreach (var asset in assetList)
                         {
                             try
@@ -835,6 +874,12 @@ namespace ReserveBlockCore.DST
                                     var assetArray = asset.Split('.');
                                     var extIndex = assetArray.Length - 1;
                                     var extToReplace = assetArray[extIndex];
+                                    if(!Globals.ValidExtensions.Contains(extToReplace))
+                                    {
+                                        //skip as its not a valid extension type.
+                                        assetCount -= 1;
+                                        continue;
+                                    }
                                     _asset = asset.Replace(extToReplace, "jpg");
                                 }
                                 //craft message to start process.
@@ -852,6 +897,7 @@ namespace ReserveBlockCore.DST
                                         }
                                         else
                                         {
+                                            assetSuccessCount += 1;
                                             continue;
                                         }
                                     }
@@ -865,32 +911,66 @@ namespace ReserveBlockCore.DST
                                     byte[]? imageData = null;
                                     int timeouts = 0;
                                     bool stopAssetBuild = false;
+                                    var stopWatch = new Stopwatch();
                                     while (!stopAssetBuild)
                                     {
                                         try
                                         {
                                             var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
-
-                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
-                                            await Task.Delay(10);
-                                            _ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
+                                            stopWatch.Restart();
+                                            stopWatch.Start();
+                                            _ = udpAssets.SendAsync(messageAssetBytes, messageAssetBytes.Length, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
+                                            //await Task.Delay(5);
+                                            //_ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
                                             
                                             var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                             var packetData = response.Buffer;
+                                            stopWatch.Stop();
+                                            //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
+                                            Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
                                             await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                             // Check if this is the last packet
-                                            bool isLastPacket = packetData.Length < 8192;
+                                            bool isLastPacket = packetData.Length < 1024;
 
+                                            //checking to see if byte is -1. If so no image. Delete and move on.
+                                            if(isLastPacket && packetData.Length == 1)
+                                            {
+                                                try
+                                                {
+                                                    byte[] byteArray = new byte[] { 0xFF };
+                                                    sbyte signedByte = unchecked((sbyte)byteArray[0]);
+                                                    int intValue = Convert.ToInt32(signedByte);
+
+                                                    if(intValue == -1)
+                                                    {
+                                                        stopAssetBuild = true;
+                                                        expectedSequenceNumber = 0;
+                                                        imageData = null;
+                                                        var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+                                                        assetSuccessCount += 1;
+                                                        if (File.Exists(pathToDelete))
+                                                        {
+                                                            fileStream.Dispose();
+                                                            File.Delete(pathToDelete);
+                                                        }
+                                                        break;
+                                                    }
+                                                }
+                                                catch { }
+                                            }
                                             // Extract the sequence number from the packet
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);
 
+                                            Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
+                                            //NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
                                             if (sequenceNumber != expectedSequenceNumber)
                                             {
                                                 // If not, discard the packet and request a retransmission
                                                 var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber;
                                                 var ackPacket = BitConverter.GetBytes(expSeqNum);
                                                 messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expSeqNum);
-                                                await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
+                                                await Task.Delay(100);
+                                                //await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
                                                 continue;
                                             }
 
@@ -922,10 +1002,11 @@ namespace ReserveBlockCore.DST
                                                 stopAssetBuild = true;
                                                 expectedSequenceNumber = 0;
                                                 imageData = null;
+                                                assetSuccessCount += 1;
                                                 break;
                                             }
 
-                                            expectedSequenceNumber++;
+                                            expectedSequenceNumber += 1;
                                         }
                                         catch(Exception ex) 
                                         {
@@ -935,11 +1016,12 @@ namespace ReserveBlockCore.DST
                                             if (timeouts > 5)
                                             {
                                                 stopAssetBuild = true;
-                                                var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                                var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
                                                 if (File.Exists(pathToDelete))
                                                 {
                                                     expectedSequenceNumber = 0;
                                                     imageData = null;
+                                                    fileStream.Dispose();
                                                     File.Delete(pathToDelete);
                                                 }
                                             }
@@ -950,11 +1032,31 @@ namespace ReserveBlockCore.DST
                             }
                             catch (Exception ex)
                             {
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(asset, scUID, true);
+                                var _asset = asset;
+                                if (!asset.EndsWith(".jpg"))
+                                {
+                                    var assetArray = asset.Split('.');
+                                    var extIndex = assetArray.Length - 1;
+                                    var extToReplace = assetArray[extIndex];
+                                    _asset = asset.Replace(extToReplace, "jpg");
+                                }
+                                var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
                                 if (File.Exists(path))
                                 {
                                     File.Delete(path);
                                 }
+                            }
+                        }
+
+                        if(assetSuccessCount == assetCount)
+                        {
+                            if (AssetDownloadQueue.TryGetValue(scUID, out var value))
+                            {
+                                AssetDownloadQueue[scUID] = true;
+                            }
+                            else
+                            {
+                                AssetDownloadQueue.TryAdd(scUID, true);
                             }
                         }
 
@@ -974,7 +1076,390 @@ namespace ReserveBlockCore.DST
             Globals.AssetDownloadLock = false;
         }
 
-        public static async Task SendShopMessageFromClient(Message message, bool responseRequested, bool sendTwice = false)
+        public static async Task GetShopData(string connectingAddress)
+        {
+            bool infoFound = false;
+            int failCounter = 0;
+
+            await Task.Delay(1000); //delay needed for UDP client on other end to catch up to request.
+
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = connectingAddress,
+                    Data = $"{DecShopRequestOptions.Info}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                while(!infoFound && failCounter < 3)
+                {
+                    await SendShopMessageFromClient(message, true);
+                    if (Globals.DecShopData?.DecShop != null)
+                        infoFound = true;
+
+                    if(!infoFound)
+                        failCounter += 1;
+
+                    await Task.Delay(500);
+                }
+
+                if (Globals.DecShopData?.DecShop != null)
+                {
+                    //begin data grab
+
+                    //Collections
+                    _ = GetShopCollections(connectingAddress);
+                    //Listings
+                    await Task.Delay(200);
+                    _ = GetShopListings(connectingAddress);
+                    //Auctions
+                    await Task.Delay(200);
+                    _ = GetShopAuctions(connectingAddress);
+                    //Assets
+                }
+            }
+        }
+
+        public static async Task GetShopCollections(string connectionAddress)
+        {
+            bool collectionsFound = false;
+            int failCounter = 0;
+
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = connectionAddress,
+                    Data = $"{DecShopRequestOptions.Collections}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = SendShopMessageFromClient(message, true);
+
+                await Task.Delay(200);
+
+                while(!collectionsFound && failCounter < 3)
+                {
+                    if(Globals.DecShopData?.Collections != null)
+                        collectionsFound= true;
+
+                    if(!collectionsFound)
+                    {
+                        failCounter+= 1;
+                        _ = SendShopMessageFromClient(message, true);
+                    }
+                    //else
+                    //{
+                    //    if(Globals.DecShopData?.Collections.Count == Globals.DecShopData?.DecShop.CollectionCount)
+                    //    {
+                    //        Console.WriteLine("TESTING");
+                    //    }
+                    //}
+                }
+
+            }
+
+            NewCollectionsFound = false;
+        }
+
+        public static async Task GetShopListings(string connectionAddress)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
+
+                if (listingCount == null)
+                    return;
+
+                if (listingCount == 0)
+                    return;
+
+                var shopPageCount = (listingCount / 10) + (listingCount % 10 != 0 ? 1 : 0);
+
+                for (int i = 0; i < shopPageCount; i++)
+                {
+                    bool listingsFound = false;
+                    int failCounter = 0;
+
+                    //iterate of amount of pages to get ALL live  listings
+                    Message message = new Message
+                    {
+                        Address = connectionAddress,
+                        Data = $"{DecShopRequestOptions.Listings},{i}",
+                        Type = MessageType.DecShop,
+                        ComType = MessageComType.Request
+                    };
+
+                    _ = SendShopMessageFromClient(message, true);
+
+                    await Task.Delay(200);
+
+                    while (!listingsFound && Globals.DecShopData?.Listings?.Count != Globals.DecShopData?.DecShop?.ListingCount)
+                    {
+                        if (Globals.DecShopData?.Listings != null)
+                        {
+                            if (Globals.DecShopData?.Listings?.Count > 0 && Globals.DecShopData?.Listings?.Count <= (i + 1) * 10)
+                            {
+                                //good
+                                listingsFound = true;
+                                await Task.Delay(200);
+                            }
+                            else
+                            {
+                                await Task.Delay(200);
+                                failCounter += 1;
+                                _ = SendShopMessageFromClient(message, true);
+                            }
+                        }
+                        else
+                        {
+                            await Task.Delay(200);
+                            failCounter += 1;
+                            _ = SendShopMessageFromClient(message, true);
+                        }
+                    }
+                }
+
+            }
+
+            NewListingsFound = false;
+        }
+        public static async Task GetShopAuctions(string connectionAddress)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var auctionCount = Globals.DecShopData?.DecShop?.AuctionCount;
+
+                if (auctionCount == null)
+                    return;
+
+                if (auctionCount == 0)
+                    return;
+
+                var shopPageCount = (auctionCount / 10) + (auctionCount % 10 != 0 ? 1 : 0);
+
+                for (int i = 0; i < shopPageCount; i++)
+                {
+                    bool auctionFound = false;
+                    int failCounter = 0;
+
+                    //iterate of amount of pages to get ALL live  listings
+                    Message message = new Message
+                    {
+                        Address = connectionAddress,
+                        Data = $"{DecShopRequestOptions.Auctions},{i}",
+                        Type = MessageType.DecShop,
+                        ComType = MessageComType.Request
+                    };
+
+                    _ = SendShopMessageFromClient(message, true);
+
+                    await Task.Delay(200);
+
+                    while (!auctionFound && failCounter < 3)
+                    {
+                        if (Globals.DecShopData?.Auctions != null)
+                        {
+                            if (Globals.DecShopData?.Auctions?.Count > 0 && Globals.DecShopData?.Auctions?.Count <= (i + 1) * 10)
+                            {
+                                //good
+                                auctionFound = true;
+                            }
+                            else
+                            {
+                                failCounter += 1;
+                                _ = SendShopMessageFromClient(message, true);
+                            }
+                        }
+                        else
+                        {
+                            failCounter += 1;
+                            _ = SendShopMessageFromClient(message, true);
+                        }
+                    }
+                }
+
+            }
+
+            NewAuctionsFound = false;
+        }
+
+        public static async Task GetShopDataLoop(CancellationToken token, string address)
+        {
+            var exit = false;
+            var delay = Task.Delay(60000);
+
+            //wait 1 minute before starting
+            await Task.Delay(60000);
+            while (!exit && !token.IsCancellationRequested)
+            {
+                try
+                {
+                    var isCancelled = token.IsCancellationRequested;
+                    if (isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+
+                    var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+                    if (connectedShop.Count() > 0)
+                    {
+                        if (Globals.DecShopData?.DecShop != null)
+                        {
+                            //begin data grab
+
+                            //Collections
+                            if(NewCollectionsFound)
+                                _ = GetShopCollections(address);
+                            //Listings
+                            if(NewListingsFound)
+                                _ = GetShopListings(address);
+                            //Auctions
+                            if(NewAuctionsFound)
+                                _ = GetShopAuctions(address);
+                        }
+                    }
+
+                    await Task.Delay(60000);
+                }
+                catch { await Task.Delay(60000); }
+            }
+        }
+
+        public static async Task GetShopListingAssets(CancellationToken token, string address)
+        {
+            AssetDownloadQueue = new ConcurrentDictionary<string, bool>(); //reset queue assuming a new connection has been made.
+            var exit = false;
+            var delay = Task.Delay(3000);
+            while (!exit && !token.IsCancellationRequested)
+            {
+                try
+                {
+                    var isCancelled = token.IsCancellationRequested;
+                    if (isCancelled)
+                    {
+                        exit = true;
+                        continue;
+                    }
+                    var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+                    if (connectedShop.Count() > 0)
+                    {
+                        //begin asset grab loop
+                        
+                        var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
+
+                        if (listingCount == null)
+                        {
+                            await Task.Delay(3000);
+                            continue;
+                        }
+                           
+                        if (listingCount == 0)
+                        {
+                            {
+                                await Task.Delay(3000);
+                                continue;
+                            }
+                        }
+
+                        if (Globals.DecShopData?.Listings?.Count > 0)
+                        {
+                            var listings = Globals.DecShopData?.Listings;
+                            if(listings != null)
+                            {
+                                var _assetConnectionId = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+
+                                foreach (var listing in listings)
+                                {
+                                    if (!AssetDownloadQueue.TryGetValue(listing.SmartContractUID, out var value))
+                                    {
+                                        Message message = new Message
+                                        {
+                                            Address = address,
+                                            Data = listing.SmartContractUID,
+                                            Type = MessageType.AssetReq,
+                                            ComType = MessageComType.Info
+                                        };
+
+                                        if (!Globals.AssetDownloadLock)
+                                        {
+                                            Globals.AssetDownloadLock = true;
+                                            //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                            if (_assetConnectionId != AssetConnectionId)
+                                            {
+                                                AssetConnectionId = _assetConnectionId;
+                                                await DisconnectFromAsset();
+                                                var connected = await ConnectToShopForAssets();
+                                                if (connected)
+                                                    await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                            }
+                                            else
+                                            {
+                                                await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if(!value)
+                                        {
+                                            Message message = new Message
+                                            {
+                                                Address = address,
+                                                Data = listing.SmartContractUID,
+                                                Type = MessageType.AssetReq,
+                                                ComType = MessageComType.Info
+                                            };
+
+                                            if (!Globals.AssetDownloadLock)
+                                            {
+                                                Globals.AssetDownloadLock = true;
+                                                //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                                if (_assetConnectionId != AssetConnectionId)
+                                                {
+                                                    AssetConnectionId = _assetConnectionId;
+                                                    await DisconnectFromAsset();
+                                                    var connected = await ConnectToShopForAssets();
+                                                    if (connected)
+                                                        await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                }
+                                                else
+                                                {
+                                                    await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            //var files = NFTAssetFileUtility
+                                        }
+                                    }
+                                    
+                                }
+
+                                Globals.AssetDownloadLock = false;
+                            }
+                        }
+                    }
+
+                    await Task.Delay(3000);
+                }
+                catch
+                {
+
+                }
+            }
+        }
+
+        public static async Task SendShopMessageFromClient(Message message, bool responseRequested, bool sendTwice = false, int delay = 0)
         {
             var shopMessage = MessageService.GenerateMessage(message, responseRequested);
             var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
@@ -983,7 +1468,8 @@ namespace ReserveBlockCore.DST
 
             if(sendTwice)
             {
-                await udpClient.SendAsync(messageBytes, ConnectedShopServer);
+                await Task.Delay(delay);
+                _ = udpClient.SendAsync(messageBytes, ConnectedShopServer);
             }
         }
 

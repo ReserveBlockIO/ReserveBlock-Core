@@ -66,6 +66,9 @@ namespace ReserveBlockCore
         public const decimal ADNRRequiredRBX = 5.0M;
         public const decimal TopicRequiredRBX = 10.0M;
         public const decimal DecShopRequiredRBX = 10.0M;
+        public const decimal DecShopUpdateRequiredRBX = 1.0M;
+        public const decimal DecShopDeleteRequiredRBX = 1.0M;
+
         public const int ADNRLimit = 65;
         public static long FeatureLock = 896247;
         public static int BlockLock = -1;
@@ -167,6 +170,7 @@ namespace ReserveBlockCore
         public static bool MemoryOverload = false;
         public static bool SelfSTUNServer = false;
         public static bool ShowSTUNMessagesInConsole = false;
+        public static bool STUNServerRunning = false;
         
         public static CancellationToken CancelledToken;
 
@@ -268,6 +272,20 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
         public static bool AssetDownloadLock = false;
+        public static readonly HashSet<string> ValidExtensions = new HashSet<string>()
+        {
+            "png",
+            "jpg",
+            "jpeg",
+            "jp2",
+            "gif",
+            "tif",
+            "tiff",
+            "webp",
+            "bmp",
+            "pdf"
+            // Other possible extensions
+        };
 
         #endregion
 

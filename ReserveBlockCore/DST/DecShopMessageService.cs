@@ -6,6 +6,7 @@ using ReserveBlockCore.Utilities;
 using System;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using static ReserveBlockCore.Models.Mother;
@@ -229,6 +230,45 @@ namespace ReserveBlockCore.DST
                             msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
                             Globals.ClientMessageDict[message.ResponseMessageId] = msg;
                         }
+                        else if (option == "SpecificAuction")
+                        {
+                            var auction = JsonConvert.DeserializeObject<Auction>(message.Data);
+                            if (auction != null)
+                            {
+                                if (Globals.DecShopData == null)
+                                {
+                                    Globals.DecShopData = new DecShopData
+                                    {
+                                        Auctions = new List<Auction> { auction },
+                                    };
+                                }
+                                else
+                                {
+                                    if (Globals.DecShopData.Auctions != null)
+                                    {
+                                        var auctionExist = Globals.DecShopData.Auctions.Exists(x => x.ListingId == auction.ListingId);
+                                        if (!auctionExist)
+                                            Globals.DecShopData.Auctions.Add(auction);
+
+                                        if (auctionExist)
+                                        {
+                                            int index = Globals.DecShopData.Auctions.FindIndex(x => x.ListingId == auction.ListingId);
+                                            if (index != -1)
+                                                Globals.DecShopData.Auctions[index] = auction;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Globals.DecShopData.Auctions = new List<Auction> { auction };
+                                    }
+                                }
+                            }
+
+
+                            msg.HasReceivedResponse = true;
+                            msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                            Globals.ClientMessageDict[message.ResponseMessageId] = msg;
+                        }
                         else if(option == "Auctions")
                         {
                             var auctions = JsonConvert.DeserializeObject<List<Auction>>(message.Data);
@@ -326,24 +366,85 @@ namespace ReserveBlockCore.DST
                                         {
                                             if (Globals.DecShopData.Collections?.Count > 0)
                                             {
-                                                var newCollectionList = Globals.DecShopData.Collections.Where(x => uData.CollectionList.Contains(x.Id)).Select(x => x).ToList();
-                                                Globals.DecShopData.Collections = newCollectionList;
+                                                var oldCollectionList = Globals.DecShopData.Collections.Where(x => !uData.CollectionList.Contains(x.Id)).Select(x => x).ToList();
+                                                foreach(var collection in oldCollectionList)
+                                                {
+                                                    try
+                                                    {
+                                                        Globals.DecShopData.Collections.Remove(collection);
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                try
+                                                {
+                                                    var newCollectionList = uData.CollectionList.Where(x => !Globals.DecShopData.Collections.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
+                                                    if (newCollectionList.Count > 0)
+                                                        DSTClient.NewCollectionsFound = true;
+                                                }
+                                                catch { }
+                                            }
+                                            else
+                                            {
+                                                if (uData.CollectionList.Count > 0)
+                                                    DSTClient.NewCollectionsFound = true;
+                                                
                                             }
                                         }
                                         if (uData.ListingList?.Count > 0)
                                         {
                                             if (Globals.DecShopData.Listings?.Count > 0)
                                             {
-                                                var newListingList = Globals.DecShopData.Listings.Where(x => uData.ListingList.Contains(x.Id)).Select(x => x).ToList();
-                                                Globals.DecShopData.Listings = newListingList;
+                                                var oldListingList = Globals.DecShopData.Listings.Where(x => !uData.ListingList.Contains(x.Id)).Select(x => x).ToList();
+                                                foreach (var listing in oldListingList)
+                                                {
+                                                    try
+                                                    {
+                                                        Globals.DecShopData.Listings.Remove(listing);
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                try
+                                                {
+                                                    var newListingsList = uData.ListingList.Where(x => !Globals.DecShopData.Listings.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
+                                                    if (newListingsList.Count > 0)
+                                                        DSTClient.NewListingsFound = true;
+                                                }
+                                                catch { }
+                                            }
+                                            else
+                                            {
+                                                if(uData.ListingList.Count > 0)
+                                                    DSTClient.NewListingsFound = true;
                                             }
                                         }
                                         if (uData.AuctionList?.Count > 0)
                                         {
                                             if (Globals.DecShopData.Auctions?.Count > 0)
                                             {
-                                                var newAuctionList = Globals.DecShopData.Auctions.Where(x => uData.AuctionList.Contains(x.Id)).Select(x => x).ToList();
-                                                Globals.DecShopData.Auctions = newAuctionList;
+                                                var oldAuctionList = Globals.DecShopData.Auctions.Where(x => !uData.AuctionList.Contains(x.Id)).Select(x => x).ToList();
+                                                foreach (var auction in oldAuctionList)
+                                                {
+                                                    try
+                                                    {
+                                                        Globals.DecShopData.Auctions.Remove(auction);
+                                                    }
+                                                    catch { }
+                                                }
+
+                                                try
+                                                {
+                                                    var newAuctionList = uData.AuctionList.Where(x => !Globals.DecShopData.Auctions.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
+                                                    if (newAuctionList.Count > 0)
+                                                        DSTClient.NewAuctionsFound = true;
+                                                }
+                                                catch { }
+                                            }
+                                            else
+                                            {
+                                                if (uData.AuctionList.Count > 0)
+                                                    DSTClient.NewAuctionsFound = true;
                                             }
                                         }
                                     }
@@ -548,7 +649,7 @@ namespace ReserveBlockCore.DST
                     {
                         var scUID = requestOptArray[1];
 
-                        if (!string.IsNullOrEmpty(scUID))
+                        if (string.IsNullOrEmpty(scUID))
                         {
                             var respMessage = new Message
                             {
@@ -640,6 +741,67 @@ namespace ReserveBlockCore.DST
                             return respMessage;
                         }
 
+                    }
+                    else if (option == "SpecificAuction")
+                    {
+                        var listingIdStr = requestOptArray[1];
+
+                        if (string.IsNullOrEmpty(listingIdStr))
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
+                        var parseAttempt = int.TryParse(listingIdStr, out var listingId);
+                        if(!parseAttempt)
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
+
+                        var auction = Auction.GetListingAuction(listingId);
+                        if (auction != null)
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = JsonConvert.SerializeObject(auction)
+                            };
+
+                            return respMessage;
+                        }
+                        else
+                        {
+                            var respMessage = new Message
+                            {
+                                ResponseMessage = true,
+                                ResponseMessageId = message.Id,
+                                Type = message.Type,
+                                ComType = MessageComType.Response,
+                                Data = ""
+                            };
+
+                            return respMessage;
+                        }
                     }
                     else if (option == "Bids")
                     {

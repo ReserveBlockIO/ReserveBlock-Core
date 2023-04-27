@@ -59,7 +59,7 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //Forced Testnet
-            //Globals.IsTestNet = true;
+            Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -570,6 +570,8 @@ namespace ReserveBlockCore
                 _ = AuctionEngine.StartAuctioneer();
             }
 
+            if (Globals.SelfSTUNServer)
+                _ = Task.Run(() => { StartupService.StartDSTServer(); });//launching off the main thread.
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 _ = WindowsUtilities.AdjAutoRestart();
@@ -734,9 +736,6 @@ namespace ReserveBlockCore
         private static void CommandLoop3()
         {
             _ = StartupService.StartBeacon();
-            if(Globals.SelfSTUNServer)
-                _ = StartupService.StartDSTServer();
-
         }
 
         #endregion

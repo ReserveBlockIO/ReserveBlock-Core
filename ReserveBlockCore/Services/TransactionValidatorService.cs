@@ -891,7 +891,7 @@ namespace ReserveBlockCore.Services
                                 if (function == "DecShopDelete()")
                                 {
                                     if (txRequest.Amount < Globals.DecShopRequiredRBX)
-                                        return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to create a Auction House.");
+                                        return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to delete a Auction House.");
 
                                     string dsUID = jobj["UniqueId"].ToObject<string?>();
                                     if (!string.IsNullOrEmpty(dsUID))
@@ -902,6 +902,9 @@ namespace ReserveBlockCore.Services
                                         {
                                             if (treiRec.OwnerAddress != txRequest.FromAddress)
                                                 return (txResult, "You must be the valid owner of this shop.");
+
+                                            //if (txRequest.Amount < Globals.DecShopDeleteRequiredRBX)
+                                            //    return (txResult, $"There must be at least {Globals.DecShopDeleteRequiredRBX} RBX to delete a Auction House.");
                                         }
                                         else
                                         {
@@ -932,8 +935,8 @@ namespace ReserveBlockCore.Services
 
                                     if (function == "DecShopCreate()")
                                     {
-                                        if (txRequest.Amount < 1M)
-                                            return (txResult, "There must be at least 1 RBX to create a Auction House.");
+                                        if (txRequest.Amount < Globals.DecShopRequiredRBX)
+                                            return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to create a Auction House.");
 
                                         var urlValid = DecShop.ValidStateTreiURL(decshop.DecShopURL);
                                         if (!urlValid)
@@ -954,8 +957,8 @@ namespace ReserveBlockCore.Services
 
                                             if (lastUpdateTime < 43200)
                                             {
-                                                if (txRequest.Amount < 1M)
-                                                    return (txResult, "There must be at least 1 RBX to Update an Auction House more than 1 time in 12 hours.");
+                                                if (txRequest.Amount < Globals.DecShopUpdateRequiredRBX)
+                                                    return (txResult, $"There must be at least {Globals.DecShopUpdateRequiredRBX} RBX to Update an Auction House more than 1 time in 12 hours.");
                                             }
                                             if (decshop.DecShopURL.ToLower() != treiRec.DecShopURL.ToLower())
                                             {

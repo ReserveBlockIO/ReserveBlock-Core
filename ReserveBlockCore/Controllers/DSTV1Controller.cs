@@ -12,6 +12,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Net;
 
 namespace ReserveBlockCore.Controllers
@@ -830,10 +831,13 @@ namespace ReserveBlockCore.Controllers
                     if(decDb != null)
                     {
                         var result = decDb.DeleteSafe(localShop.Id);
-                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Local Dec Shop Deleted : {result}" });
+
+                        var listingDeleteResult = await Listing.DeleteAllListingsByCollection(localShop.Id);
+                        var auctionsDeleteResult = await Auction.DeleteAllAuctionsByCollection(localShop.Id);
+                        var bidDeleteResult = await Bid.DeleteAllBidsByCollection(localShop.Id);
+
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = $"Delete Results - Shop : {result}, Listings : {listingDeleteResult.Item1}, Auctions : {auctionsDeleteResult.Item1}, Bids : {bidDeleteResult.Item1}" });
                     }
-
-
                 }
                 else
                 {
@@ -893,6 +897,21 @@ namespace ReserveBlockCore.Controllers
 
         }
 
+        /// <summary>
+        /// Get network dec shop list
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDecShopStateTreiList")]
+        public async Task<string> GetDecShopStateTreiList()
+        {
+            var decshops = await DecShop.GetDecShopStateTreiList();
+
+            if(decshops?.Count() == 0)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find any DecShops." });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Shops Found", DecShops = decshops }, Formatting.Indented);
+        }
+
 
         /// <summary>
         /// Connects to a shop : 'rbx://someurlgoeshere'
@@ -908,14 +927,43 @@ namespace ReserveBlockCore.Controllers
             if (decshop != null)
             {
                 ConnectingAddress = address;
+                var accountExist = AccountData.GetSingleAccount(address);
+                if(!Debugger.IsAttached)
+                {
+                    if (accountExist == null)
+                        return false;
+                }
                 //removes current connection to shop
                 await DSTClient.DisconnectFromShop();
-                var connectionResult = await DSTClient.ConnectToShop(url);
+                var connectionResult = await DSTClient.ConnectToShop(url, address);
+
+                //if connectionResult == true create some looping event.
+
+                if (connectionResult)
+                    _ = DSTClient.GetShopData(ConnectingAddress);
 
                 return connectionResult;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Gets shop info
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetConnections")]
+        public async Task<string> GetConnections()
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var decShop = connectedShop.FirstOrDefault().Value;
+
+                if(decShop != null)
+                    return JsonConvert.SerializeObject(new { Success = true, Message = $"Shop Found", DecShop = decShop, Connected = true });
+            }
+            return  JsonConvert.SerializeObject(new { Success = true, Message = $"Shop Found", DecShop = "", Connected = false }); ;
         }
 
         /// <summary>
@@ -1063,6 +1111,31 @@ namespace ReserveBlockCore.Controllers
                 {
                     Address = ConnectingAddress,
                     Data = $"{DecShopRequestOptions.SpecificListing},{scUID}",
+                    Type = MessageType.DecShop,
+                    ComType = MessageComType.Request
+                };
+
+                _ = DSTClient.SendShopMessageFromClient(message, true);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets shop Listings by collection
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetShopSpecificAuction/{listingId}")]
+        public async Task<bool> GetShopSpecificAuction(string listingId)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Address = ConnectingAddress,
+                    Data = $"{DecShopRequestOptions.SpecificAuction},{listingId}",
                     Type = MessageType.DecShop,
                     ComType = MessageComType.Request
                 };
@@ -1786,7 +1859,7 @@ namespace ReserveBlockCore.Controllers
         {
             if (Globals.DecShopData != null)
             {
-                return JsonConvert.SerializeObject(new { Success = true, Message = "Data Found.", Globals.DecShopData });
+                return JsonConvert.SerializeObject(new { Success = true, Message = "Data Found.", Globals.DecShopData }, Formatting.Indented);
             }
             else
             {
@@ -1838,7 +1911,21 @@ namespace ReserveBlockCore.Controllers
             var shops = Globals.ConnectedShops;
             var stunServer = Globals.STUNServer;
 
-            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer });           
+            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer }, Formatting.Indented);           
+        }
+
+        /// <summary>
+        /// Debug Data for DST
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("DebugData")]
+        public async Task<string> DebugData()
+        {
+            var CollectionCount = Collection.GetLiveCollections();
+            var ListingCount = Listing.GetLiveListingsCount();
+            var AuctionCount = Auction.GetLiveAuctionsCount();
+
+            return JsonConvert.SerializeObject(new { Success = true, CollectionCount, ListingCount, AuctionCount }, Formatting.Indented);
         }
     }
 }

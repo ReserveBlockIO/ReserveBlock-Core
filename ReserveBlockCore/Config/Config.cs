@@ -98,7 +98,7 @@ namespace ReserveBlockCore.Config
                 config.DSTClientPort = dict.ContainsKey("DSTClientPort") ? Convert.ToInt32(dict["DSTClientPort"]) : 3341;
                 config.STUNServers = dict.ContainsKey("STUNServers") ? dict["STUNServers"] : null;
                 config.SelfSTUNServer = dict.ContainsKey("STUN") ? Convert.ToBoolean(dict["STUN"]) : false;
-                config.DSTClientPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
+                config.SelfSTUNPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -188,7 +188,7 @@ namespace ReserveBlockCore.Config
 			}
 			else
 			{
-				var port = Globals.IsTestNet ? 13340 : 3440;
+				var port = Globals.IsTestNet ? 13340 : Globals.MinorVer == 5 && Globals.MajorVer == 3 ? 3440 : Globals.SelfSTUNPort; //needs to be 3340 **patched  DSTServer.cs Line: 20**
 
 				if(!Globals.IsTestNet)
 				{
@@ -203,6 +203,7 @@ namespace ReserveBlockCore.Config
                     Globals.STUNServers.Add(new StunServer { ServerIPPort = $"185.188.249.117:{port}", Group = 5, IsNetwork = true });
                     Globals.STUNServers.Add(new StunServer { ServerIPPort = $"154.26.155.35:{port}", Group = 5, IsNetwork = true });
 
+					//failover
                     Globals.STUNServers.Add(new StunServer { ServerIPPort = $"173.254.253.106:{port}", Group = 0, IsNetwork = true });
                 }
 				else

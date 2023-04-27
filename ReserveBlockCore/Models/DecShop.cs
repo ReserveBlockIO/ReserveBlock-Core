@@ -14,6 +14,7 @@ using System.Net;
 using Trillium.Syntax;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Engines;
+using ReserveBlockCore.Models.DST;
 
 namespace ReserveBlockCore.Models
 {
@@ -42,6 +43,9 @@ namespace ReserveBlockCore.Models
         public bool NeedsPublishToNetwork { get; set; }
         public bool IsOffline { get; set; }
         public bool IsPublished { get; set; }
+        public int CollectionCount { get; set; }
+        public int ListingCount { get; set; }
+        public int AuctionCount { get; set; }
         public bool IsIPDifferent { get { return P2PClient.MostLikelyIP() == IP ? false : true; } }
 
         public class DecShopTxData
@@ -138,6 +142,11 @@ namespace ReserveBlockCore.Models
                 {
                     return null;
                 }
+
+                decshopInfo.CollectionCount = Collection.GetLiveCollections();
+                decshopInfo.ListingCount = Listing.GetLiveListingsCount();
+                decshopInfo.AuctionCount = Auction.GetLiveAuctionsCount();
+
                 return decshopInfo;
             }
             catch (Exception ex)
@@ -357,6 +366,32 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
+        #region Get DecShop Leafs from State Trei
+        public static async Task<IEnumerable<DecShop>?> GetDecShopStateTreiList()
+        {
+            try
+            {
+                var decshops = DecShopTreiDb();
+                if (decshops == null)
+                {
+                    ErrorLogUtility.LogError("DecShops() returned a null value.", "DecShop.SaveDecShopInfo()");
+                    return null;
+                }
+                else
+                {
+                    var existingDecShopInfo = decshops.Query().Where(x => true).ToEnumerable();
+                    if (existingDecShopInfo != null)
+                    {
+                        return existingDecShopInfo;
+                    }
+                    return null;
+                }
+            }
+            catch { return null; }
+        }
+
+        #endregion
+
         #region Set DecShop Status
         public static bool? SetDecShopStatus()
         {
@@ -515,7 +550,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = address,
                 ToAddress = "DecShop_Base",
-                Amount = Globals.DecShopRequiredRBX,
+                Amount = Globals.DecShopUpdateRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.DSTR,

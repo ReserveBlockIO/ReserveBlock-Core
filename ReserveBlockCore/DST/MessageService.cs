@@ -101,7 +101,7 @@ namespace ReserveBlockCore.DST
                 }
             }
         }
-        public static void STUNClientConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static async Task STUNClientConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
         {
             if (!string.IsNullOrEmpty(message.Data))
             {
@@ -111,9 +111,9 @@ namespace ReserveBlockCore.DST
                 var ip = ipEndPoint[0];
                 var port = ipEndPoint[1];
 
-                if(Globals.ConnectedShops.TryGetValue(message.Data, out var shop))
+                if (Globals.ConnectedShops.TryGetValue(message.Data, out var shop))
                 {
-                    if(shop.IsConnected)
+                    if (shop.IsConnected)
                     {
                         //create ack packet to send
                         var successMessage = Encoding.UTF8.GetBytes("ack");
@@ -137,7 +137,6 @@ namespace ReserveBlockCore.DST
                         //let origin endpoint know they can finish the udp punch through
                         udpClient.Send(successMessage, endPoint);
                     }
-                    
                 }
                 else
                 {

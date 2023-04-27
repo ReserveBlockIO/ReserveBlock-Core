@@ -347,8 +347,9 @@ namespace ReserveBlockCore.Services
         {
             try
             {
-                _ = DSTServer.Run();
                 Console.WriteLine("DST Service Started.");
+                LogUtility.Log("DST Service Started.", "StartupService.StartDSTServer()");
+                _ = DSTServer.Run();
             }
             catch (Exception ex)
             {
