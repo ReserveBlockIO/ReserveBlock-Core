@@ -16,8 +16,6 @@ namespace ReserveBlockCore.Utilities
         private static readonly HashSet<string> ValidExtensions = new HashSet<string>()
         {
             ".png",
-            ".icns",
-            ".ico",
             ".jpg",
             ".jpeg",
             ".jp2",
@@ -26,8 +24,6 @@ namespace ReserveBlockCore.Utilities
             ".tiff",
             ".webp",
             ".bmp",
-            ".psd",
-            ".ai",
             ".pdf"
             // Other possible extensions
         };

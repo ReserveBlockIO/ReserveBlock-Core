@@ -926,7 +926,7 @@ namespace ReserveBlockCore.DST
                                             var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                             var packetData = response.Buffer;
                                             stopWatch.Stop();
-                                            NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
+                                            //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
                                             Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
                                             await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                             // Check if this is the last packet
@@ -962,7 +962,7 @@ namespace ReserveBlockCore.DST
                                             int sequenceNumber = BitConverter.ToInt32(packetData, 0);
 
                                             Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
-                                            NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
+                                            //NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
                                             if (sequenceNumber != expectedSequenceNumber)
                                             {
                                                 // If not, discard the packet and request a retransmission
@@ -1153,13 +1153,13 @@ namespace ReserveBlockCore.DST
                         failCounter+= 1;
                         _ = SendShopMessageFromClient(message, true);
                     }
-                    else
-                    {
-                        if(Globals.DecShopData?.Collections.Count == Globals.DecShopData?.DecShop.CollectionCount)
-                        {
-                            Console.WriteLine("TESTING");
-                        }
-                    }
+                    //else
+                    //{
+                    //    if(Globals.DecShopData?.Collections.Count == Globals.DecShopData?.DecShop.CollectionCount)
+                    //    {
+                    //        Console.WriteLine("TESTING");
+                    //    }
+                    //}
                 }
 
             }
@@ -1392,7 +1392,7 @@ namespace ReserveBlockCore.DST
                                         if (!Globals.AssetDownloadLock)
                                         {
                                             Globals.AssetDownloadLock = true;
-                                            NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                            //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
                                             if (_assetConnectionId != AssetConnectionId)
                                             {
                                                 AssetConnectionId = _assetConnectionId;
@@ -1422,7 +1422,7 @@ namespace ReserveBlockCore.DST
                                             if (!Globals.AssetDownloadLock)
                                             {
                                                 Globals.AssetDownloadLock = true;
-                                                NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                                //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
                                                 if (_assetConnectionId != AssetConnectionId)
                                                 {
                                                     AssetConnectionId = _assetConnectionId;
