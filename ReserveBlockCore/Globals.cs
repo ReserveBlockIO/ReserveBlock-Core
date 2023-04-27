@@ -67,6 +67,7 @@ namespace ReserveBlockCore
         public const decimal TopicRequiredRBX = 10.0M;
         public const decimal DecShopRequiredRBX = 10.0M;
         public const decimal DecShopUpdateRequiredRBX = 1.0M;
+        public const decimal DecShopDeleteRequiredRBX = 1.0M;
 
         public const int ADNRLimit = 65;
         public static long FeatureLock = 896247;
@@ -88,7 +89,7 @@ namespace ReserveBlockCore
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
-        public static int MinorVer = 5;
+        public static int MinorVer = 6;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
@@ -96,7 +97,7 @@ namespace ReserveBlockCore
         public static bool ValidatorBalanceGood = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
-        public static string GitHubVersion = "beta3.5";
+        public static string GitHubVersion = $"beta{MajorVer}.{MinorVer}";
         public static string GitHubApiURL = "https://api.github.com/";
         public static string GitHubRBXRepoURL = "repos/ReserveBlockIO/ReserveBlock-Core/releases/latest";
         public static string GitHubLatestReleaseVersion = "";
@@ -271,6 +272,20 @@ namespace ReserveBlockCore
         public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
         public static bool AssetDownloadLock = false;
+        public static readonly HashSet<string> ValidExtensions = new HashSet<string>()
+        {
+            "png",
+            "jpg",
+            "jpeg",
+            "jp2",
+            "gif",
+            "tif",
+            "tiff",
+            "webp",
+            "bmp",
+            "pdf"
+            // Other possible extensions
+        };
 
         #endregion
 

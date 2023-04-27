@@ -82,6 +82,29 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
+        #region Get All Live Auctions Count
+        public static int GetLiveAuctionsCount()
+        {
+            var auctionDb = GetAuctionDb();
+
+            if (auctionDb != null)
+            {
+                var auctions = auctionDb.Query().Where(x => !x.IsAuctionOver).ToEnumerable().Count();
+                if (auctions == 0)
+                {
+                    return 0;
+                }
+
+                return auctions;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        #endregion
+
         #region Get Single Auction
         public static Auction? GetSingleAuction(int auctionId)
         {

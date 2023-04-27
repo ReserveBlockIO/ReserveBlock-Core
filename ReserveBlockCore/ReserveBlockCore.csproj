@@ -19,6 +19,9 @@
     <Deterministic>True</Deterministic>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Databases\**" />
     <Content Remove="Databases\**" />
@@ -44,6 +47,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.5.0" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
     <PackageReference Include="Trillium" Version="1.3.0" />
+    <PackageReference Include="bblanchon.PDFium.macOS" Version="114.0.5731" />
   </ItemGroup>
 
   <ItemGroup>
