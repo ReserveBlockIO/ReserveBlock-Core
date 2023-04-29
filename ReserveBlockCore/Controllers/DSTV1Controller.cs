@@ -1161,19 +1161,25 @@ namespace ReserveBlockCore.Controllers
                     if (bidPayload == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "Bid Payload cannot be null" });
 
-                    var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
+                    if(!bidPayload.RawBid)
+                    {
+                        var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
 
-                    if (localAddress == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
-
+                        if (localAddress == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+                    }
+                    
                     if(bidPayload.BidAddress.StartsWith("xRBX"))
                         return JsonConvert.SerializeObject(new { Success = false, Message = "You may not place bids with a Reserve Account" });
 
                     if (Globals.DecShopData?.DecShop == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
 
-                    var bidBuild = bidPayload.Build();
-                    if(bidBuild == false)
+                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted ? true : false;
+
+                    var bidBuild = bidPayload.Build(thirdPartyBid);
+
+                    if (bidBuild == false)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to build bid." });
 
                     var bidJson = JsonConvert.SerializeObject(bidPayload);
@@ -1188,7 +1194,8 @@ namespace ReserveBlockCore.Controllers
 
                     var bidSave = Bid.SaveBid(bidPayload);
                     
-                    _ = DSTClient.SendShopMessageFromClient(message, false);
+                    if(bidPayload.BidStatus != BidStatus.Accepted)
+                        _ = DSTClient.SendShopMessageFromClient(message, false);
 
                     return JsonConvert.SerializeObject(new { Success = true, Message = "Bid sent.", BidId = bidPayload.Id });
                 }
@@ -1253,18 +1260,23 @@ namespace ReserveBlockCore.Controllers
                     if (bidPayload == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "Bid Payload cannot be null" });
 
-                    var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
+                    if(!bidPayload.RawBid)
+                    {
+                        var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
 
-                    if (localAddress == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+                        if (localAddress == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
 
-                    if (bidPayload.BidAddress.StartsWith("xRBX"))
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "You may not perform a 'Buy Now' with a Reserve Account" });
+                        if (bidPayload.BidAddress.StartsWith("xRBX"))
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "You may not perform a 'Buy Now' with a Reserve Account" });
+                    }
 
                     if (Globals.DecShopData?.DecShop == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
 
-                    var bidBuild = bidPayload.Build();
+                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted ? true : false;
+
+                    var bidBuild = bidPayload.Build(thirdPartyBid);
 
                     if(bidPayload.IsBuyNow != true)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "IsBuyNow must be set to 'true'." });
@@ -1284,8 +1296,9 @@ namespace ReserveBlockCore.Controllers
 
                     var bidSave = Bid.SaveBid(bidPayload);
 
-                    _ = DSTClient.SendShopMessageFromClient(message, false);
-
+                    if(bidPayload.BidStatus != BidStatus.Accepted)
+                        _ = DSTClient.SendShopMessageFromClient(message, false);
+                                 
                     return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id });
                 }
 
@@ -1921,7 +1934,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("DebugData")]
         public async Task<string> DebugData()
         {
-            var CollectionCount = Collection.GetLiveCollections();
+            var CollectionCount = Collection.GetLiveCollectionCount();
             var ListingCount = Listing.GetLiveListingsCount();
             var AuctionCount = Auction.GetLiveAuctionsCount();
 

@@ -53,8 +53,31 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
+        #region Get Live Collections
+        public static List<int>? GetLiveCollectionsIds()
+        {
+            var collectionDb = GetCollectionDb();
+
+            if (collectionDb != null)
+            {
+                var defCollection = collectionDb.Query().Where(x => x.CollectionLive).Select(x => x.Id).ToList();
+                if (defCollection.Count() == 0)
+                {
+                    return null;
+                }
+
+                return defCollection;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         #region Get Live Collection Count
-        public static int GetLiveCollections()
+        public static int GetLiveCollectionCount()
         {
             var collectionDb = GetCollectionDb();
 

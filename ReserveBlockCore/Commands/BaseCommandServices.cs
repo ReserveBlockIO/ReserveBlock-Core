@@ -918,6 +918,10 @@ namespace ReserveBlockCore.Commands
                     {
                         AnsiConsole.MarkupLine($"Last Block Won: [green]{lastBlockWon.Height}[/] | Time: [yellow]{lastBlockWon.Timestamp.ToLocalDateTimeFromUnix()}[/]");
                     }
+                    else
+                    {
+                        AnsiConsole.MarkupLine($"Last Block Won: [green]No blocks recorded at this time.[/]");
+                    }
                 }
                 else
                 {

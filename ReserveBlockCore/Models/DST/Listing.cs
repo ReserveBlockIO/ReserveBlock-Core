@@ -3,6 +3,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Utilities;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 namespace ReserveBlockCore.Models.DST
 {
@@ -105,13 +106,21 @@ namespace ReserveBlockCore.Models.DST
 
             if (listingDb != null)
             {
-                var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled).ToEnumerable().Count();
-                if (listings == 0)
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if(liveCollections != null)
+                {
+                    var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled && liveCollections.Contains(x.CollectionId)).ToEnumerable().Count();
+                    if (listings == 0)
+                    {
+                        return 0;
+                    }
+
+                    return listings;
+                }
+                else
                 {
                     return 0;
                 }
-
-                return listings;
             }
             else
             {
