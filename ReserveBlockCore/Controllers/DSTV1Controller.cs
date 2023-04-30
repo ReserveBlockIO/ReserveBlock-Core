@@ -1172,10 +1172,13 @@ namespace ReserveBlockCore.Controllers
                     if(bidPayload.BidAddress.StartsWith("xRBX"))
                         return JsonConvert.SerializeObject(new { Success = false, Message = "You may not place bids with a Reserve Account" });
 
-                    if (Globals.DecShopData?.DecShop == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    if (bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
+                    {
+                        if (Globals.DecShopData?.DecShop == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    }
 
-                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted ? true : false;
+                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted || bidPayload.BidStatus == BidStatus.Rejected ? true : false;
 
                     var bidBuild = bidPayload.Build(thirdPartyBid);
 
@@ -1271,10 +1274,13 @@ namespace ReserveBlockCore.Controllers
                             return JsonConvert.SerializeObject(new { Success = false, Message = "You may not perform a 'Buy Now' with a Reserve Account" });
                     }
 
-                    if (Globals.DecShopData?.DecShop == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    if(bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
+                    {
+                        if (Globals.DecShopData?.DecShop == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    }
 
-                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted ? true : false;
+                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted || bidPayload.BidStatus == BidStatus.Rejected ? true : false;
 
                     var bidBuild = bidPayload.Build(thirdPartyBid);
 
@@ -1296,7 +1302,7 @@ namespace ReserveBlockCore.Controllers
 
                     var bidSave = Bid.SaveBid(bidPayload);
 
-                    if(bidPayload.BidStatus != BidStatus.Accepted)
+                    if(bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
                         _ = DSTClient.SendShopMessageFromClient(message, false);
                                  
                     return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id });

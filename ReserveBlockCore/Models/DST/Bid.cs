@@ -36,7 +36,7 @@ namespace ReserveBlockCore.Models.DST
                 return false;
 
             Id = Guid.NewGuid();
-            BidStatus = thirdParty ? BidStatus.Accepted : BidStatus.Sent;
+            BidStatus = thirdParty ? BidStatus : BidStatus.Sent;
             IsAutoBid = false;
             BidSendTime = TimeUtil.GetTime();
             MaxBidAmount = BidAmount;
