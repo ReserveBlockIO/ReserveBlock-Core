@@ -288,95 +288,94 @@ namespace ReserveBlockCore.Engines
                                 continue;
                             }
                             var auction = auctions.Where(x => x.ListingId == buyNow.ListingId).FirstOrDefault();
+                            
+                            if (auction != null)
                             {
-                                if (auction != null)
+                                var listing = listings?.Where(x => x.Id == buyNow.ListingId).FirstOrDefault();
+                                if (listing != null)
                                 {
-                                    var listing = listings?.Where(x => x.Id == buyNow.ListingId).FirstOrDefault();
-                                    if (listing != null)
+                                    if(listing.BuyNowPrice == null)
                                     {
-                                        if(listing.BuyNowPrice == null)
-                                        {
-                                            AuctionLogUtility.Log($"Buy Now Rejected - Buy Now Price was Null. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                            DequeueBid(buyNow, BidStatus.Rejected);
-                                            continue;
-                                        }
-                                        if (listing.RequireBalanceCheck)
-                                        {
-                                            var addressBalance = AccountStateTrei.GetAccountBalance(buyNow.BidAddress);
-                                            if (addressBalance < listing.BuyNowPrice)
-                                            {
-                                                AuctionLogUtility.Log($"Buy Now Rejected - Address balance too low. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                                DequeueBid(buyNow, BidStatus.Rejected);
-                                                continue;
-                                            }
-
-                                        }
-                                        if (buyNow.BidAddress.StartsWith("xRBX"))
-                                        {
-                                            AuctionLogUtility.Log($"Buy Now Rejected - Buy Now cannot be purchases from Reserve Account. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                            DequeueBid(buyNow, BidStatus.Rejected);
-                                            continue;
-                                        }
-
-                                        if(auction.IsAuctionOver)
-                                        {
-                                            AuctionLogUtility.Log($"Buy Now Rejected - Auction is already over. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                            DequeueBid(buyNow, BidStatus.Rejected);
-                                            continue;
-                                        }
-
-                                        Bid aBid = new Bid
-                                        {
-                                            Id = Guid.NewGuid(),
-                                            BidAddress = buyNow.BidAddress,
-                                            BidAmount = listing.BuyNowPrice.Value,
-                                            BidSendReceive = BidSendReceive.Received,
-                                            BidSendTime = buyNow.BidSendTime,
-                                            BidSignature = buyNow.BidSignature,
-                                            BidStatus = BidStatus.Accepted,
-                                            CollectionId = buyNow.CollectionId,
-                                            IsAutoBid = buyNow.IsAutoBid,
-                                            IsBuyNow = true,
-                                            IsProcessed = true,
-                                            ListingId = buyNow.ListingId,
-                                            MaxBidAmount = listing.BuyNowPrice.Value,
-                                            PurchaseKey = buyNow.PurchaseKey
-                                        };
-
-                                        auction.CurrentBidPrice = listing.BuyNowPrice.Value;
-                                        auction.MaxBidPrice = listing.BuyNowPrice.Value;
-                                        auction.CurrentWinningAddress = buyNow.BidAddress;                                        
-                                        auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
-                                        auction.IsAuctionOver = true;
-                                        auction.IsReserveMet = true;
-                                        auction.WinningBidId = aBid.Id;
-
-                                        listing.IsAuctionEnded = true;
-                                        listing.WinningAddress = auction.CurrentWinningAddress;
-                                        listing.FinalPrice = listing.BuyNowPrice.Value;
-
-                                        Bid.SaveBid(aBid, true);
-                                        Auction.SaveAuction(auction);
-                                        _ = Listing.SaveListing(listing);
-
-                                        DequeueBid(buyNow, BidStatus.Accepted);
-                                        AuctionLogUtility.Log($"Buy Now Accepted - Sending TX now. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-
-                                        _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, aBid);
-
+                                        AuctionLogUtility.Log($"Buy Now Rejected - Buy Now Price was Null. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
+                                        DequeueBid(buyNow, BidStatus.Rejected);
                                         continue;
                                     }
-                                    else
+                                    if (listing.RequireBalanceCheck)
                                     {
-                                        AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The listing was null.", "AuctionEngine.ProcessBuyNowQueue()");
+                                        var addressBalance = AccountStateTrei.GetAccountBalance(buyNow.BidAddress);
+                                        if (addressBalance < listing.BuyNowPrice)
+                                        {
+                                            AuctionLogUtility.Log($"Buy Now Rejected - Address balance too low. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
+                                            DequeueBid(buyNow, BidStatus.Rejected);
+                                            continue;
+                                        }
+
+                                    }
+                                    if (buyNow.BidAddress.StartsWith("xRBX"))
+                                    {
+                                        AuctionLogUtility.Log($"Buy Now Rejected - Buy Now cannot be purchases from Reserve Account. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
+                                        DequeueBid(buyNow, BidStatus.Rejected);
                                         continue;
                                     }
+
+                                    if(auction.IsAuctionOver)
+                                    {
+                                        AuctionLogUtility.Log($"Buy Now Rejected - Auction is already over. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
+                                        DequeueBid(buyNow, BidStatus.Rejected);
+                                        continue;
+                                    }
+
+                                    Bid aBid = new Bid
+                                    {
+                                        Id = Guid.NewGuid(),
+                                        BidAddress = buyNow.BidAddress,
+                                        BidAmount = listing.BuyNowPrice.Value,
+                                        BidSendReceive = BidSendReceive.Received,
+                                        BidSendTime = buyNow.BidSendTime,
+                                        BidSignature = buyNow.BidSignature,
+                                        BidStatus = BidStatus.Accepted,
+                                        CollectionId = buyNow.CollectionId,
+                                        IsAutoBid = buyNow.IsAutoBid,
+                                        IsBuyNow = true,
+                                        IsProcessed = true,
+                                        ListingId = buyNow.ListingId,
+                                        MaxBidAmount = listing.BuyNowPrice.Value,
+                                        PurchaseKey = buyNow.PurchaseKey
+                                    };
+
+                                    auction.CurrentBidPrice = listing.BuyNowPrice.Value;
+                                    auction.MaxBidPrice = listing.BuyNowPrice.Value;
+                                    auction.CurrentWinningAddress = buyNow.BidAddress;                                        
+                                    auction.IncrementAmount = GetIncrementBidAmount(auction.MaxBidPrice);//update increment amount for next bid.
+                                    auction.IsAuctionOver = true;
+                                    auction.IsReserveMet = true;
+                                    auction.WinningBidId = aBid.Id;
+
+                                    listing.IsAuctionEnded = true;
+                                    listing.WinningAddress = auction.CurrentWinningAddress;
+                                    listing.FinalPrice = listing.BuyNowPrice.Value;
+
+                                    Bid.SaveBid(aBid, true);
+                                    Auction.SaveAuction(auction);
+                                    _ = Listing.SaveListing(listing);
+
+                                    DequeueBid(buyNow, BidStatus.Accepted);
+                                    AuctionLogUtility.Log($"Buy Now Accepted - Sending TX now. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
+
+                                    _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, aBid);
+
+                                    continue;
                                 }
                                 else
                                 {
-                                    AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The Auction was null.", "AuctionEngine.ProcessBuyNowQueue()");
+                                    AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The listing was null.", "AuctionEngine.ProcessBuyNowQueue()");
                                     continue;
                                 }
+                            }
+                            else
+                            {
+                                AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The Auction was null.", "AuctionEngine.ProcessBuyNowQueue()");
+                                continue;
                             }
                         }
                         catch(Exception ex) { AuctionLogUtility.Log($"Unknown Error for: {buyNow.ListingId}. Error: {ex.ToString()}", "AuctionEngine.ProcessBuyNowQueue()"); }
@@ -511,7 +510,7 @@ namespace ReserveBlockCore.Engines
                                 }
                                 if(value > 1)
                                 {
-                                    var auction = Auction.GetSingleAuction(listing.Id);
+                                    var auction = Auction.GetListingAuction(listing.Id);
                                     if(auction != null)
                                     {
                                         if(auction.WinningBidId != null)

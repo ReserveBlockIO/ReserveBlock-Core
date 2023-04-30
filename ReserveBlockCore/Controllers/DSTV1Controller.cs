@@ -409,7 +409,7 @@ namespace ReserveBlockCore.Controllers
                     var listing = Listing.GetSingleListing(listingId);
                     if (listing != null)
                     {
-                        var auction = Auction.GetSingleAuction(listingId);
+                        var auction = Auction.GetListingAuction(listingId);
                         var bids = Bid.GetListingBids(listingId);
 
                         output = JsonConvert.SerializeObject(new { Success = true, Message = "Listing Found", Listing = listing, Auction = auction, Bids = bids });
@@ -518,6 +518,46 @@ namespace ReserveBlockCore.Controllers
                     }
 
 
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Listing Id cannot be null or 0" });
+                    return output;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Gets Auction Information by listing
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetAuctionByListing/{listingId}")]
+        public async Task<string> GetAuctionByListing(int listingId)
+        {
+            var output = "";
+            try
+            {
+                if (listingId != 0)
+                {
+                    var auction = Auction.GetListingAuction(listingId);
+                    if (auction != null)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Auction Found", Auction = auction});
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Auction was not found." });
+                        return output;
+                    }
                 }
                 else
                 {
