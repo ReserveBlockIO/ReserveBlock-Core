@@ -1305,7 +1305,7 @@ namespace ReserveBlockCore.Controllers
                     if(bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
                         _ = DSTClient.SendShopMessageFromClient(message, false);
                                  
-                    return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id });
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id, Bid = bidPayload });
                 }
 
             }

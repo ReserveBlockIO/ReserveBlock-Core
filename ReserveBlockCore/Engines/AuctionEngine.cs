@@ -366,10 +366,20 @@ namespace ReserveBlockCore.Engines
 
                                         continue;
                                     }
+                                    else
+                                    {
+                                        AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The listing was null.", "AuctionEngine.ProcessBuyNowQueue()");
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The Auction was null.", "AuctionEngine.ProcessBuyNowQueue()");
+                                    continue;
                                 }
                             }
                         }
-                        catch { }
+                        catch(Exception ex) { AuctionLogUtility.Log($"Unknown Error for: {buyNow.ListingId}. Error: {ex.ToString()}", "AuctionEngine.ProcessBuyNowQueue()"); }
                     }
                 }
             }
