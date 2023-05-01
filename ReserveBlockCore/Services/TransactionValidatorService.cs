@@ -553,10 +553,13 @@ namespace ReserveBlockCore.Services
                                     }
 
                                 }
-                                    
-
+                            }
+                            else
+                            {
+                                return (txResult, "Missing the proper purchase data.");
                             }
                         }
+
                     }
                     catch(Exception ex)
                     {
