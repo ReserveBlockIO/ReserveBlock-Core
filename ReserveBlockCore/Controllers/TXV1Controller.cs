@@ -565,7 +565,6 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <param name="toAddress"></param>
-        /// <param name="locators"></param>
         /// <returns></returns>
         [HttpGet("GetNFTTransferData/{scUID}/{toAddress}")]
         public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators)
