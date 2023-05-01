@@ -583,8 +583,16 @@ namespace ReserveBlockCore.Controllers
                             var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
-                                var finalOutput = JsonConvert.SerializeObject(new { Locators = connectedBeacon.Beacons.BeaconUID, MD5List = md5List });
-                                output = finalOutput;
+                                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
+                                    AssetQueue.TransferType.Upload);
+                                if (aqResult)
+                                {
+                                    //DO TRANSFER HERE
+                                    _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assets, connectedBeacon));
+
+                                    var success = JsonConvert.SerializeObject(new { Result = "Success", Message = "NFT Transfer has been started." });
+                                    output = success;
+                                }
                             }
                         }
                     }
