@@ -263,6 +263,7 @@ namespace ReserveBlockCore.Controllers
             //signature message = scUID
             string output = "";
             var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
+            output = result;
             return output;
         }
 

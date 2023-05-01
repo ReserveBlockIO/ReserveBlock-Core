@@ -475,9 +475,8 @@ namespace ReserveBlockCore.Utilities
                     sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
                     if (sc == null)
                     {
-                        return "Not locally owned.";
+                        return "Error Generating Smart Contract in memory.";
                     }
-                    return "Not locally owned.";
                 }
 
                 if (sc.SmartContractAsset != null)
