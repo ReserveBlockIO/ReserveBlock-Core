@@ -575,6 +575,48 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Resets auction ended state
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetResetAuction/{listingId}")]
+        public async Task<string> GetResetAuction(int listingId)
+        {
+            var output = "";
+            try
+            {
+                if (listingId != 0)
+                {
+                    var auction = Auction.GetListingAuction(listingId);
+                    if (auction != null)
+                    {
+                        auction.IsAuctionOver = false;
+                        Auction.SaveAuction(auction);
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Auction Found", Auction = auction });
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Auction was not found." });
+                        return output;
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Listing Id cannot be null or 0" });
+                    return output;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Gets dec shop info from Network. Example : 'rbx://someurlgoeshere'
         /// </summary>
         /// <returns></returns>

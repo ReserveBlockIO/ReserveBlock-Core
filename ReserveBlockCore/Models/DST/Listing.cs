@@ -83,7 +83,7 @@ namespace ReserveBlockCore.Models.DST
 
             if (listingDb != null)
             {
-                var listings = listingDb.Query().Where(x => x.IsAuctionStarted).ToEnumerable();
+                var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsSaleComplete && !x.SaleHasFailed && !x.IsSaleTXSent).ToEnumerable();
                 if (listings.Count() == 0)
                 {
                     return null;

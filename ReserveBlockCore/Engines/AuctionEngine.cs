@@ -284,7 +284,7 @@ namespace ReserveBlockCore.Engines
                             if (!buyNow.IsBuyNow)
                             {
                                 AuctionLogUtility.Log($"Failed to process as it was not flagged as IsBuyNow = true. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                DequeueBid(buyNow, BidStatus.Rejected);
+                                DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                 continue;
                             }
                             var auction = auctions.Where(x => x.ListingId == buyNow.ListingId).FirstOrDefault();
@@ -297,7 +297,7 @@ namespace ReserveBlockCore.Engines
                                     if(listing.BuyNowPrice == null)
                                     {
                                         AuctionLogUtility.Log($"Buy Now Rejected - Buy Now Price was Null. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                        DequeueBid(buyNow, BidStatus.Rejected);
+                                        DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                         continue;
                                     }
                                     if (listing.RequireBalanceCheck)
@@ -306,7 +306,7 @@ namespace ReserveBlockCore.Engines
                                         if (addressBalance < listing.BuyNowPrice)
                                         {
                                             AuctionLogUtility.Log($"Buy Now Rejected - Address balance too low. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                            DequeueBid(buyNow, BidStatus.Rejected);
+                                            DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                             continue;
                                         }
 
@@ -314,14 +314,14 @@ namespace ReserveBlockCore.Engines
                                     if (buyNow.BidAddress.StartsWith("xRBX"))
                                     {
                                         AuctionLogUtility.Log($"Buy Now Rejected - Buy Now cannot be purchases from Reserve Account. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                        DequeueBid(buyNow, BidStatus.Rejected);
+                                        DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                         continue;
                                     }
 
                                     if(auction.IsAuctionOver)
                                     {
                                         AuctionLogUtility.Log($"Buy Now Rejected - Auction is already over. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
-                                        DequeueBid(buyNow, BidStatus.Rejected);
+                                        DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                         continue;
                                     }
 
@@ -359,7 +359,7 @@ namespace ReserveBlockCore.Engines
                                     Auction.SaveAuction(auction);
                                     _ = Listing.SaveListing(listing);
 
-                                    DequeueBid(buyNow, BidStatus.Accepted);
+                                    DequeueBuyNowBid(buyNow, BidStatus.Accepted);
                                     AuctionLogUtility.Log($"Buy Now Accepted - Sending TX now. Listing: {buyNow.ListingId}", "AuctionEngine.ProcessBuyNowQueue()");
 
                                     _ = SmartContractService.StartSaleSmartContractTX(listing.SmartContractUID, listing.WinningAddress, listing.FinalPrice.Value, listing, aBid);
@@ -368,12 +368,14 @@ namespace ReserveBlockCore.Engines
                                 }
                                 else
                                 {
+                                    DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                     AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The listing was null.", "AuctionEngine.ProcessBuyNowQueue()");
                                     continue;
                                 }
                             }
                             else
                             {
+                                DequeueBuyNowBid(buyNow, BidStatus.Rejected);
                                 AuctionLogUtility.Log($"Buy Now Rejected: {buyNow.ListingId}. The Auction was null.", "AuctionEngine.ProcessBuyNowQueue()");
                                 continue;
                             }
@@ -553,6 +555,21 @@ namespace ReserveBlockCore.Engines
 
             _ = DSTClient.SendClientMessageFromShop(message, bid.EndPoint, false);
         }
+
+        public static void DequeueBuyNowBid(BidQueue bid, BidStatus bidStatus)
+        {
+            Globals.BuyNowQueue.TryDequeue(out _);
+            Message message = new Message
+            {
+                Type = MessageType.Bid,
+                ComType = MessageComType.Response,
+                Data = $"{bid.Id},{bidStatus}",
+            };
+
+            _ = DSTClient.SendClientMessageFromShop(message, bid.EndPoint, false);
+        }
+
+        
 
         public static decimal GetIncrementBidAmount(decimal CurrentBidPrice)
         {

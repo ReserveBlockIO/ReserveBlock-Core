@@ -380,9 +380,14 @@ namespace ReserveBlockCore.Services
                                             return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
                                     }
 
+                                    
+
                                     var signatureVerify = Bid.VerifyBidSignature(keySign, amountSoldFor.Value, toAddress, bidSignature);
 
                                     if(!signatureVerify)
+                                        NFTLogUtility.Log($"Sig Bad. Key: {keySign} | Amount Sold For: {amountSoldFor.Value} | ToAddress {toAddress} | Sig Script: {bidSignature}", "TransactionValidatorService.VerifyTX");
+
+                                    if (!signatureVerify)
                                         return (txResult, "Bid signature did not verify.");
                                 }
                                 else
@@ -406,7 +411,7 @@ namespace ReserveBlockCore.Services
                             var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
 
-                            if (scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null && keySign != null)
+                            if (scUID != null && transactions != null && keySign != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                 if (scStateTreiRec != null)
@@ -436,6 +441,15 @@ namespace ReserveBlockCore.Services
 
                                     if(scMain.Features != null)
                                     {
+                                        if(royalty == null)
+                                            return (txResult, $"Royalty Data was missing! Royalty");
+
+                                        if(royaltyAmount == null)
+                                            return (txResult, $"Royalty Data was missing! Royalty Amount");
+
+                                        if (royaltyPayTo == null)
+                                            return (txResult, $"Royalty Data was missing! Royalty Pay To");
+
                                         var royaltyFeat = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
                                         if(royaltyFeat != null)
                                         {
