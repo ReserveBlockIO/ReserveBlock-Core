@@ -502,7 +502,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("CreateBeaconUploadRequest/{scUID}/{toAddress}/{**signature}")]
         public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
         {
-            var output = "";
+            var output = "MethodStarted";
             toAddress = toAddress.ToAddressNormalize();
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
             if (scStateTrei != null)
