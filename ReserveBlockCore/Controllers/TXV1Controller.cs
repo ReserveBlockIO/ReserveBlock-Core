@@ -517,7 +517,7 @@ namespace ReserveBlockCore.Controllers
                             var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
                             if (!beaconConnectionResult)
                             {
-                                output = "You are not connected to any beacons.";
+                                output = JsonConvert.SerializeObject(new { Success = false, Message = "You are not connected to any beacons."});
                                 NFTLogUtility.Log("Error - You failed to connect to any beacons.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
@@ -527,7 +527,7 @@ namespace ReserveBlockCore.Controllers
                             var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
                             if (connectedBeacon == null)
                             {
-                                output = "You have lost connection to beacons. Please attempt to resend.";
+                                output = JsonConvert.SerializeObject(new { Success = false, Message = "You have lost connection to beacons. Please attempt to resend." });
                                 NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
@@ -548,9 +548,17 @@ namespace ReserveBlockCore.Controllers
                                     //DO TRANSFER HERE
                                     _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assetList, connectedBeacon));
 
-                                    var success = JsonConvert.SerializeObject(new { Result = "Success", Message = "NFT Transfer has been started." });
+                                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started." });
                                     output = success;
                                 }
+                                else
+                                {
+                                    return JsonConvert.SerializeObject(new { Success = false, Message = "Creating asset queue has failed." });
+                                }
+                            }
+                            else
+                            {
+                                return JsonConvert.SerializeObject(new { Success = false, Message = "Beacon Upload Request has Failed." });
                             }
                         }
                     }
