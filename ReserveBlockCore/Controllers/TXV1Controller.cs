@@ -537,7 +537,7 @@ namespace ReserveBlockCore.Controllers
                             var md5List = scStateTrei.MD5List;
 
                             if (assetList == null)
-                                return output;
+                                return JsonConvert.SerializeObject(new { Success = false, Message = "Asset List was Null" }); ;
 
                             var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assetList, sc.SmartContractUID, toAddress, md5List, signature).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
@@ -566,7 +566,7 @@ namespace ReserveBlockCore.Controllers
                 }
             }
 
-            return output;
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Process Failed" }); ;
         }
 
         /// <summary>
