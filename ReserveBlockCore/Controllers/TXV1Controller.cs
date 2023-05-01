@@ -11,6 +11,7 @@ using ReserveBlockCore.Utilities;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -614,26 +615,32 @@ namespace ReserveBlockCore.Controllers
             var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
             try
             {
+                var txData = "";
                 var newSCInfo = new[]
                 {
-                        new { Function = "Transfer()", 
-                            ContractUID = sc.SmartContractUID, 
-                            ToAddress = toAddress, 
-                            Data = scStateTrei.ContractData, 
-                            Locators = locator, //either beacons, or self kept (NA).
-                            MD5List = scStateTrei.MD5List}
+                    new
+                    {
+                        Function = "Transfer()",
+                        ContractUID = sc.SmartContractUID,
+                        ToAddress = toAddress,
+                        Data = scStateTrei.ContractData,
+                        Locators = locator, //either beacons, or self kept (NA).
+                        MD5List = scStateTrei.MD5List
+                    }
                 };
 
-                output = JsonConvert.SerializeObject(new
-                {
-                    Success = true,
-                    Function = "Transfer()",
-                    ContractUID = sc.SmartContractUID,
-                    ToAddress = toAddress,
-                    Data = scStateTrei.ContractData,
-                    Locators = locator, //either beacons, or self kept (NA).
-                    MD5List = scStateTrei.MD5List
-                });
+                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txJToken = JToken.Parse(txData.ToString());
+                output = txData;
+                //output = JsonConvert.SerializeObject(new
+                //{
+                //    Function = "Transfer()",
+                //    ContractUID = sc.SmartContractUID,
+                //    ToAddress = toAddress,
+                //    Data = scStateTrei.ContractData,
+                //    Locators = locator, //either beacons, or self kept (NA).
+                //    MD5List = scStateTrei.MD5List
+                //});
 
                 await connectedBeacon.Connection.DisposeAsync();
                 
