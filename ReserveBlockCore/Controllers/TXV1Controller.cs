@@ -575,7 +575,7 @@ namespace ReserveBlockCore.Controllers
         /// <param name="toAddress"></param>
         /// <returns></returns>
         [HttpGet("GetNFTTransferData/{scUID}/{toAddress}")]
-        public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators)
+        public async Task<string> GetNFTTransferData(string scUID, string toAddress)
         {
             var output = "";
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
