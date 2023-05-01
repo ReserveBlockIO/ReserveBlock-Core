@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Save Asset Queue Item
-        public static bool CreateAssetQueueItem(string scUID, string toAddress, string locator, string md5List, List<string> mediaList, TransferType assetTransferType, bool isDownload = false)
+        public static bool CreateAssetQueueItem(string scUID, string toAddress, string locator, string md5List, List<string> mediaList, TransferType assetTransferType, bool isDownload = false, bool isComplete = false)
         {
             var aqDB = GetAssetQueue();
             if (aqDB == null)
@@ -67,7 +67,7 @@ namespace ReserveBlockCore.Models
                         Locator = locator,
                         MD5List = md5List,
                         MediaListJson = JsonConvert.SerializeObject(mediaList),
-                        IsComplete = false,
+                        IsComplete = isComplete,
                         SubmitDate = DateTime.UtcNow,
                         ManualCheckCount = 0,
                         LastAttempt = DateTime.UtcNow,

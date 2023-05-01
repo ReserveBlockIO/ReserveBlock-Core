@@ -7,6 +7,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -255,14 +256,36 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <param name="locators"></param>
+        /// <param name="address"></param>
         /// <param name="signature"></param>
         /// <returns></returns>
-        [HttpGet("GetBeaconAssets/{scUID}/{locators}/{**signature}/")]
-        public async Task<string> GetBeaconAssets(string scUID, string locators, string signature)
+        [HttpGet("GetBeaconAssets/{scUID}/{locators}/{address}/{**signature}/")]
+        public async Task<string> GetBeaconAssets(string scUID, string locators, string address, string signature)
         {
             //signature message = scUID
             string output = "";
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return "Error - Failed to get SC State";
+
+            var md5List = scState.MD5List;
+
+            if (md5List == null)
+                return "Error - MD5 List was null";
+
+            var assetList = await MD5Utility.GetAssetList(md5List);
+
+            if (assetList?.Count == 0)
+                return "Asset list was null or zero.";
+
             var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
+            
+            if(result == "Success")
+            {
+                var aqResult = AssetQueue.CreateAssetQueueItem(scUID, address, locators, md5List, assetList, AssetQueue.TransferType.Download, true, true);
+                if (!aqResult)
+                    result = "Fail";
+            }
             output = result;
             return output;
         }
