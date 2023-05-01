@@ -441,85 +441,89 @@ namespace ReserveBlockCore.Services
 
                                     if(scMain.Features != null)
                                     {
-                                        if(royalty == null)
-                                            return (txResult, $"Royalty Data was missing! Royalty");
-
-                                        if(royaltyAmount == null)
-                                            return (txResult, $"Royalty Data was missing! Royalty Amount");
-
-                                        if (royaltyPayTo == null)
-                                            return (txResult, $"Royalty Data was missing! Royalty Pay To");
-
-                                        var royaltyFeat = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
-                                        if(royaltyFeat != null)
+                                        var isRoyalty = scMain.Features.Exists(x => x.FeatureName == FeatureName.Royalty);
+                                        if (isRoyalty)
                                         {
-                                            var royaltyDetails = (RoyaltyFeature)royaltyFeat.FeatureFeatures;
+                                            if (royalty == null)
+                                                return (txResult, $"Royalty Data was missing! Royalty");
 
-                                            var stRoyaltyAmount = royaltyDetails.RoyaltyAmount;
-                                            var stRoyaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
-                                            if(royaltyAmount != stRoyaltyAmount)
-                                                return (txResult, "Royalty Amounts do not match up.");
+                                            if (royaltyAmount == null)
+                                                return (txResult, $"Royalty Data was missing! Royalty Amount");
 
-                                            if (stRoyaltyPayTo != royaltyPayTo)
-                                                return (txResult, "Royalty Pay to does not match up.");
+                                            if (royaltyPayTo == null)
+                                                return (txResult, $"Royalty Data was missing! Royalty Pay To");
 
-                                            var amountPaid = transactions.Sum(x => x.Amount);
-                                            var payChecked = scStateTreiRec.PurchaseAmount - amountPaid > 1.0M ? false : true;
-                                            if(!payChecked)
-                                                return (txResult, "Purchase amount does not match up with TX amounts.");
-
-                                            if(transactions.Any(x => x.Data == null))
-                                                return (txResult, "Data cannot be missing for any TX.");
-
-                                            var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
-
-                                            if(txToSeller == null)
-                                                return (txResult, "Could not find TX to seller.");
-
-                                            var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
-
-                                            if (txToRoyaltyPayee == null)
-                                                return (txResult, "Could not find TX to royalty owner.");
-
-                                            var txToSellerAmountCheck = txToSeller.Amount - (amountPaid * (1.0M - stRoyaltyAmount)) > 1 ? false : true;
-                                            var txToRoyaltyAmountCheck = txToRoyaltyPayee.Amount - (amountPaid * stRoyaltyAmount) > 1 ? false : true;
-
-                                            if(!txToSellerAmountCheck)
-                                                return (txResult, "Amount to seller does not match.");
-
-                                            if (!txToRoyaltyAmountCheck)
-                                                return (txResult, "Amount to royalty owner does not match.");
-
-                                            if (txToSeller.FromAddress != scStateTreiRec.NextOwner)
-                                                return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
-                                            if (txToRoyaltyPayee.FromAddress != scStateTreiRec.NextOwner)
-                                                return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
-
-                                            if(txToSeller.ToAddress != scStateTreiRec.OwnerAddress)
-                                                return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {txToSeller.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
-                                            if (txToRoyaltyPayee.ToAddress != stRoyaltyPayTo)
-                                                return (txResult, $"Funds are being sent to the wrong Royalty Address. You are sending here: {txToRoyaltyPayee.ToAddress}, but should be sending here {stRoyaltyPayTo}");
-
-                                            if (!string.IsNullOrEmpty(txToSeller.Signature))
+                                            var royaltyFeat = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                                            if (royaltyFeat != null)
                                             {
-                                                var isTxValid = SignatureService.VerifySignature(txToSeller.FromAddress, txToSeller.Hash, txToSeller.Signature);
-                                                if (!isTxValid)
-                                                    return (txResult, "Signature Failed to verify for tx to seller.");
-                                            }
-                                            else
-                                            {
-                                                return (txResult, "Signature to from seller tx cannot be null.");
-                                            }
+                                                var royaltyDetails = (RoyaltyFeature)royaltyFeat.FeatureFeatures;
 
-                                            if (!string.IsNullOrEmpty(txToRoyaltyPayee.Signature))
-                                            {
-                                                var isTxValid = SignatureService.VerifySignature(txToRoyaltyPayee.FromAddress, txToRoyaltyPayee.Hash, txToRoyaltyPayee.Signature);
-                                                if (!isTxValid)
-                                                    return (txResult, "Signature Failed to verify for tx to royalty payee.");
-                                            }
-                                            else
-                                            {
-                                                return (txResult, "Signature cannot be null for royalty tx.");
+                                                var stRoyaltyAmount = royaltyDetails.RoyaltyAmount;
+                                                var stRoyaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
+                                                if (royaltyAmount != stRoyaltyAmount)
+                                                    return (txResult, "Royalty Amounts do not match up.");
+
+                                                if (stRoyaltyPayTo != royaltyPayTo)
+                                                    return (txResult, "Royalty Pay to does not match up.");
+
+                                                var amountPaid = transactions.Sum(x => x.Amount);
+                                                var payChecked = scStateTreiRec.PurchaseAmount - amountPaid > 1.0M ? false : true;
+                                                if (!payChecked)
+                                                    return (txResult, "Purchase amount does not match up with TX amounts.");
+
+                                                if (transactions.Any(x => x.Data == null))
+                                                    return (txResult, "Data cannot be missing for any TX.");
+
+                                                var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
+
+                                                if (txToSeller == null)
+                                                    return (txResult, "Could not find TX to seller.");
+
+                                                var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+
+                                                if (txToRoyaltyPayee == null)
+                                                    return (txResult, "Could not find TX to royalty owner.");
+
+                                                var txToSellerAmountCheck = txToSeller.Amount - (amountPaid * (1.0M - stRoyaltyAmount)) > 1 ? false : true;
+                                                var txToRoyaltyAmountCheck = txToRoyaltyPayee.Amount - (amountPaid * stRoyaltyAmount) > 1 ? false : true;
+
+                                                if (!txToSellerAmountCheck)
+                                                    return (txResult, "Amount to seller does not match.");
+
+                                                if (!txToRoyaltyAmountCheck)
+                                                    return (txResult, "Amount to royalty owner does not match.");
+
+                                                if (txToSeller.FromAddress != scStateTreiRec.NextOwner)
+                                                    return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+                                                if (txToRoyaltyPayee.FromAddress != scStateTreiRec.NextOwner)
+                                                    return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+
+                                                if (txToSeller.ToAddress != scStateTreiRec.OwnerAddress)
+                                                    return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {txToSeller.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
+                                                if (txToRoyaltyPayee.ToAddress != stRoyaltyPayTo)
+                                                    return (txResult, $"Funds are being sent to the wrong Royalty Address. You are sending here: {txToRoyaltyPayee.ToAddress}, but should be sending here {stRoyaltyPayTo}");
+
+                                                if (!string.IsNullOrEmpty(txToSeller.Signature))
+                                                {
+                                                    var isTxValid = SignatureService.VerifySignature(txToSeller.FromAddress, txToSeller.Hash, txToSeller.Signature);
+                                                    if (!isTxValid)
+                                                        return (txResult, "Signature Failed to verify for tx to seller.");
+                                                }
+                                                else
+                                                {
+                                                    return (txResult, "Signature to from seller tx cannot be null.");
+                                                }
+
+                                                if (!string.IsNullOrEmpty(txToRoyaltyPayee.Signature))
+                                                {
+                                                    var isTxValid = SignatureService.VerifySignature(txToRoyaltyPayee.FromAddress, txToRoyaltyPayee.Hash, txToRoyaltyPayee.Signature);
+                                                    if (!isTxValid)
+                                                        return (txResult, "Signature Failed to verify for tx to royalty payee.");
+                                                }
+                                                else
+                                                {
+                                                    return (txResult, "Signature cannot be null for royalty tx.");
+                                                }
                                             }
                                         }
                                     }
