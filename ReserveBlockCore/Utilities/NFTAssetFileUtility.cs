@@ -479,66 +479,13 @@ namespace ReserveBlockCore.Utilities
                     }
                 }
 
-                if (sc.SmartContractAsset != null)
-                {
-                    assets.Add(sc.SmartContractAsset.Name);
-                }
-
-                if (sc.Features != null)
-                {
-                    foreach (var feature in sc.Features)
-                    {
-                        if (feature.FeatureName == FeatureName.Evolving)
-                        {
-                            var count = 0;
-                            var myArray = ((object[])feature.FeatureFeatures).ToList();
-                            myArray.ForEach(x => {
-                                var evolveDict = (EvolvingFeature)myArray[count];
-                                SmartContractAsset evoAsset = new SmartContractAsset();
-                                if (evolveDict.SmartContractAsset != null)
-                                {
-
-                                    var assetEvo = evolveDict.SmartContractAsset;
-                                    evoAsset.Name = assetEvo.Name;
-                                    if (!assets.Contains(evoAsset.Name))
-                                    {
-                                        assets.Add(evoAsset.Name);
-                                    }
-                                    count += 1;
-                                }
-
-                            });
-                        }
-                        if (feature.FeatureName == FeatureName.MultiAsset)
-                        {
-                            var count = 0;
-                            var myArray = ((object[])feature.FeatureFeatures).ToList();
-
-                            myArray.ForEach(x => {
-                                var multiAssetDict = (MultiAssetFeature)myArray[count];
-
-                                if(multiAssetDict != null)
-                                {
-                                    var fileName = multiAssetDict.FileName;
-                                    if (!assets.Contains(fileName))
-                                    {
-                                        assets.Add(fileName);
-                                    }
-                                }
-                                
-                                count += 1;
-
-                            });
-
-                        }
-                    }
-                }
+                var assetList = await MD5Utility.GetAssetList(md5List);             
 
                 var locatorList = locators.Split(",").ToList();
 
                 if (locatorList.Count > 0)
                 {
-                    var result = await P2PClient.BeaconDownloadRequest(locatorList, assets, sc.SmartContractUID, preSigned);
+                    var result = await P2PClient.BeaconDownloadRequest(locatorList, assetList, sc.SmartContractUID, preSigned);
                     if (result != false)
                     {
                         output = "Success";

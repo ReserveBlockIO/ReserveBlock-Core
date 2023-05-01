@@ -527,68 +527,22 @@ namespace ReserveBlockCore.Controllers
                                 NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
-                            List<string> assets = new List<string>();
 
-                            if (sc.SmartContractAsset != null)
-                            {
-                                assets.Add(sc.SmartContractAsset.Name);
-                            }
-                            if (sc.Features != null)
-                            {
-                                foreach (var feature in sc.Features)
-                                {
-                                    if (feature.FeatureName == FeatureName.Evolving)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-                                        myArray.ForEach(x => {
-                                            var evolveDict = (Dictionary<string, object>)myArray[count];
-                                            SmartContractAsset evoAsset = new SmartContractAsset();
-                                            if (evolveDict.ContainsKey("SmartContractAsset"))
-                                            {
+                            var assetList = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+                            var md5List = scStateTrei.MD5List;
 
-                                                var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                                evoAsset.Name = (string)assetEvo["Name"];
-                                                if (!assets.Contains(evoAsset.Name))
-                                                {
-                                                    assets.Add(evoAsset.Name);
-                                                }
-                                                count += 1;
-                                            }
+                            if (assetList == null)
+                                return output;
 
-                                        });
-                                    }
-                                    if (feature.FeatureName == FeatureName.MultiAsset)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-
-                                        myArray.ForEach(x => {
-                                            var multiAssetDict = (Dictionary<string, object>)myArray[count];
-
-                                            var fileName = multiAssetDict["FileName"].ToString();
-                                            if (!assets.Contains(fileName))
-                                            {
-                                                assets.Add(fileName);
-                                            }
-
-                                            count += 1;
-
-                                        });
-
-                                    }
-                                }
-                            }
-                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assetList, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
-                                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
+                                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assetList,
                                     AssetQueue.TransferType.Upload);
                                 if (aqResult)
                                 {
                                     //DO TRANSFER HERE
-                                    _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assets, connectedBeacon));
+                                    _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assetList, connectedBeacon));
 
                                     var success = JsonConvert.SerializeObject(new { Result = "Success", Message = "NFT Transfer has been started." });
                                     output = success;

@@ -278,7 +278,7 @@ namespace ReserveBlockCore.Controllers
             if (assetList?.Count == 0)
                 return "Asset list was null or zero.";
 
-            var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
+            var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, md5List);
             
             if(result == "Success")
             {
