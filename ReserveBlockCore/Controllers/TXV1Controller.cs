@@ -534,7 +534,7 @@ namespace ReserveBlockCore.Controllers
                             if (assetList == null)
                                 return output;
 
-                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assetList, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assetList, sc.SmartContractUID, toAddress, md5List, signature).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
                                 var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assetList,
