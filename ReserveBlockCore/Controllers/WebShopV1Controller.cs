@@ -340,7 +340,8 @@ namespace ReserveBlockCore.Controllers
                             ToAddress = Globals.DecShopData.DecShop.DecShopURL,
                             MessageHash = chatPayload.Message.ToHash(),
                             ShopURL = Globals.DecShopData.DecShop.DecShopURL,
-                            TimeStamp = TimeUtil.GetTime(),
+                            TimeStamp = chatPayload.TimeStamp.Value,
+                            Signature = chatPayload.Signature
                         };
 
                         var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
