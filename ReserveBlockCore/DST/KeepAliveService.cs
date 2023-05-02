@@ -10,14 +10,38 @@ namespace ReserveBlockCore.DST
 {
     public class KeepAliveService
     {
-        public static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, UdpClient udpClient, bool isShop = false, bool isStun = false)
+        public static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, UdpClient udpClient, bool isShop = false, bool isStun = false, string shopURL = "NA")
         {
             bool stop = false;
             while (true && !stop)
             {
                 try
                 {
-                    if (isShop)
+                    if(shopURL != "NA")
+                    {
+                        if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                        {
+                            var delay = Task.Delay(new TimeSpan(0, 0, seconds));
+                            var payload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
+                            var message = MessageService.GenerateMessage(payload, false);
+                            var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                            udpClient.Send(messageDataBytes, peerEndPoint);
+
+                            shopConnection.LastSentMessage = TimeUtil.GetTime();
+
+                            DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+
+                            var currentTime = TimeUtil.GetTime();
+                            if (currentTime - shopConnection.LastReceiveMessage > 60)
+                            {
+                                stop = true;
+                                DSTMultiClient.ShopConnections.TryRemove(shopURL, out _);
+                            }
+
+                            await delay;
+                        }
+                    }
+                    else if (isShop)
                     {
                         if (Globals.ConnectedShops.TryGetValue(peerEndPoint.ToString(), out var shop))
                         {

@@ -20,7 +20,7 @@ namespace ReserveBlockCore.DST
 {
     public class MessageService
     {
-        public static async Task ProcessMessage(string payload, IPEndPoint endPoint, UdpClient udpClient)
+        public static async Task ProcessMessage(string payload, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
             if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
             {
@@ -61,7 +61,10 @@ namespace ReserveBlockCore.DST
                                 AssetPunchClient(message, endPoint, udpClient);
                                 break;
                             case MessageType.KeepAlive:
-                                KeepAlive(message, endPoint, udpClient);
+                                if(shopURL == "NA")
+                                    KeepAlive(message, endPoint, udpClient);
+                                else
+                                    KeepAlive(message, endPoint, udpClient, shopURL);
                                 break;
                             case MessageType.STUNKeepAlive:
                                 STUNKeepAlive(message, endPoint, udpClient);
@@ -219,7 +222,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static void KeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static void KeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
             if (message.Type == MessageType.KeepAlive)
             {
@@ -237,6 +240,20 @@ namespace ReserveBlockCore.DST
                         }
                             
                         Globals.ConnectedClients[endPoint.ToString()] = client;
+                    }
+                }
+                else
+                {
+                    if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out ShopConnection? shopConnection))
+                    {
+                        shopConnection.LastReceiveMessage = TimeUtil.GetTime();
+                        if(!shopConnection.IsConnected)
+                        {
+                            shopConnection.IsConnected = true;
+                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, false, false, shopURL);
+                        }
+
+                        DSTMultiClient.ShopConnections[shopConnection.ShopURL] = shopConnection;
                     }
                 }
             }
