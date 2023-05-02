@@ -1569,6 +1569,7 @@ namespace ReserveBlockCore.Controllers
                         MessageHash = chatPayload.Message.ToHash(),
                         ShopURL = Globals.DecShopData.DecShop.DecShopURL,
                         TimeStamp = TimeUtil.GetTime(),
+                        IsThirdParty = chatPayload.IsThirdParty,
                     };
 
                     chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
@@ -1599,6 +1600,77 @@ namespace ReserveBlockCore.Controllers
                 
             }
             catch(Exception ex) 
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a chat message
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="shopURL"></param>
+        /// <returns></returns>
+        [HttpPost("SendChatMessageThirdParty")]
+        public async Task<string> SendChatMessageThirdParty([FromRoute] string address, [FromRoute] string shopURL, [FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    var chatPayload = JsonConvert.DeserializeObject<Chat.ChatPayload>(jsonData.ToString());
+                    if (chatPayload == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Chat Payload cannot be null" });
+
+                    var localAddress = AccountData.GetSingleAccount(chatPayload.FromAddress);
+
+                    if (localAddress == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the from address" });
+
+                    var messageLengthCheck = chatPayload.Message.ToLengthCheck(240);
+                    if (!messageLengthCheck)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Message is too long. Please shorten to 240 characters." });
+
+                    var chatMessage = new Chat.ChatMessage
+                    {
+                        Id = RandomStringUtility.GetRandomString(10, true),
+                        FromAddress = localAddress.Address,
+                        Message = chatPayload.Message,
+                        ToAddress = shopURL,
+                        MessageHash = chatPayload.Message.ToHash(),
+                        ShopURL = shopURL,
+                        TimeStamp = TimeUtil.GetTime(),
+                        IsThirdParty = chatPayload.IsThirdParty,
+                    };
+
+                    chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
+                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
+
+                    Message message = new Message
+                    {
+                        Address = address,
+                        Data = chatMessageJson,
+                        Type = MessageType.Chat,
+                        ComType = MessageComType.Chat
+                    };
+
+                    if (Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL, out var chatMessageList))
+                    {
+                        chatMessageList.Add(chatMessage);
+                        Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                    }
+                    else
+                    {
+                        Globals.ChatMessageDict.TryAdd(chatMessage.ShopURL, new List<Chat.ChatMessage> { chatMessage });
+                    }
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent.", MessageId = chatMessage.Id });
+                }
+
+            }
+            catch (Exception ex)
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
             }

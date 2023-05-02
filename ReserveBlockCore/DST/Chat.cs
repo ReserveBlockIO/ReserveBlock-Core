@@ -108,6 +108,7 @@ namespace ReserveBlockCore.DST
             public string ToAddress { get; set; }
             public string FromAddress { get; set; }
             public string Message { get; set; }
+            public bool IsThirdParty { get; set; }
             public string? Signature { get; set; }
             public long? TimeStamp { get; set; }
         }
@@ -122,6 +123,7 @@ namespace ReserveBlockCore.DST
             public long TimeStamp { get; set; }
             public string ShopURL { get; set; }
             public bool MessageReceived { get; set; }
+            public bool IsThirdParty { get; set; }
             public bool IsShopSentMessage { get; set; }
             public bool IsSignatureValid { get { return SignatureService.VerifySignature(FromAddress, FromAddress + TimeStamp.ToString(), Signature); } }
             public bool IsMessageHashValid { get { return VerifyMessageHash(Message, MessageHash); } }
