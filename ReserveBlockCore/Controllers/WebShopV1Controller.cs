@@ -337,9 +337,9 @@ namespace ReserveBlockCore.Controllers
                             Id = RandomStringUtility.GetRandomString(10, true),
                             FromAddress = address,
                             Message = chatPayload.Message,
-                            ToAddress = Globals.DecShopData.DecShop.DecShopURL,
+                            ToAddress = shopURL,
                             MessageHash = chatPayload.Message.ToHash(),
-                            ShopURL = Globals.DecShopData.DecShop.DecShopURL,
+                            ShopURL = shopURL,
                             TimeStamp = chatPayload.TimeStamp.Value,
                             Signature = chatPayload.Signature
                         };
