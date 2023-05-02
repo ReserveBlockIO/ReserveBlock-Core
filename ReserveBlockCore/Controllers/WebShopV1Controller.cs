@@ -312,7 +312,7 @@ namespace ReserveBlockCore.Controllers
         /// <param name="address"></param>
         /// <param name="shopURL"></param>
         /// <returns></returns>
-        [HttpPost("SendChatMessage")]
+        [HttpPost("SendChatMessage/{address}/{**shopURL}")]
         public async Task<string> SendChatMessage([FromRoute] string address, [FromRoute] string shopURL, [FromBody] object jsonData)
         {
             try
