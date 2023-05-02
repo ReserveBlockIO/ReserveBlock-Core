@@ -549,7 +549,7 @@ namespace ReserveBlockCore.Controllers
                                     //DO TRANSFER HERE
                                     _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assetList, connectedBeacon));
 
-                                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started." });
+                                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started.", Locator = connectedBeacon.Beacons.BeaconLocator });
                                     return success;
                                 }
                                 else
@@ -566,7 +566,7 @@ namespace ReserveBlockCore.Controllers
                 }
             }
 
-            return JsonConvert.SerializeObject(new { Success = false, Message = "Process Failed" }); ;
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Process Failed" });
         }
 
         /// <summary>
@@ -574,9 +574,10 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <param name="toAddress"></param>
+        /// <param name="locator"></param>
         /// <returns></returns>
-        [HttpGet("GetNFTTransferData/{scUID}/{toAddress}")]
-        public async Task<string> GetNFTTransferData(string scUID, string toAddress)
+        [HttpGet("GetNFTTransferData/{scUID}/{toAddress}/{**locator}")]
+        public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locator)
         {
             var output = "";
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -584,33 +585,6 @@ namespace ReserveBlockCore.Controllers
 
             if (scStateTrei == null)
                 return JsonConvert.SerializeObject(new { Success = false, Message = "State trei record cannot be null." });
-
-            if (!Globals.Beacons.Any())
-            {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = "You do not have any beacons stored." });
-                NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
-                return output;
-            }
-
-            if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
-            {
-                var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
-                if (!beaconConnectionResult)
-                {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "You failed to connect to any beacons." });
-                    NFTLogUtility.Log("Error - You failed to connect to any beacons.", "SCV1Controller.TransferNFT()");
-                    return output;
-                }
-            }
-            var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
-            if (connectedBeacon == null)
-            {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = "You have lost connection to beacons. Please attempt to resend." });
-                NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "SCV1Controller.TransferNFT()");
-                return output;
-            }
-
-            var locator = connectedBeacon.Beacons.BeaconLocator;
 
             var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
             try
@@ -632,18 +606,6 @@ namespace ReserveBlockCore.Controllers
                 txData = JsonConvert.SerializeObject(newSCInfo);
                 var txJToken = JToken.Parse(txData.ToString());
                 output = txData;
-                //output = JsonConvert.SerializeObject(new
-                //{
-                //    Function = "Transfer()",
-                //    ContractUID = sc.SmartContractUID,
-                //    ToAddress = toAddress,
-                //    Data = scStateTrei.ContractData,
-                //    Locators = locator, //either beacons, or self kept (NA).
-                //    MD5List = scStateTrei.MD5List
-                //});
-
-                await connectedBeacon.Connection.DisposeAsync();
-                
             }
             catch (Exception ex)
             {
