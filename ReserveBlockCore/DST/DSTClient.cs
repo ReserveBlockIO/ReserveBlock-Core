@@ -1076,7 +1076,7 @@ namespace ReserveBlockCore.DST
             Globals.AssetDownloadLock = false;
         }
 
-        public static async Task GetShopData(string connectingAddress)
+        public static async Task GetShopData(string connectingAddress, bool skip = false)
         {
             bool infoFound = false;
             int failCounter = 0;
@@ -1106,7 +1106,7 @@ namespace ReserveBlockCore.DST
                     await Task.Delay(500);
                 }
 
-                if (Globals.DecShopData?.DecShop != null)
+                if (Globals.DecShopData?.DecShop != null && !skip)
                 {
                     //begin data grab
 
@@ -1123,7 +1123,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task GetShopCollections(string connectionAddress)
+        public static async Task GetShopCollections(string connectionAddress, bool needsUpdate = false)
         {
             bool collectionsFound = false;
             int failCounter = 0;
@@ -1167,17 +1167,17 @@ namespace ReserveBlockCore.DST
             NewCollectionsFound = false;
         }
 
-        public static async Task GetShopListings(string connectionAddress)
+        public static async Task GetShopListings(string connectionAddress, bool needsUpdate = false)
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
             {
                 var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
 
-                if (listingCount == null)
+                if (listingCount == null && !needsUpdate)
                     return;
 
-                if (listingCount == 0)
+                if (listingCount == 0 && !needsUpdate)
                     return;
 
                 var shopPageCount = (listingCount / 10) + (listingCount % 10 != 0 ? 1 : 0);
@@ -1230,17 +1230,17 @@ namespace ReserveBlockCore.DST
 
             NewListingsFound = false;
         }
-        public static async Task GetShopAuctions(string connectionAddress)
+        public static async Task GetShopAuctions(string connectionAddress, bool needsUpdate = false)
         {
             var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
             if (connectedShop.Count() > 0)
             {
                 var auctionCount = Globals.DecShopData?.DecShop?.AuctionCount;
 
-                if (auctionCount == null)
+                if (auctionCount == null && !needsUpdate)
                     return;
 
-                if (auctionCount == 0)
+                if (auctionCount == 0 && !needsUpdate)
                     return;
 
                 var shopPageCount = (auctionCount / 10) + (auctionCount % 10 != 0 ? 1 : 0);
@@ -1315,16 +1315,18 @@ namespace ReserveBlockCore.DST
                         if (Globals.DecShopData?.DecShop != null)
                         {
                             //begin data grab
+                            if (NewAuctionsFound || NewListingsFound || NewAuctionsFound)
+                                await GetShopData(address, true);
 
                             //Collections
-                            if(NewCollectionsFound)
+                            if (NewCollectionsFound)
                                 _ = GetShopCollections(address);
                             //Listings
                             if(NewListingsFound)
-                                _ = GetShopListings(address);
+                                _ = GetShopListings(address, true);
                             //Auctions
                             if(NewAuctionsFound)
-                                _ = GetShopAuctions(address);
+                                _ = GetShopAuctions(address, true);
                         }
                     }
 

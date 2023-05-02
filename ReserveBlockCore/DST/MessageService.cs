@@ -79,7 +79,10 @@ namespace ReserveBlockCore.DST
                                 STUNConnect(message, endPoint, udpClient);
                                 break;
                             case MessageType.DecShop:
-                                DecShopMessage(message, endPoint, udpClient);
+                                if (shopURL == "NA")
+                                    DecShopMessage(message, endPoint, udpClient);
+                                else
+                                    DecShopMessage(message, endPoint, udpClient, shopURL);
                                 break;
                             case MessageType.Chat:
                                 ChatMessage(message, endPoint, udpClient);
@@ -247,9 +250,9 @@ namespace ReserveBlockCore.DST
                     if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out ShopConnection? shopConnection))
                     {
                         shopConnection.LastReceiveMessage = TimeUtil.GetTime();
-                        if(!shopConnection.IsConnected)
+                        if(!shopConnection.KeepAliveStarted)
                         {
-                            shopConnection.IsConnected = true;
+                            shopConnection.KeepAliveStarted = true;
                             _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, false, false, shopURL);
                         }
 
@@ -299,9 +302,9 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static void DecShopMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static void DecShopMessage(Message message, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
-            var respMessage = DecShopMessageService.ProcessMessage(message);
+            var respMessage = DecShopMessageService.ProcessMessage(message, shopURL);
 
             if(respMessage != null)
             {

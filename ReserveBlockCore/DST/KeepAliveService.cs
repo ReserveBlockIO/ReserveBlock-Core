@@ -22,7 +22,7 @@ namespace ReserveBlockCore.DST
                         if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
                         {
                             var delay = Task.Delay(new TimeSpan(0, 0, seconds));
-                            var payload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
+                            var payload = new Message { Type = MessageType.KeepAlive, Data = "" };
                             var message = MessageService.GenerateMessage(payload, false);
                             var messageDataBytes = Encoding.UTF8.GetBytes(message);
                             udpClient.Send(messageDataBytes, peerEndPoint);

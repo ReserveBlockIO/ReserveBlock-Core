@@ -16,6 +16,7 @@ using System;
 using Docnet.Core.Bindings;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Concurrent;
+using static ReserveBlockCore.Models.DecShop;
 
 namespace ReserveBlockCore.DST
 {
@@ -256,7 +257,7 @@ namespace ReserveBlockCore.DST
                     var nShopCon = new ShopConnection { 
                         ConnectDate = TimeUtil.GetTime(),
                         EndPoint = ConnectedShopServer,
-                        IPAddress = decShop?.IP ?? "NA" + ":" + decShop?.Port ?? "NA",
+                        IPAddress = (decShop?.IP + ":" + decShop?.Port),
                         ShopURL = shopAddress,
                         ShopToken = new CancellationTokenSource(),
                         UdpClient = udpClient
@@ -293,7 +294,7 @@ namespace ReserveBlockCore.DST
                 Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address, shopConnection); }, token);
                 taskDataLoop.Start();
 
-                Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
+                Task taskAssets = new Task(() => { GetShopListingAssets(token, address, shopConnection); }, token);
                 taskAssets.Start();
 
                 var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
@@ -308,7 +309,7 @@ namespace ReserveBlockCore.DST
             return (connected, null);
         }
 
-        public static async Task<bool> ConnectToShopForAssets()
+        public static async Task<bool> ConnectToShopForAssets(ShopConnection shopConnection)
         {
             bool connected = false;
             var successful = Encoding.UTF8.GetBytes("echo");
@@ -326,10 +327,9 @@ namespace ReserveBlockCore.DST
             while (!IsConnected && !FailedToConnect)
             {
                 var connectedClients = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-                if (connectedClients.Count() > 0)
+                if (ShopConnections.TryGetValue(shopConnection.ShopURL, out _))
                 {
-                    var connectedStore = connectedClients.FirstOrDefault().Value;
-                    var shopServer = connectedStore.IPAddress;
+                    var shopServer = shopConnection.IPAddress;
 
                     if (shopServer != null)
                     {
@@ -344,7 +344,7 @@ namespace ReserveBlockCore.DST
                         udpAssets.Send(addCommandDataBytes, shopEndPoint);
                         //STUN(shopServer);
                         var punchMeMessage = new Message { Type = MessageType.AssetPunchClient, Data = portNumber.ToString(), Address = "NA" };
-                        await SendShopMessageFromClient(punchMeMessage, false, udpAssets, shopEndPoint);
+                        await SendShopMessageFromClient(punchMeMessage, false, shopConnection.UdpClient, shopEndPoint);
 
                         stopwatch.Start();
                         while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
@@ -896,15 +896,14 @@ namespace ReserveBlockCore.DST
             Globals.AssetDownloadLock = false;
         }
 
-        public static async Task GetShopData(string connectingAddress, ShopConnection shopConnection)
+        public static async Task GetShopData(string connectingAddress, ShopConnection shopConnection, bool skip = false)
         {
             bool infoFound = false;
             int failCounter = 0;
 
             await Task.Delay(1000); //delay needed for UDP client on other end to catch up to request.
 
-            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-            if (connectedShop.Count() > 0)
+            if (ShopConnections.TryGetValue(shopConnection.ShopURL, out var _shopConnection))
             {
                 Message message = new Message
                 {
@@ -914,19 +913,22 @@ namespace ReserveBlockCore.DST
                     ComType = MessageComType.Request
                 };
 
-                while(!infoFound && failCounter < 3)
+                Globals.MultiDecShopData.TryAdd(shopConnection.ShopURL, new DecShopData());
+
+                while (!infoFound && failCounter < 3)
                 {
                     await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-                    if (Globals.DecShopData?.DecShop != null)
+                    Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var decShopData);
+                    if (decShopData?.DecShop != null)
                         infoFound = true;
 
                     if(!infoFound)
                         failCounter += 1;
-
                     await Task.Delay(500);
                 }
 
-                if (Globals.DecShopData?.DecShop != null)
+                Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var _decShopData);
+                if (_decShopData?.DecShop != null && !skip)
                 {
                     //begin data grab
 
@@ -948,8 +950,7 @@ namespace ReserveBlockCore.DST
             bool collectionsFound = false;
             int failCounter = 0;
 
-            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-            if (connectedShop.Count() > 0)
+            if (ShopConnections.TryGetValue(shopConnection.ShopURL, out var _shopConnection))
             {
                 Message message = new Message
                 {
@@ -959,76 +960,89 @@ namespace ReserveBlockCore.DST
                     ComType = MessageComType.Request
                 };
 
-                _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-
-                await Task.Delay(200);
-
-                while(!collectionsFound && failCounter < 3)
+                Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var decShopData);
+                if(decShopData?.DecShop != null)
                 {
-                    if(Globals.DecShopData?.Collections != null)
-                        collectionsFound= true;
+                    _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
 
-                    if(!collectionsFound)
+                    await Task.Delay(200);
+
+                    while (!collectionsFound && failCounter < 3)
                     {
-                        failCounter+= 1;
-                        _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-                    }
-                    //else
-                    //{
-                    //    if(Globals.DecShopData?.Collections.Count == Globals.DecShopData?.DecShop.CollectionCount)
-                    //    {
-                    //        Console.WriteLine("TESTING");
-                    //    }
-                    //}
-                }
+                        Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var _decShopData);
+                        if (_decShopData?.Collections != null)
+                            collectionsFound = true;
 
+                        if (!collectionsFound)
+                        {
+                            failCounter += 1;
+                            _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+                        }
+                        //else
+                        //{
+                        //    if(Globals.DecShopData?.Collections.Count == Globals.DecShopData?.DecShop.CollectionCount)
+                        //    {
+                        //        Console.WriteLine("TESTING");
+                        //    }
+                        //}
+                    }
+                }
             }
 
             NewCollectionsFound = false;
         }
 
-        public static async Task GetShopListings(string connectionAddress, ShopConnection shopConnection)
+        public static async Task GetShopListings(string connectionAddress, ShopConnection shopConnection, bool needsUpdate = false)
         {
-            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-            if (connectedShop.Count() > 0)
+            if (ShopConnections.TryGetValue(shopConnection.ShopURL, out var _shopConnection))
             {
-                var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
-
-                if (listingCount == null)
-                    return;
-
-                if (listingCount == 0)
-                    return;
-
-                var shopPageCount = (listingCount / 10) + (listingCount % 10 != 0 ? 1 : 0);
-
-                for (int i = 0; i < shopPageCount; i++)
+                if(Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var decShopData))
                 {
-                    bool listingsFound = false;
-                    int failCounter = 0;
 
-                    //iterate of amount of pages to get ALL live  listings
-                    Message message = new Message
+                    var listingCount = decShopData?.DecShop?.ListingCount;
+
+                    if (listingCount == null && !needsUpdate)
+                        return;
+
+                    if (listingCount == 0 && !needsUpdate)
+                        return;
+
+                    var shopPageCount = (listingCount / 10) + (listingCount % 10 != 0 ? 1 : 0);
+
+                    for (int i = 0; i < shopPageCount; i++)
                     {
-                        Address = connectionAddress,
-                        Data = $"{DecShopRequestOptions.Listings},{i}",
-                        Type = MessageType.DecShop,
-                        ComType = MessageComType.Request
-                    };
+                        bool listingsFound = false;
+                        int failCounter = 0;
 
-                    _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-
-                    await Task.Delay(200);
-
-                    while (!listingsFound && Globals.DecShopData?.Listings?.Count != Globals.DecShopData?.DecShop?.ListingCount)
-                    {
-                        if (Globals.DecShopData?.Listings != null)
+                        //iterate of amount of pages to get ALL live  listings
+                        Message message = new Message
                         {
-                            if (Globals.DecShopData?.Listings?.Count > 0 && Globals.DecShopData?.Listings?.Count <= (i + 1) * 10)
+                            Address = connectionAddress,
+                            Data = $"{DecShopRequestOptions.Listings},{i}",
+                            Type = MessageType.DecShop,
+                            ComType = MessageComType.Request
+                        };
+
+                        _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+
+                        await Task.Delay(200);
+
+                        while (!listingsFound && Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings?.Count != decShopData?.DecShop?.ListingCount)
+                        {
+                            if (Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings != null)
                             {
-                                //good
-                                listingsFound = true;
-                                await Task.Delay(200);
+                                if (Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings?.Count > 0 && Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings?.Count <= (i + 1) * 10)
+                                {
+                                    //good
+                                    listingsFound = true;
+                                    await Task.Delay(200);
+                                }
+                                else
+                                {
+                                    await Task.Delay(200);
+                                    failCounter += 1;
+                                    _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+                                }
                             }
                             else
                             {
@@ -1037,60 +1051,60 @@ namespace ReserveBlockCore.DST
                                 _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
                             }
                         }
-                        else
-                        {
-                            await Task.Delay(200);
-                            failCounter += 1;
-                            _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-                        }
                     }
                 }
-
             }
 
             NewListingsFound = false;
         }
-        public static async Task GetShopAuctions(string connectionAddress, ShopConnection shopConnection)
+        public static async Task GetShopAuctions(string connectionAddress, ShopConnection shopConnection, bool needsUpdate = false)
         {
-            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-            if (connectedShop.Count() > 0)
+            if (ShopConnections.TryGetValue(shopConnection.ShopURL, out _))
             {
-                var auctionCount = Globals.DecShopData?.DecShop?.AuctionCount;
-
-                if (auctionCount == null)
-                    return;
-
-                if (auctionCount == 0)
-                    return;
-
-                var shopPageCount = (auctionCount / 10) + (auctionCount % 10 != 0 ? 1 : 0);
-
-                for (int i = 0; i < shopPageCount; i++)
+                if (Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var decShopData))
                 {
-                    bool auctionFound = false;
-                    int failCounter = 0;
+                    var auctionCount = decShopData?.DecShop?.AuctionCount;
 
-                    //iterate of amount of pages to get ALL live  listings
-                    Message message = new Message
+                    if (auctionCount == null && !needsUpdate)
+                        return;
+
+                    if (auctionCount == 0 && !needsUpdate)
+                        return;
+
+                    var shopPageCount = (auctionCount / 10) + (auctionCount % 10 != 0 ? 1 : 0);
+
+                    for (int i = 0; i < shopPageCount; i++)
                     {
-                        Address = connectionAddress,
-                        Data = $"{DecShopRequestOptions.Auctions},{i}",
-                        Type = MessageType.DecShop,
-                        ComType = MessageComType.Request
-                    };
+                        bool auctionFound = false;
+                        int failCounter = 0;
 
-                    _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-
-                    await Task.Delay(200);
-
-                    while (!auctionFound && failCounter < 3)
-                    {
-                        if (Globals.DecShopData?.Auctions != null)
+                        //iterate of amount of pages to get ALL live  listings
+                        Message message = new Message
                         {
-                            if (Globals.DecShopData?.Auctions?.Count > 0 && Globals.DecShopData?.Auctions?.Count <= (i + 1) * 10)
+                            Address = connectionAddress,
+                            Data = $"{DecShopRequestOptions.Auctions},{i}",
+                            Type = MessageType.DecShop,
+                            ComType = MessageComType.Request
+                        };
+
+                        _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+
+                        await Task.Delay(200);
+
+                        while (!auctionFound && failCounter < 3)
+                        {
+                            if (Globals.MultiDecShopData[shopConnection.ShopURL]?.Auctions != null)
                             {
-                                //good
-                                auctionFound = true;
+                                if (Globals.MultiDecShopData[shopConnection.ShopURL]?.Auctions?.Count > 0 && Globals.MultiDecShopData[shopConnection.ShopURL]?.Auctions?.Count <= (i + 1) * 10)
+                                {
+                                    //good
+                                    auctionFound = true;
+                                }
+                                else
+                                {
+                                    failCounter += 1;
+                                    _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+                                }
                             }
                             else
                             {
@@ -1098,14 +1112,8 @@ namespace ReserveBlockCore.DST
                                 _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
                             }
                         }
-                        else
-                        {
-                            failCounter += 1;
-                            _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
-                        }
                     }
                 }
-
             }
 
             NewAuctionsFound = false;
@@ -1129,22 +1137,24 @@ namespace ReserveBlockCore.DST
                         continue;
                     }
 
-                    var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-                    if (connectedShop.Count() > 0)
+                    if (ShopConnections.TryGetValue(shopConnection.ShopURL, out _))
                     {
-                        if (Globals.DecShopData?.DecShop != null)
+                        if (Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var decShopData))
                         {
                             //begin data grab
 
+                            if (NewAuctionsFound || NewListingsFound || NewAuctionsFound)
+                                await GetShopData(address, shopConnection, true);
+
                             //Collections
-                            if(NewCollectionsFound)
+                            if (NewCollectionsFound)
                                 _ = GetShopCollections(address, shopConnection);
                             //Listings
                             if(NewListingsFound)
-                                _ = GetShopListings(address, shopConnection);
+                                _ = GetShopListings(address, shopConnection, true);
                             //Auctions
                             if(NewAuctionsFound)
-                                _ = GetShopAuctions(address, shopConnection);
+                                _ = GetShopAuctions(address, shopConnection, true);
                         }
                     }
 
@@ -1154,7 +1164,7 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static async Task GetShopListingAssets(CancellationToken token, string address)
+        public static async Task GetShopListingAssets(CancellationToken token, string address, ShopConnection shopConnection)
         {
             AssetDownloadQueue = new ConcurrentDictionary<string, bool>(); //reset queue assuming a new connection has been made.
             var exit = false;
@@ -1169,67 +1179,39 @@ namespace ReserveBlockCore.DST
                         exit = true;
                         continue;
                     }
-                    var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
-                    if (connectedShop.Count() > 0)
+
+                    if (ShopConnections.TryGetValue(shopConnection.ShopURL, out _))
                     {
                         //begin asset grab loop
-                        
-                        var listingCount = Globals.DecShopData?.DecShop?.ListingCount;
+                        if(Globals.MultiDecShopData[shopConnection.ShopURL] != null)
+                        {
+                            var decShopData = Globals.MultiDecShopData[shopConnection.ShopURL];
+                            var listingCount = decShopData?.DecShop?.ListingCount;
 
-                        if (listingCount == null)
-                        {
-                            await Task.Delay(3000);
-                            continue;
-                        }
-                           
-                        if (listingCount == 0)
-                        {
+                            if (listingCount == null)
                             {
                                 await Task.Delay(3000);
                                 continue;
                             }
-                        }
 
-                        if (Globals.DecShopData?.Listings?.Count > 0)
-                        {
-                            var listings = Globals.DecShopData?.Listings;
-                            if(listings != null)
+                            if (listingCount == 0)
                             {
-                                var _assetConnectionId = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
-
-                                foreach (var listing in listings)
                                 {
-                                    if (!AssetDownloadQueue.TryGetValue(listing.SmartContractUID, out var value))
-                                    {
-                                        Message message = new Message
-                                        {
-                                            Address = address,
-                                            Data = listing.SmartContractUID,
-                                            Type = MessageType.AssetReq,
-                                            ComType = MessageComType.Info
-                                        };
+                                    await Task.Delay(3000);
+                                    continue;
+                                }
+                            }
 
-                                        if (!Globals.AssetDownloadLock)
-                                        {
-                                            Globals.AssetDownloadLock = true;
-                                            //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
-                                            if (_assetConnectionId != AssetConnectionId)
-                                            {
-                                                AssetConnectionId = _assetConnectionId;
-                                                await DisconnectFromAsset();
-                                                var connected = await ConnectToShopForAssets();
-                                                if (connected)
-                                                    await GetListingAssetThumbnails(message, listing.SmartContractUID);
-                                            }
-                                            else
-                                            {
-                                                await GetListingAssetThumbnails(message, listing.SmartContractUID);
-                                            }
-                                        }
-                                    }
-                                    else
+                            if (decShopData?.Listings?.Count > 0)
+                            {
+                                var listings = decShopData?.Listings;
+                                if (listings != null)
+                                {
+                                    var _assetConnectionId = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+
+                                    foreach (var listing in listings)
                                     {
-                                        if(!value)
+                                        if (!AssetDownloadQueue.TryGetValue(listing.SmartContractUID, out var value))
                                         {
                                             Message message = new Message
                                             {
@@ -1247,7 +1229,7 @@ namespace ReserveBlockCore.DST
                                                 {
                                                     AssetConnectionId = _assetConnectionId;
                                                     await DisconnectFromAsset();
-                                                    var connected = await ConnectToShopForAssets();
+                                                    var connected = await ConnectToShopForAssets(shopConnection);
                                                     if (connected)
                                                         await GetListingAssetThumbnails(message, listing.SmartContractUID);
                                                 }
@@ -1259,13 +1241,44 @@ namespace ReserveBlockCore.DST
                                         }
                                         else
                                         {
-                                            //var files = NFTAssetFileUtility
-                                        }
-                                    }
-                                    
-                                }
+                                            if (!value)
+                                            {
+                                                Message message = new Message
+                                                {
+                                                    Address = address,
+                                                    Data = listing.SmartContractUID,
+                                                    Type = MessageType.AssetReq,
+                                                    ComType = MessageComType.Info
+                                                };
 
-                                Globals.AssetDownloadLock = false;
+                                                if (!Globals.AssetDownloadLock)
+                                                {
+                                                    Globals.AssetDownloadLock = true;
+                                                    //NFTLogUtility.Log($"Asset download unlocked for: {listing.SmartContractUID}", "DSTV1Controller.GetNFTAssets()");
+                                                    if (_assetConnectionId != AssetConnectionId)
+                                                    {
+                                                        AssetConnectionId = _assetConnectionId;
+                                                        await DisconnectFromAsset();
+                                                        var connected = await ConnectToShopForAssets(shopConnection);
+                                                        if (connected)
+                                                            await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                    }
+                                                    else
+                                                    {
+                                                        await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                //var files = NFTAssetFileUtility
+                                            }
+                                        }
+
+                                    }
+
+                                    Globals.AssetDownloadLock = false;
+                                }
                             }
                         }
                     }
