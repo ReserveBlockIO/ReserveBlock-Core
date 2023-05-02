@@ -5,6 +5,8 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
+using ReserveBlockCore.Services;
+using ReserveBlockCore.Utilities;
 using System.Diagnostics;
 
 namespace ReserveBlockCore.Controllers
@@ -302,6 +304,132 @@ namespace ReserveBlockCore.Controllers
             }
 
             return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a chat message
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="shopURL"></param>
+        /// <returns></returns>
+        [HttpPost("SendChatMessage")]
+        public async Task<string> SendChatMessage([FromRoute] string address, [FromRoute] string shopURL, [FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                    {
+                        var chatPayload = JsonConvert.DeserializeObject<Chat.ChatPayload>(jsonData.ToString());
+                        if (chatPayload == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "Chat Payload cannot be null" });
+
+                        if (!Globals.MultiDecShopData.TryGetValue(shopURL, out var decShopData))
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+
+                        var messageLengthCheck = chatPayload.Message.ToLengthCheck(240);
+                        if (!messageLengthCheck)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "Message is too long. Please shorten to 240 characters." });
+
+                        var chatMessage = new Chat.ChatMessage
+                        {
+                            Id = RandomStringUtility.GetRandomString(10, true),
+                            FromAddress = address,
+                            Message = chatPayload.Message,
+                            ToAddress = Globals.DecShopData.DecShop.DecShopURL,
+                            MessageHash = chatPayload.Message.ToHash(),
+                            ShopURL = Globals.DecShopData.DecShop.DecShopURL,
+                            TimeStamp = TimeUtil.GetTime(),
+                        };
+
+                        var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
+
+                        Message message = new Message
+                        {
+                            Address = address,
+                            Data = chatMessageJson,
+                            Type = MessageType.Chat,
+                            ComType = MessageComType.Chat
+                        };
+
+                        if (Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL, out var chatMessageList))
+                        {
+                            chatMessageList.Add(chatMessage);
+                            Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                        }
+                        else
+                        {
+                            Globals.ChatMessageDict.TryAdd(chatMessage.ShopURL, new List<Chat.ChatMessage> { chatMessage });
+                        }
+
+                        _ = DSTMultiClient.SendShopMessageFromClient(message, false, shopConnection.UdpClient, shopConnection.EndPoint);
+
+                        return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent.", MessageId = chatMessage.Id });
+                    }
+                    else
+                    {
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"You are not connected to: {shopURL}" });
+                    }
+                    
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Resend a chat message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <param name="address"></param>
+        /// <param name="shopUrl"></param>
+        /// <returns></returns>
+        [HttpGet("ResendChatMessage/{messageId}/{address}/{**shopUrl}")]
+        public async Task<string> ResendChatMessage(string messageId, string address, string shopUrl)
+        {
+            if (DSTMultiClient.ShopConnections.TryGetValue(shopUrl, out var shopConnection))
+            {
+                if (Globals.ChatMessageDict.TryGetValue(shopUrl, out var chatMessageList))
+                {
+                    var chatMessage = chatMessageList.Where(x => x.Id == messageId).FirstOrDefault();
+
+                    if (chatMessage == null)
+                        return JsonConvert.SerializeObject(new { Success = true, Message = "Chat ID found, but message was null." });
+
+                    if (chatMessage.MessageReceived)
+                        return JsonConvert.SerializeObject(new { Success = true, Message = "Message was reported as received." });
+
+                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
+
+                    Message message = new Message
+                    {
+                        Address = address,
+                        Data = chatMessageJson,
+                        Type = MessageType.Chat,
+                        ComType = MessageComType.Chat
+                    };
+
+                    _ = DSTMultiClient.SendShopMessageFromClient(message, false, shopConnection.UdpClient, shopConnection.EndPoint);
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message Resent." });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Chat messages were not found." });
+                }
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"You are not connected to: {shopUrl}" });
+            }
+
+            
         }
     }
 }
