@@ -279,7 +279,7 @@ namespace ReserveBlockCore.Models.DST
         public static bool VerifyBidSignature(string keySign, decimal amount, string address, string bidSignature)
         {
             //public const decimal BidModifier = 100000000M
-            var bidModifier = (amount * Globals.BidModifier).ToString();
+            var bidModifier = (amount * Globals.BidModifier).ToString("#");
             var bidAmount = Convert.ToInt64(bidModifier);
 
             var bidMessage = $"{keySign}_{bidAmount}_{address}";
