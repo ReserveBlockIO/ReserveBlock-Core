@@ -1415,6 +1415,9 @@ namespace ReserveBlockCore.Controllers
                 if(singleListing == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find listing: {listingId}" });
 
+                if (singleListing.IsSaleComplete)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"This listing has already completed its sale! ListingId: {listingId}" });
+
                 singleListing.SaleHasFailed = false;
 
                 AuctionEngine.ListingPostSaleDict.TryRemove(listingId, out _);
