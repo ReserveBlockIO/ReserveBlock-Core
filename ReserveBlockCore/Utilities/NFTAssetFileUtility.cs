@@ -167,7 +167,13 @@ namespace ReserveBlockCore.Utilities
                             }
                             else
                             {
-                                File.Copy(originPath, newPath);
+                                var newPathFileExt = newPath.ToFileExtension();
+                                newPath = newPath.Replace(newPathFileExt, ".jpg");
+                                ImageOptimizer optimizer = new ImageOptimizer();
+                                image.Write(newPath, MagickFormat.Jpg);
+                                FileInfo info = new FileInfo(newPath);
+                                optimizer.Compress(info);
+                                info.Refresh();
                             }
                         }
                     }
