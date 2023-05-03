@@ -1405,7 +1405,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="listingId"></param>
         /// <returns></returns>
-        [HttpGet("RetrySale")]
+        [HttpGet("RetrySale/{listingId}")]
         public async Task<string> RetrySale(int listingId)
         {
             var listingDb = Listing.GetListingDb();
