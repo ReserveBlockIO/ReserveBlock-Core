@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Models.DST
                 {
                     listing.PurchaseKey = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
                     listingDb.InsertSafe(listing);
-                    NFTAssetFileUtility.GenerateThumbnails(listing.SmartContractUID);
+                    _ = NFTAssetFileUtility.GenerateThumbnails(listing.SmartContractUID);
                     return (true, "Listing saved.");
                 }
             }

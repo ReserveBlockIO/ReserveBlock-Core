@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Engines
         static SemaphoreSlim BidProcessingLock = new SemaphoreSlim(1, 1);
         static SemaphoreSlim AuctioneerLock = new SemaphoreSlim(1, 1);
         static bool BidProcessingOn = false;
-        static ConcurrentDictionary<int, int> ListingPostSaleDict = new ConcurrentDictionary<int, int>(); 
+        public static ConcurrentDictionary<int, int> ListingPostSaleDict = new ConcurrentDictionary<int, int>(); 
 
         public static async Task StartBidProcessing()
         {

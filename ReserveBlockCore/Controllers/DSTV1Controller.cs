@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
+using ReserveBlockCore.Engines;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
@@ -1397,6 +1398,33 @@ namespace ReserveBlockCore.Controllers
             }
 
             return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a bid to a listing
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("RetrySale")]
+        public async Task<string> RetrySale(int listingId)
+        {
+            var listingDb = Listing.GetListingDb();
+            if(listingDb != null)
+            {
+                var singleListing = Listing.GetSingleListing(listingId);
+                if(singleListing == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find listing: {listingId}" });
+
+                singleListing.SaleHasFailed = false;
+
+                AuctionEngine.ListingPostSaleDict.TryRemove(listingId, out _);
+
+                listingDb.UpdateSafe(singleListing);
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Listing has been updated for retry." });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = $"Listing DB was null." });
         }
 
         /// <summary>
