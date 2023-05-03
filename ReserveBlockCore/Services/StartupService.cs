@@ -436,7 +436,8 @@ namespace ReserveBlockCore.Services
                     //add testnet beacons
                     List<Beacons> beaconList = new List<Beacons>
                     {
-                        new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon TESTNET", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        //new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon TESTNET", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "162.251.121.150", Name = "Lotus Beacon TESTNET", Port = Globals.Port + 20000, BeaconUID = "LotusBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
                     };
 
                     foreach (var beacon in beaconList)

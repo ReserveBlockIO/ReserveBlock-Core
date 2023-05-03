@@ -58,7 +58,7 @@ namespace ReserveBlockCore.Beacon
             bool loop_break = false;
             string fileName = "";
             var ip_address = ns.Socket.RemoteEndPoint != null ? ((IPEndPoint)ns.Socket.RemoteEndPoint).Address.ToString() : "NA";
-            while (true)
+            while (!loop_break)
             {
                 //byte[] readPbValue = ReadStream();
                 try
@@ -248,6 +248,7 @@ namespace ReserveBlockCore.Beacon
                     ErrorLogUtility.LogError($"Error in Beacon Server. Error: {ex.ToString()}", "BeaconServer.ProcessSocketRequest()");
                     try
                     {
+                        loop_break = true;
                         ns.Flush();
                         ns.Close();
                         File.Delete(@"" + SaveTo + fileName);
