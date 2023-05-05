@@ -23,7 +23,7 @@ namespace ReserveBlockCore.Services
                     {
                         var packet = packetArray[ackNum];
                         if (packet != null)
-                            await udpClient.SendAsync(packet, packet.Length, endPoint);
+                            _ = udpClient.SendAsync(packet, packet.Length, endPoint);
                     }
                     else
                     {
@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     var packet = packets[ackNum];
                                     if (packet != null)
-                                        await udpClient.SendAsync(packet, packet.Length, endPoint);
+                                        _ = udpClient.SendAsync(packet, packet.Length, endPoint);
                                 }
                                 else
                                 {
