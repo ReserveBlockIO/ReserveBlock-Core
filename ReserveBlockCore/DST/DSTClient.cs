@@ -42,6 +42,7 @@ namespace ReserveBlockCore.DST
         public static bool NewCollectionsFound = false;
         public static bool NewAuctionsFound = false;
         public static bool NewListingsFound = false;
+        static SemaphoreSlim AssetDownloadLock = new SemaphoreSlim(1, 1);
 
         public static async Task Run(bool bypass = false)
         {
@@ -817,274 +818,283 @@ namespace ReserveBlockCore.DST
 
         public static async Task GetListingAssetThumbnails(Message message, string scUID)
         {
-            Globals.AssetDownloadLock = true;
-            var shopMessage = MessageService.GenerateMessage(message, false);
-            var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
-            var stopProcess = false;
-            int attempts = 0;
-            NFTLogUtility.Log("NFT asset thumbnail process start. Requesting Asset List", "DSTClient.GetListingAssetThumbnails()-1");
-
-            while (!stopProcess)
+            await AssetDownloadLock.WaitAsync();
+            try
             {
-                try
+                Globals.AssetDownloadLock = true;
+                var shopMessage = MessageService.GenerateMessage(message, false);
+                var messageBytes = Encoding.UTF8.GetBytes(shopMessage);
+                var stopProcess = false;
+                int attempts = 0;
+                NFTLogUtility.Log("NFT asset thumbnail process start. Requesting Asset List", "DSTClient.GetListingAssetThumbnails()-1");
+
+                while (!stopProcess)
                 {
-                    _ = udpAssets.SendAsync(messageBytes, ConnectedShopServerAssets);
-                    var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5)); //wait to receive list
-                    attempts += 1;
-
-                    if (attempts == 5)
-                        stopProcess = true;
-
-                    var messageBuffer = Encoding.UTF8.GetString(messageDataGram.Buffer);
-                    var messageFromJson = JsonConvert.DeserializeObject<Message>(messageBuffer);
-
-                    if (messageFromJson == null)
-                        continue;
-
-                    var messageData = messageFromJson.Data;
-                    var messageDataArray = messageData.Split(new string[] { "<|>" }, StringSplitOptions.None);
-                    var scuidRet = messageDataArray[0];
-                    var assetListJson = messageDataArray[1];
-
-                    if (scuidRet == null)
-                        continue;
-
-                    if (scuidRet != scUID)
-                        continue;
-
-                    if(assetListJson == null)
-                        continue;
-
-                    var assetList = JsonConvert.DeserializeObject<List<string>?>(assetListJson);
-
-                    if (assetList == null)
-                        continue;
-
-                    if (assetList.Count > 0)
+                    try
                     {
-                        int byteSize = 0;
-                        char delim = ',';
-                        var assetListDelim = String.Join(delim, assetList);
-                        NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
-                        await Task.Delay(20);
-                        NFTLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
+                        _ = udpAssets.SendAsync(messageBytes, ConnectedShopServerAssets);
+                        var messageDataGram = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5)); //wait to receive list
+                        attempts += 1;
 
-                        var assetCount = assetList.Count;
-                        var assetSuccessCount = 0;
+                        if (attempts == 5)
+                            stopProcess = true;
 
-                        foreach (var asset in assetList)
+                        var messageBuffer = Encoding.UTF8.GetString(messageDataGram.Buffer);
+                        var messageFromJson = JsonConvert.DeserializeObject<Message>(messageBuffer);
+
+                        if (messageFromJson == null)
+                            continue;
+
+                        var messageData = messageFromJson.Data;
+                        var messageDataArray = messageData.Split(new string[] { "<|>" }, StringSplitOptions.None);
+                        var scuidRet = messageDataArray[0];
+                        var assetListJson = messageDataArray[1];
+
+                        if (scuidRet == null)
+                            continue;
+
+                        if (scuidRet != scUID)
+                            continue;
+
+                        if (assetListJson == null)
+                            continue;
+
+                        var assetList = JsonConvert.DeserializeObject<List<string>?>(assetListJson);
+
+                        if (assetList == null)
+                            continue;
+
+                        if (assetList.Count > 0)
                         {
-                            try
-                            {
-                                var _asset = asset;
-                                if (!asset.EndsWith(".jpg"))
-                                {
-                                    var assetArray = asset.Split('.');
-                                    var extIndex = assetArray.Length - 1;
-                                    var extToReplace = assetArray[extIndex];
-                                    if(!Globals.ValidExtensions.Contains(extToReplace))
-                                    {
-                                        //skip as its not a valid extension type.
-                                        assetCount -= 1;
-                                        continue;
-                                    }
-                                    _asset = asset.Replace(extToReplace, "jpg");
-                                }
-                                //craft message to start process.
-                                var uniqueId = RandomStringUtility.GetRandomStringOnlyLetters(10, false);
+                            int byteSize = 0;
+                            char delim = ',';
+                            var assetListDelim = String.Join(delim, assetList);
+                            NFTLogUtility.Log("NFT asset list process acquired. Loop started.", "DSTClient.GetListingAssetThumbnails()-2");
+                            await Task.Delay(20);
+                            NFTLogUtility.Log($"AssetList: {assetListDelim}", "DSTClient.GetListingAssetThumbnails()-2.1");
 
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
-                                
-                                if (File.Exists(path))
+                            var assetCount = assetList.Count;
+                            var assetSuccessCount = 0;
+
+                            foreach (var asset in assetList)
+                            {
+                                try
                                 {
-                                    var fileLength = File.ReadAllBytes(path).Length;
+                                    var _asset = asset;
+                                    if (!asset.EndsWith(".jpg"))
                                     {
-                                        if(fileLength == 0)
+                                        var assetArray = asset.Split('.');
+                                        var extIndex = assetArray.Length - 1;
+                                        var extToReplace = assetArray[extIndex];
+                                        if (!Globals.ValidExtensions.Contains(extToReplace))
                                         {
-                                            File.Delete(path);
-                                        }
-                                        else
-                                        {
-                                            assetSuccessCount += 1;
+                                            //skip as its not a valid extension type.
+                                            assetCount -= 1;
                                             continue;
                                         }
+                                        _asset = asset.Replace(extToReplace, "jpg");
                                     }
-                                }
+                                    //craft message to start process.
+                                    var uniqueId = RandomStringUtility.GetRandomStringOnlyLetters(10, false);
 
-                                using (var fileStream = File.Create(path))
-                                {
-                                    
-                                    NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-3");
-                                    int expectedSequenceNumber = 0;
-                                    byte[]? imageData = null;
-                                    int timeouts = 0;
-                                    int latencyWait = 0;
-                                    bool stopAssetBuild = false;
-                                    var stopWatch = new Stopwatch();
-                                    while (!stopAssetBuild)
+                                    var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+
+                                    if (File.Exists(path))
                                     {
-                                        try
+                                        var fileLength = File.ReadAllBytes(path).Length;
                                         {
-                                            await Task.Delay(latencyWait);
-                                            var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
-                                            stopWatch.Restart();
-                                            stopWatch.Start();
-                                            _ = udpAssets.SendAsync(messageAssetBytes, messageAssetBytes.Length, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
-                                            //await Task.Delay(10);
-                                            //_ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
-                                            
-                                            var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
-                                            var packetData = response.Buffer;
-                                            stopWatch.Stop();
-                                            latencyWait = (int)stopWatch.ElapsedMilliseconds;
-                                            //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
-                                            Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
-                                            await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
-                                            // Check if this is the last packet
-                                            bool isLastPacket = packetData.Length < 1024;
-
-                                            //checking to see if byte is -1. If so no image. Delete and move on.
-                                            if(isLastPacket && packetData.Length == 1)
+                                            if (fileLength == 0)
                                             {
-                                                try
-                                                {
-                                                    byte[] byteArray = new byte[] { 0xFF };
-                                                    sbyte signedByte = unchecked((sbyte)byteArray[0]);
-                                                    int intValue = Convert.ToInt32(signedByte);
-
-                                                    if(intValue == -1)
-                                                    {
-                                                        stopAssetBuild = true;
-                                                        expectedSequenceNumber = 0;
-                                                        imageData = null;
-                                                        var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
-                                                        assetSuccessCount += 1;
-                                                        if (File.Exists(pathToDelete))
-                                                        {
-                                                            fileStream.Dispose();
-                                                            File.Delete(pathToDelete);
-                                                        }
-                                                        break;
-                                                    }
-                                                }
-                                                catch { }
-                                            }
-                                            // Extract the sequence number from the packet
-                                            int sequenceNumber = BitConverter.ToInt32(packetData, 0);
-
-                                            Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
-                                            //NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
-                                            if (sequenceNumber != expectedSequenceNumber)
-                                            {
-                                                // If not, discard the packet and request a retransmission
-                                                var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber;
-                                                var ackPacket = BitConverter.GetBytes(expSeqNum);
-                                                messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expSeqNum);
-                                                await Task.Delay(100);
-                                                //await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
-                                                continue;
-                                            }
-
-                                            // If this is the expected packet, extract the image data and write it to disk
-                                            int dataOffset = sizeof(int);
-                                            int dataLength = packetData.Length - dataOffset;
-                                            byteSize += dataLength;
-                                            if (imageData == null)
-                                            {
-                                                imageData = new byte[dataLength];
-                                                NFTLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
+                                                File.Delete(path);
                                             }
                                             else
                                             {
-                                                //NFTLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
-                                                Array.Resize(ref imageData, imageData.Length + dataLength);
-                                            }
-                                            Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
-
-                                            // Send an acknowledgement packet
-                                            //var ackNumber = BitConverter.GetBytes(sequenceNumber);
-                                            //await udpAssets.SendAsync(ackNumber, ackNumber.Length, ConnectedShopServer);
-
-                                            if (isLastPacket)
-                                            {
-                                                NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-4");
-                                                // If this is the last   packet, save the image to disk and exit the loop
-                                                await fileStream.WriteAsync(imageData, 0, imageData.Length);
-                                                stopAssetBuild = true;
-                                                expectedSequenceNumber = 0;
-                                                imageData = null;
                                                 assetSuccessCount += 1;
-                                                break;
+                                                continue;
                                             }
-
-                                            expectedSequenceNumber += 1;
                                         }
-                                        catch(Exception ex) 
+                                    }
+
+                                    using (var fileStream = File.Create(path))
+                                    {
+
+                                        NFTLogUtility.Log($"Path created: {path}", "DSTClient.GetListingAssetThumbnails()-3");
+                                        int expectedSequenceNumber = 0;
+                                        byte[]? imageData = null;
+                                        int timeouts = 0;
+                                        int latencyWait = 0;
+                                        bool stopAssetBuild = false;
+                                        var stopWatch = new Stopwatch();
+                                        while (!stopAssetBuild)
                                         {
-                                            timeouts += 1;
-                                            NFTLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
-                                            Globals.AssetDownloadLock = false;
-                                            if (timeouts > 5)
+                                            try
                                             {
-                                                stopAssetBuild = true;
-                                                var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
-                                                if (File.Exists(pathToDelete))
+                                                await Task.Delay(latencyWait);
+                                                var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
+                                                stopWatch.Restart();
+                                                stopWatch.Start();
+                                                _ = udpAssets.SendAsync(messageAssetBytes, messageAssetBytes.Length, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
+                                                                                                                                                 //await Task.Delay(10);
+                                                                                                                                                 //_ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
+
+                                                var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
+                                                var packetData = response.Buffer;
+                                                stopWatch.Stop();
+                                                latencyWait = (int)stopWatch.ElapsedMilliseconds;
+                                                //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
+                                                Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
+                                                await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
+                                                                      // Check if this is the last packet
+                                                bool isLastPacket = packetData.Length < 1024;
+
+                                                //checking to see if byte is -1. If so no image. Delete and move on.
+                                                if (isLastPacket && packetData.Length == 1)
                                                 {
+                                                    try
+                                                    {
+                                                        byte[] byteArray = new byte[] { 0xFF };
+                                                        sbyte signedByte = unchecked((sbyte)byteArray[0]);
+                                                        int intValue = Convert.ToInt32(signedByte);
+
+                                                        if (intValue == -1)
+                                                        {
+                                                            stopAssetBuild = true;
+                                                            expectedSequenceNumber = 0;
+                                                            imageData = null;
+                                                            var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+                                                            assetSuccessCount += 1;
+                                                            if (File.Exists(pathToDelete))
+                                                            {
+                                                                fileStream.Dispose();
+                                                                File.Delete(pathToDelete);
+                                                            }
+                                                            break;
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }
+                                                // Extract the sequence number from the packet
+                                                int sequenceNumber = BitConverter.ToInt32(packetData, 0);
+
+                                                Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
+                                                //NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
+                                                if (sequenceNumber != expectedSequenceNumber)
+                                                {
+                                                    // If not, discard the packet and request a retransmission
+                                                    var expSeqNum = expectedSequenceNumber == 0 ? 0 : expectedSequenceNumber;
+                                                    var ackPacket = BitConverter.GetBytes(expSeqNum);
+                                                    messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expSeqNum);
+                                                    await Task.Delay(100);
+                                                    //await udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets);
+                                                    continue;
+                                                }
+
+                                                // If this is the expected packet, extract the image data and write it to disk
+                                                int dataOffset = sizeof(int);
+                                                int dataLength = packetData.Length - dataOffset;
+                                                byteSize += dataLength;
+                                                if (imageData == null)
+                                                {
+                                                    imageData = new byte[dataLength];
+                                                    NFTLogUtility.Log($"Image Data file sequence being populated...", "DSTClient.GetListingAssetThumbnails()-S");
+                                                }
+                                                else
+                                                {
+                                                    //NFTLogUtility.Log($"Image Data file sequence resized", "DSTClient.GetListingAssetThumbnails()-R");
+                                                    Array.Resize(ref imageData, imageData.Length + dataLength);
+                                                }
+                                                Array.Copy(packetData, dataOffset, imageData, imageData.Length - dataLength, dataLength);
+
+                                                // Send an acknowledgement packet
+                                                //var ackNumber = BitConverter.GetBytes(sequenceNumber);
+                                                //await udpAssets.SendAsync(ackNumber, ackNumber.Length, ConnectedShopServer);
+
+                                                if (isLastPacket)
+                                                {
+                                                    NFTLogUtility.Log($"Last Packet Detected. Saving File...", "DSTClient.GetListingAssetThumbnails()-4");
+                                                    // If this is the last   packet, save the image to disk and exit the loop
+                                                    await fileStream.WriteAsync(imageData, 0, imageData.Length);
+                                                    stopAssetBuild = true;
                                                     expectedSequenceNumber = 0;
                                                     imageData = null;
-                                                    fileStream.Dispose();
-                                                    File.Delete(pathToDelete);
+                                                    assetSuccessCount += 1;
+                                                    break;
                                                 }
+
+                                                expectedSequenceNumber += 1;
                                             }
-                                                
+                                            catch (Exception ex)
+                                            {
+                                                timeouts += 1;
+                                                NFTLogUtility.Log($"Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR0");
+                                                Globals.AssetDownloadLock = false;
+                                                if (timeouts > 5)
+                                                {
+                                                    stopAssetBuild = true;
+                                                    var pathToDelete = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+                                                    if (File.Exists(pathToDelete))
+                                                    {
+                                                        expectedSequenceNumber = 0;
+                                                        imageData = null;
+                                                        fileStream.Dispose();
+                                                        File.Delete(pathToDelete);
+                                                    }
+                                                }
+
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                var _asset = asset;
-                                if (!asset.EndsWith(".jpg"))
+                                catch (Exception ex)
                                 {
-                                    var assetArray = asset.Split('.');
-                                    var extIndex = assetArray.Length - 1;
-                                    var extToReplace = assetArray[extIndex];
-                                    _asset = asset.Replace(extToReplace, "jpg");
+                                    var _asset = asset;
+                                    if (!asset.EndsWith(".jpg"))
+                                    {
+                                        var assetArray = asset.Split('.');
+                                        var extIndex = assetArray.Length - 1;
+                                        var extToReplace = assetArray[extIndex];
+                                        _asset = asset.Replace(extToReplace, "jpg");
+                                    }
+                                    var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+                                    if (File.Exists(path))
+                                    {
+                                        File.Delete(path);
+                                    }
                                 }
-                                var path = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
-                                if (File.Exists(path))
+                            }
+
+                            if (assetSuccessCount == assetCount)
+                            {
+                                if (AssetDownloadQueue.TryGetValue(scUID, out var value))
                                 {
-                                    File.Delete(path);
+                                    AssetDownloadQueue[scUID] = true;
+                                }
+                                else
+                                {
+                                    AssetDownloadQueue.TryAdd(scUID, true);
                                 }
                             }
-                        }
 
-                        if(assetSuccessCount == assetCount)
-                        {
-                            if (AssetDownloadQueue.TryGetValue(scUID, out var value))
-                            {
-                                AssetDownloadQueue[scUID] = true;
-                            }
-                            else
-                            {
-                                AssetDownloadQueue.TryAdd(scUID, true);
-                            }
+                            stopProcess = true;
                         }
-
-                        stopProcess = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR1");
+                        Globals.AssetDownloadLock = false;
                     }
                 }
-                catch (Exception ex)
-                {
-                    NFTLogUtility.Log($"Unknown Error: {ex.ToString()}", "DSTClient.GetListingAssetThumbnails()-ERROR1");
-                    Globals.AssetDownloadLock = false;
-                }
+
+                Globals.AssetDownloadLock = false;
+
+                NFTLogUtility.Log($"Asset method unlocked", "DSTClient.GetListingAssetThumbnails()-7");
+                Globals.AssetDownloadLock = false;
+            }
+            finally
+            {
+                AssetDownloadLock.Release();
             }
 
-            Globals.AssetDownloadLock = false;
-
-            NFTLogUtility.Log($"Asset method unlocked", "DSTClient.GetListingAssetThumbnails()-7");
-            Globals.AssetDownloadLock = false;
         }
 
         public static async Task GetShopData(string connectingAddress, bool skip = false)
@@ -1505,19 +1515,21 @@ namespace ReserveBlockCore.DST
                                                                 Type = MessageType.AssetReq,
                                                                 ComType = MessageComType.Info
                                                             };
-
-                                                            Globals.AssetDownloadLock = true;
-                                                            if (_assetConnectionId != AssetConnectionId)
+                                                            if (!Globals.AssetDownloadLock)
                                                             {
-                                                                AssetConnectionId = _assetConnectionId;
-                                                                await DisconnectFromAsset();
-                                                                var connected = await ConnectToShopForAssets();
-                                                                if (connected)
+                                                                Globals.AssetDownloadLock = true;
+                                                                if (_assetConnectionId != AssetConnectionId)
+                                                                {
+                                                                    AssetConnectionId = _assetConnectionId;
+                                                                    await DisconnectFromAsset();
+                                                                    var connected = await ConnectToShopForAssets();
+                                                                    if (connected)
+                                                                        await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                                }
+                                                                else
+                                                                {
                                                                     await GetListingAssetThumbnails(message, listing.SmartContractUID);
-                                                            }
-                                                            else
-                                                            {
-                                                                await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                                }
                                                             }
                                                         }
                                                     }
