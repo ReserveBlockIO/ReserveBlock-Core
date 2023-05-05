@@ -1273,6 +1273,16 @@ namespace ReserveBlockCore.Controllers
             }
         }
 
+        /// <summary>
+        /// Checks your status of your ping request
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ClearPingRequest")]
+        public async Task<string> ClearPingRequest()
+        {
+            Globals.PingResultDict.Clear();
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Pings Cleared"});
+        }
 
         /// <summary>
         /// Send a bid to a listing

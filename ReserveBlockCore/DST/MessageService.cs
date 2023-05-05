@@ -654,7 +654,7 @@ namespace ReserveBlockCore.DST
                             {
                                 Message responseMessage = new Message
                                 {
-                                    Type = MessageType.Bid,
+                                    Type = MessageType.Ping,
                                     ComType = MessageComType.Response,
                                     Data = pingId,
                                     ResponseMessage = true,
