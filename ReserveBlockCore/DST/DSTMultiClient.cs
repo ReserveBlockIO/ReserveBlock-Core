@@ -17,6 +17,7 @@ using Docnet.Core.Bindings;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Concurrent;
 using static ReserveBlockCore.Models.DecShop;
+using ReserveBlockCore.Models.SmartContracts;
 
 namespace ReserveBlockCore.DST
 {
@@ -737,12 +738,14 @@ namespace ReserveBlockCore.DST
                                     int expectedSequenceNumber = 0;
                                     byte[]? imageData = null;
                                     int timeouts = 0;
+                                    int latencyWait = 0;
                                     bool stopAssetBuild = false;
                                     var stopWatch = new Stopwatch();
                                     while (!stopAssetBuild)
                                     {
                                         try
                                         {
+                                            await Task.Delay(latencyWait);
                                             var messageAssetBytes = await GenerateAssetAckMessage(uniqueId, _asset, scUID, expectedSequenceNumber);
                                             stopWatch.Restart();
                                             stopWatch.Start();
@@ -753,6 +756,7 @@ namespace ReserveBlockCore.DST
                                             var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                             var packetData = response.Buffer;
                                             stopWatch.Stop();
+                                            latencyWait = (int)stopWatch.ElapsedMilliseconds;
                                             //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
                                             Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
                                             await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
@@ -1176,6 +1180,7 @@ namespace ReserveBlockCore.DST
             AssetDownloadQueue = new ConcurrentDictionary<string, bool>(); //reset queue assuming a new connection has been made.
             var exit = false;
             var delay = Task.Delay(3000);
+            var AssetList = new ConcurrentDictionary<string, List<string>?>();
             while (!exit && !token.IsCancellationRequested)
             {
                 try
@@ -1278,7 +1283,74 @@ namespace ReserveBlockCore.DST
                                             }
                                             else
                                             {
-                                                //var files = NFTAssetFileUtility
+                                                var scUID = listing.SmartContractUID;
+                                                if (scUID != null)
+                                                {
+                                                    var assetList = new List<string>();
+                                                    if(AssetList.TryGetValue(scUID, out var assetListMem))
+                                                    {
+                                                        assetList = assetListMem;
+                                                    }
+                                                    else
+                                                    {
+                                                        var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                                                        if (scStateTrei != null)
+                                                        {
+                                                            var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                                                            if (sc != null)
+                                                            {
+                                                                assetList = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+
+                                                                AssetList.TryAdd(scUID, assetList);
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    if (assetList?.Count() > 0)
+                                                    {
+                                                        foreach (var asset in assetList)
+                                                        {
+                                                            var _asset = asset;
+                                                            if (!asset.EndsWith(".jpg"))
+                                                            {
+                                                                var assetArray = asset.Split('.');
+                                                                var extIndex = assetArray.Length - 1;
+                                                                var extToReplace = assetArray[extIndex];
+                                                                if (!Globals.ValidExtensions.Contains(extToReplace))
+                                                                {
+                                                                    //skip as its not a valid extension type.
+                                                                    continue;
+                                                                }
+                                                                _asset = asset.Replace(extToReplace, "jpg");
+                                                            }
+                                                            var assetPath = NFTAssetFileUtility.CreateNFTAssetPath(_asset, scUID, true);
+                                                            if (!File.Exists(assetPath))
+                                                            {
+                                                                Message message = new Message
+                                                                {
+                                                                    Address = address,
+                                                                    Data = listing.SmartContractUID,
+                                                                    Type = MessageType.AssetReq,
+                                                                    ComType = MessageComType.Info
+                                                                };
+
+                                                                Globals.AssetDownloadLock = true;
+                                                                if (_assetConnectionId != AssetConnectionId)
+                                                                {
+                                                                    AssetConnectionId = _assetConnectionId;
+                                                                    await DisconnectFromAsset();
+                                                                    var connected = await ConnectToShopForAssets(shopConnection);
+                                                                    if (connected)
+                                                                        await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                                }
+                                                                else
+                                                                {
+                                                                    await GetListingAssetThumbnails(message, listing.SmartContractUID);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
 

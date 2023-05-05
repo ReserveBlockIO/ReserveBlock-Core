@@ -2111,13 +2111,20 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("Debug")]
         public async Task<string> Debug()
         {
-            var clients = Globals.ConnectedClients;
-            var shops = Globals.ConnectedShops;
-            var stunServer = Globals.STUNServer;
-            var multiDecShopData = Globals.MultiDecShopData;
-            var multiShops = DSTMultiClient.ShopConnections;
+            try
+            {
+                var clients = Globals.ConnectedClients;
+                var shops = Globals.ConnectedShops;
+                var stunServer = Globals.STUNServer;
+                var multiDecShopData = Globals.MultiDecShopData;
+                var multiShops = DSTMultiClient.ShopConnections;
 
-            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer, MultiDecShopData = multiDecShopData, MultiShops = multiShops }, Formatting.Indented);           
+                return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer, MultiDecShopData = multiDecShopData, MultiShops = multiShops }, Formatting.Indented);
+            }
+            catch(Exception ex)
+            {
+                return JsonConvert.SerializeObject(new {Success = false, Message = ex.Message});
+            }
         }
 
         /// <summary>
