@@ -37,7 +37,9 @@ namespace ReserveBlockCore.DST
                             if (currentTime - shopConnection.LastReceiveMessage > 60 || savedConnectionId != shopConnection.ConnectionId)
                             {
                                 stop = true;
-                                if(savedConnectionId == shopConnection.ConnectionId && shopConnection.AttemptReconnect)
+                                shopConnection.KeepAliveStarted = false;
+                                DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                if (savedConnectionId == shopConnection.ConnectionId && shopConnection.AttemptReconnect)
                                 {
                                     await DSTMultiClient.DisconnectFromShop(shopURL);
                                     _ = DSTMultiClient.ConnectToShop(shopURL, shopConnection.RBXAddress);
@@ -136,6 +138,8 @@ namespace ReserveBlockCore.DST
                                 if (currentTime - client.LastReceiveMessage > 50 || savedConnectionId != client.ConnectionId)
                                 {
                                     stop = true;
+                                    client.KeepAliveStarted = false;
+                                    Globals.ConnectedClients[peerEndPoint.ToString()] = client;
                                     if (savedConnectionId == client.ConnectionId && client.AttemptReconnect)
                                     {
                                         var shopServer = client.IPAddress; //this also has port
