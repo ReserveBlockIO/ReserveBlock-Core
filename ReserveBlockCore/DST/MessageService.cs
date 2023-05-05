@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Extensions;
@@ -128,9 +129,11 @@ namespace ReserveBlockCore.DST
                             case MessageType.Purchase:
                                 ProcessBuyNow(message, endPoint, udpClient);
                                 break;
+                            case MessageType.Ping:
+                                _ = Ping(message, endPoint, udpClient);
+                                break;
                             default:
                                 break;
-
                         }
                     }
                 }
@@ -627,6 +630,63 @@ namespace ReserveBlockCore.DST
                             {
                                 bid.BidStatus = bidStatus;
                                 Bid.SaveBid(bid);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public static async Task Ping(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.Ping)
+            {
+                try
+                {
+                    //Request receive. Expecting a response
+                    if (message.ComType == MessageComType.Request)
+                    {
+                        var pingId = message.Data;
+                        if(pingId != null )
+                        {
+                            for(int i = 0; i < 3; i++)
+                            {
+                                Message responseMessage = new Message
+                                {
+                                    Type = MessageType.Bid,
+                                    ComType = MessageComType.Response,
+                                    Data = pingId,
+                                    ResponseMessage = true,
+                                    ResponseMessageId = message.Id,
+                                };
+
+                                var messageJson = GenerateMessage(responseMessage, false);
+                                var sendMessage = Encoding.UTF8.GetBytes(messageJson);
+                                udpClient.Send(sendMessage, endPoint);
+
+                                await Task.Delay(1000);
+                            }
+                        }
+                        
+                    }
+
+                    if (message.ComType == MessageComType.Response)
+                    {
+                        Globals.ClientMessageDict.TryGetValue(message.ResponseMessageId, out var msg);
+                        if(msg != null)
+                        {
+                            var pingId = message.Data;
+                            if (Globals.PingResultDict.TryGetValue(pingId, out var value))
+                            {
+                                value.Item2 += 1;
+                                value.Item1 = true;
+
+                                Globals.PingResultDict[pingId] = value;
+
+                                msg.HasReceivedResponse = true;
+                                msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                                Globals.ClientMessageDict[message.ResponseMessageId] = msg;
                             }
                         }
                     }

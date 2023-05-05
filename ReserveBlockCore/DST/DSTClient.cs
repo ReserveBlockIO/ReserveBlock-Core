@@ -1018,6 +1018,12 @@ namespace ReserveBlockCore.DST
                                                     expectedSequenceNumber = 0;
                                                     imageData = null;
                                                     assetSuccessCount += 1;
+                                                    try
+                                                    {
+                                                        var txtPath = NFTAssetFileUtility.CreateNFTAssetPath(_asset.Replace("jpg", "txt"), scUID, true);
+                                                        File.Create(txtPath);
+                                                    }
+                                                    catch(Exception ex) { }
                                                     break;
                                                 }
 
@@ -1554,6 +1560,31 @@ namespace ReserveBlockCore.DST
                 {
 
                 }
+            }
+        }
+
+        public static async Task<bool> PingConnection(string pingId)
+        {
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                Message message = new Message
+                {
+                    Data = pingId,
+                    Type = MessageType.Ping,
+                    ComType = MessageComType.Request
+                };
+
+                Globals.PingResultDict.TryAdd(pingId, (false, 0));
+
+                _ = SendShopMessageFromClient(message, true);
+
+                return true;
+            }
+            else
+            {
+                //return bad
+                return false;
             }
         }
 

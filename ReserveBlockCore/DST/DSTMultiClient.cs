@@ -41,133 +41,10 @@ namespace ReserveBlockCore.DST
         public static int somecount = 0;
         private static string AssetConnectionId = "";
         public static ConcurrentDictionary<string, bool> AssetDownloadQueue = new ConcurrentDictionary<string, bool>();
+        
         public static bool NewCollectionsFound = false;
         public static bool NewAuctionsFound = false;
         public static bool NewListingsFound = false;
-
-        public static async Task<bool> ConnectToShop(IPEndPoint shopEndPoint, string shopServer, string address = "NA", string shopURL = "NA")
-        {
-            //bool connected = false;
-            //var successful = Encoding.UTF8.GetBytes("echo");
-            //RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            //ConnectedShopServer = null;
-            //var remoteEndPoint = RemoteEndPoint;
-            //var IsConnected = false;
-            //IPEndPoint? ConnectedStunServer = null;
-            //var FailedToConnect = false;
-
-            //var portNumber = PortUtility.FindOpenUDPPort(LastUsedPort); //dynamic port / Port == LastUsedPort ? LastUsedPort + 1 : Port;
-            //udpClient = new UdpClient(portNumber);
-            //LastUsedPort = portNumber;
-
-            //while (!IsConnected && !FailedToConnect)
-            //{
-
-            //    var stopwatch = new Stopwatch();
-            //    var payload = new Message { Type = MessageType.ShopConnect, Data = "helo", Address = address };
-            //    var message = GenerateMessage(payload);
-
-            //    var addCommandDataBytes = Encoding.UTF8.GetBytes(message);
-
-            //    udpClient.Send(addCommandDataBytes, shopEndPoint);
-
-            //    await STUN(shopServer);
-
-            //    //Give shop time to punch
-            //    await Task.Delay(1000);
-            //    udpClient.Send(addCommandDataBytes, shopEndPoint);
-            //    await Task.Delay(200);
-            //    udpClient.Send(addCommandDataBytes, shopEndPoint);
-
-            //    stopwatch.Start();
-            //    while (stopwatch.Elapsed.TotalSeconds < 5 && !IsConnected)
-            //    {
-            //        var beginReceive = udpClient.BeginReceive(null, null);
-            //        beginReceive.AsyncWaitHandle.WaitOne(new TimeSpan(0, 0, 5));
-
-            //        if (beginReceive.IsCompleted)
-            //        {
-            //            try
-            //            {
-            //                IPEndPoint remoteEP = null;
-            //                byte[] receivedData = udpClient.EndReceive(beginReceive, ref remoteEP);
-            //                if (receivedData.SequenceEqual(successful))
-            //                {
-            //                    ConnectedStunServer = shopEndPoint;
-            //                    ConnectedShopServer = shopEndPoint;
-            //                    IsConnected = true;
-            //                }
-            //                else
-            //                {
-            //                    IsConnected = false;
-            //                }
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                IsConnected = false;
-            //            }
-            //        }
-            //        else
-            //        {
-            //            FailedToConnect = true;
-            //        }
-            //    }
-            //    stopwatch.Stop();
-            //}
-            //if (IsConnected)
-            //{
-            //    connected = true;
-            //    Console.WriteLine("connected to SHOP");
-
-            //    shopToken = new CancellationTokenSource();
-            //    CancellationToken token = shopToken.Token;
-
-            //    Task task = new Task(() => { Listen(token); }, token);
-            //    task.Start();
-
-            //    Task taskData = new Task(() => { UpdateShopData(token); }, token);
-            //    taskData.Start();
-
-            //    Task taskDataLoop = new Task(() => { GetShopDataLoop(token, address); }, token);
-            //    taskDataLoop.Start();
-
-            //    Task taskAssets = new Task(() => { GetShopListingAssets(token, address); }, token);
-            //    taskAssets.Start();
-
-
-            //    var kaPayload = new Message { Type = MessageType.KeepAlive, Data = "" };
-            //    var kaMessage = GenerateMessage(kaPayload);
-
-            //    var messageBytes = Encoding.UTF8.GetBytes(kaMessage);
-
-            //    Globals.ConnectedClients.TryGetValue(ConnectedStunServer.ToString(), out var client);
-            //    if (client != null)
-            //    {
-            //        client.LastReceiveMessage = TimeUtil.GetTime();
-            //        client.IsConnected = false;
-            //        Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
-            //    }
-            //    else
-            //    {
-            //        client = new DSTConnection
-            //        {
-            //            LastReceiveMessage = TimeUtil.GetTime(),
-            //            ConnectDate = TimeUtil.GetTime(),
-            //            IPAddress = ConnectedStunServer.ToString(),
-            //            ShopURL = shopURL
-            //        };
-
-            //        Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
-            //    }
-
-            //    udpClient.Send(messageBytes, ConnectedStunServer);
-
-            //    return connected;
-            //}
-            //return connected;
-
-            return false;
-        }
 
         public static async Task<(bool, ShopConnection?)> ConnectToShop(string shopAddress, string address = "na")
         {
@@ -528,6 +405,30 @@ namespace ReserveBlockCore.DST
             }
         }
 
+        public static async Task<bool> PingConnection(string shopURL, string pingId)
+        {
+            if(ShopConnections.TryGetValue(shopURL, out var shop))
+            {
+                Message message = new Message
+                {
+                    Data = pingId,
+                    Type = MessageType.Ping,
+                    ComType = MessageComType.Request
+                };
+
+                Globals.PingResultDict.TryAdd(pingId, (false, 0));
+
+                _ = SendShopMessageFromClient(message, true, shop.UdpClient, shop.EndPoint);
+
+                return true;
+            }
+            else
+            {
+                //return bad
+                return false;
+            }
+        }
+
         static async Task UpdateShopData(CancellationToken token, ShopConnection shopConnect)
         {
             var counter = somecount;
@@ -838,6 +739,13 @@ namespace ReserveBlockCore.DST
                                                     expectedSequenceNumber = 0;
                                                     imageData = null;
                                                     assetSuccessCount += 1;
+                                                    try
+                                                    {
+                                                        var txtPath = NFTAssetFileUtility.CreateNFTAssetPath(_asset.Replace("jpg", "txt"), scUID, true);
+                                                        File.Create(txtPath);
+                                                    }
+                                                    catch (Exception ex) { }
+
                                                     break;
                                                 }
 

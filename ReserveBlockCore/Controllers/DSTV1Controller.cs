@@ -1230,6 +1230,51 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Checks your status of connection to shop
+        /// </summary>
+        /// <param name="pingId"></param>
+        /// <returns></returns>
+        [HttpGet("PingShop/{pingId}")]
+        public async Task<string> PingShop(string pingId)
+        {
+
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var result = await DSTClient.PingConnection(pingId);
+                if (result)
+                {
+                    return JsonConvert.SerializeObject(new { Success = result, Message = $"Ping Started Result: {result}", Ping = Globals.PingResultDict[pingId] });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ping attempt failed.", Ping = (false, 0) });
+                }
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Ping Failed. Decshop not found." });
+        }
+
+        /// <summary>
+        /// Checks your status of your ping request
+        /// </summary>
+        /// <param name="pingId"></param>
+        /// <returns></returns>
+        [HttpGet("CheckPingShop/{pingId}")]
+        public async Task<string> CheckPingShop(string pingId)
+        {
+            if (Globals.PingResultDict.TryGetValue(pingId, out var value))
+            {
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ping Result", Ping = value });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Could not find that PingId" });
+            }
+        }
+
+
+        /// <summary>
         /// Send a bid to a listing
         /// </summary>
         /// <returns></returns>
@@ -2116,10 +2161,8 @@ namespace ReserveBlockCore.Controllers
                 var clients = Globals.ConnectedClients;
                 var shops = Globals.ConnectedShops;
                 var stunServer = Globals.STUNServer;
-                var multiDecShopData = Globals.MultiDecShopData;
-                var multiShops = DSTMultiClient.ShopConnections;
 
-                return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer, MultiDecShopData = multiDecShopData, MultiShops = multiShops }, Formatting.Indented);
+                return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer}, Formatting.Indented);
             }
             catch(Exception ex)
             {

@@ -56,6 +56,52 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Checks your status of connection to shop
+        /// </summary>
+        /// <param name="pingId"></param>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        [HttpGet("PingShop/{pingId}/{**url}")]
+        public async Task<string> PingShop(string pingId, string url)
+        {
+            var decshop = await DecShop.GetDecShopStateTreiLeafByURL(url);
+
+            if (decshop != null)
+            {
+                var result = await DSTMultiClient.PingConnection(url, pingId);
+
+                if(result)
+                {
+                    return JsonConvert.SerializeObject(new { Success = result, Message = $"Ping Started Result: {result}", Ping = Globals.PingResultDict[pingId] });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ping attempt failed.", Ping = (false, 0) });
+                }
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Ping Failed. Decshop not found." });
+        }
+
+        /// <summary>
+        /// Checks your status of your ping request
+        /// </summary>
+        /// <param name="pingId"></param>
+        /// <returns></returns>
+        [HttpGet("CheckPingShop/{pingId}")]
+        public async Task<string> CheckPingShop(string pingId)
+        {
+            if (Globals.PingResultDict.TryGetValue(pingId, out var value))
+            {
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ping Result", Ping = value });
+            }
+            else 
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Could not find that PingId" });
+            }            
+        }
+
+        /// <summary>
         /// Returns the shops info stored in memory.'
         /// </summary>
         /// <returns></returns>
@@ -503,6 +549,40 @@ namespace ReserveBlockCore.Controllers
             }
 
             
+        }
+
+        /// <summary>
+        /// Debug Data for DST
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Debug")]
+        public async Task<string> Debug()
+        {
+            try
+            {
+                List<DSTConnection> connections = new List<DSTConnection>();    
+                var shops = DSTMultiClient.ShopConnections;
+                foreach (var shopConnection in shops)
+                {
+                    connections.Add(new DSTConnection { 
+                        AttemptReconnect = shopConnection.Value.AttemptReconnect,
+                        ConnectDate = shopConnection.Value.ConnectDate,
+                        ConnectionId= shopConnection.Value.ConnectionId,
+                        InitialMessage= shopConnection.Value.InitialMessage,
+                        IPAddress= shopConnection.Value.IPAddress,
+                        KeepAliveStarted= shopConnection.Value.KeepAliveStarted,
+                        LastMessageSent = shopConnection.Value.LastMessageSent,
+                        LastReceiveMessage = shopConnection.Value.LastReceiveMessage,
+                        LastSentMessage = shopConnection.Value.LastSentMessage 
+                    });
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Shops = connections }, Formatting.Indented);
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = ex.Message });
+            }
         }
     }
 }
