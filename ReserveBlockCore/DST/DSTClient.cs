@@ -56,7 +56,7 @@ namespace ReserveBlockCore.DST
                     var FailedToConnect = false;
                     var badList = new List<StunServer>();
                     var portNumber = Port;
-                    LastUsedPort = portNumber;
+                    LastUsedPort = LastUsedPort == 0 ? portNumber : LastUsedPort;
                     udpShop = new UdpClient(portNumber);
                     var delay = Task.Delay(new TimeSpan(0,2,0));
 
@@ -156,6 +156,8 @@ namespace ReserveBlockCore.DST
                                 ConnectDate = TimeUtil.GetTime(),
                                 IPAddress = ConnectedStunServer != null ? ConnectedStunServer.ToString() : "NA",
                                 LastReceiveMessage = TimeUtil.GetTime(),
+                                ConnectionId = RandomStringUtility.GetRandomString(12, true),
+                                AttemptReconnect = true
                             };
 
                             Globals.STUNServer = dstCon;
@@ -267,7 +269,9 @@ namespace ReserveBlockCore.DST
                 if (client != null)
                 {
                     client.LastReceiveMessage = TimeUtil.GetTime();
-                    client.IsConnected = false;
+                    client.ConnectionId = RandomStringUtility.GetRandomString(12, true);
+                    client.KeepAliveStarted = false;
+
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
                 }
                 else
@@ -277,7 +281,9 @@ namespace ReserveBlockCore.DST
                         LastReceiveMessage = TimeUtil.GetTime(),
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
-                        ShopURL = shopURL
+                        ShopURL = shopURL,
+                        ConnectionId = RandomStringUtility.GetRandomString(12, true),
+                        AttemptReconnect = true
                     };
 
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
@@ -401,7 +407,9 @@ namespace ReserveBlockCore.DST
                 if (client != null)
                 {
                     client.LastReceiveMessage = TimeUtil.GetTime();
-                    client.IsConnected = false;
+                    client.ConnectionId = RandomStringUtility.GetRandomString(12, true);
+                    client.KeepAliveStarted = false;
+
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
                 }
                 else
@@ -411,7 +419,9 @@ namespace ReserveBlockCore.DST
                         LastReceiveMessage = TimeUtil.GetTime(),
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = ConnectedStunServer.ToString(),
-                        ShopURL = shopAddress
+                        ShopURL = shopAddress,
+                        ConnectionId = RandomStringUtility.GetRandomString(12, true),
+                        AttemptReconnect = true
                     };
 
                     Globals.ConnectedClients[ConnectedStunServer.ToString()] = client;
@@ -758,11 +768,11 @@ namespace ReserveBlockCore.DST
         {
             try
             {
-                var connectedClients = Globals.ConnectedClients.Values.Where(x => x.IsConnected);
-                foreach (var client in connectedClients)
-                {
-                    Globals.ConnectedClients.TryRemove(client.IPAddress, out _);
-                }
+                //var connectedClients = Globals.ConnectedClients.Values.Where(x => x.IsConnected);
+                //foreach (var client in connectedClients)
+                //{
+                //    Globals.ConnectedClients.TryRemove(client.IPAddress, out _);
+                //}
 
                 shopToken.Cancel();
 
@@ -789,9 +799,6 @@ namespace ReserveBlockCore.DST
 
                     if (!keepShopData)
                         Globals.DecShopData = null;
-
-                    if(!keepSTUNData)
-                        Globals.STUNServer = null;
 
                     udpShop.Close();
                     udpShop.Dispose();

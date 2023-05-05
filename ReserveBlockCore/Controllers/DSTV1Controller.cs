@@ -2114,8 +2114,10 @@ namespace ReserveBlockCore.Controllers
             var clients = Globals.ConnectedClients;
             var shops = Globals.ConnectedShops;
             var stunServer = Globals.STUNServer;
+            var multiDecShopData = Globals.MultiDecShopData;
+            var multiShops = DSTMultiClient.ShopConnections;
 
-            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer }, Formatting.Indented);           
+            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer, MultiDecShopData = multiDecShopData, MultiShops = multiShops }, Formatting.Indented);           
         }
 
         /// <summary>

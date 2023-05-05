@@ -64,10 +64,12 @@ namespace ReserveBlockCore
 
         public const int ValidatorRequiredRBX = 12000;
         public const decimal ADNRRequiredRBX = 5.0M;
+        public const decimal ADNRTransferRequiredRBX = 1.0M;
+        public const decimal ADNRDeleteRequiredRBX = 0.0M;
         public const decimal TopicRequiredRBX = 10.0M;
         public const decimal DecShopRequiredRBX = 10.0M;
         public const decimal DecShopUpdateRequiredRBX = 1.0M;
-        public const decimal DecShopDeleteRequiredRBX = 1.0M;
+        public const decimal DecShopDeleteRequiredRBX = 1.0M; //0
 
         public const int ADNRLimit = 65;
         public static long FeatureLock = 896247;

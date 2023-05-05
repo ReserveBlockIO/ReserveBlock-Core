@@ -260,7 +260,10 @@ namespace ReserveBlockCore.DST
                         IPAddress = (decShop?.IP + ":" + decShop?.Port),
                         ShopURL = shopAddress,
                         ShopToken = new CancellationTokenSource(),
-                        UdpClient = udpClient
+                        UdpClient = udpClient,
+                        ConnectionId = RandomStringUtility.GetRandomString(12, true),
+                        RBXAddress = address,
+                        AttemptReconnect = true
                     };
 
                     shopConnection = nShopCon;
@@ -279,8 +282,12 @@ namespace ReserveBlockCore.DST
                     
                     await Task.Delay(200);
 
+                    shopConnection.KeepAliveStarted = false;
+                    shopConnection.ConnectionId = RandomStringUtility.GetRandomString(12, true);
                     shopConnection.ShopToken = new CancellationTokenSource();
                     shopConnection.UdpClient = udpClient;
+
+                    ShopConnections[shopAddress] = shopConnection;
                 }
 
                 CancellationToken token = shopConnection.ShopToken.Token;
