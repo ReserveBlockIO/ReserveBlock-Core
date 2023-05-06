@@ -735,7 +735,6 @@ namespace ReserveBlockCore.DST
                                     }
                                     else
                                     {
-                                        //DO NEW MULTICONNECT - IMCOMPLETE
                                         if (Globals.MultiDecShopData.TryGetValue(shopURL, out var decShopData))
                                         {
                                             if (uData.CollectionList?.Count > 0)

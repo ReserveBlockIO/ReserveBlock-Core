@@ -1051,8 +1051,6 @@ namespace ReserveBlockCore.DST
         public static async Task GetShopDataLoop(CancellationToken token, string address, ShopConnection shopConnection)
         {
             var exit = false;
-            var delay = Task.Delay(60000);
-
             //wait 1 minute before starting
             await Task.Delay(60000);
             while (!exit && !token.IsCancellationRequested)
@@ -1077,19 +1075,19 @@ namespace ReserveBlockCore.DST
 
                             //Collections
                             if (NewCollectionsFound)
-                                _ = GetShopCollections(address, shopConnection);
+                                await GetShopCollections(address, shopConnection);
                             //Listings
                             if(NewListingsFound)
-                                _ = GetShopListings(address, shopConnection, true);
+                                await GetShopListings(address, shopConnection, true);
                             //Auctions
                             if(NewAuctionsFound)
-                                _ = GetShopAuctions(address, shopConnection, true);
+                                await GetShopAuctions(address, shopConnection, true);
                         }
                     }
 
-                    await Task.Delay(60000);
+                    await Task.Delay(5000);
                 }
-                catch { await Task.Delay(60000); }
+                catch { await Task.Delay(30000); }
             }
         }
 
