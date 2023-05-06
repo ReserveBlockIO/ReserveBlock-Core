@@ -1169,7 +1169,7 @@ namespace ReserveBlockCore.DST
                     ComType = MessageComType.Request
                 };
 
-                _ = SendShopMessageFromClient(message, true);
+                await SendShopMessageFromClient(message, true);
 
                 await Task.Delay(200);
 
@@ -1181,7 +1181,7 @@ namespace ReserveBlockCore.DST
                     if(!collectionsFound)
                     {
                         failCounter+= 1;
-                        _ = SendShopMessageFromClient(message, true);
+                        await SendShopMessageFromClient(message, true);
                     }
                     //else
                     //{
@@ -1226,11 +1226,11 @@ namespace ReserveBlockCore.DST
                         ComType = MessageComType.Request
                     };
 
-                    _ = SendShopMessageFromClient(message, true);
+                    await SendShopMessageFromClient(message, true);
 
                     await Task.Delay(200);
 
-                    while (!listingsFound && Globals.DecShopData?.Listings?.Count != Globals.DecShopData?.DecShop?.ListingCount)
+                    while (!listingsFound && failCounter < 3)
                     {
                         if (Globals.DecShopData?.Listings != null)
                         {
@@ -1238,20 +1238,17 @@ namespace ReserveBlockCore.DST
                             {
                                 //good
                                 listingsFound = true;
-                                await Task.Delay(200);
                             }
                             else
                             {
-                                await Task.Delay(200);
                                 failCounter += 1;
-                                _ = SendShopMessageFromClient(message, true);
+                                await SendShopMessageFromClient(message, true);
                             }
                         }
                         else
                         {
-                            await Task.Delay(200);
                             failCounter += 1;
-                            _ = SendShopMessageFromClient(message, true);
+                            await SendShopMessageFromClient(message, true);
                         }
                     }
                 }
@@ -1289,7 +1286,7 @@ namespace ReserveBlockCore.DST
                         ComType = MessageComType.Request
                     };
 
-                    _ = SendShopMessageFromClient(message, true);
+                    await SendShopMessageFromClient(message, true);
 
                     await Task.Delay(200);
 
@@ -1305,13 +1302,13 @@ namespace ReserveBlockCore.DST
                             else
                             {
                                 failCounter += 1;
-                                _ = SendShopMessageFromClient(message, true);
+                                await SendShopMessageFromClient(message, true);
                             }
                         }
                         else
                         {
                             failCounter += 1;
-                            _ = SendShopMessageFromClient(message, true);
+                            await SendShopMessageFromClient(message, true);
                         }
                     }
                 }
