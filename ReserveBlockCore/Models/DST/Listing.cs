@@ -130,6 +130,68 @@ namespace ReserveBlockCore.Models.DST
 
         #endregion
 
+        #region Get All Started Listings
+        public static List<Listing>? GetLiveListings()
+        {
+            var listingDb = GetListingDb();
+
+            if (listingDb != null)
+            {
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if (liveCollections != null)
+                {
+                    var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled && liveCollections.Contains(x.CollectionId)).ToList();
+                    if (listings.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    return listings;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Get Live Listings Ids
+        public static List<int>? GetLiveListingIds()
+        {
+            var listingDb = GetListingDb();
+
+            if (listingDb != null)
+            {
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if (liveCollections != null)
+                {
+                    var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled && liveCollections.Contains(x.CollectionId)).Select(x => x.Id).ToList();
+                    if (listings.Count() == 0)
+                    {
+                        return null;
+                    }
+
+                    return listings;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
         #region Get Single Listing
         public static Listing? GetSingleListing(int listingId)
         {

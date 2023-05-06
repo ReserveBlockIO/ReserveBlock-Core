@@ -755,14 +755,26 @@ namespace ReserveBlockCore.DST
                                                     {
                                                         var newCollectionList = uData.CollectionList.Where(x => !Globals.MultiDecShopData[shopURL].Collections.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
                                                         if (newCollectionList.Count > 0)
-                                                            DSTMultiClient.NewCollectionsFound = true;
+                                                        {
+                                                            if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                                                            {
+                                                                shopConnection.NewCollectionsFound = true;
+                                                                DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                                            }
+                                                        }
                                                     }
                                                     catch { }
                                                 }
                                                 else
                                                 {
                                                     if (uData.CollectionList.Count > 0)
-                                                        DSTMultiClient.NewCollectionsFound = true;
+                                                    {
+                                                        if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                                                        {
+                                                            shopConnection.NewCollectionsFound = true;
+                                                            DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                                        }
+                                                    }
 
                                                 }
                                             }
@@ -788,14 +800,26 @@ namespace ReserveBlockCore.DST
                                                     {
                                                         var newListingsList = uData.ListingList.Where(x => !Globals.MultiDecShopData[shopURL].Listings.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
                                                         if (newListingsList.Count > 0)
-                                                            DSTMultiClient.NewListingsFound = true;
+                                                        {
+                                                            if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                                                            {
+                                                                shopConnection.NewListingsFound = true;
+                                                                DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                                            }
+                                                        }
                                                     }
                                                     catch { }
                                                 }
                                                 else
                                                 {
                                                     if (uData.ListingList.Count > 0)
-                                                        DSTMultiClient.NewListingsFound = true;
+                                                    {
+                                                        if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                                                        {
+                                                            shopConnection.NewListingsFound = true;
+                                                            DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                                        }
+                                                    }
                                                 }
                                             }
                                             else
@@ -820,14 +844,26 @@ namespace ReserveBlockCore.DST
                                                     {
                                                         var newAuctionList = uData.AuctionList.Where(x => !Globals.MultiDecShopData[shopURL].Auctions.Select(y => y.Id).Contains(x)).Select(x => x).ToList();
                                                         if (newAuctionList.Count > 0)
-                                                            DSTMultiClient.NewAuctionsFound = true;
-                                                    }
+                                                        {
+                                                            if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                                                            {
+                                                                shopConnection.NewAuctionsFound = true;
+                                                                DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                                            }
+                                                        }
+                                                        }
                                                     catch { }
                                                 }
                                                 else
                                                 {
                                                     if (uData.AuctionList.Count > 0)
-                                                        DSTMultiClient.NewAuctionsFound = true;
+                                                    {
+                                                        if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                                                        {
+                                                            shopConnection.NewAuctionsFound = true;
+                                                            DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                                        }
+                                                    }
                                                 }
                                             }
                                             else
@@ -948,7 +984,7 @@ namespace ReserveBlockCore.DST
 
                             return respMessage;
                         }
-                        var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleBeforeStartDate && !x.IsCancelled && !x.IsAuctionEnded).ToList();
+                        var listings = Listing.GetLiveListings();
                         if (listings?.Count() > 0)
                         {
                             var pageSkip = page * PaginationAmount;
@@ -1243,8 +1279,8 @@ namespace ReserveBlockCore.DST
                     }
                     else if(option == "Update")
                     {
-                        var collections = Collection.GetAllCollections()?.ToList();
-                        var listings = Listing.GetAllListings()?.Where(x => x.IsVisibleBeforeStartDate && !x.IsCancelled && !x.IsAuctionEnded).ToList();
+                        var collections = Collection.GetAllCollections()?.Where(x => x.CollectionLive).ToList();
+                        var listings = Listing.GetLiveListingIds();
                         var auctions = Auction.GetAllAuctions()?.Where(x => !x.IsAuctionOver).ToList();
 
                         List<int>? collectionIds = null;
@@ -1260,7 +1296,7 @@ namespace ReserveBlockCore.DST
 
                         if (listings?.Count > 0)
                         {
-                            var listIds = listings.Select(x => x.Id);
+                            var listIds = listings;
                             listingIds = new List<int>();
                             listingIds.AddRange(listIds);
                         }

@@ -862,13 +862,13 @@ namespace ReserveBlockCore.DST
                     //begin data grab
 
                     //Collections
-                    _ = GetShopCollections(connectingAddress, shopConnection);
+                    await GetShopCollections(connectingAddress, shopConnection);
                     //Listings
                     await Task.Delay(200);
-                    _ = GetShopListings(connectingAddress, shopConnection);
+                    await GetShopListings(connectingAddress, shopConnection);
                     //Auctions
                     await Task.Delay(200);
-                    _ = GetShopAuctions(connectingAddress, shopConnection);
+                    await GetShopAuctions(connectingAddress, shopConnection);
                     //Assets
                 }
             }
@@ -918,7 +918,7 @@ namespace ReserveBlockCore.DST
                 }
             }
 
-            NewCollectionsFound = false;
+            ShopConnections[shopConnection.ShopURL].NewCollectionsFound = false;
         }
 
         public static async Task GetShopListings(string connectionAddress, ShopConnection shopConnection, bool needsUpdate = false)
@@ -984,7 +984,7 @@ namespace ReserveBlockCore.DST
                 }
             }
 
-            NewListingsFound = false;
+            ShopConnections[shopConnection.ShopURL].NewListingsFound = false;
         }
         public static async Task GetShopAuctions(string connectionAddress, ShopConnection shopConnection, bool needsUpdate = false)
         {
@@ -1045,7 +1045,7 @@ namespace ReserveBlockCore.DST
                 }
             }
 
-            NewAuctionsFound = false;
+            ShopConnections[shopConnection.ShopURL].NewAuctionsFound = false;
         }
 
         public static async Task GetShopDataLoop(CancellationToken token, string address, ShopConnection shopConnection)
@@ -1064,23 +1064,23 @@ namespace ReserveBlockCore.DST
                         continue;
                     }
 
-                    if (ShopConnections.TryGetValue(shopConnection.ShopURL, out _))
+                    if (ShopConnections.TryGetValue(shopConnection.ShopURL, out var _shopConnection))
                     {
                         if (Globals.MultiDecShopData.TryGetValue(shopConnection.ShopURL, out var decShopData))
                         {
                             //begin data grab
 
-                            if (NewAuctionsFound || NewListingsFound || NewAuctionsFound)
+                            if (_shopConnection.NewAuctionsFound || _shopConnection.NewListingsFound || _shopConnection.NewAuctionsFound)
                                 await GetShopData(address, shopConnection, true);
 
                             //Collections
-                            if (NewCollectionsFound)
+                            if(_shopConnection.NewCollectionsFound)
                                 await GetShopCollections(address, shopConnection);
                             //Listings
-                            if(NewListingsFound)
+                            if(_shopConnection.NewListingsFound)
                                 await GetShopListings(address, shopConnection, true);
                             //Auctions
-                            if(NewAuctionsFound)
+                            if(_shopConnection.NewAuctionsFound)
                                 await GetShopAuctions(address, shopConnection, true);
                         }
                     }

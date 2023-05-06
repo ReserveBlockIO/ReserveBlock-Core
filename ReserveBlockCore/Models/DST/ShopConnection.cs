@@ -15,6 +15,9 @@ namespace ReserveBlockCore.Models.DST
         public bool IsConnected { get { return GetConnectionStatus(); } }
         public bool KeepAliveStarted { get; set; }
         public bool AttemptReconnect { get; set; }
+        public bool NewCollectionsFound { get; set; }
+        public bool NewListingsFound { get; set; }
+        public bool NewAuctionsFound { get; set; }
         public string IPAddress { get; set; }
         public long ConnectDate { get; set; }
         public long LastSentMessage { get; set; }
