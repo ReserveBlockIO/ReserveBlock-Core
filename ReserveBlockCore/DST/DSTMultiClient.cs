@@ -954,7 +954,6 @@ namespace ReserveBlockCore.DST
 
                         await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
 
-                        await Task.Delay(200);
                         //while (!listingsFound && Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings?.Count != decShopData?.DecShop?.ListingCount)
                         while (!listingsFound && failCounter < 3)
                         {
@@ -964,19 +963,16 @@ namespace ReserveBlockCore.DST
                                 {
                                     //good
                                     listingsFound = true;
-                                    await Task.Delay(200);
                                     break;
                                 }
                                 else
                                 {
-                                    await Task.Delay(200);
                                     failCounter += 1;
                                     await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
                                 }
                             }
                             else
                             {
-                                await Task.Delay(200);
                                 failCounter += 1;
                                 await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
                             }
