@@ -456,7 +456,7 @@ namespace ReserveBlockCore.DST
 
                     _ = SendShopMessageFromClient(message, true, shopConnect.UdpClient, shopConnect.EndPoint);
 
-                    await Task.Delay(new TimeSpan(0, 0, 60));
+                    await Task.Delay(new TimeSpan(0, 0, 30));
                 }
                 catch
                 {
