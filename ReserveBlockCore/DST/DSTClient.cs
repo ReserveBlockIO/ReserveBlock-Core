@@ -319,6 +319,9 @@ namespace ReserveBlockCore.DST
                 var decShop = await DecShop.GetDecShopStateTreiLeafByURL(shopAddress);
                 if(decShop != null)
                 {
+                    if (decShop.IP == "NA")
+                        return false;
+
                     var shopServer = decShop.IP + ":" + decShop.Port;
 
                     if (shopServer != null)
@@ -1321,10 +1324,6 @@ namespace ReserveBlockCore.DST
         public static async Task GetShopDataLoop(CancellationToken token, string address)
         {
             var exit = false;
-            var delay = Task.Delay(60000);
-
-            //wait 1 minute before starting
-            await Task.Delay(60000);
             while (!exit && !token.IsCancellationRequested)
             {
                 try
@@ -1347,19 +1346,19 @@ namespace ReserveBlockCore.DST
 
                             //Collections
                             if (NewCollectionsFound)
-                                _ = GetShopCollections(address);
+                                await GetShopCollections(address);
                             //Listings
                             if(NewListingsFound)
-                                _ = GetShopListings(address, true);
+                                await GetShopListings(address, true);
                             //Auctions
                             if(NewAuctionsFound)
-                                _ = GetShopAuctions(address, true);
+                                await GetShopAuctions(address, true);
                         }
                     }
 
-                    await Task.Delay(60000);
+                    await Task.Delay(5000);
                 }
-                catch { await Task.Delay(60000); }
+                catch { await Task.Delay(30000); }
             }
         }
 
