@@ -952,11 +952,11 @@ namespace ReserveBlockCore.DST
                             ComType = MessageComType.Request
                         };
 
-                        _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+                        await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
 
                         await Task.Delay(200);
-
-                        while (!listingsFound && Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings?.Count != decShopData?.DecShop?.ListingCount)
+                        //while (!listingsFound && Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings?.Count != decShopData?.DecShop?.ListingCount)
+                        while (!listingsFound && failCounter < 3)
                         {
                             if (Globals.MultiDecShopData[shopConnection.ShopURL]?.Listings != null)
                             {
@@ -965,19 +965,20 @@ namespace ReserveBlockCore.DST
                                     //good
                                     listingsFound = true;
                                     await Task.Delay(200);
+                                    break;
                                 }
                                 else
                                 {
                                     await Task.Delay(200);
                                     failCounter += 1;
-                                    _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+                                    await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
                                 }
                             }
                             else
                             {
                                 await Task.Delay(200);
                                 failCounter += 1;
-                                _ = SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
+                                await SendShopMessageFromClient(message, true, shopConnection.UdpClient, shopConnection.EndPoint);
                             }
                         }
                     }
