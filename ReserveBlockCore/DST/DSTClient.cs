@@ -128,7 +128,7 @@ namespace ReserveBlockCore.DST
                         }
                         else
                         {
-                            await delay;
+                            await Task.Delay(new TimeSpan(0, 2, 0));
                             badList = new List<StunServer>();
                         }
                     }

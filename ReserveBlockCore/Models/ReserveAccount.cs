@@ -1219,6 +1219,8 @@ namespace ReserveBlockCore.Models
             if(stateRec.RecoveryAccount != recoveryAccount.Address)
                 return (null, $"Recovery account does not match the restores recovery account.");
 
+            var currentTime = TimeUtil.GetTime();
+            var message = $"{currentTime}{recoveryAccount.Address}";
             var sigScript = SignatureService.CreateSignature(recoveryAccount.Address, recoveryAccount.GetPrivKey, recoveryAccount.PublicKey);
             var verify = SignatureService.VerifySignature(recoveryAccount.Address, recoveryAccount.Address, sigScript);
 
@@ -1231,7 +1233,7 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(key, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "Recover()", RecoveryAddress = recoveryAccount.Address, RecoverySigScript = sigScript });
+            txData = JsonConvert.SerializeObject(new { Function = "Recover()", RecoveryAddress = recoveryAccount.Address, RecoverySigScript = sigScript, SignatureTime = currentTime });
 
             var tx = new Transaction
             {

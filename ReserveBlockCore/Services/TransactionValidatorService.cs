@@ -352,6 +352,8 @@ namespace ReserveBlockCore.Services
                         if (function == null)
                             return (txResult, "SC Function cannot be null.");
 
+                        var mempool = TransactionData.GetPool();
+
                         if (function == "Sale_Start()")
                         {
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
@@ -359,6 +361,32 @@ namespace ReserveBlockCore.Services
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
                             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
                             var bidSignature = jobj["BidSignature"]?.ToObject<string?>();
+
+                            var mempoolList = mempool.Query().Where(x => 
+                            x.FromAddress == txRequest.FromAddress && 
+                            x.Hash != txRequest.Hash && 
+                            (x.TransactionType == TransactionType.NFT_SALE || 
+                            x.TransactionType == TransactionType.NFT_TX || 
+                            x.TransactionType == TransactionType.NFT_BURN)).ToList();
+
+                            if (mempoolList?.Count > 0)
+                            {
+                                var reject = false;
+
+                                foreach (var tx in mempoolList)
+                                {
+                                    var txObjData = JObject.Parse(txData);
+                                    var mTXSCUID = txObjData["ContractUID"]?.ToObject<string?>();
+                                    if(mTXSCUID == scUID)
+                                    {
+                                        reject = true;
+                                        break;
+                                    }
+                                }
+
+                                if (reject)
+                                    return (txResult, "There is already a TX for this smart contract here.");
+                            }
 
                             if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null && bidSignature != null)
                             {
@@ -410,6 +438,32 @@ namespace ReserveBlockCore.Services
                             var royaltyPayTo = jobj["RoyaltyPayTo"]?.ToObject<string?>();
                             var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
+
+                            var mempoolList = mempool.Query().Where(x =>
+                            x.FromAddress == txRequest.FromAddress &&
+                            x.Hash != txRequest.Hash &&
+                            (x.TransactionType == TransactionType.NFT_SALE ||
+                            x.TransactionType == TransactionType.NFT_TX ||
+                            x.TransactionType == TransactionType.NFT_BURN)).ToList();
+
+                            if (mempoolList?.Count > 0)
+                            {
+                                var reject = false;
+
+                                foreach (var tx in mempoolList)
+                                {
+                                    var txObjData = JObject.Parse(txData);
+                                    var mTXSCUID = txObjData["ContractUID"]?.ToObject<string?>();
+                                    if (mTXSCUID == scUID)
+                                    {
+                                        reject = true;
+                                        break;
+                                    }
+                                }
+
+                                if (reject)
+                                    return (txResult, "There is already a TX for this smart contract here.");
+                            }
 
                             if (scUID != null && transactions != null && keySign != null)
                             {
@@ -1086,9 +1140,14 @@ namespace ReserveBlockCore.Services
                                         runReserveCheck = false;
                                         string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
                                         string recoverySigScript = jobj["RecoverySigScript"].ToObject<string>();
+                                        long sigTime = jobj["SignatureTime"].ToObject<long>();
+
                                         if (!string.IsNullOrEmpty(recoveryAddress) && !string.IsNullOrEmpty(recoverySigScript))
                                         {
-                                            var currentTime = TimeUtil.GetTime();
+                                            var currentTime = TimeUtil.GetTime(-600);
+
+                                            if(currentTime > sigTime)
+                                                return (txResult, "Recover request has expired.");
 
                                             var stateRec = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
@@ -1101,7 +1160,9 @@ namespace ReserveBlockCore.Services
                                             if(stateRec.RecoveryAccount != recoveryAddress)
                                                 return (txResult, $"Reserve account state record does not match the tx record.");
 
-                                            var sigVerify = SignatureService.VerifySignature(recoveryAddress, recoveryAddress, recoverySigScript);
+                                            string message = $"{sigTime}{recoveryAddress}";
+
+                                            var sigVerify = SignatureService.VerifySignature(recoveryAddress, message, recoverySigScript);
 
                                             if(!sigVerify)
                                                 return (txResult, $"Recovery account signature did not verify.");
