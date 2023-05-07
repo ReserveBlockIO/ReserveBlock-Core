@@ -341,6 +341,41 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Deletes a specific beacon asset queue with a provided id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("GetDeleteAssetQueue/{id}")]
+        public async Task<string> GetDeleteAssetQueue(int id)
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await AssetQueue.DeleteAssetQueueItem(id);
+
+            output = result.ToString();
+
+            return output;
+        }
+
+        /// <summary>
+        /// Deletes all asset queues
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDeleteAssetQueueAll")]
+        public async Task<string> GetDeleteAssetQueueAll()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await AssetQueue.DeleteAllAssetQueue();
+
+            output = result.ToString();
+
+            return output;
+        }
+
+        /// <summary>
         /// Returns all current beacon request
         /// </summary>
         /// <returns></returns>

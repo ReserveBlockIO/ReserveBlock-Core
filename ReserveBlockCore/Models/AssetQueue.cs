@@ -124,7 +124,7 @@ namespace ReserveBlockCore.Models
         }
         #endregion
 
-        #region Delete Asset Queue
+        #region Delete Asset Queue item/all
         public static void DeleteAssetQueueItem(AssetQueue aqa)
         {
             var aq = GetAssetQueue();
@@ -143,6 +143,43 @@ namespace ReserveBlockCore.Models
                     ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
                 }
             }
+        }
+        public static async Task<bool> DeleteAssetQueueItem(int id)
+        {
+            var aq = GetAssetQueue();
+            if (aq == null)
+            {
+                ErrorLogUtility.LogError("GetAdnr() returned a null value.", "Adnr.GetAdnr()");
+            }
+            else
+            {
+                try
+                {
+                    aq.DeleteSafe(id);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
+                }
+            }
+            return false;
+        }
+
+        public static async Task<bool> DeleteAllAssetQueue()
+        {
+            var assetQueue = GetAssetQueue();
+            if (assetQueue == null)
+            {
+                ErrorLogUtility.LogError("DeleteAllAssetQueue() returned a null value.", "AssetQueue.DeleteAllAssetQueue()");
+            }
+            else
+            {
+                assetQueue.DeleteAllSafe();
+                return true;
+            }
+
+            return false;
         }
         #endregion
 

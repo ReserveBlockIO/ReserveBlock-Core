@@ -27,6 +27,7 @@ namespace ReserveBlockCore.Models
         public string PrivateKey { get; set; }
         public string PublicKey { set; get; }
         public string Address { get; set; }
+        public string RecoveryCode { get; set; }
         public string RecoveryAddress { get; set; }
         public string? RecoveryPrivateKey { get; set; } = null;
         public string? RecoveryEncryptedDecryptKey { get; set; } = null;
