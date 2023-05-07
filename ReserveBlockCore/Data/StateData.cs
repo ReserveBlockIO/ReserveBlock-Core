@@ -350,8 +350,9 @@ namespace ReserveBlockCore.Data
                                             CallBackReserveAccountTx(callBackHash);
                                             break;
                                         case "Recover()":
-                                            var restoreHash = (string?)jobj["Hash"];
-                                            RecoverReserveAccountTx(restoreHash, block.StateRoot);
+                                            string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
+                                            string recoverySigScript = jobj["RecoverySigScript"].ToObject<string>();
+                                            RecoverReserveAccountTx(recoveryAddress, tx.FromAddress, block.StateRoot);
                                             break;
                                         default:
                                             break;
@@ -643,22 +644,22 @@ namespace ReserveBlockCore.Data
             }
             catch { }
         }
-        private static void RecoverReserveAccountTx(string? restoreHash, string stateRoot)
+        private static void RecoverReserveAccountTx(string? _recoveryAddress, string _fromAddress, string stateRoot)
         {
             try
             {
-                if (restoreHash != null)
+                var stDb = GetAccountStateTrei();
+                var rTXList = ReserveTransactions.GetTransactionList(_fromAddress);
+
+                if(rTXList?.Count() > 0)
                 {
-                    var rTX = ReserveTransactions.GetTransactions(restoreHash);
-                    if(rTX != null)
+                    foreach(var rTX in rTXList) 
                     {
                         var tx = rTX.Transaction;
                         var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
                         var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
                         if (tx.TransactionType == TransactionType.TX)
                         {
-                            var stDb = GetAccountStateTrei();
-                            
                             var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
 
                             if (stateTreiFrom != null)
@@ -684,7 +685,7 @@ namespace ReserveBlockCore.Data
                                     {
                                         stateTreiRecovery.Balance += tx.Amount;
                                         if (stDb != null)
-                                            stDb.UpdateSafe(stateTreiFrom);
+                                            stDb.UpdateSafe(stateTreiRecovery);
                                     }
                                     else
                                     {
@@ -719,8 +720,8 @@ namespace ReserveBlockCore.Data
                                     stDb.UpdateSafe(stateTreiTo);
                             }
                         }
-                        
-                        if(tx.TransactionType == TransactionType.NFT_TX)
+
+                        if (tx.TransactionType == TransactionType.NFT_TX)
                         {
                             var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
                             var scData = scDataArray[0];
@@ -736,14 +737,14 @@ namespace ReserveBlockCore.Data
                                     var scDb = SmartContractStateTrei.GetSCST();
                                     if (scDb != null)
                                     {
-                                        if(recoveryAddress != null)
+                                        if (recoveryAddress != null)
                                         {
                                             scStateTrei.OwnerAddress = recoveryAddress;
                                             scStateTrei.NextOwner = null;
                                             scStateTrei.IsLocked = false;
                                             scDb.UpdateSafe(scStateTrei);
                                         }
-                                        
+
                                     }
                                 }
                             }
@@ -764,6 +765,54 @@ namespace ReserveBlockCore.Data
                             rtxDb.DeleteSafe(rTX.Id);
                     }
                 }
+
+                //find current NFTs from the from address reserve and send to recovery
+                //find balance for from address reserve and send to recovery
+                var rsrvAccount = GetSpecificAccountStateTrei(_fromAddress);
+                var _stateTreiRecovery = GetSpecificAccountStateTrei(_recoveryAddress);
+
+                if (_stateTreiRecovery != null)
+                {
+                    _stateTreiRecovery.Balance += rsrvAccount.Balance;
+                    if (stDb != null)
+                        stDb.UpdateSafe(_stateTreiRecovery);
+                }
+                else
+                {
+                    var acctStateTreiTo = new AccountStateTrei
+                    {
+                        Key = _recoveryAddress,
+                        Nonce = 0,
+                        Balance = rsrvAccount.Balance, //subtract from the address
+                        StateRoot = stateRoot
+                    };
+
+                    if (stDb != null)
+                        stDb.InsertSafe(acctStateTreiTo);
+                }
+
+                rsrvAccount.Balance = 0.0M;
+                rsrvAccount.LockedBalance = 0.0M;
+
+                stDb.UpdateSafe(rsrvAccount);
+
+                var _scDb = SmartContractStateTrei.GetSCST();
+
+                if(_scDb != null)
+                {
+                    var scList = _scDb.Query().Where(x => x.OwnerAddress == _fromAddress).ToList();
+                    if(scList?.Count > 0 ) 
+                    {
+                        foreach(var sc in scList)
+                        {
+                            sc.OwnerAddress = _recoveryAddress;
+                            sc.NextOwner = null;
+                            sc.IsLocked = false;
+                            _scDb.UpdateSafe(sc);
+                        }
+                    }
+                }
+
             }
             catch { }
         }

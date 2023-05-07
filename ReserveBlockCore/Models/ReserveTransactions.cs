@@ -54,6 +54,28 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
+        #region Get ReserveTransactions transaction list
+        public static IEnumerable<ReserveTransactions>? GetTransactionList(string fromAddress)
+        {
+            try
+            {
+                var db = GetReserveTransactionsDb();
+                var rec = db.Query().Where(x => x.FromAddress == fromAddress).ToEnumerable();
+                if (rec != null)
+                {
+                    return rec;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return null;
+        }
+
+        #endregion
+
         #region Get ReserveTransactions DB
         public static void SaveReserveTx(ReserveTransactions rTx)
         {

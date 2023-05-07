@@ -1009,7 +1009,7 @@ namespace ReserveBlockCore.Services
                         return (txResult, "Feature not activated yet.");
 
                     //Feature not activated yet.
-                    return (txResult, "Feature not activated yet.");
+                    //return (txResult, "Feature not activated yet.");
 
                     var txData = txRequest.Data;
                     if (txData != null)
@@ -1084,29 +1084,27 @@ namespace ReserveBlockCore.Services
                                     if (function == "Recover()")
                                     {
                                         runReserveCheck = false;
-                                        string hash = jobj["Hash"].ToObject<string>();
-                                        if (!string.IsNullOrEmpty(hash))
+                                        string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
+                                        string recoverySigScript = jobj["RecoverySigScript"].ToObject<string>();
+                                        if (!string.IsNullOrEmpty(recoveryAddress) && !string.IsNullOrEmpty(recoverySigScript))
                                         {
                                             var currentTime = TimeUtil.GetTime();
-                                            var rTx = ReserveTransactions.GetTransactions(hash);
-                                            if (rTx == null)
-                                                return (txResult, "Could not find a reserve transaction with that hash.");
 
-                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
-                                                return (txResult, "From address does not match the reserve tx from address. Cannot recover.");
-
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                                            {
-                                                if (rTx.ConfirmTimestamp <= currentTime)
-                                                    return (txResult, "This TX has already passed and can no longer be recovered.");
-                                            }
-                                            var stateRec = StateData.GetSpecificAccountStateTrei(rTx.FromAddress);
+                                            var stateRec = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
                                             if (stateRec == null) 
                                                 return (txResult, "State record cannot be null.");
                                             
                                             if (stateRec.RecoveryAccount == null)
                                                 return (txResult, $"Reserve account does not have a recovery address.");
+
+                                            if(stateRec.RecoveryAccount != recoveryAddress)
+                                                return (txResult, $"Reserve account state record does not match the tx record.");
+
+                                            var sigVerify = SignatureService.VerifySignature(recoveryAddress, recoveryAddress, recoverySigScript);
+
+                                            if(!sigVerify)
+                                                return (txResult, $"Recovery account signature did not verify.");
                                         }
                                     }
                                 }
