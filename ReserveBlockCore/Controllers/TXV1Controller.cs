@@ -616,6 +616,54 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Creates a NFT evolve transaction data
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="evoState"></param>
+        /// <returns></returns>
+        [HttpGet("GetNFTEvolveData/{scUID}/{toAddress}/{evoState}")]
+        public async Task<string> GetNFTEvolveData(string scUID, string toAddress, int evoState)
+        {
+            var output = "";
+            try
+            {
+                toAddress = toAddress.ToAddressNormalize();
+
+                var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                if (smartContractStateTrei == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract State was Null." });
+
+                var minterAddress = smartContractStateTrei.MinterAddress;
+                var evolve = await EvolvingFeature.GetNewSpecificState(smartContractStateTrei.ContractData, evoState);
+
+                var evolveResult = evolve.Item1;
+                if (evolveResult != true)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to process new evolutionary state." });
+
+                var evolveData = evolve.Item2;
+                var bytes = Encoding.Unicode.GetBytes(evolveData);
+                var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
+
+                var newSCInfo = new[]
+                {
+                    new { Function = "ChangeEvolveStateSpecific()", ContractUID = scUID, FromAddress = minterAddress, ToAddress = toAddress, NewEvoState = evoState, Data = scBase64}
+                };
+
+                var txData = JsonConvert.SerializeObject(newSCInfo);
+
+                return txData;
+
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
+            }
+
+            return output;
+        }
+
+        /// <summary>
         /// Creates a NFT Burn data transactions
         /// </summary>
         /// <param name="scUID"></param>
