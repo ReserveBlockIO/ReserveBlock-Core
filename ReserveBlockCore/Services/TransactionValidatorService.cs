@@ -1063,7 +1063,7 @@ namespace ReserveBlockCore.Services
                         return (txResult, "Feature not activated yet.");
 
                     //Feature not activated yet.
-                    //return (txResult, "Feature not activated yet.");
+                    return (txResult, "Feature not activated yet.");
 
                     var txData = txRequest.Data;
                     if (txData != null)

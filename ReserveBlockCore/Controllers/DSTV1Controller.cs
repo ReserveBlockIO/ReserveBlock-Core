@@ -747,6 +747,7 @@ namespace ReserveBlockCore.Controllers
                             myDS.Description = decShop.Description;
                             myDS.IsOffline = decShop.IsOffline;
                             myDS.AutoUpdateNetworkDNS = decShop.AutoUpdateNetworkDNS;
+                            myDS.HostingType = decShop.HostingType;
 
                             if(myDS.DecShopURL != decShop.DecShopURL)
                             {
@@ -763,6 +764,13 @@ namespace ReserveBlockCore.Controllers
                             if(myDS.IsIPDifferent && myDS.HostingType == DecShopHostingType.Network)
                             {
                                 myDS.IP = P2PClient.MostLikelyIP();
+                                myDS.Port = myDS.Port == 0 ? Globals.DSTClientPort : myDS.Port;
+                            }
+
+                            if(decShop.HostingType == DecShopHostingType.ThirdParty)
+                            {
+                                myDS.IP = "NA";
+                                myDS.Port = 0;
                             }
                                 
                             var result = await DecShop.SaveMyDecShopLocal(myDS);
