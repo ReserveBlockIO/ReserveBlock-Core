@@ -7,6 +7,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Diagnostics;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -255,14 +256,37 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <param name="locators"></param>
+        /// <param name="address"></param>
         /// <param name="signature"></param>
         /// <returns></returns>
-        [HttpGet("GetBeaconAssets/{scUID}/{locators}/{**signature}/")]
-        public async Task<string> GetBeaconAssets(string scUID, string locators, string signature)
+        [HttpGet("GetBeaconAssets/{scUID}/{locators}/{address}/{**signature}/")]
+        public async Task<string> GetBeaconAssets(string scUID, string locators, string address, string signature)
         {
             //signature message = scUID
             string output = "";
-            var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, "NA");
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return "Error - Failed to get SC State";
+
+            var md5List = scState.MD5List;
+
+            if (md5List == null)
+                return "Error - MD5 List was null";
+
+            var assetList = await MD5Utility.GetAssetList(md5List);
+
+            if (assetList?.Count == 0)
+                return "Asset list was null or zero.";
+
+            var result = await NFTAssetFileUtility.DownloadAssetFromBeacon(scUID, locators, signature, md5List);
+            
+            if(result == "Success")
+            {
+                var aqResult = AssetQueue.CreateAssetQueueItem(scUID, address, locators, md5List, assetList, AssetQueue.TransferType.Download, true, true);
+                if (!aqResult)
+                    result = "Fail";
+            }
+            output = result;
             return output;
         }
 
@@ -312,6 +336,41 @@ namespace ReserveBlockCore.Controllers
                     }
                 }
             }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Deletes a specific beacon asset queue with a provided id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("GetDeleteAssetQueue/{id}")]
+        public async Task<string> GetDeleteAssetQueue(int id)
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await AssetQueue.DeleteAssetQueueItem(id);
+
+            output = result.ToString();
+
+            return output;
+        }
+
+        /// <summary>
+        /// Deletes all asset queues
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetDeleteAssetQueueAll")]
+        public async Task<string> GetDeleteAssetQueueAll()
+        {
+            //signature message = scUID
+            string output = "None";
+
+            var result = await AssetQueue.DeleteAllAssetQueue();
+
+            output = result.ToString();
 
             return output;
         }

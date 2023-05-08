@@ -258,9 +258,6 @@ namespace ReserveBlockCore.Commands
                     }
                     Globals.StopConsoleOutput = false;
                     break;
-                case "/test1":
-                    await DSTClient.ConnectToShopForAssets();
-                    break;
                 case "1": // Genesis Block (check)
                     var genBlock = BlockchainData.GetGenesisBlock();
                     BlockchainData.PrintBlock(genBlock);

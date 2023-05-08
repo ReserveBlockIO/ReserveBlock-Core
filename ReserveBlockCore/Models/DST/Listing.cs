@@ -3,6 +3,7 @@ using ReserveBlockCore.Data;
 using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Utilities;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 namespace ReserveBlockCore.Models.DST
 {
@@ -82,7 +83,7 @@ namespace ReserveBlockCore.Models.DST
 
             if (listingDb != null)
             {
-                var listings = listingDb.Query().Where(x => x.IsAuctionStarted).ToEnumerable();
+                var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsSaleComplete && !x.SaleHasFailed && !x.IsSaleTXSent).ToEnumerable();
                 if (listings.Count() == 0)
                 {
                     return null;
@@ -105,17 +106,87 @@ namespace ReserveBlockCore.Models.DST
 
             if (listingDb != null)
             {
-                var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled).ToEnumerable().Count();
-                if (listings == 0)
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if(liveCollections != null)
+                {
+                    var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled && liveCollections.Contains(x.CollectionId)).ToEnumerable().Count();
+                    if (listings == 0)
+                    {
+                        return 0;
+                    }
+
+                    return listings;
+                }
+                else
                 {
                     return 0;
                 }
-
-                return listings;
             }
             else
             {
                 return 0;
+            }
+        }
+
+        #endregion
+
+        #region Get All Started Listings
+        public static List<Listing>? GetLiveListings()
+        {
+            var listingDb = GetListingDb();
+
+            if (listingDb != null)
+            {
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if (liveCollections != null)
+                {
+                    var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled && liveCollections.Contains(x.CollectionId)).ToList();
+                    if (listings.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    return listings;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Get Live Listings Ids
+        public static List<int>? GetLiveListingIds()
+        {
+            var listingDb = GetListingDb();
+
+            if (listingDb != null)
+            {
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if (liveCollections != null)
+                {
+                    var listings = listingDb.Query().Where(x => x.IsAuctionStarted && !x.IsAuctionEnded && !x.IsCancelled && liveCollections.Contains(x.CollectionId)).Select(x => x.Id).ToList();
+                    if (listings.Count() == 0)
+                    {
+                        return null;
+                    }
+
+                    return listings;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
             }
         }
 
@@ -178,7 +249,7 @@ namespace ReserveBlockCore.Models.DST
                 {
                     listing.PurchaseKey = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
                     listingDb.InsertSafe(listing);
-                    NFTAssetFileUtility.GenerateThumbnails(listing.SmartContractUID);
+                    _ = NFTAssetFileUtility.GenerateThumbnails(listing.SmartContractUID);
                     return (true, "Listing saved.");
                 }
             }

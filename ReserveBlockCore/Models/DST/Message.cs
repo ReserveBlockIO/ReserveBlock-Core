@@ -139,7 +139,8 @@ namespace ReserveBlockCore.Models.DST
         ChatRec,
         AssetReq,
         AssetReqRec,
-        AssetPunchClient
+        AssetPunchClient,
+        Ping
     }
 
     public enum DecShopRequestOptions

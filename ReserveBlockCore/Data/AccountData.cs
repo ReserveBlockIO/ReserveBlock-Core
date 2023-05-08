@@ -56,7 +56,7 @@ namespace ReserveBlockCore.Data
 
 			return account;
 		}
-		public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false)
+		public static async Task<Account> RestoreAccount(string privKey, bool rescanForTx = false, bool skipSave = false)
         {
 			Account account = new Account();
             try
@@ -79,57 +79,60 @@ namespace ReserveBlockCore.Data
 				account.ADNR = adnrState != null ? adnrState : null;
 				account.Balance = accountState != null ? accountState.Balance : 0M;
 
-				var validators = Validators.Validator.GetAll();
-				var validator = validators.FindOne(x => x.Address == account.Address);
-				var accounts = AccountData.GetAccounts();
-				var accountsValidating = accounts.FindOne(x => x.IsValidating == true);
-				if(accountsValidating == null)
-                {
-					if (validator != null)
-					{
-
-					}
-				}
-
-				if(scs.Count() > 0)
+				if(!skipSave)
 				{
-					foreach (var sc in scs)
-					{
-						try
-						{
-                            var scMain = SmartContractMain.GenerateSmartContractInMemory(sc.ContractData);
-							if(sc.MinterManaged == true)
-							{
-								if(sc.MinterAddress == account.Address)
-								{
-									scMain.IsMinter = true;
-								}
-							}
+                    var validators = Validators.Validator.GetAll();
+                    var validator = validators.FindOne(x => x.Address == account.Address);
+                    var accounts = AccountData.GetAccounts();
+                    var accountsValidating = accounts.FindOne(x => x.IsValidating == true);
+                    if (accountsValidating == null)
+                    {
+                        if (validator != null)
+                        {
 
-							SmartContractMain.SmartContractData.SaveSmartContract(scMain, null);
                         }
-						catch(Exception ex)
-						{
-							ErrorLogUtility.LogError($"Failed to import Smart contract during account restore. SCUID: {sc.SmartContractUID}", "AccountData.RestoreAccount()");
+                    }
 
+                    if (scs.Count() > 0)
+                    {
+                        foreach (var sc in scs)
+                        {
+                            try
+                            {
+                                var scMain = SmartContractMain.GenerateSmartContractInMemory(sc.ContractData);
+                                if (sc.MinterManaged == true)
+                                {
+                                    if (sc.MinterAddress == account.Address)
+                                    {
+                                        scMain.IsMinter = true;
+                                    }
+                                }
+
+                                SmartContractMain.SmartContractData.SaveSmartContract(scMain, null);
+                            }
+                            catch (Exception ex)
+                            {
+                                ErrorLogUtility.LogError($"Failed to import Smart contract during account restore. SCUID: {sc.SmartContractUID}", "AccountData.RestoreAccount()");
+
+                            }
+                        }
+                    }
+
+                    var accountCheck = AccountData.GetSingleAccount(account.Address);
+                    if (accountCheck == null)
+                    {
+                        AddToAccount(account); //only add if not already in accounts
+                        if (rescanForTx == true)
+                        {
+                            //fire and forget
+                            _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address));
+                        }
+                        if (Globals.IsWalletEncrypted == true)
+                        {
+                            await WalletEncryptionService.EncryptWallet(account, true);
                         }
                     }
                 }
-
-				var accountCheck = AccountData.GetSingleAccount(account.Address);
-				if(accountCheck == null)
-                {
-					AddToAccount(account); //only add if not already in accounts
-					if(rescanForTx == true)
-                    {
-						//fire and forget
-                        _ = Task.Run(() => BlockchainRescanUtility.RescanForTransactions(account.Address));
-                    }
-					if(Globals.IsWalletEncrypted == true)
-					{
-						await WalletEncryptionService.EncryptWallet(account, true);
-					}
-				}
 			}
 			catch (Exception ex)
             {

@@ -9,6 +9,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System;
+using System.Drawing;
 using System.Security.Principal;
 
 namespace ReserveBlockCore.Controllers
@@ -378,29 +379,22 @@ namespace ReserveBlockCore.Controllers
         /// <summary>
         /// Recover a Reserve Account Transaction to Recovery Account
         /// </summary>
-        /// <param name="hash"></param>
+        /// <param name="recoveryPhrase"></param>
+        /// <param name="address"></param>
         /// <param name="password"></param>
         /// <returns></returns>
-        [HttpGet("RecoverReserveAccountTx/{hash}/{**password}")]
-        public async Task<string> RecoverReserveAccountTx(string hash, string password)
+        [HttpGet("RecoverReserveAccountTx/{recoveryPhrase}/{address}/{**password}")]
+        public async Task<string> RecoverReserveAccountTx(string recoveryPhrase, string address, string password)
         {
             var output = "";
             try
             {
-                var tx = ReserveTransactions.GetTransactions(hash);
-
-                if (tx == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find a Reserve TX with the hash: {hash}" });
-
-                var address = tx.FromAddress;
-
                 var account = ReserveAccount.GetReserveAccountSingle(address);
 
                 if (account == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account cannot be null." });
 
-
-                var result = await ReserveAccount.CreateReserveRecoverTx(account, password, tx.Hash);
+                var result = await ReserveAccount.CreateReserveRecoverTx(account, password, recoveryPhrase);
 
                 if (result.Item1 == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"{result.Item2}" });

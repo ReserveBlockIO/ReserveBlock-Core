@@ -5,43 +5,82 @@ using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 using ReserveBlockCore.Models;
+using System;
 
 namespace ReserveBlockCore.DST
 {
     public class KeepAliveService
     {
-        public static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, UdpClient udpClient, bool isShop = false, bool isStun = false)
+        public static async Task KeepAlive(int seconds, IPEndPoint peerEndPoint, UdpClient udpClient, string connectionId, bool isShop = false, bool isStun = false, string shopURL = "NA")
         {
+            var savedConnectionId = connectionId;
             bool stop = false;
             while (true && !stop)
             {
                 try
                 {
-                    if (isShop)
+                    if(shopURL != "NA") //buyers connected to sellers use this. multi connect
+                    {
+                        if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out var shopConnection))
+                        {
+                            var delay = Task.Delay(new TimeSpan(0, 0, seconds));
+                            var payload = new Message { Type = MessageType.KeepAlive, Data = "" };
+                            var message = MessageService.GenerateMessage(payload, false);
+                            var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                            udpClient.Send(messageDataBytes, peerEndPoint);
+
+                            shopConnection.LastSentMessage = TimeUtil.GetTime();
+
+                            DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+
+                            var currentTime = TimeUtil.GetTime();
+                            if (currentTime - shopConnection.LastReceiveMessage > 60 || savedConnectionId != shopConnection.ConnectionId)
+                            {
+                                stop = true;
+                                shopConnection.KeepAliveStarted = false;
+                                DSTMultiClient.ShopConnections[shopURL] = shopConnection;
+                                if (savedConnectionId == shopConnection.ConnectionId && shopConnection.AttemptReconnect)
+                                {
+                                    await DSTMultiClient.DisconnectFromShop(shopURL);
+                                    _ = DSTMultiClient.ConnectToShop(shopURL, shopConnection.RBXAddress);
+                                }
+                                if (!shopConnection.AttemptReconnect)
+                                    DSTMultiClient.ShopConnections.TryRemove(shopURL, out _);
+                            }
+
+                            await delay;
+                        }
+                        else
+                        {
+                            stop = true;
+                        }
+                    }
+                    else if (isShop)
                     {
                         if (Globals.ConnectedShops.TryGetValue(peerEndPoint.ToString(), out var shop))
                         {
-                            if (shop != null)
+                            var delay = Task.Delay(new TimeSpan(0, 0, seconds));
+                            var payload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
+                            var message = MessageService.GenerateMessage(payload, false);
+                            var messageDataBytes = Encoding.UTF8.GetBytes(message);
+                            udpClient.Send(messageDataBytes, peerEndPoint);
+
+                            shop.LastSentMessage = TimeUtil.GetTime();
+
+                            Globals.ConnectedShops[peerEndPoint.ToString()] = shop;
+
+                            var currentTime = TimeUtil.GetTime();
+                            if (currentTime - shop.LastReceiveMessage > 60 || shop.ConnectionId != savedConnectionId)
                             {
-                                var delay = Task.Delay(new TimeSpan(0, 0, seconds));
-                                var payload = new Message { Type = MessageType.STUNKeepAlive, Data = "" };
-                                var message = MessageService.GenerateMessage(payload, false);
-                                var messageDataBytes = Encoding.UTF8.GetBytes(message);
-                                udpClient.Send(messageDataBytes, peerEndPoint);
-
-                                shop.LastSentMessage = TimeUtil.GetTime();
-
-                                Globals.ConnectedShops[peerEndPoint.ToString()] = shop;
-
-                                var currentTime = TimeUtil.GetTime();
-                                if (currentTime - shop.LastReceiveMessage > 60)
-                                {
-                                    stop = true;
+                                stop = true;
+                                if (!shop.AttemptReconnect)
                                     Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
-                                }
-
-                                await delay;
+                                //Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
                             }
+
+                            
+
+                            await delay;
                         }
                         else
                         {
@@ -62,17 +101,17 @@ namespace ReserveBlockCore.DST
                             Globals.STUNServer.LastSentMessage = TimeUtil.GetTime();
 
                             var currentTime = TimeUtil.GetTime();
-                            if (currentTime - Globals.STUNServer.LastReceiveMessage > 60)
+                            if (currentTime - Globals.STUNServer.LastReceiveMessage > 50 || savedConnectionId != Globals.STUNServer.ConnectionId)
                             {
                                 stop = true;
-                                _ = DSTClient.DisconnectFromSTUNServer(true); //disconnect from STUN Server
-                                await Task.Delay(1000);
-                                Globals.STUNServer = null;
-                                _ = DSTClient.Run(); //attempt to reconnect to a STUN server.
-                                await Task.Delay(1000);
+                                if(savedConnectionId == Globals.STUNServer.ConnectionId && Globals.STUNServer.AttemptReconnect) 
+                                {
+                                    await DSTClient.DisconnectFromSTUNServer(true); //disconnect from STUN Server
+                                    _ = DSTClient.Run(); //attempt to reconnect to a STUN server.
+                                }
                             }
 
-                            await delay;
+                            await Task.Delay(new TimeSpan(0, 0, seconds));
                         }
                         else
                         {
@@ -96,22 +135,26 @@ namespace ReserveBlockCore.DST
                                 Globals.ConnectedClients[peerEndPoint.ToString()] = client;
 
                                 var currentTime = TimeUtil.GetTime();
-                                if (currentTime - client.LastReceiveMessage > 120)
+                                if (currentTime - client.LastReceiveMessage > 50 || savedConnectionId != client.ConnectionId)
                                 {
-                                    //stop = true;
-                                    //Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out _);
                                     stop = true;
-                                    var shopServer = client.IPAddress; //this also has port
-                                    var shopEndPoint = IPEndPoint.Parse(shopServer);
-                                    Globals.ConnectedClients.TryRemove(peerEndPoint.ToString(), out var dcClient);
-                                    NFTLogUtility.Log($"Disconnected from shop: {shopServer}", "KeepAliveService.KeepAlive()");
-                                    _ = DSTClient.DisconnectFromShop(true);
-                                    await Task.Delay(1000);
-                                    _ = DSTClient.ConnectToShop(shopEndPoint, shopServer, "NA", dcClient != null ? dcClient.ShopURL : "NA");
-                                    await Task.Delay(1000);
+                                    client.KeepAliveStarted = false;
+                                    Globals.ConnectedClients[peerEndPoint.ToString()] = client;
+                                    if (savedConnectionId == client.ConnectionId && client.AttemptReconnect)
+                                    {
+                                        var shopServer = client.IPAddress; //this also has port
+                                        var shopEndPoint = IPEndPoint.Parse(shopServer);
+
+                                        NFTLogUtility.Log($"Disconnected from shop: {shopServer}", "KeepAliveService.KeepAlive()");
+                                        await DSTClient.DisconnectFromShop(true);
+                                        _ = DSTClient.ConnectToShop(shopEndPoint, shopServer, "NA", client != null ? client.ShopURL : "NA");
+                                    }
+
+                                    if (!client.AttemptReconnect)
+                                        Globals.ConnectedShops.TryRemove(peerEndPoint.ToString(), out _);
                                 }
 
-                                await delay;
+                                await Task.Delay(new TimeSpan(0, 0, seconds));
                             }
                         }
                         else

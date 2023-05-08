@@ -56,6 +56,10 @@ namespace ReserveBlockCore.Services
                 }
             }
 
+            //REMOVE AFTER ENABLED!
+            if (!txRequest.ToAddress.StartsWith("xRBX"))
+                return (txResult, "Reserve accounts are not unlocked and you may not send transactions to them yet.");
+
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             
             if (txRequest.ToAddress != "Adnr_Base" && 
@@ -352,6 +356,8 @@ namespace ReserveBlockCore.Services
                         if (function == null)
                             return (txResult, "SC Function cannot be null.");
 
+                        var mempool = TransactionData.GetPool();
+
                         if (function == "Sale_Start()")
                         {
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
@@ -359,6 +365,32 @@ namespace ReserveBlockCore.Services
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
                             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
                             var bidSignature = jobj["BidSignature"]?.ToObject<string?>();
+
+                            var mempoolList = mempool.Query().Where(x => 
+                            x.FromAddress == txRequest.FromAddress && 
+                            x.Hash != txRequest.Hash && 
+                            (x.TransactionType == TransactionType.NFT_SALE || 
+                            x.TransactionType == TransactionType.NFT_TX || 
+                            x.TransactionType == TransactionType.NFT_BURN)).ToList();
+
+                            if (mempoolList?.Count > 0)
+                            {
+                                var reject = false;
+
+                                foreach (var tx in mempoolList)
+                                {
+                                    var txObjData = JObject.Parse(txData);
+                                    var mTXSCUID = txObjData["ContractUID"]?.ToObject<string?>();
+                                    if(mTXSCUID == scUID)
+                                    {
+                                        reject = true;
+                                        break;
+                                    }
+                                }
+
+                                if (reject)
+                                    return (txResult, "There is already a TX for this smart contract here.");
+                            }
 
                             if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null && bidSignature != null)
                             {
@@ -380,9 +412,14 @@ namespace ReserveBlockCore.Services
                                             return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
                                     }
 
+                                    
+
                                     var signatureVerify = Bid.VerifyBidSignature(keySign, amountSoldFor.Value, toAddress, bidSignature);
 
                                     if(!signatureVerify)
+                                        NFTLogUtility.Log($"Sig Bad. Key: {keySign} | Amount Sold For: {amountSoldFor.Value} | ToAddress {toAddress} | Sig Script: {bidSignature}", "TransactionValidatorService.VerifyTX");
+
+                                    if (!signatureVerify)
                                         return (txResult, "Bid signature did not verify.");
                                 }
                                 else
@@ -406,7 +443,33 @@ namespace ReserveBlockCore.Services
                             var transactions = jobj["Transactions"]?.ToObject<List<Transaction>?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
 
-                            if (scUID != null && royalty != null && royaltyAmount != null && royaltyPayTo != null && transactions != null && keySign != null)
+                            var mempoolList = mempool.Query().Where(x =>
+                            x.FromAddress == txRequest.FromAddress &&
+                            x.Hash != txRequest.Hash &&
+                            (x.TransactionType == TransactionType.NFT_SALE ||
+                            x.TransactionType == TransactionType.NFT_TX ||
+                            x.TransactionType == TransactionType.NFT_BURN)).ToList();
+
+                            if (mempoolList?.Count > 0)
+                            {
+                                var reject = false;
+
+                                foreach (var tx in mempoolList)
+                                {
+                                    var txObjData = JObject.Parse(txData);
+                                    var mTXSCUID = txObjData["ContractUID"]?.ToObject<string?>();
+                                    if (mTXSCUID == scUID)
+                                    {
+                                        reject = true;
+                                        break;
+                                    }
+                                }
+
+                                if (reject)
+                                    return (txResult, "There is already a TX for this smart contract here.");
+                            }
+
+                            if (scUID != null && transactions != null && keySign != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                 if (scStateTreiRec != null)
@@ -436,76 +499,89 @@ namespace ReserveBlockCore.Services
 
                                     if(scMain.Features != null)
                                     {
-                                        var royaltyFeat = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
-                                        if(royaltyFeat != null)
+                                        var isRoyalty = scMain.Features.Exists(x => x.FeatureName == FeatureName.Royalty);
+                                        if (isRoyalty)
                                         {
-                                            var royaltyDetails = (RoyaltyFeature)royaltyFeat.FeatureFeatures;
+                                            if (royalty == null)
+                                                return (txResult, $"Royalty Data was missing! Royalty");
 
-                                            var stRoyaltyAmount = royaltyDetails.RoyaltyAmount;
-                                            var stRoyaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
-                                            if(royaltyAmount != stRoyaltyAmount)
-                                                return (txResult, "Royalty Amounts do not match up.");
+                                            if (royaltyAmount == null)
+                                                return (txResult, $"Royalty Data was missing! Royalty Amount");
 
-                                            if (stRoyaltyPayTo != royaltyPayTo)
-                                                return (txResult, "Royalty Pay to does not match up.");
+                                            if (royaltyPayTo == null)
+                                                return (txResult, $"Royalty Data was missing! Royalty Pay To");
 
-                                            var amountPaid = transactions.Sum(x => x.Amount);
-                                            var payChecked = scStateTreiRec.PurchaseAmount - amountPaid > 1.0M ? false : true;
-                                            if(!payChecked)
-                                                return (txResult, "Purchase amount does not match up with TX amounts.");
-
-                                            if(transactions.Any(x => x.Data == null))
-                                                return (txResult, "Data cannot be missing for any TX.");
-
-                                            var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
-
-                                            if(txToSeller == null)
-                                                return (txResult, "Could not find TX to seller.");
-
-                                            var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
-
-                                            if (txToRoyaltyPayee == null)
-                                                return (txResult, "Could not find TX to royalty owner.");
-
-                                            var txToSellerAmountCheck = txToSeller.Amount - (amountPaid * (1.0M - stRoyaltyAmount)) > 1 ? false : true;
-                                            var txToRoyaltyAmountCheck = txToRoyaltyPayee.Amount - (amountPaid * stRoyaltyAmount) > 1 ? false : true;
-
-                                            if(!txToSellerAmountCheck)
-                                                return (txResult, "Amount to seller does not match.");
-
-                                            if (!txToRoyaltyAmountCheck)
-                                                return (txResult, "Amount to royalty owner does not match.");
-
-                                            if (txToSeller.FromAddress != scStateTreiRec.NextOwner)
-                                                return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
-                                            if (txToRoyaltyPayee.FromAddress != scStateTreiRec.NextOwner)
-                                                return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
-
-                                            if(txToSeller.ToAddress != scStateTreiRec.OwnerAddress)
-                                                return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {txToSeller.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
-                                            if (txToRoyaltyPayee.ToAddress != stRoyaltyPayTo)
-                                                return (txResult, $"Funds are being sent to the wrong Royalty Address. You are sending here: {txToRoyaltyPayee.ToAddress}, but should be sending here {stRoyaltyPayTo}");
-
-                                            if (!string.IsNullOrEmpty(txToSeller.Signature))
+                                            var royaltyFeat = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                                            if (royaltyFeat != null)
                                             {
-                                                var isTxValid = SignatureService.VerifySignature(txToSeller.FromAddress, txToSeller.Hash, txToSeller.Signature);
-                                                if (!isTxValid)
-                                                    return (txResult, "Signature Failed to verify for tx to seller.");
-                                            }
-                                            else
-                                            {
-                                                return (txResult, "Signature to from seller tx cannot be null.");
-                                            }
+                                                var royaltyDetails = (RoyaltyFeature)royaltyFeat.FeatureFeatures;
 
-                                            if (!string.IsNullOrEmpty(txToRoyaltyPayee.Signature))
-                                            {
-                                                var isTxValid = SignatureService.VerifySignature(txToRoyaltyPayee.FromAddress, txToRoyaltyPayee.Hash, txToRoyaltyPayee.Signature);
-                                                if (!isTxValid)
-                                                    return (txResult, "Signature Failed to verify for tx to royalty payee.");
-                                            }
-                                            else
-                                            {
-                                                return (txResult, "Signature cannot be null for royalty tx.");
+                                                var stRoyaltyAmount = royaltyDetails.RoyaltyAmount;
+                                                var stRoyaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
+                                                if (royaltyAmount != stRoyaltyAmount)
+                                                    return (txResult, "Royalty Amounts do not match up.");
+
+                                                if (stRoyaltyPayTo != royaltyPayTo)
+                                                    return (txResult, "Royalty Pay to does not match up.");
+
+                                                var amountPaid = transactions.Sum(x => x.Amount);
+                                                var payChecked = scStateTreiRec.PurchaseAmount - amountPaid > 1.0M ? false : true;
+                                                if (!payChecked)
+                                                    return (txResult, "Purchase amount does not match up with TX amounts.");
+
+                                                if (transactions.Any(x => x.Data == null))
+                                                    return (txResult, "Data cannot be missing for any TX.");
+
+                                                var txToSeller = transactions.Where(x => x.Data.Contains("1/2")).FirstOrDefault();
+
+                                                if (txToSeller == null)
+                                                    return (txResult, "Could not find TX to seller.");
+
+                                                var txToRoyaltyPayee = transactions.Where(x => x.Data.Contains("2/2")).FirstOrDefault();
+
+                                                if (txToRoyaltyPayee == null)
+                                                    return (txResult, "Could not find TX to royalty owner.");
+
+                                                var txToSellerAmountCheck = txToSeller.Amount - (amountPaid * (1.0M - stRoyaltyAmount)) > 1 ? false : true;
+                                                var txToRoyaltyAmountCheck = txToRoyaltyPayee.Amount - (amountPaid * stRoyaltyAmount) > 1 ? false : true;
+
+                                                if (!txToSellerAmountCheck)
+                                                    return (txResult, "Amount to seller does not match.");
+
+                                                if (!txToRoyaltyAmountCheck)
+                                                    return (txResult, "Amount to royalty owner does not match.");
+
+                                                if (txToSeller.FromAddress != scStateTreiRec.NextOwner)
+                                                    return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+                                                if (txToRoyaltyPayee.FromAddress != scStateTreiRec.NextOwner)
+                                                    return (txResult, "You are attempting to purchase a smart contract that does is not locked for you.");
+
+                                                if (txToSeller.ToAddress != scStateTreiRec.OwnerAddress)
+                                                    return (txResult, $"Funds are being sent to the wrong owner. You are sending here: {txToSeller.ToAddress}, but should be sending here {scStateTreiRec.OwnerAddress}");
+                                                if (txToRoyaltyPayee.ToAddress != stRoyaltyPayTo)
+                                                    return (txResult, $"Funds are being sent to the wrong Royalty Address. You are sending here: {txToRoyaltyPayee.ToAddress}, but should be sending here {stRoyaltyPayTo}");
+
+                                                if (!string.IsNullOrEmpty(txToSeller.Signature))
+                                                {
+                                                    var isTxValid = SignatureService.VerifySignature(txToSeller.FromAddress, txToSeller.Hash, txToSeller.Signature);
+                                                    if (!isTxValid)
+                                                        return (txResult, "Signature Failed to verify for tx to seller.");
+                                                }
+                                                else
+                                                {
+                                                    return (txResult, "Signature to from seller tx cannot be null.");
+                                                }
+
+                                                if (!string.IsNullOrEmpty(txToRoyaltyPayee.Signature))
+                                                {
+                                                    var isTxValid = SignatureService.VerifySignature(txToRoyaltyPayee.FromAddress, txToRoyaltyPayee.Hash, txToRoyaltyPayee.Signature);
+                                                    if (!isTxValid)
+                                                        return (txResult, "Signature Failed to verify for tx to royalty payee.");
+                                                }
+                                                else
+                                                {
+                                                    return (txResult, "Signature cannot be null for royalty tx.");
+                                                }
                                             }
                                         }
                                     }
@@ -539,10 +615,13 @@ namespace ReserveBlockCore.Services
                                     }
 
                                 }
-                                    
-
+                            }
+                            else
+                            {
+                                return (txResult, "Missing the proper purchase data.");
                             }
                         }
+
                     }
                     catch(Exception ex)
                     {
@@ -1063,29 +1142,34 @@ namespace ReserveBlockCore.Services
                                     if (function == "Recover()")
                                     {
                                         runReserveCheck = false;
-                                        string hash = jobj["Hash"].ToObject<string>();
-                                        if (!string.IsNullOrEmpty(hash))
+                                        string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
+                                        string recoverySigScript = jobj["RecoverySigScript"].ToObject<string>();
+                                        long sigTime = jobj["SignatureTime"].ToObject<long>();
+
+                                        if (!string.IsNullOrEmpty(recoveryAddress) && !string.IsNullOrEmpty(recoverySigScript))
                                         {
-                                            var currentTime = TimeUtil.GetTime();
-                                            var rTx = ReserveTransactions.GetTransactions(hash);
-                                            if (rTx == null)
-                                                return (txResult, "Could not find a reserve transaction with that hash.");
+                                            var currentTime = TimeUtil.GetTime(-600);
 
-                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
-                                                return (txResult, "From address does not match the reserve tx from address. Cannot recover.");
+                                            if(currentTime > sigTime)
+                                                return (txResult, "Recover request has expired.");
 
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
-                                            {
-                                                if (rTx.ConfirmTimestamp <= currentTime)
-                                                    return (txResult, "This TX has already passed and can no longer be recovered.");
-                                            }
-                                            var stateRec = StateData.GetSpecificAccountStateTrei(rTx.FromAddress);
+                                            var stateRec = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
                                             if (stateRec == null) 
                                                 return (txResult, "State record cannot be null.");
                                             
                                             if (stateRec.RecoveryAccount == null)
                                                 return (txResult, $"Reserve account does not have a recovery address.");
+
+                                            if(stateRec.RecoveryAccount != recoveryAddress)
+                                                return (txResult, $"Reserve account state record does not match the tx record.");
+
+                                            string message = $"{sigTime}{recoveryAddress}";
+
+                                            var sigVerify = SignatureService.VerifySignature(recoveryAddress, message, recoverySigScript);
+
+                                            if(!sigVerify)
+                                                return (txResult, $"Recovery account signature did not verify.");
                                         }
                                     }
                                 }

@@ -47,7 +47,7 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Save Asset Queue Item
-        public static bool CreateAssetQueueItem(string scUID, string toAddress, string locator, string md5List, List<string> mediaList, TransferType assetTransferType, bool isDownload = false)
+        public static bool CreateAssetQueueItem(string scUID, string toAddress, string locator, string md5List, List<string> mediaList, TransferType assetTransferType, bool isDownload = false, bool isComplete = false)
         {
             var aqDB = GetAssetQueue();
             if (aqDB == null)
@@ -67,7 +67,7 @@ namespace ReserveBlockCore.Models
                         Locator = locator,
                         MD5List = md5List,
                         MediaListJson = JsonConvert.SerializeObject(mediaList),
-                        IsComplete = false,
+                        IsComplete = isComplete,
                         SubmitDate = DateTime.UtcNow,
                         ManualCheckCount = 0,
                         LastAttempt = DateTime.UtcNow,
@@ -124,7 +124,7 @@ namespace ReserveBlockCore.Models
         }
         #endregion
 
-        #region Delete Asset Queue
+        #region Delete Asset Queue item/all
         public static void DeleteAssetQueueItem(AssetQueue aqa)
         {
             var aq = GetAssetQueue();
@@ -143,6 +143,43 @@ namespace ReserveBlockCore.Models
                     ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
                 }
             }
+        }
+        public static async Task<bool> DeleteAssetQueueItem(int id)
+        {
+            var aq = GetAssetQueue();
+            if (aq == null)
+            {
+                ErrorLogUtility.LogError("GetAdnr() returned a null value.", "Adnr.GetAdnr()");
+            }
+            else
+            {
+                try
+                {
+                    aq.DeleteSafe(id);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogUtility.LogError(ex.ToString(), "AssetQueue.DeleteAssetQueue()");
+                }
+            }
+            return false;
+        }
+
+        public static async Task<bool> DeleteAllAssetQueue()
+        {
+            var assetQueue = GetAssetQueue();
+            if (assetQueue == null)
+            {
+                ErrorLogUtility.LogError("DeleteAllAssetQueue() returned a null value.", "AssetQueue.DeleteAllAssetQueue()");
+            }
+            else
+            {
+                assetQueue.DeleteAllSafe();
+                return true;
+            }
+
+            return false;
         }
         #endregion
 

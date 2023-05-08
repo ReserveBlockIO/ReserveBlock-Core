@@ -64,10 +64,12 @@ namespace ReserveBlockCore
 
         public const int ValidatorRequiredRBX = 12000;
         public const decimal ADNRRequiredRBX = 5.0M;
+        public const decimal ADNRTransferRequiredRBX = 1.0M;
+        public const decimal ADNRDeleteRequiredRBX = 0.0M;
         public const decimal TopicRequiredRBX = 10.0M;
         public const decimal DecShopRequiredRBX = 10.0M;
         public const decimal DecShopUpdateRequiredRBX = 1.0M;
-        public const decimal DecShopDeleteRequiredRBX = 1.0M;
+        public const decimal DecShopDeleteRequiredRBX = 1.0M; //0
 
         public const int ADNRLimit = 65;
         public static long FeatureLock = 896247;
@@ -268,9 +270,11 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, MessageState> ClientMessageDict = new ConcurrentDictionary<string, MessageState>();
         public static ConcurrentDictionary<string, Message> ServerMessageDict = new ConcurrentDictionary<string, Message>();
         public static DecShopData? DecShopData = null;
+        public static ConcurrentDictionary<string, DecShopData> MultiDecShopData = new ConcurrentDictionary<string, DecShopData>();
         public static ConcurrentQueue<BidQueue> BidQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentQueue<BidQueue> BuyNowQueue = new ConcurrentQueue<BidQueue>();
         public static ConcurrentDictionary<IPEndPoint, int> AssetAckEndpoint = new ConcurrentDictionary<IPEndPoint, int>();
+        public static ConcurrentDictionary<string, (bool, int)> PingResultDict = new ConcurrentDictionary<string, (bool, int)>();
         public static bool AssetDownloadLock = false;
         public static readonly HashSet<string> ValidExtensions = new HashSet<string>()
         {

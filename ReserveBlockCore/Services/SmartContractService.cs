@@ -864,15 +864,23 @@ namespace ReserveBlockCore.Services
             Transaction? scTx = null;
 
             var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
-            
+
+            NFTLogUtility.Log("1", "SmartContractService.StartSaleSmartContractTX");
+
             if (smartContractStateTrei == null) return null;
+
+            NFTLogUtility.Log("2", "SmartContractService.StartSaleSmartContractTX");
 
             var scMain = SmartContractMain.GenerateSmartContractInMemory(smartContractStateTrei.ContractData);
 
             if(scMain == null) return null;
 
+            NFTLogUtility.Log("3", "SmartContractService.StartSaleSmartContractTX");
+
             var account = AccountData.GetSingleAccount(smartContractStateTrei.OwnerAddress);
             if (account == null) return null;//Owner address not found.
+
+            NFTLogUtility.Log("4", "SmartContractService.StartSaleSmartContractTX");
 
             var keyToSign = listing.PurchaseKey;
 
@@ -911,16 +919,19 @@ namespace ReserveBlockCore.Services
             scTx.Build();
 
             var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
-            if ((scTx.Amount + scTx.Fee) > senderBalance) return null;//balance insufficient
 
+            NFTLogUtility.Log("5", "SmartContractService.StartSaleSmartContractTX");
+            if ((scTx.Amount + scTx.Fee) > senderBalance) return null;//balance insufficient
+            NFTLogUtility.Log("6", "SmartContractService.StartSaleSmartContractTX");
             var privateKey = account.GetPrivKey;
 
             if(privateKey == null) return null;
 
+            NFTLogUtility.Log("7", "SmartContractService.StartSaleSmartContractTX");
             var txHash = scTx.Hash;
             var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (signature == "ERROR") return null; //TX sig failed
-
+            NFTLogUtility.Log("8", "SmartContractService.StartSaleSmartContractTX");
             scTx.Signature = signature;
 
             try
@@ -933,7 +944,12 @@ namespace ReserveBlockCore.Services
 
                 var result = await TransactionValidatorService.VerifyTX(scTx);
 
+                if(!result.Item1)
+                    NFTLogUtility.Log($"Failed TX Verify. Reason: {result.Item2}", "SmartContractService.StartSaleSmartContractTX");
+
                 if (!result.Item1) return null;
+
+                NFTLogUtility.Log("9", "SmartContractService.StartSaleSmartContractTX");
 
                 if (!Globals.Beacons.Any())
                 {
@@ -997,6 +1013,7 @@ namespace ReserveBlockCore.Services
                                 if(listing != null)
                                 {
                                     listing.IsSaleTXSent = true;
+                                    listing.IsSaleComplete = true;
                                     listing.SaleTXHash = scTx.Hash;
                                     _ = Listing.SaveListing(listing);
                                 }
@@ -1021,8 +1038,14 @@ namespace ReserveBlockCore.Services
                     }
                 }
             }
-            catch { }
-
+            catch { NFTLogUtility.Log("10", "SmartContractService.StartSaleSmartContractTX"); }
+            NFTLogUtility.Log("11", "SmartContractService.StartSaleSmartContractTX");
+            if (listing != null)
+            {
+                listing.SaleHasFailed = true;
+                listing.IsSaleComplete = true;
+                _ = Listing.SaveListing(listing);
+            }
             return null;
         }
         #endregion
