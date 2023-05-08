@@ -56,6 +56,10 @@ namespace ReserveBlockCore.Services
                 }
             }
 
+            //REMOVE AFTER ENABLED!
+            if (!txRequest.ToAddress.StartsWith("xRBX"))
+                return (txResult, "Reserve accounts are not unlocked and you may not send transactions to them yet.");
+
             if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             
             if (txRequest.ToAddress != "Adnr_Base" && 
