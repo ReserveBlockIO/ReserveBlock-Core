@@ -143,7 +143,7 @@ namespace ReserveBlockCore.Models
                     return null;
                 }
 
-                decshopInfo.CollectionCount = Collection.GetLiveCollections();
+                decshopInfo.CollectionCount = Collection.GetLiveCollectionCount();
                 decshopInfo.ListingCount = Listing.GetLiveListingsCount();
                 decshopInfo.AuctionCount = Auction.GetLiveAuctionsCount();
 

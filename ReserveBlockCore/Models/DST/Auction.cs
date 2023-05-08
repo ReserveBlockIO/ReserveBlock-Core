@@ -89,13 +89,22 @@ namespace ReserveBlockCore.Models.DST
 
             if (auctionDb != null)
             {
-                var auctions = auctionDb.Query().Where(x => !x.IsAuctionOver).ToEnumerable().Count();
-                if (auctions == 0)
+                var liveCollections = Collection.GetLiveCollectionsIds();
+                if(liveCollections != null)
+                {
+                    var auctions = auctionDb.Query().Where(x => !x.IsAuctionOver && liveCollections.Contains(x.CollectionId)).ToEnumerable().Count();
+                    if (auctions == 0)
+                    {
+                        return 0;
+                    }
+
+                    return auctions;
+                }
+                else
                 {
                     return 0;
                 }
-
-                return auctions;
+                
             }
             else
             {

@@ -11,6 +11,7 @@ using ReserveBlockCore.Utilities;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -458,17 +459,21 @@ namespace ReserveBlockCore.Controllers
 
             try
             {
+                if(scMain == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "SC Main was null" });
+
                 var result = await SmartContractWriterService.WriteSmartContract(scMain);
 
                 var txData = "";
 
                 if (result.Item1 != null)
                 {
+                    var md5List = await MD5Utility.GetMD5FromSmartContract(scMain);
                     var bytes = Encoding.Unicode.GetBytes(result.Item1);
                     var scBase64 = bytes.ToCompress().ToBase64();
                     var newSCInfo = new[]
                     {
-                            new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64}
+                            new { Function = "Mint()", ContractUID = scMain.SmartContractUID, Data = scBase64, MD5List = md5List}
                     };
 
                     txData = JsonConvert.SerializeObject(newSCInfo);
@@ -497,7 +502,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("CreateBeaconUploadRequest/{scUID}/{toAddress}/{**signature}")]
         public async Task<string> CreateBeaconUploadRequest(string scUID, string toAddress, string signature)
         {
-            var output = "";
+            var output = "MethodStarted";
             toAddress = toAddress.ToAddressNormalize();
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
             if (scStateTrei != null)
@@ -513,7 +518,7 @@ namespace ReserveBlockCore.Controllers
                             var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
                             if (!beaconConnectionResult)
                             {
-                                output = "You are not connected to any beacons.";
+                                output = JsonConvert.SerializeObject(new { Success = false, Message = "You are not connected to any beacons."});
                                 NFTLogUtility.Log("Error - You failed to connect to any beacons.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
@@ -523,75 +528,45 @@ namespace ReserveBlockCore.Controllers
                             var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
                             if (connectedBeacon == null)
                             {
-                                output = "You have lost connection to beacons. Please attempt to resend.";
+                                output = JsonConvert.SerializeObject(new { Success = false, Message = "You have lost connection to beacons. Please attempt to resend." });
                                 NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "TXV1Controller.CreateBeaconUploadRequest()");
                                 return output;
                             }
-                            List<string> assets = new List<string>();
 
-                            if (sc.SmartContractAsset != null)
-                            {
-                                assets.Add(sc.SmartContractAsset.Name);
-                            }
-                            if (sc.Features != null)
-                            {
-                                foreach (var feature in sc.Features)
-                                {
-                                    if (feature.FeatureName == FeatureName.Evolving)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-                                        myArray.ForEach(x => {
-                                            var evolveDict = (Dictionary<string, object>)myArray[count];
-                                            SmartContractAsset evoAsset = new SmartContractAsset();
-                                            if (evolveDict.ContainsKey("SmartContractAsset"))
-                                            {
+                            var assetList = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+                            var md5List = scStateTrei.MD5List;
 
-                                                var assetEvo = (Dictionary<string, object>)evolveDict["SmartContractAsset"];
-                                                evoAsset.Name = (string)assetEvo["Name"];
-                                                if (!assets.Contains(evoAsset.Name))
-                                                {
-                                                    assets.Add(evoAsset.Name);
-                                                }
-                                                count += 1;
-                                            }
+                            if (assetList == null)
+                                return JsonConvert.SerializeObject(new { Success = false, Message = "Asset List was Null" }); ;
 
-                                        });
-                                    }
-                                    if (feature.FeatureName == FeatureName.MultiAsset)
-                                    {
-                                        var count = 0;
-                                        var myArray = ((object[])feature.FeatureFeatures).ToList();
-
-                                        myArray.ForEach(x => {
-                                            var multiAssetDict = (Dictionary<string, object>)myArray[count];
-
-                                            var fileName = multiAssetDict["FileName"].ToString();
-                                            if (!assets.Contains(fileName))
-                                            {
-                                                assets.Add(fileName);
-                                            }
-
-                                            count += 1;
-
-                                        });
-
-                                    }
-                                }
-                            }
-                            var md5List = MD5Utility.MD5ListCreator(assets, sc.SmartContractUID);
-                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                            var result = await P2PClient.BeaconUploadRequest(connectedBeacon, assetList, sc.SmartContractUID, toAddress, md5List, signature).WaitAsync(new TimeSpan(0, 0, 10));
                             if (result == true)
                             {
-                                var finalOutput = JsonConvert.SerializeObject(new { Locators = connectedBeacon.Beacons.BeaconUID, MD5List = md5List });
-                                output = finalOutput;
+                                var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assetList,
+                                    AssetQueue.TransferType.Upload);
+                                if (aqResult)
+                                {
+                                    //DO TRANSFER HERE
+                                    _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assetList, connectedBeacon));
+
+                                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started.", Locator = connectedBeacon.Beacons.BeaconLocator });
+                                    return success;
+                                }
+                                else
+                                {
+                                    return JsonConvert.SerializeObject(new { Success = false, Message = "Creating asset queue has failed." });
+                                }
+                            }
+                            else
+                            {
+                                return JsonConvert.SerializeObject(new { Success = false, Message = "Beacon Upload Request has Failed." });
                             }
                         }
                     }
                 }
             }
 
-            return output;
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Process Failed" });
         }
 
         /// <summary>
@@ -599,37 +574,86 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="scUID"></param>
         /// <param name="toAddress"></param>
-        /// <param name="locators"></param>
+        /// <param name="locator"></param>
         /// <returns></returns>
-        [HttpGet("GetNFTTransferData/{scUID}/{toAddress}/{locators}")]
-        public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locators)
+        [HttpGet("GetNFTTransferData/{scUID}/{toAddress}/{**locator}")]
+        public async Task<string> GetNFTTransferData(string scUID, string toAddress, string locator)
         {
             var output = "";
             var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
             toAddress = toAddress.ToAddressNormalize();
 
+            if (scStateTrei == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "State trei record cannot be null." });
+
             var sc = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
             try
             {
-                //var result = await SmartContractWriterService.WriteSmartContract(sc);
                 var txData = "";
-
-                if (scStateTrei != null)
+                var newSCInfo = new[]
                 {
-                    var newSCInfo = new[]
+                    new
                     {
-                            new { Function = "Transfer()", 
-                                ContractUID = sc.SmartContractUID, 
-                                ToAddress = toAddress, 
-                                Data = scStateTrei.ContractData, 
-                                Locators = locators, //either beacons, or self kept (NA).
-                                MD5List = "NA"}
-                    };
+                        Function = "Transfer()",
+                        ContractUID = sc.SmartContractUID,
+                        ToAddress = toAddress,
+                        Data = scStateTrei.ContractData,
+                        Locators = locator, //either beacons, or self kept (NA).
+                        MD5List = scStateTrei.MD5List
+                    }
+                };
 
-                    txData = JsonConvert.SerializeObject(newSCInfo);
-                    var txJToken = JToken.Parse(txData.ToString());
-                    output = txData;
-                }
+                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txJToken = JToken.Parse(txData.ToString());
+                output = txData;
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Creates a NFT evolve transaction data
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="evoState"></param>
+        /// <returns></returns>
+        [HttpGet("GetNFTEvolveData/{scUID}/{toAddress}/{evoState}")]
+        public async Task<string> GetNFTEvolveData(string scUID, string toAddress, int evoState)
+        {
+            var output = "";
+            try
+            {
+                toAddress = toAddress.ToAddressNormalize();
+
+                var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+                if (smartContractStateTrei == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract State was Null." });
+
+                var minterAddress = smartContractStateTrei.MinterAddress;
+                var evolve = await EvolvingFeature.GetNewSpecificState(smartContractStateTrei.ContractData, evoState);
+
+                var evolveResult = evolve.Item1;
+                if (evolveResult != true)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to process new evolutionary state." });
+
+                var evolveData = evolve.Item2;
+                var bytes = Encoding.Unicode.GetBytes(evolveData);
+                var scBase64 = SmartContractUtility.Compress(bytes).ToBase64();
+
+                var newSCInfo = new[]
+                {
+                    new { Function = "ChangeEvolveStateSpecific()", ContractUID = scUID, FromAddress = minterAddress, ToAddress = toAddress, NewEvoState = evoState, Data = scBase64}
+                };
+
+                var txData = JsonConvert.SerializeObject(newSCInfo);
+
+                return txData;
+
             }
             catch (Exception ex)
             {

@@ -28,8 +28,6 @@ namespace ReserveBlockCore.Models
         public string PublicKey { set; get; }
         public string Address { get; set; }
         public string RecoveryAddress { get; set; }
-        public string? RecoveryPrivateKey { get; set; } = null;
-        public string? RecoveryEncryptedDecryptKey { get; set; } = null;
         public string EncryptedDecryptKey { get; set; }
         public decimal AvailableBalance { get; set; } //funds reserved or locked must always be above 0.5 RBX
         public decimal LockedBalance { get; set; } //funds currently pending use
@@ -389,27 +387,14 @@ namespace ReserveBlockCore.Models
 
                     rAccountInfo.RecoveryAddress = account.Address;
                     rAccountInfo.RecoveryPrivateKey = account.GetKey;
-
-                    if (storeRecoveryKey)
-                    {
-                        var key2 = new byte[32];
-                        RandomNumberGenerator.Create().GetBytes(key2);
-                        var encryptionString2 = Convert.ToBase64String(key2);
-
-                        //Encrypting private key with random 32 byte
-                        byte[] encrypted2 = EncryptKey(account.PrivateKey, key2);
-
-                        //Encrypting random 32 byte with clients supplied password. This key will be stored and is encrypted
-                        byte[] keyEncrypted2 = EncryptKey(encryptionString2, passwordKey);
-
-                        rAccount.RecoveryPrivateKey = Convert.ToBase64String(encrypted2);
-                        rAccount.RecoveryEncryptedDecryptKey = Convert.ToBase64String(keyEncrypted2);
-                    }
-
+                    
                     var sigScript = SignatureService.CreateSignature("test", privateKey, rAccount.PublicKey);
                     var verify = SignatureService.VerifySignature(rAccount.Address, "test", sigScript);
 
-                    if (verify == true && rAccount.Address.StartsWith("xRBX"))
+                    var sigScriptRecoAccount = SignatureService.CreateSignature("test", account.GetPrivKey, account.PublicKey);
+                    var verifyRecoAccount = SignatureService.VerifySignature(account.Address, "test", sigScriptRecoAccount);
+
+                    if (verify && verifyRecoAccount && rAccount.Address.StartsWith("xRBX"))
                     {
                         accountMade = true;
                         //save account here!
@@ -493,26 +478,13 @@ namespace ReserveBlockCore.Models
                 rAccountInfo.RecoveryAddress = account.Address;
                 rAccountInfo.RecoveryPrivateKey = account.GetKey;
 
-                if (storeRecoveryKey)
-                {
-                    var key2 = new byte[32];
-                    RandomNumberGenerator.Create().GetBytes(key2);
-                    var encryptionString2 = Convert.ToBase64String(key2);
-
-                    //Encrypting private key with random 32 byte
-                    byte[] encrypted2 = EncryptKey(account.PrivateKey, key2);
-
-                    //Encrypting random 32 byte with clients supplied password. This key will be stored and is encrypted
-                    byte[] keyEncrypted2 = EncryptKey(encryptionString2, passwordKey);
-
-                    rAccount.RecoveryPrivateKey = Convert.ToBase64String(encrypted2);
-                    rAccount.RecoveryEncryptedDecryptKey = Convert.ToBase64String(keyEncrypted2);
-                }
+                var sigScriptRecoAccount = SignatureService.CreateSignature("test", account.GetPrivKey, account.PublicKey);
+                var verifyRecoAccount = SignatureService.VerifySignature(account.Address, "test", sigScriptRecoAccount);
 
                 var sigScript = SignatureService.CreateSignature("test", privateKey, rAccount.PublicKey);
                 var verify = SignatureService.VerifySignature(rAccount.Address, "test", sigScript);
 
-                if (verify == true && rAccount.Address.StartsWith("xRBX"))
+                if (verify && verifyRecoAccount && rAccount.Address.StartsWith("xRBX"))
                 {
                     var accountStateTrei = StateData.GetSpecificAccountStateTrei(rAccount.Address);
                     if (accountStateTrei != null)
@@ -641,26 +613,13 @@ namespace ReserveBlockCore.Models
                 rAccountInfo.RecoveryAddress = account.Address;
                 rAccountInfo.RecoveryPrivateKey = account.GetKey;
 
-                if (storeRecoveryKey)
-                {
-                    var key2 = new byte[32];
-                    RandomNumberGenerator.Create().GetBytes(key2);
-                    var encryptionString2 = Convert.ToBase64String(key2);
-
-                    //Encrypting private key with random 32 byte
-                    byte[] encrypted2 = EncryptKey(account.PrivateKey, key2);
-
-                    //Encrypting random 32 byte with clients supplied password. This key will be stored and is encrypted
-                    byte[] keyEncrypted2 = EncryptKey(encryptionString2, passwordKey);
-
-                    rAccount.RecoveryPrivateKey = Convert.ToBase64String(encrypted2);
-                    rAccount.RecoveryEncryptedDecryptKey = Convert.ToBase64String(keyEncrypted2);
-                }
+                var sigScriptRecoAccount = SignatureService.CreateSignature("test", account.GetPrivKey, account.PublicKey);
+                var verifyRecoAccount = SignatureService.VerifySignature(account.Address, "test", sigScriptRecoAccount);
 
                 var sigScript = SignatureService.CreateSignature("test", privateKey, rAccount.PublicKey);
                 var verify = SignatureService.VerifySignature(rAccount.Address, "test", sigScript);
 
-                if (verify == true && rAccount.Address.StartsWith("xRBX"))
+                if (verify && verifyRecoAccount && rAccount.Address.StartsWith("xRBX"))
                 {
                     var accountStateTrei = StateData.GetSpecificAccountStateTrei(rAccount.Address);
                     if(accountStateTrei != null)
@@ -1239,11 +1198,34 @@ namespace ReserveBlockCore.Models
         #endregion
 
         #region Create Reserve Recover TX
-        public static async Task<(Transaction?, string)> CreateReserveRecoverTx(ReserveAccount account, string password, string hash)
+        public static async Task<(Transaction?, string)> CreateReserveRecoverTx(ReserveAccount account, string password, string recoveryPhrase)
         {
             var txData = "";
             var timestamp = TimeUtil.GetTime();
             var key = GetPrivateKey(account.Address, password);
+            var restoreCode = recoveryPhrase.ToStringFromBase64().Split("//");
+            var recoveryKey = restoreCode[1];
+
+            var recoveryAccount = await AccountData.RestoreAccount(recoveryKey, false, true);
+
+            if(recoveryAccount == null)
+                return (null, $"Could not restore recovery account for signature.");
+
+            var stateRec = StateData.GetSpecificAccountStateTrei(account.Address);
+
+            if (stateRec == null)
+                return (null, $"Could not find a state trei record for this reserve account.");
+
+            if(stateRec.RecoveryAccount != recoveryAccount.Address)
+                return (null, $"Recovery account does not match the restores recovery account.");
+
+            var currentTime = TimeUtil.GetTime();
+            var message = $"{currentTime}{recoveryAccount.Address}";
+            var sigScript = SignatureService.CreateSignature(recoveryAccount.Address, recoveryAccount.GetPrivKey, recoveryAccount.PublicKey);
+            var verify = SignatureService.VerifySignature(recoveryAccount.Address, recoveryAccount.Address, sigScript);
+
+            if (!verify)
+                return (null, $"Signature did not verify. Please ensure the recovery account belongs to this reserve address.");
 
             if (key == null)
                 return (null, $"Could not decrypt private key for send.");
@@ -1251,7 +1233,7 @@ namespace ReserveBlockCore.Models
             BigInteger b1 = BigInteger.Parse(key, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
             PrivateKey privateKey = new PrivateKey("secp256k1", b1);
 
-            txData = JsonConvert.SerializeObject(new { Function = "Recover()", Hash = hash });
+            txData = JsonConvert.SerializeObject(new { Function = "Recover()", RecoveryAddress = recoveryAccount.Address, RecoverySigScript = sigScript, SignatureTime = currentTime });
 
             var tx = new Transaction
             {
@@ -1271,10 +1253,6 @@ namespace ReserveBlockCore.Models
             tx.Build();
 
             var txHash = tx.Hash;
-
-            //var balanceTooLow = account.AvailableBalance - (tx.Fee + tx.Amount) < 0.5M ? true : false;
-            //if (balanceTooLow)
-            //    return (null, "This transaction will make the balance too low. Must maintain a balance above 0.5 RBX with a Reserve Account.");
 
             var sig = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
             if (sig == "ERROR")

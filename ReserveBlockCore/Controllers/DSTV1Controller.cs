@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.DST;
+using ReserveBlockCore.Engines;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
@@ -409,7 +410,7 @@ namespace ReserveBlockCore.Controllers
                     var listing = Listing.GetSingleListing(listingId);
                     if (listing != null)
                     {
-                        var auction = Auction.GetSingleAuction(listingId);
+                        var auction = Auction.GetListingAuction(listingId);
                         var bids = Bid.GetListingBids(listingId);
 
                         output = JsonConvert.SerializeObject(new { Success = true, Message = "Listing Found", Listing = listing, Auction = auction, Bids = bids });
@@ -518,6 +519,88 @@ namespace ReserveBlockCore.Controllers
                     }
 
 
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Listing Id cannot be null or 0" });
+                    return output;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Gets Auction Information by listing
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetAuctionByListing/{listingId}")]
+        public async Task<string> GetAuctionByListing(int listingId)
+        {
+            var output = "";
+            try
+            {
+                if (listingId != 0)
+                {
+                    var auction = Auction.GetListingAuction(listingId);
+                    if (auction != null)
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Auction Found", Auction = auction});
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Auction was not found." });
+                        return output;
+                    }
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Listing Id cannot be null or 0" });
+                    return output;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = ex.ToString() });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Resets auction ended state
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("GetResetAuction/{listingId}")]
+        public async Task<string> GetResetAuction(int listingId)
+        {
+            var output = "";
+            try
+            {
+                if (listingId != 0)
+                {
+                    var auction = Auction.GetListingAuction(listingId);
+                    if (auction != null)
+                    {
+                        auction.IsAuctionOver = false;
+                        Auction.SaveAuction(auction);
+                        output = JsonConvert.SerializeObject(new { Success = true, Message = "Auction Found", Auction = auction });
+                        return output;
+                    }
+                    else
+                    {
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Auction was not found." });
+                        return output;
+                    }
                 }
                 else
                 {
@@ -664,6 +747,7 @@ namespace ReserveBlockCore.Controllers
                             myDS.Description = decShop.Description;
                             myDS.IsOffline = decShop.IsOffline;
                             myDS.AutoUpdateNetworkDNS = decShop.AutoUpdateNetworkDNS;
+                            myDS.HostingType = decShop.HostingType;
 
                             if(myDS.DecShopURL != decShop.DecShopURL)
                             {
@@ -680,6 +764,13 @@ namespace ReserveBlockCore.Controllers
                             if(myDS.IsIPDifferent && myDS.HostingType == DecShopHostingType.Network)
                             {
                                 myDS.IP = P2PClient.MostLikelyIP();
+                                myDS.Port = myDS.Port == 0 ? Globals.DSTClientPort : myDS.Port;
+                            }
+
+                            if(decShop.HostingType == DecShopHostingType.ThirdParty)
+                            {
+                                myDS.IP = "NA";
+                                myDS.Port = 0;
                             }
                                 
                             var result = await DecShop.SaveMyDecShopLocal(myDS);
@@ -1147,6 +1238,61 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Checks your status of connection to shop
+        /// </summary>
+        /// <param name="pingId"></param>
+        /// <returns></returns>
+        [HttpGet("PingShop/{pingId}")]
+        public async Task<string> PingShop(string pingId)
+        {
+
+            var connectedShop = Globals.ConnectedClients.Where(x => x.Value.IsConnected).Take(1);
+            if (connectedShop.Count() > 0)
+            {
+                var result = await DSTClient.PingConnection(pingId);
+                if (result)
+                {
+                    return JsonConvert.SerializeObject(new { Success = result, Message = $"Ping Started Result: {result}", Ping = Globals.PingResultDict[pingId] });
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ping attempt failed.", Ping = (false, 0) });
+                }
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Ping Failed. Decshop not found." });
+        }
+
+        /// <summary>
+        /// Checks your status of your ping request
+        /// </summary>
+        /// <param name="pingId"></param>
+        /// <returns></returns>
+        [HttpGet("CheckPingShop/{pingId}")]
+        public async Task<string> CheckPingShop(string pingId)
+        {
+            if (Globals.PingResultDict.TryGetValue(pingId, out var value))
+            {
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ping Result", Ping = value });
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Could not find that PingId" });
+            }
+        }
+
+        /// <summary>
+        /// Checks your status of your ping request
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("ClearPingRequest")]
+        public async Task<string> ClearPingRequest()
+        {
+            Globals.PingResultDict.Clear();
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Pings Cleared"});
+        }
+
+        /// <summary>
         /// Send a bid to a listing
         /// </summary>
         /// <returns></returns>
@@ -1161,19 +1307,28 @@ namespace ReserveBlockCore.Controllers
                     if (bidPayload == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "Bid Payload cannot be null" });
 
-                    var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
+                    if(!bidPayload.RawBid)
+                    {
+                        var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
 
-                    if (localAddress == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
-
+                        if (localAddress == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+                    }
+                    
                     if(bidPayload.BidAddress.StartsWith("xRBX"))
                         return JsonConvert.SerializeObject(new { Success = false, Message = "You may not place bids with a Reserve Account" });
 
-                    if (Globals.DecShopData?.DecShop == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    if (bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
+                    {
+                        if (Globals.DecShopData?.DecShop == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    }
 
-                    var bidBuild = bidPayload.Build();
-                    if(bidBuild == false)
+                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted || bidPayload.BidStatus == BidStatus.Rejected ? true : false;
+
+                    var bidBuild = bidPayload.Build(thirdPartyBid);
+
+                    if (bidBuild == false)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to build bid." });
 
                     var bidJson = JsonConvert.SerializeObject(bidPayload);
@@ -1188,9 +1343,10 @@ namespace ReserveBlockCore.Controllers
 
                     var bidSave = Bid.SaveBid(bidPayload);
                     
-                    _ = DSTClient.SendShopMessageFromClient(message, false);
+                    if(bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
+                        _ = DSTClient.SendShopMessageFromClient(message, false);
 
-                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bid sent.", BidId = bidPayload.Id });
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Bid sent.", BidId = bidPayload.Id, Bid = bidPayload });
                 }
 
             }
@@ -1253,18 +1409,26 @@ namespace ReserveBlockCore.Controllers
                     if (bidPayload == null)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "Bid Payload cannot be null" });
 
-                    var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
+                    if(!bidPayload.RawBid)
+                    {
+                        var localAddress = AccountData.GetSingleAccount(bidPayload.BidAddress);
 
-                    if (localAddress == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
+                        if (localAddress == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the bid address address" });
 
-                    if (bidPayload.BidAddress.StartsWith("xRBX"))
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "You may not perform a 'Buy Now' with a Reserve Account" });
+                        if (bidPayload.BidAddress.StartsWith("xRBX"))
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "You may not perform a 'Buy Now' with a Reserve Account" });
+                    }
 
-                    if (Globals.DecShopData?.DecShop == null)
-                        return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    if(bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
+                    {
+                        if (Globals.DecShopData?.DecShop == null)
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "DecShop Data cannot be null." });
+                    }
 
-                    var bidBuild = bidPayload.Build();
+                    var thirdPartyBid = bidPayload.BidStatus == BidStatus.Accepted || bidPayload.BidStatus == BidStatus.Rejected ? true : false;
+
+                    var bidBuild = bidPayload.Build(thirdPartyBid);
 
                     if(bidPayload.IsBuyNow != true)
                         return JsonConvert.SerializeObject(new { Success = false, Message = "IsBuyNow must be set to 'true'." });
@@ -1284,9 +1448,10 @@ namespace ReserveBlockCore.Controllers
 
                     var bidSave = Bid.SaveBid(bidPayload);
 
-                    _ = DSTClient.SendShopMessageFromClient(message, false);
-
-                    return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id });
+                    if(bidPayload.BidStatus != BidStatus.Accepted && bidPayload.BidStatus != BidStatus.Rejected)
+                        _ = DSTClient.SendShopMessageFromClient(message, false);
+                                 
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Buy Now Bid sent.", BidId = bidPayload.Id, Bid = bidPayload });
                 }
 
             }
@@ -1296,6 +1461,36 @@ namespace ReserveBlockCore.Controllers
             }
 
             return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a bid to a listing
+        /// </summary>
+        /// <param name="listingId"></param>
+        /// <returns></returns>
+        [HttpGet("RetrySale/{listingId}")]
+        public async Task<string> RetrySale(int listingId)
+        {
+            var listingDb = Listing.GetListingDb();
+            if(listingDb != null)
+            {
+                var singleListing = Listing.GetSingleListing(listingId);
+                if(singleListing == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not find listing: {listingId}" });
+
+                if (singleListing.IsSaleComplete)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"This listing has already completed its sale! ListingId: {listingId}" });
+
+                singleListing.SaleHasFailed = false;
+
+                AuctionEngine.ListingPostSaleDict.TryRemove(listingId, out _);
+
+                listingDb.UpdateSafe(singleListing);
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Listing has been updated for retry." });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = $"Listing DB was null." });
         }
 
         /// <summary>
@@ -1468,6 +1663,7 @@ namespace ReserveBlockCore.Controllers
                         MessageHash = chatPayload.Message.ToHash(),
                         ShopURL = Globals.DecShopData.DecShop.DecShopURL,
                         TimeStamp = TimeUtil.GetTime(),
+                        IsThirdParty = chatPayload.IsThirdParty,
                     };
 
                     chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
@@ -1498,6 +1694,77 @@ namespace ReserveBlockCore.Controllers
                 
             }
             catch(Exception ex) 
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+
+            return JsonConvert.SerializeObject(new { Success = false, Message = "Wallet already has a dec shop associated to it." }); ;
+        }
+
+        /// <summary>
+        /// Send a chat message
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="shopURL"></param>
+        /// <returns></returns>
+        [HttpPost("SendChatMessageThirdParty")]
+        public async Task<string> SendChatMessageThirdParty([FromRoute] string address, [FromRoute] string shopURL, [FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    var chatPayload = JsonConvert.DeserializeObject<Chat.ChatPayload>(jsonData.ToString());
+                    if (chatPayload == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Chat Payload cannot be null" });
+
+                    var localAddress = AccountData.GetSingleAccount(chatPayload.FromAddress);
+
+                    if (localAddress == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You must own the from address" });
+
+                    var messageLengthCheck = chatPayload.Message.ToLengthCheck(240);
+                    if (!messageLengthCheck)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "Message is too long. Please shorten to 240 characters." });
+
+                    var chatMessage = new Chat.ChatMessage
+                    {
+                        Id = RandomStringUtility.GetRandomString(10, true),
+                        FromAddress = localAddress.Address,
+                        Message = chatPayload.Message,
+                        ToAddress = shopURL,
+                        MessageHash = chatPayload.Message.ToHash(),
+                        ShopURL = shopURL,
+                        TimeStamp = TimeUtil.GetTime(),
+                        IsThirdParty = chatPayload.IsThirdParty,
+                    };
+
+                    chatMessage.Signature = SignatureService.CreateSignature(chatMessage.FromAddress + chatMessage.TimeStamp.ToString(), localAddress.GetPrivKey, localAddress.PublicKey);
+                    var chatMessageJson = JsonConvert.SerializeObject(chatMessage);
+
+                    Message message = new Message
+                    {
+                        Address = address,
+                        Data = chatMessageJson,
+                        Type = MessageType.Chat,
+                        ComType = MessageComType.Chat
+                    };
+
+                    if (Globals.ChatMessageDict.TryGetValue(chatMessage.ShopURL, out var chatMessageList))
+                    {
+                        chatMessageList.Add(chatMessage);
+                        Globals.ChatMessageDict[chatMessage.ShopURL] = chatMessageList;
+                    }
+                    else
+                    {
+                        Globals.ChatMessageDict.TryAdd(chatMessage.ShopURL, new List<Chat.ChatMessage> { chatMessage });
+                    }
+
+                    return JsonConvert.SerializeObject(new { Success = true, Message = "Message sent.", MessageId = chatMessage.Id });
+                }
+
+            }
+            catch (Exception ex)
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
             }
@@ -1907,11 +2174,18 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("Debug")]
         public async Task<string> Debug()
         {
-            var clients = Globals.ConnectedClients;
-            var shops = Globals.ConnectedShops;
-            var stunServer = Globals.STUNServer;
+            try
+            {
+                var clients = Globals.ConnectedClients;
+                var shops = Globals.ConnectedShops;
+                var stunServer = Globals.STUNServer;
 
-            return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer }, Formatting.Indented);           
+                return JsonConvert.SerializeObject(new { Success = true, Clients = clients, Shops = shops, StunServer = stunServer}, Formatting.Indented);
+            }
+            catch(Exception ex)
+            {
+                return JsonConvert.SerializeObject(new {Success = false, Message = ex.Message});
+            }
         }
 
         /// <summary>
@@ -1921,7 +2195,7 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("DebugData")]
         public async Task<string> DebugData()
         {
-            var CollectionCount = Collection.GetLiveCollections();
+            var CollectionCount = Collection.GetLiveCollectionCount();
             var ListingCount = Listing.GetLiveListingsCount();
             var AuctionCount = Auction.GetLiveAuctionsCount();
 

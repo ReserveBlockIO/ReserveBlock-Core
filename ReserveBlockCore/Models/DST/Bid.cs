@@ -18,6 +18,7 @@ namespace ReserveBlockCore.Models.DST
         public decimal MaxBidAmount { get; set; }
         public bool IsBuyNow { get; set; }
         public bool IsAutoBid { get; set; }
+        public bool RawBid { get; set; }
         public string PurchaseKey { get; set; }
         public BidStatus BidStatus { get; set; }
         public BidSendReceive BidSendReceive { get; set; }
@@ -26,15 +27,8 @@ namespace ReserveBlockCore.Models.DST
         public int ListingId { get; set; }
         public int CollectionId { get; set; }
 
-        public bool Build()
+        public bool Build(bool thirdParty = false)
         {
-            var account = AccountData.GetSingleAccount(BidAddress);
-            if (account == null)
-                return false;
-
-            if (account.GetPrivKey == null)
-                return false;
-
             if (BidAmount < Globals.BidMinimum)
                 return false;
 
@@ -42,7 +36,7 @@ namespace ReserveBlockCore.Models.DST
                 return false;
 
             Id = Guid.NewGuid();
-            BidStatus = BidStatus.Sent;
+            BidStatus = thirdParty ? BidStatus : BidStatus.Sent;
             IsAutoBid = false;
             BidSendTime = TimeUtil.GetTime();
             MaxBidAmount = BidAmount;
@@ -50,11 +44,23 @@ namespace ReserveBlockCore.Models.DST
 
             var bidModifier = (BidAmount * Globals.BidModifier);
             var bidAmount = Convert.ToInt64(bidModifier);
-            var message = $"{PurchaseKey}_{bidAmount}_{BidAddress}";
-            var signature = SignatureService.CreateSignature(message, account.GetPrivKey, account.PublicKey);
 
-            BidSignature = signature;
+            if(!RawBid)
+            {
+                var account = AccountData.GetSingleAccount(BidAddress);
+                if (account == null)
+                    return false;
 
+                if (account.GetPrivKey == null)
+                    return false;
+                var message = $"{PurchaseKey}_{bidAmount}_{BidAddress}";
+
+
+                var signature = SignatureService.CreateSignature(message, account.GetPrivKey, account.PublicKey);
+
+                BidSignature = signature;
+            }
+            
             return true;
         }
 
@@ -272,7 +278,8 @@ namespace ReserveBlockCore.Models.DST
         #region Verify Bid Signature
         public static bool VerifyBidSignature(string keySign, decimal amount, string address, string bidSignature)
         {
-            var bidModifier = (amount * Globals.BidModifier).ToString();
+            //public const decimal BidModifier = 100000000M
+            var bidModifier = (amount * Globals.BidModifier).ToString("#");
             var bidAmount = Convert.ToInt64(bidModifier);
 
             var bidMessage = $"{keySign}_{bidAmount}_{address}";

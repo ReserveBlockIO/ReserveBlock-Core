@@ -2,6 +2,7 @@
 using ReserveBlockCore.Beacon;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
+using System;
 using System.Transactions;
 
 namespace ReserveBlockCore.Utilities
@@ -73,6 +74,24 @@ namespace ReserveBlockCore.Utilities
             ErrorLogUtility.LogError("Failed to connect to every beacon stored in wallet. Please ensure you are not blocking outside connections to 3338, 13338, 23338, or 33338.", "BeaconUtility.EstablishBeaconConnection()");
             return false; //something failed if we reach here. This means ZERO connections were made to beacon
         }
+
+        public static async Task SendAssets(string scUID, List<string> assets, BeaconNodeInfo connectedBeacon)
+        {
+            if (assets.Count() > 0)
+            {
+                NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                foreach (var asset in assets)
+                {
+                    await SendAssets(scUID, asset, connectedBeacon.Beacons.BeaconLocator);
+                }
+
+                connectedBeacon.Uploading = false;
+                Globals.Beacon[connectedBeacon.IPAddress] = connectedBeacon;
+
+                NFTLogUtility.Log($"NFT Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
+            }
+        }
+
         public static async Task<bool> SendAssets(string scUID, string assetName, string locator)
         {
             bool retry = true;

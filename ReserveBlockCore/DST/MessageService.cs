@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Extensions;
@@ -20,7 +21,7 @@ namespace ReserveBlockCore.DST
 {
     public class MessageService
     {
-        public static async Task ProcessMessage(string payload, IPEndPoint endPoint, UdpClient udpClient)
+        public static async Task ProcessMessage(string payload, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
             if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
             {
@@ -37,11 +38,40 @@ namespace ReserveBlockCore.DST
 
                     var message = JsonConvert.DeserializeObject<Message>(payload);
 
+                    if(shopURL == "NA")
+                    {
+                        if (Globals.ConnectedClients.TryGetValue(endPoint.ToString(), out var client))
+                        {
+                            client.LastReceiveMessage = TimeUtil.GetTime();
+                            if(message != null)
+                            {
+                                if (message.Type != MessageType.KeepAlive && message.Type != MessageType.ShopKeepAlive && message.Type != MessageType.STUNKeepAlive)
+                                    client.LastMessageSent = message;
+                            }
+                            
+
+                            Globals.ConnectedClients[endPoint.ToString()] = client;
+                        }
+                    }
+                    else
+                    {
+                        if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out ShopConnection? shopConnection))
+                        {
+                            shopConnection.LastReceiveMessage = TimeUtil.GetTime();
+                            if (message != null)
+                            {
+                                if (message.Type != MessageType.KeepAlive && message.Type != MessageType.ShopKeepAlive && message.Type != MessageType.STUNKeepAlive)
+                                    shopConnection.LastMessageSent = message;
+                            }
+                            DSTMultiClient.ShopConnections[shopConnection.ShopURL] = shopConnection;
+                        }
+                    }
+
                     //var ipTest = endPoint.ToString();
-                    //if (ipTest.StartsWith("185"))
+                    //if (ipTest.StartsWith("142"))
                     //{
                     //    Console.WriteLine($"Message from shop: {ipTest} - Received at {TimeUtil.GetTime()} - Message Type : {message.Type}");
-                    //    if(message.Type == MessageType.DecShop)
+                    //    if (message.Type == MessageType.DecShop)
                     //    {
                     //        Console.WriteLine(message.Data);
                     //    }
@@ -61,7 +91,10 @@ namespace ReserveBlockCore.DST
                                 AssetPunchClient(message, endPoint, udpClient);
                                 break;
                             case MessageType.KeepAlive:
-                                KeepAlive(message, endPoint, udpClient);
+                                if(shopURL == "NA")
+                                    KeepAlive(message, endPoint, udpClient);
+                                else
+                                    KeepAlive(message, endPoint, udpClient, shopURL);
                                 break;
                             case MessageType.STUNKeepAlive:
                                 STUNKeepAlive(message, endPoint, udpClient);
@@ -76,7 +109,10 @@ namespace ReserveBlockCore.DST
                                 STUNConnect(message, endPoint, udpClient);
                                 break;
                             case MessageType.DecShop:
-                                DecShopMessage(message, endPoint, udpClient);
+                                if (shopURL == "NA")
+                                    DecShopMessage(message, endPoint, udpClient);
+                                else
+                                    DecShopMessage(message, endPoint, udpClient, shopURL);
                                 break;
                             case MessageType.Chat:
                                 ChatMessage(message, endPoint, udpClient);
@@ -93,9 +129,11 @@ namespace ReserveBlockCore.DST
                             case MessageType.Purchase:
                                 ProcessBuyNow(message, endPoint, udpClient);
                                 break;
+                            case MessageType.Ping:
+                                _ = Ping(message, endPoint, udpClient);
+                                break;
                             default:
                                 break;
-
                         }
                     }
                 }
@@ -172,7 +210,6 @@ namespace ReserveBlockCore.DST
                 if (shop != null)
                 {
                     shop.LastReceiveMessage = TimeUtil.GetTime();
-                    shop.IsConnected = false;
                     Globals.ConnectedShops[endPoint.ToString()] = shop;
                 }
                 else
@@ -183,6 +220,7 @@ namespace ReserveBlockCore.DST
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = endPoint.ToString(),
                         InitialMessage = message,
+                        ConnectionId = RandomStringUtility.GetRandomString(12, true)
                     };
                 }
 
@@ -199,7 +237,6 @@ namespace ReserveBlockCore.DST
                 if(client != null)
                 {
                     client.LastReceiveMessage = TimeUtil.GetTime();
-                    client.IsConnected = false;
                     Globals.ConnectedClients[endPoint.ToString()] = client;
                 }
                 else
@@ -210,6 +247,7 @@ namespace ReserveBlockCore.DST
                         ConnectDate = TimeUtil.GetTime(),
                         IPAddress = endPoint.ToString(),
                         InitialMessage = message,
+                        ConnectionId = RandomStringUtility.GetRandomString(12, true)
                     };
                 }
 
@@ -219,24 +257,68 @@ namespace ReserveBlockCore.DST
             }
         }
 
-        public static void KeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static void KeepAlive(Message message, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
             if (message.Type == MessageType.KeepAlive)
             {
                 message.ReceivedTimestamp = TimeUtil.GetTime();
 
-                if (Globals.ConnectedClients.TryGetValue(endPoint.ToString(), out var client))
+                if(shopURL == "NA")
                 {
-                    if (client != null)
+                    if (Globals.ConnectedClients.TryGetValue(endPoint.ToString(), out var client))
                     {
-                        client.LastReceiveMessage = TimeUtil.GetTime();
-                        if (!client.IsConnected)
+                        if (client != null)
                         {
-                            client.IsConnected = true;
-                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient);
+                            client.LastReceiveMessage = TimeUtil.GetTime();
+                            if (!client.KeepAliveStarted)
+                            {
+                                client.KeepAliveStarted = true;
+                                _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, client.ConnectionId);
+                            }
+
+
+                            Globals.ConnectedClients[endPoint.ToString()] = client;
                         }
-                            
+                    }
+                    else
+                    {
+                        client = new DSTConnection
+                        {
+                            LastReceiveMessage = TimeUtil.GetTime(),
+                            ConnectDate = TimeUtil.GetTime(),
+                            IPAddress = endPoint.ToString(),
+                            InitialMessage = message,
+                            ConnectionId = RandomStringUtility.GetRandomString(12, true)
+                        };
+
+                        Globals.ConnectedClients.TryAdd(endPoint.ToString(),client);
+
+                        client.LastReceiveMessage = TimeUtil.GetTime();
+                        if (!client.KeepAliveStarted)
+                        {
+                            client.KeepAliveStarted = true;
+                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, client.ConnectionId);
+                        }
+
                         Globals.ConnectedClients[endPoint.ToString()] = client;
+                    }
+                }
+                else
+                {
+                    if(DSTMultiClient.ShopConnections.TryGetValue(shopURL, out ShopConnection? shopConnection))
+                    {
+                        shopConnection.LastReceiveMessage = TimeUtil.GetTime();
+                        if(!shopConnection.KeepAliveStarted)
+                        {
+                            shopConnection.KeepAliveStarted = true;
+                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, shopConnection.ConnectionId, false, false, shopURL);
+                        }
+
+                        DSTMultiClient.ShopConnections[shopConnection.ShopURL] = shopConnection;
+                    }
+                    else
+                    {
+
                     }
                 }
             }
@@ -252,10 +334,10 @@ namespace ReserveBlockCore.DST
                     if (shop != null)
                     {
                         shop.LastReceiveMessage = TimeUtil.GetTime();
-                        if (!shop.IsConnected)
+                        if (!shop.KeepAliveStarted)
                         {
-                            shop.IsConnected = true;
-                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, true);
+                            shop.KeepAliveStarted = true;
+                            _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, shop.ConnectionId, true);
                         }
 
                         Globals.ConnectedClients[endPoint.ToString()] = shop;
@@ -273,18 +355,18 @@ namespace ReserveBlockCore.DST
                 if (Globals.STUNServer != null)
                 {
                     Globals.STUNServer.LastReceiveMessage = TimeUtil.GetTime();
-                    if (!Globals.STUNServer.IsConnected)
+                    if (!Globals.STUNServer.KeepAliveStarted)
                     {
-                        Globals.STUNServer.IsConnected = true;
-                        _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, false, true);
+                        Globals.STUNServer.KeepAliveStarted = true;
+                        _ = KeepAliveService.KeepAlive(7, endPoint, udpClient, Globals.STUNServer.ConnectionId, false, true);
                     }
                 }
             }
         }
 
-        public static void DecShopMessage(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        public static void DecShopMessage(Message message, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
-            var respMessage = DecShopMessageService.ProcessMessage(message);
+            var respMessage = DecShopMessageService.ProcessMessage(message, shopURL);
 
             if(respMessage != null)
             {
@@ -548,6 +630,63 @@ namespace ReserveBlockCore.DST
                             {
                                 bid.BidStatus = bidStatus;
                                 Bid.SaveBid(bid);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public static async Task Ping(Message message, IPEndPoint endPoint, UdpClient udpClient)
+        {
+            if (message.Type == MessageType.Ping)
+            {
+                try
+                {
+                    //Request receive. Expecting a response
+                    if (message.ComType == MessageComType.Request)
+                    {
+                        var pingId = message.Data;
+                        if(pingId != null )
+                        {
+                            for(int i = 0; i < 3; i++)
+                            {
+                                Message responseMessage = new Message
+                                {
+                                    Type = MessageType.Ping,
+                                    ComType = MessageComType.Response,
+                                    Data = pingId,
+                                    ResponseMessage = true,
+                                    ResponseMessageId = message.Id,
+                                };
+
+                                var messageJson = GenerateMessage(responseMessage, false);
+                                var sendMessage = Encoding.UTF8.GetBytes(messageJson);
+                                udpClient.Send(sendMessage, endPoint);
+
+                                await Task.Delay(1000);
+                            }
+                        }
+                        
+                    }
+
+                    if (message.ComType == MessageComType.Response)
+                    {
+                        Globals.ClientMessageDict.TryGetValue(message.ResponseMessageId, out var msg);
+                        if(msg != null)
+                        {
+                            var pingId = message.Data;
+                            if (Globals.PingResultDict.TryGetValue(pingId, out var value))
+                            {
+                                value.Item2 += 1;
+                                value.Item1 = true;
+
+                                Globals.PingResultDict[pingId] = value;
+
+                                msg.HasReceivedResponse = true;
+                                msg.MessageResponseReceivedTimestamp = TimeUtil.GetTime();
+                                Globals.ClientMessageDict[message.ResponseMessageId] = msg;
                             }
                         }
                     }
