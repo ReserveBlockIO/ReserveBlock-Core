@@ -945,7 +945,8 @@ namespace ReserveBlockCore.DST
                                                 stopWatch.Stop();
                                                 latencyWait = (int)stopWatch.ElapsedMilliseconds;
                                                 //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
-                                                Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
+                                                if (Globals.ShowSTUNMessagesInConsole)
+                                                    Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
                                                 await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                                                       // Check if this is the last packet
                                                 bool isLastPacket = packetData.Length < 1024;
@@ -978,8 +979,8 @@ namespace ReserveBlockCore.DST
                                                 }
                                                 // Extract the sequence number from the packet
                                                 int sequenceNumber = BitConverter.ToInt32(packetData, 0);
-
-                                                Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
+                                                if (Globals.ShowSTUNMessagesInConsole)
+                                                    Console.WriteLine($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}");
                                                 //NFTLogUtility.Log($"Seq: {sequenceNumber} | ExpSeq: {expectedSequenceNumber}", "DSTClient.GetListingAssetThumbnails()-S");
                                                 if (sequenceNumber != expectedSequenceNumber)
                                                 {

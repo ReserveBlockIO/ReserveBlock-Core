@@ -67,15 +67,15 @@ namespace ReserveBlockCore.DST
                         }
                     }
 
-                    var ipTest = endPoint.ToString();
-                    if (ipTest.StartsWith("142"))
-                    {
-                        Console.WriteLine($"Message from shop: {ipTest} - Received at {TimeUtil.GetTime()} - Message Type : {message.Type}");
-                        if (message.Type == MessageType.DecShop)
-                        {
-                            Console.WriteLine(message.Data);
-                        }
-                    }
+                    //var ipTest = endPoint.ToString();
+                    //if (ipTest.StartsWith("142"))
+                    //{
+                    //    Console.WriteLine($"Message from shop: {ipTest} - Received at {TimeUtil.GetTime()} - Message Type : {message.Type}");
+                    //    if (message.Type == MessageType.DecShop)
+                    //    {
+                    //        Console.WriteLine(message.Data);
+                    //    }
+                    //}
 
                     if (message != null)
                     {
