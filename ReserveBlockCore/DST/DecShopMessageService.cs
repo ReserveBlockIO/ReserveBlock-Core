@@ -1135,7 +1135,7 @@ namespace ReserveBlockCore.DST
                         if (auctions?.Count() > 0)
                         {
                             var pageSkip = page * PaginationAmount;
-                            var auctionsPageApplied = auctions.Skip(pageSkip);
+                            var auctionsPageApplied = auctions.OrderBy(x => x.Id).Skip(pageSkip).Take(PaginationAmount).ToList();
 
                             var respMessage = new Message
                             {
