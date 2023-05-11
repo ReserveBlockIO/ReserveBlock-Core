@@ -661,10 +661,10 @@ namespace ReserveBlockCore.DST
                                                 var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                                 var packetData = response.Buffer;
                                                 stopWatch.Stop();
-                                                latencyWait = (int)stopWatch.ElapsedMilliseconds;
+                                                latencyWait = (int)stopWatch.ElapsedMilliseconds == 0 ? 60 : (int)stopWatch.ElapsedMilliseconds;
                                                 //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
                                                 Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
-                                                await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
+                                                //await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                                                       // Check if this is the last packet
                                                 bool isLastPacket = packetData.Length < 1024;
 
