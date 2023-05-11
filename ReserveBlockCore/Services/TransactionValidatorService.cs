@@ -1063,7 +1063,7 @@ namespace ReserveBlockCore.Services
                 if(txRequest.TransactionType == TransactionType.RESERVE)
                 {
                     //Feature not activated yet.
-                    if(Globals.Lock)
+                    if (Globals.Lock)
                         return (txResult, "Feature not activated yet.");
 
                     //Feature not activated yet.

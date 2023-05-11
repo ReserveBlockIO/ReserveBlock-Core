@@ -9,6 +9,7 @@ namespace ReserveBlockCore.Utilities
         {
             try
             {
+                bool writeLog = true;
                 var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
                 var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
@@ -40,8 +41,19 @@ namespace ReserveBlockCore.Utilities
                 {
                     Directory.CreateDirectory(path);
                 }
+                
+                if (File.Exists(path + "errorlog.txt")) 
+                { 
+                    var bytes = File.ReadAllBytes(path + "errorlog.txt").Length;
+                    var totalMB = bytes / 1024 / 1024;
+                    if (totalMB > 100)
+                        writeLog = false; 
+                    else
+                        writeLog = true;
+                }
 
-                await File.AppendAllTextAsync(path + "errorlog.txt", Environment.NewLine + text);
+                if(writeLog)
+                    await File.AppendAllTextAsync(path + "errorlog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {

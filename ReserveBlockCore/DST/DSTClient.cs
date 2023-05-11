@@ -938,16 +938,15 @@ namespace ReserveBlockCore.DST
                                                 stopWatch.Start();
                                                 _ = udpAssets.SendAsync(messageAssetBytes, messageAssetBytes.Length, ConnectedShopServerAssets); //this starts the first file download. Next receive should be the first set of bytes
                                                                                                                                                  //await Task.Delay(10);
-                                                                                                                                                 //_ = udpAssets.SendAsync(messageAssetBytes, ConnectedShopServerAssets); 
 
                                                 var response = await udpAssets.ReceiveAsync().WaitAsync(new TimeSpan(0, 0, 5));
                                                 var packetData = response.Buffer;
                                                 stopWatch.Stop();
-                                                latencyWait = (int)stopWatch.ElapsedMilliseconds;
+                                                latencyWait = (int)stopWatch.ElapsedMilliseconds == 0 ? 60 : (int)stopWatch.ElapsedMilliseconds;
                                                 //NFTLogUtility.Log($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms", "DSTClient.GetListingAssetThumbnails()");
                                                 if (Globals.ShowSTUNMessagesInConsole)
                                                     Console.WriteLine($"{_asset} | Ping: {stopWatch.ElapsedMilliseconds} ms");
-                                                await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
+                                                //await Task.Delay(200);// adding delay to avoid massive overhead on the UDP port. 
                                                                       // Check if this is the last packet
                                                 bool isLastPacket = packetData.Length < 1024;
 

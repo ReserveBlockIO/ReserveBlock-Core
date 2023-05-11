@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Utilities
         {
             try
             {
+                bool writeLog = true;
                 var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
                 var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
                 var text = "[" + DateTime.Now.ToString() + "]" + " : " + "[" + location + "]" + " : " + message;
@@ -43,11 +44,20 @@ namespace ReserveBlockCore.Utilities
                 if (firstEntry == true)
                 {
                     await File.AppendAllTextAsync(path + "apilog.txt", Environment.NewLine + " ");
-
-
                 }
 
-                await File.AppendAllTextAsync(path + "apilog.txt", Environment.NewLine + text);
+                if (File.Exists(path + "apilog.txt"))
+                {
+                    var bytes = File.ReadAllBytes(path + "apilog.txt").Length;
+                    var totalMB = bytes / 1024 / 1024;
+                    if (totalMB > 100)
+                        writeLog = false;
+                    else
+                        writeLog = true;
+                }
+
+                if(writeLog)
+                    await File.AppendAllTextAsync(path + "apilog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {

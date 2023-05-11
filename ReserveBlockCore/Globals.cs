@@ -91,7 +91,7 @@ namespace ReserveBlockCore
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
         public static int MajorVer = 3;
-        public static int MinorVer = 7;
+        public static int MinorVer = 8;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;

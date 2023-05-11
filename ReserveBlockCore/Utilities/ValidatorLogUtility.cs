@@ -10,6 +10,7 @@ namespace ReserveBlockCore.Utilities
         {
             try
             {
+                bool writeLog = true;
                 var databaseLocation = Globals.IsTestNet != true ? "Databases" : "DatabasesTestNet";
                 var mainFolderPath = Globals.IsTestNet != true ? "RBX" : "RBXTest";
 
@@ -46,7 +47,18 @@ namespace ReserveBlockCore.Utilities
                     File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + " ");
                 }
 
-                File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + text);
+                if (File.Exists(path + "validatorlog.txt"))
+                {
+                    var bytes = File.ReadAllBytes(path + "validatorlog.txt").Length;
+                    var totalMB = bytes / 1024 / 1024;
+                    if (totalMB > 100)
+                        writeLog = false;
+                    else
+                        writeLog = true;
+                }
+
+                if(writeLog)
+                    File.AppendAllText(path + "validatorlog.txt", Environment.NewLine + text);
             }
             catch (Exception ex)
             {
