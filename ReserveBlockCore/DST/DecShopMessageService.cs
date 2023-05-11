@@ -902,6 +902,8 @@ namespace ReserveBlockCore.DST
             {
                 var requestOptArray = message.Data.Split(',');
                 var requestOpt = requestOptArray[0];
+                //var compress = requestOptArray.ElementAtOrDefault(2) != null && requestOptArray.ElementAtOrDefault(2) == "c" ? true : false;
+
                 if (requestOpt != null)
                 {
                     var option = requestOpt;

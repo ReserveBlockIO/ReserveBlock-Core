@@ -953,6 +953,10 @@ namespace ReserveBlockCore.Controllers
             var leaf = dcStateTreiDb.Query().Where(x => x.OwnerAddress == address).FirstOrDefault();
             if(leaf != null)
             {
+                var localAddress = AccountData.GetSingleAccount(address);
+                if(localAddress == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = "You do not own this address and cannot import shop." });
+
                 var decShopExist = DecShop.GetMyDecShopInfo();
                 if(decShopExist == null)
                 {
