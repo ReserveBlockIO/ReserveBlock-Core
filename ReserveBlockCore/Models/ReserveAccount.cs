@@ -1221,8 +1221,8 @@ namespace ReserveBlockCore.Models
 
             var currentTime = TimeUtil.GetTime();
             var message = $"{currentTime}{recoveryAccount.Address}";
-            var sigScript = SignatureService.CreateSignature(recoveryAccount.Address, recoveryAccount.GetPrivKey, recoveryAccount.PublicKey);
-            var verify = SignatureService.VerifySignature(recoveryAccount.Address, recoveryAccount.Address, sigScript);
+            var sigScript = SignatureService.CreateSignature(message, recoveryAccount.GetPrivKey, recoveryAccount.PublicKey);
+            var verify = SignatureService.VerifySignature(recoveryAccount.Address, message, sigScript);
 
             if (!verify)
                 return (null, $"Signature did not verify. Please ensure the recovery account belongs to this reserve address.");
