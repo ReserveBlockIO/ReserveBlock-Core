@@ -1150,8 +1150,11 @@ namespace ReserveBlockCore.Services
                                         {
                                             var currentTime = TimeUtil.GetTime(-600);
 
-                                            if(currentTime > sigTime)
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            {
+                                                if (currentTime > sigTime)
                                                 return (txResult, "Recover request has expired.");
+                                            }
 
                                             var stateRec = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
