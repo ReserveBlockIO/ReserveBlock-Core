@@ -116,7 +116,7 @@ namespace ReserveBlockCore.Utilities
                             var aqDb = AssetQueue.GetAssetQueue();
                             if (aqDb != null)
                             {
-                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID);
+                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID && !x.IsComplete);
                                 if (aq != null)
                                 {
                                     aq.IsComplete = true;
@@ -137,7 +137,7 @@ namespace ReserveBlockCore.Utilities
                             var aqDb = AssetQueue.GetAssetQueue();
                             if (aqDb != null)
                             {
-                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID);
+                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID && !x.IsComplete);
                                 if (aq != null)
                                 {
                                     aq.IsComplete = true;

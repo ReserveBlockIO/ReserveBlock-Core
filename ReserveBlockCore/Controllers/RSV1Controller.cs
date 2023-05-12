@@ -150,6 +150,36 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Dumps out all reserve accounts locally stored.
+        /// </summary>
+        /// <param name="restoreCode"></param>
+        /// <returns></returns>
+        [HttpGet("DecodeRestoreCode/{restoreCodeBase}")]
+        public async Task<string> DecodeRestoreCode(string restoreCodeBase)
+        {
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            if(restoreCodeBase != null)
+            {
+                var restoreCode = restoreCodeBase.ToStringFromBase64().Split("//");
+                var rsrvKey = restoreCode[0];
+                var recoveryKey = restoreCode[1];
+
+                if (restoreCode.Length == 2)
+                {
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"Restore Code Decoded", ReserveAccountPrivateKey = rsrvKey, RBXRecoveryAccountPrivateKey = recoveryKey });
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Improper Restore Code" });
+                }
+            }
+            
+
+            return output;
+        }
+
+        /// <summary>
         /// Produces a new reserve address
         /// </summary>
         /// <returns></returns>
@@ -377,7 +407,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Recover a Reserve Account Transaction to Recovery Account
+        /// Recover a Reserve Accounts entire chain worth (NFTs and RBX) to Recovery Account
         /// </summary>
         /// <param name="recoveryPhrase"></param>
         /// <param name="address"></param>
@@ -410,7 +440,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Restores a reserve address
+        /// Restores a reserve address to a wallet with recovery info
         /// </summary>
         /// <returns></returns>
         [HttpPost("RestoreReserveAddress")]
