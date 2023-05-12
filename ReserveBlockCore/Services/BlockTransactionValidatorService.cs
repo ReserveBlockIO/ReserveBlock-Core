@@ -872,6 +872,7 @@ namespace ReserveBlockCore.Services
                                 {
                                     rAccount.AvailableBalance = 0.0M;
                                     rAccount.LockedBalance = 0.0M;
+                                    ReserveAccount.SaveReserveAccount(rAccount);
                                 }
                             }
 
