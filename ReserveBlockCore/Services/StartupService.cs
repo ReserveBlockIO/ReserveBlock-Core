@@ -269,7 +269,7 @@ namespace ReserveBlockCore.Services
                 {
                     if(!Debugger.IsAttached && !skipStateSync)
                     {
-                        await StateTreiSyncService.SyncAccountStateTrei();
+                        //await StateTreiSyncService.SyncAccountStateTrei();
                     }
                 }
 

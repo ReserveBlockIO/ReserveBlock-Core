@@ -70,6 +70,7 @@ namespace ReserveBlockCore
         public const decimal DecShopRequiredRBX = 10.0M;
         public const decimal DecShopUpdateRequiredRBX = 1.0M;
         public const decimal DecShopDeleteRequiredRBX = 1.0M; //0
+        public const decimal RSRVAccountRegisterRBX = 4.0M;
 
         public const int ADNRLimit = 65;
         public static long FeatureLock = 896247;
