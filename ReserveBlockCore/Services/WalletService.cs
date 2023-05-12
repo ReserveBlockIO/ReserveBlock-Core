@@ -313,7 +313,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount), txRequest.Amount);
                 }
                 await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
             }
@@ -327,7 +327,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount), txRequest.Amount);
                 }
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }

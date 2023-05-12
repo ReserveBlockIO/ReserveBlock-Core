@@ -867,16 +867,12 @@ namespace ReserveBlockCore.Services
                             }
                             if (function == "Recover()")
                             {
-                                //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
-                                //if (rAccount != null)
-                                //{
-                                //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
-                                //    if (rStateTrei != null)
-                                //    {
-                                //        rAccount.AvailableBalance = rStateTrei.Balance;
-                                //        rAccount.LockedBalance = rStateTrei.LockedBalance;
-                                //    }
-                                //}
+                                var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                                if (rAccount != null)
+                                {
+                                    rAccount.AvailableBalance = 0.0M;
+                                    rAccount.LockedBalance = 0.0M;
+                                }
                             }
 
                         }
