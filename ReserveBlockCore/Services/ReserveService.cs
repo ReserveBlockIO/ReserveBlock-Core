@@ -16,7 +16,10 @@ namespace ReserveBlockCore.Services
                 await ReserveServiceLock.WaitAsync();
                 try
                 {
-                    CheckReserveTransactions();
+                    if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                    {
+                        CheckReserveTransactions();
+                    }
                 }
                 finally
                 {

@@ -60,7 +60,7 @@ namespace ReserveBlockCore.Services
             //if (txRequest.ToAddress.StartsWith("xRBX"))
             //    return (txResult, "Reserve accounts are not unlocked and you may not send transactions to them yet.");
 
-            if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
+            //if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
             
             if (txRequest.ToAddress != "Adnr_Base" && 
                 txRequest.ToAddress != "DecShop_Base" && 
@@ -411,9 +411,7 @@ namespace ReserveBlockCore.Services
                                         if(scStateTreiRec.PurchaseKeys.Contains(keySign))
                                             return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
                                     }
-
                                     
-
                                     var signatureVerify = Bid.VerifyBidSignature(keySign, amountSoldFor.Value, toAddress, bidSignature);
 
                                     if(!signatureVerify)
