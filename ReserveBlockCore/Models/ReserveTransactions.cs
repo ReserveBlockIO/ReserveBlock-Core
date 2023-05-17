@@ -76,7 +76,7 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
-        #region Get ReserveTransactions DB
+        #region Save Reserve Transactions
         public static void SaveReserveTx(ReserveTransactions rTx)
         {
             try

@@ -1,4 +1,5 @@
-﻿using ReserveBlockCore.Data;
+﻿using Newtonsoft.Json.Linq;
+using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Utilities;
 
@@ -127,6 +128,37 @@ namespace ReserveBlockCore.Services
             TransactionRating rating = TransactionRating.A;
             var mempool = TransactionData.GetMempool();
             var pool = TransactionData.GetPool();
+            var txData = tx.Data;
+            string? hash = null;
+            ReserveTransactionType? reserveType = null;
+            if (txData != null)
+            {
+                var jobj = JObject.Parse(txData);
+                if (jobj != null)
+                {
+                    var function = (string?)jobj["Function"];
+                    if (function != null)
+                    {
+                        if (function == "Register()")
+                        {
+                            reserveType = ReserveTransactionType.Register;
+                        }
+
+                        if (function == "CallBack()")
+                        {
+                            reserveType = ReserveTransactionType.Callback;
+                            hash = jobj["Hash"]?.ToObject<string>();
+                        }
+
+                        
+                        if (function == "Recover()")
+                        {
+                            reserveType = ReserveTransactionType.Recover;
+                        }
+                    }
+                }
+            }
+
             if (mempool != null)
             {
                 if (mempool.Count() > 0)
@@ -134,7 +166,55 @@ namespace ReserveBlockCore.Services
                     var txs = mempool.FindAll(x => x.FromAddress == tx.FromAddress && x.TransactionType == TransactionType.RESERVE);
                     if (txs.Count() > 0)
                     {
-                        rating = TransactionRating.F; // Fail. you can only have 1 dec shop mempool item per address 
+                        var dupFoundOrFail = false;
+                        foreach(var mTx in txs)
+                        {
+                            var mtxData = mTx.Data;
+                            if(mtxData != null)
+                            {
+                                var jobj = JObject.Parse(mtxData);
+                                if (jobj != null)
+                                {
+                                    var function = (string?)jobj["Function"];
+                                    if(function != null)
+                                    {
+                                        if (function == "CallBack()")
+                                        {
+                                            if (reserveType != ReserveTransactionType.Callback)
+                                                continue;
+
+                                            string? mHash = jobj["Hash"]?.ToObject<string>();
+                                            if (mHash == null)
+                                            {
+                                                dupFoundOrFail = true;
+                                                break;
+                                            }
+                                            if(mHash == hash)
+                                            {
+                                                dupFoundOrFail = true;
+                                                break;
+                                            }
+
+                                        }
+
+                                        if (function == "Register()")
+                                        {
+                                            if (reserveType != ReserveTransactionType.Register)
+                                                continue;
+                                        }
+
+                                        if (function == "Recover()")
+                                        {
+                                            if (reserveType != ReserveTransactionType.Recover)
+                                                continue;
+                                        }
+
+                                    }
+                                }
+                            }
+                            //scan for same callback hash
+                        }
+                        rating = dupFoundOrFail ? TransactionRating.F : TransactionRating.A; // Fail. you can only have 1 dec shop mempool item per address 
                     }
                     else
                     {

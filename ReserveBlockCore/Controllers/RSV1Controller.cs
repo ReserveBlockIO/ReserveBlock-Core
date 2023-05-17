@@ -133,7 +133,7 @@ namespace ReserveBlockCore.Controllers
                 var rtxList = rTXs.Query().Where(x => true).ToEnumerable();
                 if(rtxList.Any())
                 {
-                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"{rtxList?.Count()} Found!", ReserveTransactions = rtxList });
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"{rtxList?.Count()} Found!", ReserveTransactions = rtxList }, Formatting.Indented);
                 }
                 else
                 {
@@ -167,11 +167,11 @@ namespace ReserveBlockCore.Controllers
 
                 if (restoreCode.Length == 2)
                 {
-                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"Restore Code Decoded", ReserveAccountPrivateKey = rsrvKey, RBXRecoveryAccountPrivateKey = recoveryKey });
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"Restore Code Decoded", ReserveAccountPrivateKey = rsrvKey, RBXRecoveryAccountPrivateKey = recoveryKey }, Formatting.Indented);
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Improper Restore Code" });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Improper Restore Code" }, Formatting.Indented);
                 }
             }
             
@@ -198,24 +198,24 @@ namespace ReserveBlockCore.Controllers
                         var result = ReserveAccount.CreateNewReserveAccount(rsrvAccountPayload.Password, rsrvAccountPayload.StoreRecoveryAccount);
                         if(result != null)
                         {
-                            output = JsonConvert.SerializeObject(new { Success = true, Message = "Reserve Account Created", ReserveAccount = result });
+                            output = JsonConvert.SerializeObject(new { Success = true, Message = "Reserve Account Created", ReserveAccount = result }, Formatting.Indented);
                             return output;
                         }
                     }
                     else
                     {
-                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" });
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" }, Formatting.Indented);
                     }
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Json Payload was empty." });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Json Payload was empty." }, Formatting.Indented);
                 }
                 
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" }, Formatting.Indented);
             }
 
             return output;
