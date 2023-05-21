@@ -238,5 +238,255 @@ namespace ReserveBlockCore.Beacon
 
             return ms.ToArray();
         }
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //New Method Sending
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        public static async Task<BeaconResponse> Send_New(string FilePath, string TargetIP, int Port, string scUID)
+        {
+            BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
+            string Selected_file = FilePath;
+            string File_name = Path.GetFileName(Selected_file);
+            BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
+
+            string serverIpAddress = TargetIP;
+            int serverPort = Port;
+
+            using (var client = new TcpClient())
+            {
+                await client.ConnectAsync(serverIpAddress, serverPort);
+                Console.WriteLine($"Connected to server: {client.Client.RemoteEndPoint}");
+
+                // Prepare the request
+                var request = new Request(RequestType.Upload, File_name, scUID);
+
+                // Send the request to the server
+                await SendRequest(client.GetStream(), request);
+
+                // Upload the file to the server
+                Console.WriteLine("Uploading file to the server...");
+                await SendFile(client.GetStream(), Selected_file);
+                Console.WriteLine("File uploaded successfully!");
+
+                // Optionally, you can receive a response from the server after uploading the file
+                var response = await ReceiveResponse(client.GetStream());
+                Console.WriteLine("Response received: " + response.Message);
+
+                if(response != null)
+                {
+                    if(response.ResponseType== ResponseType.Success)
+                    {
+                        return new BeaconResponse { Status = 1, Description = "Success"};
+                    }
+                    else
+                    {
+                        return new BeaconResponse { Status = -1, Description = response.Message };
+                    }
+                }
+            }
+
+            return new BeaconResponse { Status = -1, Description = "Fail" };
+        }
+
+        public static async Task<BeaconResponse> Receive_New(string fileName, string TargetIP, int Port, string scUID)
+        {
+            bool fileExist = File.Exists(NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID));
+            if (fileExist)
+            {
+                //do nothing
+                return new BeaconResponse { Status = -1, Description = "Error: " + "File already exist." };
+            }
+            string serverIpAddress = TargetIP;
+            int serverPort = Port;
+            var saveArea = GetPathUtility.GetBeaconPath();
+
+            using (var client = new TcpClient())
+            {
+                await client.ConnectAsync(serverIpAddress, serverPort);
+                Console.WriteLine($"Connected to server: {client.Client.RemoteEndPoint}");
+
+                // Prepare the request
+                var request = new Request(RequestType.Download, fileName, scUID);
+
+                if (!Directory.Exists($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}"))
+                    Directory.CreateDirectory($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}");
+
+                //perform file check
+                var extChkResult = CheckExtension(fileName);
+                if (!extChkResult)
+                {
+                    //Extension found in reject list
+                    return new BeaconResponse { Status = -1, Description = "Bad Extension Type" };
+                }
+
+                // Send the request to the server
+                await SendRequest(client.GetStream(), request);
+
+                // Upload the file to the server
+                Console.WriteLine("Requesting file to the server...");
+                await ReceiveFile(client.GetStream(), $@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}{request.FileName}", request.UniqueId);
+                Console.WriteLine("File downloaded successfully!");
+                return new BeaconResponse { Status = 1, Description = "Success" };
+            }
+
+        }
+
+        private static bool CheckExtension(string fileName)
+        {
+            bool output = false;
+
+            string ext = Path.GetExtension(fileName);
+
+            if (!string.IsNullOrEmpty(ext))
+            {
+                var rejectedExtList = Globals.RejectAssetExtensionTypes;
+                var exist = rejectedExtList.Contains(ext);
+                if (!exist)
+                    output = true;
+            }
+            return output;
+        }
+
+        enum RequestType
+        {
+            Upload,
+            Download
+        }
+
+        class Request
+        {
+            public RequestType RequestType { get; }
+            public string FileName { get; }
+            public string UniqueId { get; }
+
+            public Request(RequestType requestType, string fileName, string uniqueId)
+            {
+                RequestType = requestType;
+                FileName = fileName;
+                UniqueId = uniqueId;
+            }
+        }
+
+        private static async Task SendResponse(NetworkStream stream, Response response)
+        {
+            string responseString = $"{response.ResponseType}|{response.Message}###";
+            byte[] responseBytes = Encoding.UTF8.GetBytes(responseString);
+            await stream.WriteAsync(responseBytes, 0, responseBytes.Length);
+        }
+
+        enum ResponseType
+        {
+            Success,
+            Failure
+        }
+
+        class Response
+        {
+            public ResponseType ResponseType { get; }
+            public string Message { get; }
+
+            public Response(string responseString, string? message = null)
+            {
+                string[] responseParts = responseString.Split('|');
+                ResponseType = Enum.Parse<ResponseType>(responseParts[0]);
+                Message = responseParts[1];
+            }
+        }
+        private static async Task SendRequest(NetworkStream stream, Request request)
+        {
+            string requestString = $"{request.RequestType}|{request.FileName}|{request.UniqueId}###";
+            byte[] buffer = Encoding.ASCII.GetBytes(requestString);
+            await stream.WriteAsync(buffer, 0, buffer.Length);
+        }
+
+        private static async Task ReceiveFile(NetworkStream stream, string filePath, string uniqueId)
+        {
+            using (var fileStream = File.Create($"{filePath}"))
+            {
+                byte[] buffer = new byte[8192]; // Specify the desired buffer size
+                int bytesRead;
+
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    // Check if the received data contains the end marker
+                    int endMarkerIndex = IndexOfEndMarker(buffer, bytesRead);
+                    if (endMarkerIndex != -1)
+                    {
+                        // Write the portion of the buffer before the end marker to the file
+                        await fileStream.WriteAsync(buffer, 0, endMarkerIndex);
+                        break; // File transfer complete, exit the loop
+                    }
+
+                    // Write the entire buffer to the file
+                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                }
+            }
+        }
+
+        private static int IndexOfEndMarker(byte[] buffer, int length)
+        {
+            string endMarker = "END_OF_FILE_TRANSFER";
+            int markerLength = endMarker.Length;
+
+            for (int i = 0; i <= length - markerLength; i++)
+            {
+                bool found = true;
+                for (int j = 0; j < markerLength; j++)
+                {
+                    if (buffer[i + j] != endMarker[j])
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+
+                if (found)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        static async Task SendFile(NetworkStream stream, string filePath)
+        {
+            using (var fileStream = File.OpenRead(filePath))
+            {
+                byte[] buffer = new byte[8192]; // Specify the desired buffer size
+                int bytesRead;
+
+                while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await stream.WriteAsync(buffer, 0, bytesRead);
+                }
+
+                // Send a marker indicating the end of the file transfer
+                byte[] endMarker = Encoding.ASCII.GetBytes("END_OF_FILE_TRANSFER");
+                await stream.WriteAsync(endMarker, 0, endMarker.Length);
+            }
+        }
+
+        private static async Task<Response> ReceiveResponse(NetworkStream stream)
+        {
+            StringBuilder sb = new StringBuilder();
+            byte[] buffer = new byte[1];
+            string delimiter = "###";
+
+            while (true)
+            {
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                char receivedChar = (char)buffer[0];
+                sb.Append(receivedChar);
+
+                if (sb.ToString().EndsWith(delimiter))
+                {
+                    sb.Length -= delimiter.Length;
+                    break;
+                }
+            }
+
+            string responseString = sb.ToString();
+            return new Response(responseString);
+        }
     }
 }

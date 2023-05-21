@@ -796,6 +796,25 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// DO NOT USE - Creates a transaction that burns the desired NFT
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("BurnBypass/{scUID}")]
+        public async Task<string> BurnBypass(string scUID)
+        {
+            var output = "";
+
+            var tx = await SmartContractService.BurnSmartContractBypass(scUID);
+
+            var txJson = JsonConvert.SerializeObject(tx);
+            output = txJson;
+               
+
+            return output;
+        }
+
+        /// <summary>
         /// Creates a transaction to evolve an NFT
         /// </summary>
         /// <param name="id"></param>

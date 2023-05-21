@@ -450,6 +450,122 @@ namespace ReserveBlockCore.Services
         }
         #endregion
 
+        #region BurnSmartContract
+        public static async Task<Transaction?> BurnSmartContractBypass(string scUID)
+        {
+            Transaction? scTx = null;
+
+            var scst = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if (scst == null)
+            {
+                return null;
+            }
+
+            var account = AccountData.GetSingleAccount(scst.OwnerAddress);
+            if (account == null)
+            {
+                return null;//Minter address is not found
+            }
+
+            var txData = "";
+
+            var newSCInfo = new[]
+            {
+                new { Function = "Burn()", ContractUID = scUID, FromAddress = account.Address}
+            };
+
+            txData = JsonConvert.SerializeObject(newSCInfo);
+            
+            scTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = account.Address,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.NFT_BURN,
+                Data = txData
+            };
+
+            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+            if ((scTx.Amount + scTx.Fee) > senderBalance)
+            {
+                return null;//balance insufficient
+            }
+
+            BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
+            PrivateKey privateKey = new PrivateKey("secp256k1", b1);
+
+            var txHash = scTx.Hash;
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR")
+            {
+                return null; //TX sig failed
+            }
+
+            scTx.Signature = signature; //sigScript  = signature + '.' (this is a split char) + pubKey in Base58 format
+
+            try
+            {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(scTx);
+                if (result.Item1 == true)
+                {
+                    scTx.TransactionStatus = TransactionStatus.Pending;
+
+                    if (account.IsValidating == true && (account.Balance - (scTx.Fee + scTx.Amount) < ValidatorService.ValidatorRequiredAmount()))
+                    {
+                        var validator = Validators.Validator.GetAll().FindOne(x => x.Address.ToLower() == scTx.FromAddress.ToLower());
+                        ValidatorService.StopValidating(validator);
+                        TransactionData.AddToPool(scTx);
+                        TransactionData.AddTxToWallet(scTx, true);
+                        AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
+                        await P2PClient.SendTXMempool(scTx);//send out to mempool
+                    }
+                    else if (account.IsValidating)
+                    {
+                        TransactionData.AddToPool(scTx);
+                        TransactionData.AddTxToWallet(scTx, true);
+                        AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
+                        await P2PClient.SendTXToAdjudicator(scTx);//send directly to adjs
+                    }
+                    else
+                    {
+                        TransactionData.AddToPool(scTx);
+                        TransactionData.AddTxToWallet(scTx, true);
+                        AccountData.UpdateLocalBalance(scTx.FromAddress, (scTx.Fee + scTx.Amount));
+                        await P2PClient.SendTXMempool(scTx);//send out to mempool
+                    }
+                    return scTx;
+                }
+                else
+                {
+                    var output = "Fail! Transaction Verify has failed.";
+                    NFTLogUtility.Log($"Error Evolve Failed TX Verify: {scUID}. Result: {result.Item2}", "SmartContractService.BurnSmartContract()");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+                NFTLogUtility.Log($"Error Burning Smart Contract: {ex.ToString()}", "SmartContractService.BurnSmartContract()");
+            }
+
+            return null;
+        }
+        #endregion
+
         #region EvolveSmartContract
         public static async Task<Transaction?> EvolveSmartContract(string scUID, string toAddress)
         {
