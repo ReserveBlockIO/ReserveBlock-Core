@@ -163,7 +163,7 @@ namespace ReserveBlockCore.Services
                     NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
                     foreach (var asset in assets)
                     {
-                        var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset, beaconNodeInfo.Beacons.BeaconLocator);
+                        var sendResult = await BeaconUtility.SendAssets_New(scMain.SmartContractUID, asset, beaconNodeInfo.Beacons.BeaconLocator);
                         if (!sendResult)
                             beaconSendFinalResult = false;
                     }
@@ -1109,7 +1109,7 @@ namespace ReserveBlockCore.Services
                                 NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
                                 foreach (var asset in assets)
                                 {
-                                    var sendResult = await BeaconUtility.SendAssets(scMain.SmartContractUID, asset, connectedBeacon.Beacons.BeaconLocator);
+                                    var sendResult = await BeaconUtility.SendAssets_New(scMain.SmartContractUID, asset, connectedBeacon.Beacons.BeaconLocator);
                                     if (!sendResult)
                                         beaconSendFinalResult = false;
                                 }

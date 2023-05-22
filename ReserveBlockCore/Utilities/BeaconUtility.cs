@@ -92,6 +92,23 @@ namespace ReserveBlockCore.Utilities
             }
         }
 
+        public static async Task SendAssets_New(string scUID, List<string> assets, BeaconNodeInfo connectedBeacon)
+        {
+            if (assets.Count() > 0)
+            {
+                NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                foreach (var asset in assets)
+                {
+                    await SendAssets_New(scUID, asset, connectedBeacon.Beacons.BeaconLocator);
+                }
+
+                connectedBeacon.Uploading = false;
+                Globals.Beacon[connectedBeacon.IPAddress] = connectedBeacon;
+
+                NFTLogUtility.Log($"NFT Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
+            }
+        }
+
         public static async Task<bool> SendAssets_New(string scUID, string assetName, string locator)
         {
             bool retry = true;

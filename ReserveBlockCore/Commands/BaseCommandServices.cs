@@ -760,7 +760,7 @@ namespace ReserveBlockCore.Commands
             else
             {
                 var beaconState = result.Value ? "on" : "off";
-                Console.WriteLine($"Beacon has been turned {beaconState}.");
+                Console.WriteLine($"Beacon has been turned {beaconState}. Please restart wallet for this to take effect.");
             }
         }
 

@@ -330,6 +330,7 @@ namespace ReserveBlockCore.Services
             {
                 if(Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
+                    _ = BeaconServerFast.StartBeaconServer();
                     var port = Globals.Port + 20000; //23338 - mainnet
                     
                     BeaconServer server = new BeaconServer(GetPathUtility.GetBeaconPath(), port);
