@@ -8,6 +8,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security.Principal;
 using System.Text;
 
 namespace ReserveBlockCore.Controllers
@@ -897,6 +898,46 @@ namespace ReserveBlockCore.Controllers
                 sc.IsPublic ^= true;
                 SmartContractMain.SmartContractData.UpdateSmartContract(sc);
             }
+            return output;
+        }
+        /// <summary>
+        ///  Attempt to call media from beacon
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CallMediaFromBeacon/{scUID}")]
+        public async Task<string> CallMediaFromBeacon(string scUID)
+        {
+            var output = "";
+
+            //Get SmartContractMain.IsPublic and set to True.
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if(scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "scState record was null. Please ensure blocks are synced to height." });
+
+            var locators = scState.Locators;
+            var md5List = scState.MD5List;
+
+            var account = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+            if(account == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "You are not the registered owner of this NFT." });
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+
+            if (sc == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Smart contract was not found locally." });
+
+            if(locators == null || md5List== null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Locators and/or MD5 List cannot be null." });
+
+            var assetList = await MD5Utility.GetAssetList(md5List);
+            var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
+            NFTLogUtility.Log($"NFT Transfer - Asset Queue items created.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+
+            output = JsonConvert.SerializeObject(new { Success = true, Message = "Thumbnail generation process started." });
+            
             return output;
         }
 
