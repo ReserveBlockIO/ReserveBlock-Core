@@ -934,7 +934,7 @@ namespace ReserveBlockCore.Controllers
 
             var assetList = await MD5Utility.GetAssetList(md5List);
             var aqResult = AssetQueue.CreateAssetQueueItem(scUID, account.Address, locators, md5List, assetList, AssetQueue.TransferType.Download, true);
-            NFTLogUtility.Log($"NFT Transfer - Asset Queue items created.", "BlockTransactionValidatorService.ProcessIncomingTransactions()");
+            NFTLogUtility.Log($"NFT Transfer - Asset Queue items created.", "SCV1Controller.CallMediaFromBeacon()");
 
             output = JsonConvert.SerializeObject(new { Success = true, Message = "Call to beacon process has started. Please check your NFT or logs for more details." });
             
