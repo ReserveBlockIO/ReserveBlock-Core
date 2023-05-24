@@ -83,6 +83,8 @@ namespace ReserveBlockCore.Beacon
                 var fileName = request.FileName;
                 var scUID = request.UniqueId;
 
+                var scuidFolder = request.UniqueId.Replace(":", "");
+
                 if (request.RequestType == RequestType.Ping)
                 {
                     var randomNum = request.UniqueId;
@@ -95,8 +97,10 @@ namespace ReserveBlockCore.Beacon
                 {
                     Console.WriteLine($"Receiving file from {client.Client.RemoteEndPoint}...");
 
-                    if (!Directory.Exists($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}"))
-                        Directory.CreateDirectory($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}");
+                   
+
+                    if (!Directory.Exists($@"{saveArea}{scuidFolder}{Path.DirectorySeparatorChar}"))
+                        Directory.CreateDirectory($@"{saveArea}{scuidFolder}{Path.DirectorySeparatorChar}");
 
                     
                     //perform file check
@@ -109,7 +113,7 @@ namespace ReserveBlockCore.Beacon
                         return;
                     }
 
-                    bool fileExist = File.Exists($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}{request.FileName}");
+                    bool fileExist = File.Exists($@"{saveArea}{scuidFolder}{Path.DirectorySeparatorChar}{request.FileName}");
                     if (fileExist)
                     {
                         var failResponse = new Response(ResponseType.Success, "Success. File Already Exist");
@@ -132,7 +136,7 @@ namespace ReserveBlockCore.Beacon
                             var _beaconData = beaconData.Where(x => x.IPAdress == ip_address && x.AssetName == fileName).FirstOrDefault();
                             if (_beaconData != null)
                             {
-                                await ReceiveFile(client.GetStream(), $@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}{request.FileName}", request.UniqueId);
+                                await ReceiveFile(client.GetStream(), $@"{saveArea}{scuidFolder}{Path.DirectorySeparatorChar}{request.FileName}", request.UniqueId);
                                 Console.WriteLine($"File received from {client.Client.RemoteEndPoint} successfully!");
 
                                 // Send a response back to the client
@@ -164,7 +168,7 @@ namespace ReserveBlockCore.Beacon
                     //make sure its the correct person and what not.
                     //check if file exist
                     //create unique id + asset name to find.
-                    var filePath = $@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}{request.FileName}";
+                    var filePath = $@"{saveArea}{scuidFolder}{Path.DirectorySeparatorChar}{request.FileName}";
                     bool fileExist = File.Exists(filePath);
                     if (!fileExist)
                     {
