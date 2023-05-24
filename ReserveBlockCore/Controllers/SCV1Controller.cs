@@ -8,6 +8,7 @@ using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net;
 using System.Security.Principal;
 using System.Text;
 
@@ -386,6 +387,35 @@ namespace ReserveBlockCore.Controllers
             }
             
             return output;
+        }
+
+        /// <summary>
+        /// Returns a list of scUIDS owned by an address
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet("GetSmartContractsByAddress/{address}")]
+        public async Task<string> GetSmartContractsByAddress(string address)
+        {
+            string output = "";
+            List<string> scUIDList = new List<string>();
+            var scList = SmartContractStateTrei.GetSmartContractsOwnedByAddress(address);
+
+            if (scList != null)
+            {
+                foreach(var sc in scList)
+                {
+                    scUIDList.Add(sc.SmartContractUID);
+                }    
+                output = JsonConvert.SerializeObject(new { Success = true, Message = $"Smart Contracts Found", SCUIDList = scUIDList }, Formatting.Indented);
+            }
+            else
+            {
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"No Smart Contracts Found", SCUIDList = scUIDList }, Formatting.Indented);
+            }
+
+            return output;
+
         }
 
         /// <summary>

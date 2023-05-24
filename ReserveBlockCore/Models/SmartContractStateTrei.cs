@@ -40,6 +40,21 @@ namespace ReserveBlockCore.Models
             return null;
         }
 
+        public static IEnumerable<SmartContractStateTrei>? GetSmartContractsOwnedByAddress(string address)
+        {
+            var scs = GetSCST();
+            if (scs != null)
+            {
+                var scList = scs.Query().Where(x => x.OwnerAddress == address).ToEnumerable();
+                if (scList.Count() > 0)
+                {
+                    return scList;
+                }
+            }
+
+            return null;
+        }
+
         public static void SaveSmartContract(SmartContractStateTrei scMain)
         {
             var scs = GetSCST();
