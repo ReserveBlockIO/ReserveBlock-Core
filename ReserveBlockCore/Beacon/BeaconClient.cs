@@ -264,6 +264,8 @@ namespace ReserveBlockCore.Beacon
                 // Send the request to the server
                 await SendRequest(client.GetStream(), request);
 
+                await Task.Delay(500);
+
                 // Upload the file to the server
                 Console.WriteLine("Uploading file to the server...");
                 await SendFile(client.GetStream(), Selected_file);
