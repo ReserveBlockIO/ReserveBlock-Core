@@ -34,6 +34,7 @@ namespace ReserveBlockCore
             bool signalrLog = false;
             bool runSingleRequest = false;
             bool skipStateSync = false;
+            bool startGUI = false;
 
             var argList = args.ToList();
             //force culture info to US
@@ -134,6 +135,10 @@ namespace ReserveBlockCore
                     if (argC == "stun")
                     {
                         Globals.SelfSTUNServer = true;
+                    }
+                    if (argC == "startgui")
+                    {
+                        startGUI = true;
                     }
                     if (argC == "stunmessages")
                     {
@@ -551,6 +556,23 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatorCountRun();
             _ = ReserveService.Run();
             _ = DSTClient.Run();
+
+            if(startGUI && Globals.IsTestNet)
+            {
+                Process[] pname = Process.GetProcessesByName("RBXWallet");
+
+                if(pname.Length == 0)
+                {
+                    Globals.GUIProcess = new Process();
+                    Globals.GUIProcess.StartInfo = new ProcessStartInfo
+                    {
+                        FileName = @"C:\Program Files (x86)\RBXWallet\RBXWallet.exe",
+                        Verb = "runas",
+                        WorkingDirectory = @"C:\Program Files (x86)\RBXWallet\"
+                    };
+                    Globals.GUIProcess.Start();
+                }
+            }
 
             var decShop = DecShop.GetMyDecShopInfo();
             if(decShop != null)

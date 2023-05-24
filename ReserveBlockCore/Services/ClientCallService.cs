@@ -227,7 +227,7 @@ namespace ReserveBlockCore.Services
 
                                                                 if (beacon != null)
                                                                 {
-                                                                    BeaconResponse rsp = BeaconClient.Receive(asset, beacon.IPAddress, beacon.Port, aq.SmartContractUID);
+                                                                    BeaconResponse rsp = await BeaconClient.Receive_New(asset, beacon.IPAddress, beacon.Port, aq.SmartContractUID);
                                                                     if (rsp.Status != 1)
                                                                     {
                                                                         //failed to download
