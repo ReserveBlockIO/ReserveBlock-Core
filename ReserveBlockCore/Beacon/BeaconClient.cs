@@ -299,7 +299,7 @@ namespace ReserveBlockCore.Beacon
             }
             string serverIpAddress = TargetIP;
             int serverPort = Port;
-            var saveArea = GetPathUtility.GetBeaconPath();
+            var saveArea = NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID);
             var scuidFolder = scUID.Replace(":", "");
 
             using (var client = new TcpClient())
@@ -309,9 +309,6 @@ namespace ReserveBlockCore.Beacon
 
                 // Prepare the request
                 var request = new Request(RequestType.Download, fileName, scUID);
-
-                if (!Directory.Exists($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}"))
-                    Directory.CreateDirectory($@"{saveArea}{request.UniqueId}{Path.DirectorySeparatorChar}");
 
                 //perform file check
                 var extChkResult = CheckExtension(fileName);
@@ -326,7 +323,7 @@ namespace ReserveBlockCore.Beacon
 
                 // Upload the file to the server
                 Console.WriteLine("Requesting file to the server...");
-                await ReceiveFile(client.GetStream(), $@"{saveArea}{scuidFolder}{Path.DirectorySeparatorChar}{request.FileName}", request.UniqueId);
+                await ReceiveFile(client.GetStream(), saveArea, request.UniqueId);
                 Console.WriteLine("File downloaded successfully!");
                 return new BeaconResponse { Status = 1, Description = "Success" };
             }
