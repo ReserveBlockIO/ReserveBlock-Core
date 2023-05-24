@@ -375,11 +375,11 @@ namespace ReserveBlockCore.Services
             var beacons = Beacons.GetBeacons();
             if(beacons != null)
             {
+                BootstrapBeacons();
                 var beaconList = beacons.Query().Where(x => true).ToEnumerable();
                 if(beaconList.Count() == 0)
                 {
                     //seed beacons
-                    BootstrapBeacons();
                     beaconList = beacons.Query().Where(x => true).ToEnumerable();
                     if(beaconList.Count() > 0)
                     {
@@ -409,20 +409,20 @@ namespace ReserveBlockCore.Services
             var beacons = Beacons.GetBeacons();
             if(beacons != null )
             {
-                if(!Globals.IsTestNet)
+                if (!Globals.IsTestNet)
                 {
-                    List<Beacons> beaconList = new List<Beacons> 
+                    List<Beacons> beaconList = new List<Beacons>
                     {
-                        new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                        new Beacons { IPAddress = "144.126.149.104",Name = "Wisteria Beacon", Port = Globals.Port + 20000, BeaconUID = "WisteriaBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                        new Beacons { IPAddress = "144.126.150.118", Name = "Tulip Beacon", Port = Globals.Port + 20000, BeaconUID = "TulipBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                        new Beacons { IPAddress = "89.117.21.39", Name = "Sunflower Beacon", Port = Globals.Port + 20000, BeaconUID = "SunflowerBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                        new Beacons { IPAddress = "89.117.21.40", Name = "Lavender Beacon", Port = Globals.Port + 20000, BeaconUID = "LavenderBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
-                        new Beacons { IPAddress = "209.126.11.92", Name = "Rose Beacon", Port = Globals.Port + 20000, BeaconUID = "RoseBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
-                        new Beacons { IPAddress = "149.102.144.58", Name = "Lupin Beacon", Port = Globals.Port + 20000, BeaconUID = "LupinBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
-                        new Beacons { IPAddress = "194.233.77.39", Name = "Orchid Beacon", Port = Globals.Port + 20000, BeaconUID = "OrchidBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
-                        new Beacons { IPAddress = "185.188.249.117", Name = "Lotus Beacon", Port = Globals.Port + 20000, BeaconUID = "LotusBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
-                        new Beacons { IPAddress = "154.26.155.35", Name = "Snapdragon Beacon", Port = Globals.Port + 20000, BeaconUID = "SnapdragonBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2}
+                        new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "LilyBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "144.126.149.104",Name = "Wisteria Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "WisteriaBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "144.126.150.118", Name = "Tulip Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "TulipBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "89.117.21.39", Name = "Sunflower Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "SunflowerBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "89.117.21.40", Name = "Lavender Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "LavenderBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
+                        new Beacons { IPAddress = "209.126.11.92", Name = "Rose Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "RoseBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1},
+                        new Beacons { IPAddress = "149.102.144.58", Name = "Lupin Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "LupinBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                        new Beacons { IPAddress = "194.233.77.39", Name = "Orchid Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "OrchidBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                        new Beacons { IPAddress = "185.188.249.117", Name = "Lotus Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "LotusBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2},
+                        new Beacons { IPAddress = "154.26.155.35", Name = "Snapdragon Beacon V2", Port = Globals.Port + 1 + 20000, BeaconUID = "SnapdragonBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 2}
                     };
 
                     foreach (var beacon in beaconList)
@@ -438,7 +438,7 @@ namespace ReserveBlockCore.Services
                     List<Beacons> beaconList = new List<Beacons>
                     {
                         //new Beacons { IPAddress = "162.248.14.123", Name = "Lily Beacon TESTNET", Port = Globals.Port + 20000, BeaconUID = "LilyBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
-                        new Beacons { IPAddress = "162.251.121.150", Name = "Lotus Beacon TESTNET", Port = Globals.Port + 20000, BeaconUID = "LotusBeacon", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
+                        new Beacons { IPAddress = "162.251.121.150", Name = "Lotus Beacon V2 TESTNET", Port = Globals.Port + 1 + 20000, BeaconUID = "LotusBeaconV2", DefaultBeacon = true, AutoDeleteAfterDownload = true, FileCachePeriodDays = 2, IsPrivateBeacon = false, SelfBeacon = false, SelfBeaconActive = false, BeaconLocator = "", Region = 1 },
                     };
 
                     foreach (var beacon in beaconList)
@@ -448,7 +448,7 @@ namespace ReserveBlockCore.Services
 
                     Beacons.SaveBeaconList(beaconList);
                 }
-            } 
+            }         
         }
 
         internal static async Task ClearStaleMempool()
