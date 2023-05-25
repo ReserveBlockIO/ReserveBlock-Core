@@ -152,12 +152,14 @@ namespace ReserveBlockCore.Utilities
                             }
                             else
                             {
+                                await Task.Delay(2000);
                                 retryCount += 1;
                                 NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
                             }
                         }
                         else
                         {
+                            await Task.Delay(2000);
                             retryCount += 1;
                         }
                     }

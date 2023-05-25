@@ -269,7 +269,7 @@ namespace ReserveBlockCore.Beacon
 
                             // Add the file content to the form data
                             formData.Add(fileContent, "file", Path.GetFileName(Selected_file));
-                            string url = $"{serverIpAddress}:{serverPort}/upload/{scUID}";
+                            string url = $"http://{serverIpAddress}:{serverPort}/upload/{scUID}";
                             // Send the POST request to the API endpoint
                             var response = await client.PostAsync(url, formData);
 

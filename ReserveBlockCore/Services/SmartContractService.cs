@@ -166,6 +166,8 @@ namespace ReserveBlockCore.Services
                         var sendResult = await BeaconUtility.SendAssets_New(scMain.SmartContractUID, asset, beaconNodeInfo.Beacons.BeaconLocator);
                         if (!sendResult)
                             beaconSendFinalResult = false;
+
+                        await Task.Delay(1000);
                     }
 
                     beaconNodeInfo.Uploading = false;
