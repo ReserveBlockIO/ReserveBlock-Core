@@ -262,26 +262,35 @@ namespace ReserveBlockCore.Beacon
 
         static async Task ReceiveFile(NetworkStream stream, string filePath, string uniqueId)
         {
-            using (var fileStream = File.Create($"{filePath}"))
+            try
             {
-                byte[] buffer = new byte[8192]; // Specify the desired buffer size
-                int bytesRead;
-
-                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                using (var fileStream = File.Create($"{filePath}"))
                 {
-                    // Check if the received data contains the end marker
-                    int endMarkerIndex = IndexOfEndMarker(buffer, bytesRead);
-                    if (endMarkerIndex != -1)
-                    {
-                        // Write the portion of the buffer before the end marker to the file
-                        await fileStream.WriteAsync(buffer, 0, endMarkerIndex);
-                        break; // File transfer complete, exit the loop
-                    }
+                    byte[] buffer = new byte[8192]; // Specify the desired buffer size
+                    int bytesRead;
 
-                    // Write the entire buffer to the file
-                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length).WaitAsync(new TimeSpan(0,0,1))) > 0)
+                    {
+                        // Check if the received data contains the end marker
+                        int endMarkerIndex = IndexOfEndMarker(buffer, bytesRead);
+                        if (endMarkerIndex != -1)
+                        {
+                            // Write the portion of the buffer before the end marker to the file
+                            await fileStream.WriteAsync(buffer, 0, endMarkerIndex);
+                            break; // File transfer complete, exit the loop
+                        }
+
+                        // Write the entire buffer to the file
+                        await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    }
                 }
             }
+            catch
+            {
+                if(File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+            
         }
 
         static int IndexOfEndMarker(byte[] buffer, int length)
