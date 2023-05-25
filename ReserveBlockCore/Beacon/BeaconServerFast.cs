@@ -20,7 +20,7 @@ namespace ReserveBlockCore.Beacon
                     {
                         webBuilder.UseKestrel(options =>
                         {
-                            options.ListenAnyIP(12345);
+                            options.ListenAnyIP(Globals.Port + 1 + 20000);
 
                         })
                         .UseStartup<BeaconStartup>()
@@ -28,11 +28,6 @@ namespace ReserveBlockCore.Beacon
                     });
 
                     _ = builder.RunConsoleAsync();
-
-                    //while(true)
-                    //{
-                    //    Console.ReadLine();
-                    //}
                 }
             }
             catch (Exception ex)
