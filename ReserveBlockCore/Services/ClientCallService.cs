@@ -932,7 +932,7 @@ namespace ReserveBlockCore.Services
                 ConsoleWriterService.Output(DateTime.Now.ToString());
 
                 var Now = TimeUtil.GetMillisecondTime();
-                Console.WriteLine("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
+                ConsoleWriterService.Output("Sending Blocks Now - Height: " + block.Height.ToString() + " at " + Now);
                 var data = JsonConvert.SerializeObject(block);
 
                 Parallel.ForEach(Globals.Nodes.Values.Where(x => x.Address != Globals.AdjudicateAccount.Address), new ParallelOptions { MaxDegreeOfParallelism = Globals.Signers.Count },
@@ -954,7 +954,7 @@ namespace ReserveBlockCore.Services
                     }
                     catch { }
                 Now = TimeUtil.GetMillisecondTime();
-                Console.WriteLine("Done sending - Height: " + block.Height.ToString() + " at " + Now);
+                ConsoleWriterService.Output("Done sending - Height: " + block.Height.ToString() + " at " + Now);
 
                 await ProcessFortisPoolV3(Globals.TaskAnswerDictV3.Keys.Select(x => x.RBXAddress).ToArray());
                 ConsoleWriterService.Output("Fortis Pool Processed");

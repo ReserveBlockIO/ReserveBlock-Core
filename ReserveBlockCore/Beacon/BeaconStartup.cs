@@ -41,89 +41,97 @@ namespace ReserveBlockCore.Beacon
                 endpoints.MapPost("/upload/{scUID}", async context =>
                 {
                     // Increase the maximum request body size
-                    context.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize = 152 * 1024 * 1024; // 150 MB
-                    var scUID = context.Request.RouteValues["scUID"] as string;
-                    var ipAddress = context.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-                    // Check if the request contains a file
-                    if (context.Request.Form.Files.Count > 0)
+                    try
                     {
-                        var file = context.Request.Form.Files[0];
-
-                        // Save the uploaded file
-                        var fileName = file.FileName;
-                        var scuidFolder = scUID.Replace(":", "");
-                        var filePath = $@"{SaveArea}{scuidFolder}{Path.DirectorySeparatorChar}{fileName}";
-
-                        var extChkResult = CheckExtension(fileName);
-                        if (!extChkResult)
+                        context.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize = 152 * 1024 * 1024; // 150 MB
+                        var scUID = context.Request.RouteValues["scUID"] as string;
+                        var ipAddress = context.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+                        // Check if the request contains a file
+                        if (context.Request.Form.Files.Count > 0)
                         {
-                            //Extension found in reject list
-                            context.Response.StatusCode = StatusCodes.Status403Forbidden; // Bad Request
-                            await context.Response.WriteAsync("No file was uploaded. Extension was found in auto reject list.");
-                            return;
-                        }
+                            var file = context.Request.Form.Files[0];
 
-                        bool fileExist = File.Exists(filePath);
-                        if (fileExist)
-                        {
-                            context.Response.StatusCode = StatusCodes.Status202Accepted;
-                            await context.Response.WriteAsync("No file was uploaded. The file already exist");
-                            return;
-                        }
+                            // Save the uploaded file
+                            var fileName = file.FileName;
+                            var scuidFolder = scUID.Replace(":", "");
+                            var filePath = $@"{SaveArea}{scuidFolder}{Path.DirectorySeparatorChar}{fileName}";
 
-                        if (!Directory.Exists($@"{SaveArea}{scuidFolder}{Path.DirectorySeparatorChar}"))
-                            Directory.CreateDirectory($@"{SaveArea}{scuidFolder}{Path.DirectorySeparatorChar}");
-
-
-                        var beaconData = BeaconData.GetBeaconData();
-                        if (beaconData != null)
-                        {
-                            var authCheck = beaconData.Exists(x => x.IPAdress == ipAddress && x.AssetName == fileName);
-                            if (!authCheck)
+                            var extChkResult = CheckExtension(fileName);
+                            if (!extChkResult)
                             {
+                                //Extension found in reject list
                                 context.Response.StatusCode = StatusCodes.Status403Forbidden; // Bad Request
                                 await context.Response.WriteAsync("No file was uploaded. Extension was found in auto reject list.");
                                 return;
                             }
-                            else
+
+                            bool fileExist = File.Exists(filePath);
+                            if (fileExist)
                             {
-                                var _beaconData = beaconData.Where(x => x.IPAdress == ipAddress && x.AssetName == fileName).FirstOrDefault();
-                                if (_beaconData != null)
+                                context.Response.StatusCode = StatusCodes.Status202Accepted;
+                                await context.Response.WriteAsync("No file was uploaded. The file already exist");
+                                return;
+                            }
+
+                            if (!Directory.Exists($@"{SaveArea}{scuidFolder}{Path.DirectorySeparatorChar}"))
+                                Directory.CreateDirectory($@"{SaveArea}{scuidFolder}{Path.DirectorySeparatorChar}");
+
+
+                            var beaconData = BeaconData.GetBeaconData();
+                            if (beaconData != null)
+                            {
+                                var authCheck = beaconData.Exists(x => x.IPAdress == ipAddress && x.AssetName == fileName);
+                                if (!authCheck)
                                 {
-                                    using (var stream = new FileStream(filePath, FileMode.Create))
-                                    {
-                                        await file.CopyToAsync(stream);
-                                    }
-
-                                    await context.Response.WriteAsync($"File uploaded successfully!");
-
-                                    _beaconData.AssetReceiveDate = TimeUtil.GetTime();//received today
-                                    _beaconData.AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(); //expires in 5 days
-                                    var beaconDatas = BeaconData.GetBeacon();
-                                    if (beaconDatas != null)
-                                    {
-                                        beaconDatas.UpdateSafe(_beaconData);
-                                    }
-
+                                    context.Response.StatusCode = StatusCodes.Status403Forbidden; // Bad Request
+                                    await context.Response.WriteAsync("No file was uploaded. Extension was found in auto reject list.");
                                     return;
                                 }
+                                else
+                                {
+                                    var _beaconData = beaconData.Where(x => x.IPAdress == ipAddress && x.AssetName == fileName).FirstOrDefault();
+                                    if (_beaconData != null)
+                                    {
+                                        using (var stream = new FileStream(filePath, FileMode.Create))
+                                        {
+                                            await file.CopyToAsync(stream);
+                                        }
 
+                                        await context.Response.WriteAsync($"File uploaded successfully!");
+
+                                        _beaconData.AssetReceiveDate = TimeUtil.GetTime();//received today
+                                        _beaconData.AssetExpireDate = TimeUtil.GetTimeForBeaconRelease(); //expires in 5 days
+                                        var beaconDatas = BeaconData.GetBeacon();
+                                        if (beaconDatas != null)
+                                        {
+                                            beaconDatas.UpdateSafe(_beaconData);
+                                        }
+
+                                        return;
+                                    }
+
+                                }
                             }
+                            else
+                            {
+                                context.Response.StatusCode = StatusCodes.Status204NoContent; // Bad Request
+                                await context.Response.WriteAsync("No file was uploaded. Extension was found in auto reject list.");
+                                return;
+                            }
+
+
                         }
                         else
                         {
-                            context.Response.StatusCode = StatusCodes.Status204NoContent; // Bad Request
-                            await context.Response.WriteAsync("No file was uploaded. Extension was found in auto reject list.");
-                            return;
+                            context.Response.StatusCode = 400; // Bad Request
+                            await context.Response.WriteAsync("No file was uploaded.");
                         }
-
-                        
                     }
-                    else
+                    catch(Exception ex)
                     {
-                        context.Response.StatusCode = 400; // Bad Request
-                        await context.Response.WriteAsync("No file was uploaded.");
+                        Console.WriteLine($"Error: {ex.ToString()}");
                     }
+                    
                 });
 
                 endpoints.MapGet("/download/{scUID}/{fileName}", async context =>
