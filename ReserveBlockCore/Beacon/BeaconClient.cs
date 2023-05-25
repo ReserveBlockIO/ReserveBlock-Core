@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ReserveBlockCore.Beacon
@@ -245,47 +246,55 @@ namespace ReserveBlockCore.Beacon
 
         public static async Task<BeaconResponse> Send_New(string FilePath, string TargetIP, int Port, string scUID)
         {
-            BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
-            string Selected_file = FilePath;
-            string File_name = Path.GetFileName(Selected_file);
-            BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
-
-            string serverIpAddress = TargetIP;
-            int serverPort = Port;
-
-            using (var client = new TcpClient())
+            try
             {
-                await client.ConnectAsync(serverIpAddress, serverPort);
-                Console.WriteLine($"Connected to server: {client.Client.RemoteEndPoint}");
+                BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
+                string Selected_file = FilePath;
+                string File_name = Path.GetFileName(Selected_file);
+                BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
 
-                // Prepare the request
-                var request = new Request(RequestType.Upload, File_name, scUID);
+                string serverIpAddress = TargetIP;
+                int serverPort = Port;
 
-                // Send the request to the server
-                await SendRequest(client.GetStream(), request);
-
-                await Task.Delay(500);
-
-                // Upload the file to the server
-                Console.WriteLine("Uploading file to the server...");
-                await SendFile(client.GetStream(), Selected_file);
-                Console.WriteLine("File uploaded successfully!");
-
-                // Optionally, you can receive a response from the server after uploading the file
-                var response = await ReceiveResponse(client.GetStream());
-                Console.WriteLine("Response received: " + response.Message);
-
-                if(response != null)
+                using (var client = new TcpClient())
                 {
-                    if(response.ResponseType== ResponseType.Success)
+                    await client.ConnectAsync(serverIpAddress, serverPort);
+                    Console.WriteLine($"Connected to server: {client.Client.RemoteEndPoint}");
+
+                    // Prepare the request
+                    var request = new Request(RequestType.Upload, File_name, scUID);
+
+                    // Send the request to the server
+                    await SendRequest(client.GetStream(), request);
+
+                    await Task.Delay(500);
+
+                    // Upload the file to the server
+                    Console.WriteLine("Uploading file to the server...");
+                    await SendFile(client.GetStream(), Selected_file);
+                    Console.WriteLine("File uploaded successfully!");
+
+                    // Optionally, you can receive a response from the server after uploading the file
+                    var response = await ReceiveResponse(client.GetStream()).WaitAsync(new TimeSpan(0, 0, 2));
+
+                    Console.WriteLine("Response received: " + response.Message);
+
+                    if (response != null)
                     {
-                        return new BeaconResponse { Status = 1, Description = "Success"};
-                    }
-                    else
-                    {
-                        return new BeaconResponse { Status = -1, Description = response.Message };
+                        if (response.ResponseType == ResponseType.Success)
+                        {
+                            return new BeaconResponse { Status = 1, Description = "Success" };
+                        }
+                        else
+                        {
+                            return new BeaconResponse { Status = -1, Description = response.Message };
+                        }
                     }
                 }
+            }
+            catch(Exception ex)
+            {
+                NFTLogUtility.Log($"Error Sending. Error: {ex.ToString()}", "BeaconClient.Send_New()");
             }
 
             return new BeaconResponse { Status = -1, Description = "Fail" };
