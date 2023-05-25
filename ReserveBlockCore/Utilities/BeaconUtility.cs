@@ -126,7 +126,7 @@ namespace ReserveBlockCore.Utilities
 
                         if(beacon != null)
                         {
-                            NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconUtility.SendAssets_New() - send");
                             BeaconResponse rsp = await BeaconClient.Send_New(filePath, beacon.IPAddress, beacon.Port, scUID);
                             if (rsp.Status == 1)
                             {
@@ -144,7 +144,7 @@ namespace ReserveBlockCore.Utilities
                                         aqDb.UpdateSafe(aq);
                                     }
                                 }
-                                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
 
                                 await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
@@ -153,7 +153,7 @@ namespace ReserveBlockCore.Utilities
                             else
                             {
                                 retryCount += 1;
-                                NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                                NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
                             }
                         }
                         else
@@ -165,7 +165,7 @@ namespace ReserveBlockCore.Utilities
                 catch(Exception ex)
                 {
                     retryCount += 1;
-                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.ProcessData() - send");
+                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconUtility.SendAssets_New() - send");
                 }
             }
 
@@ -187,7 +187,7 @@ namespace ReserveBlockCore.Utilities
                         var beaconString = locator.ToStringFromBase64();
                         var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-                        NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.ProcessData() - send");
+                        NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.SendAssets() - send");
                         BeaconResponse rsp = BeaconClient.Send(filePath, beacon.IPAddress, beacon.Port);
                         if (rsp.Status == 1)
                         {
@@ -205,7 +205,7 @@ namespace ReserveBlockCore.Utilities
                                     aqDb.UpdateSafe(aq);
                                 }
                             }
-                            NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
 
                             await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
@@ -226,7 +226,7 @@ namespace ReserveBlockCore.Utilities
                                     aqDb.UpdateSafe(aq);
                                 }
                             }
-                            NFTLogUtility.Log($"Asset already existed: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"Asset already existed: {assetName}. Description: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
 
                             await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
@@ -235,7 +235,7 @@ namespace ReserveBlockCore.Utilities
                         else
                         {
                             retryCount += 1;
-                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
                         }
                     }
                     else
@@ -246,7 +246,7 @@ namespace ReserveBlockCore.Utilities
                 catch (Exception ex)
                 {
                     retryCount += 1;
-                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.ProcessData() - send");
+                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.SendAssets() - send");
                 }
             }
 

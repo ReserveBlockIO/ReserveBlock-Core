@@ -246,55 +246,54 @@ namespace ReserveBlockCore.Beacon
 
         public static async Task<BeaconResponse> Send_New(string FilePath, string TargetIP, int Port, string scUID)
         {
-            try
+            BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
+            string Selected_file = FilePath;
+            string File_name = Path.GetFileName(Selected_file);
+            BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
+
+            string serverIpAddress = TargetIP;
+            int serverPort = Port;
+
+            using (var client = Globals.HttpClientFactory.CreateClient())
             {
-                BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
-                string Selected_file = FilePath;
-                string File_name = Path.GetFileName(Selected_file);
-                BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
-
-                string serverIpAddress = TargetIP;
-                int serverPort = Port;
-
-                using (var client = new TcpClient())
+                try
                 {
-                    await client.ConnectAsync(serverIpAddress, serverPort);
-                    Console.WriteLine($"Connected to server: {client.Client.RemoteEndPoint}");
-
-                    // Prepare the request
-                    var request = new Request(RequestType.Upload, File_name, scUID);
-
-                    // Send the request to the server
-                    await SendRequest(client.GetStream(), request);
-
-                    await Task.Delay(500);
-
-                    // Upload the file to the server
-                    Console.WriteLine("Uploading file to the server...");
-                    await SendFile(client.GetStream(), Selected_file);
-                    Console.WriteLine("File uploaded successfully!");
-
-                    // Optionally, you can receive a response from the server after uploading the file
-                    var response = await ReceiveResponse(client.GetStream()).WaitAsync(new TimeSpan(0, 0, 2));
-
-                    Console.WriteLine("Response received: " + response.Message);
-
-                    if (response != null)
+                    // Create a new MultipartFormDataContent
+                    using (var formData = new MultipartFormDataContent())
                     {
-                        if (response.ResponseType == ResponseType.Success)
+                        // Read the file as a stream
+                        using (var fileStream = File.OpenRead(Selected_file))
                         {
-                            return new BeaconResponse { Status = 1, Description = "Success" };
-                        }
-                        else
-                        {
-                            return new BeaconResponse { Status = -1, Description = response.Message };
+                            // Create a StreamContent from the file stream
+                            var fileContent = new StreamContent(fileStream);
+
+                            // Add the file content to the form data
+                            formData.Add(fileContent, "file", Path.GetFileName(Selected_file));
+                            string url = $"{serverIpAddress}:{serverPort}/upload/{scUID}";
+                            // Send the POST request to the API endpoint
+                            var response = await client.PostAsync(url, formData);
+
+                            // Check if the request was successful (status code 200)
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var responseContent = await response.Content.ReadAsStringAsync();
+                                Console.WriteLine("File uploaded successfully!");
+                                Console.WriteLine("Server response: " + responseContent);
+                               
+                                return new BeaconResponse { Status = 1, Description = "Success" };
+                            }
+                            else
+                            {
+                                Console.WriteLine("File upload failed. Status code: " + response.StatusCode);
+                                return new BeaconResponse { Status = -1, Description = $"Fail. Reason: {response.StatusCode}" };
+                            }
                         }
                     }
                 }
-            }
-            catch(Exception ex)
-            {
-                NFTLogUtility.Log($"Error Sending. Error: {ex.ToString()}", "BeaconClient.Send_New()");
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                }
             }
 
             return new BeaconResponse { Status = -1, Description = "Fail" };
@@ -313,30 +312,41 @@ namespace ReserveBlockCore.Beacon
             var saveArea = NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID);
             var scuidFolder = scUID.Replace(":", "");
 
-            using (var client = new TcpClient())
+            using (var client = Globals.HttpClientFactory.CreateClient())
             {
-                await client.ConnectAsync(serverIpAddress, serverPort);
-                Console.WriteLine($"Connected to server: {client.Client.RemoteEndPoint}");
-
-                // Prepare the request
-                var request = new Request(RequestType.Download, fileName, scUID);
-
-                //perform file check
-                var extChkResult = CheckExtension(fileName);
-                if (!extChkResult)
+                try
                 {
-                    //Extension found in reject list
-                    return new BeaconResponse { Status = -1, Description = "Bad Extension Type" };
+                    //perform file check
+                    var extChkResult = CheckExtension(fileName);
+                    if (!extChkResult)
+                    {
+                        //Extension found in reject list
+                        return new BeaconResponse { Status = -1, Description = "Bad Extension Type" };
+                    }
+
+                    string url = $"http://{serverIpAddress}:{serverPort}/download/{scUID}/{fileName}";
+
+                    var response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"File download failed. Status code: {response.StatusCode}");
+                        return new BeaconResponse { Status = -1, Description = "Failed" };
+                    }
+
+                    using (var fileStream = new FileStream(saveArea, FileMode.Create))
+                    {
+                        await response.Content.CopyToAsync(fileStream);
+                    }
+
+                    Console.WriteLine("File downloaded successfully!");
+                    return new BeaconResponse { Status = 1, Description = "Success" };
                 }
-
-                // Send the request to the server
-                await SendRequest(client.GetStream(), request);
-
-                // Upload the file to the server
-                Console.WriteLine("Requesting file to the server...");
-                await ReceiveFile(client.GetStream(), saveArea, request.UniqueId);
-                Console.WriteLine("File downloaded successfully!");
-                return new BeaconResponse { Status = 1, Description = "Success" };
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred while downloading the file: {ex.Message}");
+                }
+                return new BeaconResponse { Status = -1, Description = "Fail" };
             }
 
         }
@@ -355,147 +365,6 @@ namespace ReserveBlockCore.Beacon
                     output = true;
             }
             return output;
-        }
-
-        enum RequestType
-        {
-            Upload,
-            Download
-        }
-
-        class Request
-        {
-            public RequestType RequestType { get; }
-            public string FileName { get; }
-            public string UniqueId { get; }
-
-            public Request(RequestType requestType, string fileName, string uniqueId)
-            {
-                RequestType = requestType;
-                FileName = fileName;
-                UniqueId = uniqueId;
-            }
-        }
-
-        private static async Task SendResponse(NetworkStream stream, Response response)
-        {
-            string responseString = $"{response.ResponseType}|{response.Message}###";
-            byte[] responseBytes = Encoding.UTF8.GetBytes(responseString);
-            await stream.WriteAsync(responseBytes, 0, responseBytes.Length);
-        }
-
-        enum ResponseType
-        {
-            Success,
-            Failure
-        }
-
-        class Response
-        {
-            public ResponseType ResponseType { get; }
-            public string Message { get; }
-
-            public Response(string responseString, string? message = null)
-            {
-                string[] responseParts = responseString.Split('|');
-                ResponseType = Enum.Parse<ResponseType>(responseParts[0]);
-                Message = responseParts[1];
-            }
-        }
-        private static async Task SendRequest(NetworkStream stream, Request request)
-        {
-            string requestString = $"{request.RequestType}|{request.FileName}|{request.UniqueId}###";
-            byte[] buffer = Encoding.ASCII.GetBytes(requestString);
-            await stream.WriteAsync(buffer, 0, buffer.Length);
-        }
-
-        private static async Task ReceiveFile(NetworkStream stream, string filePath, string uniqueId)
-        {
-            using (var fileStream = File.Create($"{filePath}"))
-            {
-                byte[] buffer = new byte[8192]; // Specify the desired buffer size
-                int bytesRead;
-
-                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    // Check if the received data contains the end marker
-                    int endMarkerIndex = IndexOfEndMarker(buffer, bytesRead);
-                    if (endMarkerIndex != -1)
-                    {
-                        // Write the portion of the buffer before the end marker to the file
-                        await fileStream.WriteAsync(buffer, 0, endMarkerIndex);
-                        break; // File transfer complete, exit the loop
-                    }
-
-                    // Write the entire buffer to the file
-                    await fileStream.WriteAsync(buffer, 0, bytesRead);
-                }
-            }
-        }
-
-        private static int IndexOfEndMarker(byte[] buffer, int length)
-        {
-            string endMarker = "END_OF_FILE_TRANSFER";
-            int markerLength = endMarker.Length;
-
-            for (int i = 0; i <= length - markerLength; i++)
-            {
-                bool found = true;
-                for (int j = 0; j < markerLength; j++)
-                {
-                    if (buffer[i + j] != endMarker[j])
-                    {
-                        found = false;
-                        break;
-                    }
-                }
-
-                if (found)
-                    return i;
-            }
-
-            return -1;
-        }
-
-        static async Task SendFile(NetworkStream stream, string filePath)
-        {
-            using (var fileStream = File.OpenRead(filePath))
-            {
-                byte[] buffer = new byte[8192]; // Specify the desired buffer size
-                int bytesRead;
-
-                while ((bytesRead = await fileStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    await stream.WriteAsync(buffer, 0, bytesRead);
-                }
-
-                // Send a marker indicating the end of the file transfer
-                byte[] endMarker = Encoding.ASCII.GetBytes("END_OF_FILE_TRANSFER");
-                await stream.WriteAsync(endMarker, 0, endMarker.Length);
-            }
-        }
-
-        private static async Task<Response> ReceiveResponse(NetworkStream stream)
-        {
-            StringBuilder sb = new StringBuilder();
-            byte[] buffer = new byte[1];
-            string delimiter = "###";
-
-            while (true)
-            {
-                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                char receivedChar = (char)buffer[0];
-                sb.Append(receivedChar);
-
-                if (sb.ToString().EndsWith(delimiter))
-                {
-                    sb.Length -= delimiter.Length;
-                    break;
-                }
-            }
-
-            string responseString = sb.ToString();
-            return new Response(responseString);
         }
     }
 }

@@ -3,6 +3,7 @@ using ReserveBlockCore.Utilities;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
+using ReserveBlockCore.Beacon;
 
 namespace ReserveBlockCore.Beacon
 {
@@ -14,15 +15,24 @@ namespace ReserveBlockCore.Beacon
             {
                 if (Globals.SelfBeacon?.SelfBeaconActive == true)
                 {
-                    var port = Globals.Port + 1 + 20000; //23338/9 - mainnet | 33338/9 testnet
-                    var server = new TcpListener(IPAddress.Any, port);
-                    server.Start();
-
-                    while (true)
+                    var builder = Host.CreateDefaultBuilder()
+                    .ConfigureWebHostDefaults(webBuilder =>
                     {
-                        var client = await server.AcceptTcpClientAsync();
-                        Task.Run(() => ProcessClient(client));
-                    }
+                        webBuilder.UseKestrel(options =>
+                        {
+                            options.ListenAnyIP(12345);
+
+                        })
+                        .UseStartup<BeaconStartup>()
+                        .ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+                    });
+
+                    _ = builder.RunConsoleAsync();
+
+                    //while(true)
+                    //{
+                    //    Console.ReadLine();
+                    //}
                 }
             }
             catch (Exception ex)
