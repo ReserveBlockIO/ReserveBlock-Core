@@ -853,32 +853,45 @@ namespace ReserveBlockCore.Controllers
                 if (osArray == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
 
+                bool timeExpired = false;
                 var address = osArray[0];
                 var message = osArray[1].Replace("%2F", "/");
                 var sigScript = osArray[2].Replace("%2F", "/");
                 var scUID = osArray[3].Replace("%2F", "/");
 
+                var messageArray = message.Split(".");
+
+                var timeParse = int.TryParse(messageArray[1], out int timeCreated);
+
+                if(!timeParse)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not parse time." });
+
+                var currentTime = TimeUtil.GetTime();
+
+                if(currentTime > timeCreated + 3600)
+                    timeExpired = true;
+
                 if (address == null || message == null || sigScript == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly.", IsTimeExpired = true });
 
                 var isSigGood = SignatureService.VerifySignature(address, message, sigScript);
 
                 if (isSigGood == false)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership --> NOT VERIFIED <--" });
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership --> NOT VERIFIED <--", IsTimeExpired = true });
 
                 var scState = SmartContractStateTrei.GetSmartContractState(scUID);
 
                 if(scState == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"SC State was not found." });
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"SC State was not found.", IsTimeExpired = true });
 
                 if(scState.OwnerAddress != address)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"State owner does not match supplied address." });
 
-                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership  --> VERIFIED <--" });
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership  --> VERIFIED <--", IsTimeExpired = timeExpired });
             }
             catch
             {
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership  --> NOT VERIFIED <--" });
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership  --> NOT VERIFIED <--", IsTimeExpired = true });
             }
             
         }
