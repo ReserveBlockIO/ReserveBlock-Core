@@ -827,7 +827,7 @@ namespace ReserveBlockCore.Controllers
 
                 var sigScript = SignatureService.CreateSignature(sigMessage, localAccount.GetPrivKey, localAccount.PublicKey);
 
-                completedOwnershipScript = $"{localAccount.Address}<>{sigMessage}<>{sigScript}";
+                completedOwnershipScript = $"{localAccount.Address}<>{sigMessage}<>{sigScript}<>{scUID}";
 
                 var sigVerifies = SignatureService.VerifySignature(localAccount.Address, sigMessage, sigScript);
 
@@ -846,24 +846,41 @@ namespace ReserveBlockCore.Controllers
         [HttpGet("VerifyOwnership/{**ownershipScript}")]
         public async Task<string> VerifyOwnership(string ownershipScript)
         {
-            var osArray = ownershipScript.Split(new string[] { "<>"},StringSplitOptions.None);
+            try
+            {
+                var osArray = ownershipScript.Split(new string[] { "<>" }, StringSplitOptions.None);
 
-            if(osArray == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
+                if (osArray == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
 
-            var address = osArray[0];
-            var message = osArray[1].Replace("%2F", "/");
-            var sigScript = osArray[2].Replace("%2F", "/");
+                var address = osArray[0];
+                var message = osArray[1].Replace("%2F", "/");
+                var sigScript = osArray[2].Replace("%2F", "/");
+                var scUID = osArray[3].Replace("%2F", "/");
 
-            if (address == null || message == null || sigScript == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
+                if (address == null || message == null || sigScript == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
 
-            var isSigGood = SignatureService.VerifySignature(address, message, sigScript);
+                var isSigGood = SignatureService.VerifySignature(address, message, sigScript);
 
-            if(isSigGood == false)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership --> NOT VERIFIED <--" });
+                if (isSigGood == false)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership --> NOT VERIFIED <--" });
 
-            return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership  --> VERIFIED <--" });
+                var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                if(scState == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"SC State was not found." });
+
+                if(scState.OwnerAddress != address)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"State owner does not match supplied address." });
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership  --> VERIFIED <--" });
+            }
+            catch
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership  --> NOT VERIFIED <--" });
+            }
+            
         }
 
         /// <summary>
