@@ -9,6 +9,7 @@ using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
+using System.Web;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -793,6 +794,76 @@ namespace ReserveBlockCore.Controllers
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Creates ownership script
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("ProveOwnership/{scUID}")]
+        public async Task<string> ProveOwnership(string scUID)
+        {
+            var output = "";
+
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+            var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+            if(localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+            bool sigGood = false;
+            var completedOwnershipScript = "";
+
+            while (!sigGood)
+            {
+                var randomKey = RandomStringUtility.GetRandomStringOnlyLetters(8, false);
+                var timestamp = TimeUtil.GetTime();
+
+                var sigMessage = $"{randomKey}.{timestamp}";
+
+                var sigScript = SignatureService.CreateSignature(sigMessage, localAccount.GetPrivKey, localAccount.PublicKey);
+
+                completedOwnershipScript = $"{localAccount.Address}<>{sigMessage}<>{sigScript}";
+
+                var sigVerifies = SignatureService.VerifySignature(localAccount.Address, sigMessage, sigScript);
+
+                if (sigVerifies)
+                    sigGood = true;
+            }
+            
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+        }
+
+        /// <summary>
+        /// Verify Ownership Script
+        /// </summary>
+        /// <param name="ownershipScript"></param>
+        /// <returns></returns>
+        [HttpGet("VerifyOwnership/{**ownershipScript}")]
+        public async Task<string> VerifyOwnership(string ownershipScript)
+        {
+            var osArray = ownershipScript.Split(new string[] { "<>"},StringSplitOptions.None);
+
+            if(osArray == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
+
+            var address = osArray[0];
+            var message = osArray[1].Replace("%2F", "/");
+            var sigScript = osArray[2].Replace("%2F", "/");
+
+            if (address == null || message == null || sigScript == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
+
+            var isSigGood = SignatureService.VerifySignature(address, message, sigScript);
+
+            if(isSigGood == false)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership --> NOT VERIFIED <--" });
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership  --> VERIFIED <--" });
         }
 
         /// <summary>
