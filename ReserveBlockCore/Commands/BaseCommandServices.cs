@@ -20,6 +20,7 @@ using System.Numerics;
 using ReserveBlockCore.EllipticCurve;
 using System;
 using System.Security.Principal;
+using Newtonsoft.Json.Converters;
 
 namespace ReserveBlockCore.Commands
 {
@@ -411,6 +412,76 @@ namespace ReserveBlockCore.Commands
                 await Mothering.Mother.StartMotherProgram();
         }
 
+        public static async Task VerifyNFTOwnership()
+        {
+            Console.WriteLine("Please enter the verification ownership.");
+            var ownerSig = Console.ReadLine();
+            if (!string.IsNullOrEmpty(ownerSig))
+            {
+                var osArray = ownerSig.Split(new string[] { "<>" }, StringSplitOptions.None);
+
+                if (osArray == null)
+                {
+                    Console.WriteLine("Verification script was malformed. Please try again.");
+                    return;
+                }
+
+                bool timeExpired = false;
+                var address = osArray[0];
+                var message = osArray[1].Replace("%2F", "/");
+                var sigScript = osArray[2].Replace("%2F", "/");
+                var scUID = osArray[3].Replace("%2F", "/");
+
+                var messageArray = message.Split(".");
+
+                var timeParse = int.TryParse(messageArray[1], out int timeCreated);
+
+                if (!timeParse)
+                {
+                    Console.WriteLine($"Could not parse time.");
+                    return;
+                }
+
+                var currentTime = TimeUtil.GetTime();
+
+                if (currentTime > timeCreated + 3600)
+                    timeExpired = true;
+
+                if (address == null || message == null || sigScript == null)
+                {
+                    Console.WriteLine($"Owner script was not formatted properly.");
+                    return;
+                }
+                    
+                var isSigGood = SignatureService.VerifySignature(address, message, sigScript);
+
+                if (isSigGood == false)
+                {
+                    Console.WriteLine($"Ownership --> NOT VERIFIED <--");
+                    return;
+                }
+
+                var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                if (scState == null)
+                {
+                    Console.WriteLine($"SC State was not found.");
+                    return;
+                }
+                    
+                if (scState.OwnerAddress != address)
+                {
+                    Console.WriteLine($"State owner does not match supplied address.");
+                    return;
+                }
+
+                var timeExpResponse = timeExpired ? "Yes" : "No";
+
+                Console.WriteLine($"Ownership  --> VERIFIED <--. Is Time Expired? {timeExpResponse}");
+
+                await Task.Delay(1000);
+            }
+        }
         public static async void SetTrilliumOutput()
         {
             Globals.ShowTrilliumOutput ^= true;

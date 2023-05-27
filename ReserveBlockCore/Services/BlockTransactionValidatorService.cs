@@ -824,44 +824,55 @@ namespace ReserveBlockCore.Services
                                 var callBackHash = (string?)jobj["Hash"];
                                 if (callBackHash != null)
                                 {
-                                    var rTX = ReserveTransactions.GetTransactions(callBackHash);
-                                    if (rTX != null)
+                                    var localTX = TransactionData.GetTxByHash(callBackHash);
+                                    if(localTX != null)
                                     {
-                                        var ctx = rTX.Transaction;
-
-                                        var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
-
-                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(ctx.Data);
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTX.Data);
                                         var scData = scDataArray[0];
-                                        var cfunction = (string?)scData["Function"];
                                         var scUID = (string?)scData["ContractUID"];
 
-                                        var data = (string?)scData["Data"];
-                                        if (data != null)
+                                        if(scUID != null)
                                         {
-                                            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-                                            if (sc == null)
+                                            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scState != null)
                                             {
-                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-
-                                                if (!isCompletedSuccessfully)
+                                                var data = scState.ContractData;
+                                                if (data != null)
                                                 {
-                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                    var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                                    if (sc == null)
+                                                    {
+                                                        var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
+                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+
+                                                        if (!isCompletedSuccessfully)
+                                                        {
+                                                            NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        NFTLogUtility.Log("SC was not null. Contract already exist.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    NFTLogUtility.Log("SC Data from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                                 }
                                             }
                                             else
                                             {
-                                                NFTLogUtility.Log("SC was not null. Contract already exist.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                NFTLogUtility.Log("SC State Trei Rec was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                             }
                                         }
                                         else
                                         {
-                                            NFTLogUtility.Log("SC Data from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                            NFTLogUtility.Log("SCUID from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                         }
-
-                                        if (rtxDb != null)
-                                            rtxDb.DeleteSafe(rTX.Id);
+                                    }
+                                    else
+                                    {
+                                        NFTLogUtility.Log("Original TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                     }
                                 }
                             }

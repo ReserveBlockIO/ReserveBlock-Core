@@ -812,7 +812,7 @@ namespace ReserveBlockCore.Controllers
 
             var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
 
-            if(localAccount == null)
+            if (localAccount == null)
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
 
             bool sigGood = false;
@@ -834,8 +834,135 @@ namespace ReserveBlockCore.Controllers
                 if (sigVerifies)
                     sigGood = true;
             }
-            
+
             return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+        }
+
+        /// <summary>
+        /// Adds NFT to local from network if you own it.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("AddNFTDataFromNetwork/{scUID}")]
+        public async Task<string> AddNFTDataFromNetwork(string scUID)
+        {
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+            if (scState.OwnerAddress.StartsWith("xRBX"))
+            {
+                var localReserve = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress);
+                if (localReserve == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+            }
+            else
+            {
+                var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+                if (localAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+            }
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if (sc == null)
+            {
+                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scState.ContractData); });
+                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+
+                if (!isCompletedSuccessfully)
+                {
+                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "SCV1Controller.AddNFTDataFromNetwork()");
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT was not created. Failed to decompile smart contract." });
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"NFT Created." });
+            }
+            else
+            {
+                NFTLogUtility.Log("SC was not null. Contract already exist.", "SCV1Controller.AddNFTDataFromNetwork()");
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT Already Exist." });
+            }
+        }
+
+        /// <summary>
+        /// Creates ownership script RSRV compatible
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpGet("ProveOwnership/{scUID}/{password?}")]
+        public async Task<string> ProveOwnership(string scUID, string? password = null)
+        {
+            var output = "";
+
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+            if(scState.OwnerAddress.StartsWith("xRBX"))
+            {
+                var localReserve = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress);
+                if(localReserve == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+                if(string.IsNullOrEmpty(password))
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Password cannot be empty for Reserve Account." });
+
+                bool sigGood = false;
+                var completedOwnershipScript = "";
+                var privateKey = ReserveAccount.GetPrivateKey(localReserve, password, true);
+
+                while (!sigGood)
+                {
+                    var randomKey = RandomStringUtility.GetRandomStringOnlyLetters(8, false);
+                    var timestamp = TimeUtil.GetTime();
+
+                    var sigMessage = $"{randomKey}.{timestamp}";
+
+                    var sigScript = SignatureService.CreateSignature(sigMessage, privateKey, localReserve.PublicKey);
+
+                    completedOwnershipScript = $"{localReserve.Address}<>{sigMessage}<>{sigScript}<>{scUID}";
+
+                    var sigVerifies = SignatureService.VerifySignature(localReserve.Address, sigMessage, sigScript);
+
+                    if (sigVerifies)
+                        sigGood = true;
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+            }
+            else
+            {
+                var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+                if (localAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+                bool sigGood = false;
+                var completedOwnershipScript = "";
+
+                while (!sigGood)
+                {
+                    var randomKey = RandomStringUtility.GetRandomStringOnlyLetters(8, false);
+                    var timestamp = TimeUtil.GetTime();
+
+                    var sigMessage = $"{randomKey}.{timestamp}";
+
+                    var sigScript = SignatureService.CreateSignature(sigMessage, localAccount.GetPrivKey, localAccount.PublicKey);
+
+                    completedOwnershipScript = $"{localAccount.Address}<>{sigMessage}<>{sigScript}<>{scUID}";
+
+                    var sigVerifies = SignatureService.VerifySignature(localAccount.Address, sigMessage, sigScript);
+
+                    if (sigVerifies)
+                        sigGood = true;
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+            }
+
+            
         }
 
         /// <summary>

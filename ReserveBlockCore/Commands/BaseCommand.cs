@@ -197,6 +197,11 @@ namespace ReserveBlockCore.Commands
                 case "/setto":
                     BaseCommandServices.SetTrilliumOutput();
                     break;
+                case "/verifynft":
+                    Globals.StopConsoleOutput = true;
+                    await BaseCommandServices.VerifyNFTOwnership();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/mother":
                     Globals.StopConsoleOutput = true;
                     BaseCommandServices.StartMother();
