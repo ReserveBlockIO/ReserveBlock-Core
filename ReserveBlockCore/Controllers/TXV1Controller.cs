@@ -393,9 +393,11 @@ namespace ReserveBlockCore.Controllers
         /// Warning this uses parallelism so only use if you system can handle this.
         /// </summary>
         /// <param name="txHash"></param>
+        /// <param name="startAtBlock"></param>
+        /// <param name="startAtBeginning"></param>
         /// <returns></returns>
-        [HttpGet("GetNetworkTXByHash/{txHash}")]
-        public async Task<string> GetNetworkTXByHash(string txHash)
+        [HttpGet("GetNetworkTXByHash/{txHash}/{startAtBlock?}/{startAtBeginning?}")]
+        public async Task<string> GetNetworkTXByHash(string txHash, int startAtBlock = 0, bool startAtBeginning = false)
         {
             var output = "";
             var coreCount = Environment.ProcessorCount;
@@ -407,10 +409,10 @@ namespace ReserveBlockCore.Controllers
                     {
                         txHash = txHash.Replace(" ", "");//removes any whitespace before or after in case left in.
                         var blocks = BlockchainData.GetBlocks();
-                        var height = Convert.ToInt32(Globals.LastBlock.Height);
+                        var height = Convert.ToInt32(Globals.LastBlock.Height) - startAtBlock;
                         bool resultFound = false;
 
-                        var integerList = Enumerable.Range(0, height + 1);
+                        var integerList = startAtBeginning ? Enumerable.Range(startAtBlock, height + 1) : Enumerable.Range(startAtBlock, height + 1).Reverse();
                         Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount == 4 ? 2 : 4 }, (blockHeight, loopState) =>
                         {
                             var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
@@ -421,25 +423,25 @@ namespace ReserveBlockCore.Controllers
                                 if (result != null)
                                 {
                                     resultFound = true;
-                                    output = JsonConvert.SerializeObject(new { Success = true, Message = result });
+                                    output = JsonConvert.SerializeObject(new { Success = true, Message = result }, Formatting.Indented);
                                     loopState.Break();
                                 }
                             }
                         });
 
                         if (!resultFound)
-                            output = JsonConvert.SerializeObject(new { Success = false, Message = "No transaction found with that hash." });
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "No transaction found with that hash." }, Formatting.Indented);
                     }
                     catch (Exception ex)
                     {
-                        output = JsonConvert.SerializeObject(new { Success = false, Message = $"Error Performing Query: {ex.ToString()}" });
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = $"Error Performing Query: {ex.ToString()}" }, Formatting.Indented);
                     }
 
                 }
             }
             else
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude. You must enable 'RunUnsafeCode' in config file or add 'unsafe' to your start up parameters." });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = "The current system does not have enough physical/logical cores to safely run a query of this magnitude. You must enable 'RunUnsafeCode' in config file or add 'unsafe' to your start up parameters." }, Formatting.Indented);
             }
 
             return output;
