@@ -163,6 +163,10 @@ namespace ReserveBlockCore.Utilities
                             retryCount += 1;
                         }
                     }
+                    else
+                    {
+                        retry = false;
+                    }
                 }
                 catch(Exception ex)
                 {

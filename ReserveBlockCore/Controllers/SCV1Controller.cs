@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
@@ -536,6 +537,7 @@ namespace ReserveBlockCore.Controllers
             {
                 SmartContractReturnData scReturnData = new SmartContractReturnData();
                 var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
+
                 if(scMain != null)
                 {
                     NFTLogUtility.Log($"Creating Smart Contract: {scMain.SmartContractUID}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData)");
@@ -543,9 +545,32 @@ namespace ReserveBlockCore.Controllers
                 else
                 {
                     NFTLogUtility.Log($"scMain is null", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 190");
+                    throw new Exception("Smart Contract was null.");
                 }
                 try
                 {
+                    var featureList = scMain.Features;
+
+                    if(featureList?.Count() > 0) 
+                    { 
+                        var royalty = featureList.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                        if(royalty != null)
+                        {
+                            var royaltyFeatures = ((JObject)royalty.FeatureFeatures).ToObject<RoyaltyFeature>();
+                            if(royaltyFeatures != null)
+                            {
+                                if (royaltyFeatures.RoyaltyType == RoyaltyType.Flat)
+                                {
+                                    throw new Exception("Flat rates may no longer be used.");
+                                }
+                                if(royaltyFeatures.RoyaltyAmount >= 1.0M)
+                                {
+                                    throw new Exception("Royalty cannot be over 1. Must be .99 or less.");
+                                }
+                            }
+                        }
+                    }
+
                     var result = await SmartContractWriterService.WriteSmartContract(scMain);
                     scReturnData.Success = true;
                     scReturnData.SmartContractCode = result.Item1;
