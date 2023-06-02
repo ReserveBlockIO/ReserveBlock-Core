@@ -175,6 +175,7 @@ namespace ReserveBlockCore
         public static bool SelfSTUNServer = false;
         public static bool ShowSTUNMessagesInConsole = false;
         public static bool STUNServerRunning = false;
+        public static bool LogMemory = false;
         
         public static CancellationToken CancelledToken;
 

@@ -44,6 +44,8 @@ namespace ReserveBlockCore.Config
 		public string? STUNServers { get; set; }
 		public bool SelfSTUNServer { get; set; }
         public int SelfSTUNPort { get; set; }
+		public bool LogMemory { get; set; }
+
         public static Config ReadConfigFile()
         {
             var path = GetPathUtility.GetConfigPath();
@@ -99,6 +101,7 @@ namespace ReserveBlockCore.Config
                 config.STUNServers = dict.ContainsKey("STUNServers") ? dict["STUNServers"] : null;
                 config.SelfSTUNServer = dict.ContainsKey("STUN") ? Convert.ToBoolean(dict["STUN"]) : false;
                 config.SelfSTUNPort = dict.ContainsKey("SelfSTUNPort") ? Convert.ToInt32(dict["SelfSTUNPort"]) : 3340;
+                config.LogMemory = dict.ContainsKey("LogMemory") ? Convert.ToBoolean(dict["LogMemory"]) : false;
 
 
                 config.AutoDownloadNFTAsset = dict.ContainsKey("AutoDownloadNFTAsset") ? Convert.ToBoolean(dict["AutoDownloadNFTAsset"]) : false;
@@ -176,7 +179,8 @@ namespace ReserveBlockCore.Config
 			Globals.RunUnsafeCode = config.RunUnsafeCode;
 			Globals.DSTClientPort = config.DSTClientPort;
             Globals.SelfSTUNPort = config.SelfSTUNPort;
-			Globals.SelfSTUNServer = Globals.SelfSTUNServer == true ? true : config.SelfSTUNServer;
+			Globals.SelfSTUNServer = config.SelfSTUNServer;
+			Globals.LogMemory = true ? true : config.LogMemory;
 			
 			if (config.STUNServers?.Count() > 0)
 			{

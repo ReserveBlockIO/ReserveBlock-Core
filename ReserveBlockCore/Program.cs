@@ -295,9 +295,9 @@ namespace ReserveBlockCore
                     {
                         Startup.APIEnabled = true; //api disabled by default
                     }
-                    if (argC == "hidecli")
+                    if (argC == "logmemory")
                     {
-                        
+                        Globals.LogMemory = true;
                     }
                     if (argC == "testurl")
                     {

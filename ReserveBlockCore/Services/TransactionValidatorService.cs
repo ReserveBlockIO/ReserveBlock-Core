@@ -519,6 +519,9 @@ namespace ReserveBlockCore.Services
                                                 if (royaltyAmount != stRoyaltyAmount)
                                                     return (txResult, "Royalty Amounts do not match up.");
 
+                                                if (royaltyAmount >= 1.0M)
+                                                    return (txResult, "Royalty Amount may not exceed 99.99%");
+
                                                 if (stRoyaltyPayTo != royaltyPayTo)
                                                     return (txResult, "Royalty Pay to does not match up.");
 
