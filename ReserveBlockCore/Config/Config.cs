@@ -180,7 +180,7 @@ namespace ReserveBlockCore.Config
 			Globals.DSTClientPort = config.DSTClientPort;
             Globals.SelfSTUNPort = config.SelfSTUNPort;
 			Globals.SelfSTUNServer = config.SelfSTUNServer;
-			Globals.LogMemory = true ? true : config.LogMemory;
+			Globals.LogMemory = config.LogMemory;
 			
 			if (config.STUNServers?.Count() > 0)
 			{

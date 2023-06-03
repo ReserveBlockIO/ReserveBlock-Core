@@ -85,6 +85,7 @@ namespace ReserveBlockCore.Models
                 var rec = db.Query().Where(x => x.Hash == rTx.Hash).FirstOrDefault();
                 if(rec == null)
                 {
+                    Globals.ReserveTransactionsDict.TryAdd(rTx.Hash, rTx);
                     db.InsertSafe(rTx);
                 }
             }

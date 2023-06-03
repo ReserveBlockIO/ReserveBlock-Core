@@ -155,6 +155,9 @@ namespace ReserveBlockCore.Data
             transactionPool.EnsureIndexSafe(x => x.FromAddress, false);
             transactionPool.EnsureIndexSafe(x => x.ToAddress, false);
 
+            var rsrvTransactions = DB_Reserve.GetCollection<ReserveTransactions>(RSRV_RESERVE_TRANSACTIONS);
+            rsrvTransactions.EnsureIndexSafe(x => x.Hash);
+
             var transactions = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);
             transactions.EnsureIndexSafe(x => x.Hash, false);
             transactions.EnsureIndexSafe(x => x.FromAddress, false);
@@ -185,7 +188,7 @@ namespace ReserveBlockCore.Data
             DB_Banlist.BeginTrans();
             DB_WorldStateTrei.BeginTrans();
             DB_AccountStateTrei.BeginTrans();
-            DB_Reserve.BeginTrans();
+            //DB_Reserve.BeginTrans();
             DB_SmartContractStateTrei.BeginTrans();
             //DB_DST.BeginTrans();
             DB_DecShopStateTrei.BeginTrans();

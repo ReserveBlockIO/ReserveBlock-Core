@@ -14,7 +14,7 @@ namespace ReserveBlockCore.Services
 {
     public class TransactionValidatorService
     {
-        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false)
+        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false, bool blockVerify = false)
         {
             bool txResult = false;
             bool runReserveCheck = true;
@@ -1127,6 +1127,33 @@ namespace ReserveBlockCore.Services
                                             var currentTime = TimeUtil.GetTime();
                                             var rTx = ReserveTransactions.GetTransactions(hash);
                                             if(rTx == null)
+                                            {
+                                                if(!blockVerify)
+                                                    return (txResult, "Could not find a reserve transaction with that hash.");
+
+                                                var txSearchResult = await TransactionData.GetNetworkTXByHash(hash, 0, false, true);
+
+                                                if(txSearchResult != null)
+                                                {
+                                                    if(txSearchResult.UnlockTime == null)
+                                                        return (txResult, "This TX has no unlock time.");
+
+                                                    if (txSearchResult.UnlockTime < txRequest.Timestamp)
+                                                        return (txResult, "This TX has already passed and can no longer be called back.");
+
+                                                    rTx = new ReserveTransactions { 
+                                                        FromAddress = txSearchResult.FromAddress, 
+                                                        ConfirmTimestamp = (long)txSearchResult.UnlockTime,
+                                                        Hash = hash,
+                                                        ToAddress = txSearchResult.ToAddress,
+                                                        Transaction = txSearchResult
+                                                    };
+
+                                                    ReserveTransactions.SaveReserveTx(rTx);
+                                                }
+                                            }
+
+                                            if (rTx == null)
                                                 return (txResult, "Could not find a reserve transaction with that hash.");
 
                                             if (rTx.Transaction.FromAddress != txRequest.FromAddress)

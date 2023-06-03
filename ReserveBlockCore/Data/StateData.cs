@@ -7,6 +7,7 @@ using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Services;
 using System.Collections.Concurrent;
 using System.Xml.Linq;
+using LiteDB;
 
 namespace ReserveBlockCore.Data
 {
@@ -87,6 +88,14 @@ namespace ReserveBlockCore.Data
                             {
                                 if(tx.TransactionType != TransactionType.RESERVE)
                                 {
+                                    bool changeme = false;
+                                    if (tx.Hash == "345a2093609d7bb12f977cda200463874aa2d53c2ffe88a69655bb258569af86" ||
+                                        tx.Hash == "1273e029e69a34f83a3c01a01f1bbb2bb96f3ea4a24d6e18f40e818cb1b5905d" ||
+                                        tx.Hash == "255400690804902e2f6f11a832e214dbc099d5520137b9a5a2e6bbbc4cfc8f78")
+                                    {
+                                        changeme= true;
+                                    }
+
                                     ReserveTransactions rTx = new ReserveTransactions
                                     {
                                         ConfirmTimestamp = (long)tx.UnlockTime,
@@ -95,6 +104,12 @@ namespace ReserveBlockCore.Data
                                         Transaction = tx,
                                         Hash = tx.Hash
                                     };
+
+                                    if(changeme)
+                                    {
+                                        //rTx.Transaction.Data = rTx.Transaction.Data.ToBase64();
+                                    }
+                                    
 
                                     ReserveTransactions.SaveReserveTx(rTx);
                                 }
