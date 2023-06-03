@@ -352,7 +352,7 @@ namespace ReserveBlockCore.Services
                                 DbContext.Rollback("BlockValidatorService.ValidateBlock()-13");
                                 return result;//block rejected due to bad transaction(s)
                             }
-                            if (block.Height == 258507 || block.Height == 258506)
+                            if (block.Height == 258507 || block.Height == 258506 || block.Height == 258482)
                             {
 
                             }
@@ -361,6 +361,7 @@ namespace ReserveBlockCore.Services
                             UpdateMemBlocks(block);//update mem blocks
                             
                             await StateData.UpdateTreis(block); //update treis
+                            await ReserveService.Run(); //updates treis for reserve pending txs
 
                             var mempool = TransactionData.GetPool();
 

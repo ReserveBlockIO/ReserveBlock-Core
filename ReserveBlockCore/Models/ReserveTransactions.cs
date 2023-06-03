@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
+using System.ComponentModel.DataAnnotations;
 
 namespace ReserveBlockCore.Models
 {
@@ -8,11 +9,23 @@ namespace ReserveBlockCore.Models
     {
         [BsonId]
         public Guid Id { get; set; }
-        public Transaction Transaction { get; set; }
         public string Hash { get; set; }
         public long ConfirmTimestamp { get; set; } //will not be valid till after this.
         public string FromAddress { get; set; }
         public string ToAddress { get; set; }
+        public decimal Amount { get; set; }
+        public long Nonce { get; set; }
+        public decimal Fee { get; set; }
+        public long Timestamp { get; set; }
+        public string? Data { get; set; } = null;
+        public long? UnlockTime { get; set; } = null;
+
+        [StringLength(512)]
+        public string Signature { get; set; }
+        public long Height { get; set; }
+        public TransactionType TransactionType { get; set; }
+        public ReserveTransactionStatus ReserveTransactionStatus { get; set; }
+
 
         #region Get ReserveTransactions DB
         public static LiteDB.ILiteCollection<ReserveTransactions>? GetReserveTransactionsDb()
@@ -82,10 +95,9 @@ namespace ReserveBlockCore.Models
             try
             {
                 var db = GetReserveTransactionsDb();
-                var rec = db.Query().Where(x => x.Hash == rTx.Hash).FirstOrDefault();
+                var rec = db.FindOne(x => x.Hash == rTx.Hash);
                 if(rec == null)
                 {
-                    Globals.ReserveTransactionsDict.TryAdd(rTx.Hash, rTx);
                     db.InsertSafe(rTx);
                 }
             }
@@ -99,4 +111,12 @@ namespace ReserveBlockCore.Models
         #endregion
 
     }
+    public enum ReserveTransactionStatus
+    {
+        Pending,
+        Confirmed,
+        CalledBack,
+        Recovered
+    }
+
 }

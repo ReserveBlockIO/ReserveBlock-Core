@@ -10,38 +10,25 @@ namespace ReserveBlockCore.Services
 
         public static async Task Run()
         {
-            while (true)
+            await ReserveServiceLock.WaitAsync();
+            try
             {
-                await ReserveServiceLock.WaitAsync();
-                try
+                var latestBlockTime = Globals.LastBlock.Timestamp;
+                var rTXDb = ReserveTransactions.GetReserveTransactionsDb();
+                if (rTXDb != null)
                 {
-                    if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                    var reserveTxList = rTXDb.Query().Where(x => x.ConfirmTimestamp < latestBlockTime && x.ReserveTransactionStatus == ReserveTransactionStatus.Pending).ToList();
+                    if (reserveTxList.Count() > 0)
                     {
-                        CheckReserveTransactions();
+                        StateData.UpdateTreiFromReserve(reserveTxList);
                     }
                 }
-                finally
-                {
-                    ReserveServiceLock.Release();
-                }
-
-                await Task.Delay(new TimeSpan(0, 1, 0));
             }
-        }
-
-        private static void CheckReserveTransactions()
-        {
-            var currentTime = TimeUtil.GetTime();
-            var rTXDb = ReserveTransactions.GetReserveTransactionsDb();
-            if(rTXDb != null)
+            finally
             {
-                var reserveTxList = rTXDb.Query().Where(x => x.ConfirmTimestamp < currentTime).ToList();
-                if(reserveTxList.Count() > 0)
-                {
-                    StateData.UpdateTreiFromReserve(reserveTxList);
-                }
+                ReserveServiceLock.Release();
             }
-            
         }
+
     }
 }

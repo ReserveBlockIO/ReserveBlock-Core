@@ -554,7 +554,6 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatingMonitorService();
             _ = ValidatorService.GetActiveValidators();
             _ = ValidatorService.ValidatorCountRun();
-            _ = ReserveService.Run();
             _ = DSTClient.Run();
 
             if(startGUI && Globals.IsTestNet)

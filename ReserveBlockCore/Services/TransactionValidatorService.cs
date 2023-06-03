@@ -1146,7 +1146,16 @@ namespace ReserveBlockCore.Services
                                                         ConfirmTimestamp = (long)txSearchResult.UnlockTime,
                                                         Hash = hash,
                                                         ToAddress = txSearchResult.ToAddress,
-                                                        Transaction = txSearchResult
+                                                        Amount = txSearchResult.Amount,
+                                                        Data = txSearchResult.Data,
+                                                        Fee = txSearchResult.Fee,
+                                                        Height = txSearchResult.Height,
+                                                        Nonce = txSearchResult.Nonce,
+                                                        ReserveTransactionStatus = ReserveTransactionStatus.Pending,
+                                                        Signature = txSearchResult.Signature,
+                                                        Timestamp = txSearchResult.Timestamp,
+                                                        TransactionType = txSearchResult.TransactionType,
+                                                        UnlockTime = txSearchResult.UnlockTime
                                                     };
 
                                                     ReserveTransactions.SaveReserveTx(rTx);
@@ -1156,7 +1165,7 @@ namespace ReserveBlockCore.Services
                                             if (rTx == null)
                                                 return (txResult, "Could not find a reserve transaction with that hash.");
 
-                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
+                                            if (rTx.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
 
                                             if (Globals.BlocksDownloadSlim.CurrentCount != 0)
