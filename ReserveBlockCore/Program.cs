@@ -133,10 +133,6 @@ namespace ReserveBlockCore
                         //Launch testnet
                         Globals.IsTestNet = true;
                     }
-                    if (argC == "stun")
-                    {
-                        Globals.SelfSTUNServer = true;
-                    }
                     if (argC == "startgui")
                     {
                         startGUI = true;
@@ -300,6 +296,10 @@ namespace ReserveBlockCore
                     if (argC == "logmemory")
                     {
                         Globals.LogMemory = true;
+                    }
+                    if (argC == "stun")
+                    {
+                        Globals.SelfSTUNServer = true;
                     }
                     if (argC == "testurl")
                     {
