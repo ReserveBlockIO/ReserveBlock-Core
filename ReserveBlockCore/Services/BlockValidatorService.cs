@@ -486,6 +486,8 @@ namespace ReserveBlockCore.Services
 
                         DbContext.Commit();
 
+
+
                         if (P2PClient.MaxHeight() <= block.Height)
                         {
                             ValidatorProcessor.RandomNumberTaskV3(block.Height + 1);

@@ -77,6 +77,7 @@ namespace ReserveBlockCore.Data
         public const string RSRV_ACCOUNT_KEYSTORE = "rsrv_account_keystore";
         public const string RSRV_RESERVE_ACCOUNTS = "rsrv_reserve_account";
         public const string RSRV_RESERVE_TRANSACTIONS = "rsrv_reserve_transactions";
+        public const string RSRV_RESERVE_TRANSACTIONS_CALLED_BACK = "rsrv_rsrvtx_called_back";
         public const string RSRV_WALLET_SETTINGS = "rsrv_wallet_settings";
         public const string RSRV_BAN_LIST = "rsrv_ban_list";
         public const string RSRV_PEERS = "rsrv_peers";

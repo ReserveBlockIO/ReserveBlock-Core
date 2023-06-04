@@ -1125,6 +1125,7 @@ namespace ReserveBlockCore.Services
                                         if(!string.IsNullOrEmpty(hash))
                                         {
                                             var currentTime = TimeUtil.GetTime();
+
                                             var rTx = ReserveTransactions.GetTransactions(hash);
                                             if(rTx == null)
                                             {
@@ -1164,6 +1165,9 @@ namespace ReserveBlockCore.Services
 
                                             if (rTx == null)
                                                 return (txResult, "Could not find a reserve transaction with that hash.");
+
+                                            if(rTx.ReserveTransactionStatus != ReserveTransactionStatus.Pending)
+                                                return (txResult, $"This TX already has a status of: {rTx.ReserveTransactionStatus}");
 
                                             if (rTx.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot call back.");

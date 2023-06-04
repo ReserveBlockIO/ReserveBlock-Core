@@ -112,7 +112,8 @@ namespace ReserveBlockCore
 
             Globals.BuildVer = WalletVersionUtility.GetBuildVersion();
 
-            Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + WalletVersionUtility.GetBuildVersion().ToString() + "-beta";
+            Globals.CLIVersion = $"{Globals.MajorVer}.{Globals.MinorVer}.{Globals.RevisionVer}.{WalletVersionUtility.GetBuildVersion()}-beta";
+
             var logCLIVer = Globals.CLIVersion;
 
             if (argList.Count() > 0)
@@ -276,6 +277,7 @@ namespace ReserveBlockCore
             SeedNodeService.SeedNodes();
             SeedNodeService.SeedBench();
             await BadTransaction.PopulateBadTXList();
+            await WalletService.BalanceRectify();
 
             Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
             Globals.BlockLock = (int)Globals.V3Height;

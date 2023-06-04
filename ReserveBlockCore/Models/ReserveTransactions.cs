@@ -45,6 +45,24 @@ namespace ReserveBlockCore.Models
 
         #endregion
 
+        #region Get ReserveTransactionsCalledBack DB
+        public static LiteDB.ILiteCollection<string>? GetReserveTransactionsCalledBackDb()
+        {
+            try
+            {
+                var rTx = DbContext.DB_Reserve.GetCollection<string>(DbContext.RSRV_RESERVE_TRANSACTIONS_CALLED_BACK);
+                return rTx;
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "ReserveTransactions.GetReserveTransactionsCalledBackDb()");
+                return null;
+            }
+
+        }
+
+        #endregion
+
         #region Get ReserveTransactions transaction
         public static ReserveTransactions? GetTransactions(string hash)
         {
@@ -99,6 +117,48 @@ namespace ReserveBlockCore.Models
                 if(rec == null)
                 {
                     db.InsertSafe(rTx);
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+        }
+
+        #endregion
+
+        #region Get ReserveTransactions transaction called back list
+        public static bool GetTransactionsCalledBack(string hash)
+        {
+            try
+            {
+                var db = GetReserveTransactionsCalledBackDb();
+                var rec = db.Query().Where(x => x == hash).FirstOrDefault();
+                if (rec != null)
+                {
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
+        #region Save Reserve Transactions
+        public static void SaveReserveTxCallBack(string rTxHash)
+        {
+            try
+            {
+                var db = GetReserveTransactionsCalledBackDb();
+                var rec = db.FindOne(x => x == rTxHash);
+                if (rec == null)
+                {
+                    db.InsertSafe(rTxHash);
                 }
             }
             catch (Exception ex)

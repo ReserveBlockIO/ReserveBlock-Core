@@ -650,7 +650,6 @@ namespace ReserveBlockCore.Data
 
                         if (rtxDb != null)
                             rtxDb.UpdateSafe(rTX);
-
                     }
                 }
             }
