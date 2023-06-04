@@ -284,7 +284,7 @@ namespace ReserveBlockCore
 
             //var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
             //if(adjGenAccount != null)
-            // await BlockchainData.InitializeChain();
+            //await BlockchainData.InitializeChain();
 
             StartupService.SetValidator();
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
