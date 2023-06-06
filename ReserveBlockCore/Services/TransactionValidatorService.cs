@@ -356,6 +356,9 @@ namespace ReserveBlockCore.Services
                         if (function == null)
                             return (txResult, "SC Function cannot be null.");
 
+                        if (txRequest.ToAddress.StartsWith("xRBX") || txRequest.FromAddress.StartsWith("xRBX"))
+                            return (txResult, "You cannot perform a sale with a Reserve Account.");
+
                         var mempool = TransactionData.GetPool();
 
                         if (function == "Sale_Start()" || function == "M_Sale_Start()")
