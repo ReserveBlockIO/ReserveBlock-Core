@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
@@ -10,6 +11,7 @@ using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Security.Principal;
 using System.Text;
 using System.Web;
@@ -160,6 +162,11 @@ namespace ReserveBlockCore.Controllers
                     {
                         var exist = accounts.Exists(x => x.Address == scState.OwnerAddress || x.Address == scState.NextOwner);
                         var rExist = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress) != null ? true : false;
+                        if(!rExist)
+                        {
+                            if(scState.NextOwner != null)
+                                rExist = ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false;
+                        }
                         if(rExist)
                             rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : true;
                         if (exist || rExist)
@@ -850,6 +857,147 @@ namespace ReserveBlockCore.Controllers
             }
 
             return output;
+        }
+
+        /// <summary>
+        /// Creates a transaction to start a sale for an NFT.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="saleAmount"></param>
+        /// <param name="backupURL"></param>
+        /// <returns></returns>
+        [HttpGet("TransferSale/{scUID}/{toAddress}/{saleAmount}/{**backupURL}")]
+        public static async Task<string> TransferSale(string scUID, string toAddress, decimal saleAmount, string? backupURL = "")
+        {
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+                    var purchaseKey = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+                    var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                    if (scState == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+                    var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+                    if (localAccount == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+                    if (!Globals.Beacons.Any())
+                    {
+                        NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You do not have any beacons stored." });
+                    }
+
+                    if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
+                    {
+                        var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                        if (!beaconConnectionResult)
+                        {
+                            NFTLogUtility.Log("Error - You failed to connect to any beacons.", "SCV1Controller.TransferNFT()");
+                            return  JsonConvert.SerializeObject(new { Success = false, Message = "You failed to connect to any beacons." });
+                        }
+                    }
+                    var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+                    if (connectedBeacon == null)
+                    {
+                        NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "SCV1Controller.TransferNFT()");
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You have lost connection to beacons. Please attempt to resend." });
+                    }
+
+                    toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
+                    var localAddress = AccountData.GetSingleAccount(toAddress);
+
+                    var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+                    var md5List = await MD5Utility.GetMD5FromSmartContract(sc);
+
+                    NFTLogUtility.Log($"Sending the following assets for upload: {md5List}", "SCV1Controller.TransferNFT()");
+
+                    bool result = false;
+                    if (localAddress == null)
+                    {
+                        result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                        NFTLogUtility.Log($"NFT Beacon Upload Request Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
+                    }
+                    else
+                    {
+                        result = true;
+                    }
+
+                    if (result == true)
+                    {
+                        var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
+                            AssetQueue.TransferType.Upload);
+                        NFTLogUtility.Log($"NFT Asset Queue Items Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
+
+                        if (aqResult)
+                        {
+                            _ = Task.Run(() => SmartContractService.StartTransferSaleSmartContractTX(sc, 
+                                scUID, toAddress, saleAmount, purchaseKey, connectedBeacon, md5List, backupURL));
+
+                            var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started." });
+                            NFTLogUtility.Log($"NFT Process Completed in CLI. SCUID: {sc.SmartContractUID}. Response: {success}", "SCV1Controller.TransferNFT()");
+                            return success;
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {connectedBeacon.Beacons.BeaconLocator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
+                            return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to add upload to Asset Queue. Please check logs for more details." });
+                        }
+
+                    }
+                    else
+                    {
+                        NFTLogUtility.Log($"Beacon upload failed. Result was : {result}", "SCV1Controller.TransferNFT()");
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Beacon upload failed. Result was : {result}" });
+                    }
+
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT is not published." });
+                }
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT could not be found locally." });
+            }
+        }
+
+        /// <summary>
+        /// Complete NFT purchase
+        /// </summary>
+        /// <param name="keySign"></param>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CompleteTransferSale/{keySign}/{**scUID}")]
+        public async Task<string> CompleteTransferSale(string keySign, string scUID)
+        {
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if (scStateTrei == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract was not found." });
+
+            var nextOwner = scStateTrei.NextOwner;
+            var purchaseAmount = scStateTrei.PurchaseAmount;
+
+            if (nextOwner == null || purchaseAmount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart contract data missing or purchase already completed. Next Owner: {nextOwner} | Purchase Amount {purchaseAmount}" });
+
+            var localAccount = AccountData.GetSingleAccount(nextOwner);
+
+            if (localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"A local account with next owner address was not found. Next Owner: {nextOwner}" });
+
+            if (localAccount.Balance <= purchaseAmount.Value)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Not enough funds to purchase NFT. Purchase Amount {purchaseAmount} | Current Balance: {localAccount.Balance}." });
+
+            var result = await SmartContractService.CompleteTransferSaleSmartContractTX(scUID, scStateTrei.OwnerAddress, purchaseAmount.Value, keySign);
+
+            return JsonConvert.SerializeObject(new { Success = result.Item1 == null ? false : true, Message = result.Item2 });
         }
 
         /// <summary>

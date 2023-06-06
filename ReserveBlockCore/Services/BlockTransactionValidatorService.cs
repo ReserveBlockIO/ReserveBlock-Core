@@ -91,6 +91,22 @@ namespace ReserveBlockCore.Services
 
                             AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, false);
                         }
+
+                        if(function == "M_Sale_Start()")
+                        {
+                            var txdata = TransactionData.GetAll();
+                            tx.TransactionStatus = TransactionStatus.Success;
+                            txdata.InsertSafe(tx);
+                        }
+
+                        if (function == "M_Sale_Complete()")
+                        {
+                            var txdata = TransactionData.GetAll();
+                            tx.TransactionStatus = TransactionStatus.Success;
+                            txdata.InsertSafe(tx);
+
+                            AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, false);
+                        }
                     }
                     
                 }
@@ -366,7 +382,7 @@ namespace ReserveBlockCore.Services
 
                         if (!string.IsNullOrWhiteSpace(function))
                         {
-                            if (function == "Sale_Complete()")
+                            if (function == "Sale_Complete()" || function == "M_Sale_Complete()")
                             {
                                 var localFromAddress = AccountData.GetSingleAccount(tx.FromAddress);
 

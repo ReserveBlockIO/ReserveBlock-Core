@@ -229,7 +229,13 @@ namespace ReserveBlockCore.Data
                                         case "Sale_Start()":
                                             StartSaleSmartContract(tx);
                                             break;
+                                        case "M_Sale_Start()":
+                                            StartSaleSmartContract(tx);
+                                            break;
                                         case "Sale_Complete()":
+                                            CompleteSaleSmartContract(tx, block);
+                                            break;
+                                        case "M_Sale_Complete()":
                                             CompleteSaleSmartContract(tx, block);
                                             break;
                                         default:

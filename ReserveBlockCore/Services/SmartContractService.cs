@@ -362,6 +362,429 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
+        #region Start Transfer Sale
+        public static async Task<Transaction?> StartTransferSaleSmartContractTX(SmartContractMain scMain, string scUID, string toAddress, decimal amountSoldFor, string purchaseKey, BeaconNodeInfo beaconNodeInfo, string md5List = "NA", string backupURL = "")
+        {
+            Transaction? scTx = null;
+
+            var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            NFTLogUtility.Log("1", "SmartContractService.StartSaleSmartContractTX");
+
+            if (smartContractStateTrei == null) return null;
+
+            NFTLogUtility.Log("2", "SmartContractService.StartSaleSmartContractTX");
+
+            if (scMain == null) return null;
+
+            NFTLogUtility.Log("3", "SmartContractService.StartSaleSmartContractTX");
+
+            var account = AccountData.GetSingleAccount(smartContractStateTrei.OwnerAddress);
+            if (account == null) return null;//Owner address not found.
+
+            NFTLogUtility.Log("4", "SmartContractService.StartSaleSmartContractTX");
+
+            var keyToSign = purchaseKey;
+
+            var txData = JsonConvert.SerializeObject(new { Function = "M_Sale_Start()", ContractUID = scUID, NextOwner = toAddress, SoldFor = amountSoldFor, KeySign = keyToSign, Locators = beaconNodeInfo.Beacons.BeaconLocator });
+
+            scTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.NFT_SALE,
+                Data = txData
+            };
+
+            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+
+            NFTLogUtility.Log("5", "SmartContractService.StartSaleSmartContractTX");
+            if ((scTx.Amount + scTx.Fee) > senderBalance) return null;//balance insufficient
+            NFTLogUtility.Log("6", "SmartContractService.StartSaleSmartContractTX");
+            var privateKey = account.GetPrivKey;
+
+            if (privateKey == null) return null;
+
+            NFTLogUtility.Log("7", "SmartContractService.StartSaleSmartContractTX");
+            var txHash = scTx.Hash;
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR") return null; //TX sig failed
+            NFTLogUtility.Log("8", "SmartContractService.StartSaleSmartContractTX");
+            scTx.Signature = signature;
+
+            try
+            {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                if (!result.Item1)
+                    NFTLogUtility.Log($"Failed TX Verify. Reason: {result.Item2}", "SmartContractService.StartSaleSmartContractTX");
+
+                if (!result.Item1) return null;
+
+                NFTLogUtility.Log("9", "SmartContractService.StartSaleSmartContractTX");
+
+                if (!Globals.Beacons.Any())
+                {
+                    NFTLogUtility.Log("Error - You do not have any beacons stored.", "SmartContratService.StartSaleSmartContractTX()");
+                    return null;
+                }
+                else
+                {
+
+                    toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
+                    var localAddress = AccountData.GetSingleAccount(toAddress);
+
+                    var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(scMain);
+
+                    NFTLogUtility.Log($"Sending the following assets for upload: {md5List}", "SmartContratService.StartSaleSmartContractTX()");
+
+                    bool burResult = false;
+                    if (localAddress == null)
+                    {
+                        burResult = await P2PClient.BeaconUploadRequest(beaconNodeInfo, assets, scMain.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
+                        NFTLogUtility.Log($"NFT Beacon Upload Request Completed. SCUID: {scMain.SmartContractUID}", "SmartContratService.StartSaleSmartContractTX()");
+                    }
+                    else
+                    {
+                        burResult = true;
+                    }
+
+                    if (burResult == true)
+                    {
+                        var aqResult = AssetQueue.CreateAssetQueueItem(scMain.SmartContractUID, toAddress, beaconNodeInfo.Beacons.BeaconLocator, md5List, assets,
+                            AssetQueue.TransferType.Upload);
+                        NFTLogUtility.Log($"NFT Asset Queue Items Completed. SCUID: {scMain.SmartContractUID}", "SmartContratService.StartSaleSmartContractTX()");
+
+                        if (aqResult)
+                        {
+                            //_ = Task.Run(() => SendBeaconAssetsFromSale(scMain, toAddress, connectedBeacon, md5List));
+                            bool beaconSendFinalResult = true;
+                            if (assets.Count() > 0)
+                            {
+                                NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scMain.SmartContractUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                                foreach (var asset in assets)
+                                {
+                                    var sendResult = await BeaconUtility.SendAssets_New(scMain.SmartContractUID, asset, beaconNodeInfo.Beacons.BeaconLocator);
+                                    if (!sendResult)
+                                        beaconSendFinalResult = false;
+                                }
+
+                                beaconNodeInfo.Uploading = false;
+                                Globals.Beacon[beaconNodeInfo.IPAddress] = beaconNodeInfo;
+
+                                NFTLogUtility.Log($"NFT Asset Transfer Done for: {scMain.SmartContractUID}.", "SCV1Controller.TransferNFT()");
+                            }
+
+                            if (beaconSendFinalResult)
+                            {
+                                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                                await WalletService.SendTransaction(scTx, account);
+
+                                return scTx;
+                            }
+                            else
+                            {
+                                NFTLogUtility.Log($"Failed to upload to Beacon - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {beaconNodeInfo.Beacons.BeaconLocator} | MD5List: {md5List}", "SmartContractService.StartSaleSmartContractTX()");
+                                return null;
+                            }
+                        }
+                        else
+                        {
+                            NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {scMain.SmartContractUID} | toAddres: {toAddress} | Locator: {beaconNodeInfo.Beacons.BeaconLocator} | MD5List: {md5List}", "SmartContratService.StartSaleSmartContractTX()");
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        NFTLogUtility.Log($"Beacon upload failed. Result was : {burResult}", "SmartContratService.StartSaleSmartContractTX()");
+                    }
+                }
+            }
+            catch { NFTLogUtility.Log("10", "SmartContractService.StartSaleSmartContractTX"); }
+            NFTLogUtility.Log("11", "SmartContractService.StartSaleSmartContractTX");
+
+            return null;
+        }
+        #endregion
+
+        #region Complete Transfer Sale
+        public static async Task<(Transaction?, string)> CompleteTransferSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor, string keySign)
+        {
+            Transaction? scTx = null;
+            bool isRoyalty = false;
+            decimal royaltyAmount = 0.0M;
+            string royaltyPayTo = "";
+            List<Transaction> scTxList = new List<Transaction>();
+
+            var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (smartContractStateTrei == null)
+                return (null, $"Could not find State record for smart contract: {scUID}");
+
+            if (smartContractStateTrei.NextOwner == null)
+                return (null, "There was no next owner identified on the state trei level.");
+
+            var account = AccountData.GetSingleAccount(smartContractStateTrei.NextOwner);
+            if (account == null)
+                return (null, $"Next owner is {smartContractStateTrei.NextOwner}, but this account was not found within your wallet.");//Owner address not found.
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+
+            var privateKey = account.GetPrivKey;
+
+            try
+            {
+                var scMain = SmartContractMain.GenerateSmartContractInMemory(smartContractStateTrei.ContractData);
+                if (scMain.Features != null)
+                {
+                    var royalty = scMain.Features?.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                    if (royalty != null)
+                    {
+                        //calc royalty
+                        var royaltyDetails = (RoyaltyFeature)royalty.FeatureFeatures;
+                        isRoyalty = true;
+                        royaltyAmount = royaltyDetails.RoyaltyAmount;
+                        royaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
+
+                        var royaltyRBX = amountSoldFor * royaltyAmount;
+                        var saleRBXLessRoyalty = amountSoldFor - royaltyRBX;
+
+                        var payRoyaltyOff = amountSoldFor - (saleRBXLessRoyalty + royaltyRBX) > 1.0M ? false : true;
+                        if (!payRoyaltyOff)
+                            return (null, $"The Royalty VS amount being paid is not settling. Please verify all things are correct. Royalty % {royaltyAmount}.  Amount Sold For: {amountSoldFor}. Royalty Due: {royaltyRBX}. Sale less the royalty {saleRBXLessRoyalty}");
+
+                        Transaction scSaleTx = new Transaction
+                        {
+                            Timestamp = TimeUtil.GetTime(),
+                            FromAddress = account.Address,
+                            ToAddress = toAddress,
+                            Amount = saleRBXLessRoyalty,
+                            Fee = 0,
+                            Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                            TransactionType = TransactionType.NFT_SALE,
+                            Data = JsonConvert.SerializeObject(new { Function = "M_Sale_Complete()", ContractUID = scUID, Royalty = true, RoyaltyAmount = royaltyRBX, RoyaltyPaidTo = royaltyPayTo, TXNum = "1/2" })
+                        };
+
+                        scSaleTx.Fee = FeeCalcService.CalculateTXFee(scSaleTx);
+
+                        scSaleTx.Build();
+
+                        if ((scSaleTx.Amount + scSaleTx.Fee) > senderBalance)
+                            return (null, "Amount exceeds balance.");//balance insufficient
+
+                        if (privateKey == null)
+                            return (null, "Private key was null.");
+
+                        var txHashRoyaltyPay = scSaleTx.Hash;
+                        var signatureRoyaltyPay = SignatureService.CreateSignature(txHashRoyaltyPay, privateKey, account.PublicKey);
+                        if (signatureRoyaltyPay == "ERROR")
+                            return (null, "Failed to create signature."); //TX sig failed
+
+                        scSaleTx.Signature = signatureRoyaltyPay;
+
+                        if (scSaleTx.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(scSaleTx);
+                            scSaleTx.TransactionRating = rating;
+                        }
+
+                        scTxList.Add(scSaleTx);
+
+                        Transaction scRoyaltyTx = new Transaction
+                        {
+                            Timestamp = TimeUtil.GetTime(),
+                            FromAddress = account.Address,
+                            ToAddress = royaltyPayTo,
+                            Amount = royaltyRBX,
+                            Fee = 0,
+                            Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                            TransactionType = TransactionType.NFT_SALE,
+                            Data = JsonConvert.SerializeObject(new { Function = "M_Sale_Complete()", ContractUID = scUID, Royalty = true, TXNum = "2/2" })
+                        };
+
+                        scRoyaltyTx.Fee = FeeCalcService.CalculateTXFee(scRoyaltyTx);
+
+                        scRoyaltyTx.Build();
+
+                        if ((scRoyaltyTx.Amount + scRoyaltyTx.Fee) > senderBalance)
+                            return (null, "Amount exceeds balance.");//balance insufficient
+
+                        if (privateKey == null)
+                            return (null, "Private key was null.");
+
+                        var txHashRoyalty = scRoyaltyTx.Hash;
+                        var signatureRoyalty = SignatureService.CreateSignature(txHashRoyalty, privateKey, account.PublicKey);
+                        if (signatureRoyalty == "ERROR")
+                            return (null, "Failed to create signature."); //TX sig failed
+
+                        scRoyaltyTx.Signature = signatureRoyalty;
+
+                        if (scRoyaltyTx.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(scRoyaltyTx);
+                            scRoyaltyTx.TransactionRating = rating;
+                        }
+
+                        scTxList.Add(scRoyaltyTx);
+                    }
+                    else
+                    {
+                        Transaction scSaleTx = new Transaction
+                        {
+                            Timestamp = TimeUtil.GetTime(),
+                            FromAddress = account.Address,
+                            ToAddress = toAddress,
+                            Amount = amountSoldFor,
+                            Fee = 0,
+                            Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                            TransactionType = TransactionType.NFT_SALE,
+                            Data = JsonConvert.SerializeObject(new { Function = "M_Sale_Complete()", ContractUID = scUID })
+                        };
+
+                        scSaleTx.Fee = FeeCalcService.CalculateTXFee(scSaleTx);
+
+                        scSaleTx.Build();
+
+                        if ((scSaleTx.Amount + scSaleTx.Fee) > senderBalance)
+                            return (null, "Amount exceeds balance.");//balance insufficient
+
+                        if (privateKey == null)
+                            return (null, "Private key was null.");
+
+                        var txHashNoRoyalty = scSaleTx.Hash;
+                        var signatureNoRoyalty = SignatureService.CreateSignature(txHashNoRoyalty, privateKey, account.PublicKey);
+                        if (signatureNoRoyalty == "ERROR")
+                            return (null, "Failed to create signature."); //TX sig failed
+
+                        scSaleTx.Signature = signatureNoRoyalty;
+
+                        if (scSaleTx.TransactionRating == null)
+                        {
+                            var rating = await TransactionRatingService.GetTransactionRating(scSaleTx);
+                            scSaleTx.TransactionRating = rating;
+                        }
+
+                        scTxList.Add(scSaleTx);
+                    }
+                }
+                else
+                {
+                    Transaction scSaleTx = new Transaction
+                    {
+                        Timestamp = TimeUtil.GetTime(),
+                        FromAddress = account.Address,
+                        ToAddress = toAddress,
+                        Amount = amountSoldFor,
+                        Fee = 0,
+                        Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                        TransactionType = TransactionType.NFT_SALE,
+                        Data = JsonConvert.SerializeObject(new { Function = "M_Sale_Complete()", ContractUID = scUID })
+                    };
+
+                    scSaleTx.Fee = FeeCalcService.CalculateTXFee(scSaleTx);
+
+                    scSaleTx.Build();
+
+                    if ((scSaleTx.Amount + scSaleTx.Fee) > senderBalance)
+                        return (null, "Amount exceeds balance.");//balance insufficient
+
+                    if (privateKey == null)
+                        return (null, "Private key was null.");
+
+                    var txHashNoRoyalty = scSaleTx.Hash;
+                    var signatureNoRoyalty = SignatureService.CreateSignature(txHashNoRoyalty, privateKey, account.PublicKey);
+                    if (signatureNoRoyalty == "ERROR")
+                        return (null, "Failed to create signature."); //TX sig failed
+
+                    scSaleTx.Signature = signatureNoRoyalty;
+
+                    if (scSaleTx.TransactionRating == null)
+                    {
+                        var rating = await TransactionRatingService.GetTransactionRating(scSaleTx);
+                        scSaleTx.TransactionRating = rating;
+                    }
+
+                    scTxList.Add(scSaleTx);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (null, $"Unknown error decompiling SC. Error: {ex.ToString()}");
+            }
+
+            var txData = JsonConvert.SerializeObject(new { Function = "M_Sale_Complete()", ContractUID = scUID, Royalty = isRoyalty, RoyaltyAmount = royaltyAmount, RoyaltyPayTo = royaltyPayTo, Transactions = scTxList, KeySign = keySign });
+
+            scTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.NFT_SALE,
+                Data = txData
+            };
+
+            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            if ((scTx.Amount + scTx.Fee + scTxList.Select(x => x.Amount + x.Fee).Sum()) > senderBalance)  // not sure about this... double check.
+                return (null, "Amount exceeds balance.");//balance insufficient
+
+            if (privateKey == null)
+                return (null, "Private key was null.");
+
+            var txHash = scTx.Hash;
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR")
+                return (null, "Failed to create signature."); //TX sig failed
+
+            scTx.Signature = signature;
+
+            try
+            {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                if (!result.Item1)
+                    return (null, $"Transaction failed to verify. Reason: {result.Item2}");
+
+                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                var specialAmount = scTx.Amount + scTx.Fee + scTxList.Select(x => x.Amount + x.Fee).Sum();
+
+                await WalletService.SendTransaction(scTx, account, specialAmount);
+
+                return (scTx, "TX Sent to Mempool");
+            }
+            catch { }
+
+            return (null, "Fail");
+        }
+
+        #endregion
+
         #region BurnSmartContract
         public static async Task<Transaction?> BurnSmartContract(SmartContractMain scMain)
         {
@@ -1009,7 +1432,7 @@ namespace ReserveBlockCore.Services
 
         #endregion
 
-        #region Start Sale Smart Contract
+        #region Start Sale Smart Contract Shop
         public static async Task<Transaction?> StartSaleSmartContractTX(string scUID, string toAddress, decimal amountSoldFor, Listing listing, Bid bid)
         {
             Transaction? scTx = null;

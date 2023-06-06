@@ -358,7 +358,7 @@ namespace ReserveBlockCore.Services
 
                         var mempool = TransactionData.GetPool();
 
-                        if (function == "Sale_Start()")
+                        if (function == "Sale_Start()" || function == "M_Sale_Start()")
                         {
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
                             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
@@ -431,7 +431,7 @@ namespace ReserveBlockCore.Services
                             }
                         }
 
-                        if (function == "Sale_Complete()")
+                        if (function == "Sale_Complete()" || function == "M_Sale_Complete()")
                         {
                             //Complete sale logic.
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
