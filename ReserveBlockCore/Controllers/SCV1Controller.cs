@@ -916,46 +916,12 @@ namespace ReserveBlockCore.Controllers
                     var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
                     var md5List = await MD5Utility.GetMD5FromSmartContract(sc);
 
-                    NFTLogUtility.Log($"Sending the following assets for upload: {md5List}", "SCV1Controller.TransferNFT()");
+                    _ = Task.Run(() => SmartContractService.StartTransferSaleSmartContractTX(sc, 
+                        scUID, toAddress, saleAmount, purchaseKey, connectedBeacon, md5List, backupURL));
 
-                    bool result = false;
-                    if (localAddress == null)
-                    {
-                        result = await P2PClient.BeaconUploadRequest(connectedBeacon, assets, sc.SmartContractUID, toAddress, md5List).WaitAsync(new TimeSpan(0, 0, 10));
-                        NFTLogUtility.Log($"NFT Beacon Upload Request Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
-                    }
-                    else
-                    {
-                        result = true;
-                    }
-
-                    if (result == true)
-                    {
-                        var aqResult = AssetQueue.CreateAssetQueueItem(sc.SmartContractUID, toAddress, connectedBeacon.Beacons.BeaconLocator, md5List, assets,
-                            AssetQueue.TransferType.Upload);
-                        NFTLogUtility.Log($"NFT Asset Queue Items Completed. SCUID: {sc.SmartContractUID}", "SCV1Controller.TransferNFT()");
-
-                        if (aqResult)
-                        {
-                            _ = Task.Run(() => SmartContractService.StartTransferSaleSmartContractTX(sc, 
-                                scUID, toAddress, saleAmount, purchaseKey, connectedBeacon, md5List, backupURL));
-
-                            var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started." });
-                            NFTLogUtility.Log($"NFT Process Completed in CLI. SCUID: {sc.SmartContractUID}. Response: {success}", "SCV1Controller.TransferNFT()");
-                            return success;
-                        }
-                        else
-                        {
-                            NFTLogUtility.Log($"Failed to add upload to Asset Queue - TX terminated. Data: scUID: {sc.SmartContractUID} | toAddres: {toAddress} | Locator: {connectedBeacon.Beacons.BeaconLocator} | MD5List: {md5List} | backupURL: {backupURL}", "SCV1Controller.TransferNFT()");
-                            return JsonConvert.SerializeObject(new { Success = false, Message = "Failed to add upload to Asset Queue. Please check logs for more details." });
-                        }
-
-                    }
-                    else
-                    {
-                        NFTLogUtility.Log($"Beacon upload failed. Result was : {result}", "SCV1Controller.TransferNFT()");
-                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Beacon upload failed. Result was : {result}" });
-                    }
+                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started." });
+                    NFTLogUtility.Log($"NFT Process Completed in CLI. SCUID: {sc.SmartContractUID}. Response: {success}", "SCV1Controller.TransferNFT()");
+                    return success;                    
 
                 }
                 else

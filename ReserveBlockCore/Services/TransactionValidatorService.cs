@@ -395,6 +395,9 @@ namespace ReserveBlockCore.Services
                                     return (txResult, "There is already a TX for this smart contract here.");
                             }
 
+                            if (function == "M_Sale_Start()")
+                                bidSignature = "manual";
+
                             if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null && bidSignature != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -417,6 +420,9 @@ namespace ReserveBlockCore.Services
                                     
                                     var signatureVerify = Bid.VerifyBidSignature(keySign, amountSoldFor.Value, toAddress, bidSignature);
 
+                                    if (bidSignature == "manual")
+                                        signatureVerify = true;
+
                                     if(!signatureVerify)
                                         NFTLogUtility.Log($"Sig Bad. Key: {keySign} | Amount Sold For: {amountSoldFor.Value} | ToAddress {toAddress} | Sig Script: {bidSignature}", "TransactionValidatorService.VerifyTX");
 
@@ -430,7 +436,7 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {
-                                return (txResult, "TX Data has a null value in ContractUID, NextOwner, and/or KeySign");
+                                return (txResult, "TX Data has a null value in ContractUID, NextOwner, Bid Signature, and/or KeySign");
                             }
                         }
 
