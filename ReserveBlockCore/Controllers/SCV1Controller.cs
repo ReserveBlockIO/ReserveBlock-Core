@@ -867,8 +867,10 @@ namespace ReserveBlockCore.Controllers
         /// <param name="saleAmount"></param>
         /// <param name="backupURL"></param>
         /// <returns></returns>
-        [HttpGet("TransferSale/{scUID}/{toAddress}/{saleAmount}/{**backupURL}")]
-        public static async Task<string> TransferSale(string scUID, string toAddress, decimal saleAmount, string? backupURL = "")
+        [HttpGet]
+        [Route("TransferSale/{scUID}/{toAddress}/{saleAmount}")]
+        [Route("TransferSale/{scUID}/{toAddress}/{saleAmount}/{**backupURL}")]
+        public async Task<string> TransferSale(string scUID, string toAddress, decimal saleAmount, string? backupURL = "")
         {
             var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
             if (sc != null)
@@ -1307,7 +1309,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <param name="toAddress"></param>
-        /// /// <param name="evolveState"></param>
+        /// <param name="evolveState"></param>
         /// <returns></returns>
         [HttpGet("EvolveSpecific/{id}/{toAddress}/{evolveState}")]
         public async Task<string> EvolveSpecific(string id, string toAddress, int evolveState)
