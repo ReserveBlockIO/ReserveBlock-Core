@@ -1887,5 +1887,81 @@ namespace ReserveBlockCore.Services
         }
 
         #endregion
+
+        #region Cancel NFT Sale TX
+        public static async Task<(Transaction?, string)> CancelNFTSaleTX(SmartContractMain scMain, string scUID, string toAddress, string purchaseKey)
+        {
+            Transaction? scTx = null;
+
+            var smartContractStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if (smartContractStateTrei == null) return (null , "Could not find state record for NFT.");
+
+            if (scMain == null) return (null, "Smart Contract Main was null.");
+
+            var account = AccountData.GetSingleAccount(smartContractStateTrei.OwnerAddress);
+            if (account == null) return (null, "Owner of this NFT was not found locally.");//Owner address not found.
+
+            var keyToSign = purchaseKey;
+
+            var txData = JsonConvert.SerializeObject(new { Function = "Sale_Cancel()", ContractUID = scUID, KeySign = keyToSign });
+
+            scTx = new Transaction
+            {
+                Timestamp = TimeUtil.GetTime(),
+                FromAddress = account.Address,
+                ToAddress = toAddress,
+                Amount = 0.0M,
+                Fee = 0,
+                Nonce = AccountStateTrei.GetNextNonce(account.Address),
+                TransactionType = TransactionType.NFT_SALE,
+                Data = txData
+            };
+
+            scTx.Fee = FeeCalcService.CalculateTXFee(scTx);
+
+            scTx.Build();
+
+            var senderBalance = AccountStateTrei.GetAccountBalance(account.Address);
+
+            if ((scTx.Amount + scTx.Fee) > senderBalance) return (null, "Insufficient balance to send.");//balance insufficient
+
+            var privateKey = account.GetPrivKey;
+
+            if (privateKey == null) return (null, "Could not find private key.");
+
+            var txHash = scTx.Hash;
+            var signature = SignatureService.CreateSignature(txHash, privateKey, account.PublicKey);
+            if (signature == "ERROR") return (null, "Signature failed."); //TX sig failed
+            scTx.Signature = signature;
+
+            try
+            {
+                if (scTx.TransactionRating == null)
+                {
+                    var rating = await TransactionRatingService.GetTransactionRating(scTx);
+                    scTx.TransactionRating = rating;
+                }
+
+                var result = await TransactionValidatorService.VerifyTX(scTx);
+
+                if (!result.Item1)
+                    NFTLogUtility.Log($"Failed TX Verify. Reason: {result.Item2}", "SmartContractService.CancelNFTSaleTX()");
+
+                if (!result.Item1) return (null, $"Transaction failed to verify. Reason: {result.Item2}");
+
+                scTx.TransactionStatus = TransactionStatus.Pending;
+
+                await WalletService.SendTransaction(scTx, account);
+
+                return (scTx, $"Success! Tx Hash: {txHash}");
+            }
+            catch(Exception ex)
+            {
+                return (null, $"Unknown Error Occurred. Error: {ex.ToString()}");
+            }
+        }
+
+        #endregion
     }
 }

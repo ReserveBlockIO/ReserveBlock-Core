@@ -241,6 +241,12 @@ namespace ReserveBlockCore.Controllers
                         var amount = sendTxPayload.Amount * 1.0M; //ensure it is decimal formatted
                         var password = sendTxPayload.DecryptPassword;
 
+                        if(fromAddress.StartsWith("xRBX") && toAddress.StartsWith("xRBX"))
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "Reserve accounts cannot send to another Reserve Account." });
+                            return output;
+                        }
+
                         var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
 
                         if (addrCheck == false)
@@ -296,6 +302,12 @@ namespace ReserveBlockCore.Controllers
 
                 if (fromAddress == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "From Address was not found in wallet. You may only send from addresses you own locally." });
+
+                if (fromAddress.Address.StartsWith("xRBX") && toAddress.StartsWith("xRBX"))
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Reserve accounts cannot send to another Reserve Account." });
+                    return output;
+                }
 
                 var keyString = ReserveAccount.GetPrivateKey(sendNFTTransferPayload.FromAddress, sendNFTTransferPayload.DecryptPassword);
 

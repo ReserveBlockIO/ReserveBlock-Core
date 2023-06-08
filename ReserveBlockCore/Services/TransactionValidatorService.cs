@@ -8,6 +8,7 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System;
+using System.Net;
 using System.Security.Principal;
 
 namespace ReserveBlockCore.Services
@@ -56,12 +57,15 @@ namespace ReserveBlockCore.Services
                 }
             }
 
+            if(txRequest.ToAddress.StartsWith("xRBX") && txRequest.FromAddress.StartsWith("xRBX"))
+                return (txResult, "Reserve accounts cannot send to another Reserve Account.");
+
             //REMOVE AFTER ENABLED!
             //if (txRequest.ToAddress.StartsWith("xRBX"))
             //    return (txResult, "Reserve accounts are not unlocked and you may not send transactions to them yet.");
 
             //if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
-            
+
             if (txRequest.ToAddress != "Adnr_Base" && 
                 txRequest.ToAddress != "DecShop_Base" && 
                 txRequest.ToAddress != "Topic_Base" && 
@@ -361,6 +365,64 @@ namespace ReserveBlockCore.Services
 
                         var mempool = TransactionData.GetPool();
 
+                        if(function == "Sale_Cancel()")
+                        {
+                            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            var keySign = jobj["KeySign"]?.ToObject<string?>();
+
+                            if(keySign == null)
+                                return (txResult, "Keysign cannot be null.");
+
+                            if (scUID == null)
+                                return (txResult, "SCUID cannot be null.");
+
+                            var mempoolList = mempool.Query().Where(x =>
+                            x.FromAddress == txRequest.FromAddress &&
+                            x.Hash != txRequest.Hash &&
+                            (x.TransactionType == TransactionType.NFT_SALE ||
+                            x.TransactionType == TransactionType.NFT_TX ||
+                            x.TransactionType == TransactionType.NFT_BURN)).ToList();
+
+                            if (mempoolList?.Count > 0)
+                            {
+                                var reject = false;
+
+                                foreach (var tx in mempoolList)
+                                {
+                                    var txObjData = JObject.Parse(txData);
+                                    var mTXSCUID = txObjData["ContractUID"]?.ToObject<string?>();
+                                    if (mTXSCUID == scUID)
+                                    {
+                                        reject = true;
+                                        break;
+                                    }
+                                }
+
+                                if (reject)
+                                    return (txResult, "There is already a TX for this smart contract here.");
+                            }
+
+                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                            if(scStateTreiRec == null)
+                                return (txResult, "SC does not exist.");
+
+                            if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                return (txResult, "You are attempting to transfer a Smart contract you don't own.");
+
+                            if (!scStateTreiRec.IsLocked)
+                                return (txResult, "You are attempting to Cancel a Smart contract sale that is not locked.");
+
+                            if (scStateTreiRec.NextOwner == null)
+                                return (txResult, "You are attempting to Cancel a Smart contract sale that has no next owner assigned to it.");
+
+                            if (scStateTreiRec.PurchaseKeys != null)
+                            {
+                                if (scStateTreiRec.PurchaseKeys.Contains(keySign))
+                                    return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
+                            }
+                        }
+
                         if (function == "Sale_Start()" || function == "M_Sale_Start()")
                         {
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
@@ -368,6 +430,18 @@ namespace ReserveBlockCore.Services
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
                             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
                             var bidSignature = jobj["BidSignature"]?.ToObject<string?>();
+
+                            if (keySign == null)
+                                return (txResult, "Keysign cannot be null.");
+
+                            if (scUID == null)
+                                return (txResult, "SCUID cannot be null.");
+
+                            if (toAddress == null)
+                                return (txResult, "To Address cannot be null.");
+
+                            if (amountSoldFor == null)
+                                return (txResult, "Amount Sold For cannot be null.");
 
                             var mempoolList = mempool.Query().Where(x => 
                             x.FromAddress == txRequest.FromAddress && 

@@ -969,6 +969,36 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Cancels a sale.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CancelSale/{scUID}")]
+        public async Task<string> CancelSale(string scUID)
+        {
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTrei == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract was not found." });
+
+            var currentOwner = scStateTrei.OwnerAddress;
+
+            var localAccount = AccountData.GetSingleAccount(currentOwner);
+
+            if (localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"A local account with owner address was not found. Owner: {currentOwner}" });
+
+            if(!scStateTrei.IsLocked)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"This NFT is not locked for a sale." });
+
+            if (string.IsNullOrEmpty(scStateTrei.NextOwner))
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"There is no next owner on this NFT. Nothing to Cancel." });
+
+
+
+            return "";
+        }
+
+        /// <summary>
         /// Creates ownership script
         /// </summary>
         /// <param name="scUID"></param>

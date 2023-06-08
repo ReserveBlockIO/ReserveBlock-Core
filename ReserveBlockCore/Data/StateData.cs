@@ -238,6 +238,9 @@ namespace ReserveBlockCore.Data
                                         case "M_Sale_Complete()":
                                             CompleteSaleSmartContract(tx, block);
                                             break;
+                                        case "Sale_Cancel()":
+                                            CancelSaleSmartContract(tx);
+                                            break;
                                         default:
                                             break;
                                     }
@@ -1334,7 +1337,28 @@ namespace ReserveBlockCore.Data
                     }
                 }
             }
+        }
 
+        private static void CancelSaleSmartContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.NextOwner = null;
+                scStateTreiRec.IsLocked = false;
+                scStateTreiRec.Nonce += 1;
+                scStateTreiRec.PurchaseAmount = null;
+
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
 
         }
 
