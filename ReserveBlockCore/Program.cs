@@ -276,8 +276,8 @@ namespace ReserveBlockCore
             await WalletService.BalanceRectify();
 
             Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
-            Globals.BlockLock = (int)Globals.V3Height;
 
+            Globals.BlockLock = Globals.IsTestNet ? 0 : Globals.BlockLock;
             //var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
             //if(adjGenAccount != null)
             //await BlockchainData.InitializeChain();

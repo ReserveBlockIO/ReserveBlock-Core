@@ -1439,12 +1439,16 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetSmartContractData(string id)
         {
             var output = "";
-
-            var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
-            if (scStateTrei != null)
+            bool exit = false;
+            while (!Globals.TreisUpdating && !exit)
             {
-                var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                output = JsonConvert.SerializeObject(new { SmartContractMain = scMain, CurrentOwner = scStateTrei.OwnerAddress });
+                var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
+                if (scStateTrei != null)
+                {
+                    var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                    output = JsonConvert.SerializeObject(new { SmartContractMain = scMain, CurrentOwner = scStateTrei.OwnerAddress });
+                }
+                exit = true;
             }
 
             return output;

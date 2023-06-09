@@ -75,8 +75,7 @@ namespace ReserveBlockCore
         public const decimal RSRVAccountRegisterRBX = 4.0M;
 
         public const int ADNRLimit = 65;
-        public static long FeatureLock = 896247;
-        public static int BlockLock = -1;
+        public static int BlockLock = 1079200;
         public static long V3Height = 579015;
         public static long V1ValHeight = 832000;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
@@ -93,9 +92,9 @@ namespace ReserveBlockCore
         public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
-        public static int MajorVer = 3;
-        public static int MinorVer = 8;
-        public static int RevisionVer = 1;
+        public static int MajorVer = 4;
+        public static int MinorVer = 0;
+        public static int RevisionVer = 0;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
