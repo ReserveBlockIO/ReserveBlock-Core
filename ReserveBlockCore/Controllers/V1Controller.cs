@@ -1228,19 +1228,46 @@ namespace ReserveBlockCore.Controllers
         {
             string output;
 
+            message = message.Replace("%2F", "/");
+
             var account = AccountData.GetSingleAccount(address);
             if(account != null)
             {
-                BigInteger b1 = BigInteger.Parse(account.GetKey, NumberStyles.AllowHexSpecifier);//converts hex private key into big int.
-                PrivateKey privateKey = new PrivateKey("secp256k1", b1);
-
-                var signature = SignatureService.CreateSignature(message, privateKey, account.PublicKey);
+                var signature = SignatureService.CreateSignature(message, account.GetPrivKey, account.PublicKey);
                 output = signature;
             }
             else
             {
                 output = "ERROR - Account not associated with wallet.";
             }
+            
+            return output;
+        }
+
+        /// <summary>
+        /// Create a signature with provided private key and message
+        /// </summary>
+        /// <param name="privKey"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        [HttpGet("CreateSignatureFromPrivateKey/{privKey}/{**message}")]
+        public async Task<string> CreateSignatureFromPrivateKey(string privKey, string message)
+        {
+            string output;
+
+            try
+            {
+                message = message.Replace("%2F", "/");
+                var account = await AccountData.RestoreAccount(privKey, false, true);
+
+                if (account == null)
+                    return "Failed to use Private Key.";
+
+                var signature = SignatureService.CreateSignature(message, account.GetPrivKey, account.PublicKey);
+
+                output = signature;
+            }
+            catch(Exception ex) { return $"ERROR: {ex.ToString()}"; }
             
             return output;
         }
@@ -1256,6 +1283,10 @@ namespace ReserveBlockCore.Controllers
         public async Task<bool> ValidateSignature(string message, string address, string sigScript)
         {
             bool output;
+
+            message = message.Replace("%2F", "/");
+
+            sigScript = sigScript.Replace("%2F", "/");
 
             var result = SignatureService.VerifySignature(address, message, sigScript);
             output = result;

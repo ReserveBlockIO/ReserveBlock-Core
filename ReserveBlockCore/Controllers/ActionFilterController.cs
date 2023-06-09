@@ -103,10 +103,12 @@ namespace ReserveBlockCore.Controllers
                     "GetActiveTopics", "GetInactiveTopics", "GetMyTopics", "GetAllSmartContracts", "GetMintedSmartContracts", "CheckStatus", 
                     "GetIsWalletEncrypted", "GetMyVotes", "GetSingleSmartContract", "GetNFTAssetLocation", "GetCLIVersion", "CheckPasswordNeeded",
                     "GetBeacons", "GetValidatorInfo", "IsValidating", "NetworkMetrics", "Network", "Height", "LastBlock", "GetDecShop", "GetSummaryChatMessages",
-                    "GetAllCollections", "GetAllReserveAccounts", "GetSimpleShopChatMessages", "GetDecShopData", "GetShopSpecificAuction", "GetListing", "GetCollectionListings"};
+                    "GetAllCollections", "GetAllReserveAccounts", "GetSimpleShopChatMessages", "GetDecShopData", "GetShopSpecificAuction", "GetListing", "GetCollectionListings",
+                    "GetSmartContractData"};
 
-                
-                if(!APIExclusionList.Contains(action))
+
+
+                if (!APIExclusionList.Contains(action))
                 {
                     if (Globals.GUI || Globals.LogAPI)
                         APILogUtility.Log($"API Called: {DateTime.Now.ToString()}. Total Number of Action Arguments: {actionArguments}. Action Keys (Only if Arguments > 0): {actionKeysStr}", $"/{controller}/{action}");

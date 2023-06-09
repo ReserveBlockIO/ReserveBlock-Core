@@ -17,7 +17,7 @@
                     var major = Convert.ToInt32(walletVerSplit[0]);
                     var minor = Convert.ToInt32(walletVerSplit[1]);
 
-                    if (major < Globals.MajorVer)
+                    if (major < Globals.MajorVer && Globals.LastBlock.Height >= Globals.BlockLock)
                     {
                         return output;
                     }

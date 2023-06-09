@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.SmartContractSourceGenerator;
+using ReserveBlockCore.Trillium;
 using ReserveBlockCore.Utilities;
 using System.Text;
 
@@ -282,6 +283,7 @@ namespace ReserveBlockCore.Services
                 }
 
                 scText = strBuild.ToString();
+
             }
             catch(Exception ex)
             {

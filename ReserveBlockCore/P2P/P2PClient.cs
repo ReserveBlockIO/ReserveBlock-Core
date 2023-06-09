@@ -909,7 +909,7 @@ namespace ReserveBlockCore.P2P
                     }
                 });
 
-                await beaconHubConnection.StartAsync();
+                await beaconHubConnection.StartAsync().WaitAsync(new TimeSpan(0,0,3)); // wait 3 seconds to connect. Should happen faster, but giving some room.
 
                 if (string.IsNullOrEmpty(beaconHubConnection.ConnectionId))
                     return false;

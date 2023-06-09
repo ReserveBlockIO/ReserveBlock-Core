@@ -39,21 +39,24 @@ namespace ReserveBlockCore.Services
 
         public static async Task RunGlobals()
         {
-            while (true)
+            if(Globals.LogMemory)
             {
-                var delay = Task.Delay(new TimeSpan(0, 0, 20));
-
-                await GlobalMemoryServiceLock.WaitAsync();
-                try
+                while (true)
                 {
-                    await GetGlobalMemoryInfo();
-                }
-                finally
-                {
-                    GlobalMemoryServiceLock.Release();
-                }
+                    var delay = Task.Delay(new TimeSpan(0, 0, 20));
 
-                await delay;
+                    await GlobalMemoryServiceLock.WaitAsync();
+                    try
+                    {
+                        await GetGlobalMemoryInfo();
+                    }
+                    finally
+                    {
+                        GlobalMemoryServiceLock.Release();
+                    }
+
+                    await delay;
+                }
             }
         }
 

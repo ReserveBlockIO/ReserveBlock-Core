@@ -44,6 +44,7 @@ namespace ReserveBlockCore
         public static ConcurrentDictionary<string, AdjNodeInfo> AdjNodes = new ConcurrentDictionary<string, AdjNodeInfo>(); // IP Address        
         public static ConcurrentDictionary<string, bool> Signers = new ConcurrentDictionary<string, bool>();
         public static ConcurrentDictionary<string, MethodCallCount> MethodDict = new ConcurrentDictionary<string, MethodCallCount>();
+        public static ConcurrentDictionary<string, ReserveTransactions> ReserveTransactionsDict = new ConcurrentDictionary<string, ReserveTransactions>();
         public static string SignerCache = "";
         public static string IpAddressCache = "";
         public static object SignerCacheLock = new object();
@@ -56,6 +57,7 @@ namespace ReserveBlockCore
         public static long LastBlockAddedTimestamp = TimeUtil.GetTime();
         public static long BlockTimeDiff = 0;
         public static Block? LastWonBlock = null;
+        public static Process GUIProcess;
 
         public static DateTime? RemoteCraftLockTime = null;        
         public static DateTime? CLIWalletUnlockTime = null;
@@ -70,10 +72,10 @@ namespace ReserveBlockCore
         public const decimal DecShopRequiredRBX = 10.0M;
         public const decimal DecShopUpdateRequiredRBX = 1.0M;
         public const decimal DecShopDeleteRequiredRBX = 1.0M; //0
+        public const decimal RSRVAccountRegisterRBX = 4.0M;
 
         public const int ADNRLimit = 65;
-        public static long FeatureLock = 896247;
-        public static int BlockLock = -1;
+        public static int BlockLock = 1079488;
         public static long V3Height = 579015;
         public static long V1ValHeight = 832000;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
@@ -90,8 +92,9 @@ namespace ReserveBlockCore
         public static int SelfSTUNPort = 3340;
         public static int DSTClientPort = 3341;
         public static int APIPort = 7292;
-        public static int MajorVer = 3;
-        public static int MinorVer = 8;
+        public static int MajorVer = 4;
+        public static int MinorVer = 0;
+        public static int RevisionVer = 0;
         public static int BuildVer = 0;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
@@ -99,7 +102,7 @@ namespace ReserveBlockCore
         public static bool ValidatorBalanceGood = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
-        public static string GitHubVersion = $"beta{MajorVer}.{MinorVer}";
+        public static string GitHubVersion = $"beta{MajorVer}.{MinorVer}.{RevisionVer}";
         public static string GitHubApiURL = "https://api.github.com/";
         public static string GitHubRBXRepoURL = "repos/ReserveBlockIO/ReserveBlock-Core/releases/latest";
         public static string GitHubLatestReleaseVersion = "";
@@ -173,6 +176,7 @@ namespace ReserveBlockCore
         public static bool SelfSTUNServer = false;
         public static bool ShowSTUNMessagesInConsole = false;
         public static bool STUNServerRunning = false;
+        public static bool LogMemory = false;
         
         public static CancellationToken CancelledToken;
 

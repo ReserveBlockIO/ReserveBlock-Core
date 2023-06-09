@@ -319,7 +319,7 @@ namespace ReserveBlockCore.Beacon
                     output = true;
             }
             return output;
-        }
+        }       
 
     }
 }

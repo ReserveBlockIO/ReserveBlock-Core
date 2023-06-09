@@ -7,6 +7,7 @@ using ReserveBlockCore.Utilities;
 using ReserveBlockCore.Services;
 using System.Collections.Concurrent;
 using System.Xml.Linq;
+using LiteDB;
 
 namespace ReserveBlockCore.Data
 {
@@ -87,13 +88,30 @@ namespace ReserveBlockCore.Data
                             {
                                 if(tx.TransactionType != TransactionType.RESERVE)
                                 {
+                                    bool changeme = false;
+                                    if (tx.Hash == "345a2093609d7bb12f977cda200463874aa2d53c2ffe88a69655bb258569af86" ||
+                                        tx.Hash == "1273e029e69a34f83a3c01a01f1bbb2bb96f3ea4a24d6e18f40e818cb1b5905d" ||
+                                        tx.Hash == "255400690804902e2f6f11a832e214dbc099d5520137b9a5a2e6bbbc4cfc8f78")
+                                    {
+                                        changeme= true;
+                                    }
+
                                     ReserveTransactions rTx = new ReserveTransactions
                                     {
                                         ConfirmTimestamp = (long)tx.UnlockTime,
                                         FromAddress = tx.FromAddress,
                                         ToAddress = tx.ToAddress,
-                                        Transaction = tx,
-                                        Hash = tx.Hash
+                                        Hash = tx.Hash,
+                                        Height = tx.Height,
+                                        Data = tx.Data,
+                                        Amount = tx.Amount,
+                                        Fee = tx.Fee,
+                                        Nonce= tx.Nonce,
+                                        ReserveTransactionStatus = ReserveTransactionStatus.Pending,
+                                        Signature = tx.Signature,
+                                        Timestamp = tx.Timestamp,
+                                        TransactionType = tx.TransactionType,
+                                        UnlockTime = tx.UnlockTime,
                                     };
 
                                     ReserveTransactions.SaveReserveTx(rTx);
@@ -211,8 +229,17 @@ namespace ReserveBlockCore.Data
                                         case "Sale_Start()":
                                             StartSaleSmartContract(tx);
                                             break;
+                                        case "M_Sale_Start()":
+                                            StartSaleSmartContract(tx);
+                                            break;
                                         case "Sale_Complete()":
                                             CompleteSaleSmartContract(tx, block);
+                                            break;
+                                        case "M_Sale_Complete()":
+                                            CompleteSaleSmartContract(tx, block);
+                                            break;
+                                        case "Sale_Cancel()":
+                                            CancelSaleSmartContract(tx);
                                             break;
                                         default:
                                             break;
@@ -393,36 +420,34 @@ namespace ReserveBlockCore.Data
             {
                 try
                 {
-                    var tx = rtx.Transaction;
-
-                    if(tx.TransactionType == TransactionType.TX)
+                    if(rtx.TransactionType == TransactionType.TX)
                     {
-                        if (tx.FromAddress != "Coinbase_TrxFees" && tx.FromAddress != "Coinbase_BlkRwd" && tx.ToAddress != "Reserve_Base")
+                        if (rtx.FromAddress != "Coinbase_TrxFees" && rtx.FromAddress != "Coinbase_BlkRwd" && rtx.ToAddress != "Reserve_Base")
                         {
-                            var from = GetSpecificAccountStateTrei(tx.FromAddress);
+                            var from = GetSpecificAccountStateTrei(rtx.FromAddress);
                             if (from != null)
                             {
-                                from.LockedBalance -= tx.Amount;
+                                from.LockedBalance -= rtx.Amount;
                                 accStTrei.UpdateSafe(from);
                             }
 
                         }
 
-                        if (tx.ToAddress != "Adnr_Base" &&
-                            tx.ToAddress != "DecShop_Base" &&
-                            tx.ToAddress != "Topic_Base" &&
-                            tx.ToAddress != "Vote_Base" &&
-                            tx.ToAddress != "Reserve_Base")
+                        if (rtx.ToAddress != "Adnr_Base" &&
+                            rtx.ToAddress != "DecShop_Base" &&
+                            rtx.ToAddress != "Topic_Base" &&
+                            rtx.ToAddress != "Vote_Base" &&
+                            rtx.ToAddress != "Reserve_Base")
                         {
-                            var to = GetSpecificAccountStateTrei(tx.ToAddress);
-                            if (tx.TransactionType == TransactionType.TX)
+                            var to = GetSpecificAccountStateTrei(rtx.ToAddress);
+                            if (rtx.TransactionType == TransactionType.TX)
                             {
                                 if (to != null)
                                 {
-                                    if (tx.FromAddress.StartsWith("xRBX"))
+                                    if (rtx.FromAddress.StartsWith("xRBX"))
                                     {
-                                        to.Balance += tx.Amount;
-                                        to.LockedBalance -= tx.Amount;
+                                        to.Balance += rtx.Amount;
+                                        to.LockedBalance -= rtx.Amount;
 
                                         accStTrei.UpdateSafe(to);
                                     }
@@ -430,9 +455,9 @@ namespace ReserveBlockCore.Data
                             }
                         }
                     }
-                    if(tx.TransactionType == TransactionType.NFT_TX)
+                    if(rtx.TransactionType == TransactionType.NFT_TX)
                     {
-                        var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                        var scDataArray = JsonConvert.DeserializeObject<JArray>(rtx.Data);
                         var scData = scDataArray[0];
                         var function = (string?)scData["Function"];
                         var scUID = (string?)scData["ContractUID"];
@@ -445,7 +470,7 @@ namespace ReserveBlockCore.Data
                                 if (scStateTreiRec != null)
                                 {
                                     
-                                    scStateTreiRec.OwnerAddress = tx.ToAddress;
+                                    scStateTreiRec.OwnerAddress = rtx.ToAddress;
                                     scStateTreiRec.NextOwner = null;
                                     scStateTreiRec.IsLocked = false;
 
@@ -456,11 +481,12 @@ namespace ReserveBlockCore.Data
                     }
 
                     var rtxRec = rtxDb.Query().Where(x => x.Id == rtx.Id).FirstOrDefault();
-                    var hash = tx.Hash;
+                    var hash = rtx.Hash;
 
                     if (rtxRec != null)
                     {
-                        rtxDb.DeleteSafe(rtxRec.Id);
+                        rtx.ReserveTransactionStatus = ReserveTransactionStatus.Confirmed;
+                        rtxDb.UpdateSafe(rtx);
                     }
 
                     var txRec = TransactionData.GetTxByHash(hash);
@@ -543,20 +569,19 @@ namespace ReserveBlockCore.Data
                     var rTX = ReserveTransactions.GetTransactions(callBackHash);
                     if (rTX != null)
                     {
-                        var tx = rTX.Transaction;
                         var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
 
-                        if(tx.TransactionType == TransactionType.TX)
+                        if(rTX.TransactionType == TransactionType.TX)
                         {
                             var stDb = GetAccountStateTrei();
-                            var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
-                            var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
+                            var stateTreiFrom = GetSpecificAccountStateTrei(rTX.FromAddress);
+                            var stateTreiTo = GetSpecificAccountStateTrei(rTX.ToAddress);
 
                             if (stateTreiFrom != null)
                             {
                                 //return amount to From address
-                                stateTreiFrom.LockedBalance -= tx.Amount;
-                                stateTreiFrom.Balance += tx.Amount;
+                                stateTreiFrom.LockedBalance -= rTX.Amount;
+                                stateTreiFrom.Balance += rTX.Amount;
                                 if (stDb != null)
                                     stDb.UpdateSafe(stateTreiFrom);
 
@@ -564,8 +589,8 @@ namespace ReserveBlockCore.Data
                                 if (rLocalAccount != null)
                                 {
                                     var rDb = ReserveAccount.GetReserveAccountsDb();
-                                    rLocalAccount.LockedBalance -= tx.Amount;
-                                    rLocalAccount.AvailableBalance += tx.Amount;
+                                    rLocalAccount.LockedBalance -= rTX.Amount;
+                                    rLocalAccount.AvailableBalance += rTX.Amount;
                                     if (rDb != null)
                                         rDb.UpdateSafe(rLocalAccount);
                                 }
@@ -573,7 +598,7 @@ namespace ReserveBlockCore.Data
                             if (stateTreiTo != null)
                             {
                                 //remove amount from locked To address
-                                stateTreiTo.LockedBalance -= tx.Amount;
+                                stateTreiTo.LockedBalance -= rTX.Amount;
                                 if (stDb != null)
                                     stDb.UpdateSafe(stateTreiTo);
 
@@ -581,7 +606,7 @@ namespace ReserveBlockCore.Data
                                 if (localAccount != null)
                                 {
                                     var accountDB = AccountData.GetAccounts();
-                                    localAccount.LockedBalance -= tx.Amount;
+                                    localAccount.LockedBalance -= rTX.Amount;
                                     if (accountDB != null)
                                         accountDB.UpdateSafe(localAccount);
                                 }
@@ -590,16 +615,16 @@ namespace ReserveBlockCore.Data
                                 if (rLocalAccount != null)
                                 {
                                     var rDb = ReserveAccount.GetReserveAccountsDb();
-                                    rLocalAccount.LockedBalance -= tx.Amount;
+                                    rLocalAccount.LockedBalance -= rTX.Amount;
                                     if (rDb != null)
                                         rDb.UpdateSafe(rLocalAccount);
                                 }
                             }
                         }
 
-                        if(tx.TransactionType == TransactionType.NFT_TX)
+                        if(rTX.TransactionType == TransactionType.NFT_TX)
                         {
-                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(rTX.Data);
                             var scData = scDataArray[0];
                             var function = (string?)scData["Function"];
                             var scUID = (string?)scData["ContractUID"];
@@ -621,24 +646,19 @@ namespace ReserveBlockCore.Data
                         }
                         
 
-                        var localTx = TransactionData.GetTxByHash(tx.Hash);
+                        var localTx = TransactionData.GetTxByHash(rTX.Hash);
                         if(localTx != null)
                         {
                             //Change TX status to CalledBack
                             var txDB = Transaction.GetAll();
                             localTx.TransactionStatus = TransactionStatus.CalledBack;
-                            if(txDB != null)
+                            rTX.ReserveTransactionStatus = ReserveTransactionStatus.CalledBack;
+                            if (txDB != null)
                                 txDB.UpdateSafe(localTx);
                         }
 
-                        var localFrom = ReserveAccount.GetReserveAccountSingle(rTX.FromAddress);
-                        if( localFrom == null ) 
-                        {
-                            if (rtxDb != null)
-                                rtxDb.DeleteSafe(rTX.Id);
-                        }
-                        //Delete from Reserve Transaction List
-                        
+                        if (rtxDb != null)
+                            rtxDb.UpdateSafe(rTX);
                     }
                 }
             }
@@ -655,19 +675,18 @@ namespace ReserveBlockCore.Data
                 {
                     foreach(var rTX in rTXList) 
                     {
-                        var tx = rTX.Transaction;
                         var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
-                        var stateTreiFrom = GetSpecificAccountStateTrei(tx.FromAddress);
-                        if (tx.TransactionType == TransactionType.TX)
+                        var stateTreiFrom = GetSpecificAccountStateTrei(rTX.FromAddress);
+                        if (rTX.TransactionType == TransactionType.TX)
                         {
-                            var stateTreiTo = GetSpecificAccountStateTrei(tx.ToAddress);
+                            var stateTreiTo = GetSpecificAccountStateTrei(rTX.ToAddress);
 
                             if (stateTreiFrom != null)
                             {
                                 var recoveryAddress = stateTreiFrom.RecoveryAccount;
                                 if (recoveryAddress != null)
                                 {
-                                    stateTreiFrom.LockedBalance -= tx.Amount;
+                                    stateTreiFrom.LockedBalance -= rTX.Amount;
                                     if (stDb != null)
                                         stDb.UpdateSafe(stateTreiFrom);
 
@@ -675,7 +694,7 @@ namespace ReserveBlockCore.Data
                                     if (rLocalAccount != null)
                                     {
                                         var rDb = ReserveAccount.GetReserveAccountsDb();
-                                        rLocalAccount.LockedBalance -= tx.Amount;
+                                        rLocalAccount.LockedBalance -= rTX.Amount;
                                         if (rDb != null)
                                             rDb.UpdateSafe(rLocalAccount);
                                     }
@@ -683,7 +702,7 @@ namespace ReserveBlockCore.Data
                                     var stateTreiRecovery = GetSpecificAccountStateTrei(recoveryAddress);
                                     if (stateTreiRecovery != null)
                                     {
-                                        stateTreiRecovery.Balance += tx.Amount;
+                                        stateTreiRecovery.Balance += rTX.Amount;
                                         if (stDb != null)
                                             stDb.UpdateSafe(stateTreiRecovery);
                                     }
@@ -693,7 +712,7 @@ namespace ReserveBlockCore.Data
                                         {
                                             Key = recoveryAddress,
                                             Nonce = 0,
-                                            Balance = tx.Amount, //subtract from the address
+                                            Balance = rTX.Amount, //subtract from the address
                                             StateRoot = stateRoot
                                         };
 
@@ -706,7 +725,7 @@ namespace ReserveBlockCore.Data
                                     if (localAccount != null)
                                     {
                                         var accountDB = AccountData.GetAccounts();
-                                        localAccount.Balance += tx.Amount;
+                                        localAccount.Balance += rTX.Amount;
                                         if (accountDB != null)
                                             accountDB.UpdateSafe(localAccount);
                                     }
@@ -715,15 +734,15 @@ namespace ReserveBlockCore.Data
 
                             if (stateTreiTo != null)
                             {
-                                stateTreiTo.LockedBalance -= tx.Amount;
+                                stateTreiTo.LockedBalance -= rTX.Amount;
                                 if (stDb != null)
                                     stDb.UpdateSafe(stateTreiTo);
                             }
                         }
 
-                        if (tx.TransactionType == TransactionType.NFT_TX)
+                        if (rTX.TransactionType == TransactionType.NFT_TX)
                         {
-                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                            var scDataArray = JsonConvert.DeserializeObject<JArray>(rTX.Data);
                             var scData = scDataArray[0];
                             var function = (string?)scData["Function"];
                             var scUID = (string?)scData["ContractUID"];
@@ -750,19 +769,19 @@ namespace ReserveBlockCore.Data
                             }
                         }
 
-                        var localTx = TransactionData.GetTxByHash(tx.Hash);
+                        var localTx = TransactionData.GetTxByHash(rTX.Hash);
                         if (localTx != null)
                         {
                             //Change TX status to CalledBack
                             var txDB = Transaction.GetAll();
                             localTx.TransactionStatus = TransactionStatus.Recovered;
+                            rTX.ReserveTransactionStatus = ReserveTransactionStatus.Recovered;
                             if (txDB != null)
                                 txDB.UpdateSafe(localTx);
                         }
 
-                        //Delete from Reserve Transaction List
                         if (rtxDb != null)
-                            rtxDb.DeleteSafe(rTX.Id);
+                            rtxDb.UpdateSafe(rTX);
                     }
                 }
 
@@ -1318,7 +1337,28 @@ namespace ReserveBlockCore.Data
                     }
                 }
             }
+        }
 
+        private static void CancelSaleSmartContract(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                scStateTreiRec.NextOwner = null;
+                scStateTreiRec.IsLocked = false;
+                scStateTreiRec.Nonce += 1;
+                scStateTreiRec.PurchaseAmount = null;
+
+                SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+            }
 
         }
 

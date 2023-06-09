@@ -268,7 +268,7 @@ namespace ReserveBlockCore.Services
                             {
                                 if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                                 {
-                                    var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads);
+                                    var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads, true);
                                     if(!Globals.GUI && !Globals.BasicCLI && !blockDownloads)
                                     {
                                         //if (!txResult.Item1)
@@ -352,11 +352,16 @@ namespace ReserveBlockCore.Services
                                 DbContext.Rollback("BlockValidatorService.ValidateBlock()-13");
                                 return result;//block rejected due to bad transaction(s)
                             }
+                            if (block.Height == 258507 || block.Height == 258506 || block.Height == 258482)
+                            {
 
+                            }
                             result = true;
                             BlockchainData.AddBlock(block);//add block to chain.
                             UpdateMemBlocks(block);//update mem blocks
+                            
                             await StateData.UpdateTreis(block); //update treis
+                            await ReserveService.Run(); //updates treis for reserve pending txs
 
                             var mempool = TransactionData.GetPool();
 
@@ -480,6 +485,8 @@ namespace ReserveBlockCore.Services
                         await TransactionData.UpdateWalletTXTask();
 
                         DbContext.Commit();
+
+
 
                         if (P2PClient.MaxHeight() <= block.Height)
                         {

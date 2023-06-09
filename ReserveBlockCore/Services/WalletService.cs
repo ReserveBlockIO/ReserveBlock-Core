@@ -101,6 +101,72 @@ namespace ReserveBlockCore.Services
             }
             
         }
+
+        public static async Task BalanceRectify()
+        {
+            var accountDb = AccountData.GetAccounts();
+            var reserveDb = ReserveAccount.GetReserveAccountsDb();
+
+            if (accountDb == null)
+                return;
+
+            if(reserveDb == null) 
+                return;
+
+            var accountList = accountDb.FindAll().ToList();
+            var reserveAccountList = reserveDb.FindAll().ToList();
+
+            if(accountList.Count > 0)
+            {
+                foreach ( var account in accountList)
+                {
+                    bool save = false;
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if(stateAccount == null) continue;
+
+                    if(stateAccount.Balance != account.Balance) 
+                    {
+                        account.Balance = stateAccount.Balance;
+                        save = true;
+                    }
+
+                    if(stateAccount.LockedBalance != account.LockedBalance)
+                    {
+                        account.LockedBalance = stateAccount.LockedBalance;
+                        save = true;
+                    }
+
+                    if(save) { accountDb.UpdateSafe(account); }
+                    save = false;
+                }
+            }
+
+            if (reserveAccountList.Count > 0)
+            {
+                foreach (var account in reserveAccountList)
+                {
+                    bool save = false;
+                    var stateAccount = StateData.GetSpecificAccountStateTrei(account.Address);
+                    if (stateAccount == null) continue;
+
+                    if (stateAccount.Balance != account.AvailableBalance)
+                    {
+                        account.AvailableBalance = stateAccount.Balance;
+                        save = true;
+                    }
+
+                    if (stateAccount.LockedBalance != account.LockedBalance)
+                    {
+                        account.LockedBalance = stateAccount.LockedBalance;
+                        save = true;
+                    }
+
+                    if (save) { reserveDb.UpdateSafe(account); }
+                    save = false;
+                }
+            }
+        }
+
         public static async Task<string> SendTXOut(string FromAddress, string ToAddress, decimal Amount, TransactionType tranType = TransactionType.TX)
         {
             string output = "Bad TX Format... Please Try Again";
@@ -313,7 +379,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount), txRequest.Amount);
                 }
                 await P2PClient.SendTXToAdjudicator(txRequest);//send directly to adjs
             }
@@ -327,7 +393,7 @@ namespace ReserveBlockCore.Services
                 }
                 else
                 {
-                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount));
+                    ReserveAccount.UpdateLocalBalance(txRequest.FromAddress, (txRequest.Fee + txRequest.Amount), txRequest.Amount);
                 }
                 await P2PClient.SendTXMempool(txRequest);//send out to mempool
             }

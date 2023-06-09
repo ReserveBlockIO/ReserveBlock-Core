@@ -55,6 +55,23 @@ namespace ReserveBlockCore.Services
                                         }
                                     }
                                 }
+                                else
+                                {
+                                    RebroadcastDict.TryAdd(mempoolEntry.Hash, 1);
+                                    var account = AccountData.GetSingleAccount(mempoolEntry.FromAddress);
+                                    if (account != null)
+                                    {
+                                        if (account.IsValidating || !string.IsNullOrEmpty(Globals.ValidatorAddress))
+                                        {
+                                            await P2PClient.SendTXToAdjudicator(mempoolEntry);//send directly to adjs
+                                        }
+                                        else
+                                        {
+                                            await P2PClient.SendTXMempool(mempoolEntry);//send out to mempool
+                                        }
+                                    }
+
+                                }
                             }
                         }
                     }
