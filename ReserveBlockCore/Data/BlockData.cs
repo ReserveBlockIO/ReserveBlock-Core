@@ -10,6 +10,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using ReserveBlockCore.Extensions;
+using ReserveBlockCore.Utilities;
 
 namespace ReserveBlockCore.Data
 {
@@ -31,7 +32,7 @@ namespace ReserveBlockCore.Data
             Block block = new Block
             {
                 Height = 0,
-                Timestamp = timeStamp,
+                Timestamp = TimeUtil.GetTime(),
                 Transactions = gTrxList,
                 Validator = "Genesis Validator",
                 ChainRefId = BlockchainData.ChainRef,

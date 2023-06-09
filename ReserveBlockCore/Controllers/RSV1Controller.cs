@@ -133,18 +133,47 @@ namespace ReserveBlockCore.Controllers
                 var rtxList = rTXs.Query().Where(x => true).ToEnumerable();
                 if(rtxList.Any())
                 {
-                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"{rtxList?.Count()} Found!", ReserveTransactions = rtxList });
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"{rtxList?.Count()} Found!", ReserveTransactions = rtxList }, Formatting.Indented);
                 }
                 else
                 {
                     output = JsonConvert.SerializeObject(new { Success = false, Message = "No TXs" });
                 }
-                
             }
             else
             {
                 output = JsonConvert.SerializeObject(new { Success = false, Message = "No TXs" });
             }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Dumps out all reserve accounts locally stored.
+        /// </summary>
+        /// <param name="restoreCode"></param>
+        /// <returns></returns>
+        [HttpGet("DecodeRestoreCode/{restoreCodeBase}")]
+        public async Task<string> DecodeRestoreCode(string restoreCodeBase)
+        {
+            var output = "Command not recognized."; // this will only display if command not recognized.
+
+            if(restoreCodeBase != null)
+            {
+                var restoreCode = restoreCodeBase.ToStringFromBase64().Split("//");
+                var rsrvKey = restoreCode[0];
+                var recoveryKey = restoreCode[1];
+
+                if (restoreCode.Length == 2)
+                {
+                    output = JsonConvert.SerializeObject(new { Success = true, Message = $"Restore Code Decoded", ReserveAccountPrivateKey = rsrvKey, RBXRecoveryAccountPrivateKey = recoveryKey }, Formatting.Indented);
+                }
+                else
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Improper Restore Code" }, Formatting.Indented);
+                }
+            }
+            
 
             return output;
         }
@@ -157,6 +186,9 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> NewReserveAddress([FromBody] object jsonData)
         {
             var output = "";
+            //REMOVE AFTER LOCK!
+            if (Globals.LastBlock.Height < Globals.BlockLock)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Reserve Account feature is not unlocked. Unlocks at {Globals.BlockLock}" }, Formatting.Indented);
 
             try
             {
@@ -168,24 +200,24 @@ namespace ReserveBlockCore.Controllers
                         var result = ReserveAccount.CreateNewReserveAccount(rsrvAccountPayload.Password, rsrvAccountPayload.StoreRecoveryAccount);
                         if(result != null)
                         {
-                            output = JsonConvert.SerializeObject(new { Success = true, Message = "Reserve Account Created", ReserveAccount = result });
+                            output = JsonConvert.SerializeObject(new { Success = true, Message = "Reserve Account Created", ReserveAccount = result }, Formatting.Indented);
                             return output;
                         }
                     }
                     else
                     {
-                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" });
+                        output = JsonConvert.SerializeObject(new { Success = false, Message = "Failed to deserialize payload" }, Formatting.Indented);
                     }
                 }
                 else
                 {
-                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Json Payload was empty." });
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Json Payload was empty." }, Formatting.Indented);
                 }
                 
             }
             catch (Exception ex)
             {
-                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" });
+                output = JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error. Error: {ex.ToString()}" }, Formatting.Indented);
             }
 
             return output;
@@ -210,6 +242,12 @@ namespace ReserveBlockCore.Controllers
                         var toAddress = sendTxPayload.ToAddress;
                         var amount = sendTxPayload.Amount * 1.0M; //ensure it is decimal formatted
                         var password = sendTxPayload.DecryptPassword;
+
+                        if(fromAddress.StartsWith("xRBX") && toAddress.StartsWith("xRBX"))
+                        {
+                            output = JsonConvert.SerializeObject(new { Success = false, Message = "Reserve accounts cannot send to another Reserve Account." });
+                            return output;
+                        }
 
                         var addrCheck = AddressValidateUtility.ValidateAddress(toAddress);
 
@@ -266,6 +304,12 @@ namespace ReserveBlockCore.Controllers
 
                 if (fromAddress == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = "From Address was not found in wallet. You may only send from addresses you own locally." });
+
+                if (fromAddress.Address.StartsWith("xRBX") && toAddress.StartsWith("xRBX"))
+                {
+                    output = JsonConvert.SerializeObject(new { Success = false, Message = "Reserve accounts cannot send to another Reserve Account." });
+                    return output;
+                }
 
                 var keyString = ReserveAccount.GetPrivateKey(sendNFTTransferPayload.FromAddress, sendNFTTransferPayload.DecryptPassword);
 
@@ -377,7 +421,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Recover a Reserve Account Transaction to Recovery Account
+        /// Recover a Reserve Accounts entire chain worth (NFTs and RBX) to Recovery Account
         /// </summary>
         /// <param name="recoveryPhrase"></param>
         /// <param name="address"></param>
@@ -410,7 +454,7 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
-        /// Restores a reserve address
+        /// Restores a reserve address to a wallet with recovery info
         /// </summary>
         /// <returns></returns>
         [HttpPost("RestoreReserveAddress")]

@@ -1,6 +1,7 @@
 ﻿using ReserveBlockCore.Services;
 using ReserveBlockCore.Utilities;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ReserveBlockCore.Beacon
@@ -237,6 +238,133 @@ namespace ReserveBlockCore.Beacon
             ms.Write(data, 0, data.Length);
 
             return ms.ToArray();
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //New Method Sending
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        public static async Task<BeaconResponse> Send_New(string FilePath, string TargetIP, int Port, string scUID)
+        {
+            BeaconLogUtility.Log("Beginning Beacon Asset Transfer", "BeaconClient.Send()");
+            string Selected_file = FilePath;
+            string File_name = Path.GetFileName(Selected_file);
+            BeaconLogUtility.Log($"Sending File: {File_name}", "BeaconClient.Send()");
+
+            string serverIpAddress = TargetIP;
+            int serverPort = Port;
+
+            using (var client = Globals.HttpClientFactory.CreateClient())
+            {
+                try
+                {
+                    // Create a new MultipartFormDataContent
+                    using (var formData = new MultipartFormDataContent())
+                    {
+                        // Read the file as a stream
+                        using (var fileStream = File.OpenRead(Selected_file))
+                        {
+                            // Create a StreamContent from the file stream
+                            var fileContent = new StreamContent(fileStream);
+
+                            // Add the file content to the form data
+                            formData.Add(fileContent, "file", Path.GetFileName(Selected_file));
+                            string url = $"http://{serverIpAddress}:{serverPort}/upload/{scUID}";
+                            // Send the POST request to the API endpoint
+                            var response = await client.PostAsync(url, formData);
+
+                            // Check if the request was successful (status code 200)
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var responseContent = await response.Content.ReadAsStringAsync();
+                                Console.WriteLine("File uploaded successfully!");
+                                Console.WriteLine("Server response: " + responseContent);
+                               
+                                return new BeaconResponse { Status = 1, Description = "Success" };
+                            }
+                            else
+                            {
+                                Console.WriteLine("File upload failed. Status code: " + response.StatusCode);
+                                return new BeaconResponse { Status = -1, Description = $"Fail. Reason: {response.StatusCode}" };
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                }
+            }
+
+            return new BeaconResponse { Status = -1, Description = "Fail" };
+        }
+
+        public static async Task<BeaconResponse> Receive_New(string fileName, string TargetIP, int Port, string scUID)
+        {
+            bool fileExist = File.Exists(NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID));
+            if (fileExist)
+            {
+                //do nothing
+                return new BeaconResponse { Status = -1, Description = "Error: " + "File already exist." };
+            }
+            string serverIpAddress = TargetIP;
+            int serverPort = Port;
+            var saveArea = NFTAssetFileUtility.CreateNFTAssetPath(fileName, scUID);
+            var scuidFolder = scUID.Replace(":", "");
+
+            using (var client = Globals.HttpClientFactory.CreateClient())
+            {
+                try
+                {
+                    //perform file check
+                    var extChkResult = CheckExtension(fileName);
+                    if (!extChkResult)
+                    {
+                        //Extension found in reject list
+                        return new BeaconResponse { Status = -1, Description = "Bad Extension Type" };
+                    }
+
+                    string url = $"http://{serverIpAddress}:{serverPort}/download/{scUID}/{fileName}";
+
+                    var response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"File download failed. Status code: {response.StatusCode}");
+                        return new BeaconResponse { Status = -1, Description = "Failed" };
+                    }
+
+                    using (var fileStream = new FileStream(saveArea, FileMode.Create))
+                    {
+                        await response.Content.CopyToAsync(fileStream);
+                    }
+
+                    Console.WriteLine("File downloaded successfully!");
+                    return new BeaconResponse { Status = 1, Description = "Success" };
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred while downloading the file: {ex.Message}");
+                }
+                return new BeaconResponse { Status = -1, Description = "Fail" };
+            }
+
+        }
+
+        private static bool CheckExtension(string fileName)
+        {
+            bool output = false;
+
+            string ext = Path.GetExtension(fileName);
+
+            if (!string.IsNullOrEmpty(ext))
+            {
+                var rejectedExtList = Globals.RejectAssetExtensionTypes;
+                var exist = rejectedExtList.Contains(ext);
+                if (!exist)
+                    output = true;
+            }
+            return output;
         }
     }
 }

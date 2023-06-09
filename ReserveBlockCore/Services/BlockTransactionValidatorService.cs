@@ -91,6 +91,22 @@ namespace ReserveBlockCore.Services
 
                             AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, false);
                         }
+
+                        if(function == "M_Sale_Start()")
+                        {
+                            var txdata = TransactionData.GetAll();
+                            tx.TransactionStatus = TransactionStatus.Success;
+                            txdata.InsertSafe(tx);
+                        }
+
+                        if (function == "M_Sale_Complete()")
+                        {
+                            var txdata = TransactionData.GetAll();
+                            tx.TransactionStatus = TransactionStatus.Success;
+                            txdata.InsertSafe(tx);
+
+                            AccountData.UpdateLocalBalanceAdd(tx.ToAddress, tx.Amount, false);
+                        }
                     }
                     
                 }
@@ -366,7 +382,7 @@ namespace ReserveBlockCore.Services
 
                         if (!string.IsNullOrWhiteSpace(function))
                         {
-                            if (function == "Sale_Complete()")
+                            if (function == "Sale_Complete()" || function == "M_Sale_Complete()")
                             {
                                 var localFromAddress = AccountData.GetSingleAccount(tx.FromAddress);
 
@@ -824,59 +840,67 @@ namespace ReserveBlockCore.Services
                                 var callBackHash = (string?)jobj["Hash"];
                                 if (callBackHash != null)
                                 {
-                                    var rTX = ReserveTransactions.GetTransactions(callBackHash);
-                                    if (rTX != null)
+                                    var localTX = TransactionData.GetTxByHash(callBackHash);
+                                    if(localTX != null)
                                     {
-                                        var ctx = rTX.Transaction;
-
-                                        var rtxDb = ReserveTransactions.GetReserveTransactionsDb();
-
-                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(ctx.Data);
+                                        var scDataArray = JsonConvert.DeserializeObject<JArray>(localTX.Data);
                                         var scData = scDataArray[0];
-                                        var cfunction = (string?)scData["Function"];
                                         var scUID = (string?)scData["ContractUID"];
 
-                                        var data = (string?)scData["Data"];
-                                        if (data != null)
+                                        if(scUID != null)
                                         {
-                                            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
-                                            if (sc == null)
+                                            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scState != null)
                                             {
-                                                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
-                                                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
-
-                                                if (!isCompletedSuccessfully)
+                                                var data = scState.ContractData;
+                                                if (data != null)
                                                 {
-                                                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                    var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+                                                    if (sc == null)
+                                                    {
+                                                        var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(data); });
+                                                        bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+
+                                                        if (!isCompletedSuccessfully)
+                                                        {
+                                                            NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        NFTLogUtility.Log("SC was not null. Contract already exist.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    NFTLogUtility.Log("SC Data from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                                 }
                                             }
                                             else
                                             {
-                                                NFTLogUtility.Log("SC was not null. Contract already exist.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                                NFTLogUtility.Log("SC State Trei Rec was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                             }
                                         }
                                         else
                                         {
-                                            NFTLogUtility.Log("SC Data from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
+                                            NFTLogUtility.Log("SCUID from TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                         }
-
-                                        if (rtxDb != null)
-                                            rtxDb.DeleteSafe(rTX.Id);
+                                    }
+                                    else
+                                    {
+                                        NFTLogUtility.Log("Original TX was null.", "BlockTransactionValidatorService.ProcessOutgoingReserveTransaction()");
                                     }
                                 }
                             }
                             if (function == "Recover()")
                             {
-                                //var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
-                                //if (rAccount != null)
-                                //{
-                                //    var rStateTrei = StateData.GetSpecificAccountStateTrei(tx.FromAddress);
-                                //    if (rStateTrei != null)
-                                //    {
-                                //        rAccount.AvailableBalance = rStateTrei.Balance;
-                                //        rAccount.LockedBalance = rStateTrei.LockedBalance;
-                                //    }
-                                //}
+                                var rAccount = ReserveAccount.GetReserveAccountSingle(tx.FromAddress);
+                                if (rAccount != null)
+                                {
+                                    rAccount.AvailableBalance = 0.0M;
+                                    rAccount.LockedBalance = 0.0M;
+                                    ReserveAccount.SaveReserveAccount(rAccount);
+                                }
                             }
 
                         }

@@ -23,120 +23,128 @@ namespace ReserveBlockCore.DST
     {
         public static async Task ProcessMessage(string payload, IPEndPoint endPoint, UdpClient udpClient, string shopURL = "NA")
         {
-            if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
+            try
             {
-                if (Globals.ShowSTUNMessagesInConsole)
-                    Console.WriteLine(payload);
-            }
-            else
-            {
-
-                if (!string.IsNullOrEmpty(payload))
+                if (string.IsNullOrEmpty(payload) || payload == "ack" || payload == "nack" || payload == "fail" || payload == "dc" || payload == "echo")
                 {
                     if (Globals.ShowSTUNMessagesInConsole)
-                        Console.WriteLine(payload + "\n");
+                        Console.WriteLine(payload);
+                }
+                else
+                {
 
-                    var message = JsonConvert.DeserializeObject<Message>(payload);
-
-                    if(shopURL == "NA")
+                    if (!string.IsNullOrEmpty(payload))
                     {
-                        if (Globals.ConnectedClients.TryGetValue(endPoint.ToString(), out var client))
+                        if (Globals.ShowSTUNMessagesInConsole)
+                            Console.WriteLine(payload + "\n");
+
+                        var message = JsonConvert.DeserializeObject<Message>(payload);
+
+                        if (shopURL == "NA")
                         {
-                            client.LastReceiveMessage = TimeUtil.GetTime();
-                            if(message != null)
+                            if (Globals.ConnectedClients.TryGetValue(endPoint.ToString(), out var client))
                             {
-                                if (message.Type != MessageType.KeepAlive && message.Type != MessageType.ShopKeepAlive && message.Type != MessageType.STUNKeepAlive)
-                                    client.LastMessageSent = message;
-                            }
-                            
+                                client.LastReceiveMessage = TimeUtil.GetTime();
+                                if (message != null)
+                                {
+                                    if (message.Type != MessageType.KeepAlive && message.Type != MessageType.ShopKeepAlive && message.Type != MessageType.STUNKeepAlive)
+                                        client.LastMessageSent = message;
+                                }
 
-                            Globals.ConnectedClients[endPoint.ToString()] = client;
+
+                                Globals.ConnectedClients[endPoint.ToString()] = client;
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out ShopConnection? shopConnection))
+                        else
                         {
-                            shopConnection.LastReceiveMessage = TimeUtil.GetTime();
-                            if (message != null)
+                            if (DSTMultiClient.ShopConnections.TryGetValue(shopURL, out ShopConnection? shopConnection))
                             {
-                                if (message.Type != MessageType.KeepAlive && message.Type != MessageType.ShopKeepAlive && message.Type != MessageType.STUNKeepAlive)
-                                    shopConnection.LastMessageSent = message;
+                                shopConnection.LastReceiveMessage = TimeUtil.GetTime();
+                                if (message != null)
+                                {
+                                    if (message.Type != MessageType.KeepAlive && message.Type != MessageType.ShopKeepAlive && message.Type != MessageType.STUNKeepAlive)
+                                        shopConnection.LastMessageSent = message;
+                                }
+                                DSTMultiClient.ShopConnections[shopConnection.ShopURL] = shopConnection;
                             }
-                            DSTMultiClient.ShopConnections[shopConnection.ShopURL] = shopConnection;
                         }
-                    }
 
-                    //var ipTest = endPoint.ToString();
-                    //if (ipTest.StartsWith("142"))
-                    //{
-                    //    Console.WriteLine($"Message from shop: {ipTest} - Received at {TimeUtil.GetTime()} - Message Type : {message.Type}");
-                    //    if (message.Type == MessageType.DecShop)
-                    //    {
-                    //        Console.WriteLine(message.Data);
-                    //    }
-                    //}
+                        //var ipTest = endPoint.ToString();
+                        //if (ipTest.StartsWith("142"))
+                        //{
+                        //    Console.WriteLine($"Message from shop: {ipTest} - Received at {TimeUtil.GetTime()} - Message Type : {message.Type}");
+                        //    if (message.Type == MessageType.DecShop)
+                        //    {
+                        //        Console.WriteLine(message.Data);
+                        //    }
+                        //}
 
-                    if (message != null)
-                    {
-                        switch (message.Type)
+                        if (message != null)
                         {
-                            case MessageType.STUN:
-                                STUNClientConnect(message, endPoint, udpClient);
-                                break;
-                            case MessageType.PunchClient:
-                                PunchClient(message, endPoint, udpClient);
-                                break;
-                            case MessageType.AssetPunchClient:
-                                AssetPunchClient(message, endPoint, udpClient);
-                                break;
-                            case MessageType.KeepAlive:
-                                if(shopURL == "NA")
-                                    KeepAlive(message, endPoint, udpClient);
-                                else
-                                    KeepAlive(message, endPoint, udpClient, shopURL);
-                                break;
-                            case MessageType.STUNKeepAlive:
-                                STUNKeepAlive(message, endPoint, udpClient);
-                                break;
-                            case MessageType.ShopConnect:
-                                ShopConnect(message, endPoint, udpClient);
-                                break;
-                            case MessageType.ShopKeepAlive:
-                                ShopKeepAlive(message, endPoint, udpClient);
-                                break;
-                            case MessageType.STUNConnect:
-                                STUNConnect(message, endPoint, udpClient);
-                                break;
-                            case MessageType.DecShop:
-                                if (shopURL == "NA")
-                                    DecShopMessage(message, endPoint, udpClient);
-                                else
-                                    DecShopMessage(message, endPoint, udpClient, shopURL);
-                                break;
-                            case MessageType.Chat:
-                                ChatMessage(message, endPoint, udpClient);
-                                break;
-                            case MessageType.ChatRec:
-                                ChatMessageReceived(message);
-                                break;
-                            case MessageType.AssetReq:
-                                _ = Task.Run(async () => await AssetRequest(message, endPoint, udpClient));
-                                break;
-                            case MessageType.Bid:
-                                ProcessBid(message, endPoint, udpClient);
-                                break;
-                            case MessageType.Purchase:
-                                ProcessBuyNow(message, endPoint, udpClient);
-                                break;
-                            case MessageType.Ping:
-                                _ = Ping(message, endPoint, udpClient);
-                                break;
-                            default:
-                                break;
+                            switch (message.Type)
+                            {
+                                case MessageType.STUN:
+                                    STUNClientConnect(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.PunchClient:
+                                    PunchClient(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.AssetPunchClient:
+                                    AssetPunchClient(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.KeepAlive:
+                                    if (shopURL == "NA")
+                                        KeepAlive(message, endPoint, udpClient);
+                                    else
+                                        KeepAlive(message, endPoint, udpClient, shopURL);
+                                    break;
+                                case MessageType.STUNKeepAlive:
+                                    STUNKeepAlive(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.ShopConnect:
+                                    ShopConnect(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.ShopKeepAlive:
+                                    ShopKeepAlive(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.STUNConnect:
+                                    STUNConnect(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.DecShop:
+                                    if (shopURL == "NA")
+                                        DecShopMessage(message, endPoint, udpClient);
+                                    else
+                                        DecShopMessage(message, endPoint, udpClient, shopURL);
+                                    break;
+                                case MessageType.Chat:
+                                    ChatMessage(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.ChatRec:
+                                    ChatMessageReceived(message);
+                                    break;
+                                case MessageType.AssetReq:
+                                    _ = Task.Run(async () => await AssetRequest(message, endPoint, udpClient));
+                                    break;
+                                case MessageType.Bid:
+                                    ProcessBid(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.Purchase:
+                                    ProcessBuyNow(message, endPoint, udpClient);
+                                    break;
+                                case MessageType.Ping:
+                                    _ = Ping(message, endPoint, udpClient);
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                if (Globals.ShowSTUNMessagesInConsole)
+                    Console.WriteLine($"Message Error: {ex.ToString()}");
             }
         }
         public static async Task STUNClientConnect(Message message, IPEndPoint endPoint, UdpClient udpClient)
@@ -253,6 +261,7 @@ namespace ReserveBlockCore.DST
 
                 Globals.ConnectedClients[endPoint.ToString()] = client;
                 var successMessage = Encoding.UTF8.GetBytes("echo");
+                TcpClient tcpClient = new TcpClient();
                 udpClient.Send(successMessage, endPoint);
             }
         }

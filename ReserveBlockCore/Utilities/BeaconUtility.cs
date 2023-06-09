@@ -92,6 +92,92 @@ namespace ReserveBlockCore.Utilities
             }
         }
 
+        public static async Task SendAssets_New(string scUID, List<string> assets, BeaconNodeInfo connectedBeacon)
+        {
+            if (assets.Count() > 0)
+            {
+                NFTLogUtility.Log($"NFT Asset Transfer Beginning for: {scUID}. Assets: {assets}", "SCV1Controller.TransferNFT()");
+                foreach (var asset in assets)
+                {
+                    await SendAssets_New(scUID, asset, connectedBeacon.Beacons.BeaconLocator);
+                }
+
+                connectedBeacon.Uploading = false;
+                Globals.Beacon[connectedBeacon.IPAddress] = connectedBeacon;
+
+                NFTLogUtility.Log($"NFT Asset Transfer Done for: {scUID}.", "SCV1Controller.TransferNFT()");
+            }
+        }
+
+        public static async Task<bool> SendAssets_New(string scUID, string assetName, string locator)
+        {
+            bool retry = true;
+            int retryCount = 0;
+            bool result = false;
+            while(retry)
+            {
+                try
+                {
+                    if (retryCount < 4)
+                    {
+                        var filePath = NFTAssetFileUtility.NFTAssetPath(assetName, scUID);
+                        var beaconString = locator.ToStringFromBase64();
+                        var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
+
+                        if(beacon != null)
+                        {
+                            NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconUtility.SendAssets_New() - send");
+                            BeaconResponse rsp = await BeaconClient.Send_New(filePath, beacon.IPAddress, beacon.Port, scUID);
+                            if (rsp.Status == 1)
+                            {
+                                //success
+                                retry = false;
+                                var aqDb = AssetQueue.GetAssetQueue();
+                                if (aqDb != null)
+                                {
+                                    var aq = aqDb.FindOne(x => x.SmartContractUID == scUID && !x.IsComplete);
+                                    if (aq != null)
+                                    {
+                                        aq.IsComplete = true;
+                                        aq.IsDownloaded = true;
+
+                                        aqDb.UpdateSafe(aq);
+                                    }
+                                }
+                                NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
+
+                                await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
+
+                                result = true;
+                            }
+                            else
+                            {
+                                await Task.Delay(2000);
+                                retryCount += 1;
+                                NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconUtility.SendAssets_New() - send");
+                            }
+                        }
+                        else
+                        {
+                            await Task.Delay(2000);
+                            retryCount += 1;
+                        }
+                    }
+                    else
+                    {
+                        retry = false;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    retryCount += 1;
+                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconUtility.SendAssets_New() - send");
+                }
+            }
+
+            return result;
+        }
+
         public static async Task<bool> SendAssets(string scUID, string assetName, string locator)
         {
             bool retry = true;
@@ -107,7 +193,7 @@ namespace ReserveBlockCore.Utilities
                         var beaconString = locator.ToStringFromBase64();
                         var beacon = JsonConvert.DeserializeObject<BeaconInfo.BeaconInfoJson>(beaconString);
 
-                        NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.ProcessData() - send");
+                        NFTLogUtility.Log($"Beginning send on: {assetName}.", "BeaconProcessor.SendAssets() - send");
                         BeaconResponse rsp = BeaconClient.Send(filePath, beacon.IPAddress, beacon.Port);
                         if (rsp.Status == 1)
                         {
@@ -116,7 +202,7 @@ namespace ReserveBlockCore.Utilities
                             var aqDb = AssetQueue.GetAssetQueue();
                             if (aqDb != null)
                             {
-                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID);
+                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID && !x.IsComplete);
                                 if (aq != null)
                                 {
                                     aq.IsComplete = true;
@@ -125,7 +211,7 @@ namespace ReserveBlockCore.Utilities
                                     aqDb.UpdateSafe(aq);
                                 }
                             }
-                            NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"Success sending asset: {assetName}. Description: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
 
                             await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
@@ -137,7 +223,7 @@ namespace ReserveBlockCore.Utilities
                             var aqDb = AssetQueue.GetAssetQueue();
                             if (aqDb != null)
                             {
-                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID);
+                                var aq = aqDb.FindOne(x => x.SmartContractUID == scUID && !x.IsComplete);
                                 if (aq != null)
                                 {
                                     aq.IsComplete = true;
@@ -146,7 +232,7 @@ namespace ReserveBlockCore.Utilities
                                     aqDb.UpdateSafe(aq);
                                 }
                             }
-                            NFTLogUtility.Log($"Asset already existed: {assetName}. Description: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"Asset already existed: {assetName}. Description: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
 
                             await P2PClient.BeaconFileIsReady(scUID, assetName, locator);
 
@@ -155,7 +241,7 @@ namespace ReserveBlockCore.Utilities
                         else
                         {
                             retryCount += 1;
-                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.ProcessData() - send");
+                            NFTLogUtility.Log($"NFT Send for assets -> {assetName} <- failed. Status Code: {rsp.Status}. Status Message: {rsp.Description}", "BeaconProcessor.SendAssets() - send");
                         }
                     }
                     else
@@ -166,7 +252,7 @@ namespace ReserveBlockCore.Utilities
                 catch (Exception ex)
                 {
                     retryCount += 1;
-                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.ProcessData() - send");
+                    NFTLogUtility.Log($"NFT Send for assets failed. Unknown Error {ex.ToString()}.", "BeaconProcessor.SendAssets() - send");
                 }
             }
 

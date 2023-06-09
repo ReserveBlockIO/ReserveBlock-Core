@@ -628,7 +628,7 @@ namespace ReserveBlockCore.Models
                 Timestamp = TimeUtil.GetTime(),
                 FromAddress = address,
                 ToAddress = "DecShop_Base",
-                Amount = Globals.DecShopRequiredRBX,
+                Amount = Globals.DecShopDeleteRequiredRBX,
                 Fee = 0,
                 Nonce = AccountStateTrei.GetNextNonce(address),
                 TransactionType = TransactionType.DSTR,

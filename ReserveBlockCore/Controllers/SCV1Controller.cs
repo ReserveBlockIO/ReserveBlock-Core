@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.DST;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Services;
@@ -9,8 +11,10 @@ using ReserveBlockCore.Utilities;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Security.Principal;
 using System.Text;
+using System.Web;
 
 namespace ReserveBlockCore.Controllers
 {
@@ -159,7 +163,12 @@ namespace ReserveBlockCore.Controllers
                         var exist = accounts.Exists(x => x.Address == scState.OwnerAddress || x.Address == scState.NextOwner);
                         var rExist = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress) != null ? true : false;
                         if(!rExist)
-                            rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : false;
+                        {
+                            if(scState.NextOwner != null)
+                                rExist = ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false;
+                        }
+                        if(rExist)
+                            rExist = scState.NextOwner != null ? ReserveAccount.GetReserveAccountSingle(scState.NextOwner) != null ? true : false : true;
                         if (exist || rExist)
                             scStateMainBag.Add(scState);
                     }
@@ -566,6 +575,7 @@ namespace ReserveBlockCore.Controllers
             {
                 SmartContractReturnData scReturnData = new SmartContractReturnData();
                 var scMain = JsonConvert.DeserializeObject<SmartContractMain>(jsonData.ToString());
+
                 if(scMain != null)
                 {
                     NFTLogUtility.Log($"Creating Smart Contract: {scMain.SmartContractUID}", "SCV1Controller.CreateSmartContract([FromBody] object jsonData)");
@@ -573,9 +583,32 @@ namespace ReserveBlockCore.Controllers
                 else
                 {
                     NFTLogUtility.Log($"scMain is null", "SCV1Controller.CreateSmartContract([FromBody] object jsonData) - Line 190");
+                    throw new Exception("Smart Contract was null.");
                 }
                 try
                 {
+                    var featureList = scMain.Features;
+
+                    if(featureList?.Count() > 0) 
+                    { 
+                        var royalty = featureList.Where(x => x.FeatureName == FeatureName.Royalty).FirstOrDefault();
+                        if(royalty != null)
+                        {
+                            var royaltyFeatures = ((JObject)royalty.FeatureFeatures).ToObject<RoyaltyFeature>();
+                            if(royaltyFeatures != null)
+                            {
+                                if (royaltyFeatures.RoyaltyType == RoyaltyType.Flat)
+                                {
+                                    throw new Exception("Flat rates may no longer be used.");
+                                }
+                                if(royaltyFeatures.RoyaltyAmount >= 1.0M)
+                                {
+                                    throw new Exception("Royalty cannot be over 1. Must be .99 or less.");
+                                }
+                            }
+                        }
+                    }
+
                     var result = await SmartContractWriterService.WriteSmartContract(scMain);
                     scReturnData.Success = true;
                     scReturnData.SmartContractCode = result.Item1;
@@ -827,6 +860,391 @@ namespace ReserveBlockCore.Controllers
         }
 
         /// <summary>
+        /// Creates a transaction to start a sale for an NFT.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="toAddress"></param>
+        /// <param name="saleAmount"></param>
+        /// <param name="backupURL"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("TransferSale/{scUID}/{toAddress}/{saleAmount}")]
+        [Route("TransferSale/{scUID}/{toAddress}/{saleAmount}/{**backupURL}")]
+        public async Task<string> TransferSale(string scUID, string toAddress, decimal saleAmount, string? backupURL = "")
+        {
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if (sc != null)
+            {
+                if (sc.IsPublished == true)
+                {
+                    var purchaseKey = RandomStringUtility.GetRandomStringOnlyLetters(10, true);
+                    var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                    if (scState == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+                    var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+                    if (localAccount == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+                    if (!Globals.Beacons.Any())
+                    {
+                        NFTLogUtility.Log("Error - You do not have any beacons stored.", "SCV1Controller.TransferNFT()");
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You do not have any beacons stored." });
+                    }
+
+                    if (!Globals.Beacon.Values.Where(x => x.IsConnected).Any())
+                    {
+                        var beaconConnectionResult = await BeaconUtility.EstablishBeaconConnection(true, false);
+                        if (!beaconConnectionResult)
+                        {
+                            NFTLogUtility.Log("Error - You failed to connect to any beacons.", "SCV1Controller.TransferNFT()");
+                            return  JsonConvert.SerializeObject(new { Success = false, Message = "You failed to connect to any beacons." });
+                        }
+                    }
+                    var connectedBeacon = Globals.Beacon.Values.Where(x => x.IsConnected).FirstOrDefault();
+                    if (connectedBeacon == null)
+                    {
+                        NFTLogUtility.Log("Error - You have lost connection to beacons. Please attempt to resend.", "SCV1Controller.TransferNFT()");
+                        return JsonConvert.SerializeObject(new { Success = false, Message = "You have lost connection to beacons. Please attempt to resend." });
+                    }
+
+                    toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
+                    var localAddress = AccountData.GetSingleAccount(toAddress);
+
+                    var assets = await NFTAssetFileUtility.GetAssetListFromSmartContract(sc);
+                    var md5List = await MD5Utility.GetMD5FromSmartContract(sc);
+
+                    _ = Task.Run(() => SmartContractService.StartTransferSaleSmartContractTX(sc, 
+                        scUID, toAddress, saleAmount, purchaseKey, connectedBeacon, md5List, backupURL));
+
+                    var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started." });
+                    NFTLogUtility.Log($"NFT Process Completed in CLI. SCUID: {sc.SmartContractUID}. Response: {success}", "SCV1Controller.TransferNFT()");
+                    return success;                    
+
+                }
+                else
+                {
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT is not published." });
+                }
+            }
+            else
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT could not be found locally." });
+            }
+        }
+
+        /// <summary>
+        /// Complete NFT purchase
+        /// </summary>
+        /// <param name="keySign"></param>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CompleteTransferSale/{keySign}/{**scUID}")]
+        public async Task<string> CompleteTransferSale(string keySign, string scUID)
+        {
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+
+            if (scStateTrei == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract was not found." });
+
+            var nextOwner = scStateTrei.NextOwner;
+            var purchaseAmount = scStateTrei.PurchaseAmount;
+
+            if (nextOwner == null || purchaseAmount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart contract data missing or purchase already completed. Next Owner: {nextOwner} | Purchase Amount {purchaseAmount}" });
+
+            var localAccount = AccountData.GetSingleAccount(nextOwner);
+
+            if (localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"A local account with next owner address was not found. Next Owner: {nextOwner}" });
+
+            if (localAccount.Balance <= purchaseAmount.Value)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Not enough funds to purchase NFT. Purchase Amount {purchaseAmount} | Current Balance: {localAccount.Balance}." });
+
+            var result = await SmartContractService.CompleteTransferSaleSmartContractTX(scUID, scStateTrei.OwnerAddress, purchaseAmount.Value, keySign);
+
+            return JsonConvert.SerializeObject(new { Success = result.Item1 == null ? false : true, Message = result.Item2 });
+        }
+
+        /// <summary>
+        /// Cancels a sale.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("CancelSale/{scUID}")]
+        public async Task<string> CancelSale(string scUID)
+        {
+            var scStateTrei = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTrei == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = "Smart Contract was not found." });
+
+            var currentOwner = scStateTrei.OwnerAddress;
+
+            var localAccount = AccountData.GetSingleAccount(currentOwner);
+
+            if (localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"A local account with owner address was not found. Owner: {currentOwner}" });
+
+            if(!scStateTrei.IsLocked)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"This NFT is not locked for a sale." });
+
+            if (string.IsNullOrEmpty(scStateTrei.NextOwner))
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"There is no next owner on this NFT. Nothing to Cancel." });
+
+
+
+            return "";
+        }
+
+        /// <summary>
+        /// Creates ownership script
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("ProveOwnership/{scUID}")]
+        public async Task<string> ProveOwnership(string scUID)
+        {
+            var output = "";
+
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+            var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+            if (localAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+            bool sigGood = false;
+            var completedOwnershipScript = "";
+
+            while (!sigGood)
+            {
+                var randomKey = RandomStringUtility.GetRandomStringOnlyLetters(8, false);
+                var timestamp = TimeUtil.GetTime();
+
+                var sigMessage = $"{randomKey}.{timestamp}";
+
+                var sigScript = SignatureService.CreateSignature(sigMessage, localAccount.GetPrivKey, localAccount.PublicKey);
+
+                completedOwnershipScript = $"{localAccount.Address}<>{sigMessage}<>{sigScript}<>{scUID}";
+
+                var sigVerifies = SignatureService.VerifySignature(localAccount.Address, sigMessage, sigScript);
+
+                if (sigVerifies)
+                    sigGood = true;
+            }
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+        }
+
+        /// <summary>
+        /// Adds NFT to local from network if you own it.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("AddNFTDataFromNetwork/{scUID}")]
+        public async Task<string> AddNFTDataFromNetwork(string scUID)
+        {
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+            if (scState.OwnerAddress.StartsWith("xRBX"))
+            {
+                var localReserve = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress);
+                if (localReserve == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+            }
+            else
+            {
+                var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+                if (localAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+            }
+
+            var sc = SmartContractMain.SmartContractData.GetSmartContract(scUID);
+            if (sc == null)
+            {
+                var transferTask = Task.Run(() => { SmartContractMain.SmartContractData.CreateSmartContract(scState.ContractData); });
+                bool isCompletedSuccessfully = transferTask.Wait(TimeSpan.FromMilliseconds(Globals.NFTTimeout * 1000));
+
+                if (!isCompletedSuccessfully)
+                {
+                    NFTLogUtility.Log("Failed to decompile smart contract for transfer in time.", "SCV1Controller.AddNFTDataFromNetwork()");
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT was not created. Failed to decompile smart contract." });
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"NFT Created." });
+            }
+            else
+            {
+                NFTLogUtility.Log("SC was not null. Contract already exist.", "SCV1Controller.AddNFTDataFromNetwork()");
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"NFT Already Exist." });
+            }
+        }
+
+        /// <summary>
+        /// Creates ownership script RSRV compatible
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpGet("ProveOwnership/{scUID}/{password?}")]
+        public async Task<string> ProveOwnership(string scUID, string? password = null)
+        {
+            var output = "";
+
+            var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scState == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not located state information for Smart Contract: {scUID}" });
+
+            if(scState.OwnerAddress.StartsWith("xRBX"))
+            {
+                var localReserve = ReserveAccount.GetReserveAccountSingle(scState.OwnerAddress);
+                if(localReserve == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+                if(string.IsNullOrEmpty(password))
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Password cannot be empty for Reserve Account." });
+
+                bool sigGood = false;
+                var completedOwnershipScript = "";
+                var privateKey = ReserveAccount.GetPrivateKey(localReserve, password, true);
+
+                while (!sigGood)
+                {
+                    var randomKey = RandomStringUtility.GetRandomStringOnlyLetters(8, false);
+                    var timestamp = TimeUtil.GetTime();
+
+                    var sigMessage = $"{randomKey}.{timestamp}";
+
+                    var sigScript = SignatureService.CreateSignature(sigMessage, privateKey, localReserve.PublicKey);
+
+                    completedOwnershipScript = $"{localReserve.Address}<>{sigMessage}<>{sigScript}<>{scUID}";
+
+                    var sigVerifies = SignatureService.VerifySignature(localReserve.Address, sigMessage, sigScript);
+
+                    if (sigVerifies)
+                        sigGood = true;
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+            }
+            else
+            {
+                var localAccount = AccountData.GetSingleAccount(scState.OwnerAddress);
+
+                if (localAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Local account not found. You wallet is not the owner of this NFT." });
+
+                bool sigGood = false;
+                var completedOwnershipScript = "";
+
+                while (!sigGood)
+                {
+                    var randomKey = RandomStringUtility.GetRandomStringOnlyLetters(8, false);
+                    var timestamp = TimeUtil.GetTime();
+
+                    var sigMessage = $"{randomKey}.{timestamp}";
+
+                    var sigScript = SignatureService.CreateSignature(sigMessage, localAccount.GetPrivKey, localAccount.PublicKey);
+
+                    completedOwnershipScript = $"{localAccount.Address}<>{sigMessage}<>{sigScript}<>{scUID}";
+
+                    var sigVerifies = SignatureService.VerifySignature(localAccount.Address, sigMessage, sigScript);
+
+                    if (sigVerifies)
+                        sigGood = true;
+                }
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership Script Created.", OwnershipScript = completedOwnershipScript });
+            }
+
+            
+        }
+
+        /// <summary>
+        /// Verify Ownership Script
+        /// </summary>
+        /// <param name="ownershipScript"></param>
+        /// <returns></returns>
+        [HttpGet("VerifyOwnership/{**ownershipScript}")]
+        public async Task<string> VerifyOwnership(string ownershipScript)
+        {
+            try
+            {
+                var osArray = ownershipScript.Split(new string[] { "<>" }, StringSplitOptions.None);
+
+                if (osArray == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly." });
+
+                bool timeExpired = false;
+                var address = osArray[0];
+                var message = osArray[1].Replace("%2F", "/");
+                var sigScript = osArray[2].Replace("%2F", "/");
+                var scUID = osArray[3].Replace("%2F", "/");
+
+                var messageArray = message.Split(".");
+
+                var timeParse = int.TryParse(messageArray[1], out int timeCreated);
+
+                if(!timeParse)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not parse time." });
+
+                var currentTime = TimeUtil.GetTime();
+
+                if(currentTime > timeCreated + 3600)
+                    timeExpired = true;
+
+                if (address == null || message == null || sigScript == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Owner script was not formatted properly.", IsTimeExpired = true });
+
+                var isSigGood = SignatureService.VerifySignature(address, message, sigScript);
+
+                if (isSigGood == false)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership --> NOT VERIFIED <--", IsTimeExpired = true });
+
+                var scState = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                if(scState == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"SC State was not found.", IsTimeExpired = true });
+
+                if(scState.OwnerAddress != address)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"State owner does not match supplied address." });
+
+                return JsonConvert.SerializeObject(new { Success = true, Message = $"Ownership  --> VERIFIED <--", IsTimeExpired = timeExpired });
+            }
+            catch
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Ownership  --> NOT VERIFIED <--", IsTimeExpired = true });
+            }
+            
+        }
+
+        /// <summary>
+        /// DO NOT USE - Creates a transaction that burns the desired NFT
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <returns></returns>
+        [HttpGet("BurnBypass/{scUID}")]
+        public async Task<string> BurnBypass(string scUID)
+        {
+            var output = "";
+
+            var tx = await SmartContractService.BurnSmartContractBypass(scUID);
+
+            var txJson = JsonConvert.SerializeObject(tx);
+            output = txJson;
+               
+
+            return output;
+        }
+
+        /// <summary>
         /// Creates a transaction to evolve an NFT
         /// </summary>
         /// <param name="id"></param>
@@ -887,7 +1305,7 @@ namespace ReserveBlockCore.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <param name="toAddress"></param>
-        /// /// <param name="evolveState"></param>
+        /// <param name="evolveState"></param>
         /// <returns></returns>
         [HttpGet("EvolveSpecific/{id}/{toAddress}/{evolveState}")]
         public async Task<string> EvolveSpecific(string id, string toAddress, int evolveState)
@@ -1021,12 +1439,24 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> GetSmartContractData(string id)
         {
             var output = "";
-
-            var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
-            if (scStateTrei != null)
+            bool exit = false;
+            while (!exit)
             {
-                var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
-                output = JsonConvert.SerializeObject(new { SmartContractMain = scMain, CurrentOwner = scStateTrei.OwnerAddress });
+                if(!Globals.TreisUpdating)
+                {
+                    var scStateTrei = SmartContractStateTrei.GetSmartContractState(id);
+                    if (scStateTrei != null)
+                    {
+                        var scMain = SmartContractMain.GenerateSmartContractInMemory(scStateTrei.ContractData);
+                        output = JsonConvert.SerializeObject(new { SmartContractMain = scMain, CurrentOwner = scStateTrei.OwnerAddress });
+                    }
+                    exit = true;
+                }
+                else
+                {
+                    await Task.Delay(50);
+                }
+                
             }
 
             return output;

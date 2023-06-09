@@ -74,6 +74,13 @@ namespace ReserveBlockCore.Models
         RESERVE //create a reserve TX
     }
 
+    public enum ReserveTransactionType
+    {
+        Register,
+        Callback,
+        Recover
+    }
+
     public enum TransactionStatus
     {
         Pending,

@@ -253,7 +253,7 @@ namespace ReserveBlockCore.Models
 
         #region Update Balances
 
-        public static void UpdateLocalBalance(string address, decimal amount)
+        public static void UpdateLocalBalance(string address, decimal totalAmount, decimal amount)
         {
             var db = GetReserveAccountsDb();
             var accountList = GetReserveAccounts();
@@ -262,7 +262,7 @@ namespace ReserveBlockCore.Models
                 var localAccount = accountList.Where(x => x.Address == address).FirstOrDefault();
                 if(localAccount != null)
                 {
-                    localAccount.AvailableBalance -= amount;
+                    localAccount.AvailableBalance -= totalAmount;
                     localAccount.LockedBalance += amount;
                 }
                 db.UpdateSafe(localAccount);
@@ -1221,8 +1221,8 @@ namespace ReserveBlockCore.Models
 
             var currentTime = TimeUtil.GetTime();
             var message = $"{currentTime}{recoveryAccount.Address}";
-            var sigScript = SignatureService.CreateSignature(recoveryAccount.Address, recoveryAccount.GetPrivKey, recoveryAccount.PublicKey);
-            var verify = SignatureService.VerifySignature(recoveryAccount.Address, recoveryAccount.Address, sigScript);
+            var sigScript = SignatureService.CreateSignature(message, recoveryAccount.GetPrivKey, recoveryAccount.PublicKey);
+            var verify = SignatureService.VerifySignature(recoveryAccount.Address, message, sigScript);
 
             if (!verify)
                 return (null, $"Signature did not verify. Please ensure the recovery account belongs to this reserve address.");

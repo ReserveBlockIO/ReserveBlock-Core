@@ -580,17 +580,14 @@ namespace ReserveBlockCore.DST
                                 }
                                 else
                                 {
-                                    if (Globals.MultiDecShopData.TryGetValue(shopURL, out var decShopData))
+                                    if (!Globals.MultiDecShopData.TryGetValue(shopURL, out var decShopData))
                                     {
-                                        if (decShopData == null)
+                                        decShopData = new DecShopData
                                         {
-                                            decShopData = new DecShopData
-                                            {
-                                                Bids = bids,
-                                            };
+                                            Bids = bids,
+                                        };
 
-                                            Globals.MultiDecShopData[shopURL] = decShopData;
-                                        }
+                                        Globals.MultiDecShopData[shopURL] = decShopData;
                                     }
                                     else
                                     {

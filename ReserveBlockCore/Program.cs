@@ -34,6 +34,7 @@ namespace ReserveBlockCore
             bool signalrLog = false;
             bool runSingleRequest = false;
             bool skipStateSync = false;
+            bool startGUI = false;
 
             var argList = args.ToList();
             //force culture info to US
@@ -111,7 +112,8 @@ namespace ReserveBlockCore
 
             Globals.BuildVer = WalletVersionUtility.GetBuildVersion();
 
-            Globals.CLIVersion = Globals.MajorVer.ToString() + "." + Globals.MinorVer.ToString() + "." + WalletVersionUtility.GetBuildVersion().ToString() + "-beta";
+            Globals.CLIVersion = $"{Globals.MajorVer}.{Globals.MinorVer}.{Globals.RevisionVer}.{WalletVersionUtility.GetBuildVersion()}-beta";
+
             var logCLIVer = Globals.CLIVersion;
 
             if (argList.Count() > 0)
@@ -131,9 +133,9 @@ namespace ReserveBlockCore
                         //Launch testnet
                         Globals.IsTestNet = true;
                     }
-                    if (argC == "stun")
+                    if (argC == "startgui")
                     {
-                        Globals.SelfSTUNServer = true;
+                        startGUI = true;
                     }
                     if (argC == "stunmessages")
                     {
@@ -271,13 +273,14 @@ namespace ReserveBlockCore
             SeedNodeService.SeedNodes();
             SeedNodeService.SeedBench();
             await BadTransaction.PopulateBadTXList();
+            await WalletService.BalanceRectify();
 
             Globals.V3Height = Globals.IsTestNet == true ? 0 : (int)Globals.V3Height;
-            Globals.BlockLock = (int)Globals.V3Height;
 
+            Globals.BlockLock = Globals.IsTestNet ? 0 : Globals.BlockLock;
             //var adjGenAccount = AccountData.GetSingleAccount("xBRxhFC2C4qE21ai3cQuBrkyjXnvP1HqZ8");
             //if(adjGenAccount != null)
-            // await BlockchainData.InitializeChain();
+            //await BlockchainData.InitializeChain();
 
             StartupService.SetValidator();
             //To update this go to project -> right click properties -> go To debug -> general -> open debug launch profiles
@@ -290,9 +293,13 @@ namespace ReserveBlockCore
                     {
                         Startup.APIEnabled = true; //api disabled by default
                     }
-                    if (argC == "hidecli")
+                    if (argC == "logmemory")
                     {
-                        
+                        Globals.LogMemory = true;
+                    }
+                    if (argC == "stun")
+                    {
+                        Globals.SelfSTUNServer = true;
                     }
                     if (argC == "testurl")
                     {
@@ -549,8 +556,24 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatingMonitorService();
             _ = ValidatorService.GetActiveValidators();
             _ = ValidatorService.ValidatorCountRun();
-            _ = ReserveService.Run();
             _ = DSTClient.Run();
+
+            if(startGUI && Globals.IsTestNet)
+            {
+                Process[] pname = Process.GetProcessesByName("RBXWallet");
+
+                if(pname.Length == 0)
+                {
+                    Globals.GUIProcess = new Process();
+                    Globals.GUIProcess.StartInfo = new ProcessStartInfo
+                    {
+                        FileName = @"C:\Program Files (x86)\RBXWallet\RBXWallet.exe",
+                        Verb = "runas",
+                        WorkingDirectory = @"C:\Program Files (x86)\RBXWallet\"
+                    };
+                    Globals.GUIProcess.Start();
+                }
+            }
 
             var decShop = DecShop.GetMyDecShopInfo();
             if(decShop != null)

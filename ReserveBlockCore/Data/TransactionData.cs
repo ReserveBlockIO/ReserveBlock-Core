@@ -725,6 +725,53 @@ namespace ReserveBlockCore.Data
             return result;
         }
 
+        public static async Task<Transaction?> GetNetworkTXByHash(string txHash, int startAtBlock = 0, bool startAtBeginning = false, bool forcedRun = false)
+        {
+            var output = "";
+            var coreCount = Environment.ProcessorCount;
+            Transaction? txResult = null;
+            if (coreCount >= 4 || Globals.RunUnsafeCode || forcedRun)
+            {
+                if (!string.IsNullOrEmpty(txHash))
+                {
+                    try
+                    {
+                        txHash = txHash.Replace(" ", "");//removes any whitespace before or after in case left in.
+                        var blocks = BlockchainData.GetBlocks();
+                        var height = Convert.ToInt32(Globals.LastBlock.Height) - startAtBlock;
+                        bool resultFound = false;
+
+                        var integerList = startAtBeginning ? Enumerable.Range(startAtBlock, height + 1) : Enumerable.Range(startAtBlock, height + 1).Reverse();
+                        Parallel.ForEach(integerList, new ParallelOptions { MaxDegreeOfParallelism = coreCount <= 4 ? 2 : 4 }, (blockHeight, loopState) =>
+                        {
+                            var block = blocks.Query().Where(x => x.Height == blockHeight).FirstOrDefault();
+                            if (block != null)
+                            {
+                                var txs = block.Transactions.ToList();
+                                var result = txs.Where(x => x.Hash == txHash).FirstOrDefault();
+                                if (result != null)
+                                {
+                                    resultFound = true;
+                                    txResult = result;
+                                    loopState.Break();
+                                }
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        return txResult;
+                    }
+                }
+            }
+            else
+            {
+                return txResult;
+            }
+
+            return txResult;
+        }
+
         public static LiteDB.ILiteCollection<Transaction> GetAll()
         {
             var collection = DbContext.DB_Wallet.GetCollection<Transaction>(DbContext.RSRV_TRANSACTIONS);

@@ -549,7 +549,7 @@ namespace ReserveBlockCore.Controllers
                                 if (aqResult)
                                 {
                                     //DO TRANSFER HERE
-                                    _ = Task.Run(() => BeaconUtility.SendAssets(sc.SmartContractUID, assetList, connectedBeacon));
+                                    _ = Task.Run(() => BeaconUtility.SendAssets_New(sc.SmartContractUID, assetList, connectedBeacon));
 
                                     var success = JsonConvert.SerializeObject(new { Success = true, Message = "NFT Transfer has been started.", Locator = connectedBeacon.Beacons.BeaconLocator });
                                     return success;

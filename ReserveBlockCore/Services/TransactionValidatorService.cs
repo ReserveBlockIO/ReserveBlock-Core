@@ -8,13 +8,14 @@ using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System;
+using System.Net;
 using System.Security.Principal;
 
 namespace ReserveBlockCore.Services
 {
     public class TransactionValidatorService
     {
-        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false)
+        public static async Task<(bool, string)> VerifyTX(Transaction txRequest, bool blockDownloads = false, bool blockVerify = false)
         {
             bool txResult = false;
             bool runReserveCheck = true;
@@ -56,12 +57,15 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            //REMOVE AFTER ENABLED!
-            if (txRequest.ToAddress.StartsWith("xRBX"))
-                return (txResult, "Reserve accounts are not unlocked and you may not send transactions to them yet.");
+            if(txRequest.ToAddress.StartsWith("xRBX") && txRequest.FromAddress.StartsWith("xRBX"))
+                return (txResult, "Reserve accounts cannot send to another Reserve Account.");
 
-            if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
-            
+            //REMOVE AFTER ENABLED!
+            //if (txRequest.ToAddress.StartsWith("xRBX"))
+            //    return (txResult, "Reserve accounts are not unlocked and you may not send transactions to them yet.");
+
+            //if (txRequest.ToAddress != "Adnr_Base" && txRequest.ToAddress != "DecShop_Base" && txRequest.ToAddress != "Topic_Base" && txRequest.ToAddress != "Vote_Base")
+
             if (txRequest.ToAddress != "Adnr_Base" && 
                 txRequest.ToAddress != "DecShop_Base" && 
                 txRequest.ToAddress != "Topic_Base" && 
@@ -345,9 +349,6 @@ namespace ReserveBlockCore.Services
 
                 if(txRequest.TransactionType == TransactionType.NFT_SALE)
                 {
-                    if (Globals.LastBlock.Height < Globals.FeatureLock && !Globals.IsTestNet)
-                        return (txResult, "Feature not activated yet.");
-
                     var txData = txRequest.Data;
                     try
                     {
@@ -356,15 +357,99 @@ namespace ReserveBlockCore.Services
                         if (function == null)
                             return (txResult, "SC Function cannot be null.");
 
+                        if (txRequest.ToAddress.StartsWith("xRBX") || txRequest.FromAddress.StartsWith("xRBX"))
+                            return (txResult, "You cannot perform a sale with a Reserve Account.");
+
                         var mempool = TransactionData.GetPool();
 
-                        if (function == "Sale_Start()")
+                        if(function == "Sale_Cancel()")
                         {
+                            //REMOVE AFTER LOCK!
+                            if (Globals.LastBlock.Height < Globals.BlockLock)
+                                return (txResult, $"This feature unlocks at {Globals.LastBlock}");
+
+                            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            var keySign = jobj["KeySign"]?.ToObject<string?>();
+
+                            if(keySign == null)
+                                return (txResult, "Keysign cannot be null.");
+
+                            if (scUID == null)
+                                return (txResult, "SCUID cannot be null.");
+
+                            var mempoolList = mempool.Query().Where(x =>
+                            x.FromAddress == txRequest.FromAddress &&
+                            x.Hash != txRequest.Hash &&
+                            (x.TransactionType == TransactionType.NFT_SALE ||
+                            x.TransactionType == TransactionType.NFT_TX ||
+                            x.TransactionType == TransactionType.NFT_BURN)).ToList();
+
+                            if (mempoolList?.Count > 0)
+                            {
+                                var reject = false;
+
+                                foreach (var tx in mempoolList)
+                                {
+                                    var txObjData = JObject.Parse(txData);
+                                    var mTXSCUID = txObjData["ContractUID"]?.ToObject<string?>();
+                                    if (mTXSCUID == scUID)
+                                    {
+                                        reject = true;
+                                        break;
+                                    }
+                                }
+
+                                if (reject)
+                                    return (txResult, "There is already a TX for this smart contract here.");
+                            }
+
+                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                            if(scStateTreiRec == null)
+                                return (txResult, "SC does not exist.");
+
+                            if (txRequest.FromAddress != scStateTreiRec.OwnerAddress)
+                                return (txResult, "You are attempting to transfer a Smart contract you don't own.");
+
+                            if (!scStateTreiRec.IsLocked)
+                                return (txResult, "You are attempting to Cancel a Smart contract sale that is not locked.");
+
+                            if (scStateTreiRec.NextOwner == null)
+                                return (txResult, "You are attempting to Cancel a Smart contract sale that has no next owner assigned to it.");
+
+                            if (scStateTreiRec.PurchaseKeys != null)
+                            {
+                                if (scStateTreiRec.PurchaseKeys.Contains(keySign))
+                                    return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
+                            }
+                        }
+
+                        if (function == "Sale_Start()" || function == "M_Sale_Start()")
+                        {
+                            if(function == "M_Sale_Start()")
+                            {
+                                //REMOVE AFTER LOCK!
+                                if (Globals.LastBlock.Height < Globals.BlockLock)
+                                    return (txResult, $"This feature unlocks at {Globals.LastBlock}");
+                            }
+
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
                             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
                             var amountSoldFor = jobj["SoldFor"]?.ToObject<decimal?>();
                             var bidSignature = jobj["BidSignature"]?.ToObject<string?>();
+
+                            if (keySign == null)
+                                return (txResult, "Keysign cannot be null.");
+
+                            if (scUID == null)
+                                return (txResult, "SCUID cannot be null.");
+
+                            if (toAddress == null)
+                                return (txResult, "To Address cannot be null.");
+
+                            if (amountSoldFor == null)
+                                return (txResult, "Amount Sold For cannot be null.");
 
                             var mempoolList = mempool.Query().Where(x => 
                             x.FromAddress == txRequest.FromAddress && 
@@ -392,6 +477,9 @@ namespace ReserveBlockCore.Services
                                     return (txResult, "There is already a TX for this smart contract here.");
                             }
 
+                            if (function == "M_Sale_Start()")
+                                bidSignature = "manual";
+
                             if (scUID != null && toAddress != null && keySign != null && amountSoldFor != null && bidSignature != null)
                             {
                                 var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -411,10 +499,11 @@ namespace ReserveBlockCore.Services
                                         if(scStateTreiRec.PurchaseKeys.Contains(keySign))
                                             return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
                                     }
-
                                     
-
                                     var signatureVerify = Bid.VerifyBidSignature(keySign, amountSoldFor.Value, toAddress, bidSignature);
+
+                                    if (bidSignature == "manual")
+                                        signatureVerify = true;
 
                                     if(!signatureVerify)
                                         NFTLogUtility.Log($"Sig Bad. Key: {keySign} | Amount Sold For: {amountSoldFor.Value} | ToAddress {toAddress} | Sig Script: {bidSignature}", "TransactionValidatorService.VerifyTX");
@@ -429,11 +518,11 @@ namespace ReserveBlockCore.Services
                             }
                             else
                             {
-                                return (txResult, "TX Data has a null value in ContractUID, NextOwner, and/or KeySign");
+                                return (txResult, "TX Data has a null value in ContractUID, NextOwner, Bid Signature, and/or KeySign");
                             }
                         }
 
-                        if (function == "Sale_Complete()")
+                        if (function == "Sale_Complete()" || function == "M_Sale_Complete()")
                         {
                             //Complete sale logic.
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
@@ -520,6 +609,9 @@ namespace ReserveBlockCore.Services
                                                 var stRoyaltyPayTo = royaltyDetails.RoyaltyPayToAddress;
                                                 if (royaltyAmount != stRoyaltyAmount)
                                                     return (txResult, "Royalty Amounts do not match up.");
+
+                                                if (royaltyAmount >= 1.0M)
+                                                    return (txResult, "Royalty Amount may not exceed 99.99%");
 
                                                 if (stRoyaltyPayTo != royaltyPayTo)
                                                     return (txResult, "Royalty Pay to does not match up.");
@@ -948,9 +1040,6 @@ namespace ReserveBlockCore.Services
 
                 if (txRequest.TransactionType == TransactionType.DSTR)
                 {
-                    if(Globals.LastBlock.Height < Globals.FeatureLock && !Globals.IsTestNet)
-                        return (txResult, "Feature not activated yet.");
-
                     var badDSTTx = Globals.BadDSTList.Exists(x => x == txRequest.Hash);
                     var txData = txRequest.Data;
                     if (txData != null && !badDSTTx)
@@ -969,8 +1058,18 @@ namespace ReserveBlockCore.Services
                                 var function = (string?)jobj["Function"];
                                 if (function == "DecShopDelete()")
                                 {
-                                    if (txRequest.Amount < Globals.DecShopRequiredRBX)
-                                        return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to delete a Auction House.");
+                                    //REMOVE AFTER LOCK!
+                                    if (Globals.LastBlock.Height < Globals.BlockLock)
+                                    {
+                                        if (txRequest.Amount < Globals.DecShopRequiredRBX)
+                                            return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to delete a Auction House.");
+                                    }
+                                    else
+                                    {
+                                        if (txRequest.Amount < Globals.DecShopDeleteRequiredRBX)
+                                            return (txResult, $"There must be at least {Globals.DecShopDeleteRequiredRBX} RBX to delete a Auction House.");
+                                    }
+                                    
 
                                     string dsUID = jobj["UniqueId"].ToObject<string?>();
                                     if (!string.IsNullOrEmpty(dsUID))
@@ -1062,12 +1161,9 @@ namespace ReserveBlockCore.Services
                 }
                 if(txRequest.TransactionType == TransactionType.RESERVE)
                 {
-                    //Feature not activated yet.
-                    if (Globals.Lock)
-                        return (txResult, "Feature not activated yet.");
-
-                    //Feature not activated yet.
-                    return (txResult, "Feature not activated yet.");
+                    //REMOVE AFTER LOCK!
+                    if (Globals.LastBlock.Height < Globals.BlockLock)
+                        return (txResult, $"This feature unlocks at {Globals.LastBlock}");
 
                     var txData = txRequest.Data;
                     if (txData != null)
@@ -1090,8 +1186,8 @@ namespace ReserveBlockCore.Services
                                     {
                                         runReserveCheck = false;
 
-                                        if (txRequest.Amount < 4M)
-                                            return (txResult, "There must be at least 4 RBX to register a Reserve Account on network.");
+                                        if (txRequest.Amount < Globals.RSRVAccountRegisterRBX)
+                                            return (txResult, $"There must be at least {Globals.RSRVAccountRegisterRBX} RBX to register a Reserve Account on network.");
 
                                         string reserveAddress = txRequest.FromAddress;
                                         string recoveryAddress = jobj["RecoveryAddress"].ToObject<string>();
@@ -1124,11 +1220,51 @@ namespace ReserveBlockCore.Services
                                         if(!string.IsNullOrEmpty(hash))
                                         {
                                             var currentTime = TimeUtil.GetTime();
+
                                             var rTx = ReserveTransactions.GetTransactions(hash);
                                             if(rTx == null)
+                                            {
+                                                if(!blockVerify)
+                                                    return (txResult, "Could not find a reserve transaction with that hash.");
+
+                                                var txSearchResult = await TransactionData.GetNetworkTXByHash(hash, 0, false, true);
+
+                                                if(txSearchResult != null)
+                                                {
+                                                    if(txSearchResult.UnlockTime == null)
+                                                        return (txResult, "This TX has no unlock time.");
+
+                                                    if (txSearchResult.UnlockTime < txRequest.Timestamp)
+                                                        return (txResult, "This TX has already passed and can no longer be called back.");
+
+                                                    rTx = new ReserveTransactions { 
+                                                        FromAddress = txSearchResult.FromAddress, 
+                                                        ConfirmTimestamp = (long)txSearchResult.UnlockTime,
+                                                        Hash = hash,
+                                                        ToAddress = txSearchResult.ToAddress,
+                                                        Amount = txSearchResult.Amount,
+                                                        Data = txSearchResult.Data,
+                                                        Fee = txSearchResult.Fee,
+                                                        Height = txSearchResult.Height,
+                                                        Nonce = txSearchResult.Nonce,
+                                                        ReserveTransactionStatus = ReserveTransactionStatus.Pending,
+                                                        Signature = txSearchResult.Signature,
+                                                        Timestamp = txSearchResult.Timestamp,
+                                                        TransactionType = txSearchResult.TransactionType,
+                                                        UnlockTime = txSearchResult.UnlockTime
+                                                    };
+
+                                                    ReserveTransactions.SaveReserveTx(rTx);
+                                                }
+                                            }
+
+                                            if (rTx == null)
                                                 return (txResult, "Could not find a reserve transaction with that hash.");
 
-                                            if (rTx.Transaction.FromAddress != txRequest.FromAddress)
+                                            if(rTx.ReserveTransactionStatus != ReserveTransactionStatus.Pending)
+                                                return (txResult, $"This TX already has a status of: {rTx.ReserveTransactionStatus}");
+
+                                            if (rTx.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
 
                                             if (Globals.BlocksDownloadSlim.CurrentCount != 0)
@@ -1150,8 +1286,11 @@ namespace ReserveBlockCore.Services
                                         {
                                             var currentTime = TimeUtil.GetTime(-600);
 
-                                            if(currentTime > sigTime)
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            {
+                                                if (currentTime > sigTime)
                                                 return (txResult, "Recover request has expired.");
+                                            }
 
                                             var stateRec = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
 
@@ -1183,6 +1322,10 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.FromAddress.StartsWith("xRBX") && runReserveCheck)
             {
+                //REMOVE AFTER LOCK!
+                if (Globals.LastBlock.Height < Globals.BlockLock)
+                    return (txResult, $"This feature unlocks at {Globals.LastBlock}");
+
                 if (txRequest.TransactionType != TransactionType.TX && txRequest.TransactionType != TransactionType.RESERVE && txRequest.TransactionType != TransactionType.NFT_TX)
                     return (txResult, "Invalid Transaction Type was selected.");
 
