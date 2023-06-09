@@ -102,7 +102,7 @@ namespace ReserveBlockCore
         public static bool ValidatorBalanceGood = true;
         public static List<string> ValidatorErrorMessages = new List<string>();
         public static long ValidatorLastBlockHeight = 0;
-        public static string GitHubVersion = $"beta{MajorVer}.{MinorVer}";
+        public static string GitHubVersion = $"beta{MajorVer}.{MinorVer}.{RevisionVer}";
         public static string GitHubApiURL = "https://api.github.com/";
         public static string GitHubRBXRepoURL = "repos/ReserveBlockIO/ReserveBlock-Core/releases/latest";
         public static string GitHubLatestReleaseVersion = "";
