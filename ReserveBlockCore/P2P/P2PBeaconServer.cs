@@ -18,26 +18,42 @@ namespace ReserveBlockCore.P2P
             bool pendingSends = false;
             bool pendingReceives = false;
 
+            NFTLogUtility.Log("Entered Beacon Connection", "CustomLogging");
+            await Task.Delay(10);
+
             var peerIP = GetIP(Context);
+            NFTLogUtility.Log($"IP Found: {peerIP}", "CustomLogging");
+            await Task.Delay(10);
             if (Globals.BeaconPeerDict.TryGetValue(peerIP, out var context) && context.ConnectionId != Context.ConnectionId)
                 context.Abort();
 
+            NFTLogUtility.Log($"Beyond Context", "CustomLogging");
+            await Task.Delay(10);
             Globals.BeaconPeerDict[peerIP] = Context;
 
             var httpContext = Context.GetHttpContext();
             if (httpContext != null)
             {
+                NFTLogUtility.Log($"HttpContext was good.", "CustomLogging");
+                await Task.Delay(10);
                 var beaconRef = httpContext.Request.Headers["beaconRef"].ToString();
                 var walletVersion = httpContext.Request.Headers["walver"].ToString();
                 var uplReq = httpContext.Request.Headers["uplReq"].ToString();
                 var dwnlReq = httpContext.Request.Headers["dwnlReq"].ToString();
 
+                NFTLogUtility.Log($"beaconRef: {beaconRef} | walletVersion: {walletVersion} | uplReq: {uplReq} | dwnReq: {dwnlReq}", "CustomLogging");
+                await Task.Delay(10);
+
                 var walletVersionVerify = WalletVersionUtility.Verify(walletVersion);
 
                 var beaconPool = Globals.BeaconPool.Values.ToList();
 
+                NFTLogUtility.Log($"Wallet Version Verift: {walletVersionVerify}", "CustomLogging");
+                await Task.Delay(10);
+
                 if (!string.IsNullOrWhiteSpace(beaconRef) && walletVersionVerify)
-                { 
+                {
+                    NFTLogUtility.Log($"Wal Version Good and Beacon Ref Good.", "CustomLogging");
                     var beaconData = BeaconData.GetBeaconData();
                     var beacon = BeaconData.GetBeacon();
                     
@@ -102,13 +118,16 @@ namespace ReserveBlockCore.P2P
                     }
 
                     if(pendingSends == true || pendingReceives == true)
-                    {                        
+                    {
+                        NFTLogUtility.Log($"Pending Sends: {pendingSends} | Pending Received: {pendingReceives}", "CustomLogging");
                         var conExist = beaconPool.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
                         if (conExist != null)
                         {
+                            NFTLogUtility.Log($"Con Exist", "CustomLogging");
                             var beaconCon = Globals.BeaconPool.Values.Where(x => x.Reference == beaconRef || x.IpAddress == peerIP).FirstOrDefault();
                             if (beaconCon != null)
                             {
+                                NFTLogUtility.Log($"BeaconCon was not null", "CustomLogging");
                                 beaconCon.WalletVersion = walletVersion;
                                 beaconCon.Reference = beaconRef;
                                 beaconCon.ConnectDate = DateTime.Now;
@@ -118,6 +137,7 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
+                            NFTLogUtility.Log($"Con did not exist, but thats ok.", "CustomLogging");
                             BeaconPool beaconConnection = new BeaconPool
                             {
                                 WalletVersion = walletVersion,
@@ -268,23 +288,29 @@ namespace ReserveBlockCore.P2P
             //{
             bool result = false;
             var peerIP = GetIP(Context);
+            NFTLogUtility.Log($"Receive Upload IP : {peerIP}", "CustomLogging-2-ReceiveUploadRequest");
             try
             {
+                NFTLogUtility.Log($"Wal Version Good and Beacon Ref Good.", "CustomLogging-2-ReceiveUploadRequest");
                 var beaconAuth = await BeaconService.BeaconAuthorization(bsd.CurrentOwnerAddress);
                 if (!beaconAuth.Item1)
                     return result;
 
+                NFTLogUtility.Log($"Beacon Auth Good.", "CustomLogging-2-ReceiveUploadRequest");
                 if (bsd != null)
                 {
+                    NFTLogUtility.Log($"BSD was not null", "CustomLogging-2-ReceiveUploadRequest");
                     var scState = SmartContractStateTrei.GetSmartContractState(bsd.SmartContractUID);
                     if (scState == null)
                     {
+                        NFTLogUtility.Log($"SC State was null", "CustomLogging-2-ReceiveUploadRequest");
                         return result;
                     }
 
                     var sigCheck = SignatureService.VerifySignature(scState.OwnerAddress, bsd.SmartContractUID, bsd.Signature);
                     if (sigCheck == false)
                     {
+                        NFTLogUtility.Log($"Bad Signature. Owner | {scState.OwnerAddress} | SCUID: {bsd.SmartContractUID} | Signature: {bsd.Signature}", "CustomLogging-2-ReceiveUploadRequest");
                         return result;
                     }
 
@@ -293,6 +319,7 @@ namespace ReserveBlockCore.P2P
                     {
                         if (beaconData == null)
                         {
+                            NFTLogUtility.Log($"Beacon data was  not null", "CustomLogging-2-ReceiveUploadRequest");
                             var bd = new BeaconData
                             {
                                 CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
@@ -313,6 +340,7 @@ namespace ReserveBlockCore.P2P
                         }
                         else
                         {
+                            NFTLogUtility.Log($"Beacon data was null", "CustomLogging-2-ReceiveUploadRequest");
                             var bdCheck = beaconData.Where(x => x.SmartContractUID == bsd.SmartContractUID && 
                             x.AssetName == fileName && 
                             x.IPAdress == peerIP && 
@@ -321,6 +349,7 @@ namespace ReserveBlockCore.P2P
 
                             if (bdCheck == null)
                             {
+                                NFTLogUtility.Log($"BDcheck was not null", "CustomLogging-2-ReceiveUploadRequest");
                                 var bd = new BeaconData
                                 {
                                     CurrentAssetOwnerAddress = bsd.CurrentOwnerAddress,
@@ -340,6 +369,7 @@ namespace ReserveBlockCore.P2P
                             }
                             else
                             {
+                                NFTLogUtility.Log($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "CustomLogging-2-ReceiveUploadRequest");
                                 ErrorLogUtility.LogError($"Beacon request failed to insert for: {bsd.SmartContractUID}. From: {bsd.CurrentOwnerAddress}. To: {bsd.NextAssetOwnerAddress}. PeerIP: {peerIP}", "P2PBeaconService.ReceiveUploadRequest()");
                                 return false;
                             }
@@ -349,10 +379,12 @@ namespace ReserveBlockCore.P2P
             }
             catch (Exception ex)
             {
+                NFTLogUtility.Log($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "CustomLogging-2-ReceiveUploadRequest");
                 ErrorLogUtility.LogError($"Error Receive Upload Request. Error Msg: {ex.ToString()}", "P2PServer.ReceiveUploadRequest()");
                 return false;
             }
 
+            NFTLogUtility.Log($"Result : {result}", "CustomLogging-2-ReceiveUploadRequest");
             return result;
             //});
         }
