@@ -80,6 +80,7 @@ namespace ReserveBlockCore
         public static long V1ValHeight = 832000;
         public static long TXHeightRule1 = 820457; //March 31th, 2023 at 03:44 UTC
         public static long TXHeightRule2 = 847847; //around April 7, 2023 at 18:30 UTC
+        public static long TXHeightRule3 = 1079488; //around June 13th, 2023 at 19:30 UTC
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;

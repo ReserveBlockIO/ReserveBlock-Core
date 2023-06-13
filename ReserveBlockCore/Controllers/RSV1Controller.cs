@@ -186,10 +186,6 @@ namespace ReserveBlockCore.Controllers
         public async Task<string> NewReserveAddress([FromBody] object jsonData)
         {
             var output = "";
-            //REMOVE AFTER LOCK!
-            if (Globals.LastBlock.Height < Globals.BlockLock)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Reserve Account feature is not unlocked. Unlocks at {Globals.BlockLock}" }, Formatting.Indented);
-
             try
             {
                 if(jsonData != null)

@@ -364,10 +364,6 @@ namespace ReserveBlockCore.Services
 
                         if(function == "Sale_Cancel()")
                         {
-                            //REMOVE AFTER LOCK!
-                            if (Globals.LastBlock.Height < Globals.BlockLock)
-                                return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
 
@@ -426,13 +422,6 @@ namespace ReserveBlockCore.Services
 
                         if (function == "Sale_Start()" || function == "M_Sale_Start()")
                         {
-                            if(function == "M_Sale_Start()")
-                            {
-                                //REMOVE AFTER LOCK!
-                                if (Globals.LastBlock.Height < Globals.BlockLock)
-                                    return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-                            }
-
                             var scUID = jobj["ContractUID"]?.ToObject<string?>();
                             var toAddress = jobj["NextOwner"]?.ToObject<string?>();
                             var keySign = jobj["KeySign"]?.ToObject<string?>();
@@ -1058,8 +1047,7 @@ namespace ReserveBlockCore.Services
                                 var function = (string?)jobj["Function"];
                                 if (function == "DecShopDelete()")
                                 {
-                                    //REMOVE AFTER LOCK!
-                                    if (Globals.LastBlock.Height < Globals.BlockLock)
+                                    if (Globals.LastBlock.Height < Globals.TXHeightRule3)
                                     {
                                         if (txRequest.Amount < Globals.DecShopRequiredRBX)
                                             return (txResult, $"There must be at least {Globals.DecShopRequiredRBX} RBX to delete a Auction House.");
@@ -1070,7 +1058,6 @@ namespace ReserveBlockCore.Services
                                             return (txResult, $"There must be at least {Globals.DecShopDeleteRequiredRBX} RBX to delete a Auction House.");
                                     }
                                     
-
                                     string dsUID = jobj["UniqueId"].ToObject<string?>();
                                     if (!string.IsNullOrEmpty(dsUID))
                                     {
@@ -1161,10 +1148,6 @@ namespace ReserveBlockCore.Services
                 }
                 if(txRequest.TransactionType == TransactionType.RESERVE)
                 {
-                    //REMOVE AFTER LOCK!
-                    if (Globals.LastBlock.Height < Globals.BlockLock)
-                        return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-
                     var txData = txRequest.Data;
                     if (txData != null)
                     {
@@ -1322,10 +1305,6 @@ namespace ReserveBlockCore.Services
 
             if (txRequest.FromAddress.StartsWith("xRBX") && runReserveCheck)
             {
-                //REMOVE AFTER LOCK!
-                if (Globals.LastBlock.Height < Globals.BlockLock)
-                    return (txResult, $"This feature unlocks at {Globals.LastBlock}");
-
                 if (txRequest.TransactionType != TransactionType.TX && txRequest.TransactionType != TransactionType.RESERVE && txRequest.TransactionType != TransactionType.NFT_TX)
                     return (txResult, "Invalid Transaction Type was selected.");
 
