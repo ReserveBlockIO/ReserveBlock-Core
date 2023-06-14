@@ -526,7 +526,7 @@ namespace ReserveBlockCore.Services
             var myAccount = accounts.FindOne(x => x.Address == address);
             if (myAccount != null && myAccount.IsValidating != true)
             {
-                var valResult = await ValidatorService.StartValidating(myAccount, uname);
+                //var valResult = await ValidatorService.StartValidating(myAccount, uname);
                 Globals.ValidatorAddress = myAccount.Address;
             }
         }
