@@ -357,7 +357,11 @@ namespace ReserveBlockCore
                 });
             }
 
-            
+            if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
+            {
+                StartupService.SetConfigValidator();
+            }
+
             StartupService.SetAdjudicatorAddresses();
             Signer.UpdateSigningAddresses();
 
@@ -602,11 +606,7 @@ namespace ReserveBlockCore
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 _ = LinuxUtilities.AdjAutoRestart();
 
-            if (!string.IsNullOrWhiteSpace(Globals.ConfigValidator))
-            {
-                StartupService.SetConfigValidator();
-            }
-
+            
             await Task.Delay(2000);
 
             //_ = DSTServer.Run();
