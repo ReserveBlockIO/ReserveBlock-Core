@@ -112,13 +112,6 @@ namespace ReserveBlockCore.Services
             string output = "";
             Validators validator = new Validators();
 
-            if (Globals.StopAllTimers == true || Globals.BlocksDownloadSlim.CurrentCount == 0)
-            {
-                output = "Wallet is still starting. Please wait";
-                return output;
-            }
-
-
             if (account == null) { throw new ArgumentNullException(nameof(account)); }
             else
             {
@@ -129,9 +122,9 @@ namespace ReserveBlockCore.Services
                     output = "Account not found in the State Trei. Please send funds to desired account and wait for at least 1 confirm.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance < ValidatorService.ValidatorRequiredAmount())
+                if (sTreiAcct != null && sTreiAcct.Balance < ValidatorRequiredAmount())
                 {
-                    output = $"Account Found, but does not meet the minimum of {ValidatorService.ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
+                    output = $"Account Found, but does not meet the minimum of {ValidatorRequiredAmount()} RBX. Please send funds to get account balance to {Globals.ValidatorRequiredRBX} RBX.";
                     return output;
                 }
                 if (!string.IsNullOrWhiteSpace(uName) && UniqueNameCheck(uName) == false)
@@ -139,7 +132,7 @@ namespace ReserveBlockCore.Services
                     output = "Unique name has already been taken. Please choose another.";
                     return output;
                 }
-                if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorService.ValidatorRequiredAmount())
+                if (sTreiAcct != null && sTreiAcct.Balance >= ValidatorRequiredAmount())
                 {
                     //validate account with signature check
                     var signature = SignatureService.CreateSignature(account.Address, AccountData.GetPrivateKey(account), account.PublicKey);
