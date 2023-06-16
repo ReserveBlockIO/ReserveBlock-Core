@@ -1,4 +1,7 @@
-﻿using System;
+﻿using LiteDB;
+using ReserveBlockCore.Data;
+using ReserveBlockCore.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,21 +11,47 @@ namespace ReserveBlockCore.Models
 {
     public class Blockchain
     {
-        public string ChainHash { get; set; }
-        public List<Transaction> PendingTransactions { get; set; }
-        public decimal MasterNodeReward { get; set; } = 15M;
-        public decimal DataNodeReward { get; set; } = 25M;
-        public virtual ICollection<Block> Blocks { get; set; }
+        [BsonId]
+        public long Id { get; set; }
+        public string Hash { get; set; }
+        public long Height { get; set; }
+        public long Size { get; set; }
+        public long CumulativeSize { get; set; }
 
-        public int GetLatestBlock
+        public static LiteDB.ILiteCollection<Blockchain>? GetBlockchain()
         {
-            get { return Blocks.Count() - 1; } 
+            try
+            {
+                var blockchainDb = DbContext.DB_Blockchain.GetCollection<Blockchain>(DbContext.RSRV_BLOCKCHAIN);
+                return blockchainDb;
+            }
+            catch (Exception ex)
+            {
+                ErrorLogUtility.LogError(ex.ToString(), "Blockchain.GetBlockchain()");
+                return null;
+            }
         }
 
-        public int GetNextBlockHeight
+        public static async Task AddBlock(Block block)
         {
-            get { return Blocks.Count(); }
-        }
+            var blockchain = GetBlockchain();
+            if (blockchain != null)
+            {
+                var blockExist = blockchain.Query().Where(x => x.Height == block.Height).FirstOrDefault();
+                if (blockExist == null)
+                {
+                    Blockchain rec = new Blockchain {
+                        Hash = block.Hash,
+                        Height = block.Height,
+                        Size = block.Size,
+                        CumulativeSize = Globals.Blockchain.CumulativeSize + block.Size
+                    };
 
+                    blockchain.InsertSafe(rec); //insert latest
+
+                    Globals.Blockchain = rec; //update global record
+                }
+            }
+        }
     }
 }

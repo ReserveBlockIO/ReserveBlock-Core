@@ -60,7 +60,7 @@ namespace ReserveBlockCore
             Globals.HttpClientFactory = httpClientBuilder.Services.GetRequiredService<HttpService>().HttpClientFactory();
 
             //Forced Testnet
-            Globals.IsTestNet = true;
+            //Globals.IsTestNet = true;
 
             //Perform network time sync
             _ = NetworkTimeService.Run();
@@ -562,7 +562,7 @@ namespace ReserveBlockCore
             _ = ValidatorService.ValidatorCountRun();
             _ = DSTClient.Run();
 
-            if(startGUI && Globals.IsTestNet)
+            if(startGUI)
             {
                 Process[] pname = Process.GetProcessesByName("RBXWallet");
 
