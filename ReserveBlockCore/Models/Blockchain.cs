@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System;
@@ -108,7 +109,7 @@ namespace ReserveBlockCore.Models
             return blockList;
         }
 
-        public static async void PerformHeaderCreation(long startHeight = 0)
+        public static async Task PerformHeaderCreation(long startHeight = 0)
         {
             var blockchain = GetBlockchain();
             var blocksDb = BlockchainData.GetBlocks();
@@ -117,6 +118,7 @@ namespace ReserveBlockCore.Models
             var increment = (double)1 / ((double)lastBlock - (double)startHeight) * (double)100;
             var currentRunHeight = startHeight;
             bool processBlocks = true;
+            List<Blockchain> blockHeaders = new List<Blockchain>();
             AnsiConsole.MarkupLine("[green]|*****************************************************************************|[/]");
             AnsiConsole.MarkupLine("[red]| Syncing Blockchain Headers... This process may take a moment.               |[/]");
             AnsiConsole.MarkupLine("[yellow]| This process will only need to run once for the entire chain.               |[/]");
@@ -136,14 +138,14 @@ namespace ReserveBlockCore.Models
                     var task1 = ctx.AddTask("[purple]Running Block Header Sync[/]");
                     while (!ctx.IsFinished)
                     {
-                        while(processBlocks)
+                        while (processBlocks)
                         {
                             var heightSpan = currentRunHeight + interval;
 
                             var blocks = blocksDb.Query()
                             .Where(x => x.Height >= currentRunHeight && x.Height < heightSpan)
                             .Limit((int)heightSpan - (int)currentRunHeight)
-                            .ToEnumerable();
+                            .ToList();
 
                             foreach (Block block in blocks)
                             {
@@ -159,8 +161,9 @@ namespace ReserveBlockCore.Models
                                         CumulativeSize = block.Height == 0 ? block.Size : block.Size + Globals.Blockchain.CumulativeSize,
                                     };
 
-                                    blockchain.InsertSafe(bHeader);
+                                    //blockchain.InsertSafe(bHeader);
                                     Globals.Blockchain = bHeader; //update global record
+                                    blockHeaders.Add(bHeader);
                                 }
 
                                 if (block.Height == lastBlock)
@@ -174,13 +177,17 @@ namespace ReserveBlockCore.Models
                                 }
                             }
 
-                            if(processBlocks)
+                            if (processBlocks)
                                 currentRunHeight += interval;
-                            
-                                
+
+                            blocks.Clear();
+                            blocks = new List<Block>();
+                           
                         }
 
+                        blockchain.InsertBulkSafe(blockHeaders);
                         task1.Increment(100);
+
                     }
                 });
         }

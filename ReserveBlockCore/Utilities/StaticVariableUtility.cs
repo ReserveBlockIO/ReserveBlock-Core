@@ -118,6 +118,7 @@ namespace ReserveBlockCore.Utilities
 
             var startMemory = $"Start Memory: {Globals.StartMemory}";
             var currentMemory = $"Current Memory: {Globals.CurrentMemory}";
+            var systemMemory = $"System Memory: {Globals.SystemMemory}";
 
             var stunServerText = $"STUN Server Start: {Globals.SelfSTUNServer}";
             var stunServerPortText = $"STUN Server Port: {Globals.SelfSTUNPort}";
@@ -135,6 +136,8 @@ namespace ReserveBlockCore.Utilities
             strBld.AppendLine(githubVersionTag);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(validatorAddress);
+            strBld.AppendLine("---------------------------------------------------------------------");
+            strBld.AppendLine(systemMemory);
             strBld.AppendLine("---------------------------------------------------------------------");
             strBld.AppendLine(startMemory);
             strBld.AppendLine("---------------------------------------------------------------------");

@@ -315,7 +315,7 @@ namespace ReserveBlockCore.Services
             }
         }
 
-        internal static void SetLastBlockchainPoint()
+        internal static async void SetLastBlockchainPoint()
         {
             if(Globals.LastBlock.Height != -1)
             {
@@ -325,12 +325,12 @@ namespace ReserveBlockCore.Services
                     Globals.Blockchain = header;
                     if(header.Height != Globals.LastBlock.Height)
                     {
-                        Blockchain.PerformHeaderCreation(header.Height);
+                        await Blockchain.PerformHeaderCreation(header.Height);
                     }
                 }
                 else
                 {
-                    Blockchain.PerformHeaderCreation(); //this only happens once.
+                    await Blockchain.PerformHeaderCreation(); //this only happens once.
                 }
             }
         }

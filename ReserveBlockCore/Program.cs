@@ -266,7 +266,6 @@ namespace ReserveBlockCore
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
             StartupService.StartupMemBlocks();
-            StartupService.SetLastBlockchainPoint();
 
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
@@ -503,7 +502,9 @@ namespace ReserveBlockCore
             _ = builder.RunConsoleAsync();
             _ = builder2.RunConsoleAsync();
 
-            if(Globals.AdjudicateAccount != null)
+            StartupService.SetLastBlockchainPoint();
+
+            if (Globals.AdjudicateAccount != null)
             {
                 _ = builder3.RunConsoleAsync();
             }
