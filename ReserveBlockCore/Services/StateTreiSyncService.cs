@@ -24,7 +24,7 @@ namespace ReserveBlockCore.Services
                 {
                     IsRunning = true;
                     var height = BlockchainData.GetHeight();
-                    long currenRunHeight = 0;
+                    long currentRunHeight = 0;
                     long interval = 10000;
                     bool processBlocks = true;
                     double progress = new double();
@@ -47,11 +47,11 @@ namespace ReserveBlockCore.Services
                         {
                             while (processBlocks)
                             {
-                                var heightSpan = currenRunHeight + interval;
+                                var heightSpan = currentRunHeight + interval;
                                 
                                 var blocks = blockChain.Query()
-                                .Where(x => x.Height >= currenRunHeight && x.Height < heightSpan)
-                                .Limit((int)heightSpan - (int)currenRunHeight)
+                                .Where(x => x.Height >= currentRunHeight && x.Height < heightSpan)
+                                .Limit((int)heightSpan - (int)currentRunHeight)
                                 .ToEnumerable();
 
                                 foreach (Block block in blocks)
@@ -124,7 +124,7 @@ namespace ReserveBlockCore.Services
                                         processBlocks = false;
                                         task1.Increment(100);
                                         progress = (double)100;
-                                        var messageEnd = JsonConvert.SerializeObject(new { NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%") });
+                                        var messageEnd = JsonConvert.SerializeObject(new { NextBlock = currentRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%") });
                                         await StateTreiSyncLogUtility.Log(messageEnd);
                                         //break;
                                     }
@@ -137,10 +137,10 @@ namespace ReserveBlockCore.Services
                                     //blocks = new List<Block>();
                                     task1.Increment(increment);
                                     progress += increment;
-                                    currenRunHeight += interval;
+                                    currentRunHeight += interval;
                                 }
                                 
-                                var message = JsonConvert.SerializeObject(new {NextBlock = currenRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%")});
+                                var message = JsonConvert.SerializeObject(new {NextBlock = currentRunHeight.ToString(), CurrentPercent = (progress.ToString("#.##") + "%")});
                                 await StateTreiSyncLogUtility.Log(message);
                             }
                         }

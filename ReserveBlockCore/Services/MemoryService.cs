@@ -183,6 +183,9 @@ namespace ReserveBlockCore.Services
             // it will give the size of memory in MB
             var physicalMemory = (long)Math.Round((double)installedMemory / 1024000.0 / 1024);
 
+            if (physicalMemory <= 512)
+                physicalMemory = FindClosestNumber(physicalMemory);
+
             return physicalMemory;
         }
 
@@ -251,5 +254,25 @@ namespace ReserveBlockCore.Services
             return 1;
         }
 
+        public static long FindClosestNumber(long inputNumber)
+        {
+            long[] numbers = { 1, 2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 128, 256, 512 };
+
+            long closestNumber = numbers[0];
+            long minimumDifference = Math.Abs(inputNumber - closestNumber);
+
+            foreach (long number in numbers)
+            {
+                long difference = Math.Abs(inputNumber - number);
+
+                if (difference < minimumDifference)
+                {
+                    minimumDifference = difference;
+                    closestNumber = number;
+                }
+            }
+
+            return closestNumber;
+        }
     }
 }

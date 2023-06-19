@@ -21,6 +21,7 @@ using ReserveBlockCore.EllipticCurve;
 using System;
 using System.Security.Principal;
 using Newtonsoft.Json.Converters;
+using static ReserveBlockCore.Models.Integrations;
 
 namespace ReserveBlockCore.Commands
 {
@@ -2129,6 +2130,7 @@ namespace ReserveBlockCore.Commands
             table.AddRow("[blue]Network[/]", $"[green]{network}[/]");
             table.AddRow("[blue]Port[/]", $"[green]{Globals.Port}[/]");
             table.AddRow("[blue]OS[/]", $"[green]{osDesc}[/]");
+            table.AddRow("[blue]Memory (RAM)[/]", $"[green]{Globals.SystemMemory}[/]");
             table.AddRow("[blue]Processor Architecture[/]", $"[green]{processArch}[/]");
             table.AddRow("[blue]Thread Count[/]", $"[green]{threadCount}[/]");
             table.AddRow("[blue].Net Core[/]", $"[green]{netFramework}[/]");
@@ -2146,6 +2148,36 @@ namespace ReserveBlockCore.Commands
             AnsiConsole.Write(table);
 
         }
+
+        public static void PrintChainInfo()
+        {
+            Console.Clear();
+            Console.SetCursorPosition(Console.CursorLeft, Console.CursorTop);
+
+            AnsiConsole.Write(
+            new FigletText("RBX Chain Info")
+            .Centered()
+            .Color(Color.Green));
+
+            var table = new Table();
+
+            table.Title("[yellow]RBX Info[/]").Centered();
+            table.AddColumn(new TableColumn(new Panel("Title")));
+            table.AddColumn(new TableColumn(new Panel("Description"))).Centered();
+
+            table.AddRow("[blue]Hash[/]", $"[green]{Globals.Blockchain.Hash}[/]");
+            table.AddRow("[blue]Height[/]", $"[green]{Globals.Blockchain.Height}[/]");
+            table.AddRow("[blue]Size[/]", $"[green]{Globals.Blockchain.Size}[/]");
+            table.AddRow("[blue]Cumulative Size (Bytes)[/]", $"[green]{Globals.Blockchain.CumulativeSize}[/]");
+            table.AddRow("[blue]Cumulative Size (KBs)[/]", $"[green]{Math.Round(Globals.Blockchain.CumulativeSize / 1024.00, 2)}[/]");
+            table.AddRow("[blue]Cumulative Size (MBs)[/]", $"[green]{Math.Round(Globals.Blockchain.CumulativeSize / 1024.00 / 1024.00, 2)}[/]");
+            table.AddRow("[blue]Cumulative Size (GBs)[/]", $"[green]{Math.Round(Globals.Blockchain.CumulativeSize / 1024.00 / 1024.00 / 1024.00, 2)}[/]");
+
+            table.Border(TableBorder.Rounded);
+
+            AnsiConsole.Write(table);
+        }
+
         public static void PrintHelpMenu()
         {
             Console.Clear();

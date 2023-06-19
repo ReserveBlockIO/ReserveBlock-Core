@@ -32,6 +32,11 @@ namespace ReserveBlockCore.Commands
                 case "/debug":
                     StaticVariableUtility.PrintStaticVariables();
                     break;
+                case "/chain":
+                    Globals.StopConsoleOutput = true;
+                    BaseCommandServices.PrintChainInfo();
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/printkeys":
                     BaseCommandServices.PrintKeys();
                     break;

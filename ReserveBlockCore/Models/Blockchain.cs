@@ -1,9 +1,11 @@
 ﻿using LiteDB;
+using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -109,10 +111,12 @@ namespace ReserveBlockCore.Models
         public static async void PerformHeaderCreation(long startHeight = 0)
         {
             var blockchain = GetBlockchain();
-
+            var blocksDb = BlockchainData.GetBlocks();
             var interval = Globals.SystemMemory < 2 ? 500 : Globals.SystemMemory >= 2 && Globals.SystemMemory < 6 ? 2000 : 5000;
             var lastBlock = Globals.LastBlock.Height;
-            var increment = (double)interval / ((double)lastBlock - (double)startHeight) * (double)100;
+            var increment = (double)1 / ((double)lastBlock - (double)startHeight) * (double)100;
+            var currentRunHeight = startHeight;
+            bool processBlocks = true;
             AnsiConsole.MarkupLine("[green]|*****************************************************************************|[/]");
             AnsiConsole.MarkupLine("[red]| Syncing Blockchain Headers... This process may take a moment.               |[/]");
             AnsiConsole.MarkupLine("[yellow]| This process will only need to run once for the entire chain.               |[/]");
@@ -132,12 +136,18 @@ namespace ReserveBlockCore.Models
                     var task1 = ctx.AddTask("[purple]Running Block Header Sync[/]");
                     while (!ctx.IsFinished)
                     {
-                        for (var h = startHeight; h <= lastBlock; h++)
+                        while(processBlocks)
                         {
-                            var block = BlockchainData.GetBlockByHeight(h);
-                            if (block != null)
+                            var heightSpan = currentRunHeight + interval;
+
+                            var blocks = blocksDb.Query()
+                            .Where(x => x.Height >= currentRunHeight && x.Height < heightSpan)
+                            .Limit((int)heightSpan - (int)currentRunHeight)
+                            .ToEnumerable();
+
+                            foreach (Block block in blocks)
                             {
-                                AnsiConsole.Markup($"\rBlock: [blue]{h}[/][red]/[/][green]{lastBlock}[/]");
+                                AnsiConsole.Markup($"\rBlock: [blue]{block.Height}[/][red]/[/][green]{lastBlock}[/]");
                                 var blockExist = blockchain.Query().Where(x => x.Height == block.Height).FirstOrDefault();
                                 if (blockExist == null)
                                 {
@@ -152,12 +162,22 @@ namespace ReserveBlockCore.Models
                                     blockchain.InsertSafe(bHeader);
                                     Globals.Blockchain = bHeader; //update global record
                                 }
+
+                                if (block.Height == lastBlock)
+                                {
+                                    processBlocks = false;
+                                    task1.Increment(100);
+                                }
+                                else
+                                {
+                                    task1.Increment(increment);
+                                }
                             }
-                            else
-                            {
-                                break;
-                            }
-                            task1.Increment(increment);
+
+                            if(processBlocks)
+                                currentRunHeight += interval;
+                            
+                                
                         }
 
                         task1.Increment(100);
