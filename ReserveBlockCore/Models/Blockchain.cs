@@ -112,7 +112,7 @@ namespace ReserveBlockCore.Models
 
             var interval = Globals.SystemMemory < 2 ? 500 : Globals.SystemMemory >= 2 && Globals.SystemMemory < 6 ? 2000 : 5000;
             var lastBlock = Globals.LastBlock.Height;
-            var increment = (double)1 / ((double)lastBlock - (double)startHeight) * (double)100;
+            var increment = (double)interval / ((double)lastBlock - (double)startHeight) * (double)100;
             AnsiConsole.MarkupLine("[green]|*****************************************************************************|[/]");
             AnsiConsole.MarkupLine("[red]| Syncing Blockchain Headers... This process may take a moment.               |[/]");
             AnsiConsole.MarkupLine("[yellow]| This process will only need to run once for the entire chain.               |[/]");
