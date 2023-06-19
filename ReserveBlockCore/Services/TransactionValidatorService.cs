@@ -57,8 +57,11 @@ namespace ReserveBlockCore.Services
                 }
             }
 
-            if(txRequest.ToAddress.StartsWith("xRBX") && txRequest.FromAddress.StartsWith("xRBX"))
-                return (txResult, "Reserve accounts cannot send to another Reserve Account.");
+            if(!Globals.IsTestNet)
+            {
+                if (txRequest.ToAddress.StartsWith("xRBX") && txRequest.FromAddress.StartsWith("xRBX"))
+                    return (txResult, "Reserve accounts cannot send to another Reserve Account.");
+            }
 
             //REMOVE AFTER ENABLED!
             //if (txRequest.ToAddress.StartsWith("xRBX"))

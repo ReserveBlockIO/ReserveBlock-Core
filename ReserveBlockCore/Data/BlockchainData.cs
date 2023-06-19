@@ -325,6 +325,7 @@ namespace ReserveBlockCore.Data
                 var currentTime = TimeUtil.GetTime();
                 Globals.BlockTimeDiff = currentTime - Globals.LastBlockAddedTimestamp;
                 Globals.LastBlockAddedTimestamp = currentTime;
+                Blockchain.AddBlock(block);
                 _ = BlockDiffService.UpdateQueue(Globals.BlockTimeDiff);
                 _ = ValidatorService.UpdateActiveValidators(block);
 

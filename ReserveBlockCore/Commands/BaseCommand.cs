@@ -163,6 +163,12 @@ namespace ReserveBlockCore.Commands
                     BaseCommandServices.UnbanPeer();
                     Globals.StopConsoleOutput = false;
                     break;
+                case "/unbanall":
+                    Globals.StopConsoleOutput = true;
+                    var banResult = await Peers.UnbanAllPeers(true);
+                    AnsiConsole.WriteLine($"Number of peers unbanned: [green]{banResult}[/]");
+                    Globals.StopConsoleOutput = false;
+                    break;
                 case "/creatednr":
                     Globals.StopConsoleOutput = true;
                     await BaseCommandServices.CreateDnr();

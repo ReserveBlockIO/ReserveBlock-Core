@@ -785,7 +785,7 @@ namespace ReserveBlockCore.Commands
                     BeaconInfo.BeaconInfoJson beaconLoc1 = new BeaconInfo.BeaconInfoJson
                     {
                         IPAddress = ip,
-                        Port = Globals.Port + 20000,
+                        Port = Globals.Port + 20000 + 1,
                         Name = name,
                         BeaconUID = bUID
                     };
@@ -796,7 +796,7 @@ namespace ReserveBlockCore.Commands
                     {
                         IPAddress = ip,
                         Name = name,
-                        Port = Globals.Port + 20000,
+                        Port = Globals.Port + 20000 + 1,
                         BeaconUID = bUID,
                         AutoDeleteAfterDownload = autoDelete,
                         FileCachePeriodDays = fileCachePeriod,

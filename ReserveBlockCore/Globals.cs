@@ -118,6 +118,7 @@ namespace ReserveBlockCore
         public static decimal StartMemory = 0;
         public static decimal CurrentMemory = 0;
         public static decimal ProjectedMemory = 0;
+        public static long SystemMemory = 1;
 
         public static string Platform = "";
         public static string ValidatorAddress = "";

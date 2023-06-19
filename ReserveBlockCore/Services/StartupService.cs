@@ -314,6 +314,26 @@ namespace ReserveBlockCore.Services
                 Globals.LastBlock = BlockchainData.GetLastBlock();
             }
         }
+
+        internal static void SetLastBlockchainPoint()
+        {
+            if(Globals.LastBlock.Height != -1)
+            {
+                var header = Blockchain.GetLastBlockchainPoint();
+                if(header != null)
+                {
+                    Globals.Blockchain = header;
+                    if(header.Height != Globals.LastBlock.Height)
+                    {
+                        Blockchain.PerformHeaderCreation(header.Height);
+                    }
+                }
+                else
+                {
+                    Blockchain.PerformHeaderCreation(); //this only happens once.
+                }
+            }
+        }
         internal static async void RunStateSync()
         {            
             if (Globals.AdjudicateAccount == null)

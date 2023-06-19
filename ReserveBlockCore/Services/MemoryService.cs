@@ -156,5 +156,100 @@ namespace ReserveBlockCore.Services
             }
         }
 
+        public static long GetTotalMemory()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return GetTotalMemoryWindows();
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                return GetTotalMemoryMacOS();
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                return GetTotalMemoryLinux();
+            }
+            else
+            {
+                throw new NotSupportedException("Unsupported operating system.");
+            }
+        }
+
+        private static long GetTotalMemoryWindows()
+        {
+            var gcMemoryInfo = GC.GetGCMemoryInfo();
+            long installedMemory = gcMemoryInfo.TotalAvailableMemoryBytes;
+            // it will give the size of memory in MB
+            var physicalMemory = (long)Math.Round((double)installedMemory / 1024000.0 / 1024);
+
+            return physicalMemory;
+        }
+
+        private static long GetTotalMemoryMacOS()
+        {
+            try
+            {
+                var process = new Process()
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "/usr/sbin/sysctl",
+                        Arguments = "hw.memsize",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                if (long.TryParse(output.Split(':')[1].Trim(), out long memory))
+                {
+                    return memory;
+                }
+            }
+            catch
+            {
+
+            }
+
+            return 1;
+        }
+
+        private static long GetTotalMemoryLinux()
+        {
+            try
+            {
+                var process = new Process()
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "free",
+                        Arguments = "-b",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                var lines = output.Split('\n');
+                var memoryLine = lines[1].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (long.TryParse(memoryLine[1], out long memory))
+                {
+                    return memory;
+                }
+            }
+            catch { }
+            return 1;
+        }
+
     }
 }

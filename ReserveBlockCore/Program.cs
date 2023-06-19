@@ -240,6 +240,7 @@ namespace ReserveBlockCore
             }
 
             Globals.Platform = PlatformUtility.GetPlatform();
+            Globals.SystemMemory = MemoryService.GetTotalMemory();
 
             Config.Config.EstablishConfigFile();
             var config = Config.Config.ReadConfigFile();
@@ -265,6 +266,7 @@ namespace ReserveBlockCore
             StartupService.SetBlockHeight();
             StartupService.SetLastBlock();
             StartupService.StartupMemBlocks();
+            StartupService.SetLastBlockchainPoint();
 
             StartupService.SetBlockchainChainRef(); // sets blockchain reference id
             StartupService.CheckBlockRefVerToDb();
