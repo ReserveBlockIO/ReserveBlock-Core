@@ -130,6 +130,11 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                if (Globals.UseV2BlockDownload)
+                {
+                    await Task.Delay(1000);
+                    return false;
+                }
                 await Globals.BlocksDownloadSlim.WaitAsync();
                 try
                 {

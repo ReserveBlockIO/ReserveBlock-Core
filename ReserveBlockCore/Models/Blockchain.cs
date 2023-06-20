@@ -86,7 +86,7 @@ namespace ReserveBlockCore.Models
 
             var maxByteLength = initialBlock.CumulativeSize + byteSpan;
 
-            var finalBlock = blockchain.Query().Where(x => x.Height >= height && x.CumulativeSize <= maxByteLength).FirstOrDefault();
+            var finalBlock = blockchain.Query().Where(x => x.Height >= height && x.CumulativeSize <= maxByteLength).OrderByDescending(x => x.Height).FirstOrDefault();
 
             if(finalBlock == null)
                 return null;
