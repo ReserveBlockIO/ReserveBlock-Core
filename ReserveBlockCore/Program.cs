@@ -161,6 +161,10 @@ namespace ReserveBlockCore
                     {
                         Globals.GUI = true;
                     }
+                    if(argC == "blockv2")
+                    {
+                        Globals.UseV2BlockDownload = true;
+                    }
                     if (argC == "unsafe")
                     {
                         Globals.RunUnsafeCode = true;

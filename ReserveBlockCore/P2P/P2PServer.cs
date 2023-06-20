@@ -269,6 +269,20 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send Block Span
+
+        public async Task<long?> SendBlockSpan(long startHeight, long cumulativeBuffer)
+        {
+            var blockSpan = await Blockchain.GetBlockSpan(startHeight, cumulativeBuffer);
+
+            if (blockSpan == null)
+                return null;
+
+            return blockSpan.Value.Item2;
+        }
+
+        #endregion
+
         #region Send Block List
         public async Task<string> SendBlockList((long , long) blockSpan)
         {

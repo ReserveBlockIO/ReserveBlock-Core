@@ -49,20 +49,22 @@ namespace ReserveBlockCore.Services
                     {
                         if (blockStart != 0)
                         {
-                            var blockSpan = await Blockchain.GetBlockSpan(blockStart, MaxBlockRequestBuffer);
-                            if (blockSpan != null)
+                            var maxBlockHeight = await P2PClient.GetBlockSpan(blockStart, MaxBlockRequestBuffer, node.node);
+                            if (maxBlockHeight != null)
                             {
-                                NodeDict.TryAdd(node.node, blockSpan.Value);
-                                blockStart = (blockSpan.Value.Item2 + 1);
+                                (long, long) blockSpan = (blockStart, maxBlockHeight.Value);
+                                NodeDict.TryAdd(node.node, blockSpan);
+                                blockStart = (blockSpan.Item2 + 1);
                             }
                         }
                         else
                         {
-                            var blockSpan = await Blockchain.GetBlockSpan(heightToDownload, MaxBlockRequestBuffer);
-                            if (blockSpan != null)
+                            var maxBlockHeight = await P2PClient.GetBlockSpan(heightToDownload, MaxBlockRequestBuffer, node.node);
+                            if (maxBlockHeight != null)
                             {
-                                NodeDict.TryAdd(node.node, blockSpan.Value);
-                                blockStart = (blockSpan.Value.Item2 + 1);
+                                (long, long) blockSpan = (heightToDownload, maxBlockHeight.Value);
+                                NodeDict.TryAdd(node.node, blockSpan);
+                                blockStart = (blockSpan.Item2 + 1);
                             }
                         }
                     }

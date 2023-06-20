@@ -660,6 +660,21 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Block Span
+
+        public static async Task<long?> GetBlockSpan(long startHeight, long blockSpanBuffer, NodeInfo node)
+        {
+            var source = new CancellationTokenSource(10000);
+            var blockSpan = await node.Connection.InvokeCoreAsync<long?>("SendBlockSpan", args: new object?[] { startHeight, blockSpanBuffer }, source.Token);
+
+            if (blockSpan == null)
+                return null;
+
+            return blockSpan;
+        }
+
+        #endregion
+
         #region Get Block V2
 
         public static async Task<List<Block>?> GetBlockList((long, long) heightSpan, NodeInfo node) //base example
