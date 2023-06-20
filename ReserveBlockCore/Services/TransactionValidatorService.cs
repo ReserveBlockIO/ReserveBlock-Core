@@ -91,7 +91,7 @@ namespace ReserveBlockCore.Services
             }
 
             //Timestamp Check
-            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+            if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
             {
                 var currentTime = TimeUtil.GetTime();
                 var timeDiff = currentTime - txRequest.Timestamp;
@@ -997,7 +997,7 @@ namespace ReserveBlockCore.Services
                                     if(voteExixt)
                                         return (txResult, "You have already voted on this topic and may not do so again.");
 
-                                    if(Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                    if(Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                                     {
                                         var stAcct = StateData.GetSpecificAccountStateTrei(txRequest.FromAddress);
                                         if (stAcct != null)
@@ -1253,7 +1253,7 @@ namespace ReserveBlockCore.Services
                                             if (rTx.FromAddress != txRequest.FromAddress)
                                                 return (txResult, "From address does not match the reserve tx from address. Cannot call back.");
 
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                                             {
                                                 if (rTx.ConfirmTimestamp <= currentTime)
                                                     return (txResult, "This TX has already passed and can no longer be called back.");
@@ -1272,7 +1272,7 @@ namespace ReserveBlockCore.Services
                                         {
                                             var currentTime = TimeUtil.GetTime(-600);
 
-                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                                            if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                                             {
                                                 if (currentTime > sigTime)
                                                 return (txResult, "Recover request has expired.");
@@ -1318,7 +1318,7 @@ namespace ReserveBlockCore.Services
                 if(txRequest.UnlockTime == null)
                     return (txResult, "There must be an unlock time for this transaction");
 
-                if (Globals.BlocksDownloadSlim.CurrentCount != 0)
+                if (Globals.BlocksDownloadSlim.CurrentCount != 0 && Globals.BlocksDownloadV2Slim.CurrentCount != 0)
                 {
                     var validUnlockTime = TimeUtil.GetReserveTime(-3);
 

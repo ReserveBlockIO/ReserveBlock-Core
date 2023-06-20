@@ -22,20 +22,23 @@ namespace ReserveBlockCore.Services
         {
             try
             {
+                if (Globals.BlocksDownloadV2Slim.CurrentCount == 0)
+                {
+                    await Task.Delay(1000);
+                    return;
+                }
+                    
                 await Globals.BlocksDownloadV2Slim.WaitAsync();
-                ConcurrentDictionary<NodeInfo, (long, long)?> NodeDict= new ConcurrentDictionary<NodeInfo, (long, long)?>();
-                var blockBag = new ConcurrentBag<(Block, string)>();
                 var coolDownTime = TimeUtil.GetTime();
                 long blockStart = 0;
                 while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
                 {
                     //set the  next block height
                     var heightToDownload = Globals.LastBlock.Height + 1;
-
+                    var blockBag = new ConcurrentBag<(Block, string)>();
+                    ConcurrentDictionary<NodeInfo, (long, long)?> NodeDict = new ConcurrentDictionary<NodeInfo, (long, long)?>();
                     //Get the nodes who have the height I need.
-                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload && x.IsConnected).GroupBy(x => x.NodeHeight)
-                            .OrderBy(x => x.Key).Select((x, i) => (node: x.First(), height: heightToDownload + i))
-                             .Where(x => x.node.NodeHeight >= x.height).ToArray();
+                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload && x.IsConnected).ToArray();
 
                     if (!heightsFromNodes.Any())
                     {
@@ -47,29 +50,52 @@ namespace ReserveBlockCore.Services
 
                     foreach (var node in heightsFromNodes)
                     {
+                        if (node.NodeIP == "142.147.96.212")
+                        {
+                            //test
+                        }
+
                         if (blockStart != 0)
                         {
-                            var maxBlockHeight = await P2PClient.GetBlockSpan(blockStart, MaxBlockRequestBuffer, node.node);
+                            var maxBlockHeight = await P2PClient.GetBlockSpan(blockStart, MaxBlockRequestBuffer, node);
                             if (maxBlockHeight != null)
                             {
                                 (long, long) blockSpan = (blockStart, maxBlockHeight.Value);
-                                NodeDict.TryAdd(node.node, blockSpan);
+                                NodeDict.TryAdd(node, blockSpan);
                                 blockStart = (blockSpan.Item2 + 1);
                             }
                         }
                         else
                         {
-                            var maxBlockHeight = await P2PClient.GetBlockSpan(heightToDownload, MaxBlockRequestBuffer, node.node);
+                            var maxBlockHeight = await P2PClient.GetBlockSpan(heightToDownload, MaxBlockRequestBuffer, node);
                             if (maxBlockHeight != null)
                             {
                                 (long, long) blockSpan = (heightToDownload, maxBlockHeight.Value);
-                                NodeDict.TryAdd(node.node, blockSpan);
+                                NodeDict.TryAdd(node, blockSpan);
                                 blockStart = (blockSpan.Item2 + 1);
                             }
                         }
                     }
 
-                    NodeDict.ParallelLoop(async h =>
+                    //NodeDict.ParallelLoop(async h =>
+                    //{
+                    //    if (h.Value.HasValue)
+                    //    {
+                    //        var blockList = await P2PClient.GetBlockList(h.Value.Value, h.Key);
+                    //        if (blockList != null)
+                    //        {
+                    //            foreach (var block in blockList)
+                    //            {
+                    //                blockBag.Add((block, h.Key.NodeIP));
+                    //            }
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        Console.WriteLine("No Value");
+                    //    }
+                    //});
+                    var tasks = NodeDict.Select(async h =>
                     {
                         if (h.Value.HasValue)
                         {
@@ -82,7 +108,13 @@ namespace ReserveBlockCore.Services
                                 }
                             }
                         }
-                    });
+                        else
+                        {
+                            Console.WriteLine("No Value");
+                        }
+                    }).ToList();
+
+                    await Task.WhenAll(tasks);
 
                     if (blockBag.Count > 0)
                     {
@@ -93,7 +125,7 @@ namespace ReserveBlockCore.Services
                             BlockDict[block.Item1.Height] = (block.Item1, block.Item2);
                         }
 
-                        _ = BlockValidatorService.ValidateBlocks();
+                        await BlockValidatorService.ValidateBlocks();
 
                         _ = P2PClient.DropLowBandwidthPeers();
                         var AvailableNode = Globals.Nodes.Values.Where(x => x.IsSendingBlock == 0).OrderByDescending(x => x.NodeHeight).FirstOrDefault();
@@ -110,6 +142,8 @@ namespace ReserveBlockCore.Services
                                 
                             }
                         }
+
+                        blockBag.Clear();
                     }
                 }
             }
@@ -122,8 +156,10 @@ namespace ReserveBlockCore.Services
                 }
             }
             finally 
-            { 
-                Globals.BlocksDownloadV2Slim.Release(); 
+            {
+                try 
+                { Globals.BlocksDownloadV2Slim.Release(); Globals.UseV2BlockDownload = false; } catch { }
+                 
             }
         }
         public static async Task<bool> GetAllBlocks()

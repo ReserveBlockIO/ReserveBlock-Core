@@ -171,7 +171,7 @@ namespace ReserveBlockCore.Commands
                 case "/unbanall":
                     Globals.StopConsoleOutput = true;
                     var banResult = await Peers.UnbanAllPeers(true);
-                    AnsiConsole.WriteLine($"Number of peers unbanned: [green]{banResult}[/]");
+                    AnsiConsole.MarkupLine("Number of peers unbanned: [green]{0}[/]", banResult);
                     Globals.StopConsoleOutput = false;
                     break;
                 case "/creatednr":

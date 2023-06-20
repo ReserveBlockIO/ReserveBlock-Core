@@ -78,7 +78,7 @@ namespace ReserveBlockCore.Services
                             ErrorLogUtility.LogError("Banned IP address: " + ipAddress + " at height " + height, "ValidateBlocks");
                             if (Globals.Nodes.TryRemove(ipAddress, out var node) && node.Connection != null)
                                 await node.Connection.DisposeAsync();
-                            ConsoleWriterService.Output("Block was rejected from: " + block.Validator);
+                            ConsoleWriterService.Output($"Block: {block.Height} was rejected from: {block.Validator}");
                         }
                         else
                         {
@@ -269,6 +269,10 @@ namespace ReserveBlockCore.Services
                                 if (blkTransaction.FromAddress != "Coinbase_TrxFees" && blkTransaction.FromAddress != "Coinbase_BlkRwd")
                                 {
                                     var txResult = await TransactionValidatorService.VerifyTX(blkTransaction, blockDownloads, true);
+                                    if(txResult.Item1 == false)
+                                    {
+                                        //testing
+                                    }
                                     if(!Globals.GUI && !Globals.BasicCLI && !blockDownloads)
                                     {
                                         //if (!txResult.Item1)

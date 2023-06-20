@@ -693,7 +693,7 @@ namespace ReserveBlockCore.P2P
             try
             {
                 var source = new CancellationTokenSource(10000);
-                var blockSpan = await node.Connection.InvokeCoreAsync<string>("SendBlockList", args: new object?[] { heightSpan }, source.Token);
+                var blockSpan = await node.Connection.InvokeCoreAsync<string>("SendBlockList", args: new object?[] { heightSpan.Item1, heightSpan.Item2 }, source.Token);
                 if (!string.IsNullOrEmpty(blockSpan))
                 {
                     if(blockSpan != "0")
