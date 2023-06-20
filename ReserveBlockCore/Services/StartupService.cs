@@ -910,7 +910,11 @@ namespace ReserveBlockCore.Services
                     {
                         ConsoleWriterService.Output($"Block downloads started on: {startTime.ToLocalTime()}");
                         LogUtility.Log("Block downloads started.", "DownloadBlocksOnStart()-if");
-                        await BlockDownloadService.GetAllBlocks();
+                        if(Globals.UseV2BlockDownload)
+                            await BlockDownloadService.GetAllBlocksV2();
+                        else
+                            await BlockDownloadService.GetAllBlocks();
+
                     }
 
                     var lastBlock = Globals.LastBlock;

@@ -84,6 +84,7 @@ namespace ReserveBlockCore
         public static long TXHeightRule3 = 1079488; //around June 13th, 2023 at 19:30 UTC
         public static long LastAdjudicateTime = 0;
         public static SemaphoreSlim BlocksDownloadSlim = new SemaphoreSlim(1, 1);
+        public static SemaphoreSlim BlocksDownloadV2Slim = new SemaphoreSlim(1, 1);
         public static int WalletUnlockTime = 0;
         public static int ChainCheckPointInterval = 0;
         public static int ChainCheckPointRetain = 0;
@@ -180,6 +181,7 @@ namespace ReserveBlockCore
         public static bool ShowSTUNMessagesInConsole = false;
         public static bool STUNServerRunning = false;
         public static bool LogMemory = false;
+        public static bool UseV2BlockDownload = false;
         
         public static CancellationToken CancelledToken;
 

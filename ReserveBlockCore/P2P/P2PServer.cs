@@ -269,6 +269,24 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Send Block List
+        public async Task<string> SendBlockList((long , long) blockSpan)
+        {
+            var peerIP = GetIP(Context);
+            var blockList = await Blockchain.GetBlockListFromSpan(blockSpan);
+            if(blockList?.Count > 0)
+            {
+                var blockListJsonCompressed = JsonConvert.SerializeObject(blockList).ToCompress();
+                return blockListJsonCompressed;
+            }
+            else
+            {
+                return "0";
+            }
+        }
+
+        #endregion
+
         #region Send Block
         //Send Block to client from p2p server
         public async Task<Block?> SendBlock(long currentBlock)

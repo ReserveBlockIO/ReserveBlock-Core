@@ -94,7 +94,7 @@ namespace ReserveBlockCore.Models
             return (initialBlock.Height, finalBlock.Height);
         }
 
-        public static async Task<List<Block>?> GetBlockListFromSpan(Tuple<long, long> blockSpan)
+        public static async Task<List<Block>?> GetBlockListFromSpan((long, long) blockSpan)
         {
             var blockDb = BlockchainData.GetBlocks();
 

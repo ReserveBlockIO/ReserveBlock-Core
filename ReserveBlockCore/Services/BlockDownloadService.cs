@@ -1,9 +1,11 @@
 ﻿using ReserveBlockCore.Data;
+using ReserveBlockCore.Extensions;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.P2P;
 using ReserveBlockCore.Utilities;
 using Spectre.Console;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace ReserveBlockCore.Services
@@ -14,7 +16,114 @@ namespace ReserveBlockCore.Services
             new ConcurrentDictionary<long, (Block, string)>();
 
         public const int MaxDownloadBuffer = 52428800;
+        public const long MaxBlockRequestBuffer = 1048576;
 
+        public static async Task GetAllBlocksV2()
+        {
+            try
+            {
+                await Globals.BlocksDownloadV2Slim.WaitAsync();
+                ConcurrentDictionary<NodeInfo, (long, long)?> NodeDict= new ConcurrentDictionary<NodeInfo, (long, long)?>();
+                var blockBag = new ConcurrentBag<(Block, string)>();
+                var coolDownTime = TimeUtil.GetTime();
+                long blockStart = 0;
+                while (Globals.LastBlock.Height < P2PClient.MaxHeight() || P2PClient.MaxHeight() == -1)
+                {
+                    //set the  next block height
+                    var heightToDownload = Globals.LastBlock.Height + 1;
+
+                    //Get the nodes who have the height I need.
+                    var heightsFromNodes = Globals.Nodes.Values.Where(x => x.NodeHeight >= heightToDownload && x.IsConnected).GroupBy(x => x.NodeHeight)
+                            .OrderBy(x => x.Key).Select((x, i) => (node: x.First(), height: heightToDownload + i))
+                             .Where(x => x.node.NodeHeight >= x.height).ToArray();
+
+                    if (!heightsFromNodes.Any())
+                    {
+                        //Failed to find any heights above mine. Checking again and continuing. 
+                        await Task.Delay(20);
+                        P2PClient.UpdateMaxHeight(Globals.Nodes.Values.Max(x => (long?)x.NodeHeight) ?? -1);
+                        continue;
+                    }
+
+                    foreach (var node in heightsFromNodes)
+                    {
+                        if (blockStart != 0)
+                        {
+                            var blockSpan = await Blockchain.GetBlockSpan(blockStart, MaxBlockRequestBuffer);
+                            if (blockSpan != null)
+                            {
+                                NodeDict.TryAdd(node.node, blockSpan.Value);
+                                blockStart = (blockSpan.Value.Item2 + 1);
+                            }
+                        }
+                        else
+                        {
+                            var blockSpan = await Blockchain.GetBlockSpan(heightToDownload, MaxBlockRequestBuffer);
+                            if (blockSpan != null)
+                            {
+                                NodeDict.TryAdd(node.node, blockSpan.Value);
+                                blockStart = (blockSpan.Value.Item2 + 1);
+                            }
+                        }
+                    }
+
+                    NodeDict.ParallelLoop(async h =>
+                    {
+                        if (h.Value.HasValue)
+                        {
+                            var blockList = await P2PClient.GetBlockList(h.Value.Value, h.Key);
+                            if (blockList != null)
+                            {
+                                foreach (var block in blockList)
+                                {
+                                    blockBag.Add((block, h.Key.NodeIP));
+                                }
+                            }
+                        }
+                    });
+
+                    if (blockBag.Count > 0)
+                    {
+                        var blockBagOrdered = blockBag.OrderBy(x => x.Item1.Height);
+
+                        foreach (var block in blockBagOrdered)
+                        {
+                            BlockDict[block.Item1.Height] = (block.Item1, block.Item2);
+                        }
+
+                        _ = BlockValidatorService.ValidateBlocks();
+
+                        _ = P2PClient.DropLowBandwidthPeers();
+                        var AvailableNode = Globals.Nodes.Values.Where(x => x.IsSendingBlock == 0).OrderByDescending(x => x.NodeHeight).FirstOrDefault();
+
+                        if (AvailableNode != null)
+                        {
+                            var DownloadBuffer = BlockDict.AsParallel().Sum(x => x.Value.block.Size);
+                            if (DownloadBuffer > MaxDownloadBuffer)
+                            {
+                                
+                            }
+                            else
+                            {
+                                
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                if (Globals.PrintConsoleErrors == true)
+                {
+                    Console.WriteLine("Failure in GetAllBlocks Method");
+                    Console.WriteLine(ex.ToString());
+                }
+            }
+            finally 
+            { 
+                Globals.BlocksDownloadV2Slim.Release(); 
+            }
+        }
         public static async Task<bool> GetAllBlocks()
         {
             try

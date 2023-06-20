@@ -660,6 +660,55 @@ namespace ReserveBlockCore.P2P
 
         #endregion
 
+        #region Get Block V2
+
+        public static async Task<List<Block>?> GetBlockList((long, long) heightSpan, NodeInfo node) //base example
+        {
+            var startTime = DateTime.Now;
+            long blockSize = 0;
+
+            try
+            {
+                var source = new CancellationTokenSource(10000);
+                var blockSpan = await node.Connection.InvokeCoreAsync<string>("SendBlockList", args: new object?[] { heightSpan }, source.Token);
+                if (!string.IsNullOrEmpty(blockSpan))
+                {
+                    if(blockSpan != "0")
+                    {
+                        var blockSpanDecompressed = blockSpan.ToDecompress();
+                        var blockSpanList = JsonConvert.DeserializeObject<List<Block>>(blockSpanDecompressed);
+                        if(blockSpanList?.Count > 0)
+                        {
+                            return blockSpanList;
+                        }
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                
+            }
+            finally
+            {
+                Interlocked.Exchange(ref node.IsSendingBlock, 0);
+                if (node != null)
+                {
+                    node.TotalDataSent += blockSize;
+                    node.SendingBlockTime += (DateTime.Now - startTime).Milliseconds;
+                }
+            }
+
+            await P2PClient.RemoveNode(node);
+
+            return null;
+        }
+
+        #endregion
+
         #region Get Block
         public static async Task<Block> GetBlock(long height, NodeInfo node) //base example
         {
