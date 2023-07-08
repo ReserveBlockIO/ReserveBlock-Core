@@ -99,6 +99,7 @@ namespace ReserveBlockCore
         public static int MinorVer = 0;
         public static int RevisionVer = 0;
         public static int BuildVer = 0;
+        public static int SCVersion = 1;
         public static int ValidatorIssueCount = 0;
         public static bool ValidatorSending = true;
         public static bool ValidatorReceiving = true;

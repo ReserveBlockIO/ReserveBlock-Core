@@ -323,7 +323,7 @@ namespace ReserveBlockCore.Services
                 if(header != null)
                 {
                     Globals.Blockchain = header;
-                    if(header.Height != Globals.LastBlock.Height)
+                    if(header.Height < Globals.LastBlock.Height)
                     {
                         await Blockchain.PerformHeaderCreation(header.Height);
                     }

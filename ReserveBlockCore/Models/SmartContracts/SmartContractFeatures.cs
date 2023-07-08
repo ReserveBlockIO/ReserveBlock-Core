@@ -20,6 +20,7 @@
         Paired,//class
         Wrapped,//class
         Soulbound,//class
-        Ticket//class
+        Ticket,//class
+        Token //class
     }
 }

@@ -13,19 +13,21 @@ namespace ReserveBlockCore.Services
     {
 
         #region Write Smart Contract for new creation
-        public static async Task<(string, SmartContractMain)> WriteSmartContract(SmartContractMain scMain)
+        public static async Task<(string, SmartContractMain, bool)> WriteSmartContract(SmartContractMain scMain)
         {
             var scUID = Guid.NewGuid().ToString().Replace("-", "") + ":" + TimeUtil.GetTime().ToString();
             var features = "";
             var featuresList = scMain.Features;
             var hash = ""; //create hash
             string scText = "";
+            var isToken = false;
 
             bool isDynamic = false;
 
             StringBuilder strRoyaltyBld = new StringBuilder();
             StringBuilder strEvolveBld = new StringBuilder();
             StringBuilder strMultiAssetBld = new StringBuilder();
+            StringBuilder strTokenBld = new StringBuilder();
 
             scMain.SmartContractUID = scUID;
             scMain.IsMinter = true;
@@ -43,7 +45,7 @@ namespace ReserveBlockCore.Services
                 var result = NFTAssetFileUtility.MoveAsset(scAsset.Location, scAsset.Name, scMain.SmartContractUID);
                 if (result == false)
                 {
-                    return ("Failed to save smart contract asset. Please try again.", scMain);
+                    return ("Failed to save smart contract asset. Please try again.", scMain, isToken);
                 }
             }
             
@@ -83,7 +85,7 @@ namespace ReserveBlockCore.Services
                                 strEvolveBld = evolveSource.Item2;
                                 if (strBuild.ToString() == "Failed")
                                 {
-                                    return ("Failed to save smart contract asset for Evolving Asset. Please try again.", scMain);
+                                    return ("Failed to save smart contract asset for Evolving Asset. Please try again.", scMain, isToken);
                                 }
                             }
                         }
@@ -101,13 +103,25 @@ namespace ReserveBlockCore.Services
 
                                 if (strBuild.ToString() == "Failed")
                                 {
-                                    return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain);
+                                    return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain, isToken);
                                 }
                             }
                         }
-                        else if (feature.FeatureName == FeatureName.Ticket)
+                        else if (feature.FeatureName == FeatureName.Token)
                         {
-
+                            var token = ((JObject)feature.FeatureFeatures).ToObject<TokenFeature>();
+                            if (token != null)
+                            {
+                                feature.FeatureFeatures = token;
+                                var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
+                                strBuild = tokenSource.Item1;
+                                strTokenBld = tokenSource.Item2;
+                                isToken = true;
+                            }
+                            if (strBuild.ToString() == "Failed")
+                            {
+                                return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain, isToken);
+                            }
                         }
 
                     }
@@ -163,7 +177,7 @@ namespace ReserveBlockCore.Services
 
                                     if (strBuild.ToString() == "Failed")
                                     {
-                                        return ("Failed to save smart contract asset for Evolving Asset. Please try again.", scMain);
+                                        return ("Failed to save smart contract asset for Evolving Asset. Please try again.", scMain, isToken);
                                     }
                                 }
 
@@ -184,8 +198,25 @@ namespace ReserveBlockCore.Services
 
                                     if (strBuild.ToString() == "Failed")
                                     {
-                                        return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain);
+                                        return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain, isToken);
                                     }
+                                }
+                            }
+
+                            if (x.FeatureName == FeatureName.Token)
+                            {
+                                var token = ((JObject)x.FeatureFeatures).ToObject<TokenFeature>();
+                                if (token != null)
+                                {
+                                    x.FeatureFeatures = token;
+                                    var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
+                                    strBuild = tokenSource.Item1;
+                                    strTokenBld = tokenSource.Item2;
+                                    isToken = true;
+                                }
+                                if (strBuild.ToString() == "Failed")
+                                {
+                                    return ("Failed to save smart contract asset for Multi-Asset. Please try again.", scMain, isToken);
                                 }
                             }
 
@@ -199,17 +230,14 @@ namespace ReserveBlockCore.Services
                 //NFT Main Data
                 strBuild.AppendLine(("let Name = \"{#NFTName}\"").Replace("{#NFTName}", scMain.Name));
                 strBuild.AppendLine(("let Description = \"{#Description}\"").Replace("{#Description}", scMain.Description));
-                //strBuild.AppendLine(("let Address = \"{#Address}\"").Replace("{#Address}", scMain.Address));
                 strBuild.AppendLine(("let MinterAddress = \"{#MinterAddress}\"").Replace("{#MinterAddress}", scMain.MinterAddress));
                 strBuild.AppendLine(("let MinterName = \"{#MinterName}\"").Replace("{#MinterName}", scMain.MinterName));
                 strBuild.AppendLine(("let SmartContractUID = \"" + scUID + "\""));
-                //strBuild.AppendLine(("let Signature = \"" + signature + "\""));
                 strBuild.AppendLine(("let Features = \"" + features + "\""));
+                strBuild.AppendLine(("let SCVersion = " + scMain.SCVersion.ToString()));
 
                 //NFT asset Data
-                //strBuild.AppendLine(("let Extension = \"" + scAsset.Extension + "\""));
                 strBuild.AppendLine(("let FileSize = \"" + scAsset.FileSize.ToString() + "\""));
-                //strBuild.AppendLine(("let Location = \"" + scAsset.Location + "\""));
                 strBuild.AppendLine(("let FileName = \"" + scAsset.Name + "\""));
                 strBuild.AppendLine(("let AssetAuthorName = \"" + scAsset.AssetAuthorName + "\""));
 
@@ -280,6 +308,10 @@ namespace ReserveBlockCore.Services
                     {
                         strBuild.Append(strMultiAssetBld);
                     }
+                    if (featuresList.Exists(x => x.FeatureName == FeatureName.Token))
+                    {
+                        strBuild.Append(strTokenBld);
+                    }
                 }
 
                 scText = strBuild.ToString();
@@ -292,7 +324,7 @@ namespace ReserveBlockCore.Services
             }
 
 
-            return (scText, scMain);
+            return (scText, scMain, isToken);
 
         }
 

@@ -212,11 +212,71 @@ namespace ReserveBlockCore.Services
                                         {
                                             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
                                             if (scStateTreiRec != null)
-                                            {
                                                 return (txResult, "This smart contract has already been minted.");
-                                            }
+                                            
                                             if(txRequest.FromAddress.StartsWith("xRBX"))
                                                 return (txResult, "A reserve account may not mint a smart contract.");
+                                            break;
+                                        }
+
+                                    case "TokenDeploy()":
+                                        {
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+                                            if (scStateTreiRec != null)
+                                                return (txResult, "This smart contract has already been minted.");
+                                            
+                                            if (txRequest.FromAddress.StartsWith("xRBX"))
+                                                return (txResult, "A reserve account may not mint a smart contract.");
+
+                                            break;
+                                        }
+
+                                    case "TokenTransfer()" :
+                                        {
+                                            var jobj = JObject.Parse(txData);
+
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var toAddress = jobj["ToAddress"]?.ToObject<string?>();
+                                            var amount = jobj["Amount"]?.ToObject<decimal?>();
+
+                                            if(amount == null || toAddress == null || fromAddress == null)
+                                                return (txResult, $"TX Data was missing items.");
+
+                                            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (stateAccount == null)
+                                                return (txResult, "Could not find account at state level.");
+
+                                            var tokenDetails = scStateTreiRec.TokenDetails;
+
+                                            if(tokenDetails == null)
+                                                return (txResult, "Could not find token details for contract at state level.");
+
+                                            if(tokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            var tokenAccounts = stateAccount.TokenAccounts;
+
+                                            if(tokenAccounts?.Count == 0)
+                                                return (txResult, "Could not find token accounts for account at state level.");
+
+                                            var tokenAccount = tokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                                            if(tokenAccount == null)
+                                                return (txResult, "No tokens exist for this account at state level.");
+
+                                            if(tokenAccount.Balance < amount.Value)
+                                                return (txResult, "Insufficient Balance.");
+
+                                            var decimalsUsed = BitConverter.GetBytes(decimal.GetBits(amount.Value)[3])[2];
+
+                                            if(decimalsUsed > tokenDetails.DecimalPlaces)
+                                                return (txResult, $"Too many decimals used. Amount used: {decimalsUsed} - Amount Allowed: {tokenDetails.DecimalPlaces}.");
+
                                             break;
                                         }
 
@@ -234,6 +294,9 @@ namespace ReserveBlockCore.Services
                                                 
                                                 if(scStateTreiRec.NextOwner != null)
                                                     return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
+
+                                                if(scStateTreiRec.IsToken == true)
+                                                    return (txResult, "You are attempting to transfer a Token Smart contract, which is not allowed.");
                                             }
                                             else
                                             {
@@ -258,6 +321,8 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     return (txResult, "You are attempting to burn a Smart contract you don't own.");
                                                 }
+                                                if (scStateTreiRec.IsToken == true)
+                                                    return (txResult, "You are attempting to burn a Token Smart contract, which is not allowed.");
                                             }
                                             else
                                             {
@@ -415,6 +480,9 @@ namespace ReserveBlockCore.Services
 
                             if (scStateTreiRec.NextOwner == null)
                                 return (txResult, "You are attempting to Cancel a Smart contract sale that has no next owner assigned to it.");
+                            if (scStateTreiRec.IsToken == true)
+
+                                return (txResult, "You are attempting to sell a Token Smart contract, which is not allowed.");
 
                             if (scStateTreiRec.PurchaseKeys != null)
                             {
@@ -485,8 +553,11 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner != null)
                                         return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
-                                    
-                                    if(scStateTreiRec.PurchaseKeys != null)
+
+                                    if (scStateTreiRec.IsToken == true)
+                                        return (txResult, "You are attempting to sell a Token Smart contract, which is not allowed.");
+
+                                    if (scStateTreiRec.PurchaseKeys != null)
                                     {
                                         if(scStateTreiRec.PurchaseKeys.Contains(keySign))
                                             return (txResult, "This purchase key has already been used for a previous purchase and may not be used again.");
@@ -562,6 +633,9 @@ namespace ReserveBlockCore.Services
 
                                     if (scStateTreiRec.NextOwner == null)
                                         return (txResult, "There is no next owner specified for this NFT.");
+
+                                    if (scStateTreiRec.IsToken == true)
+                                        return (txResult, "You are attempting to sell/buy a Token Smart contract, which is not allowed.");
 
                                     if (scStateTreiRec.PurchaseKeys != null)
                                     {

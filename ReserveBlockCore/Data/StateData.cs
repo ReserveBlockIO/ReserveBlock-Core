@@ -200,6 +200,12 @@ namespace ReserveBlockCore.Data
                                     case "ChangeEvolveStateSpecific()":
                                         EvolveDevolveSpecific(tx);
                                         break;
+                                    case "TokenDeploy()":
+                                        DeployTokenContract(tx, block);
+                                        break;
+                                    case "TokenTransfer()":
+                                        TokenTransfer(tx);
+                                        break;
                                     default:
                                         break;
                                 }
@@ -1006,7 +1012,6 @@ namespace ReserveBlockCore.Data
                 //Save to state trei
                 SmartContractStateTrei.SaveSmartContract(scST);
             }
-
         }
         private static void TransferSmartContract(Transaction tx)
         {
@@ -1113,6 +1118,175 @@ namespace ReserveBlockCore.Data
 
                 SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
             }
+        }
+
+        private static void DeployTokenContract(Transaction tx, Block block)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+            var scData = scDataArray[0];
+            var stDb = GetAccountStateTrei();
+            if (scData != null)
+            {
+                var function = (string?)scData["Function"];
+                var data = (string?)scData["Data"];
+                var scUID = (string?)scData["ContractUID"];
+                var md5List = (string?)scData["MD5List"];
+
+
+                scST.ContractData = data;
+                scST.MinterAddress = tx.FromAddress;
+                scST.OwnerAddress = tx.FromAddress;
+                scST.SmartContractUID = scUID;
+                scST.Nonce = 0;
+                scST.MD5List = md5List;
+                scST.IsToken = true;
+
+                try
+                {
+                    var sc = SmartContractMain.GenerateSmartContractInMemory(data);
+                    if (sc.Features != null)
+                    {
+                        var tokenFeatures = sc.Features.Where(x => x.FeatureName == FeatureName.Token).Select(x => x.FeatureFeatures).FirstOrDefault();
+                        if (tokenFeatures != null)
+                        {
+                            var tokenFeature = (TokenFeature)tokenFeatures;
+                            if(tokenFeature != null)
+                            {
+                                var tokenDetails = TokenDetails.CreateTokenDetails(tokenFeature, sc);
+                                scST.TokenDetails = tokenDetails;
+
+                                if(tokenFeature.TokenSupply > 0)
+                                {
+                                    var toAddress = GetSpecificAccountStateTrei(sc.MinterAddress);
+                                    if(toAddress != null)
+                                    {
+                                        var tokenAccount = TokenAccount.CreateTokenAccount(sc.SmartContractUID, tokenFeature.TokenName,
+                                            tokenFeature.TokenTicker, tokenFeature.TokenSupply, tokenFeature.TokenDecimalPlaces);
+
+                                        if(toAddress.TokenAccounts.Count > 0)
+                                        {
+                                            toAddress.TokenAccounts.Add(tokenAccount);
+                                        }
+                                        else
+                                        {
+                                            List<TokenAccount> tokenAccounts = new List<TokenAccount>
+                                            {
+                                                tokenAccount
+                                            };
+
+                                            toAddress.TokenAccounts = tokenAccounts;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var tokenAccount = TokenAccount.CreateTokenAccount(sc.SmartContractUID, tokenFeature.TokenName, 
+                                            tokenFeature.TokenTicker, tokenFeature.TokenSupply, tokenFeature.TokenDecimalPlaces);
+
+                                        List<TokenAccount> tokenAccounts = new List<TokenAccount>
+                                        {
+                                            tokenAccount
+                                        };
+
+                                        var acctStateTreiTo = new AccountStateTrei
+                                        {
+                                            Key = tx.ToAddress,
+                                            Nonce = 0,
+                                            Balance = 0.0M,
+                                            StateRoot = block.StateRoot,
+                                            LockedBalance = 0.0M,
+                                            TokenAccounts = tokenAccounts
+                                        };
+                                    }
+                                }
+                            }
+                            
+                        }
+                    }
+                }
+                catch { }
+
+                //Save to state trei
+                SmartContractStateTrei.SaveSmartContract(scST);
+            }
+        }
+
+        private static void TokenTransfer(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+            var stDB = GetAccountStateTrei();
+
+            var jobj = JObject.Parse(txData);
+
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var toAddress = jobj["ToAddress"]?.ToObject<string?>();
+            var amount = jobj["amount"]?.ToObject<decimal?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if(scStateTreiRec.TokenDetails != null)
+                {
+                    var toAccount = GetSpecificAccountStateTrei(toAddress);
+                    var fromAccount = GetSpecificAccountStateTrei(fromAddress);
+
+                    
+                    var tokenAccountFrom = fromAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    if(tokenAccountFrom != null)
+                    {
+                        tokenAccountFrom.Balance -= amount.Value;
+                        int fromIndex = fromAccount.TokenAccounts.FindIndex(a => a.SmartContractUID == scUID);
+                        fromAccount.TokenAccounts[fromIndex] = tokenAccountFrom;
+                        stDB.UpdateSafe(fromAccount);
+                    }
+
+                    var tokenAccountTo = toAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    if(tokenAccountTo == null)
+                    {
+                        var nTokenAccountT0 = TokenAccount.CreateTokenAccount(scUID, scStateTreiRec.TokenDetails.TokenName, scStateTreiRec.TokenDetails.TokenTicker, 
+                            amount.Value, scStateTreiRec.TokenDetails.DecimalPlaces);
+
+                        if(toAccount.TokenAccounts?.Count == 0)
+                        {
+                            List<TokenAccount> tokenAccounts = new List<TokenAccount>
+                            {
+                                nTokenAccountT0
+                            };
+
+                            toAccount.TokenAccounts = tokenAccounts;
+                        }
+                    }
+                    else
+                    {
+                        tokenAccountTo.Balance += amount.Value;
+                        int toIndex = toAccount.TokenAccounts.FindIndex(a => a.SmartContractUID == scUID);
+                        toAccount.TokenAccounts[toIndex] = tokenAccountTo;
+                    }
+                    stDB.UpdateSafe(toAccount);
+                }
+                
+
+                //if (tx.FromAddress.StartsWith("xRBX"))
+                //{
+                //    scStateTreiRec.NextOwner = tx.ToAddress;
+                //    scStateTreiRec.IsLocked = true;
+                //    scStateTreiRec.Nonce += 1;
+                //    scStateTreiRec.ContractData = data;
+                //    scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
+                //}
+                //else
+                //{
+                //    scStateTreiRec.OwnerAddress = tx.ToAddress;
+                //    scStateTreiRec.Nonce += 1;
+                //    scStateTreiRec.ContractData = data;
+                //    scStateTreiRec.Locators = !string.IsNullOrWhiteSpace(locator) ? locator : scStateTreiRec.Locators;
+                //}
+            }
+
         }
 
         private static void StartSaleSmartContract(Transaction tx)

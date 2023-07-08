@@ -21,6 +21,7 @@ namespace ReserveBlockCore.Models.SmartContracts
         public string SmartContractUID { get; set; }//System Set
         public bool IsMinter { get; set; }
         public bool IsPublished { get; set; }
+        public int? SCVersion { get; set; }
         public bool IsLocked { get { return SmartContractData.GetSmartContractLockState(SmartContractUID); } }
         public string? NextOwner { get { return SmartContractData.GetSmartContractNextOwner(SmartContractUID); } }
         public Dictionary<string, string>? Properties { get; set; }
@@ -220,6 +221,8 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
                 var fileName = repl.Run(@"FileName").Value.ToString();
                 var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
+
+                var scVersion = repl.Run(@"SCVersion").Value != null ? (int)repl.Run(@"SCVersion").Value : 0;
                 var properties = repl.Run(@"getProperties(Properties)").Value;
 
                 var mainData = repl.Run(@"NftMain(""nftdata"")").Value.ToString();
@@ -229,7 +232,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                 var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
 
                 var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
-                var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
+                var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features, scVersion);
                 if(properties!= null)
                 {
                     smartContractMain.Properties = (Dictionary<string, string>)properties;
@@ -260,6 +263,17 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                     featuresList.Add(scFeature);
                                     break;
+                                case FeatureName.Token:
+                                    {
+                                        var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
+                                        if (tokenData != null)
+                                        {
+                                            var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                            scFeature.FeatureName = FeatureName.Token;
+                                            scFeature.FeatureFeatures = tokenFeature;
+                                        }
+                                        break;
+                                    }
                                 case FeatureName.MultiAsset:
                                     var multiAssetList = new List<string>();
                                     var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
@@ -332,6 +346,17 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 featuresList.Add(scFeature);
                                 break;
+                            case FeatureName.Token:
+                                {
+                                    var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
+                                    if (tokenData != null)
+                                    {
+                                        var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                        scFeature.FeatureName = FeatureName.Token;
+                                        scFeature.FeatureFeatures = tokenFeature;
+                                    }
+                                    break;
+                                }
                             case FeatureName.MultiAsset:
                                 var multiAssetList = new List<string>();
                                 var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
@@ -429,6 +454,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             var fileSize = Convert.ToInt32(repl.Run(@"FileSize").Value.ToString());
             var fileName = repl.Run(@"FileName").Value.ToString();
             var assetAuthorName = repl.Run(@"AssetAuthorName").Value.ToString();
+            var scVersion = repl.Run(@"SCVersion").Value != null ? (int)repl.Run(@"SCVersion").Value : 0;
             var properties = repl.Run(@"getProperties(Properties)").Value;
 
             var mainData = repl.Run(@"NftMain(""nftdata"")").Value.ToString();
@@ -437,7 +463,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             var assetData = repl.Run(@"NftMain(""getnftassetdata"")").Value.ToString();
             var assetDataArray = assetData.Split(new string[] { "|->" }, StringSplitOptions.None);
 
-            var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features);
+            var smartContractMain = GetSmartContractMain(name, description, minterAddress, minterName, scUID, features, scVersion);
             
             var extension = !string.IsNullOrWhiteSpace(fileName) ? Path.GetExtension(fileName) : "";
             var smartContractAssset = SmartContractAsset.GetSmartContractAsset(assetAuthorName, fileName, "Asset Folder", extension, fileSize);
@@ -470,6 +496,18 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                                 featuresList.Add(scFeature);
                                 break;
+
+                            case FeatureName.Token:
+                                {
+                                    var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
+                                    if(tokenData != null)
+                                    {
+                                        var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                        scFeature.FeatureName = FeatureName.Token;
+                                        scFeature.FeatureFeatures = tokenFeature;
+                                    }
+                                    break;
+                                }
                             case FeatureName.MultiAsset:
                                 var multiAssetList = new List<string>();
                                 var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
@@ -556,6 +594,18 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                             featuresList.Add(scFeature);
                             break;
+
+                        case FeatureName.Token:
+                            {
+                                var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
+                                if (tokenData != null)
+                                {
+                                    var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                    scFeature.FeatureName = FeatureName.Token;
+                                    scFeature.FeatureFeatures = tokenFeature;
+                                }
+                                break;
+                            }
                         case FeatureName.MultiAsset:
                             var multiAssetList = new List<string>();
                             var multiAssetCount = Convert.ToInt32(repl.Run(@"MultiAssetCount").Value.ToString());
@@ -621,7 +671,7 @@ namespace ReserveBlockCore.Models.SmartContracts
             return smartContractMain;
         }
 
-        private static SmartContractMain GetSmartContractMain(string name, string desc, string minterAddress, string minterName, string smartContractUID, string features)
+        private static SmartContractMain GetSmartContractMain(string name, string desc, string minterAddress, string minterName, string smartContractUID, string features, int scVersion)
         {
             SmartContractMain scMain = new SmartContractMain();
 
