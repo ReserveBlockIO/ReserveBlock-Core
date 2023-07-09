@@ -113,6 +113,10 @@ namespace ReserveBlockCore.Services
                             if (token != null)
                             {
                                 feature.FeatureFeatures = token;
+
+                                var imageBase = token.TokenImageURL == null && token.TokenImageBase == null ? TokenSourceGenerator.DefaultImageBase64 : token.TokenImageBase;
+                                token.TokenImageBase = imageBase;
+
                                 var tokenSource = await TokenSourceGenerator.Build(token, strBuild);
                                 strBuild = tokenSource.Item1;
                                 strTokenBld = tokenSource.Item2;
