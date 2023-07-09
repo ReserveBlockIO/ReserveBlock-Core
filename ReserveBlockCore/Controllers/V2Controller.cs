@@ -102,6 +102,7 @@ namespace ReserveBlockCore.Controllers
             {
                 Address = stateAccount.Key,
                 RBXBalance = stateAccount.Balance,
+                RBXLockedBalance= stateAccount.LockedBalance,
                 TokenAccounts = stateAccount.TokenAccounts?.Count > 0 ? stateAccount.TokenAccounts : tokenAccounts
             };
 
