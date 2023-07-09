@@ -721,67 +721,7 @@ namespace ReserveBlockCore.Controllers
 
             return output;
         }
-        /// <summary>
-        /// Creates a transaction to send a desired token from one account to another
-        /// </summary>
-        /// <param name="scUID"></param>
-        /// <param name="fromAddress"></param>
-        /// <param name="toAddress"></param>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("TransferToken/{scUID}/{fromAddress}/{toAddress}/{amount}")]
-        public async Task<string> TransferToken(string scUID, string fromAddress, string toAddress, decimal amount)
-        {
-            try
-            {
-                var sc = SmartContractStateTrei.GetSmartContractState(scUID);
-                if(sc == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
-
-                if(sc.IsToken == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
-
-                if(sc.IsToken.Value == false)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
-
-                if(sc.TokenDetails != null && sc.TokenDetails.IsPaused)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has been paused." });
-
-                toAddress = toAddress.Replace(" ", "").ToAddressNormalize();
-
-                var account = AccountData.GetSingleAccount(fromAddress);
-
-                if(account == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
-
-                var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
-
-                if(stateAccount == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
-
-                if(stateAccount.TokenAccounts.Count == 0)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
-
-                var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
-
-                if(tokenAccount == null)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
-
-                if(tokenAccount.Balance < amount)
-                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {tokenAccount.Balance} - Attempted Send of: {amount}." });
-
-                var result = await TokenContractService.TransferToken(sc, tokenAccount, fromAddress, toAddress, amount);
-
-                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
-            }
-            catch(Exception ex)
-            {
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
-            }
-
-            return JsonConvert.SerializeObject(new { Success = false, Message = $"Reached end of method." });
-        }
-
+        
         /// <summary>
         /// Creates a transaction to send a desired NFT from one wallet to another
         /// </summary>

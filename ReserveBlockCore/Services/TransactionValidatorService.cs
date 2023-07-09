@@ -231,6 +231,52 @@ namespace ReserveBlockCore.Services
                                             break;
                                         }
 
+                                    case "TokenPause()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var pause = jobj["Pause"]?.ToObject<bool?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if(txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if(scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if(scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            break;
+                                        }
+
+                                    case "TokenContractOwnerChange()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var toAddress = jobj["ToAddress"]?.ToObject<string?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            break;
+                                        }
+
                                     case "TokenTransfer()" :
                                         {
                                             var jobj = JObject.Parse(txData);
@@ -275,6 +321,54 @@ namespace ReserveBlockCore.Services
                                             var decimalsUsed = BitConverter.GetBytes(decimal.GetBits(amount.Value)[3])[2];
 
                                             if(decimalsUsed > tokenDetails.DecimalPlaces)
+                                                return (txResult, $"Too many decimals used. Amount used: {decimalsUsed} - Amount Allowed: {tokenDetails.DecimalPlaces}.");
+
+                                            break;
+                                        }
+
+                                    case "TokenBurn()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var amount = jobj["Amount"]?.ToObject<decimal?>();
+
+                                            if (amount == null ||fromAddress == null)
+                                                return (txResult, $"TX Data was missing items.");
+
+                                            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (stateAccount == null)
+                                                return (txResult, "Could not find account at state level.");
+
+                                            var tokenDetails = scStateTreiRec.TokenDetails;
+
+                                            if (tokenDetails == null)
+                                                return (txResult, "Could not find token details for contract at state level.");
+
+                                            if (tokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            var tokenAccounts = stateAccount.TokenAccounts;
+
+                                            if (tokenAccounts?.Count == 0)
+                                                return (txResult, "Could not find token accounts for account at state level.");
+
+                                            var tokenAccount = tokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                                            if (tokenAccount == null)
+                                                return (txResult, "No tokens exist for this account at state level.");
+
+                                            if (tokenAccount.Balance < amount.Value)
+                                                return (txResult, "Insufficient Balance.");
+
+                                            var decimalsUsed = BitConverter.GetBytes(decimal.GetBits(amount.Value)[3])[2];
+
+                                            if (decimalsUsed > tokenDetails.DecimalPlaces)
                                                 return (txResult, $"Too many decimals used. Amount used: {decimalsUsed} - Amount Allowed: {tokenDetails.DecimalPlaces}.");
 
                                             break;

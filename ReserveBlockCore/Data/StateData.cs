@@ -8,6 +8,7 @@ using ReserveBlockCore.Services;
 using System.Collections.Concurrent;
 using System.Xml.Linq;
 using LiteDB;
+using System.Net;
 
 namespace ReserveBlockCore.Data
 {
@@ -205,6 +206,15 @@ namespace ReserveBlockCore.Data
                                         break;
                                     case "TokenTransfer()":
                                         TokenTransfer(tx);
+                                        break;
+                                    case "TokenBurn()":
+                                        TokenBurn(tx);
+                                        break;
+                                    case "TokenPause()":
+                                        TokenPause(tx);
+                                        break;
+                                    case "TokenContractOwnerChange()":
+                                        TokenContractOwnerChange(tx);
                                         break;
                                     default:
                                         break;
@@ -1210,6 +1220,49 @@ namespace ReserveBlockCore.Data
                 SmartContractStateTrei.SaveSmartContract(scST);
             }
         }
+        private static void TokenContractOwnerChange(Transaction tx)
+        {
+            var txData = tx.Data;
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var toAddress = jobj["ToAddress"]?.ToObject<string?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    scStateTreiRec.TokenDetails.ContractOwner = toAddress;
+                    scStateTreiRec.OwnerAddress = toAddress;
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
+        }
+        private static void TokenPause(Transaction tx)
+        {
+            var txData = tx.Data;
+            var jobj = JObject.Parse(txData);
+            
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var pause = jobj["Pause"]?.ToObject<bool?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    scStateTreiRec.TokenDetails.IsPaused = !scStateTreiRec.TokenDetails.IsPaused;
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
+
+        }
 
         private static void TokenTransfer(Transaction tx)
         {
@@ -1287,6 +1340,43 @@ namespace ReserveBlockCore.Data
                 //}
             }
 
+        }
+
+        private static void TokenBurn(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+            var stDB = GetAccountStateTrei();
+
+            var jobj = JObject.Parse(txData);
+
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var amount = jobj["amount"]?.ToObject<decimal?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    var fromAccount = GetSpecificAccountStateTrei(fromAddress);
+
+                    var tokenAccountFrom = fromAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    if (tokenAccountFrom != null)
+                    {
+                        tokenAccountFrom.Balance -= amount.Value;
+                        int fromIndex = fromAccount.TokenAccounts.FindIndex(a => a.SmartContractUID == scUID);
+                        fromAccount.TokenAccounts[fromIndex] = tokenAccountFrom;
+                        stDB.UpdateSafe(fromAccount);
+                    }
+
+                    scStateTreiRec.TokenDetails.CurrentSupply -= amount.Value;
+
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
         }
 
         private static void StartSaleSmartContract(Transaction tx)
