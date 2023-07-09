@@ -250,6 +250,9 @@ namespace ReserveBlockCore.Services
                                             if (scStateTreiRec.TokenDetails == null)
                                                 return (txResult, "Token details for this SC are null.");
 
+                                            if(scStateTreiRec.TokenDetails.StartingSupply > 0.0M)
+                                                return (txResult, "Token supply was not set to infinite.");
+
                                             if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
                                                 return (txResult, "TX From address is not the owner of this Token SC.");
 
@@ -420,7 +423,7 @@ namespace ReserveBlockCore.Services
                                                 if(scStateTreiRec.NextOwner != null)
                                                     return (txResult, "You are attempting to transfer a Smart contract that has a new owner assigned to it.");
 
-                                                if(scStateTreiRec.IsToken == true)
+                                                if(scStateTreiRec.IsToken != null && scStateTreiRec.IsToken.Value == true)
                                                     return (txResult, "You are attempting to transfer a Token Smart contract, which is not allowed.");
                                             }
                                             else
@@ -446,7 +449,7 @@ namespace ReserveBlockCore.Services
                                                 {
                                                     return (txResult, "You are attempting to burn a Smart contract you don't own.");
                                                 }
-                                                if (scStateTreiRec.IsToken == true)
+                                                if (scStateTreiRec.IsToken != null && scStateTreiRec.IsToken.Value == true)
                                                     return (txResult, "You are attempting to burn a Token Smart contract, which is not allowed.");
                                             }
                                             else

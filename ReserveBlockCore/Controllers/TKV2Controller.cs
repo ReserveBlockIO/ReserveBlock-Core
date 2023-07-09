@@ -40,6 +40,7 @@ namespace ReserveBlockCore.Controllers
             try
             {
                 var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+
                 if (sc == null)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
 
@@ -174,6 +175,9 @@ namespace ReserveBlockCore.Controllers
 
                 if (account.Address != sc.TokenDetails.ContractOwner)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own this token contract." });
+
+                if (sc.TokenDetails.StartingSupply > 0.0M)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Token supply was not set to infinite." });
 
                 var result = await TokenContractService.TokenMint(sc, fromAddress, amount);
 

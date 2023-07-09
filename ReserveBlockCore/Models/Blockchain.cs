@@ -59,11 +59,12 @@ namespace ReserveBlockCore.Models
                 var blockExist = blockchain.Query().Where(x => x.Height == block.Height).FirstOrDefault();
                 if (blockExist == null)
                 {
+                    var cumulativeSize = Globals.Blockchain != null ? Globals.Blockchain.CumulativeSize : 0;
                     Blockchain rec = new Blockchain {
                         Hash = block.Hash,
                         Height = block.Height,
                         Size = block.Size,
-                        CumulativeSize = Globals.Blockchain.CumulativeSize + block.Size
+                        CumulativeSize = cumulativeSize + block.Size
                     };
 
                     blockchain.InsertSafe(rec); //insert latest

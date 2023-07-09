@@ -53,6 +53,7 @@ namespace ReserveBlockCore.Controllers
                         {
                             Address = account.Address,
                             RBXBalance = account.Balance,
+                            RBXLockedBalance = account.LockedBalance,
                             TokenAccounts = stateAccount.TokenAccounts?.Count > 0 ? stateAccount.TokenAccounts : tokenAccounts
                         };
                         accountBalanceList.Add(accountBalance);
