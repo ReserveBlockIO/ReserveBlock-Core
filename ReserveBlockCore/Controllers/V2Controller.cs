@@ -80,8 +80,32 @@ namespace ReserveBlockCore.Controllers
 
                 return JsonConvert.SerializeObject(new { Success = true, Message = $"Accounts Found", AccountBalances = accountBalanceList });
             }
+        }
 
-            return JsonConvert.SerializeObject(new { Success = false, Message = $"Reached end of method"});
+        /// <summary>
+        /// Gets RBX and Token Balances from State for specific address. Local or Remote
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("GetStateBalance/{address}")]
+        public async Task<string> GetStateBalance(string address)
+        {
+            var stateAccount = StateData.GetSpecificAccountStateTrei(address);
+            List<TokenAccount> tokenAccounts = new List<TokenAccount>();
+
+            if (stateAccount == null)
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Account not found." });
+
+            AccountBalance accountBalance = new AccountBalance
+            {
+                Address = stateAccount.Key,
+                RBXBalance = stateAccount.Balance,
+                TokenAccounts = stateAccount.TokenAccounts?.Count > 0 ? stateAccount.TokenAccounts : tokenAccounts
+            };
+
+            return JsonConvert.SerializeObject(new { Success = true, Message = $"Account Found", AccountBalance = accountBalance });
+
         }
     }
 }

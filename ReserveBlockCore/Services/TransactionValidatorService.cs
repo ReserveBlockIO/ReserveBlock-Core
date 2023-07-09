@@ -231,6 +231,34 @@ namespace ReserveBlockCore.Services
                                             break;
                                         }
 
+                                    case "TokenMint()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var amount = jobj["Amount"]?.ToObject<decimal?>();
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if(fromAddress == null || amount == null)
+                                                return (txResult, "Missing TX Data Fields.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if(amount.Value < 1.0M)
+                                                return (txResult, "You must mint at least 1 token.");
+
+                                            break;
+                                        }
+
                                     case "TokenPause()":
                                         {
                                             var jobj = JObject.Parse(txData);
@@ -273,6 +301,9 @@ namespace ReserveBlockCore.Services
 
                                             if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
                                                 return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (scStateTreiRec.TokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
 
                                             break;
                                         }

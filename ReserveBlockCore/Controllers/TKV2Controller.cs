@@ -95,45 +95,95 @@ namespace ReserveBlockCore.Controllers
         [Route("BurnToken/{scUID}/{fromAddress}/{amount}")]
         public async Task<string> BurnToken(string scUID, string fromAddress, decimal amount)
         {
-            var sc = SmartContractStateTrei.GetSmartContractState(scUID);
-            if (sc == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
+            try
+            {
+                var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+                if (sc == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
 
-            if (sc.IsToken == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+                if (sc.IsToken == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
 
-            if (sc.IsToken.Value == false)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+                if (sc.IsToken.Value == false)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
 
-            if (sc.TokenDetails != null && sc.TokenDetails.IsPaused)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has been paused." });
+                if (sc.TokenDetails != null && sc.TokenDetails.IsPaused)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has been paused." });
 
-            var account = AccountData.GetSingleAccount(fromAddress);
+                var account = AccountData.GetSingleAccount(fromAddress);
 
-            if (account == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+                if (account == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
 
-            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
 
-            if (stateAccount == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
+                if (stateAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
 
-            if (stateAccount.TokenAccounts.Count == 0)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
+                if (stateAccount.TokenAccounts.Count == 0)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
 
-            var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
 
-            if (tokenAccount == null)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
+                if (tokenAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
 
-            if (tokenAccount.Balance < amount)
-                return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {tokenAccount.Balance} - Attempted Send of: {amount}." });
+                if (tokenAccount.Balance < amount)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Insufficient Balance. Current Balance: {tokenAccount.Balance} - Attempted Send of: {amount}." });
 
-            var result = await TokenContractService.BurnToken(sc, tokenAccount, fromAddress, amount);
+                var result = await TokenContractService.BurnToken(sc, tokenAccount, fromAddress, amount);
 
-            return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
+                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
         }
 
+        /// <summary>
+        /// Creates a transaction to mint new tokens.
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="fromAddress"></param>
+        /// <param name="amount"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("TokenMint/{scUID}/{fromAddress}/{amount}")]
+        public async Task<string> TokenMint(string scUID, string fromAddress, decimal amount)
+        {
+            try
+            {
+                var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+                if (sc == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
+
+                if (sc.IsToken == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                if (sc.IsToken.Value == false)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                if (sc.TokenDetails != null && sc.TokenDetails.IsPaused)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has been paused." });
+
+                var account = AccountData.GetSingleAccount(fromAddress);
+
+                if (account == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+
+                if (account.Address != sc.TokenDetails.ContractOwner)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own this token contract." });
+
+                var result = await TokenContractService.TokenMint(sc, fromAddress, amount);
+
+                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
+            }
+            catch (Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
 
         /// <summary>
         /// Pauses contract from doing anything else. Only owner can pause and unpause.

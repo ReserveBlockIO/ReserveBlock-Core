@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Xml.Linq;
 using LiteDB;
 using System.Net;
+using System.Security.Principal;
 
 namespace ReserveBlockCore.Data
 {
@@ -205,6 +206,9 @@ namespace ReserveBlockCore.Data
                                         DeployTokenContract(tx, block);
                                         break;
                                     case "TokenTransfer()":
+                                        TokenTransfer(tx);
+                                        break;
+                                    case "TokenMint()":
                                         TokenTransfer(tx);
                                         break;
                                     case "TokenBurn()":
@@ -1263,7 +1267,55 @@ namespace ReserveBlockCore.Data
             }
 
         }
+        private static void TokenMint(Transaction tx)
+        {
+            SmartContractStateTrei scST = new SmartContractStateTrei();
+            var txData = tx.Data;
+            var stDB = GetAccountStateTrei();
 
+            var jobj = JObject.Parse(txData);
+
+            var function = (string?)jobj["Function"];
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var amount = jobj["amount"]?.ToObject<decimal?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    var fromAccount = GetSpecificAccountStateTrei(fromAddress);
+                    var tokenAccountFrom = fromAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    if (tokenAccountFrom != null)
+                    {
+                        tokenAccountFrom.Balance += amount.Value;
+                        int fromIndex = fromAccount.TokenAccounts.FindIndex(a => a.SmartContractUID == scUID);
+                        fromAccount.TokenAccounts[fromIndex] = tokenAccountFrom;
+                        stDB.UpdateSafe(fromAccount);
+                    }
+                    else
+                    {
+                        var nTokenAccountT0 = TokenAccount.CreateTokenAccount(scUID, scStateTreiRec.TokenDetails.TokenName, scStateTreiRec.TokenDetails.TokenTicker,
+                            amount.Value, scStateTreiRec.TokenDetails.DecimalPlaces);
+
+                        if (fromAccount.TokenAccounts?.Count == 0)
+                        {
+                            List<TokenAccount> tokenAccounts = new List<TokenAccount>
+                            {
+                                nTokenAccountT0
+                            };
+
+                            fromAccount.TokenAccounts = tokenAccounts;
+                            stDB.UpdateSafe(fromAccount);
+                        }
+                    }
+                    scStateTreiRec.TokenDetails.CurrentSupply += amount.Value;
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
+
+        }
         private static void TokenTransfer(Transaction tx)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
