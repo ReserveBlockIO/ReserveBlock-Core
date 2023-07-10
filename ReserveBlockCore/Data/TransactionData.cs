@@ -10,6 +10,7 @@ using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Services;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Xml.Linq;
 
 namespace ReserveBlockCore.Data
 {
@@ -394,13 +395,36 @@ namespace ReserveBlockCore.Data
                                 tx.TransactionType != TransactionType.RESERVE &&
                                 tx.TransactionType != TransactionType.NFT_SALE)
                             {
-                                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                                if (scDataArray != null)
+                                string scUID = "";
+                                string function = "";
+                                bool skip = false;
+                                JToken? scData = null;
+                                JArray? scDataArray = null;
+                                try
                                 {
-                                    var scData = scDataArray[0];
+                                    scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                                    scData = scDataArray[0];
 
-                                    var function = (string?)scData["Function"];
-                                    var scUID = (string?)scData["ContractUID"];
+                                    function = (string?)scData["Function"];
+                                    scUID = (string?)scData["ContractUID"];
+                                    skip = true;
+                                }
+                                catch { }
+
+                                try
+                                {
+                                    if (!skip)
+                                    {
+                                        var jobj = JObject.Parse(tx.Data);
+                                        scUID = jobj["ContractUID"]?.ToObject<string?>();
+                                        function = jobj["Function"]?.ToObject<string?>();
+                                    }
+                                }
+                                catch { }
+
+                                if (scDataArray != null && skip)
+                                {
+                                    
                                     if (!string.IsNullOrWhiteSpace(function))
                                     {
                                         var otherTxs = approvedMemPoolList.Where(x => x.FromAddress == tx.FromAddress && x.Hash != tx.Hash).ToList();
