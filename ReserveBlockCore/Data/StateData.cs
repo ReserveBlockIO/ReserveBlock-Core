@@ -248,6 +248,9 @@ namespace ReserveBlockCore.Data
                                     case "TokenVoteTopicCreate()":
                                         TokenVoteTopicCreate(tx);
                                         break;
+                                    case "TokenVoteTopicCast()":
+                                        TokenVoteTopicCast(tx);
+                                        break;
                                     default:
                                         break;
                                 }
@@ -1220,6 +1223,8 @@ namespace ReserveBlockCore.Data
 
                                             toAddress.TokenAccounts = tokenAccounts;
                                         }
+
+                                        stDb.UpdateSafe(toAddress);
                                     }
                                     else
                                     {
@@ -1240,7 +1245,11 @@ namespace ReserveBlockCore.Data
                                             LockedBalance = 0.0M,
                                             TokenAccounts = tokenAccounts
                                         };
+
+                                        stDb.InsertSafe(acctStateTreiTo);
                                     }
+
+
                                 }
                             }
                             
