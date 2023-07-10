@@ -23,9 +23,9 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                 strBuild.AppendLine("let TokenTicker = \"" + token.TokenTicker + "\"");
                 strBuild.AppendLine("let TokenDecimalPlaces = " + token.TokenDecimalPlaces.ToString());
                 strBuild.AppendLine("let TokenSupply = " + token.TokenSupply.ToString());
-                strBuild.AppendLine("let TokenBurnable = " + token.TokenBurnable.ToString());
-                strBuild.AppendLine("let TokenVoting = " + token.TokenVoting.ToString());
-                strBuild.AppendLine("let TokenMintable = " + token.TokenVoting.ToString());
+                strBuild.AppendLine("let TokenBurnable = " + token.TokenBurnable.ToString().ToLower());
+                strBuild.AppendLine("let TokenVoting = " + token.TokenVoting.ToString().ToLower());
+                strBuild.AppendLine("let TokenMintable = " + token.TokenVoting.ToString().ToLower());
                 strBuild.AppendLine("let TokenImageURL = \"" + token.TokenImageURL + "\"");
                 strBuild.AppendLine("let TokenImageBase = \"" + token.TokenImageBase + "\"");
 
@@ -41,16 +41,16 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
                     var votingToken = RandomStringUtility.GetRandomStringOnlyLetters(18);
                     strTokenBld.AppendLine("function GetVotingRules() : any");
                     strTokenBld.AppendLine("{");
-                    strTokenBld.AppendLine($"   return getVotingRules(1, \"" + votingToken + "\", 30, true");
+                    strTokenBld.AppendLine($"   return getVotingRules(1, \"" + votingToken + "\", 30, true)");
                     strTokenBld.AppendLine("}");
                     tokenFuncs = tokenFuncs + " + " + appendChar + " + \"TokenVote()\" + " + appendChar + " + \"TokenCreateVote()\"";
                 }
 
                 if (token.TokenBurnable)
                 {
-                    strTokenBld.AppendLine("function GetBurnRules() : any");
+                    strTokenBld.AppendLine("function GetBurnRules() : int");
                     strTokenBld.AppendLine("{");
-                    strTokenBld.AppendLine("   return getBurnRules(0)");
+                    strTokenBld.AppendLine("   return 0");
                     strTokenBld.AppendLine("}");
                     tokenFuncs = tokenFuncs + " + " + appendChar + " + \"TokenBurn()\"";
                 }
