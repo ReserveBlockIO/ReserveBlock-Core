@@ -663,13 +663,39 @@ namespace ReserveBlockCore.Data
             {
                 if(tx.Data != null)
                 {
-                    var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                    if(scDataArray != null)
+                    string scUID = "";
+                    string function = "";
+                    bool skip = false;
+                    JToken? scData = null;
+                    JArray? scDataArray = null;
+                    try
                     {
-                        var scData = scDataArray[0];
+                        scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                        scData = scDataArray[0];
 
-                        var function = (string?)scData["Function"];
-                        var scUID = (string?)scData["ContractUID"];
+                        function = (string?)scData["Function"];
+                        scUID = (string?)scData["ContractUID"];
+                        skip = true;
+                    }
+                    catch { }
+
+                    try
+                    {
+                        if (!skip)
+                        {
+                            var jobj = JObject.Parse(tx.Data);
+                            scUID = jobj["ContractUID"]?.ToObject<string?>();
+                            function = jobj["Function"]?.ToObject<string?>();
+                        }
+                    }
+                    catch { }
+
+                    if (scDataArray != null && skip)
+                    {
+                        scData = scDataArray[0];
+
+                        function = (string?)scData["Function"];
+                        scUID = (string?)scData["ContractUID"];
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             switch (function)
