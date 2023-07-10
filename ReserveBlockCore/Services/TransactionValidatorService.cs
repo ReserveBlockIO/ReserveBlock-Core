@@ -229,9 +229,6 @@ namespace ReserveBlockCore.Services
                                             if (txRequest.FromAddress.StartsWith("xRBX"))
                                                 return (txResult, "A reserve account may not mint a smart contract.");
 
-                                            if(txRequest.ToAddress != "Token_Base")
-                                                return (txResult, "To Address must be 'Token_Base'.");
-
                                             break;
                                         }
 
@@ -262,6 +259,9 @@ namespace ReserveBlockCore.Services
 
                                             if(amount.Value < 1.0M)
                                                 return (txResult, "You must mint at least 1 token.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
 
                                             break;
                                         }
