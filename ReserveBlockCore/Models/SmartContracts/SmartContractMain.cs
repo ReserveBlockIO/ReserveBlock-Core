@@ -276,6 +276,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                                 var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
                                                 scFeature.FeatureName = FeatureName.Token;
                                                 scFeature.FeatureFeatures = tokenFeature;
+                                                featuresList.Add(scFeature);
                                             }
                                         }
                                         break;
@@ -364,6 +365,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                             var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
                                             scFeature.FeatureName = FeatureName.Token;
                                             scFeature.FeatureFeatures = tokenFeature;
+                                            featuresList.Add(scFeature);
                                         }
                                     }
                                     break;
@@ -520,6 +522,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                             var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
                                             scFeature.FeatureName = FeatureName.Token;
                                             scFeature.FeatureFeatures = tokenFeature;
+                                            featuresList.Add(scFeature);
                                         }
                                     }
                                     break;
@@ -623,6 +626,7 @@ namespace ReserveBlockCore.Models.SmartContracts
                                         var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
                                         scFeature.FeatureName = FeatureName.Token;
                                         scFeature.FeatureFeatures = tokenFeature;
+                                        featuresList.Add(scFeature);
                                     }
                                 }
                                 break;

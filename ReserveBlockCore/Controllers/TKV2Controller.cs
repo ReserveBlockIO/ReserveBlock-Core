@@ -165,6 +165,9 @@ namespace ReserveBlockCore.Controllers
                 if (sc.IsToken.Value == false)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
 
+                if(sc.TokenDetails == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Token Details are null." });
+
                 if (sc.TokenDetails != null && sc.TokenDetails.IsPaused)
                     return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has been paused." });
 
