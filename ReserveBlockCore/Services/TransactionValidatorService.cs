@@ -278,7 +278,10 @@ namespace ReserveBlockCore.Services
                                             if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
                                                 return (txResult, "TX From address is not the owner of this Token SC.");
 
-                                            if(amount.Value < 1.0M)
+                                            if (!scStateTreiRec.TokenDetails.TokenMintable)
+                                                return (txResult, "Minting not enabled on this contract");
+
+                                            if (amount.Value < 1.0M)
                                                 return (txResult, "You must mint at least 1 token.");
 
                                             if (txRequest.ToAddress != "Token_Base")
@@ -460,6 +463,9 @@ namespace ReserveBlockCore.Services
                                             if (tokenAccount == null)
                                                 return (txResult, "No tokens exist for this account at state level.");
 
+                                            if (!scStateTreiRec.TokenDetails.TokenBurnable)
+                                                return (txResult, "Burning not enabled on this contract");
+
                                             if (tokenAccount.Balance < amount.Value)
                                                 return (txResult, "Insufficient Balance.");
 
@@ -495,6 +501,9 @@ namespace ReserveBlockCore.Services
 
                                             if (scStateTreiRec.TokenDetails.IsPaused)
                                                 return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if (!scStateTreiRec.TokenDetails.TokenVoting)
+                                                return (txResult, "Voting not enabled on this contract");
 
                                             break;
                                         }

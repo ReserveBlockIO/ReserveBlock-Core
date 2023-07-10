@@ -8,6 +8,9 @@
         public decimal CurrentSupply { get; set; }
         public int DecimalPlaces { get; set; }
         public bool IsPaused { get; set; }
+        public bool TokenBurnable { get; set; }
+        public bool TokenVoting { get; set; }
+        public bool TokenMintable { get; set; }
         public string ContractOwner { get; set; }
         public List<string>? AddressBlackList { get; set; }
         public List<TokenVoteTopic> TokenTopicList { get; set; }
@@ -21,7 +24,10 @@
                 CurrentSupply = tokenFeature.TokenSupply,
                 IsPaused = false,
                 ContractOwner = scMain.MinterAddress,
-                DecimalPlaces = tokenFeature.TokenDecimalPlaces
+                DecimalPlaces = tokenFeature.TokenDecimalPlaces,
+                TokenBurnable = tokenFeature.TokenBurnable,
+                TokenMintable = tokenFeature.TokenMintable,
+                TokenVoting = tokenFeature.TokenVoting,
             };
 
             return tokenDetails;
