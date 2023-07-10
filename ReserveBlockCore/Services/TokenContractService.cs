@@ -5,6 +5,7 @@ using ReserveBlockCore.EllipticCurve;
 using ReserveBlockCore.Models;
 using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Utilities;
+using System;
 using System.Net;
 using System.Security.Principal;
 using System.Text;
@@ -34,16 +35,8 @@ namespace ReserveBlockCore.Services
                 var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
                 var privateKey = !isReserveAccount ? account?.GetPrivKey : reserveAccountKey;
 
-                var txData = "";
-
-                var newSCInfo = new[]
-                {
-                    new { Function = "TokenTransfer()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress, Amount = amount}
-                };
-
-                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenTransfer()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress, Amount = amount });
                 
-
                 tokenTx = new Transaction
                 {
                     Timestamp = TimeUtil.GetTime(),
@@ -143,13 +136,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = account?.PublicKey;
                 var privateKey = account?.GetPrivKey;
 
-                var txData = "";
-                var newSCInfo = new[]
-                {
-                     new { Function = "TokenMint()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount}
-                };
-
-                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenMint()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount });
 
                 tokenTx = new Transaction
                 {
@@ -252,14 +239,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = !isReserveAccount ? account?.PublicKey : rAccount?.PublicKey;
                 var privateKey = !isReserveAccount ? account?.GetPrivKey : reserveAccountKey;
 
-                var txData = "";
-
-                var newSCInfo = new[]
-                {
-                    new { Function = "TokenBurn()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount}
-                };
-
-                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenBurn()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Amount = amount });
 
                 tokenTx = new Transaction
                 {
@@ -361,13 +341,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = account?.PublicKey;
                 var privateKey = account?.GetPrivKey;
 
-                var txData = "";
-                var newSCInfo = new[]
-                {
-                     new { Function = "TokenBanAddress()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, BanAddress = banAddress}
-                };
-
-                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenBanAddress()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, BanAddress = banAddress });
 
                 tokenTx = new Transaction
                 {
@@ -466,13 +440,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = account?.PublicKey;
                 var privateKey = account?.GetPrivKey;
 
-                var txData = "";
-                var newSCInfo = new[]
-                {
-                     new { Function = "TokenContractOwnerChange()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress}
-                };
-
-                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenContractOwnerChange()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, ToAddress = toAddress });
 
                 tokenTx = new Transaction
                 {
@@ -571,14 +539,7 @@ namespace ReserveBlockCore.Services
                 var publicKey = account?.PublicKey;
                 var privateKey = account?.GetPrivKey;
 
-                var txData = "";
-
-                var newSCInfo = new[]
-                {
-                     new { Function = "TokenPause()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Pause = pause}
-                };
-
-                txData = JsonConvert.SerializeObject(newSCInfo);
+                var txData = JsonConvert.SerializeObject(new { Function = "TokenPause()", ContractUID = sc.SmartContractUID, FromAddress = fromAddress, Pause = pause });
                 
                 tokenTx = new Transaction
                 {
