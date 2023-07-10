@@ -292,12 +292,35 @@ namespace ReserveBlockCore.Services
                                         {
                                             try
                                             {
-                                                var scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
-                                                if (scDataArray != null)
+                                                string scUID = "";
+                                                string function = "";
+                                                bool skip = false;
+                                                JToken? scData = null;
+                                                JArray? scDataArray = null;
+                                                try
                                                 {
-                                                    var scData = scDataArray[0];
+                                                    scDataArray = JsonConvert.DeserializeObject<JArray>(blkTransaction.Data);
+                                                    scData = scDataArray[0];
+                                                    skip = true;
+                                                }
+                                                catch { }
 
-                                                    var function = (string?)scData["Function"];
+                                                try
+                                                {
+                                                    if (!skip)
+                                                    {
+                                                        var jobj = JObject.Parse(blkTransaction.Data);
+                                                        scUID = jobj["ContractUID"]?.ToObject<string?>();
+                                                        function = jobj["Function"]?.ToObject<string?>();
+                                                    }
+                                                }
+                                                catch { }
+
+                                                if (scDataArray != null && skip)
+                                                {
+                                                    scData = scDataArray[0];
+
+                                                    function = (string?)scData["Function"];
 
                                                     if (!string.IsNullOrWhiteSpace(function))
                                                     {
@@ -310,7 +333,7 @@ namespace ReserveBlockCore.Services
                                                                     otx.TransactionType == TransactionType.NFT_BURN ||
                                                                     otx.TransactionType == TransactionType.NFT_MINT)
                                                                 {
-                                                                    var scUID = (string?)scData["ContractUID"];
+                                                                    scUID = (string?)scData["ContractUID"];
                                                                     if (otx.Data != null)
                                                                     {
                                                                         var ottxDataArray = JsonConvert.DeserializeObject<JArray>(otx.Data);

@@ -39,13 +39,25 @@ namespace ReserveBlockCore.Services
             }
             if (tx.TransactionType == TransactionType.NFT_TX)
             {
-                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                if (scDataArray != null)
+                string scUID = "";
+                string function = "";
+                bool skip = false;
+                JToken? scData = null;
+                JArray? scDataArray = null;
+                try
                 {
-                    var scData = scDataArray[0];
+                    scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                    scData = scDataArray[0];
+                    skip = true;
+                }
+                catch { }
+
+                if (scDataArray != null && skip)
+                {
+                    scData = scDataArray[0];
                     if (scData != null)
                     {
-                        var function = (string?)scData["Function"];
+                        function = (string?)scData["Function"];
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             if (function == "Transfer()")
@@ -580,13 +592,35 @@ namespace ReserveBlockCore.Services
             }
             if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_SALE)
             {
-                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                if (scDataArray != null)
+                string scUID = "";
+                string function = "";
+                bool skip = false;
+                JToken? scData = null;
+                JArray? scDataArray = null;
+                try
                 {
-                    var scData = scDataArray[0];
+                    scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                    function = (string?)scData["Function"];
+                    scData = scDataArray[0];
+                    skip = true;
+                }
+                catch { }
+
+                try
+                {
+                    if (!skip)
+                    {
+                        var jobj = JObject.Parse(tx.Data);
+                        function = jobj["Function"]?.ToObject<string?>();
+                    }
+                }
+                catch { }
+
+                if (scDataArray != null && skip)
+                {
+                    scData = scDataArray[0];
                     if (scData != null)
                     {
-                        var function = (string?)scData["Function"];
                         if (!string.IsNullOrWhiteSpace(function))
                         {
                             if (function == "Transfer()")
