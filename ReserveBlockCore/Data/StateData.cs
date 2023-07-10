@@ -1405,7 +1405,7 @@ namespace ReserveBlockCore.Data
                     var fromAccount = GetSpecificAccountStateTrei(fromAddress);
 
                     
-                    var tokenAccountFrom = fromAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    var tokenAccountFrom = fromAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
                     if(tokenAccountFrom != null)
                     {
                         tokenAccountFrom.Balance -= amount.Value;
