@@ -242,8 +242,8 @@ namespace ReserveBlockCore.Controllers
         /// <param name="fromAddress"></param>
         /// <param name="banAddress"></param>
         /// <returns></returns>
-        /// [HttpGet]
-        [Route("BanAddress/{scUID}/{fromAddress}/{toAddress}")]
+        [HttpGet]
+        [Route("BanAddress/{scUID}/{fromAddress}/{banAddress}")]
         public async Task<string> BanAddress(string scUID, string fromAddress, string banAddress)
         {
             try
