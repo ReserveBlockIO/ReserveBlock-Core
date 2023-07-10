@@ -210,7 +210,7 @@ namespace ReserveBlockCore.Data
                                         TokenTransfer(tx);
                                         break;
                                     case "TokenMint()":
-                                        TokenTransfer(tx);
+                                        TokenMint(tx);
                                         break;
                                     case "TokenBurn()":
                                         TokenBurn(tx);
