@@ -474,6 +474,86 @@ namespace ReserveBlockCore.Services
                                             break;
                                         }
 
+                                    case "TokenVoteTopicCreate()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (txRequest.FromAddress != fromAddress)
+                                                return (txResult, "From Addresses Do not match.");
+
+                                            if (scStateTreiRec.TokenDetails == null)
+                                                return (txResult, "Token details for this SC are null.");
+
+                                            if (scStateTreiRec.TokenDetails.ContractOwner != txRequest.FromAddress)
+                                                return (txResult, "TX From address is not the owner of this Token SC.");
+
+                                            if (scStateTreiRec.TokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            break;
+                                        }
+
+                                    case "TokenVoteTopicCast()":
+                                        {
+                                            var jobj = JObject.Parse(txData);
+
+                                            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+                                            var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+                                            var voteType = jobj["TopicUID"]?.ToObject<VoteType?>();
+
+                                            var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+                                            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                                            if (scStateTreiRec == null)
+                                                return (txResult, "Could not find smart contract at state level.");
+
+                                            if (stateAccount == null)
+                                                return (txResult, "Could not find account at state level.");
+
+                                            var tokenDetails = scStateTreiRec.TokenDetails;
+
+                                            if (tokenDetails == null)
+                                                return (txResult, "Could not find token details for contract at state level.");
+
+                                            if (tokenDetails.IsPaused)
+                                                return (txResult, "Contract is paused. NO TXs may go through.");
+
+                                            if (tokenDetails.AddressBlackList?.Count > 0)
+                                            {
+                                                if (tokenDetails.AddressBlackList.Exists(x => x == txRequest.FromAddress))
+                                                    return (txResult, "This address has been blacklisted and may no longer perform transfers.");
+                                            }
+
+                                            var topic = tokenDetails.TokenTopicList?.Where(x => x.TopicUID == topicUID).FirstOrDefault();
+
+                                            if (topic == null)
+                                                return (txResult, "Topic was not found.");
+
+                                            var tokenAccounts = stateAccount.TokenAccounts;
+
+                                            if (tokenAccounts?.Count == 0)
+                                                return (txResult, "Could not find token accounts for account at state level.");
+
+                                            var tokenAccount = tokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                                            if (tokenAccount == null)
+                                                return (txResult, "No tokens exist for this account at state level.");
+
+                                            if (tokenAccount.Balance < topic.MinimumVoteRequirement)
+                                                return (txResult, "Insufficient Balance to cast a vote.");
+
+                                            if (txRequest.ToAddress != "Token_Base")
+                                                return (txResult, "To Address must be 'Token_Base'.");
+
+                                            break;
+                                        }
+
                                     case "Transfer()":
                                         {
                                             var toAddress = (string?)scData["ToAddress"];

@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using ReserveBlockCore.Data;
 using ReserveBlockCore.Models;
+using ReserveBlockCore.Models.SmartContracts;
 using ReserveBlockCore.Services;
+using System;
 using System.Net;
 using System.Security.Principal;
 
@@ -326,6 +328,131 @@ namespace ReserveBlockCore.Controllers
 
             }
             catch(Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+        }
+
+        /// <summary>
+        /// Post a vote topic for a token community.
+        /// </summary>
+        /// <param name="jsonData"></param>
+        /// <returns></returns>
+        [HttpPost("CreateTokenTopic")]
+        public async Task<string> CreateTokenTopic([FromBody] object jsonData)
+        {
+            try
+            {
+                if (jsonData != null)
+                {
+                    var topicCreate = JsonConvert.DeserializeObject<TokenVoteTopic.TopicCreate>(jsonData.ToString());
+                    var scUID = topicCreate.SmartContractUID;
+                    var fromAddress = topicCreate.FromAddress;
+
+                    var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+
+                    if (sc == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
+
+                    if (sc.IsToken == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                    if (sc.IsToken.Value == false)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                    if (sc.TokenDetails == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Token details are null." });
+
+                    var account = AccountData.GetSingleAccount(fromAddress);
+
+                    if (account == null)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+
+                    if (account.Address != sc.TokenDetails.ContractOwner)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own this token contract." });
+
+                    var topic = new TokenVoteTopic
+                    {
+                        TopicName = topicCreate.TopicName,
+                        TopicDescription = topicCreate.TopicDescription,
+                        SmartContractUID = topicCreate.SmartContractUID,
+                        MinimumVoteRequirement = topicCreate.MinimumVoteRequirement,
+                    };
+
+                    var buildResult = topic.Build(topicCreate.VotingEndDays);
+
+                    if (!buildResult)
+                        return JsonConvert.SerializeObject(new { Success = false, Message = $"Failed to create topic." });
+
+                    var result = await TokenContractService.CreateTokenVoteTopic(sc, fromAddress, topic);
+
+                    return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
+                }
+            }
+            catch(Exception ex)
+            {
+                return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
+            }
+            return JsonConvert.SerializeObject(new { Success = false, Message = $"End of Method." });
+        }
+
+        /// <summary>
+        /// Cast your vote on a specific token topic. (yes or no)
+        /// </summary>
+        /// <param name="scUID"></param>
+        /// <param name="fromAddress"></param>
+        /// <param name="topicUID"></param>
+        /// <param name="voteType"></param>
+        /// <returns></returns>
+        [HttpGet("CastTokenTopicVote/{scUID}/{fromAddress}/{topicUID}/{voteType}")]
+        public async Task<string> CastTokenTopicVote(string scUID, string fromAddress, string topicUID, VoteType voteType)
+        {
+            try
+            {
+                var sc = SmartContractStateTrei.GetSmartContractState(scUID);
+                if (sc == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Could not locate the requested Smart Contract." });
+
+                if (sc.IsToken == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                if (sc.IsToken.Value == false)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Smart Contract is not a token contract." });
+
+                if (sc.TokenDetails != null && sc.TokenDetails.IsPaused)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Contract has been paused." });
+
+                var topic = sc.TokenDetails?.TokenTopicList?.Where(x => x.TopicUID == topicUID).FirstOrDefault();
+
+                if(topic == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Topic was not found." });
+
+                var account = AccountData.GetSingleAccount(fromAddress);
+
+                if (account == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist locally." });
+
+                var stateAccount = StateData.GetSpecificAccountStateTrei(fromAddress);
+
+                if (stateAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not exist at the state level." });
+
+                if (stateAccount.TokenAccounts.Count == 0)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not have any token accounts." });
+
+                var tokenAccount = stateAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+
+                if (tokenAccount == null)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"Account does not own any of the token {sc.TokenDetails?.TokenName}." });
+
+                if(tokenAccount.Balance < topic.MinimumVoteRequirement)
+                    return JsonConvert.SerializeObject(new { Success = false, Message = $"You do not meet the minimum required to vote." });
+
+                var result = await TokenContractService.CastTokenVoteTopic(sc, tokenAccount, fromAddress, topicUID, voteType);
+
+                return JsonConvert.SerializeObject(new { Success = result.Item1, Message = $"Result: {result.Item2}" });
+            }
+            catch (Exception ex)
             {
                 return JsonConvert.SerializeObject(new { Success = false, Message = $"Unknown Error: {ex.ToString()}" });
             }

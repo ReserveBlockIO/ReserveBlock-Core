@@ -10,6 +10,7 @@
         public bool IsPaused { get; set; }
         public string ContractOwner { get; set; }
         public List<string>? AddressBlackList { get; set; }
+        public List<TokenVoteTopic> TokenTopicList { get; set; }
 
         public static TokenDetails CreateTokenDetails(TokenFeature tokenFeature, SmartContractMain scMain)
         {

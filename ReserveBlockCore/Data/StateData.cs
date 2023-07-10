@@ -245,6 +245,9 @@ namespace ReserveBlockCore.Data
                                     case "TokenContractOwnerChange()":
                                         TokenContractOwnerChange(tx);
                                         break;
+                                    case "TokenVoteTopicCreate()":
+                                        TokenVoteTopicCreate(tx);
+                                        break;
                                     default:
                                         break;
                                 }
@@ -1268,6 +1271,75 @@ namespace ReserveBlockCore.Data
                     scStateTreiRec.TokenDetails.ContractOwner = toAddress;
                     scStateTreiRec.OwnerAddress = toAddress;
                     SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
+        }
+
+        private static void TokenVoteTopicCreate(Transaction tx)
+        {
+            var txData = tx.Data;
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+            var topic = jobj["TokenVoteTopic"]?.ToObject<TokenVoteTopic?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    var topicList = scStateTreiRec.TokenDetails.TokenTopicList;
+                    if (topicList?.Count > 0)
+                    {
+                        var exist = scStateTreiRec.TokenDetails.TokenTopicList.Exists(x => x.TopicUID == topic.TopicUID);
+                        if (!exist)
+                        {
+                            scStateTreiRec.TokenDetails.TokenTopicList.Add(topic);
+                        }
+                    }
+                    else
+                    {
+                        scStateTreiRec.TokenDetails.TokenTopicList = new List<TokenVoteTopic> { topic };
+                    }
+                    SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                }
+            }
+        }
+
+        private static void TokenVoteTopicCast(Transaction tx)
+        {
+            var txData = tx.Data;
+            var jobj = JObject.Parse(txData);
+            var function = (string?)jobj["Function"];
+
+            var scUID = jobj["ContractUID"]?.ToObject<string?>();
+            var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
+            var topicUID = jobj["TopicUID"]?.ToObject<string?>();
+            var voteType = jobj["TopicUID"]?.ToObject<VoteType?>();
+
+            var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
+            if (scStateTreiRec != null)
+            {
+                if (scStateTreiRec.TokenDetails != null)
+                {
+                    var topicList = scStateTreiRec.TokenDetails.TokenTopicList;
+                    if (topicList?.Count > 0)
+                    {
+                        var topic = scStateTreiRec.TokenDetails.TokenTopicList.Where(x => x.TopicUID == topicUID).FirstOrDefault();
+                        if (topic != null)
+                        {
+                            if (voteType == VoteType.Yes)
+                                topic.VoteYes += 1;
+                            if (voteType == VoteType.No)
+                                topic.VoteNo += 1;
+
+                            int fromIndex = scStateTreiRec.TokenDetails.TokenTopicList.FindIndex(a => a.TopicUID == topicUID);
+                            scStateTreiRec.TokenDetails.TokenTopicList[fromIndex] = topic;
+                            SmartContractStateTrei.UpdateSmartContract(scStateTreiRec);
+                        }
+                    }
                 }
             }
         }
