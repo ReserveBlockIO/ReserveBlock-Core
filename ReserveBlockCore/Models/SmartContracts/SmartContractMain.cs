@@ -266,12 +266,17 @@ namespace ReserveBlockCore.Models.SmartContracts
                                     break;
                                 case FeatureName.Token:
                                     {
-                                        var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
-                                        if (tokenData != null)
+                                        var tokenObject = repl.Run(@"GetTokenDetails()").Value;
+                                        if (tokenObject != null)
                                         {
-                                            var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
-                                            scFeature.FeatureName = FeatureName.Token;
-                                            scFeature.FeatureFeatures = tokenFeature;
+                                            var tokenObjectSerialized = JsonConvert.SerializeObject(tokenObject);
+                                            var tokenData = JsonConvert.DeserializeObject<Token>(tokenObjectSerialized);
+                                            if (tokenData != null)
+                                            {
+                                                var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                                scFeature.FeatureName = FeatureName.Token;
+                                                scFeature.FeatureFeatures = tokenFeature;
+                                            }
                                         }
                                         break;
                                     }
@@ -349,12 +354,17 @@ namespace ReserveBlockCore.Models.SmartContracts
                                 break;
                             case FeatureName.Token:
                                 {
-                                    var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
-                                    if (tokenData != null)
+                                    var tokenObject = repl.Run(@"GetTokenDetails()").Value;
+                                    if (tokenObject != null)
                                     {
-                                        var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
-                                        scFeature.FeatureName = FeatureName.Token;
-                                        scFeature.FeatureFeatures = tokenFeature;
+                                        var tokenObjectSerialized = JsonConvert.SerializeObject(tokenObject);
+                                        var tokenData = JsonConvert.DeserializeObject<Token>(tokenObjectSerialized);
+                                        if (tokenData != null)
+                                        {
+                                            var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                            scFeature.FeatureName = FeatureName.Token;
+                                            scFeature.FeatureFeatures = tokenFeature;
+                                        }
                                     }
                                     break;
                                 }
@@ -500,12 +510,17 @@ namespace ReserveBlockCore.Models.SmartContracts
 
                             case FeatureName.Token:
                                 {
-                                    var tokenData = (Token)repl.Run(@"GetTokenDetails()").Value;
-                                    if(tokenData != null)
+                                    var tokenObject = repl.Run(@"GetTokenDetails()").Value;
+                                    if (tokenObject != null)
                                     {
-                                        var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
-                                        scFeature.FeatureName = FeatureName.Token;
-                                        scFeature.FeatureFeatures = tokenFeature;
+                                        var tokenObjectSerialized = JsonConvert.SerializeObject(tokenObject);
+                                        var tokenData = JsonConvert.DeserializeObject<Token>(tokenObjectSerialized);
+                                        if (tokenData != null)
+                                        {
+                                            var tokenFeature = TokenFeature.CreateTokenFeature(tokenData);
+                                            scFeature.FeatureName = FeatureName.Token;
+                                            scFeature.FeatureFeatures = tokenFeature;
+                                        }
                                     }
                                     break;
                                 }
