@@ -58,6 +58,17 @@ namespace ReserveBlockCore.Controllers
                         };
                         accountBalanceList.Add(accountBalance);
                     }
+                    else
+                    {
+                        AccountBalance accountBalance = new AccountBalance
+                        {
+                            Address = account.Address,
+                            RBXBalance = 0.0M,
+                            RBXLockedBalance = 0.0M,
+                            TokenAccounts = tokenAccounts
+                        };
+                        accountBalanceList.Add(accountBalance);
+                    }
                 }
 
                 if(rAccounts?.Count > 0)
@@ -73,6 +84,17 @@ namespace ReserveBlockCore.Controllers
                                 Address = rAccount.Address,
                                 RBXBalance = rAccount.AvailableBalance,
                                 TokenAccounts = stateAccount.TokenAccounts?.Count > 0 ? stateAccount.TokenAccounts : tokenAccounts
+                            };
+                            accountBalanceList.Add(accountBalance);
+                        }
+                        else
+                        {
+                            AccountBalance accountBalance = new AccountBalance
+                            {
+                                Address = rAccount.Address,
+                                RBXBalance = 0.0M,
+                                RBXLockedBalance = 0.0M,
+                                TokenAccounts = tokenAccounts
                             };
                             accountBalanceList.Add(accountBalance);
                         }
