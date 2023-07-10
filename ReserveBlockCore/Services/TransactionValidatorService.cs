@@ -199,11 +199,32 @@ namespace ReserveBlockCore.Services
                         var txData = txRequest.Data;
                         if(txData != null)
                         {
-                            var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
-                            var scData = scDataArray[0];
+                            string scUID = "";
+                            string function = "";
+                            bool skip = false;
+                            JToken? scData = null;
+                            try
+                            {
+                                var scDataArray = JsonConvert.DeserializeObject<JArray>(txRequest.Data);
+                                scData = scDataArray[0];
 
-                            var function = (string?)scData["Function"];
-                            var scUID = (string?)scData["ContractUID"];
+                                function = (string?)scData["Function"];
+                                scUID = (string?)scData["ContractUID"];
+                                skip = true;
+                            }
+                            catch{ }
+
+                            try
+                            {
+                                if(!skip)
+                                {
+                                    var jobj = JObject.Parse(txData);
+                                    scUID = jobj["ContractUID"]?.ToObject<string?>();
+                                    function = jobj["Function"]?.ToObject<string?>();
+                                }
+                            }
+                            catch { }
+                            
 
                             if (!string.IsNullOrWhiteSpace(function))
                             {
