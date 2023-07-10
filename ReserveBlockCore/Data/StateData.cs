@@ -1427,7 +1427,6 @@ namespace ReserveBlockCore.Data
                         toAccount = acctStateTreiTo;
                     }
 
-                    
                     var tokenAccountFrom = fromAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
                     if(tokenAccountFrom != null)
                     {
@@ -1437,7 +1436,7 @@ namespace ReserveBlockCore.Data
                         stDB.UpdateSafe(fromAccount);
                     }
 
-                    var tokenAccountTo = toAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    var tokenAccountTo = toAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
                     if(tokenAccountTo == null)
                     {
                         var nTokenAccountT0 = TokenAccount.CreateTokenAccount(scUID, scStateTreiRec.TokenDetails.TokenName, scStateTreiRec.TokenDetails.TokenTicker, 
@@ -1508,7 +1507,7 @@ namespace ReserveBlockCore.Data
                 {
                     var fromAccount = GetSpecificAccountStateTrei(fromAddress);
 
-                    var tokenAccountFrom = fromAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    var tokenAccountFrom = fromAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
                     if (tokenAccountFrom != null)
                     {
                         tokenAccountFrom.Balance -= amount.Value;
