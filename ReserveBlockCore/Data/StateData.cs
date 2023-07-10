@@ -1420,7 +1420,7 @@ namespace ReserveBlockCore.Data
                         var nTokenAccountT0 = TokenAccount.CreateTokenAccount(scUID, scStateTreiRec.TokenDetails.TokenName, scStateTreiRec.TokenDetails.TokenTicker, 
                             amount.Value, scStateTreiRec.TokenDetails.DecimalPlaces);
 
-                        if(toAccount.TokenAccounts?.Count == 0)
+                        if(toAccount.TokenAccounts == null)
                         {
                             List<TokenAccount> tokenAccounts = new List<TokenAccount>
                             {
@@ -1428,6 +1428,11 @@ namespace ReserveBlockCore.Data
                             };
 
                             toAccount.TokenAccounts = tokenAccounts;
+                        }
+                        else
+                        {
+                            toAccount.TokenAccounts.Add(nTokenAccountT0);
+                            stDB.UpdateSafe(toAccount);
                         }
                     }
                     else
