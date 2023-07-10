@@ -176,10 +176,31 @@ namespace ReserveBlockCore.Data
                         if (tx.TransactionType == TransactionType.NFT_TX || tx.TransactionType == TransactionType.NFT_MINT
                             || tx.TransactionType == TransactionType.NFT_BURN)
                         {
-                            var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
-                            var scData = scDataArray[0];
-                            var function = (string?)scData["Function"];
-                            var scUID = (string?)scData["ContractUID"];
+                            string scUID = "";
+                            string function = "";
+                            bool skip = false;
+                            JToken? scData = null;
+                            try
+                            {
+                                var scDataArray = JsonConvert.DeserializeObject<JArray>(tx.Data);
+                                scData = scDataArray[0];
+
+                                function = (string?)scData["Function"];
+                                scUID = (string?)scData["ContractUID"];
+                                skip = true;
+                            }
+                            catch { }
+
+                            try
+                            {
+                                if (!skip)
+                                {
+                                    var jobj = JObject.Parse(tx.Data);
+                                    scUID = jobj["ContractUID"]?.ToObject<string?>();
+                                    function = jobj["Function"]?.ToObject<string?>();
+                                }
+                            }
+                            catch { }
 
                             if (!string.IsNullOrWhiteSpace(function))
                             {
@@ -1316,7 +1337,7 @@ namespace ReserveBlockCore.Data
 
             var function = (string?)jobj["Function"];
             var scUID = jobj["ContractUID"]?.ToObject<string?>();
-            var amount = jobj["amount"]?.ToObject<decimal?>();
+            var amount = jobj["Amount"]?.ToObject<decimal?>();
             var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
@@ -1325,7 +1346,7 @@ namespace ReserveBlockCore.Data
                 if (scStateTreiRec.TokenDetails != null)
                 {
                     var fromAccount = GetSpecificAccountStateTrei(fromAddress);
-                    var tokenAccountFrom = fromAccount.TokenAccounts.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
+                    var tokenAccountFrom = fromAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
                     if (tokenAccountFrom != null)
                     {
                         tokenAccountFrom.Balance += amount.Value;
@@ -1338,7 +1359,7 @@ namespace ReserveBlockCore.Data
                         var nTokenAccountT0 = TokenAccount.CreateTokenAccount(scUID, scStateTreiRec.TokenDetails.TokenName, scStateTreiRec.TokenDetails.TokenTicker,
                             amount.Value, scStateTreiRec.TokenDetails.DecimalPlaces);
 
-                        if (fromAccount.TokenAccounts?.Count == 0)
+                        if (fromAccount.TokenAccounts == null)
                         {
                             List<TokenAccount> tokenAccounts = new List<TokenAccount>
                             {
@@ -1367,7 +1388,7 @@ namespace ReserveBlockCore.Data
 
             var scUID = jobj["ContractUID"]?.ToObject<string?>();
             var toAddress = jobj["ToAddress"]?.ToObject<string?>();
-            var amount = jobj["amount"]?.ToObject<decimal?>();
+            var amount = jobj["Amount"]?.ToObject<decimal?>();
             var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
