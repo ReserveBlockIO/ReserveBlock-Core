@@ -228,7 +228,7 @@ namespace ReserveBlockCore.Data
                                         DeployTokenContract(tx, block);
                                         break;
                                     case "TokenTransfer()":
-                                        TokenTransfer(tx);
+                                        TokenTransfer(tx, block);
                                         break;
                                     case "TokenMint()":
                                         TokenMint(tx);
@@ -1381,7 +1381,7 @@ namespace ReserveBlockCore.Data
             }
 
         }
-        private static void TokenTransfer(Transaction tx)
+        private static void TokenTransfer(Transaction tx, Block block)
         {
             SmartContractStateTrei scST = new SmartContractStateTrei();
             var txData = tx.Data;
@@ -1403,6 +1403,29 @@ namespace ReserveBlockCore.Data
                 {
                     var toAccount = GetSpecificAccountStateTrei(toAddress);
                     var fromAccount = GetSpecificAccountStateTrei(fromAddress);
+
+                    if(toAccount == null)
+                    {
+                        var accStTrei = GetAccountStateTrei();
+                        var acctStateTreiTo = new AccountStateTrei
+                        {
+                            Key = tx.ToAddress,
+                            Nonce = 0,
+                            Balance = 0.0M,
+                            StateRoot = block.StateRoot
+                        };
+
+                        if (!tx.FromAddress.StartsWith("xRBX"))
+                        {
+                            acctStateTreiTo.Balance += tx.Amount;
+                        }
+                        else
+                        {
+                            acctStateTreiTo.LockedBalance += tx.Amount;
+                        }
+                        accStTrei.InsertSafe(acctStateTreiTo);
+                        toAccount = acctStateTreiTo;
+                    }
 
                     
                     var tokenAccountFrom = fromAccount.TokenAccounts?.Where(x => x.SmartContractUID == scUID).FirstOrDefault();
@@ -1475,7 +1498,7 @@ namespace ReserveBlockCore.Data
             var function = (string?)jobj["Function"];
 
             var scUID = jobj["ContractUID"]?.ToObject<string?>();
-            var amount = jobj["amount"]?.ToObject<decimal?>();
+            var amount = jobj["Amount"]?.ToObject<decimal?>();
             var fromAddress = jobj["FromAddress"]?.ToObject<string?>();
 
             var scStateTreiRec = SmartContractStateTrei.GetSmartContractState(scUID);
