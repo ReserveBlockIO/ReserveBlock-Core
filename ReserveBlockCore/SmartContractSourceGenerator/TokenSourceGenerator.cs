@@ -10,6 +10,12 @@ namespace ReserveBlockCore.SmartContractSourceGenerator
         public static async Task<(StringBuilder, StringBuilder)> Build(TokenFeature token, StringBuilder strBuild)
         {
             StringBuilder strTokenBld = new StringBuilder();
+            if(token.TokenDecimalPlaces > 18)
+            {
+                strBuild.Clear();
+                strBuild.Append("Failed");
+                return (strBuild, strTokenBld);
+            }
             var appendChar = "\"|->\"";
             try
             {
